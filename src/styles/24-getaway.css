@@ -1,0 +1,46 @@
+/* Bluff & glider (P24): the chip while the checkpoint's gates stand open for the player. */
+.hud-alert.hud-waved {
+  background: rgba(20, 84, 56, 0.92);
+  box-shadow: 0 0 0 1px rgba(95, 224, 138, 0.35) inset;
+}
+.hud-alert.hud-waved .ic {
+  color: #8ff0b0;
+}
+.hud-alert.hud-waved .hud-alert-bar i {
+  background: #5fe08a;
+}
+
+/* A glide's promise beside the round tool button on touch (P24): how far, and whether out. */
+.tool-what {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: max-content;
+  max-width: min(46vw, 200px);
+  padding: 7px 12px;
+  border-radius: 12px;
+  font: 700 13px/1.2 var(--font-ui);
+  text-align: right;
+  color: #fff;
+  background: rgba(18, 24, 36, 0.85);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.tool-what::first-letter {
+  text-transform: uppercase;
+}
+.tool-btn.no .tool-what {
+  color: #c8ccd2;
+}
+
+/* Papers that won't do now (P24): the action greyed, as the tool button is. */
+.act-btn.no .act-round {
+  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+}
+.act-prompt.no {
+  background: rgba(60, 64, 72, 0.86);
+}
+.act-prompt.no b {
+  color: #c8ccd2;
+}

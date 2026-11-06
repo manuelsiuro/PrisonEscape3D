@@ -1,0 +1,8 @@
+# The text tables: data, one key per line in double quotes (formatting them only moves quotes and wraps strings).
+src/i18n/
+# Golden outputs, generated and built files.
+scripts/snapshots/
+dist/
+assets/
+public/
+trailer/

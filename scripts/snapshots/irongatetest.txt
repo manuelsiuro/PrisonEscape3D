@@ -1,0 +1,8 @@
+island: the sea all round, the landing (18 road tiles) only past the drawbridge, the pier 6 tiles
+flood: dug under the sea at 1,30, the tunnel and its entrance lost, the player woke in the infirmary
+generators: GEN-1 at 44,18 (arches, cameras), GEN-2 at 43,46 (fence, searchlights, lamps)
+raft: launched off the pier's end at 62,28, escaped by raft
+drawbridge: up until the takeover, then down to the ferry landing
+roofs: north roof → across the yard on the grapnel → the south roofs → down the sheet rope into the court
+helicopter: in at night only, never with a helipad guard up, staff only
+riot guards: 4, health 130, a Strength 90 punch 9 (a guard: 19)

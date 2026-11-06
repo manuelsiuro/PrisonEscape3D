@@ -1,0 +1,4 @@
+storage ok, version 2
+escape records ok
+saves ok, under 12 KB
+progress keys ok

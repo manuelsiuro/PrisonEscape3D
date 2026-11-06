@@ -1,0 +1,8 @@
+data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open floor, a walk from their rounds
+shifts: kennel on day 1; at the heel 10:00–22:00 from day 2, nights 01:00–05:00 for night dogs, every lockdown
+nose: contraband in the hotbar within 1.5 tiles → a bark, +25%, the handler looks; a pouch stops it, a uniform doesn't; trust 60+ lets it go
+trail: out of bounds only, a tile at a time, 32 tiles at most, 90 s fresh; soap and showers wash it off
+tracking: beside the trail a dog follows it to its end: the way the player went (cover or no cover: found, the alarm), the player, or lost
+treats: jerky +20 trust once a day (a friend at 100), pepper 10 s of sneezing, sleepy jerky 2 h asleep
+treats: on the canteen counters at 08:00 from day 2 where there are dogs, and the pills in one desk
+saves: an old one loads the dogs in their kennels

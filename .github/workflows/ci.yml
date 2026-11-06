@@ -1,0 +1,61 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.site.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # The tests and tools type-checked too (the build checks src/), the linter, the layout.
+      - run: npx tsc --noEmit -p scripts
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      # Does this push change the game? Not when every file it touches is the docs, the tests and dev
+      # tools, the skills, the map viewer or the lint and format settings (none of them is in dist/).
+      # Unsure (a manual run, 20 or more commits, whose file lists GitHub cuts short): deploy.
+      - id: site
+        run: |
+          node -e '
+            const e = require(process.env.GITHUB_EVENT_PATH);
+            const tools = /^(docs\/|scripts\/|\.claude\/|assets\/maps\/|[^/]+\.md$|\.(oxlintrc\.json|prettierrc\.json|prettierignore|git-blame-ignore-revs)$)/;
+            const commits = e.commits ?? [];
+            const files = commits.flatMap((c) => [...(c.added ?? []), ...(c.removed ?? []), ...(c.modified ?? [])]);
+            const known = commits.length > 0 && commits.length < 20;
+            const deploy = !known || files.some((f) => !tools.test(f));
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `deploy=${deploy}\n`);
+            console.log(deploy ? "the game may have changed: deploy" : `docs and tools only (${files.length} files): no deploy`);
+          '
+      - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.site.outputs.deploy == 'true'
+        with:
+          path: dist
+
+  # Publishes the game on GitHub Pages (main only, once the checks pass).
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.check.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

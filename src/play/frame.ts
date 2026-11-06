@@ -1,0 +1,732 @@
+import { focusNow } from './focus';
+import { JOBS } from '../content/jobs';
+import { SCENT_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
+import { checkpointOf, shiftChange } from '../sim/systems/getaway';
+import { lookingAway } from '../sim/systems/ways';
+import { itemDef, itemNumber } from '../content/items';
+import { ROUTINE } from '../content/routine';
+import { ROOF_Y } from '../render/Structure';
+import { rollCallShows } from '../render/ground';
+import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
+import type { Sim } from '../sim/Sim';
+import { jobRooms } from '../sim/systems/economy';
+import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
+import { eatingNow, mealOn, mealSteps, TRAY, traysHere } from '../sim/systems/canteen';
+import { wardenOf } from '../sim/systems/rollcall';
+import { dummyInBed } from '../sim/systems/justice';
+import { afterHours } from '../sim/systems/watch';
+import { DOING, dutyCarry, dutyMachine, inmateEatSteps } from '../sim/systems/inmates';
+import { ON_MACHINE } from '../sim/ai/doing';
+import { placesOf } from '../sim/ai/places';
+import type { Prop, World } from '../sim/world/World';
+import { benchBack } from '../render/GymGear';
+import type { BedPose } from '../render/Character';
+import { TRAY_AT } from '../render/Character';
+import { itemOf, type ItemState } from '../sim/systems/items';
+import { seatSpot } from '../sim/systems/rest';
+import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
+import { TILE } from '../sim/world/tiles';
+import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
+import { press, targets } from './reach';
+import type { Game } from './game';
+import { coachItems, coachOnce, seenTip } from './tips';
+import { dayMinute, eventOn, fogNow, prisonDay, today, weatherNow } from '../sim/systems/calendar';
+import { searchMinute } from '../sim/systems/delivery';
+import { freezing } from '../sim/systems/weather';
+import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
+import { inDuct, RAT } from '../sim/systems/rats';
+import { smuggleFrame } from './smuggle';
+import { diceRival, gamesDoing, gamesFrameOf } from './games';
+import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
+import { longFrameOf, petOnTrack } from './long';
+import { teamFrameOf } from './team';
+import { nightsFrameOf } from './nights';
+import { INSTRUMENT } from '../content/nights';
+import { sightFor } from '../sim/systems/football';
+import { carWaiting, commsOf } from '../sim/systems/phone';
+import { kioskOf, loggedIn } from '../sim/systems/kiosk';
+import { atVending, VEND_NOBODY, VEND_PLAYER, vendProp } from '../sim/systems/vending';
+import { coolerProp } from '../sim/systems/cooler';
+import { atMenu } from '../sim/systems/menu';
+import { SIP_STEPS } from '../content/cooler';
+import { menuFrame } from './menuBoard';
+import { COIL_STEPS, INMATE_COIL_STEPS, THUMP_STEPS } from '../content/vending';
+import { powered } from '../sim/systems/power';
+import { boardNow, boardOf } from '../sim/systems/oddjobs';
+import { calledNow, freedNow } from '../sim/systems/paperwork';
+import { fireworksOn, holidayNow } from '../sim/systems/holiday';
+import { decorHoliday } from './holidays';
+import { tileAt } from '../sim/world/grid';
+import { emptyFrame, type Frame } from '../render/viewFrame';
+import { badgeOf } from './badges';
+
+/**
+ * The frame record the view draws: everyone where they are between the last two steps, what
+ * the player is doing, what is in focus, the security as the sim has it. One record, refilled
+ * every frame (phones notice garbage).
+ */
+
+const BATON = itemNumber('baton');
+const POUCH = itemNumber('pouch');
+const MAGAZINE = itemNumber('magazine');
+const BOOK = itemNumber('thick_book');
+/** 2.33: the water cooler's paper cup (the plastic cup's look). */
+const CUP = itemNumber('plastic_cup');
+
+/** Whether the player's bed holds a dummy: read again when the items change, never every frame. */
+const dummyMemo: { sim: Sim | null; rev: number; there: boolean } = { sim: null, rev: -1, there: false };
+/** 2.30: the player's hands on a station for a moment after a press (real time: the view's alone, nothing of the sim's). */
+export const workPose = { until: 0, doing: 0 };
+
+const groundFrame: Array<{ x: number; z: number; item: number }> = [];
+/** Firecrackers burning (P14): their tiles. */
+const fuseFrame: number[] = [];
+/** The player's trail (P19): [tile, freshness], refilled. */
+const scentFrame: Array<[number, number]> = [];
+
+const frameData: Frame = { ...emptyFrame(), ground: groundFrame, fuses: fuseFrame, scent: scentFrame };
+/** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
+function carriesUnshielded(it: ItemState): boolean {
+  let found = false;
+  for (let k = 0; k <= SLOT.OUTFIT; k++) {
+    const n = itemOf(it.inv[k]);
+    if (!n) continue;
+    if (n === POUCH && k < 6) return false;
+    if (itemDef(n).contraband) found = true;
+  }
+  return found;
+}
+/** Searchlight pools (tiles), refilled every frame. */
+const beamFrames: Array<{ x: number; z: number }> = [];
+const beamAt0 = { x: 0, z: 0 };
+const hookAt = { x: 0, y: 0, z: 0 };
+/** Where the player stands while training on a treadmill (on its belt), refilled. */
+const trainAt = { x: 0, z: 0, facing: 0, y: 0 };
+/** Where the player sits (refilled when the seat or the body changes), and an infirmary bed's pose. */
+const seatAt = { x: 0, z: 0, facing: 0, y: 0 };
+const seatMemo = { seat: -1, x: 0, z: 0 };
+const restBed: BedPose = { x: 0, z: 0, angle: 0 };
+
+/** Where someone on a machine is drawn (2.29), the player or an inmate: on the belt, hanging from the bar, along the mat, squared up to the bag. */
+function machinePose(p: Prop, out: { x: number; z: number; facing: number; y: number }) {
+  // (On a mat, feet to the west of its middle: the body along it, not the feet on it and the head off its end.)
+  out.x = p.x + p.w / 2 - (p.kind === 'mat' ? 0.42 : 0);
+  out.z = p.z + p.d / 2 + (p.kind === 'treadmill' ? 0.1 : p.kind === 'pullup' ? 0.55 : p.kind === 'punchingBag' ? 0.62 : 0);
+  out.y = p.kind === 'treadmill' ? 0.14 : p.kind === 'pullup' ? 0.2 : 0;
+  out.facing = p.kind === 'mat' ? Math.PI / 2 : Math.PI;
+}
+
+/** On a bench: lying along it, head under the bar, lower than a bed, feet off its end. */
+function benchPose(w: World, p: Prop, out: BedPose) {
+  out.x = p.x + p.w / 2;
+  out.z = p.z + p.d / 2;
+  out.angle = 0;
+  out.top = 0.32;
+  out.feet = 0.62 - benchBack(w, p);
+}
+const tapAt = { x: 0, z: 0 };
+
+/** Reps so far, counted across sets (the view pumps the arms on each). */
+let repCount = 0;
+let repLast = 0;
+function trainReps(reps: number, on: boolean): number {
+  // (2.29: the press that fills the bar empties it in the same step: it pumps too. Not stepping off with a bar half full.)
+  if (reps > repLast || (on && reps === 0 && repLast > 0)) repCount++;
+  repLast = reps;
+  return repCount;
+}
+
+/**
+ * Fills the frame record: `a` is how far the clock is between the last step and the next, `tile`
+ * the player's tile, `busy` whether the player can't act (asleep, out cold, in solitary, paused,
+ * over), `held` the item in hand. The buttons' targets are worked out already (updateTargets).
+ */
+export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, busy: boolean, held: number): Frame {
+  const sim = g.rec.sim;
+  const p = sim.state.player;
+  const clock = sim.clock;
+  const lerp = (from: number, to: number) => (from + (to - from) * a) / UNIT;
+  const st = sim.state;
+  const f = frameData;
+  f.x = lerp(g.prev.x, p.x);
+  f.z = lerp(g.prev.z, p.z);
+  f.facing = headingAngle(p.facing);
+  f.moving = p.moving && !g.paused;
+  f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
+  f.rollCall = rollCallShows(sim, clock.minuteOfDay);
+  f.layer = st.layer;
+  f.tilesRev = sim.tilesRev;
+  f.wearRev = sim.wearRev;
+  f.deskAside = st.deskAside;
+  f.wear = st.wear;
+  // Footsteps: earth in the tunnels, steel in the vents, the floor's own sound elsewhere.
+  f.surface =
+    st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
+  f.inmates.length = st.inmates.length;
+  // (Sat in the canteen on dinner's plan with no meal on: a film, the acts. No tray, no spoon.)
+  const watching = traysHere(sim) && !mealOn(sim);
+  const warden = st.guards[wardenOf(sim)];
+  // (2.30: the job machines running, the inmates' as they come, the player's after; the gardener's planters growing.)
+  const running = f.running as Map<number, number>;
+  running.clear();
+  const grow = f.planters as Map<number, number>;
+  grow.clear();
+  const atWork = !sim.rules229 && !sim.world.def.rules?.relaxed && !st.lockdown && ROUTINE[st.routine].id === 'work';
+  st.inmates.forEach((m, k) => {
+    const o = (f.inmates[k] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      doing: 0,
+      cell: 0,
+      angry: false,
+      badge: '',
+      trayAt: 0,
+      trayLeft: 1,
+      held: 0,
+      bare: false,
+      towel: 0,
+      attention: false,
+      prop: -1,
+      at: { x: 0, z: 0, facing: 0, y: 0 },
+      bench: { x: 0, z: 0, angle: 0 },
+    });
+    const q = g.prevInmates[k];
+    o.x = lerp(q?.x ?? m.body.x, m.body.x);
+    o.z = lerp(q?.z ?? m.body.z, m.body.z);
+    o.facing = headingAngle(m.body.facing);
+    // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
+    o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
+    // (Jogging the track, P31: running as it goes.)
+    o.doing = o.moving && m.then === DOING.JOG ? DOING.RUN : watching && m.doing === DOING.EAT ? DOING.SIT : m.doing;
+    // (2.29: on a machine: drawn on it, not on the tile it stands on.)
+    o.prop = -1;
+    if (ON_MACHINE.includes(m.doing) && !o.moving) {
+      const spot = placesOf(sim.world).machines.find((q) => q.tile === m.goal);
+      if (spot) {
+        o.prop = spot.prop;
+        const gear = sim.world.props[spot.prop];
+        if (m.doing === DOING.BENCH) benchPose(sim.world, gear, o.bench);
+        else machinePose(gear, o.at);
+      }
+    }
+    o.cell = m.cell;
+    o.angry = m.angry > 0;
+    o.badge = badgeOf(sim, k);
+    // Its tray: in front of it at the table, eaten as its time runs out; else in its hands.
+    // (Replaying an older run, or a prison with no counter: there at the table, no more.)
+    const atTable = o.doing === DOING.EAT;
+    o.trayAt = atTable ? TRAY_AT.TABLE : m.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
+    o.trayLeft = m.tray === TRAY.EMPTY ? 0 : atTable && m.tray === TRAY.FULL ? Math.min(1, m.wait / inmateEatSteps(m)) : 1;
+    // (2.30: at work, what's in its hands, and the machine it's running.)
+    o.held = 0;
+    // (On its way at work, not out cold, in a fight or off with the player: it's put down then.)
+    const job = atWork && m.ko <= 0 && m.angry <= 0 && m.plan === st.routine ? st.jobs.indexOf(k) : -1;
+    // (2.31: a book, chosen at a shelf and carried to a chair.)
+    if (!sim.rules230 && m.ko <= 0 && m.angry <= 0 && (m.book === 2 || (m.book === 1 && o.doing === DOING.READ))) o.held = BOOK;
+    // (2.32: what it's bought from the machine, in hand while it lasts; stood still, at its mouth.)
+    if (m.snack && st.step < m.snackEnd && m.ko <= 0 && m.angry <= 0) {
+      o.held = m.snack;
+      if (o.doing === DOING.NOTHING && !m.body.moving) o.doing = DOING.SNACK;
+    }
+    // (2.33: a paper cup at the water cooler.)
+    if (o.doing === DOING.DRINK) o.held = CUP;
+    if (job >= 0) {
+      const carry = dutyCarry(sim.world, m, job);
+      if (carry) o.held = itemNumber(carry);
+      const on = dutyMachine(sim.world, m, job);
+      if (on) {
+        running.set(on.prop, on.done);
+        if (sim.world.props[on.prop]?.kind === 'planter') grow.set(on.prop, on.done);
+      }
+    }
+    // A turn at the showers (2.26), the walks between its steps included: a towel round the neck while waiting and on the way to a head,
+    // in shorts under the water, still in them walking off to dry, the towel over the hair; dressed again after.
+    const washTurn = !o.moving
+      ? 0
+      : m.then === DOING.TOWEL
+        ? 1
+        : m.then === DOING.SHOWER && sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'showers'
+          ? 2
+          : 0;
+    o.bare = o.doing === DOING.SHOWER || o.doing === DOING.TOWEL || washTurn === 1;
+    o.towel = o.doing === DOING.TOWEL ? 2 : o.doing === DOING.SHOWER_WAIT || washTurn > 0 ? 1 : 0;
+    // The warden's come to its square (2.27): it stands straight.
+    o.attention = !!warden && warden.mode === GUARD.COUNT && warden.tasks[0] === m.cell - 1;
+  });
+  // The side games (P22): the dice partner crouches over the dice with the player (the arm-wrestle's pose is the view's, from the bout).
+  const rival = diceRival(sim);
+  if (rival >= 0 && f.inmates[rival] && st.talk === rival) f.inmates[rival].doing = DOING.DICE;
+  // Card sharks (P27): the one across the cards or the board crouches over them too, facing the player (and the player them).
+  const across = pastimesPartner(sim);
+  const partner = across && f.inmates[across.who] && st.talk === across.who ? f.inmates[across.who] : null;
+  if (partner && across) {
+    partner.doing = across.doing;
+    partner.facing = Math.atan2(f.x - partner.x, f.z - partner.z);
+    f.facing = Math.atan2(partner.x - f.x, partner.z - f.z);
+  }
+  // (A shootout's inmate taking his shot: arms up, facing the rim, a moment as the ball goes.)
+  const shooter = shooterNow();
+  const rimAt = shooter !== null ? rimInTiles(sim) : null;
+  if (shooter !== null && shooter >= 0 && rimAt && f.inmates[shooter]) {
+    const m = f.inmates[shooter];
+    m.doing = DOING.SHOOT;
+    m.facing = Math.atan2(rimAt.x - m.x, rimAt.z - m.z);
+  }
+  f.guards.length = st.guards.length;
+  st.guards.forEach((m, k) => {
+    const o = (f.guards[k] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      doing: 0,
+      alert: 0,
+      pace: 1,
+      held: 0,
+      hasKey: true,
+      away: false,
+      awayLeft: 0,
+      stir: 0,
+      range: 7,
+    });
+    const q = g.prevGuards[k];
+    o.x = lerp(q?.x ?? m.body.x, m.body.x);
+    o.z = lerp(q?.z ?? m.body.z, m.body.z);
+    o.facing = headingAngle(m.body.facing);
+    // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
+    o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
+    o.doing = m.doing;
+    o.alert = alertOf(m);
+    o.away = lookingAway(m, st.step);
+    o.awayLeft = o.away ? m.bribed - st.step : 0;
+    o.stir = m.doze > 0 ? Math.min(1, m.stir / stirSteps(sim.state)) : 0;
+    // How far it sees now (P17): the cone is drawn exactly that long.
+    // (P29: watching a match, half that for the player off the pitch.)
+    o.range = sightFor(sim, m, st.player.x, st.player.z) / UNIT;
+    const chasing = m.mode === GUARD.CHASE;
+    o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
+    o.held = chasing ? BATON : 0;
+    // Its key on its belt while it's in its pockets (taken from a guard out cold, it's gone).
+    const pocket = st.items.containers[st.items.containers.length - st.guards.length + k];
+    o.hasKey =
+      !!pocket &&
+      (itemOf(pocket[0]) === g.guardKeys[k] ||
+        itemOf(pocket[1]) === g.guardKeys[k] ||
+        itemOf(pocket[2]) === g.guardKeys[k] ||
+        itemOf(pocket[3]) === g.guardKeys[k]);
+  });
+  // The dogs (P19): where they are, what they're up to; the player's trail, fresher the brighter.
+  f.dogs.length = st.dogs.length;
+  st.dogs.forEach((d, k) => {
+    const o = (f.dogs[k] ??= { x: 0, z: 0, facing: 0, moving: false, pace: 1, pose: 'kennel', friend: false });
+    const q = g.prevDogs[k];
+    o.x = lerp(q?.x ?? d.body.x, d.body.x);
+    o.z = lerp(q?.z ?? d.body.z, d.body.z);
+    o.facing = headingAngle(d.body.facing);
+    o.moving = d.body.moving && !g.paused;
+    o.pose = dogAsleep(d, st.step)
+      ? 'asleep'
+      : dogDazed(d, st.step)
+        ? 'dazed'
+        : d.mode === DOG.POINT
+          ? 'point'
+          : d.mode === DOG.TRACK || d.mode === DOG.RAT
+            ? 'track'
+            : d.mode === DOG.KENNEL
+              ? 'kennel'
+              : 'heel';
+    o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / WALK_SPEED_GUARD : 1;
+    o.friend = d.trust >= TRUST_IGNORE;
+  });
+  // The rats (P20): from where they were to where they are (not across a jump: off the shoulder, back on it).
+  f.rats.length = st.rats.length;
+  st.rats.forEach((r, k) => {
+    const o = (f.rats[k] ??= { x: 0, z: 0, facing: 0, mode: 'hidden', carry: 0 });
+    const q = g.prevRats[k];
+    const glide = !!q && q.mode !== RAT.SHOULDER && r.mode !== RAT.SHOULDER && Math.abs(q.x - r.x) + Math.abs(q.z - r.z) < UNIT;
+    o.x = lerp(glide ? q!.x : r.x, r.x);
+    o.z = lerp(glide ? q!.z : r.z, r.z);
+    o.facing = headingAngle(r.facing);
+    const t = tileAt(r.x, r.z);
+    o.mode =
+      r.mode === RAT.SHOULDER
+        ? 'shoulder'
+        : r.mode === RAT.WAIT || inDuct(sim.world, t)
+          ? 'hidden'
+          : r.mode === RAT.LOOSE
+            ? 'loose'
+            : 'run';
+    // (P28: the pet away on the track, racing or running its laps: drawn there, not on the shoulder.)
+    if (!r.wild && r.mode === RAT.SHOULDER && petOnTrack(sim)) o.mode = 'hidden';
+    o.carry = itemOf(r.carry);
+  });
+  scentFrame.length = st.scent.length;
+  for (let k = 0; k < st.scent.length; k++) {
+    const e = (scentFrame[k] ??= [0, 0]);
+    e[0] = st.scent[k][0];
+    e[1] = Math.max(0, 1 - (st.step - st.scent[k][1]) / SCENT_STEPS);
+  }
+  f.lock = st.lock;
+  // The ring reads the fight: red while they're after the player, dim out of reach.
+  f.lockHostile =
+    st.lock >= 0 &&
+    (st.lock < st.inmates.length ? st.inmates[st.lock].angry > 0 : st.guards[st.lock - st.inmates.length].mode === GUARD.CHASE);
+  // (The tool button as the last frame left it: it's worked out after the draw.)
+  f.lockFar = !!press.toolNow?.attack && !press.toolNow.fits;
+  f.knockedOut = st.ko > 0;
+  // (Hidden in the delivery's vehicle, P18: nowhere to be led.)
+  f.guide = st.stowed ? null : g.guide;
+  const dest = g.pilot.destination;
+  if (dest >= 0) {
+    tapAt.x = (dest % MAP_W) + 0.5;
+    tapAt.z = Math.floor(dest / MAP_W) + 0.5;
+  }
+  f.tap = dest >= 0 ? tapAt : null;
+  f.alarm = st.lockdown;
+  // Items: the floor (of the player's layer), the hand, the outfit, and what the action button would use.
+  const it = st.items;
+  let n = 0;
+  for (const [key, v] of it.ground) {
+    if (layerOfKey(key) !== st.layer) continue;
+    const tileIndex = tileOfKey(key);
+    const o = (groundFrame[n++] ??= { x: 0, z: 0, item: 0 });
+    o.x = (tileIndex % MAP_W) + 0.5;
+    o.z = Math.floor(tileIndex / MAP_W) + 0.5;
+    o.item = itemOf(v);
+  }
+  groundFrame.length = n;
+  // A layer change redraws the floor items too.
+  f.groundRev = it.rev * 4 + st.layer;
+  fuseFrame.length = 0;
+  for (const [key] of st.fuses) fuseFrame.push(tileOfKey(key));
+  // The frame stays on an open container (what the panel shows), else on what a press acts on.
+  const memo = targets;
+  f.focus = focusNow(sim, busy ? null : memo.plan);
+  // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
+  const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
+  // The tray: in both hands, unless it's set down on a table (below).
+  f.trayAt = st.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
+  f.trayLeft = st.tray === TRAY.EMPTY ? 0 : 1 - Math.min(1, st.eaten / mealSteps(sim));
+  f.doing =
+    trainKind === 'weights'
+      ? DOING.BENCH
+      : trainKind === 'pullup'
+        ? DOING.PULLUP
+        : trainKind === 'treadmill'
+          ? DOING.RUN
+          : trainKind === 'shelf'
+            ? DOING.READ
+            : trainKind === 'mat'
+              ? DOING.PUSHUP
+              : trainKind === 'punchingBag'
+                ? DOING.BAG
+                : DOING.NOTHING;
+  f.trainProp = st.train;
+  f.restBed = null;
+  if (trainKind === 'weights') {
+    benchPose(sim.world, sim.world.props[st.train], restBed);
+    f.restBed = restBed;
+  }
+  // Seated (GDD §3.1): on the seat's tile facing the table, eating while the meal lasts; resting on an infirmary bed: lying on it.
+  const seated = st.seat >= 0 ? sim.world.props[st.seat] : null;
+  if (seated?.kind === 'bed') {
+    restBed.x = seated.x + seated.w / 2;
+    restBed.z = seated.z + seated.d / 2;
+    restBed.angle = (seated.rot * Math.PI) / 2;
+    restBed.top = restBed.feet = undefined;
+    f.restBed = restBed;
+    f.doing = DOING.SLEEP;
+    f.trainAt = null;
+  } else if (seated) {
+    if (seatMemo.seat !== st.seat || seatMemo.x !== p.x || seatMemo.z !== p.z) {
+      const spot = seatSpot(sim.world, st.seat, p);
+      Object.assign(seatMemo, { seat: st.seat, x: p.x, z: p.z });
+      seatAt.x = spot.x + 0.5;
+      seatAt.z = spot.z + 0.5;
+      seatAt.y = seated.kind === 'chair' || seated.kind === 'readChair' ? 0.1 : 0;
+      seatAt.facing = headingAngle(spot.facing);
+    }
+    f.doing = eatingNow(sim) ? DOING.EAT : trainKind === 'shelf' ? DOING.SIT_READ : DOING.SIT;
+    if (f.doing === DOING.EAT || (st.tray !== TRAY.NONE && seated.kind === 'seat')) f.trayAt = TRAY_AT.TABLE;
+    f.trainAt = seatAt;
+  } else if (sim.showering) f.doing = DOING.SHOWER;
+  // The side games (P22): at a lock, in an arm-wrestle, over the dice.
+  const game = gamesDoing(sim);
+  if (game >= 0 && !seated) f.doing = game;
+  // (P27: over the cards, at the board, the ball up for a shot: facing the rim.)
+  // (And a moment after letting go: the follow-through.)
+  const past = shooter === -1 && !seated ? DOING.SHOOT : pastimesDoing(sim);
+  if (past >= 0 && !seated) f.doing = past;
+  if (past === DOING.SHOOT) {
+    const rim = rimInTiles(sim);
+    if (rim) f.facing = Math.atan2(rim.x - f.x, rim.z - f.z);
+  }
+  // (P29: a kick wound up; at work on a tattoo, or being inked, facing the other.)
+  if (!seated && st.match?.hold) f.doing = DOING.FOOTBALL;
+  // (P30: on the stage, the instrument played; at the quiz, the buzzer, facing the way the places do.)
+  if (!seated && st.show) f.doing = st.show.inst === INSTRUMENT.GUITAR ? DOING.GUITAR : DOING.DRUMS;
+  if (!seated && st.quiz) {
+    f.doing = DOING.QUIZ;
+    const qf = sim.world.def.leisure?.quiz?.face ?? 5;
+    if (!p.moving) f.facing = qf === 1 ? Math.PI / 2 : qf === 9 ? -Math.PI / 2 : qf === 13 ? Math.PI : 0;
+  }
+  // (2.30: a press at a job's station.)
+  if (!seated && !f.moving && f.doing === DOING.NOTHING && performance.now() < workPose.until) f.doing = workPose.doing;
+  // (P34: on the pay phone, the handset at the ear, facing the phone on its wall.)
+  const comms = st.call !== null && !seated ? commsOf(sim) : null;
+  if (comms) {
+    f.doing = DOING.PHONE;
+    const ph = comms.phone;
+    if (!p.moving) f.facing = Math.atan2(ph.x + 0.5 + DIR_X[ph.face] / 2048 - f.x, ph.z + 0.5 + DIR_Z[ph.face] / 2048 - f.z);
+  }
+  // (P35: logged in at the kiosk, standing at it, typing, facing its screen on the wall; a step off it
+  // and still logged in, not typing at nothing.)
+  const kiosk = loggedIn(st) && !seated && !p.moving ? kioskOf(sim) : null;
+  if (kiosk && Math.hypot(f.x - kiosk.x - 0.5, f.z - kiosk.z - 0.5) < 0.6) {
+    f.doing = DOING.KIOSK;
+    f.facing = Math.atan2(kiosk.x + 0.5 + DIR_X[kiosk.face] / 2048 - f.x, kiosk.z + 0.5 + DIR_Z[kiosk.face] / 2048 - f.z);
+  }
+  // (2.32: up at the vending machine: pressing its keys, or thumping it a moment.)
+  if (st.vendOpen && !seated && !p.moving && atVending(sim)) {
+    const vp = vendProp(sim);
+    if (vp) {
+      f.doing = st.step - st.vend.hit < THUMP_STEPS + 4 && st.vend.hit > 0 ? DOING.THUMP : DOING.VEND;
+      f.facing = Math.atan2(vp.x + 0.5 - f.x, vp.z + 0.5 - f.z);
+    }
+  }
+  // (2.33: a cup at the water cooler for a moment, facing it; at the menu board, facing it, a scribble up on it.)
+  const sipping = st.drank > 0 && st.step - st.drank < SIP_STEPS && !seated && !p.moving;
+  const cp = sipping ? coolerProp(sim) : null;
+  if (cp) {
+    f.doing = DOING.DRINK;
+    f.facing = Math.atan2(cp.x + 0.5 - f.x, cp.z + 0.5 - f.z);
+  }
+  if ((st.menuOpen || st.menu.until) && !seated && !p.moving && atMenu(sim)) {
+    f.facing = Math.PI;
+    if (st.menu.until) f.doing = DOING.SCRIBBLE;
+  }
+  if (!seated && st.ink) {
+    f.doing = DOING.TATTOO;
+    const m = st.inmates[st.ink.who];
+    if (m && (m.body.x !== p.x || m.body.z !== p.z)) f.facing = Math.atan2(m.body.x - p.x, m.body.z - p.z);
+  }
+  // (P31: at the pull-up bar, just in front of it facing it, hands up on it, lifted a little off the grass:
+  // a step back from it, or the see-through cut round the player would take the bar away.)
+  if (!seated && (trainKind === 'treadmill' || trainKind === 'pullup' || trainKind === 'mat' || trainKind === 'punchingBag')) {
+    machinePose(sim.world.props[st.train], trainAt);
+    f.trainAt = trainAt;
+  } else if (!seated || seated.kind === 'bed') f.trainAt = null;
+  f.reps = trainReps(st.reps, st.train >= 0);
+  f.puddles = st.puddles;
+  // (P31: the gardener's planters growing what was planted in them.)
+  const cycleOf = sim.jobActive() >= 0 ? (jobRooms(sim.world)[sim.jobActive()]?.def.cycle ?? 3) : 3;
+  for (const k in st.machines) {
+    const i = Number(k);
+    const done = Math.max(0, Math.min(1, 1 - (st.machines[i] - st.step) / (cycleOf * STEPS_PER_SECOND)));
+    // (A load that's finished stands waiting, no longer running.)
+    if (st.machines[i] > st.step) running.set(i, done);
+    if (sim.world.props[i]?.kind !== 'planter') continue;
+    grow.set(i, Math.max(0, Math.min(1, 1 - (st.machines[i] - st.step) / (JOBS.gardener.cycle! * STEPS_PER_SECOND))));
+  }
+  f.craters = st.craters;
+  f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
+  // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)
+  // (2.31: the book, read or carried to a chair.)
+  f.held = st.show || st.quiz ? 0 : st.book > 0 ? BOOK : trainKind === 'shelf' ? MAGAZINE : f.doing === DOING.DRINK ? CUP : held;
+  f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
+  coachItems(f.held, f.outfit);
+  f.sleeping = st.sleeping;
+  if (dummyMemo.sim !== sim || dummyMemo.rev !== it.rev) Object.assign(dummyMemo, { sim, rev: it.rev, there: dummyInBed(sim) });
+  f.bedDummy = dummyMemo.there;
+  f.blockDark = !st.lockdown && afterHours(sim);
+  // Security (GDD §5.4–5.6) as the sim has it: cameras on their sweep, the searchlights at night, a sniper's aim.
+  const sec = f.security;
+  // What has power (Irongate's two generators each run their half, P12).
+  sec.power = sim.powered('lights');
+  sec.fence = sim.powered('fence');
+  sec.arches = sim.powered('detectors');
+  sec.gens[0] = st.powerOff === 0;
+  sec.gens[1] = st.powerOff2 === 0;
+  sec.px = f.x;
+  sec.pz = f.z;
+  const cams = sim.prison.cameras ?? [];
+  sec.cams.length = cams.length;
+  cams.forEach((c, k) => {
+    const o = (sec.cams[k] ??= { facing: 0, on: false, sees: false, taped: false });
+    o.taped = st.cams[k] > 0;
+    o.facing = Math.PI / 2 - ((c.face - 1 + cameraSweep(k, st.step + a)) * Math.PI * 2) / 16;
+    o.on = sim.powered('cameras') && !st.cams[k];
+    o.sees = o.on && st.layer === LAYER.GROUND && !g.over && cameraSees(sim.world, c, k, st.step, p);
+    // The first time a camera has the player in its eye: what cameras do, and how to blind one.
+    if (o.sees && !busy) coachOnce('camera', 'hint.camera');
+  });
+  // (P31: the first time out on the sports ground, or in the garden: what's there.)
+  if (st.layer === LAYER.GROUND && !busy) {
+    const here = sim.playerZone;
+    if (here === 'sports') coachOnce('sports', 'hint.sports');
+    else if (here === 'garden') coachOnce('gardenPlace', 'hint.gardenPlace');
+  }
+  // Walking up to a live detector arch with contraband and no pouch (GDD §5.4): a warning, once.
+  if (
+    memo.step === st.step &&
+    sim.powered('detectors') &&
+    st.layer === LAYER.GROUND &&
+    !busy &&
+    !seenTip('detectorAhead') &&
+    carriesUnshielded(it)
+  ) {
+    for (let dz = -2; dz <= 2; dz++)
+      for (let dx = -2; dx <= 2; dx++)
+        if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');
+  }
+  const lights = sim.prison.searchlights;
+  if (lights && sim.powered('searchlights') && ROUTINE[st.routine].id === 'lightsOut') {
+    beamFrames.length = lights.length;
+    lights.forEach((path, k) => {
+      beamAt(path, st.step + a, beamAt0);
+      const o = (beamFrames[k] ??= { x: 0, z: 0 });
+      o.x = beamAt0.x / UNIT;
+      o.z = beamAt0.z / UNIT;
+    });
+    sec.beams = beamFrames;
+  } else sec.beams = null;
+  sec.aim = st.sniperAt > 0 && !busy ? sniperOn(sim.world, p, st.layer) : -1;
+  // A grapnel ready at a roof's edge: where it would land.
+  const hook = memo.tool?.action === 'grapnel' ? memo.tool.tile : -1;
+  if (hook >= 0) {
+    hookAt.x = (hook % MAP_W) + 0.5;
+    hookAt.z = Math.floor(hook / MAP_W) + 0.5;
+    // Onto a roof (Shankton's gatehouse), the landing is up there.
+    hookAt.y = memo.tool!.layer === LAYER.ROOF ? ROOF_Y : 0;
+  }
+  sec.hook = hook >= 0 ? hookAt : null;
+  f.takeover = st.takeover;
+  frameA = a;
+  dayFrame(sim, f);
+  getawayFrame(sim, f);
+  // Smuggling (P21): the drone, the drops, visiting day.
+  f.smuggle = smuggleFrame(sim, a);
+  // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
+  f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? (f.inmates[rival] ?? null) : null);
+  // Card sharks (P27): the court, the ball, the cards between the two, the board.
+  f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner);
+  // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
+  f.long = longFrameOf(sim, a);
+  // Team & ink (P29): the pitch, the ball.
+  f.team = teamFrameOf(sim, a);
+  // Stage nights (P30): the stage set up, the buzzers.
+  f.nights = nightsFrameOf(sim);
+  // The pay phone (P34): off the hook while an inmate's call has begun or the player's is on; Lou's car on its night.
+  f.phone.offHook = (st.booth[0] >= 0 && st.booth[1] > 0) || st.call !== null;
+  f.phone.car = carWaiting(st);
+  // The internet kiosk (P35): the screen awake while the player's logged in; the drawings pinned over the bed.
+  f.kiosk.on = loggedIn(st);
+  // The vending machine (2.32): lit, what's left, what's dropping.
+  f.vending.on = powered(sim.world, st, 'lights');
+  f.vending.left = st.vend.left;
+  f.vending.jam = st.vend.jam - 1;
+  f.vending.coil = st.vend.who !== VEND_NOBODY && !st.vend.thumping ? st.vend.row : -1;
+  f.vending.turn =
+    f.vending.coil >= 0
+      ? Math.min(1, Math.max(0, 1 - (st.vend.until - st.step) / (st.vend.who === VEND_PLAYER ? COIL_STEPS : INMATE_COIL_STEPS)))
+      : 0;
+  f.vending.thumps = st.vend.hit;
+  f.kiosk.photos = st.photos;
+  // The menu board and the water cooler (2.33): today's dishes on it, a scribble; a cup being drunk at the cooler.
+  menuFrame(sim, f);
+  // The odd jobs board (P40): the cards still up today, a tag while a job is held.
+  oddJobsFrame(sim, f);
+  // The release desk (P36): its lamp while the name is called, and while the way out is open.
+  f.release.called = calledNow(st);
+  f.release.freed = freedNow(st);
+  f.inked = st.inked;
+  return f;
+}
+
+/** What's on the odd jobs board, worked out again only when the day, the pins taken or the story move on (the deals aren't free). */
+let boardKey = '';
+function oddJobsFrame(sim: Sim, f: Frame) {
+  const st = sim.state;
+  const o = f.oddjobs;
+  o.mine = st.oddjob.length > 0;
+  if (!boardOf(sim)) {
+    boardKey = '';
+    o.pins.fill(false);
+    o.chain = false;
+    return;
+  }
+  const key = `${sim.prison.id}|${st.salt}|${prisonDay(st.step)}|${st.oddjobs.join(',')}|${st.oddjob.length}`;
+  if (key === boardKey) return;
+  boardKey = key;
+  const b = boardNow(sim);
+  for (let k = 0; k < o.pins.length; k++) o.pins[k] = !!b.pins[k];
+  o.chain = !!b.chain;
+}
+
+/**
+ * The day in the picture (P17): rain (1) or a storm (2), fog while it lies thick, a
+ * heatwave's haze by day, the wind (a heading in the view: where it blows to), and the
+ * event on (the screen, the food, the inspectors).
+ */
+/** The step's fraction (the frame's interpolation) for the day's clocks. */
+/** Bluff & glider (P24): the checkpoint's shift change and the player waved through; a glider at a roof's edge, where it would come down (the sim's own target). */
+const glidePreview = { fromX: 0, fromZ: 0, toX: 0, toZ: 0, go: false, out: false };
+function getawayFrame(sim: Sim, f: Frame) {
+  const st = sim.state;
+  const gw = f.getaway;
+  gw.shift = !!checkpointOf(sim) && shiftChange(st.step);
+  gw.waved = st.waved > 0;
+  const tt = targets.tool;
+  const g = tt?.action === 'glide' ? tt.glide : undefined;
+  if (!g || !g.dist || st.layer !== LAYER.ROOF) {
+    gw.glide = null;
+    return;
+  }
+  const here = tt!.over!;
+  glidePreview.fromX = (here % MAP_W) + 0.5;
+  glidePreview.fromZ = Math.floor(here / MAP_W) + 0.5;
+  glidePreview.toX = (tt!.tile % MAP_W) + 0.5;
+  glidePreview.toZ = Math.floor(tt!.tile / MAP_W) + 0.5;
+  glidePreview.go = tt!.fits;
+  glidePreview.out = g.out;
+  gw.glide = glidePreview;
+}
+
+let frameA = 0;
+function dayFrame(sim: Sim, f: Frame) {
+  const plan = today(sim);
+  const w = f.weather;
+  const now = weatherNow(sim);
+  w.rain = now === 'storm' ? 2 : now === 'rain' ? 1 : 0;
+  w.fog = fogNow(sim) ? 1 : 0;
+  const m = dayMinute(sim.state.step);
+  w.heat = plan.weather === 'heatwave' && m >= 60 && m < 690;
+  // From a bearing (0 north, clockwise in eighths) it blows the other way: east +x, south +z.
+  const b = (plan.wind * Math.PI) / 4;
+  w.windAngle = Math.atan2(Math.cos(b), -Math.sin(b));
+  w.windForce = plan.windForce;
+  // (P26: a Big Freeze Daily snows on any prison, as Stalag Flucht always does.)
+  w.snow = freezing(sim);
+  const e = f.events;
+  e.movie = eventOn(sim, 'movie');
+  e.foodFight = eventOn(sim, 'foodFight');
+  e.inspection = eventOn(sim, 'inspection');
+  // The holiday (P42): the run's own, or (a Daily, which plays without one) the date's, for the decor only.
+  const hd = f.holiday;
+  hd.kind = decorHoliday(sim);
+  hd.water = holidayNow(sim, 'waterFight');
+  hd.fireworks = fireworksOn(sim);
+  // Delivery day (P18): the vehicle's day, in fractional minutes (it drives in before 12:30 and out after 14:31).
+  const d = f.delivery;
+  const st = sim.state;
+  d.t =
+    plan.event === 'delivery' && sim.prison.delivery && !sim.prison.rules?.relaxed
+      ? (st.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE + frameA / STEPS_PER_MINUTE
+      : -1;
+  d.at = plan.at;
+  d.until = plan.until;
+  d.search = searchMinute(plan);
+  d.stowed = st.stowed;
+}

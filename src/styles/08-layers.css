@@ -1,0 +1,541 @@
+/* P4: tools, energy, layers, the escape. */
+
+/* ------------------------------------------------------------ the tool button (touch) */
+.tool-btn {
+  position: fixed;
+  right: max(23px, calc(env(safe-area-inset-right) + 7px));
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 172px);
+  z-index: 31;
+  padding: 0;
+  color: white;
+  background: none;
+  touch-action: none;
+}
+
+.tool-round {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  font: 800 11px/1.1 var(--font-ui);
+  font-style: normal;
+  background: radial-gradient(circle at 40% 30%, var(--steel), var(--steel-2));
+  box-shadow:
+    0 10px 22px -8px rgba(20, 40, 70, 0.9),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.08s;
+}
+
+.tool-round span {
+  /* Two short lines at most ("Lancer le / grappin"), never a word cut off. */
+  display: -webkit-box;
+  max-width: 58px;
+  overflow: hidden;
+  text-align: center;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* How far the tile has given way: a ring filling round the button. */
+.tool-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold) var(--p, 0%), rgba(255, 255, 255, 0.14) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+
+.tool-btn.down .tool-round {
+  transform: scale(0.92);
+}
+
+/* The tool in hand can't do it: grey, pressing says what is needed. */
+.tool-btn.no .tool-round {
+  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+}
+
+/* ------------------------------------------------------------ the Space prompt (keyboard) */
+.tool-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  color: white;
+  font: 600 14px var(--font-ui);
+  background: rgba(30, 50, 76, 0.86);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: toast-in 0.25s var(--spring);
+}
+
+.tool-prompt b {
+  font-weight: 800;
+  color: #b8d4f0;
+}
+
+.tool-prompt.no {
+  background: rgba(60, 64, 72, 0.86);
+}
+
+.tool-prompt.no b {
+  color: #c8ccd2;
+}
+
+kbd.wide {
+  padding: 0 8px;
+}
+
+.tool-bar {
+  display: block;
+  width: 56px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tool-bar i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.15s;
+}
+
+/* ------------------------------------------------------------ energy */
+.energy {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 63px);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 6px;
+  border-radius: 999px;
+  color: var(--energy);
+  background: rgba(18, 24, 36, 0.8);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.energy-bar {
+  display: block;
+  width: 84px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.energy-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--energy);
+  transition: width 0.3s var(--ease);
+}
+
+.energy .vital {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.energy .vital.hidden {
+  display: none;
+}
+
+.energy .vital.en {
+  color: var(--energy);
+}
+
+.energy .vital.hp {
+  color: var(--health);
+}
+
+.energy .vital.hp .energy-bar i {
+  background: var(--health);
+}
+
+.energy .vital.low {
+  color: var(--energy-low);
+}
+
+.energy .vital.low .energy-bar i {
+  background: var(--energy-low);
+}
+
+.energy .vital.hp.low .ic {
+  animation: heart-beat 0.9s ease-in-out infinite;
+}
+
+.energy .vital.thump .ic {
+  animation: heart-thump 0.35s var(--spring);
+}
+
+@keyframes heart-beat {
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+@keyframes heart-thump {
+  40% {
+    transform: scale(1.45);
+  }
+}
+
+/* Both bars at once: a little shorter, side by side. */
+.energy:has(.vital.hp:not(.hidden)):has(.vital.en:not(.hidden)) .energy-bar {
+  width: 64px;
+}
+
+.energy:has(.vital.hp:not(.hidden)):has(.vital.en:not(.hidden)) {
+  gap: 10px;
+}
+
+/* The E prompt and the Space prompt sit above the energy pill on desktop. */
+body:not(.touch) .act-prompt {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 88px);
+}
+
+/* ------------------------------------------------------------ the coach hint clears the tool button */
+.touch.is-playing.has-tool .hint,
+.touch.is-playing.dig-up .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 248px);
+}
+
+@media (max-width: 520px) {
+  .tool-btn {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 152px);
+    right: max(20px, calc(env(safe-area-inset-right) + 4px));
+  }
+
+  .energy {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 56px);
+  }
+}
+
+/* Landscape phones: the tool button left of the action button, low. */
+@media (max-height: 520px) {
+  .tool-btn {
+    right: calc(max(16px, env(safe-area-inset-right)) + 90px);
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .energy {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 56px);
+  }
+
+  .touch.is-playing.has-tool .hint,
+  .touch.is-playing.dig-up .hint {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
+  }
+}
+
+/* ------------------------------------------------------------ Dig up, in a tunnel (beside the tool button; the lock button's place, never shown underground) */
+.up-btn {
+  position: fixed;
+  right: calc(max(23px, calc(env(safe-area-inset-right) + 7px)) + 74px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
+  z-index: 31;
+  padding: 0;
+  color: white;
+  background: none;
+  touch-action: none;
+}
+
+.up-round {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font: 800 10px/1.1 var(--font-ui);
+  font-style: normal;
+  background: radial-gradient(circle at 40% 30%, #b48a5c, #6e4a26);
+  box-shadow:
+    0 10px 22px -8px rgba(60, 36, 12, 0.9),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.08s;
+}
+
+.up-round span {
+  max-width: 50px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-btn.down .up-round {
+  transform: scale(0.92);
+}
+
+.up-btn.no .up-round {
+  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+}
+
+/* The U prompt (keyboard), above the Space prompt. */
+.up-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  color: white;
+  font: 600 14px var(--font-ui);
+  background: rgba(92, 60, 32, 0.9);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: toast-in 0.25s var(--spring);
+}
+
+.up-prompt b {
+  font-weight: 800;
+  color: #f0d4b0;
+}
+
+.up-prompt.no {
+  background: rgba(60, 64, 72, 0.86);
+}
+
+.up-prompt.no b {
+  color: #c8ccd2;
+}
+
+.item-card .up-prompt {
+  visibility: hidden;
+}
+
+@media (max-width: 520px) {
+  .up-btn {
+    right: calc(max(20px, calc(env(safe-area-inset-right) + 4px)) + 74px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 156px);
+  }
+}
+
+/* Landscape phones: above the tool button, clear of the action button's tag (it sits above that button there). */
+@media (max-height: 520px) {
+  .up-btn {
+    right: calc(max(16px, env(safe-area-inset-right)) + 110px);
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 124px);
+  }
+}
+
+/* ------------------------------------------------------------ a layer change: a blink of dark */
+.layer-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  background: #07090c;
+  pointer-events: none;
+  animation: layer-fade 0.42s var(--ease) forwards;
+}
+
+@keyframes layer-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------ the desk's tunnel (in its panel) */
+.box-tunnel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  color: #f2dcc0;
+  font: 600 13px var(--font-ui);
+  background: rgba(90, 60, 35, 0.55);
+}
+
+/* (2.23: another inmate's furniture: a guard who sees the player at it minds.) */
+.box-warn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: #ffd27a;
+  font: 600 12.5px var(--font-ui);
+  background: rgba(120, 70, 10, 0.45);
+}
+.box-warn.hidden {
+  display: none;
+}
+
+/* ------------------------------------------------------------ escaped */
+.escaped .card {
+  text-align: center;
+}
+
+.escaped h2 {
+  margin: 4px 0 6px;
+  font: 700 clamp(34px, 9vw, 52px) / 1 var(--font-display);
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  animation: badge-pop 0.6s var(--spring);
+}
+
+.escaped .escaped-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 6px;
+  border-radius: 50%;
+  color: white;
+  background: radial-gradient(circle at 40% 30%, #ffd05c, #e08a12);
+  box-shadow: 0 12px 26px -8px rgba(224, 138, 18, 0.8);
+}
+
+/* ------------------------------------------------------------ toasts clear the tool controls */
+.is-playing.tool-up .toasts,
+.is-playing.dig-up .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 166px), var(--hint-clear, 0px));
+}
+
+.is-playing.tool-up .item-toast,
+.is-playing.dig-up .item-toast {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 168px);
+}
+
+.touch.is-playing.tool-up .toasts,
+.touch.is-playing.dig-up .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 214px), var(--hint-clear, 0px));
+}
+
+.touch.is-playing.tool-up .item-toast,
+.touch.is-playing.dig-up .item-toast {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 226px);
+}
+
+@media (max-height: 520px) {
+  .is-playing.tool-up .toasts,
+  .touch.is-playing.tool-up .toasts,
+  .is-playing.dig-up .toasts,
+  .touch.is-playing.dig-up .toasts {
+    bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 74px), var(--hint-clear, 0px));
+  }
+
+  .touch.is-playing.tool-up .item-toast,
+  .touch.is-playing.dig-up .item-toast {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 130px);
+  }
+}
+
+/* An item's card (drop, wear) over the hotbar: the prompts and energy under it make way. */
+.item-card .act-prompt,
+.item-card .tool-prompt,
+.item-card .energy {
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------ the layer the player is on, in the zone pill */
+.hud .pill.hud-zone[data-layer='under'] {
+  background: rgba(92, 60, 32, 0.9);
+}
+
+.hud .pill.hud-zone[data-layer='vents'] {
+  background: rgba(61, 95, 132, 0.92);
+}
+
+.hud .pill.hud-zone[data-layer='roof'] {
+  background: rgba(120, 112, 98, 0.92);
+}
+
+/* Desktop: the coach hint sits above the Space prompt. */
+body:not(.touch).is-playing.tool-up .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
+}
+
+/* Desktop, Dig up: the U prompt in the Space prompt's place when that's away, above it when not; the hint and toasts above both. */
+body:not(.touch).dig-up:not(.tool-up) .up-prompt {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+}
+
+body:not(.touch).is-playing.dig-up.tool-up .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 216px);
+}
+
+body:not(.touch).is-playing.dig-up.tool-up .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 212px), var(--hint-clear, 0px));
+}
+
+body:not(.touch).is-playing.dig-up.tool-up .item-toast {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 214px);
+}
+
+body:not(.touch).is-playing.dig-up:not(.tool-up) .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
+}
+
+/* Landscape phones: a desk's hidden compartment and drawers side by side, so all 16 slots
+   (and the tunnel row) fit between the HUD and the hotbar without scrolling. */
+@media (max-height: 520px) {
+  .box-panel:not(.plain) {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-content: start;
+    column-gap: 14px;
+    width: auto;
+  }
+
+  .box-panel:not(.plain) .panel-head,
+  .box-panel:not(.plain) .box-tunnel,
+  .box-panel:not(.plain) .box-warn {
+    grid-column: 1 / -1;
+  }
+
+  .box-panel:not(.plain) .box-section + .box-section {
+    margin-top: 0;
+  }
+
+  .box-panel:not(.plain) .box-hidden .slot-grid,
+  .box-panel:not(.plain) .slot-grid.box-hidden {
+    grid-template-columns: repeat(3, 40px);
+  }
+
+  .box-panel:not(.plain) .slot-grid.box-drawers {
+    grid-template-columns: repeat(5, 40px);
+  }
+
+  .box-tunnel {
+    margin-bottom: 6px;
+    padding: 3px 3px 3px 12px;
+  }
+
+  .box-panel:not(.plain) .box-label {
+    margin-bottom: 3px;
+  }
+
+  .box-panel:not(.plain) .box-hidden-wrap .slot-grid {
+    padding: 4px;
+  }
+}

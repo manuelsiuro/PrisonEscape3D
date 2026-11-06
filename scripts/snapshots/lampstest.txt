@@ -1,0 +1,83 @@
+
+training
+  18,36 yard — SE: asphalt at 1
+  31,36 yard — SW: asphalt at 1
+  29,50 yard — E: dirt at 2
+  48,36 sports — SW: a weights at 1
+
+center-perks
+  27,7 rollCall — SE: open ground
+  38,7 rollCall — SW: open ground
+  24,25 yard — SE: a bench at 2
+  37,25 yard — SW: a bench at 2
+  24,34 yard — NE: a bench at 2
+  37,34 yard — NW: a bench at 2
+  4,9 perimeter — W: the fence at 2
+  59,9 perimeter — E: the fence at 2
+  4,21 perimeter — W: the fence at 2
+  59,21 perimeter — E: the fence at 2
+  4,33 perimeter — W: the fence at 2
+  59,33 perimeter — E: the fence at 2
+  4,43 perimeter — W: the fence at 2
+  59,43 perimeter — E: the fence at 2
+  14,4 perimeter — N: the fence at 2
+  26,4 perimeter — N: the fence at 2
+  38,4 perimeter — N: the fence at 2
+  50,4 perimeter — N: the fence at 2
+  28,49 perimeter — E: dirt at 2
+  33,49 perimeter — W: dirt at 2
+  28,56 perimeter — E: dirt at 2
+  33,56 perimeter — W: dirt at 2
+  26,46 sports — SW: open ground
+  6,55 sports — NE: a pullup at 1
+  56,55 garden — NW: open ground
+
+stalag-flucht
+  4,22 yard — SE: open ground
+  37,22 yard — SW: open ground
+  4,28 yard — NE: open ground
+  37,28 yard — NW: open ground
+  21,44 yard, two heads — E: open ground; W: open ground
+  3,59 yard — SW: the fence at 1
+  38,59 yard — S: grass at 1
+  44,16 perimeter — W: the fence at 2
+  59,16 perimeter — E: the fence at 2
+  44,34 perimeter — W: the fence at 2
+  59,34 perimeter — E: the fence at 2
+  43,60 sports — NE: open ground
+  60,60 sports — NW: open ground
+  60,45 sports — SW: open ground
+
+shankton
+  39,28 yard — SW: open ground
+  54,13 sports — SW: open ground
+  6,6 perimeter — NW: the fence at 1
+  31,6 perimeter — N: the fence at 1
+  57,6 perimeter — NE: the fence at 1
+  6,31 perimeter — W: the fence at 1
+  57,31 perimeter — E: the fence at 1
+  6,57 perimeter — SW: the fence at 1
+  20,57 perimeter — S: the fence at 1
+  57,57 perimeter — SE: the fence at 1
+
+san-pancho
+  27,22 yard — SE: open ground
+  36,22 yard — SW: open ground
+  26,46 sports — NE: open ground
+  39,46 sports — NW: open ground
+  26,36 sports — SE: open ground
+  39,36 sports — SW: open ground
+
+irongate
+  23,22 yard — SE: a wall at 5
+  41,22 yard — SW: a wall at 5
+  33,42 helipad — SE: a helipad at 2
+  40,50 helipad — NW: open ground
+  57,23 dock — NE: the fence at 1
+  59,33 dock — SE: the fence at 1
+  8,37 sports — NE: open ground
+  21,37 sports — NW: open ground
+  8,27 sports — SE: open ground
+  21,27 sports — SW: open ground
+
+69 lamps, 1 with two heads; aimed E 11, N 5, NE 8, NW 8, S 2, SE 11, SW 15, W 9

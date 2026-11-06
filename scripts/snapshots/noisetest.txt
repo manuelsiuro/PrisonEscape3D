@@ -1,0 +1,7 @@
+reach: a chip in the corridor reaches 68 tiles; a door shut 15 vs open 20; under 9, vents 21, roof 15; tools 5 6 7 5 2 4 2 3 2
+responders: heard 0 3 1 2, sent 0 3 to 30,22; a bang sent 0 1 2
+throwing: a sock reaches 12 tiles, a potato 38, a crowbar 75
+firecracker: off 30 steps after landing, heard by 5 guards, 3 sent, 175 tiles
+alarm clock: wound 20 40 60 60; rang 8 times from 59.8 s; in a desk at 10,7
+arch: thrown over to 44,18, through clean
+ear badge: 60/60 agree with the sim (27 heard)

@@ -1,0 +1,680 @@
+import { WAVED_STEPS } from '../content/getaways';
+import { STEPS_PER_SECOND } from '../sim/tuning';
+import { ROUTINE, routineEnd, zonesOf } from '../content/routine';
+import { type Clock, formatTime, hhmm, pad2, spanText } from '../sim/systems/clock';
+import type { ZoneId } from '../content/zones';
+import { currentLang, t, type Key } from '../i18n';
+import { keyLabel } from '../i18n/keys';
+import { h, setText, TOUCH } from './dom';
+import { icon } from './icons';
+
+/** The waved-through chip's full run (P24). */
+const WAVED_SECS = WAVED_STEPS / STEPS_PER_SECOND;
+
+/** What the HUD shows besides the clock and the zone. */
+export interface HudState {
+  /** The routine block (index into ROUTINE). */
+  routine: number;
+  attended: boolean;
+  /** 2.23: a block checked in to by staying (not yet checked in): game minutes there so far, of how many (null: on arrival, or checked in). */
+  presence?: readonly [number, number] | null;
+  /** Guard heat, 0–100. */
+  heat: number;
+  lockdown: boolean;
+  /** A guard sees the player right now. */
+  seen: boolean;
+  /** Game minutes left in solitary, null when not there. */
+  solitaryMinutes: number | null;
+  /** Dollars (GDD §13.2: CASH in the top bar). */
+  cash: number;
+  /** During the Work Period with a job (GDD §11): where, and the quota so far (the badge shows it instead of PENDING). */
+  work: { place: string; quota: number; of: number; paid: boolean; late: boolean } | null;
+  /** Security (GDD §5.5, §12): seconds until the power comes back (null: on), and until the first guard comes round in a takeover (null: none). */
+  powerLeft: number | null;
+  /** What the power pill says (Irongate's generators each kill their half, P12). */
+  powerKey: 'hud.powerOut' | 'hud.powerOutCams' | 'hud.powerOutFence';
+  takeoverLeft: number | null;
+  /** Waved through the checkpoint (P24): seconds its gates stay open for the player (null: shut). */
+  wavedLeft: number | null;
+  /** P36: whose way out it is (the checkpoint waved through, or cleared for release). */
+  wavedKey: Key;
+  /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double); `hot`: a heatwave's sun instead (P17). */
+  cold: { built: number; left: number; bit: boolean; warming: boolean; hot: boolean } | null;
+  /** A guard bribed to look the other way (P15): who, until when, game minutes left of it, out of how many (null: none). */
+  bribe: { name: string; until: string; left: number; of: number } | null;
+  /** The day (P17): the weather's icon by the clock (its name for the tooltip), and the day's event chip (null: nothing to show). */
+  weather: { icon: string; name: string; color: string };
+  today: { icon: string; color: string; text: string; time: string; soon: boolean; left: number | null; of: number; sr: string } | null;
+  /** The fire drill (P17): the routine pill says so until it's over; whether the player has mustered. */
+  drill: { mustered: boolean; missed: boolean } | null;
+  /** Guard dogs (P19): one close by would smell the contraband in the hotbar ('nose'), one is on the player's trail ('track'); null neither. */
+  dog: 'nose' | 'track' | null;
+  /** The pet rat (P20): its name, what it's doing ('' on the shoulder), out on an errand or loose, and the seconds left of a panic (null none) out of how many. */
+  rat: { name: string; status: string; busy: boolean; left: number | null; of: number; usable: boolean } | null;
+  /** Smuggling (P21): an order on its way (its way's icon and when: a time today, else the day), a drop lying where it fell (`urgent`), the visitor coming (`done`: how far, 0–1); null none. */
+  order: { icon: string; text: string; sr: string; urgent: boolean; done: number | null; panel: boolean } | null;
+  /** The crew (P23): while someone has an order, their orders' icons and the first one's status; flashing as a lookout whistles. */
+  crew: { icons: string[]; text: string; alert: boolean } | null;
+  /** Tipsy (P28): until when (the clock's time), game minutes left, out of how many; null sober. */
+  tipsy: { until: string; left: number; of: number } | null;
+  /** The odd job held (P40): its kind's icon, the step under way, the time left (0–1); on watch at a dig, the whistle (urgent: a guard coming); null none. */
+  oddjob?: { icon: string; text: string; tail: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
+  /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
+  quietRoutine?: boolean;
+  /** At roll call (2.27): the pill's second line, your square, or the shakedown's cells. */
+  square?: string | null;
+}
+
+/** "Canteen", "Gym or Courtyard": where a block wants the player. */
+/** The zones the prison being played has (P31: the sports ground only where there is one); null: all of them. */
+let zonesHere: ReadonlySet<string> | null = null;
+export function setZonesHere(zones: ReadonlySet<string> | null) {
+  zonesHere = zones;
+}
+
+export function routinePlace(k: number): string {
+  const names = (zonesHere ? zonesOf(k, (z) => zonesHere!.has(z)) : ROUTINE[k].zones).map((z) => t(`zone.${z}` as Key));
+  if (!names.length) return t('routine.free');
+  // ("Gym, Courtyard or Sports ground": the last two joined by "or", the rest by commas.)
+  const last = names.pop()!;
+  return names.length ? t('routine.or', { a: names.join(', '), b: last }) : last;
+}
+
+/** The zones that are layers, and the pill's icon for each. */
+const LAYER_ZONES: Partial<Record<ZoneId, string>> = { tunnels: 'under', vents: 'vents', roof: 'roof' };
+const LAYER_ICONS: Record<string, string> = { under: 'down', vents: 'bars', roof: 'up' };
+
+/** Phones narrower than this move the block's deadline under its name. */
+const NARROW = matchMedia('(max-width: 440px)');
+
+export const routineName = (k: number) => t(`routine.${ROUTINE[k].id}` as Key);
+
+/**
+ * The in-game HUD. Top row: the clock and day, where the player stands, the pause button.
+ * Second row: the routine block, where it wants the player and the PENDING / ATTENDED badge
+ * (GDD §13), and the heat meter. Text is written only when it changes (it updates every
+ * frame). Both rows must still fit at 412 px.
+ */
+export class Hud {
+  readonly el: HTMLElement;
+  private readonly day: HTMLElement;
+  private readonly time: HTMLElement;
+  private readonly zone: HTMLElement;
+  private readonly zonePill: HTMLElement;
+  private readonly clockIcon: HTMLElement;
+  private readonly routinePill: HTMLElement;
+  private readonly routineIcon: HTMLElement;
+  private readonly routineName: HTMLElement;
+  private readonly routinePlace: HTMLElement;
+  private readonly routineUntil: HTMLElement;
+  private readonly badge: HTMLElement;
+  private readonly heatPill: HTMLElement;
+  private readonly heatFill: HTMLElement;
+  private readonly heatText: HTMLElement;
+  private shownSeen = false;
+  private shownDog: HudState['dog'] = null;
+  private readonly paw: HTMLElement;
+  private readonly pawSr: HTMLElement;
+  private shownZone = '';
+  private night: boolean | null = null;
+  private shownKey = '';
+  private shownHeat = -1;
+  private shownMinute = '';
+  private shownCash = -1;
+  private readonly cashPill: HTMLElement;
+  private readonly cashText: HTMLElement;
+  private readonly face: HTMLImageElement;
+  private readonly tip: HTMLElement;
+  private shownFace = '';
+  private news = false;
+  private lang = currentLang();
+
+  constructor(onPause: () => void, onProfile: () => void) {
+    this.el = h(
+      'div',
+      'hud hidden',
+      `<div class="hud-row">
+        <button class="pill big hud-cash" aria-keyshortcuts="I"><span class="hud-face">${icon('person', 18)}<img alt="" draggable="false" hidden><i class="hud-news"></i></span><b></b><span class="hud-me-tip" aria-hidden="true"></span></button>
+        <button class="pill big hud-clock" aria-keyshortcuts="J"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b><i class="hud-wx" role="img"></i></button>
+        <span class="pill big hud-zone">${icon('pin', 16)}<span></span></span>
+        <button class="icon-btn hud-lesson hidden" aria-keyshortcuts="O">${icon('bulb')}<i class="hud-lesson-new"></i></button>
+        <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
+      </div>
+      <div class="hud-row">
+        <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><span class="hud-routine-head"><b></b><small></small></span><span class="hud-routine-place"></span></span><em class="hud-badge"></em></span>
+        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span><span class="hud-paw" role="img">${icon('paw', 16)}</span><span class="sr-only hud-paw-sr" role="status"></span></span>
+      </div>
+      <div class="hud-row hud-alerts">
+        <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-waved hidden" role="status">${icon('idCard', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-tipsy hidden">${icon('brew', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <button class="pill hud-alert hud-rat hidden" aria-keyshortcuts="T">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+        <button class="pill hud-alert hud-order hidden" aria-keyshortcuts="P"><i class="hud-order-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+        <button class="pill hud-alert hud-crew hidden" aria-keyshortcuts="G"><i class="hud-crew-ic"></i><b></b></button>
+        <button class="pill hud-alert hud-job hidden" aria-keyshortcuts="B"><i class="hud-job-ic"></i><b></b><em class="hud-job-tail"></em><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+      </div>`,
+    );
+    const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
+    this.day = q('.hud-day');
+    this.time = q('.hud-time');
+    this.zone = q('.hud-zone span');
+    this.zonePill = q('.hud-zone');
+    this.clockIcon = q('.hud-sky');
+    this.routinePill = q('.hud-routine');
+    this.routineIcon = q('.hud-routine-ic');
+    this.routineName = q('.hud-routine-head b');
+    this.routineUntil = q('.hud-routine-head small');
+    this.routinePlace = q('.hud-routine-place');
+    this.badge = q('.hud-badge');
+    this.heatPill = q('.hud-heat');
+    this.heatFill = q('.hud-heat-bar i');
+    this.heatText = q('.hud-heat b');
+    this.paw = q('.hud-paw');
+    this.pawSr = q('.hud-paw-sr');
+    for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill])
+      el.addEventListener('animationend', () => el.classList.remove('pulse', 'pop', 'bump'));
+    q('.hud-pause').addEventListener('click', onPause);
+    this.lessonBtn = q('.hud-lesson');
+    this.lessonBtn.addEventListener('click', () => this.onLesson());
+    this.cashPill = q('.hud-cash');
+    this.cashText = q('.hud-cash b');
+    this.face = q('.hud-face img');
+    this.tip = q('.hud-me-tip');
+    this.cashPill.addEventListener('click', onProfile);
+    this.cashPill.addEventListener('animationend', () => this.cashPill.classList.remove('gain', 'spend'));
+    this.power = q('.hud-power');
+    this.riot = q('.hud-riot');
+    this.waved = q('.hud-waved');
+    this.cold = q('.hud-cold');
+    this.bribe = q('.hud-bribe');
+    this.tipsy = q('.hud-tipsy');
+    this.today = q('.hud-today');
+    this.rat = q('.hud-rat');
+    this.rat.addEventListener('click', () => this.onRat());
+    this.order = q('.hud-order');
+    this.order.addEventListener('click', () => this.onOrder());
+    this.crew = q('.hud-crew');
+    this.crew.addEventListener('click', () => this.onCrew());
+    this.job = q('.hud-job');
+    // (Pressed from the keyboard — Enter or Space, a click with no pointer — or tapped.)
+    this.job.addEventListener('click', (e) => this.onJob(e.detail === 0));
+    // The clock: the day's card (its routine block by block, what's on).
+    this.clockPill = q('.hud-clock');
+    this.clockPill.addEventListener('click', () => this.onDay());
+    this.clockPill.setAttribute('aria-haspopup', 'dialog');
+    this.wx = q('.hud-wx');
+    document.body.append(this.el);
+  }
+
+  private readonly clockPill: HTMLElement;
+  private clockSaid = '';
+  private wxSaid = '';
+  /** The clock's name to a screen reader: the day in full (narrow phones show "D1"), the time, the weather, what a press opens. */
+  private sayClock() {
+    this.clockPill.setAttribute('aria-label', `${this.clockSaid}${this.wxSaid ? `, ${this.wxSaid}` : ''}. ${t('hud.dayCard')}`);
+  }
+  /** The clock tapped: the day's card. */
+  onDay: () => void = () => {};
+  private readonly lessonBtn: HTMLElement;
+  /** The bulb tapped (a lesson under way): its objectives. */
+  onLesson: () => void = () => {};
+  /** The bulb beside the pause button while a lesson is under way; `fresh`: a step came up while the lesson's card was hidden (a dot on it until seen). */
+  lesson(on: boolean, fresh = false) {
+    this.lessonBtn.classList.toggle('hidden', !on);
+    this.lessonBtn.classList.toggle('new', on && fresh);
+    const label = t(fresh ? 'hud.objectivesNew' : 'hud.objectives');
+    if (this.lessonBtn.getAttribute('aria-label') !== label) {
+      this.lessonBtn.setAttribute('aria-label', label);
+      // (A keyboard's tooltip names its key.)
+      this.lessonBtn.title = TOUCH ? '' : `${label} (${keyLabel('KeyO')})`;
+    }
+  }
+
+  private readonly bribe: HTMLElement;
+  private readonly tipsy: HTMLElement;
+  private readonly power: HTMLElement;
+  private readonly riot: HTMLElement;
+  private readonly waved: HTMLElement;
+  private readonly cold: HTMLElement;
+  private readonly today: HTMLElement;
+  private readonly rat: HTMLElement;
+  /** The rat pill tapped (P20): its panel. */
+  onRat: () => void = () => {};
+  private readonly crew: HTMLElement;
+  private crewIcons = '';
+  /** The odd job's pill (P40): tapped, the job's card (on watch at a dig: the whistle). */
+  private readonly job: HTMLElement;
+  private jobIcon = '';
+  onJob: (keys: boolean) => void = () => {};
+  /** The crew's pill tapped (P23): their panel. */
+  onCrew: () => void = () => {};
+  private readonly order: HTMLElement;
+  private orderIcon = '';
+  /** The order pill tapped (P21): the phone's panel. */
+  onOrder: () => void = () => {};
+  private readonly wx: HTMLElement;
+  private shownAlerts = '';
+  /** The open way's chip's icon (P36: the bluff's ID card, or the release's clipboard). */
+  private wavedIcon = 'idCard';
+  private shownWx = '';
+  private coldIcon = 'snow';
+  private todayIcon = '';
+
+  /** A chip under the rows while something runs out: its label, the seconds left and a bar draining from full. */
+  private alert(el: HTMLElement, label: Key, left: number | null, total: number) {
+    el.classList.toggle('hidden', left === null);
+    if (left === null) return;
+    setText(el.querySelector('span')!, t(label));
+    const secs = Math.max(0, Math.ceil(left));
+    setText(el.querySelector('b')!, spanText(secs));
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, left / total)) * 100}%`;
+    el.classList.toggle('low', left <= 10);
+  }
+
+  /** A guard looking the other way (P15): who, until when (the clock's time), the bar for what's left. */
+  private lookAway(b: HudState['bribe']) {
+    const el = this.bribe;
+    el.classList.toggle('hidden', !b);
+    if (!b) return;
+    setText(el.querySelector('span')!, t('hud.bribe', { name: b.name }));
+    setText(el.querySelector('b')!, t('hud.bribeUntil', { time: b.until }));
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
+    el.classList.toggle('low', b.left <= 15);
+  }
+
+  /** Tipsy (P28): "Tipsy until 13:30", the bar draining. */
+  private tipsyChip(b: HudState['tipsy']) {
+    const el = this.tipsy;
+    el.classList.toggle('hidden', !b);
+    if (!b) return;
+    setText(el.querySelector('span')!, t('hud.tipsy'));
+    setText(el.querySelector('b')!, t('hud.bribeUntil', { time: b.until }));
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
+    el.classList.toggle('low', b.left <= 15);
+  }
+
+  /** The cold's chip: the bar fills as it builds, the seconds until it bites; then "Frozen" until warm again. A heatwave's (P17): "Hot", "Baked", "Cooling down". */
+  private chill(c: HudState['cold']) {
+    const el = this.cold;
+    el.classList.toggle('hidden', !c);
+    if (!c) return;
+    el.classList.toggle('bit', c.bit);
+    el.classList.toggle('warming', c.warming);
+    el.classList.toggle('hot', c.hot);
+    const ic = c.hot ? 'heat' : 'snow';
+    if (ic !== this.coldIcon) {
+      this.coldIcon = ic;
+      el.querySelector('.hud-cold-ic')!.innerHTML = icon(ic, 15);
+    }
+    setText(
+      el.querySelector('span')!,
+      t(
+        c.hot
+          ? c.bit
+            ? 'hud.baked'
+            : c.warming
+              ? 'hud.cooling'
+              : 'hud.hot'
+          : c.bit
+            ? 'hud.frozen'
+            : c.warming
+              ? 'hud.warming'
+              : 'hud.cold',
+      ),
+    );
+    setText(
+      el.querySelector('b')!,
+      c.bit ? '×2' : c.warming ? '' : `0:${String(Math.min(59, Math.max(0, Math.ceil(c.left)))).padStart(2, '0')}`,
+    );
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, c.built)) * 100}%`;
+  }
+
+  /** The pet rat's pill (P20): its name and what it's up to; a bar draining while it runs loose. Tapped, its panel. */
+  private ratChip(r: HudState['rat']) {
+    const el = this.rat;
+    el.classList.toggle('hidden', !r);
+    if (!r) return;
+    el.classList.toggle('busy', r.busy);
+    (el as HTMLButtonElement).disabled = !r.usable;
+    setText(el.querySelector('span')!, r.name);
+    setText(el.querySelector('b')!, r.left === null ? r.status : `${r.status} 0:${pad2(Math.ceil(r.left))}`);
+    const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
+    bar.style.display = r.left === null ? 'none' : '';
+    if (r.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, r.left / r.of)) * 100}%`;
+    el.title = TOUCH ? t('hud.rat') : `${t('hud.rat')} (T)`;
+    el.setAttribute('aria-label', `${r.name}${r.status ? `, ${r.status}` : ''}. ${t('hud.rat')}`);
+  }
+
+  /** Smuggling's pill (P21): the order's way and when, a drop lying (pulsing), the visitor's wait (a bar filling). Tapped, the phone's panel. */
+  private orderChip(o: HudState['order']) {
+    const el = this.order;
+    el.classList.toggle('hidden', !o);
+    if (!o) return;
+    el.classList.toggle('urgent', o.urgent);
+    if (o.icon !== this.orderIcon) {
+      this.orderIcon = o.icon;
+      el.querySelector('.hud-order-ic')!.innerHTML = icon(o.icon, 15);
+    }
+    setText(el.querySelector('b')!, o.text);
+    const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
+    bar.style.display = o.done === null ? 'none' : '';
+    if (o.done !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, o.done)) * 100}%`;
+    // (A visitor coming with nothing ordered: no phone to open, said as it is.)
+    el.classList.toggle('inert', !o.panel);
+    if (o.panel) el.setAttribute('aria-keyshortcuts', 'P');
+    else el.removeAttribute('aria-keyshortcuts');
+    el.title = !o.panel ? t('hud.visitor') : TOUCH ? t('hud.order') : `${t('hud.order')} (P)`;
+    el.setAttribute('aria-label', o.panel ? `${o.sr.replace(/\.\s*$/, '')}. ${t('hud.order')}` : o.sr);
+  }
+
+  /** The crew's pill (P23): the orders in force (their icons) and how the first is getting on; it flashes as a lookout whistles. Tapped, their panel. */
+  private crewChip(c: HudState['crew']) {
+    const el = this.crew;
+    el.classList.toggle('hidden', !c);
+    if (!c) return;
+    el.classList.toggle('urgent', c.alert);
+    const icons = c.icons.join(',');
+    if (icons !== this.crewIcons) {
+      this.crewIcons = icons;
+      el.querySelector('.hud-crew-ic')!.innerHTML = c.icons.map((i) => icon(i, 15)).join('');
+    }
+    setText(el.querySelector('b')!, c.text);
+    el.title = TOUCH ? t('hud.crew') : `${t('hud.crew')} (G)`;
+    el.setAttribute('aria-label', `${c.text}. ${t('hud.crew')}`);
+  }
+
+  /** The odd job's pill (P40): its step, the time left draining; on watch at a dig, the whistle (flashing as a guard comes). */
+  private jobChip(j: HudState['oddjob']) {
+    const el = this.job;
+    el.classList.toggle('hidden', !j);
+    if (!j) return;
+    el.classList.toggle('urgent', j.urgent);
+    el.classList.toggle('done', j.done);
+    const ic = j.watch ? 'megaphone' : j.icon;
+    if (ic !== this.jobIcon) {
+      this.jobIcon = ic;
+      el.querySelector('.hud-job-ic')!.innerHTML = icon(ic, 15);
+    }
+    setText(el.querySelector('b')!, j.text);
+    setText(el.querySelector('.hud-job-tail')!, j.tail);
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, j.left)) * 100}%`;
+    const what = t(j.urgent ? 'hud.whistle' : 'hud.job');
+    el.title = TOUCH ? what : `${what} (B)`;
+    el.setAttribute('aria-label', `${j.sr}. ${what}`);
+  }
+
+  /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
+  private dayChip(d: HudState['today']) {
+    const el = this.today;
+    el.classList.toggle('hidden', !d);
+    if (!d) return;
+    el.classList.toggle('soon', d.soon);
+    el.style.setProperty('--c', d.color);
+    if (d.icon !== this.todayIcon) {
+      this.todayIcon = d.icon;
+      el.querySelector('.hud-today-ic')!.innerHTML = icon(d.icon, 15);
+    }
+    setText(el.querySelector('span')!, d.text);
+    // The screen reader hears the whole phrase, once (never the countdown's seconds).
+    setText(el.querySelector('.sr-only')!, d.sr);
+    setText(el.querySelector('b')!, d.left === null ? d.time : `${Math.floor(d.left / 60)}:${pad2(Math.max(0, Math.ceil(d.left % 60)))}`);
+    const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
+    bar.style.display = d.left === null ? 'none' : '';
+    if (d.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, d.left / d.of)) * 100}%`;
+    el.classList.toggle('low', d.left !== null && d.left <= 5);
+  }
+
+  show(on: boolean) {
+    this.el.classList.toggle('hidden', !on);
+    if (!on) return;
+    this.shownWx = '';
+    this.shownZone = this.shownKey = this.shownMinute = '';
+    this.shownHeat = -1;
+    this.shownCash = -1;
+    this.shownAlerts = '';
+  }
+
+  /** Your prisoner's face on the file's button (a data URL: render/portrait.ts); the person icon until then. */
+  setFace(url: string) {
+    if (url === this.shownFace) return;
+    this.shownFace = url;
+    this.face.src = url;
+    this.face.hidden = false;
+    this.cashPill.classList.add('has-face');
+  }
+
+  /** Something new in the file since it was last opened (a rumor, a favor taken or ready, a job, tomorrow's forecast): a dot on the face. */
+  setNews(on: boolean) {
+    if (on === this.news) return;
+    this.news = on;
+    this.cashPill.classList.toggle('news', on);
+    this.label();
+  }
+
+  /** The first run's label under the button ("Your file"), for a few seconds. */
+  fileTip(on: boolean) {
+    this.cashPill.classList.toggle('tip', on);
+  }
+
+  private label() {
+    this.cashPill.setAttribute(
+      'aria-label',
+      `${t('hud.cashIs', { n: Math.max(0, this.shownCash) })}. ${t('hud.profile')}${this.news ? `. ${t('hud.fileNew')}` : ''}`,
+    );
+  }
+
+  update(clock: Clock, zone: ZoneId, s: HudState) {
+    // The language changed (settings, from the pause menu): rewrite everything.
+    if (currentLang() !== this.lang) {
+      this.lang = currentLang();
+      this.shownKey = this.shownMinute = '';
+      this.zone.textContent = '';
+      this.cashPill.title = '';
+      this.el.querySelector('.hud-pause')!.setAttribute('aria-label', t('hud.pause'));
+      this.heatPill.setAttribute('aria-label', t('hud.heat'));
+      this.el.querySelector<HTMLElement>('.hud-eye')!.title = t('hud.seen');
+    }
+    // Text only when it changes: the clock once a game minute, the zone on entering one.
+    const minute = `${clock.day}:${clock.minuteOfDay}:${NARROW.matches}`;
+    if (minute !== this.shownMinute) {
+      this.shownMinute = minute;
+      // Narrow phones: "D1" leaves the zone room for its name.
+      setText(this.day, t(NARROW.matches ? 'hud.dayShort' : 'hud.day', { n: clock.day }));
+      setText(this.time, formatTime(clock));
+      this.clockPill.title = TOUCH ? '' : `${t('hud.dayCard')} (${keyLabel('KeyJ')})`;
+      this.clockSaid = `${t('hud.day', { n: clock.day })}, ${formatTime(clock)}`;
+      this.sayClock();
+    }
+    if (zone !== this.shownZone || !this.zone.textContent) {
+      setText(this.zone, t(`zone.${zone}`));
+      // Off the ground floor the pill shows the layer (GDD §13.2): its own color and icon.
+      const layer = LAYER_ZONES[zone] ?? '';
+      if (layer !== this.zonePill.dataset.layer) {
+        this.zonePill.dataset.layer = layer;
+        this.zonePill.querySelector('.ic')!.outerHTML = icon(LAYER_ICONS[layer] ?? 'pin', 16);
+      }
+      // A pulse on entering a new zone (not on the first frame).
+      if (this.shownZone && zone !== this.shownZone) this.zonePill.classList.add('pulse');
+      this.shownZone = zone;
+    }
+    // Sun by day, moon from 21:00 to 06:00.
+    const night = clock.hour >= 21 || clock.hour < 6;
+    if (night !== this.night) {
+      this.night = night;
+      this.clockIcon.innerHTML = icon(night ? 'moon' : 'sun', 16);
+      this.clockIcon.classList.toggle('moon', night);
+    }
+    // The weather by the clock (P17).
+    const wx = `${s.weather.icon}|${s.weather.name}`;
+    if (wx !== this.shownWx) {
+      this.shownWx = wx;
+      this.wx.innerHTML = s.weather.icon ? icon(s.weather.icon, 15) : '';
+      this.wx.style.setProperty('--wx', s.weather.color);
+      this.wx.setAttribute('aria-label', t('hud.weather', { weather: s.weather.name }));
+      this.wx.title = t('hud.weather', { weather: s.weather.name });
+      this.wxSaid = s.weather.icon ? t('hud.weather', { weather: s.weather.name }) : '';
+      this.sayClock();
+    }
+    this.updateRoutine(s);
+    this.updateHeat(s.heat);
+    const c = s.cold;
+    const d = s.today;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${s.oddjob ? `${s.oddjob.icon}:${s.oddjob.text}:${s.oddjob.urgent}:${s.oddjob.watch}:${s.oddjob.done}:${Math.round(s.oddjob.left * 40)}` : ''}|${this.lang}`;
+    if (alerts !== this.shownAlerts) {
+      this.shownAlerts = alerts;
+      this.alert(this.power, s.powerKey, s.powerLeft, 45);
+      this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
+      // (P36: cleared for release, the release's clipboard in place of the bluff's ID card.)
+      const ic = s.wavedKey === 'hud.freed' ? 'clipboard' : 'idCard';
+      if (ic !== this.wavedIcon) {
+        this.wavedIcon = ic;
+        this.waved.querySelector('svg')?.replaceWith(h('i', '', icon(ic, 15)).firstElementChild!);
+      }
+      this.alert(this.waved, s.wavedKey, s.wavedLeft, WAVED_SECS);
+      this.chill(c);
+      this.lookAway(s.bribe);
+      this.tipsyChip(s.tipsy);
+      this.dayChip(d);
+      this.ratChip(s.rat);
+      this.orderChip(s.order);
+      this.crewChip(s.crew);
+      this.jobChip(s.oddjob ?? null);
+    }
+    if (s.cash !== this.shownCash || this.cashPill.title === '') {
+      // Money in: the pill flashes gold; out: it dips.
+      if (this.shownCash >= 0 && s.cash !== this.shownCash) {
+        this.cashPill.classList.remove('gain', 'spend');
+        void this.cashPill.offsetWidth;
+        this.cashPill.classList.add(s.cash > this.shownCash ? 'gain' : 'spend');
+      }
+      this.shownCash = s.cash;
+      setText(this.cashText, `$${s.cash}`);
+      // The keyboard's shortcut in the tooltip (not on touch).
+      this.cashPill.title = TOUCH ? t('hud.profile') : `${t('hud.profile')} (I)`;
+      this.label();
+      setText(this.tip, t('hud.profile'));
+    }
+    // The eye opens while a guard is looking (so stealth can be read at a glance).
+    if (s.seen !== this.shownSeen) {
+      this.shownSeen = s.seen;
+      this.heatPill.classList.toggle('seen', s.seen);
+    }
+    // The paw (P19): a dog close by would smell the contraband on you; a dog on your trail.
+    if (s.dog !== this.shownDog) {
+      this.shownDog = s.dog;
+      this.paw.dataset.dog = s.dog ?? '';
+      const say = s.dog ? t(s.dog === 'nose' ? 'hud.dogNose' : 'hud.dogTrack') : '';
+      this.paw.title = say;
+      this.paw.setAttribute('aria-label', say);
+      // (Said to a screen reader as it comes on.)
+      this.pawSr.textContent = say;
+      if (s.dog) this.heatPill.classList.add('bump');
+    }
+  }
+
+  private updateRoutine(s: HudState) {
+    const w = s.work;
+    const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}:${w.late}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}|${s.presence?.join(':') ?? ''}|${s.square ?? ''}`;
+    if (key === this.shownKey) return;
+    const was = this.shownKey;
+    this.shownKey = key;
+    this.routinePill.classList.toggle('alarm', s.lockdown);
+    this.routinePill.classList.toggle('solitary', s.solitaryMinutes !== null);
+    this.routinePill.classList.toggle('drill', !!s.drill && !s.lockdown && s.solitaryMinutes === null);
+    if (s.lockdown) {
+      this.routineIcon.innerHTML = icon('siren', 16);
+      setText(this.routineName, t('routine.lockdown'));
+      setText(this.routinePlace, t('routine.hunted'));
+      setText(this.routineUntil, '');
+      this.badge.className = 'hud-badge hidden';
+      return;
+    }
+    if (s.solitaryMinutes !== null) {
+      const m = s.solitaryMinutes;
+      this.routineIcon.innerHTML = icon('lock', 16);
+      setText(this.routineName, t('routine.solitary'));
+      setText(this.routinePlace, t('routine.solitaryLeft', { time: spanText(m) }));
+      setText(this.routineUntil, '');
+      this.badge.className = 'hud-badge hidden';
+      return;
+    }
+    // The fire drill (P17): out to roll call, the badge says whether the player has mustered.
+    if (s.drill) {
+      this.routineIcon.innerHTML = icon('siren', 16);
+      setText(this.routineName, t('routine.drill'));
+      setText(this.routinePlace, t('zone.rollCall'));
+      setText(this.routineUntil, '');
+      this.badge.className = `hud-badge${s.drill.mustered ? ' done' : s.drill.missed ? ' missed' : ''}`;
+      this.badge.innerHTML = s.drill.mustered
+        ? `${icon('check', 12)}${t('routine.mustered')}`
+        : s.drill.missed
+          ? t('routine.drillMissed')
+          : t('routine.pending');
+      const wasDrill = was.split('|')[6] ?? '';
+      if (was && wasDrill === '') this.routinePill.classList.add('pulse');
+      else if (wasDrill === 'false' && s.drill.mustered) this.badge.classList.add('pop');
+      return;
+    }
+    this.routineIcon.innerHTML = icon('bell', 16);
+    setText(this.routineName, routineName(s.routine));
+    const end = routineEnd(s.routine);
+    const until = t('routine.until', { time: hhmm(end) });
+    // Narrow phones: "Canteen · until 10:00" on the second line (the name keeps the first).
+    const place = w ? w.place : (s.square ?? routinePlace(s.routine));
+    const pending = w ? !w.paid : !s.attended;
+    // (A lesson about something else, P24's glider: "Lights out · until 08:00", nothing asked of the player.)
+    const quiet = !!s.quietRoutine && !w;
+    // (2.23: being counted there, narrow: the time alone, the badge's minutes beside it.)
+    const counting = !w && !s.attended && !!s.presence && s.presence[0] > 0;
+    // (2.27: what roll call has to say shows on a phone too, in place of the time it would give while counting.)
+    setText(
+      this.routinePlace,
+      quiet || (counting && NARROW.matches && !s.square)
+        ? NARROW.matches
+          ? until
+          : ''
+        : NARROW.matches && mandatory && pending && !s.square
+          ? `${place} · ${until}`
+          : place,
+    );
+    setText(this.routineUntil, until);
+    // At work the badge counts the quota (GDD §11), and says PAID once it's done.
+    const done = w ? w.paid : s.attended;
+    // (2.23: being counted, the minutes there so far, the badge filling up as they add up.)
+    this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}${w?.late ? ' late' : ''}${counting ? ' counting' : ''}`;
+    this.badge.style.setProperty('--fill', counting ? `${Math.round((100 * s.presence![0]) / s.presence![1])}%` : '0%');
+    this.badge.innerHTML = w
+      ? w.paid
+        ? `${icon('check', 12)}${t('routine.paid')}`
+        : `${w.quota}/${w.of}`
+      : s.attended
+        ? `${icon('check', 12)}${t('routine.attended')}`
+        : counting
+          ? t('routine.present', { n: s.presence![0], of: s.presence![1] })
+          : t('routine.pending');
+    // Checked in (or a load done): the badge pops. A new block: the whole pill does.
+    const [wasRoutine, wasAttended] = was.split('|');
+    const wasWork = was.split('|')[5] ?? '';
+    if (
+      was &&
+      wasRoutine === String(s.routine) &&
+      ((wasAttended === 'false' && s.attended && !w) || (w && wasWork && wasWork !== key.split('|')[5]))
+    )
+      this.badge.classList.add('pop');
+    else if (was && wasRoutine !== String(s.routine)) this.routinePill.classList.add('pulse');
+  }
+
+  private updateHeat(heat: number) {
+    if (heat === this.shownHeat) return;
+    if (this.shownHeat >= 0 && heat > this.shownHeat) this.heatPill.classList.add('bump');
+    this.shownHeat = heat;
+    this.heatFill.style.width = `${heat}%`;
+    setText(this.heatText, `${heat}%`);
+    this.heatPill.dataset.level = heat >= 80 ? 'high' : heat >= 40 ? 'mid' : heat > 0 ? 'low' : 'none';
+  }
+}

@@ -1,0 +1,186 @@
+/**
+ * The day (P17): what each prison's days may hold. A week's deck of event cards (shuffled
+ * afresh every week; a quiet card is a day with nothing on), the weather its climate brings
+ * (and how often a day's weather lasts into the next), the wind that usually blows, and the
+ * warden who reads it all out over the speakers. The plan for a day is worked out in
+ * src/sim/systems/calendar.ts; a prison without a row (the Training Block) is always quiet.
+ */
+
+/** The day's event. Stored as numbers: append only, never renumber. */
+export const DAY_EVENTS = [
+  'none',
+  'inspection',
+  'drill',
+  'feast',
+  'maintenance',
+  'movie',
+  'foodFight',
+  'delivery',
+  'visiting',
+  'sports',
+  'talent',
+  'quiz',
+] as const;
+export type DayEvent = (typeof DAY_EVENTS)[number];
+
+/** The weather. Stored as numbers: append only. In the snow (Stalag Flucht) the storm is a blizzard. */
+export const WEATHERS = ['clear', 'fog', 'rain', 'storm', 'heatwave'] as const;
+export type Weather = (typeof WEATHERS)[number];
+
+interface Climate {
+  /** Each weather's weight (WEATHERS order) on a day that doesn't keep yesterday's. */
+  weights: readonly number[];
+  /** Out of 100: the chance a day keeps yesterday's weather (a storm or a heatwave keeps it half as often). */
+  keep: number;
+  /** Where the wind usually blows from (0 north, clockwise in eighths). */
+  wind: number;
+}
+
+export interface DayBook {
+  /** A week of event cards, every one dealt once a week in a shuffled order. */
+  deck: readonly DayEvent[];
+  climate: Climate;
+  /**
+   * The card the delivery (P18) took the place of in the week's deck (the deck keeps its
+   * length, so every other day deals as it did): a game saved before P18 keeps it on the day
+   * it's loaded.
+   */
+  before?: DayEvent;
+  /** The card visiting day (P21) took the place of, likewise (a game saved before P21 keeps it on the day it's loaded, and the next). */
+  beforeVisits?: DayEvent;
+  /** The card sports day (P22) took the place of, likewise. */
+  beforeSports?: DayEvent;
+  /** The cards talent night and quiz night (P30) took the places of, likewise. */
+  beforeStage?: { talent: DayEvent; quiz: DayEvent };
+}
+
+/** prison → its days. */
+export const DAY_BOOKS: Record<string, DayBook> = {
+  // Suburban and mild: a bit of everything, rarely too hot; families visit once a week, and the yard holds its sports day.
+  // (P30: a talent night on the quiet day, a quiz night in place of the generator's service.)
+  'center-perks': {
+    deck: ['talent', 'delivery', 'inspection', 'visiting', 'sports', 'drill', 'quiz'],
+    climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
+    before: 'none',
+    beforeVisits: 'feast',
+    beforeSports: 'movie',
+    beforeStage: { talent: 'none', quiz: 'maintenance' },
+  },
+  // The Alps: clear (snowing), fog in the valleys, blizzards; never rain, never a heatwave.
+  // (The Red Cross truck comes once a week; the camp's own Olympics too.)
+  'stalag-flucht': {
+    // (P30: the camp's cabaret in place of the generator's service, a quiz on the quiet day; the film still shows.)
+    deck: ['quiz', 'inspection', 'drill', 'delivery', 'sports', 'talent', 'movie'],
+    climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
+    before: 'drill',
+    beforeSports: 'feast',
+    beforeStage: { talent: 'maintenance', quiz: 'none' },
+  },
+  // Industrial and grey: rain and smog, scuffles at meals; visiting day once a week, in the canteen; a sports day instead of a drill.
+  shankton: {
+    // (P30: a talent night where the film was, a quiz in place of the generator's service; a quiet day still.)
+    deck: ['none', 'inspection', 'foodFight', 'sports', 'quiz', 'talent', 'visiting'],
+    climate: { weights: [35, 20, 30, 15, 0], keep: 35, wind: 5 },
+    beforeVisits: 'none',
+    beforeSports: 'drill',
+    beforeStage: { talent: 'movie', quiz: 'maintenance' },
+  },
+  // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week; sports day in the dust.
+  'san-pancho': {
+    // (P30: a talent night where the food fight was, a quiz in place of the inspection; the feast and a quiet day still.)
+    deck: ['none', 'talent', 'delivery', 'feast', 'visiting', 'quiz', 'sports'],
+    climate: { weights: [45, 5, 0, 15, 35], keep: 40, wind: 2 },
+    before: 'foodFight',
+    beforeVisits: 'movie',
+    beforeSports: 'drill',
+    beforeStage: { talent: 'foodFight', quiz: 'inspection' },
+  },
+  // The island: sea fog and squalls, and inspectors on the ferry; a sports day where the food fight was.
+  // (The supply helicopter by day once a week; families come over on the ferry once a week.)
+  irongate: {
+    // (P30: a talent night on the quiet day, a quiz in place of the drill.)
+    deck: ['talent', 'inspection', 'delivery', 'quiz', 'maintenance', 'visiting', 'sports'],
+    climate: { weights: [35, 30, 20, 15, 0], keep: 35, wind: 7 },
+    before: 'inspection',
+    beforeVisits: 'movie',
+    beforeSports: 'foodFight',
+    beforeStage: { talent: 'none', quiz: 'drill' },
+  },
+};
+
+/**
+ * When each event happens, as minutes into the prison day (0 is 08:00). Some have a fixed
+ * time; the drill and the food fight start at a minute drawn for the day within a window
+ * (`[from, to]`, the drill in either of two).
+ */
+export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | ReadonlyArray<readonly [number, number]>; length: number }> = {
+  // 10:00–16:00.
+  inspection: { at: 120, length: 360 },
+  // Morning free time (10:15–11:15) or the evening's (19:00–21:00): 20 minutes out in the yard.
+  drill: {
+    at: [
+      [135, 195],
+      [660, 780],
+    ],
+    length: 20,
+  },
+  // Dinner, 17:00–18:00.
+  feast: { at: 540, length: 60 },
+  // 13:00–13:45: the generator off for its service.
+  maintenance: { at: 300, length: 45 },
+  // 19:00–21:30, in the canteen.
+  movie: { at: 660, length: 150 },
+  // 15 minutes of a meal: breakfast (09:05–09:40) or dinner (17:05–17:40).
+  foodFight: {
+    at: [
+      [65, 100],
+      [545, 580],
+    ],
+    length: 15,
+  },
+  // 12:30–14:31: the vehicle in (its search at 14:30, away at 14:31).
+  delivery: { at: 270, length: 121 },
+  // 10:00–12:00: visiting hours (P21).
+  visiting: { at: 120, length: 120 },
+  // 10:00–22:00: the yard's games all day (P22; played in free time and the exercise hour).
+  sports: { at: 120, length: 720 },
+  // 19:00–21:00: talent night in the canteen, quiz night in the library (P30).
+  talent: { at: 660, length: 120 },
+  quiz: { at: 660, length: 120 },
+};
+
+/** The fire drill: minutes after the bell by which the player must be at roll call, and what missing it costs. */
+export const MUSTER_MINUTES = 15;
+export const DRILL_HEAT = 40;
+/** A clean inspection day (nothing seen, nothing missed): a commendation, in dollars. */
+export const COMMENDATION = 25;
+/** A feast's tray: this much energy (a meal's is 35), and health back to full. */
+export const FEAST_ENERGY = 70;
+/** A storm's power cuts: 2 or 3 of them, starting between 23:15 and 04:30 (minutes into the prison day). */
+export const OUTAGE_FROM = 915;
+export const OUTAGE_TO = 1230;
+/** Fog lies thick in the morning (08:00–11:00) and from 19:00 through the night (minutes into the prison day). */
+export const FOG_UNTIL = 180;
+export const FOG_FROM = 660;
+/** A heatwave bites out in the sun from 11:00 to 18:00. */
+export const HEAT_FROM = 180;
+export const HEAT_UNTIL = 600;
+
+/** How far a guard out in the open sees in this weather (tiles; fog only while it lies thick). */
+export const WEATHER_SIGHT: Partial<Record<Weather, number>> = { fog: 4, rain: 6, storm: 5 };
+/** How far a noise made out in the open carries in this weather (a share, in tenths). */
+export const WEATHER_NOISE: Partial<Record<Weather, number>> = { rain: 6, storm: 4 };
+/** The inspectors keep the guards sharp: a tile more sight indoors and out (the weather still has the last word outdoors). */
+export const INSPECTION_SIGHT = 1;
+/** Contraband in sight during an inspection: twice the heat. */
+export const INSPECTION_CONTRABAND = 2;
+/** The shakedown on an inspection morning names this many cells. */
+export const INSPECTION_CELLS = 4;
+/** The film's soundtrack: a noise made in the canteen during movie night carries this share (tenths). */
+export const MOVIE_NOISE = 4;
+
+/** The delivery (P18): the supervisor goes to the tail to sign it off this many minutes before the search (14:25: time to walk there from anywhere on its round), and searches from up to this far (tiles). */
+export const SIGN_OFF_MINUTES = 5;
+export const SEARCH_REACH = 3;
+/** After a stowaway is caught, every search is thorough for this many days after (two weeks: the next two deliveries). */
+export const WARY_DAYS = 14;

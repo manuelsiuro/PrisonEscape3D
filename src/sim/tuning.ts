@@ -1,0 +1,419 @@
+/**
+ * Every gameplay number in one place. Positions are integers: a tile is UNIT units wide,
+ * so the simulation never depends on float rounding.
+ */
+export const STEPS_PER_SECOND = 20;
+/** 1 real second = 1 game minute (GDD §2). */
+export const STEPS_PER_MINUTE = 20;
+/** Day 1 starts at Morning Roll Call, 08:00. */
+export const START_MINUTE = 8 * 60;
+
+export const UNIT = 1024;
+/** Half the player's footprint (a square 0.6 tile wide). */
+export const BODY_HALF = 300;
+/** Walking speed, units per step (about 3.6 tiles a second). */
+export const WALK_SPEED = 184;
+/** How far a blocked step may slide the player sideways to round a door frame. */
+export const CORNER_ASSIST = 96;
+
+/** Guard heat is a whole percent; out of sight it cools 1% every 4 game minutes (GDD §3.1). */
+export const HEAT_DECAY_STEPS = 4 * STEPS_PER_MINUTE;
+/** Missing a meal, exercise or showers (GDD §2.2). */
+export const MISSED_ROUTINE_HEAT = 25;
+/** 2.23: this far into a block (minutes: the walk there, across the biggest map), a guard who sees the player away from it before they've checked in minds: 1% every SKIP_EVERY steps (+2% a second). */
+export const SKIP_GRACE = 20;
+export const SKIP_EVERY = 10;
+/**
+ * 2.23: going through the furniture in another inmate's cell, seen by a guard: +20% at the sight
+ * (again once no guard has seen it for SNOOP_GAP steps), then 1% every SNOOP_EVERY steps
+ * (+4% a second). The cell's owner who sees it from SNOOP_SIGHT tiles thinks SNOOP_OPINION less
+ * of the player (once a search); a grudge left (OPINION_LOW or less) and they fight.
+ */
+export const SNOOP_HEAT = 20;
+export const SNOOP_EVERY = 5;
+export const SNOOP_GAP = 5 * STEPS_PER_SECOND;
+export const SNOOP_SIGHT = 6;
+export const SNOOP_OPINION = 15;
+/** From this much heat a guard who sees the player gives chase; caught from this much, it's solitary (GDD §3.1). */
+export const CHASE_HEAT = 80;
+export const SOLITARY_HEAT = 90;
+/** The night bed checks (GDD §5.3), as minutes of the day: 00:30 and 04:00. */
+export const BED_CHECK_MINUTES: readonly number[] = [30, 240];
+/** Out of the cell this long after Lights Out begins before it counts (the walk home). */
+/** 22:50: the warning (2.28) that Lights Out is near, by the toast and the floor arrows. */
+export const NIGHT_WARNING = 22 * 60 + 50;
+export const LIGHTS_OUT_GRACE = 25 * STEPS_PER_MINUTE;
+/** What it was before 2.28 (Sim.rules227): shorter than the walk home from the far rooms. */
+export const LIGHTS_OUT_GRACE_227 = 15 * STEPS_PER_MINUTE;
+/** A contraband tool or weapon in hand in sight: +40% a second (GDD §5.2), so +2 a step. */
+export const CONTRABAND_HEAT = 2;
+/** In a guard outfit, a guard this close (units) for this long recognizes the player: +50% a second after that. */
+export const RECOGNIZE_RANGE = Math.round(2.5 * UNIT);
+export const RECOGNIZE_STEPS = 2 * STEPS_PER_SECOND;
+/** Knocked out for 30 s (docs/decisions/combat.md): the player, then carried off; inmates and guards, then up again (GDD §10.2). */
+export const KO_STEPS = 30 * STEPS_PER_SECOND;
+/** Solitary lasts 2 game hours; each peeled potato takes 10 minutes off, a potato is 5 presses (GDD §5.6). */
+export const SOLITARY_STEPS = 120 * STEPS_PER_MINUTE;
+export const POTATO_PRESSES = 5;
+/** Strokes of the peeler count at most this often (mashing faster gains nothing): 5 a second. */
+export const PEEL_STEPS = 4;
+export const POTATO_STEPS = 10 * STEPS_PER_MINUTE;
+
+/** Inmates stroll a little slower than the player can walk (units per step). */
+export const INMATE_SPEED = 150;
+/** P31: an inmate jogging the running track goes this much faster than its walk (units a step). */
+export const JOG_EXTRA = 60;
+/** After a bell, inmates set off within this many steps (not all at once). */
+export const INMATE_REACTION = 6 * STEPS_PER_SECOND;
+
+// ---------------------------------------------------------------- layers and destruction (P4, GDD §9)
+/** A tool strike at most this often (a swing takes a moment; holding the button repeats it). */
+export const STRIKE_STEPS = 9;
+/** Hit points: brick walls and chain-link fences 100, electric fences 120, vent grates 60 (GDD §9.1). */
+export const WALL_HP = 100;
+export const FENCE_HP = 100;
+export const ELECTRIC_HP = 120;
+export const GRATE_HP = 60;
+/** Digging a tunnel entrance through the floor, a tile of earth below, back up to the surface. */
+export const FLOOR_HP = 40;
+export const SOIL_HP = 30;
+/** More than this many tunnel tiles in a row without a brace cave in (GDD §9.2). */
+export const UNBRACED_RUN = 2;
+/** A toilet takes this many loads of dirt an hour, then stays clogged for an hour (GDD §9.2). */
+export const TOILET_LOADS = 3;
+export const TOILET_CLOG_STEPS = 60 * STEPS_PER_MINUTE;
+/** Energy (0–100): back to full after a night's sleep, a little back every couple of minutes, more from meals, showers and chocolate. */
+export const ENERGY_REGEN_STEPS = 2 * STEPS_PER_MINUTE;
+/** Up at Lights Out (2.28), energy comes back no further than this: tools stop below 10, and nobody is stranded down a tunnel until morning. */
+export const NIGHT_ENERGY_FLOOR = 20;
+/** A meal (GDD §2): the tray from the counter, seated at a canteen table during breakfast or dinner, takes this long to eat, then +35, once a meal. */
+export const MEAL_ENERGY = 35;
+export const MEAL_STEPS = 6 * STEPS_PER_SECOND;
+/** A tray eaten and not brought back (2.25): taken out of the canteen, or still in hand when the meal ends. The heat, never enough by itself to start a chase; and how long before the end a tray eaten is let off, with no time to walk it back. */
+export const TRAY_HEAT = 10;
+export const TRAY_GRACE_STEPS = 5 * STEPS_PER_MINUTE;
+/** How long it took before 2.25 (Sim.rules224). */
+export const MEAL_STEPS_224 = 3 * STEPS_PER_SECOND;
+/** An inmate at the serving counter: picking up its tray or putting it back. */
+export const SERVE_STEPS = 30;
+/** An inmate over its tray: this long, and up to EAT_SPREAD more by its cell, in a meal an hour of steps long. */
+export const INMATE_EAT_STEPS = 10 * STEPS_PER_SECOND;
+export const EAT_SPREAD = 6 * STEPS_PER_SECOND;
+/** Standing under a shower in the showers block (GDD §3.1): a point every 10 steps (2 a second). */
+export const SHOWER_ENERGY_STEPS = 10;
+/**
+ * 2.27, roll call: the warden sets off this many minutes into the block (the line has about formed), no later than COUNT_LAST;
+ * a stop at each square, and the player's own held for the answer, a nod after it; a call unanswered costs this much heat.
+ */
+export const COUNT_START = 14;
+export const COUNT_LAST = 40;
+export const COUNT_STOP_STEPS = 24;
+export const COUNT_ANSWER_STEPS = 100;
+export const COUNT_NOD_STEPS = 12;
+export const COUNT_HEAT = 5;
+/** 2.26 (GDD §2: showers "reduce minor Heat"): a point of heat off every 2 s under the water, only below this much. */
+export const SHOWER_HEAT_STEPS = 40;
+export const SHOWER_HEAT_BELOW = 25;
+/** 2.26: an inmate's turn under a head, 8 to 11 s by its cell, and the towel after it (the block is 60 s, and the walk there takes up to half of it). */
+export const INMATE_WASH_STEPS = 160;
+export const WASH_SPREAD = 60;
+export const INMATE_DRY_STEPS = 80;
+/** Sitting (a chair, a bench, a canteen seat) or lying on an infirmary bed: a point every 13 steps (about 1.5 a second, GDD §3.1). */
+export const SIT_ENERGY_STEPS = 13;
+export const CHOCOLATE_ENERGY = 25;
+/** Crawling in the vents and stooping in tunnels are slower than walking (units per step). */
+export const CRAWL_SPEED = 110;
+export const TUNNEL_SPEED = 150;
+/** A guard who saw a strike this recently (steps) saw the player at it. */
+export const STRIKE_SEEN_STEPS = 10;
+/** A lockdown with the player off the ground floor this long: the guards call off the hunt (damage found is put right, the heat stays). */
+export const HIDING_STEPS = 60 * STEPS_PER_MINUTE;
+
+// ---------------------------------------------------------------- combat (P5, GDD §3.1, §10)
+/** Attributes run 20–100 and start at 40 (GDD §3.2; training arrives in P6). */
+export const START_STR = 40;
+export const START_SPD = 40;
+/** Guards are tougher than the average inmate; inmates vary (STR 30–60). */
+export const GUARD_STR = 60;
+/** Armored riot guards (P12, HMP Irongate): stronger (more health, harder blows), and their plates take a blow's edge off (defense, as an outfit's). */
+export const RIOT_STR = 80;
+export const RIOT_DEFENSE = 45;
+export const INMATE_STR_MIN = 30;
+export const INMATE_STR_SPAN = 31;
+/** A melee blow reaches this far (units, centre to centre); the razor whip further (its def says). */
+export const MELEE_REACH = Math.round(1.3 * UNIT);
+/** Molten chocolate is thrown this far (GDD §10.1: 3 tiles). */
+export const THROW_RANGE = 3 * UNIT;
+/** Lock-on picks someone this close (and in sight); the lock holds out to the second range. */
+export const LOCK_RANGE = 5 * UNIT;
+export const LOCK_KEEP = 7 * UNIT;
+/** Steps between a guard's baton blows, and between an angry inmate's punches. */
+export const GUARD_SWING_STEPS = 16;
+export const INMATE_SWING_STEPS = 18;
+/** An inmate the player hits fights back this long (steps), unless it loses them first. */
+export const ANGRY_STEPS = 20 * STEPS_PER_SECOND;
+/** Health comes back a point a game minute (two asleep). */
+export const HEALTH_REGEN_STEPS = STEPS_PER_MINUTE;
+/** A tunnel roof coming down on the player (GDD §9.2). */
+export const CAVE_IN_DAMAGE = 40;
+/** A landmine underfoot (GDD §4.4): 100 HP, out cold unless Strength has raised the most health past it. */
+export const MINE_DAMAGE = 100;
+/** Rubbing a comb or toothbrush on a wall this many times sharpens it into a shiv. */
+export const SHARPEN_STROKES = 4;
+
+// ---------------------------------------------------------------- economy, training, social (P6, GDD §3.2, §10.3–10.4, §11)
+/** Walking speed grows with Speed (GDD §3.2): 184 at the starting 40, 220 at 100 (a chasing guard runs 196). */
+export const walkSpeed = (spd: number) => 160 + Math.floor((spd * 3) / 5);
+/** Attributes run 20–100; training adds 2 a set (GDD §3.2). Decay takes a point a day off an untrained one, never below the start. */
+export const ATTR_MIN = 20;
+export const ATTR_MAX = 100;
+export const ATTR_START = 40;
+export const TRAIN_GAIN = 2;
+/** A set: the bar fills by alternate presses, drains while idle; full, it costs this much energy (GDD: 12% gym, 10% library). */
+export const REP_GAIN = 6;
+export const REP_DRAIN_STEPS = 2;
+export const GYM_ENERGY = 12;
+export const STUDY_ENERGY = 10;
+/** Below this much energy: no tools, no training (GDD §3.1). */
+export const TIRED = 10;
+/**
+ * A set in time (2.29), by what it's done on: a press every `beat` steps, within `window` steps of the beat for
+ * `hit` of the bar, anywhere else `miss`; one press counts per beat. On the beat, about 4.5 s a set, whatever the
+ * machine; off it, about four times that, and nothing drains: nobody is kept from finishing by how fast they tap.
+ */
+export const SET_BEATS = {
+  weights: { beat: 16, window: 3, hit: 17, miss: 4 },
+  pullup: { beat: 20, window: 3, hit: 20, miss: 5 },
+  mat: { beat: 14, window: 3, hit: 15, miss: 4 },
+  treadmill: { beat: 10, window: 2, hit: 12, miss: 3 },
+  punchingBag: { beat: 8, window: 2, hit: 10, miss: 3 },
+  shelf: { beat: 24, window: 4, hit: 25, miss: 6 },
+} as const;
+/**
+ * A set of reading (2.31): the bar fills by itself, a point every READ_FILL_EVERY steps (about 20 s), and each key word
+ * underlined as the marker reaches it, within READ_WINDOW steps, adds READ_HIT: about 5 s kept up with. At most
+ * READ_SETS_A_DAY sets a day; what the kiosk, checkers and quiz night teach comes on top.
+ */
+export const READ_FILL_EVERY = 4;
+export const READ_WINDOW = 4;
+export const READ_HIT = 20;
+export const READ_SETS_A_DAY = 6;
+/**
+ * 2.34: the marker reads at half the speed (books.ts READ_PACE) and stops at each key word. The word lights
+ * READ_LEAD steps before the marker gets there, and a press while it's lit underlines it; the marker waits there up
+ * to READ_WAIT steps (3 s), then goes on and the word goes dim. A press with nothing lit still spends the next.
+ */
+export const READ_LEAD = 10;
+export const READ_WAIT = 60;
+/** An inmate looking along a shelf before it sits down with a book (2.31). */
+export const BROWSE_STEPS = 60;
+/** How long an inmate takes to finish up and step off a machine the player asked for (2.29). */
+export const GIVE_WAY_STEPS = 40;
+
+/**
+ * 2.30: the Work Period. The warnings that the quota isn't done (minute of the day). The first comes while
+ * the whole job can still be done from nothing, from wherever the player is (measured in jobstest: up to
+ * 68 minutes, the mail round up to 104, so 13:45 and 13:00); the second at 14:30, as a last call.
+ */
+export const WORK_WARNING = 13 * 60 + 45;
+export const MAIL_WARNING = 13 * 60;
+export const LAST_WARNING = 14 * 60 + 30;
+/** An inmate at work: steps at a bin, resting after a piece (plus a little by its cell), mopping a patch of floor. */
+export const DUTY_HAND_STEPS = 30;
+export const DUTY_REST_STEPS = 60;
+export const DUTY_MOP_STEPS = 80;
+/**
+ * 2.30: in a work room that isn't yours in the Work Period, in a guard's sight: told to leave, STRANGER_GRACE steps to
+ * do it (walking through costs nothing), then +STRANGER_HEAT and 1% every STRANGER_EVERY steps, never past
+ * STRANGER_CAP on its own. Seen again after STRANGER_GAP steps out of sight: told afresh.
+ */
+export const STRANGER_GRACE = 5 * STEPS_PER_SECOND;
+export const STRANGER_HEAT = 5;
+export const STRANGER_EVERY = STEPS_PER_SECOND;
+export const STRANGER_CAP = 30;
+export const STRANGER_GAP = 5 * STEPS_PER_SECOND;
+/** P31: fresh meals from the garden (the gardener's quota filled): this much more energy and health at each, for a day after. */
+export const FRESH_ENERGY = 10;
+export const FRESH_HEALTH = 10;
+export const FRESH_FOR = 1440 * STEPS_PER_MINUTE;
+/** Talking to an inmate: within this reach (units, either axis), nothing between. */
+export const TALK_REACH = Math.round(1.4 * UNIT);
+/** Opinion (GDD §10.3): 0–100 from 50; at or under LOW an inmate may jump the player at meals and showers; from HIGH it joins them. */
+export const OPINION_START = 50;
+export const OPINION_LOW = 25;
+/** A hostile prison (San Pancho, P11): what inmates think of the new arrival on day 1; every fourth cell's starts with a grudge. */
+export const HOSTILE_OPINION = 40;
+export const HOSTILE_GRUDGE = 20;
+/** A score settled: an inmate who put the player down gets over its grudge (its opinion back up to this). */
+export const GRUDGE_SETTLED = 35;
+export const OPINION_HIGH = 80;
+/** An inmate tells the player a recipe (once a day) from this opinion up (P8+, docs/decisions/items.md). */
+export const TIP_OPINION = 60;
+/** Studying tells the player a recipe each time Intellect passes a multiple of this. */
+export const STUDY_TIP_EVERY = 5;
+export const FAVOR_OPINION = 15;
+export const HIT_OPINION = 8;
+export const KO_OPINION = 15;
+export const BUY_OPINION = 2;
+/** A grudge: each step in the same canteen or shower block, nearby, 1 chance in this many of an ambush. */
+export const AMBUSH_ODDS = 400;
+/** 2.26: the moment an ambusher stands squaring up, the warning before it comes for the player (1.5 s). */
+export const AMBUSH_WINDUP_STEPS = 30;
+export const AMBUSH_RANGE = 4 * UNIT;
+/** 2.31: in a lawless prison, the new arrival's first morning is their own: no ambush before this minute of day 1. */
+export const LAWLESS_FROM = 12 * 60;
+/** At most 2 followers (GDD §10.3); they keep this far behind, and go for whoever comes for the player within this range. */
+export const MAX_FOLLOWERS = 2;
+export const FOLLOW_GAP = Math.round(1.6 * UNIT);
+export const GUARD_RANGE = 6 * UNIT;
+/** Favors pay $20–50 (GDD §10.4); at most this many on offer at once, and under way. */
+export const FAVOR_OFFERS = 3;
+export const FAVORS_TAKEN = 3;
+/** A job left open is filled by an inmate this many mornings after it opened (the player has until then to apply). */
+export const VACANCY_DAYS = 2;
+/** Merchants: up to 50% off at full opinion (GDD §10.3); they won't deal with someone they despise. */
+export const MAX_DISCOUNT = 0.5;
+/** Seen hitting back at an inmate who jumped the player: this much heat a blow (attacking first: 100%). */
+export const SELF_DEFENSE_HEAT = 10;
+
+// Security and escapes (GDD §5.4–5.6, §12).
+/** The generator switched off (GDD §5.5): 45 s until the maintenance guard has it back on. */
+export const POWER_OFF_STEPS = 45 * STEPS_PER_SECOND;
+/** Walking through a live detector arch with unshielded contraband (GDD §5.4). */
+export const DETECTOR_HEAT = 50;
+/** Tape or toothpaste over a camera's lens blinds it this long (GDD §5.6). */
+export const CAMERA_BLIND_STEPS = 60 * STEPS_PER_SECOND;
+/** How far a camera sees (units), and how often it turns a sixteenth of a turn on its ±45° sweep. */
+export const CAMERA_RANGE = 6 * UNIT;
+export const CAMERA_TURN_STEPS = 40;
+/** Reach to tape a camera: standing under it or beside it (units). */
+export const CAMERA_REACH = Math.round(1.5 * UNIT);
+/** Searchlights at night (GDD §5.2): +35% heat a second in the beam (this much every 4 steps), its radius and speed. */
+export const SEARCHLIGHT_HEAT = 7;
+export const BEAM_RADIUS = 2 * UNIT;
+export const BEAM_SPEED = 90;
+/** Snipers by day (GDD §5.6): their reach from the towers, the aim before the warning shot, the pace and the damage of the rest. */
+export const SNIPER_RANGE = 26 * UNIT;
+export const SNIPER_AIM = 2 * STEPS_PER_SECOND;
+export const SNIPER_PACE = 3 * STEPS_PER_SECOND;
+export const SNIPER_DAMAGE = 30;
+/** The takeover (GDD §12): this share of the guards out cold at once opens the gates (L1: all 5). */
+export const TAKEOVER_SHARE = 0.85;
+/** How far beyond a roof's edge a grapnel can hook the perimeter fence (tiles). */
+export const GRAPNEL_REACH = 6;
+
+/** The cold (GDD §4.2): a minute out in the snow without a warm outfit chills; indoors it wears off four times as fast. */
+export const COLD_STEPS = 60 * STEPS_PER_SECOND;
+export const WARM_RATE = 4;
+
+// Noise and distractions (P14).
+/** How many walking tiles a noise carries (a shut door counts DOOR_NOISE): a tool at work, by what it does. */
+export const STRIKE_NOISE = { chip: 6, cut: 5, dig: 3, digUp: 3, unscrew: 2, sharpen: 2 } as const;
+/** A thrown item landing: soft, hard, metal (ItemDef.thud). */
+export const THUD_NOISE: readonly number[] = [2, 4, 6];
+/** A firecracker going off; an alarm clock ringing (once a second while it rings). */
+export const BANG_NOISE = 10;
+export const RING_NOISE = 7;
+export const DOOR_NOISE = 4;
+/** Guards sent to look at a noise: this many at most (a bang: more), looking around this long; none if one is already looking this close (tiles). */
+export const NOISE_GUARDS = 2;
+export const BANG_GUARDS = 3;
+export const NOISE_LOOK = 8 * STEPS_PER_SECOND;
+export const BANG_LOOK = 12 * STEPS_PER_SECOND;
+export const LOOK_NEAR = 2;
+/** Throwing (tiles): this far, farther from this much Strength. */
+export const TOSS_RANGE = 6;
+export const TOSS_RANGE_STRONG = 7;
+export const TOSS_STRONG = 70;
+/** An inmate hit by something thrown thinks less of the player. */
+export const TOSS_OPINION = 2;
+/** A firecracker's fuse. */
+export const FUSE_STEPS = Math.round(1.5 * STEPS_PER_SECOND);
+/** The alarm clock (seconds): wound this much a press, up to the most; then it rings this long. */
+export const WIND_SECONDS = 20;
+export const WIND_MAX = 60;
+export const RING_SECONDS = 8;
+
+// Guard ways (P15).
+/** A lazy guard naps at a nap stop of its night round between these minutes of the day (01:00–05:00), once a night, this long (wakes at 05:00 at the latest). */
+export const NAP_FROM = 60;
+export const NAP_TO = 300;
+export const NAP_MIN = 60 * STEPS_PER_MINUTE;
+export const NAP_MAX = 150 * STEPS_PER_MINUTE;
+/** A dozing guard wakes to a noise whose reach at his tile is this much shorter than the noise's own (a bang wakes him anywhere in earshot). */
+export const NAP_WAKE = 2;
+/** ...and to the player standing this close (units) for this long. */
+export const STIR_RANGE = Math.round(0.9 * UNIT);
+export const STIR_STEPS = STEPS_PER_SECOND;
+/** Bribes (a corrupt guard only): "look the other way" for 2 game hours, "lose the paperwork" (heat off, once a day each); prices base + per prison difficulty. */
+export const LOOK_AWAY_STEPS = 120 * STEPS_PER_MINUTE;
+export const LOOK_AWAY_PRICE = 40;
+export const PAPER_PRICE = 30;
+export const BRIBE_PER_LEVEL = 10;
+export const PAPER_HEAT = 25;
+/** A strict guard offered a bribe reports it. */
+export const BRIBE_REPORT_HEAT = 20;
+/** The shakedown names this many cells (a strict guard's: more), and a strict guard searches this much longer (×3/2). */
+export const SHAKEDOWN_CELLS = 2;
+export const STRICT_CELLS = 3;
+
+// Guard dogs (P19).
+/** Dogs start work on this prison day (day 1 is quiet), and their shifts (minutes of the day): 10:00–22:00, and 01:00–05:00 for those on nights. */
+export const DOG_FIRST_DAY = 2;
+export const DOG_DAY_FROM = 600;
+export const DOG_DAY_TO = 1320;
+export const DOG_NIGHT_FROM = 60;
+export const DOG_NIGHT_TO = 300;
+/** A dog trots at its handler's heel, runs to catch up from this far (units), tracks a trail at its own pace (units a step). */
+export const DOG_HEEL_SPEED = 130;
+export const DOG_RUN_SPEED = 200;
+export const DOG_TRACK_SPEED = 160;
+export const DOG_CATCH_UP = 3 * UNIT;
+/** It stops this close to its handler. */
+export const DOG_HEEL = UNIT;
+/** It smells contraband in the hotbar this close (units, a clear line), points and barks this long, and not again so soon. */
+export const SNIFF_RANGE = Math.round(1.5 * UNIT);
+export const POINT_STEPS = 3 * STEPS_PER_SECOND;
+export const SNIFF_AGAIN = 30 * STEPS_PER_SECOND;
+/** What its bark costs and how far it carries; a sneeze's. */
+export const SNIFF_HEAT = 25;
+export const BARK_NOISE = 6;
+export const SNEEZE_NOISE = 3;
+/** The player's trail out of bounds: this many tiles at most, each fresh this long. */
+export const SCENT_TILES = 32;
+export const SCENT_STEPS = 90 * STEPS_PER_SECOND;
+/** Something thrown to a dog lands this close to it (units): jerky (trust, once a day), pepper (dazed), sleepy jerky (asleep). */
+export const TREAT_RANGE = Math.round(1.5 * UNIT);
+export const TREAT_TRUST = 20;
+/** Trust: from this much a dog lets contraband go by; at the most, it's a friend and never tracks the player. */
+export const TRUST_IGNORE = 60;
+export const TRUST_FRIEND = 100;
+export const DAZE_STEPS = 10 * STEPS_PER_SECOND;
+export const DOG_SLEEP_STEPS = 120 * STEPS_PER_MINUTE;
+
+// The pet rat (P20).
+/** A rat trap left on the floor at 04:00 catches a rat this often (percent): in a kitchen, canteen or storeroom; down a tunnel; anywhere else none. */
+export const TRAP_KITCHEN = 60;
+export const TRAP_TUNNEL = 85;
+/** The minute of the day the traps are checked (04:00). */
+export const TRAP_MINUTE = 240;
+/** A caught rat is tame after this many meals. */
+export const RAT_MEALS = 2;
+/** A rat runs this many tiles of its way at most to an errand (under doors, along the ducts), at this pace (units a step: faster than anyone walks). */
+export const RAT_REACH = 16;
+export const RAT_SPEED = 260;
+/** Back to the player: it finds them anywhere its way reaches (tiles); with no way to them, it waits where it is. */
+export const RAT_HOME = 4096;
+/** Let loose: it takes this many people within PANIC_RANGE (units, in sight) to start a panic, which lasts PANIC_STEPS. */
+export const PANIC_PEOPLE = 3;
+export const PANIC_RANGE = 4 * UNIT;
+export const PANIC_STEPS = 20 * STEPS_PER_SECOND;
+/** Its squeaks carry this far, and draw this many guards to look. */
+export const SQUEAK_NOISE = 10;
+export const SQUEAK_GUARDS = 3;
+/** Inmates this close to a rat running loose flee it (units), at their pace plus this. */
+export const FLEE_RANGE = 6 * UNIT;
+export const FLEE_SPEED = 60;
+/** A dog on shift sees a rat this close (units, in sight) and goes after it this long. */
+export const DOG_RAT_RANGE = 5 * UNIT;
+export const DOG_RAT_STEPS = 5 * STEPS_PER_SECOND;

@@ -1,0 +1,99 @@
+import type { Autopilot } from '../sim/ai/autopilot';
+import type { RunRecorder } from '../sim/runlog';
+import type { LessonRun } from './lesson';
+import type { ReplayRun } from './replay';
+import type { HuntRun } from './hunt';
+
+// ------------------------------------------------------------------ the game
+export interface Game {
+  /** The simulation and its run log (P16). */
+  rec: RunRecorder;
+  /** The player's and inmates' positions before the last step (interpolation). */
+  prev: { x: number; z: number };
+  prevInmates: Array<{ x: number; z: number }>;
+  prevGuards: Array<{ x: number; z: number }>;
+  /** The dogs' (P19). */
+  prevDogs: Array<{ x: number; z: number }>;
+  /** The rats before the step (P20), and what each was up to. */
+  prevRats: Array<{ x: number; z: number; mode: number }>;
+  paused: boolean;
+  /** How far the player has walked (tiles), for the first-play hint. */
+  walked: number;
+  /** Tap-to-walk: steers the player with ordinary commands. */
+  pilot: Autopilot;
+  /** The floor arrows: the way to the routine's place, recomputed now and then. */
+  guide: Array<{ x: number; z: number }> | null;
+  guideAge: number;
+  guideFrom: number;
+  /** Dev builds: simulation speed (`]` toggles fast-forward). */
+  speed: number;
+  /** Hidden in the delivery's vehicle (P18): the Wait button runs the clock fast until the sign-off. */
+  waiting: boolean;
+  /** One-step operations waiting for the next steps (one per step), from the item UI and keys: [op, a, b, c]. */
+  ops: Array<[number, number, number, number]>;
+  /** Where the ladder comes down (for the action button's label), worked out once. */
+  ladderFoot: number;
+  /** The escape screen is up: the game is over. */
+  over: boolean;
+  /** Each guard's own key (item number): the view hangs it on the belt while it's in the guard's pockets. */
+  guardKeys: number[];
+  /** The game in progress was last written to storage successfully. */
+  saved: boolean;
+  /** A tutorial lesson (P8+): no saves, no records, its own end. */
+  lesson: LessonRun | null;
+  /** A Daily Escape's run (P26): its own save, its own result; null in the campaign. */
+  daily: DailyRun | null;
+  /** A replay being watched (P25): this game is its picture, played from the log; null in play. */
+  replay?: ReplayRun | null;
+  /** The manhunt under way (P41): over the wall, the inside run over (`over`), the outside played; null otherwise. */
+  hunt?: HuntRun | null;
+}
+
+/** A Daily Escape under way (P26): which Daily, and the try it is. */
+export interface DailyRun {
+  n: number;
+  tries: number;
+}
+
+/**
+ * The game in progress (null on the title) and the frame clock: `acc` is the time not yet
+ * stepped, `last` the previous frame's time. Fields of one object rather than module `let`s,
+ * because every play module reads them and several replace them (an import can't be reassigned).
+ */
+export const play: { game: Game | null; acc: number; last: number } = { game: null, acc: 0, last: performance.now() };
+
+/** Queues a one-step operation (sent with the next simulation step). */
+export function sendOp(op: number, a = 0, b = 0, c = 0) {
+  play.game?.ops.push([op, a, b, c]);
+}
+
+/**
+ * Play time (ms): real time that has passed with a game on screen and not paused (a replay's
+ * too, while it plays). The cards' and pictures' short holds (a verdict shown 6 s, a ball in
+ * the air) count it, so a pause never eats them. Never reset: only differences are read.
+ */
+const playClock = { ms: 0 };
+/** Things to do after some play time (a ball's landing sound), soonest first. */
+const playTimers: Array<{ at: number; fn: () => void }> = [];
+
+/** Play time now (ms). */
+export const playNow = () => playClock.ms;
+
+/** Runs `fn` after `ms` of play time (held while the game is paused). */
+export function playLater(ms: number, fn: () => void) {
+  const at = playClock.ms + ms;
+  let k = playTimers.length;
+  while (k > 0 && playTimers[k - 1].at > at) k--;
+  playTimers.splice(k, 0, { at, fn });
+}
+
+/** A frame of play (not paused): the clock moves on `dtMs`, and what's due runs. */
+export function tickPlayClock(dtMs: number) {
+  playClock.ms += dtMs;
+  while (playTimers.length && playTimers[0].at <= playClock.ms) playTimers.shift()!.fn();
+}
+
+/** A new game, a load, the title: what was waiting is dropped. */
+export function clearPlayTimers() {
+  playTimers.length = 0;
+}

@@ -1,0 +1,36 @@
+{
+  "name": "prison-escape-3d",
+  "private": true,
+  "version": "2.34.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 5310 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host --port 5311 --strictPort",
+    "test": "tsx scripts/test.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "lint": "oxlint --type-aware --deny-warnings src scripts",
+    "format": "prettier --write \"src/**/*.{ts,css}\" \"scripts/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,css}\" \"scripts/**/*.ts\"",
+    "check": "npm run typecheck && npm run lint && npm run format:check && tsx scripts/test.ts",
+    "maps": "tsx scripts/dev/mapimage.ts",
+    "released": "sh scripts/dev/released.sh",
+    "docs:released": "tsx scripts/dev/docsreleased.ts",
+    "icons": "rsvg-convert -w 512 public/icon.svg -o public/icon-512.png && rsvg-convert -w 192 public/icon.svg -o public/icon-192.png && rsvg-convert -w 512 public/icon-maskable.svg -o public/icon-maskable-512.png && rsvg-convert -w 180 public/icon.svg -o public/apple-touch-icon.png"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "21.0.4",
+    "@types/node": "^22.20.5",
+    "@types/three": "^0.186.0",
+    "happy-dom": "21.0.4",
+    "oxlint": "^1.91.0",
+    "oxlint-tsgolint": "^7.0.2006",
+    "prettier": "3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
+  }
+}

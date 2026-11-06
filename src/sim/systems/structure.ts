@@ -1,0 +1,812 @@
+import { itemDef, itemNumber, type ItemDef } from '../../content/items';
+import { handlersOf } from './k9';
+import { sideX, sideZ } from '../command';
+import {
+  BODY_HALF,
+  CAMERA_REACH,
+  ELECTRIC_HP,
+  FENCE_HP,
+  FLOOR_HP,
+  GRAPNEL_REACH,
+  GRATE_HP,
+  SHARPEN_STROKES,
+  SOIL_HP,
+  UNBRACED_RUN,
+  UNIT,
+  WALL_HP,
+} from '../tuning';
+import { isGrate, isSea, isTunnel, TILE, TILE_INFO } from '../world/tiles';
+import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
+import { placesOf } from '../ai/places';
+import { lineOfSight } from '../ai/sight';
+import { overlapsTile, type Body } from './movement';
+import { lockAt } from './games';
+import { PINS } from '../../content/games';
+import type { Weather } from '../../content/days';
+import { GLIDE_BASE, GLIDE_MAX, GLIDE_MIN, GLIDE_RAIN, GLIDE_TAIL, RUN_UP } from '../../content/getaways';
+import { bedTarget } from './garden';
+import { tileAt, tileX, tileZ } from '../world/grid';
+
+/**
+ * Layers and destruction (GDD §9): what a tool would strike, what the action button would
+ * climb or cover, and the tunnel rules. Pure functions of the world and the player: the
+ * simulation applies them, the UI labels the buttons with the same answers.
+ */
+
+/**
+ * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
+ * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
+ * takes the player down off a roof, an alarm clock is wound (P14), soap washes the scent off
+ * (P19), a caught rat is fed and a rat trap set down (P20), a lockpick works a keyed door's pins (P22),
+ * a glider takes off a roof's edge (P24); ripe pruno is drunk, the rat runs its track, and a garden
+ * bed is planted, watered or harvested (P28).
+ */
+export type ToolAction =
+  | 'chip'
+  | 'cut'
+  | 'unscrew'
+  | 'dig'
+  | 'digUp'
+  | 'eat'
+  | 'cover'
+  | 'brace'
+  | 'rope'
+  | 'sharpen'
+  | 'grapnel'
+  | 'tape'
+  | 'launch'
+  | 'wind'
+  | 'wash'
+  | 'feed'
+  | 'setTrap'
+  | 'pick'
+  | 'glide'
+  | 'drink'
+  | 'track'
+  | 'plant'
+  | 'water'
+  | 'harvest'
+  | 'unbook'
+  | 'carve';
+
+/** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
+export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
+
+export interface ToolTarget {
+  action: ToolAction;
+  layer: number;
+  tile: number;
+  /** The item in hand can do it (else the button says what is needed). */
+  fits: boolean;
+  /** Hit points the tile has in all (0: nothing gets through it; strikes only). */
+  hp: number;
+  /** A grapnel's swing: the fence (or gatehouse roof) tile it hooks (the landing is `tile`). P24, a glide: the roof tile it leaves from. */
+  over?: number;
+  /** A glide (P24): how far it goes (tiles), whether it comes down short of the wind's reach, whether it lands out on the road, and why it can't go (fits false). */
+  glide?: Glide;
+}
+
+/** The air a glider flies in (P24): the day's wind (where it blows from, 0 north clockwise in eighths; its strength 0–3) and weather. */
+export interface Air {
+  wind: number;
+  force: number;
+  weather: Weather;
+  /** Replaying a 2.5.0 run (Sim.rules250): a glide could come down where nobody walks to (between the fences). */
+  old?: boolean;
+}
+
+/** A glide off a roof's edge (P24, glideFrom). */
+export interface Glide {
+  /** The tiles the wind carries it (GLIDE_MIN–GLIDE_MAX), and where it comes down (tiles from the edge; 0 nowhere). */
+  reach: number;
+  dist: number;
+  /** It comes down short of its reach (a roof, a tower or a fence in the way, nowhere to land beyond). */
+  short: boolean;
+  /** It lands out on the road. */
+  out: boolean;
+  /** Why it can't go: a storm, no run-up behind, nowhere to land; null when it can. */
+  why: 'storm' | 'runUp' | 'noLanding' | null;
+}
+
+/** What the action button does to the structure around the player. */
+export type ClimbAction =
+  /** Ground → vents through an open grate; vents → ground. */
+  | 'climbVent'
+  | 'dropDown'
+  /** Up the ladder to the roof (from the floor or the vents), and back down to the floor. */
+  | 'climbRoof'
+  | 'climbDownLadder'
+  /** Into a tunnel entrance, and back out. */
+  | 'climbDown'
+  | 'climbUp'
+  /** A cover taken off damage (into the hand). */
+  | 'uncover';
+
+export interface ClimbTarget {
+  action: ClimbAction;
+  /** It's over the player's own tile (a grate overhead), not the one they face: furniture faced wins. */
+  overhead?: boolean;
+  /** The tile it acts on (the layer is the player's, or the one below for grates). */
+  tile: number;
+  /** Where the player ends up (cover/uncover/brace: stays). */
+  toLayer: number;
+  toTile: number;
+  /** Covers: the item it takes or gives back. */
+  item?: number;
+}
+
+export const DIRT = itemNumber('dirt');
+export const WALL_CHUNK = itemNumber('wall_chunk');
+const POSTER = itemNumber('poster');
+const FAKE_WALL = itemNumber('fake_wall');
+const FAKE_FENCE = itemNumber('fake_fence');
+const FAKE_VENT = itemNumber('fake_vent');
+const BRACE = itemNumber('timber_brace');
+export const SHEET_ROPE = itemNumber('sheet_rope');
+const CHOCOLATE = itemNumber('chocolate');
+/** P34: Lou's cake (a file inside). */
+const CAKE = itemNumber('cake');
+/** P35: the hollow book (one small item hidden inside). */
+export const HOLLOW_BOOK = itemNumber('hollow_book');
+/** P42: a chocolate egg and an ice lolly (eaten as chocolate is), a pumpkin (carved in the kitchen). */
+export const CHOC_EGG = itemNumber('choc_egg');
+export const ICE_LOLLY = itemNumber('ice_lolly');
+const PUMPKIN = itemNumber('pumpkin');
+const GRAPNEL = itemNumber('grapnel');
+const RAFT = itemNumber('raft');
+/** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
+export const ALARM_CLOCK = itemNumber('alarm_clock');
+export const FIRECRACKER = itemNumber('firecracker');
+const SOAP = itemNumber('soap');
+/** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
+const RAT_TRAP = itemNumber('rat_trap');
+const CAUGHT_RAT = itemNumber('caught_rat');
+/** P28: ripe pruno (drunk), the rat's track. */
+const PRUNO = itemNumber('pruno');
+const RAT_TRACK = itemNumber('rat_track');
+/** P22: the lockpick (a keyed door ahead). */
+const LOCKPICK = itemNumber('lockpick');
+/** P24: the glider (off a roof's edge). */
+export const GLIDER = itemNumber('glider');
+const BAIT = ['potato', 'chocolate', 'jerky'].map((id) => itemNumber(id));
+/** What blinds a camera (GDD §5.6). */
+const LENS_COVERS: ReadonlySet<number> = new Set([itemNumber('duct_tape'), itemNumber('toothpaste')]);
+const PLASTIC_KNIFE = itemNumber('plastic_knife');
+/** What rubbing on a wall makes of a comb and a toothbrush (GDD §7.3: shivs). */
+export const SHIVS: ReadonlyMap<number, number> = new Map([
+  [itemNumber('plastic_comb'), itemNumber('comb_shiv')],
+  [itemNumber('toothbrush'), itemNumber('toothbrush_shiv')],
+]);
+
+/** The floors a tunnel can be started through (GDD §9.2: dirt, grass or any non-reinforced floor). */
+const DIGGABLE = new Set<number>([TILE.GRASS, TILE.ROAD, TILE.CONCRETE, TILE.TILED, TILE.WOOD, TILE.ASPHALT, TILE.DIRT]);
+
+/** The tile straight ahead of a body (its heading snapped to the nearest of the four sides), -1 off the map. */
+function aheadOf(b: Body): number {
+  const x = Math.floor(b.x / UNIT) + sideX(b.facing);
+  const z = Math.floor(b.z / UNIT) + sideZ(b.facing);
+  return x < 0 || z < 0 || x >= MAP_W || z >= MAP_H ? -1 : z * MAP_W + x;
+}
+
+/** Whether a tool does a job: picks chip, shovels dig, the multitool does both, cutters cut, files and screwdrivers (and the plastic knife) unscrew. */
+function toolFits(def: ItemDef | null, action: ToolAction): boolean {
+  const kind = def?.tool?.kind;
+  if (!kind) return false;
+  switch (action) {
+    case 'chip':
+      return kind === 'chip' || kind === 'multi';
+    case 'dig':
+    case 'digUp':
+      return kind === 'dig' || kind === 'multi';
+    case 'cut':
+      return kind === 'cut';
+    case 'unscrew':
+      return kind === 'unscrew' || itemDef(PLASTIC_KNIFE) === def;
+    default:
+      return false;
+  }
+}
+
+/** The player's desk, if the tile is under it (a tunnel can start there, GDD §9.3). */
+export function underMyDesk(w: World, i: number): boolean {
+  return (
+    w.cellOf[i] === 1 &&
+    w.props.some((p) => p.kind === 'desk' && i >= 0 && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)
+  );
+}
+
+/** Someone's footprint covers the tile (no digging under people). */
+const occupied = (i: number, bodies: readonly Body[]) => bodies.some((b) => overlapsTile(b, i));
+
+/**
+ * Tiles nobody may dig a hole in: where people must be able to stand (beside each bed and
+ * desk, outside each cell door, at the ladder's foot, the roll call spots). A hole there would
+ * strand a guard's bed check or a sleeper, or the player climbing down.
+ */
+const reservedCache = new WeakMap<World, Set<number>>();
+/** Forgets where nobody may dig, to be worked out again: a replay's flags turned a solid prop back into decoration (2.32's machine, 2.33's cooler), which changes the chokepoints. */
+export function forgetReserved(w: World) {
+  reservedCache.delete(w);
+}
+export function reserved(w: World): Set<number> {
+  let r = reservedCache.get(w);
+  if (r) return r;
+  const p = placesOf(w);
+  const guardSpots = w.def.guards
+    .flatMap((d) => [...d.beat, ...(d.night ?? []), ...Object.values(d.posts ?? {})])
+    .map((q) => q!.z * MAP_W + q!.x);
+  r = new Set<number>(
+    [
+      ...p.bedside,
+      ...p.deskside,
+      ...p.doorstep,
+      ...p.rollCall.map((q) => q.tile),
+      ...p.guardBeds.map((g) => g.tile),
+      p.infirmary,
+      p.solitary,
+      ladderFootOf(w),
+      ...guardSpots,
+    ].filter((t) => t >= 0),
+  );
+  // Either side of every door, and every chokepoint: a hole there would cut people off.
+  const base = w.ground.base;
+  for (let i = 0; i < MAP_W * MAP_H; i++) {
+    if (base[i] !== TILE.DOOR && base[i] !== TILE.DETECTOR) continue;
+    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) r.add(j);
+  }
+  for (const i of chokepoints(w)) r.add(i);
+  reservedCache.set(w, r);
+  return r;
+}
+
+/**
+ * The tiles whose loss would split the prison's walkable floor in two (articulation points of
+ * the map as built, doors open, furniture in place): found once per map, iteratively (Tarjan).
+ */
+function chokepoints(w: World): number[] {
+  const N = MAP_W * MAP_H;
+  const base = w.ground.base;
+  const open = (i: number) => {
+    const k = base[i];
+    return (k === TILE.DOOR || !TILE_INFO[k].solid) && !w.propSolid[i];
+  };
+  const disc = new Int32Array(N).fill(-1);
+  const low = new Int32Array(N);
+  const parent = new Int32Array(N).fill(-1);
+  const next = new Uint8Array(N);
+  const cut = new Uint8Array(N);
+  let time = 0;
+  const neighbour = (i: number, k: number) => {
+    const x = i % MAP_W;
+    if (k === 0) return x > 0 ? i - 1 : -1;
+    if (k === 1) return x < MAP_W - 1 ? i + 1 : -1;
+    if (k === 2) return i >= MAP_W ? i - MAP_W : -1;
+    return i < N - MAP_W ? i + MAP_W : -1;
+  };
+  for (let root = 0; root < N; root++) {
+    if (!open(root) || disc[root] >= 0) continue;
+    let children = 0;
+    const stack = [root];
+    disc[root] = low[root] = time++;
+    while (stack.length) {
+      const u = stack[stack.length - 1];
+      if (next[u] < 4) {
+        const v = neighbour(u, next[u]++);
+        if (v < 0 || !open(v)) continue;
+        if (disc[v] < 0) {
+          parent[v] = u;
+          if (u === root) children++;
+          disc[v] = low[v] = time++;
+          stack.push(v);
+        } else if (v !== parent[u]) low[u] = Math.min(low[u], disc[v]);
+        continue;
+      }
+      stack.pop();
+      const pu = parent[u];
+      if (pu >= 0) {
+        low[pu] = Math.min(low[pu], low[u]);
+        if (pu !== root && low[u] >= disc[pu]) cut[pu] = 1;
+      }
+    }
+    if (children > 1) cut[root] = 1;
+  }
+  const out: number[] = [];
+  for (let i = 0; i < N; i++) if (cut[i]) out.push(i);
+  return out;
+}
+
+/** A ground floor tile a tunnel entrance can be dug through (free floor, or under the player's desk); from below (`up`), the minefield's sand too, mine and all (P11). */
+export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = false): boolean {
+  if (i < 0) return false;
+  const k = w.ground.kind[i];
+  // Nor over a boulder: there'd be nowhere to go.
+  if (!(DIGGABLE.has(k) || (up && k === TILE.MINE)) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
+  if (w.propSolid[i] && !underMyDesk(w, i)) return false;
+  // (The gym's bag and mat, decor until 2.29, were never in the way of a spade.)
+  // (Nor, in a run from before 2.31, the library's added chairs; before 2.32, the vending machine; before 2.33, the water cooler.)
+  if (
+    w.props.some(
+      (p) =>
+        p.kind !== 'mat' &&
+        p.kind !== 'punchingBag' &&
+        !(w.plainBooks && (p.kind === 'readChair' || p.kind === 'deskChair')) &&
+        !(w.plainVending && p.kind === 'vending') &&
+        !(w.plainCooler && p.kind === 'cooler') &&
+        !w.propSolid[i] &&
+        tileX(i) >= p.x &&
+        tileX(i) < p.x + p.w &&
+        tileZ(i) >= p.z &&
+        tileZ(i) < p.z + p.d,
+    )
+  )
+    return false;
+  return !occupied(i, bodies);
+}
+
+/**
+ * What a strike with the held item would hit (GDD §9): the wall, fence or grate ahead, the
+ * floor ahead (a shovel digs a tunnel entrance), the earth ahead in a tunnel or the ground
+ * above its end. Chocolate in hand is eaten. When something is there but the tool can't do
+ * it, the target comes back with `fits` false (the UI says what is needed); null when there
+ * is nothing to strike.
+ */
+export function toolTarget(
+  w: World,
+  layer: number,
+  b: Body,
+  held: number,
+  bodies: readonly Body[],
+  pockets: readonly number[] = [],
+  air?: Air,
+  plots?: readonly number[][],
+  inside = 0,
+): ToolTarget | null {
+  const def = held ? itemDef(held) : null;
+  // The garden (P28): a ripe bed ahead (or underfoot) harvested whatever is in hand; seeds planted, a cup watering.
+  const bed = plots ? bedTarget(w, layer, b, held, plots) : null;
+  if (bed) return { action: bed.action, layer: LAYER.GROUND, tile: bed.tile, fits: bed.fits, hp: 0 };
+  // Ripe pruno drunk; the rat's track (P28).
+  if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
+  if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
+  if (held === CHOCOLATE || held === CAKE || held === CHOC_EGG || held === ICE_LOLLY || def?.food)
+    return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  // P42: a pumpkin carved into a lantern, in the kitchen only.
+  if (held === PUMPKIN)
+    return {
+      action: 'carve',
+      layer,
+      tile: -1,
+      fits: layer === LAYER.GROUND && w.zoneAt(Math.floor(b.x / UNIT), Math.floor(b.z / UNIT)) === 'kitchen',
+      hp: 0,
+    };
+  // P35: the hollow book opened, what it hides (`inside`: the slot in its upper bits) taken out.
+  if (held === HOLLOW_BOOK) return { action: 'unbook', layer, tile: -1, fits: inside > 0, hp: 0 };
+  if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
+  // A bar of soap (P19): the player's scent rubbed off.
+  if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
+  // A caught rat (P20): fed the first bait in the hotbar. A rat trap: set down where the player stands (`tile`).
+  if (held === CAUGHT_RAT) return { action: 'feed', layer, tile: -1, fits: pockets.some((v, k) => k < 6 && BAIT.includes(v & 255)), hp: 0 };
+  if (held === RAT_TRAP) return { action: 'setTrap', layer, tile: tileAt(b.x, b.z), fits: true, hp: 0 };
+  const here = tileAt(b.x, b.z);
+  const ahead = aheadOf(b);
+  // A comb or toothbrush against a wall: rubbed into a shiv (hp: the strokes it takes).
+  if (SHIVS.has(held) && layer === LAYER.GROUND && ahead >= 0) {
+    const k = w.ground.kind[ahead];
+    if (k === TILE.BRICK || k === TILE.REINFORCED) return { action: 'sharpen', layer, tile: ahead, fits: true, hp: SHARPEN_STROKES };
+  }
+  const placed = placeTarget(w, layer, here, ahead, held);
+  if (placed) return placed;
+  // A lockpick at a keyed door shut for the player (P22): its pins (hp); a perimeter gate has none to pick (`fits` false).
+  if (held === LOCKPICK && layer === LAYER.GROUND && ahead >= 0) {
+    const lock = lockAt(w, ahead);
+    if (lock) return { action: 'pick', layer, tile: ahead, fits: lock === 'lock', hp: PINS[w.ground.key[ahead]] ?? 0 };
+  }
+  // A raft in hand at the end of a pier, the open sea ahead (P12, GDD §4.5): launched, and away.
+  if (
+    held === RAFT &&
+    layer === LAYER.GROUND &&
+    ahead >= 0 &&
+    w.ground.kind[here] === TILE.PIER &&
+    w.ground.kind[ahead] === TILE.WATER &&
+    !w.bridge[ahead]
+  ) {
+    return { action: 'launch', layer, tile: ahead, fits: true, hp: 0 };
+  }
+  // A glider at a roof's edge (P24): off it, as far as the day's wind carries it.
+  if (held === GLIDER && layer === LAYER.ROOF && air) {
+    const glide = glideFrom(w, b, air, bodies);
+    if (glide) {
+      const sx = sideX(b.facing);
+      const sz = sideZ(b.facing);
+      const land = glide.dist ? here + (sz * MAP_W + sx) * glide.dist : -1;
+      return { action: 'glide', layer: LAYER.GROUND, tile: land, over: here, hp: 0, fits: glide.why === null, glide };
+    }
+  }
+  // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): a sheet rope in the pockets gets the player down outside.
+  if (held === GRAPNEL && layer === LAYER.ROOF) {
+    const swing = grapnelSwing(w, b);
+    if (swing)
+      return {
+        action: 'grapnel',
+        layer: swing.roof ? LAYER.ROOF : LAYER.GROUND,
+        tile: swing.land,
+        over: swing.fence,
+        hp: 0,
+        fits: pockets.some((v) => (v & 255) === SHEET_ROPE),
+      };
+  }
+  // Tape or toothpaste under a camera: over its lens.
+  if (LENS_COVERS.has(held) && layer === LAYER.GROUND) {
+    const cam = cameraInReach(w, b);
+    if (cam >= 0) {
+      const c = w.def.cameras![cam];
+      return { action: 'tape', layer: LAYER.GROUND, tile: c.z * MAP_W + c.x, hp: 0, fits: true };
+    }
+  }
+  const found: ToolTarget[] = [];
+  const add = (action: ToolAction, l: number, tile: number, hp: number) =>
+    found.push({ action, layer: l, tile, hp, fits: toolFits(def, action) });
+  if (layer === LAYER.GROUND) {
+    const k = ahead >= 0 ? w.ground.kind[ahead] : TILE.EMPTY;
+    if (k === TILE.BRICK || k === TILE.REINFORCED) add('chip', LAYER.GROUND, ahead, k === TILE.REINFORCED ? 0 : WALL_HP);
+    if (k === TILE.FENCE || k === TILE.ELECTRIC) add('cut', LAYER.GROUND, ahead, k === TILE.ELECTRIC ? ELECTRIC_HP : FENCE_HP);
+    // A ceiling grate overhead or just ahead (from the floor you reach up to it).
+    for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
+    // A shovel in hand: the floor ahead.
+    if (toolFits(def, 'dig') && canDigFloor(w, ahead, bodies)) add('dig', LAYER.GROUND, ahead, FLOOR_HP);
+  } else if (layer === LAYER.UNDER) {
+    const k = ahead >= 0 ? w.layers[LAYER.UNDER].kind[ahead] : TILE.EMPTY;
+    if (k === TILE.SOIL && !edge(ahead)) add('dig', LAYER.UNDER, ahead, SOIL_HP);
+    // Granite: there, but no tool gets through (hp 0, as reinforced concrete).
+    else if (k === TILE.BOULDER) add('dig', LAYER.UNDER, ahead, 0);
+    // At the tunnel's end, facing back along it (the earth behind the player): up through the
+    // floor above. Never just after breaking through ahead (the tunnel is behind them then),
+    // so tapping on at the dig face never surfaces by accident.
+    else if (isTunnel(k) && behindIsEarth(w, b) && canDigFloor(w, here, bodies, true) && !underMyDesk(w, here))
+      add('digUp', LAYER.GROUND, here, FLOOR_HP);
+  } else if (layer === LAYER.VENTS) {
+    for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
+  }
+  if (!found.length) return null;
+  return found.find((f) => f.fits && f.hp > 0) ?? found[0];
+}
+
+/**
+ * Dig up (the Dig up button, U): in a tunnel, up through the floor right overhead, whichever
+ * way the player faces; null where nothing could be dug through (a wall, the fence, furniture,
+ * someone standing there, the entrance or the desk over it). `fits`: a digging tool in hand.
+ */
+export function digUpTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[]): ToolTarget | null {
+  if (layer !== LAYER.UNDER) return null;
+  const here = tileAt(b.x, b.z);
+  if (!isTunnel(w.layers[LAYER.UNDER].kind[here]) || !canDigFloor(w, here, bodies, true) || underMyDesk(w, here)) return null;
+  return { action: 'digUp', layer: LAYER.GROUND, tile: here, hp: FLOOR_HP, fits: !!held && toolFits(itemDef(held), 'dig') };
+}
+
+/**
+ * A cover, a brace or a sheet rope in hand (GDD §9.2–9.3, §12): a fake vent cover over an
+ * open grate (from below or above), a fake wall block into a hole, a poster over a hole in
+ * the player's own cell (elsewhere it wouldn't pass: `fits` false), a fake fence cover over
+ * a cut, a brace in the tunnel where the player stands, a rope down off a roof's edge.
+ */
+function placeTarget(w: World, layer: number, here: number, ahead: number, held: number): ToolTarget | null {
+  const vents = w.layers[LAYER.VENTS].kind;
+  const at = (action: ToolAction, l: number, tile: number, fits = true): ToolTarget => ({ action, layer: l, tile, fits, hp: 0 });
+  const spots = ahead >= 0 && ahead !== here ? [here, ahead] : [here];
+  if (held === FAKE_VENT && (layer === LAYER.GROUND || layer === LAYER.VENTS)) {
+    for (const t of spots) if (vents[t] === TILE.GRATE_OPEN) return at('cover', LAYER.VENTS, t);
+  }
+  if (layer === LAYER.GROUND && ahead >= 0) {
+    const k = w.ground.kind[ahead];
+    if (k === TILE.HOLE && held === FAKE_WALL) return at('cover', LAYER.GROUND, ahead);
+    if (k === TILE.HOLE && held === POSTER) return at('cover', LAYER.GROUND, ahead, touchesMyCell(w, ahead));
+    if (k === TILE.FENCE_CUT && held === FAKE_FENCE) return at('cover', LAYER.GROUND, ahead);
+  }
+  if (layer === LAYER.UNDER && held === BRACE && w.layers[LAYER.UNDER].kind[here] === TILE.TUNNEL) return at('brace', LAYER.UNDER, here);
+  if (
+    layer === LAYER.ROOF &&
+    held === SHEET_ROPE &&
+    ahead >= 0 &&
+    w.layers[LAYER.ROOF].kind[ahead] === TILE.EMPTY &&
+    !w.blocked(tileX(ahead), tileZ(ahead)) &&
+    TILE_INFO[w.ground.kind[ahead]].outdoor
+  ) {
+    return at('rope', LAYER.GROUND, ahead);
+  }
+  return null;
+}
+
+/**
+ * A grapnel thrown from a roof's edge (GDD §12): straight ahead over the open ground below,
+ * the perimeter fence within reach, and free road just past it to come down on; or a roof
+ * standing on the wire to swing across onto (Shankton's gatehouse, GDD §4.3: the sheet
+ * rope then gets the player down its far side). Returns the tile hooked and the landing, or null.
+ */
+export function grapnelSwing(w: World, b: Body): { fence: number; land: number; roof: boolean } | null {
+  const sx = sideX(b.facing);
+  const sz = sideZ(b.facing);
+  let x = Math.floor(b.x / UNIT);
+  let z = Math.floor(b.z / UNIT);
+  const roof = w.layers[LAYER.ROOF].kind;
+  // Only from the edge: the tile ahead has no roof.
+  if (!w.inside(x + sx, z + sz) || roof[(z + sz) * MAP_W + x + sx] !== TILE.EMPTY) return null;
+  for (let k = 1; k <= GRAPNEL_REACH + 1; k++) {
+    x += sx;
+    z += sz;
+    if (!w.inside(x, z)) return null;
+    const i = z * MAP_W + x;
+    const kind = w.ground.kind[i];
+    if (kind === TILE.FENCE || kind === TILE.ELECTRIC || kind === TILE.FENCE_FAKE || kind === TILE.FENCE_CUT) {
+      if (k > GRAPNEL_REACH || !w.inside(x + sx, z + sz)) return null;
+      const land = (z + sz) * MAP_W + x + sx;
+      // Down onto open ground (the road, or between two fences): whether that's out, the escape check says.
+      const lk = w.ground.kind[land];
+      return TILE_INFO[lk].outdoor && !TILE_INFO[lk].solid && !w.blocked(x + sx, z + sz) ? { fence: i, land, roof: false } : null;
+    }
+    // A roof standing on the wire (a gatehouse astride the fences), or a landing across a chasm
+    // between roofs (Irongate's yard): hooked, and swung across onto it.
+    if (roof[i] === TILE.ROOF && k <= GRAPNEL_REACH && (w.zoneAt(x, z) === 'perimeter' || onLanding(w, x, z)))
+      return { fence: i, land: i, roof: true };
+    // Over open ground only (no roofs, towers or walls in the way).
+    if (roof[i] !== TILE.EMPTY || !TILE_INFO[kind].outdoor || TILE_INFO[kind].solid) return null;
+  }
+  return null;
+}
+
+/** A body's heading snapped to one of the four sides, as steps along x and z. */
+
+/**
+ * How far the wind carries a glide heading one way (P24; eighths, 0 north, 2 east, 4 south, 6
+ * west): GLIDE_BASE tiles in still air; a tailwind adds GLIDE_TAIL a point of its strength (half
+ * that from a quarter behind), a headwind takes one a point off (half that from a quarter ahead),
+ * a crosswind nothing; rain a tile. Pure: the button and the ring say the same.
+ */
+export function glideReach(air: Air, heading: number): number {
+  const off = (((((air.wind + 4) % 8) - heading) % 8) + 8) % 8;
+  const f = air.force;
+  const wind =
+    off === 0
+      ? GLIDE_TAIL * f
+      : off === 1 || off === 7
+        ? (GLIDE_TAIL * f) / 2
+        : off === 4
+          ? -f
+          : off === 3 || off === 5
+            ? -Math.floor(f / 2)
+            : 0;
+  return Math.max(GLIDE_MIN, Math.min(GLIDE_MAX, GLIDE_BASE + wind - (air.weather === 'rain' ? GLIDE_RAIN : 0)));
+}
+
+/**
+ * A glide off the roof's edge the player faces (P24): null away from an edge. It needs RUN_UP
+ * tiles of roof behind, and no storm. It flies straight out over open ground and fences as far
+ * as the wind carries it (glideReach), stopped short by a roof or a tower in the way, and comes
+ * down on the furthest tile it reaches where one can land (open ground: not a fence, the sea,
+ * a minefield, a solid prop, a parked vehicle or someone standing there). Pure: the button, the
+ * ring and the sim agree.
+ */
+export function glideFrom(w: World, b: Body, air: Air, bodies: readonly Body[] = []): Glide | null {
+  const sx = sideX(b.facing);
+  const sz = sideZ(b.facing);
+  const x = Math.floor(b.x / UNIT);
+  const z = Math.floor(b.z / UNIT);
+  const roof = w.layers[LAYER.ROOF].kind;
+  // Only from the edge: the tile ahead has no roof.
+  if (!sx && !sz) return null;
+  if (!w.inside(x + sx, z + sz) || roof[(z + sz) * MAP_W + x + sx] !== TILE.EMPTY) return null;
+  const reach = glideReach(air, sx > 0 ? 2 : sx < 0 ? 6 : sz > 0 ? 4 : 0);
+  const glide: Glide = { reach, dist: 0, short: false, out: false, why: null };
+  // Room to run: roof underfoot all the way behind.
+  for (let k = 1; k <= RUN_UP; k++) {
+    const bx = x - sx * k;
+    const bz = z - sz * k;
+    const r = w.inside(bx, bz) ? roof[bz * MAP_W + bx] : TILE.EMPTY;
+    if (r !== TILE.ROOF && r !== TILE.LADDER) glide.why = 'runUp';
+  }
+  // How far it gets: a roof or a tower in the way brings it down before it.
+  let far = 0;
+  for (let k = 1; k <= reach; k++) {
+    const tx = x + sx * k;
+    const tz = z + sz * k;
+    if (!w.inside(tx, tz)) break;
+    const i = tz * MAP_W + tx;
+    if (roof[i] !== TILE.EMPTY || w.ground.kind[i] === TILE.TOWER) break;
+    far = k;
+  }
+  for (let k = far; k >= 1; k--) {
+    const tx = x + sx * k;
+    const tz = z + sz * k;
+    const i = tz * MAP_W + tx;
+    const kind = w.ground.kind[i];
+    if (!TILE_INFO[kind].outdoor || TILE_INFO[kind].solid || kind === TILE.MINE || w.blocked(tx, tz)) continue;
+    // (2.5.1: nor where there's no walking in or out from: between the fences, short of the road.)
+    if (!air.old && !w.afoot(i)) continue;
+    // (Never down on someone: the next tile back.)
+    const mx = tx * UNIT + UNIT / 2;
+    const mz = tz * UNIT + UNIT / 2;
+    if (bodies.some((o) => Math.abs(o.x - mx) < 2 * BODY_HALF && Math.abs(o.z - mz) < 2 * BODY_HALF)) continue;
+    glide.dist = k;
+    glide.short = k < reach;
+    glide.out = w.zoneAt(tx, tz) === 'outside';
+    break;
+  }
+  if (!glide.dist && !glide.why) glide.why = 'noLanding';
+  if (air.weather === 'storm') glide.why = 'storm';
+  return glide;
+}
+
+/** A roof the prison names as a grapnel's landing across a chasm (PrisonDef.landings). */
+const onLanding = (w: World, x: number, z: number) =>
+  !!w.def.landings?.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
+
+/** A tunnel tile under the sea (P12): digging it floods the tunnel (GDD §4.5). */
+export const underSea = (w: World, i: number) => i >= 0 && isSea(w.ground.base[i]);
+
+/** The camera the player stands under or beside (-1: none). */
+function cameraInReach(w: World, b: Body): number {
+  const cams = w.def.cameras ?? [];
+  for (let k = 0; k < cams.length; k++) {
+    const dx = Math.abs(cams[k].x * UNIT + UNIT / 2 - b.x);
+    const dz = Math.abs(cams[k].z * UNIT + UNIT / 2 - b.z);
+    // Within reach, and not through a wall.
+    if (Math.max(dx, dz) <= CAMERA_REACH && lineOfSight(w, b.x, b.z, cams[k].x * UNIT + UNIT / 2, cams[k].z * UNIT + UNIT / 2)) return k;
+  }
+  return -1;
+}
+
+/** Whether the tile behind a body (opposite its heading, snapped to a side) is undug earth or the map's edge. */
+function behindIsEarth(w: World, b: Body): boolean {
+  const x = Math.floor(b.x / UNIT) - sideX(b.facing);
+  const z = Math.floor(b.z / UNIT) - sideZ(b.facing);
+  const k = w.inside(x, z) ? w.layers[LAYER.UNDER].kind[z * MAP_W + x] : TILE.SOIL;
+  return k === TILE.SOIL || k === TILE.BOULDER;
+}
+
+/** The map's outermost ring can't be dug (there is nothing past it). */
+const edge = (i: number) => tileX(i) === 0 || tileZ(i) === 0 || tileX(i) === MAP_W - 1 || tileZ(i) === MAP_H - 1;
+
+const AROUND = [
+  [0, 0],
+  [0, 1],
+  [0, -1],
+  [1, 0],
+  [-1, 0],
+  [1, 1],
+  [-1, 1],
+  [1, -1],
+  [-1, -1],
+] as const;
+
+/**
+ * The free floor tile next to a ground tile where someone climbing out stands (-1 for none):
+ * the four sides first, then the corners (never through a wall's corner). With `self` the
+ * tile itself comes first.
+ */
+export function besideOnGround(w: World, i: number, bodies: readonly Body[] = [], self = false): number {
+  const x = tileX(i);
+  const z = tileZ(i);
+  const free = (nx: number, nz: number) => w.inside(nx, nz) && !w.blocked(nx, nz);
+  for (const [dx, dz] of AROUND) {
+    if (!dx && !dz && !self) continue;
+    const nx = x + dx;
+    const nz = z + dz;
+    if (!free(nx, nz)) continue;
+    if (dx && dz && (!free(x + dx, z) || !free(x, z + dz))) continue;
+    const j = nz * MAP_W + nx;
+    if (!occupied(j, bodies)) return j;
+  }
+  return -1;
+}
+
+/** Whether a hole in a wall touches the player's cell (a poster only passes for decoration there). */
+export const touchesMyCell = (w: World, i: number) =>
+  [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => j >= 0 && j < MAP_W * MAP_H && w.cellOf[j] === 1);
+
+/**
+ * What the action button would do to the structure around the player: climb (grates, the
+ * ladder, tunnel entrances) or take a cover off damage. Checked before furniture and items,
+ * so standing on a grate means climbing. (Putting covers on is the use button's: see
+ * placeTarget.) `ladderFoot` is where the ladder's floor end is (-1 if the prison has none).
+ */
+export function climbTarget(w: World, layer: number, b: Body, ladderFoot: number, bodies: readonly Body[]): ClimbTarget | null {
+  const here = tileAt(b.x, b.z);
+  const ahead = aheadOf(b);
+  const spots = ahead >= 0 && ahead !== here ? [here, ahead] : [here];
+  const vents = w.layers[LAYER.VENTS].kind;
+  const stay = (action: ClimbAction, tile: number, item?: number): ClimbTarget => ({ action, tile, toLayer: layer, toTile: here, item });
+  if (layer === LAYER.GROUND) {
+    for (const t of spots) {
+      const overhead = t === here;
+      if (vents[t] === TILE.GRATE_OPEN) return { action: 'climbVent', tile: t, toLayer: LAYER.VENTS, toTile: t, overhead };
+      if (vents[t] === TILE.GRATE_FAKE) return { ...stay('uncover', t, FAKE_VENT), overhead };
+    }
+    if (ahead < 0) return null;
+    const k = w.ground.kind[ahead];
+    if (vents[ahead] === TILE.LADDER && w.propSolid[ahead]) return { action: 'climbRoof', tile: ahead, toLayer: LAYER.ROOF, toTile: ahead };
+    if (k === TILE.SHAFT && !underMyDesk(w, ahead)) return { action: 'climbDown', tile: ahead, toLayer: LAYER.UNDER, toTile: ahead };
+    if (k === TILE.HOLE_POSTER) return stay('uncover', ahead, POSTER);
+    if (k === TILE.HOLE_FAKE) return stay('uncover', ahead, FAKE_WALL);
+    if (k === TILE.FENCE_FAKE) return stay('uncover', ahead, FAKE_FENCE);
+    return null;
+  }
+  if (layer === LAYER.UNDER) {
+    if (w.ground.kind[here] === TILE.SHAFT) {
+      const out = underMyDesk(w, here) ? -2 : besideOnGround(w, here, bodies);
+      if (out !== -1) return { action: 'climbUp', tile: here, toLayer: LAYER.GROUND, toTile: out };
+    }
+    return null;
+  }
+  if (layer === LAYER.VENTS) {
+    for (const t of spots) {
+      if (vents[t] === TILE.GRATE_OPEN && !w.blocked(tileX(t), tileZ(t)) && !occupied(t, bodies))
+        return { action: 'dropDown', tile: t, toLayer: LAYER.GROUND, toTile: t };
+      if (vents[t] === TILE.GRATE_FAKE) return stay('uncover', t, FAKE_VENT);
+      if (vents[t] === TILE.LADDER) return { action: 'climbRoof', tile: t, toLayer: LAYER.ROOF, toTile: t };
+    }
+    return null;
+  }
+  if (layer === LAYER.ROOF) {
+    for (const t of spots)
+      if (w.layers[LAYER.ROOF].kind[t] === TILE.LADDER && ladderFoot >= 0)
+        return { action: 'climbDownLadder', tile: t, toLayer: LAYER.GROUND, toTile: ladderFoot };
+  }
+  return null;
+}
+
+/** The floor tile in front of the ladder (where climbing down puts the player), -1 without a ladder. */
+export function ladderFootOf(w: World): number {
+  const vents = w.layers[LAYER.VENTS].kind;
+  for (let i = 0; i < MAP_W * MAP_H; i++) if (vents[i] === TILE.LADDER) return besideOnGround(w, i);
+  return -1;
+}
+
+/**
+ * Whether a tunnel tile is held up: within a brace's 3×3 (GDD §9.2), or right under a
+ * tunnel entrance (its frame).
+ */
+function supported(w: World, i: number): boolean {
+  if (w.ground.kind[i] === TILE.SHAFT) return true;
+  const under = w.layers[LAYER.UNDER].kind;
+  const x = tileX(i);
+  const z = tileZ(i);
+  for (let dz = -1; dz <= 1; dz++)
+    for (let dx = -1; dx <= 1; dx++) if (w.inside(x + dx, z + dz) && under[(z + dz) * MAP_W + x + dx] === TILE.BRACED) return true;
+  return false;
+}
+
+/** Whether a newly dug tunnel tile brings down the roof: more than UNBRACED_RUN unsupported tiles joined to it. */
+export function cavesIn(w: World, i: number): boolean {
+  const under = w.layers[LAYER.UNDER].kind;
+  const seen = new Set<number>([i]);
+  const queue = [i];
+  while (queue.length) {
+    const t = queue.pop()!;
+    if (supported(w, t)) continue;
+    if (seen.size > UNBRACED_RUN + 1) break;
+    for (const j of [t - 1, t + 1, t - MAP_W, t + MAP_W]) {
+      if (j < 0 || j >= MAP_W * MAP_H || seen.has(j) || !isTunnel(under[j]) || supported(w, j)) continue;
+      if (Math.abs(tileX(j) - tileX(t)) > 1) continue;
+      seen.add(j);
+      queue.push(j);
+    }
+  }
+  return !supported(w, i) && seen.size > UNBRACED_RUN;
+}
+
+/** Whether a grate tile of the vents is open, closed or covered (for the render and the rules). */
+export const grateAt = (w: World, i: number) => (isGrate(w.layers[LAYER.VENTS].kind[i]) ? w.layers[LAYER.VENTS].kind[i] : 0);
+
+/**
+ * The action button's choice between the structure and the furniture in reach: a grate
+ * overhead gives way to a piece of furniture the player faces (the toilet beside it). The
+ * sim and the button's label both decide through this, so they always agree.
+ */
+export function preferClimb(climb: ClimbTarget | null, facesFurniture: boolean): ClimbTarget | null {
+  return climb?.overhead && facesFurniture ? null : climb;
+}
+
+/** Whether the tile ahead of a body is part of a piece of furniture. */
+export function facesProp(b: Body, p: { x: number; z: number; w: number; d: number }): boolean {
+  const t = aheadOf(b);
+  return t >= 0 && tileX(t) >= p.x && tileX(t) < p.x + p.w && tileZ(t) >= p.z && tileZ(t) < p.z + p.d;
+}

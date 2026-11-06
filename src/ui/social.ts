@@ -1,0 +1,469 @@
+import { SWAP_PRICE } from '../content/phone';
+import { crewSection, SPEC_ICON, type CrewTalkView } from './crew';
+import { nightOf, specialityOf } from '../sim/systems/crew';
+import { itemDef, itemNumber } from '../content/items';
+import { BRIBE, OP, TALK } from '../sim/command';
+import { traitOf } from '../sim/systems/guards';
+import { lookAwayPrice, lookingAway, paperPrice } from '../sim/systems/ways';
+import { STAPLES } from '../content/long';
+import { saleOf, stapleSlot } from '../sim/systems/pantry';
+import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_STATE, giftOpinion, priceOf } from '../sim/systems/economy';
+import { HOTBAR, itemOf } from '../sim/systems/items';
+import type { Sim } from '../sim/Sim';
+import { nextTip } from '../sim/systems/recipes';
+import {
+  BRIBE_REPORT_HEAT,
+  LOOK_AWAY_STEPS,
+  MAX_FOLLOWERS,
+  OPINION_HIGH,
+  OPINION_LOW,
+  PAPER_HEAT,
+  STEPS_PER_MINUTE,
+  TIP_OPINION,
+} from '../sim/tuning';
+import { clockAt, formatTime } from '../sim/systems/clock';
+import { itemIcons } from '../render/itemIcons';
+import { currentLang, type Key, t } from '../i18n';
+import { confirmed, esc, h, type Send } from './dom';
+import { icon } from './icons';
+import { itemName } from './items';
+import { fixerOf, PHONE } from '../sim/systems/smuggling';
+import { librarianOf } from '../sim/systems/training';
+import { librarianLine } from './reading';
+import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
+import { gamesSection, type GamesView } from './games';
+import { twist } from '../sim/systems/twists';
+import { favorText, guardTitle, inmateName } from './names';
+
+/**
+ * What odd jobs bring to a talk (P40, play/oddjobs.ts): the job held handed in to him (its words,
+ * the pay, why not yet), the fixer's own job (what, the pay, why not), a debt he owes the player
+ * ('' when it can be called in; null: he owes nothing).
+ */
+export interface OddJobTalkView {
+  handIn: { text: string; pay: string; why: string } | null;
+  offer: { text: string; pay: string; why: string } | null;
+  owed: string | null;
+  /** A delivery's parcel to hand over to this inmate (its hotbar slot), from the talk panel. */
+  give: { text: string; slot: number } | null;
+  key: string;
+}
+
+/** What an inmate thinks of the player, in three bands (GDD §10.3). */
+const moodOf = (opinion: number) => (opinion <= OPINION_LOW ? 'low' : opinion >= OPINION_HIGH ? 'high' : 'neutral');
+
+/**
+ * Talking to an inmate (GDD §10.3–10.4): what they think of the player, their favor (take it
+ * on, hand it in), their shop if they're a merchant (free time only, cheaper the more they
+ * like the player), gifts (an item from the hotbar, or cash) and recruiting. A side panel on
+ * wide screens, a bottom sheet on phones; everything is sent as OP.TALK and redrawn from the
+ * simulation, so it never disagrees with it.
+ */
+export class TalkPanel {
+  readonly el: HTMLElement;
+  private drawn = '';
+  private who = -1;
+  private opinion = -1;
+  /** What the inmate says on seeing the player (P13: chosen once a talk, by the speech bubbles' director). */
+  greeting = '';
+  /** Whether the player has heard a rumor (its fact key): a guard's ways show once gossip told them (P15). */
+  knows: (key: string) => boolean = () => false;
+  /** The games on offer with this inmate (P22), from the play layer. */
+  games: (sim: Sim) => GamesView | null = () => null;
+  /** The crew's orders for a follower (P23, play/crew.ts). */
+  crew: (sim: Sim, who: number) => CrewTalkView | null = () => null;
+  /** Odd jobs (P40, play/oddjobs.ts): the job handed in, the fixer's own, a debt. */
+  oddJob: (sim: Sim, who: number) => OddJobTalkView | null = () => null;
+  /** The dice chosen to throw again (bit per die), and the dice game they were chosen in. */
+  private diceMask = 0;
+  private diceGame = -1;
+
+  constructor(
+    private readonly send: Send,
+    private readonly click: () => void,
+  ) {
+    this.el = h('div', 'item-panel talk-panel hidden');
+    this.el.setAttribute('role', 'dialog');
+    this.el.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.addEventListener('click', (e) => {
+      // A die tapped (P22): chosen to throw again, or not.
+      const die = (e.target as HTMLElement).closest<HTMLElement>('[data-die]');
+      if (die) {
+        // (One die at most: choosing one lets go of the other; choosing it again, of it.)
+        this.click();
+        const bit = 1 << Number(die.dataset.die);
+        this.diceMask = this.diceMask & bit ? 0 : bit;
+        this.drawn = '';
+        return;
+      }
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
+      if (!b || (b as HTMLButtonElement).disabled) return;
+      this.click();
+      if (!confirmed(b)) return;
+      if (b.dataset.act === 'close') this.send(OP.CLOSE);
+      else this.send(OP.TALK, Number(b.dataset.act), Number(b.dataset.arg ?? 0));
+    });
+    document.body.append(this.el);
+  }
+
+  get open() {
+    return !this.el.classList.contains('hidden');
+  }
+
+  hide() {
+    this.el.classList.add('hidden');
+    this.drawn = '';
+    this.who = -1;
+  }
+
+  update(sim: Sim, busy: boolean) {
+    const s = sim.state;
+    const who = s.talk;
+    // (P22: an arm-wrestle has its own card meanwhile; P27: so do a hand of Cheat and the old-timer's board.)
+    if (who < 0 || busy || s.bout.length || s.cheat || s.board?.seated) {
+      if (this.open) this.hide();
+      return;
+    }
+    if (who >= s.inmates.length) {
+      this.updateGuard(sim, who);
+      return;
+    }
+    const m = s.inmates[who];
+    const merchant = sim.merchantOf(who);
+    const shop = merchant >= 0 ? s.shops[merchant] : null;
+    const favor = s.favors.find((f) => f.by === who);
+    const inv = s.items.inv.slice(0, HOTBAR);
+    // The fixer (P21): a burner phone, to a friend.
+    const fixer = fixerOf(sim) === who;
+    // (2.31: the librarian's advice, from what the shelves can tell the player now.)
+    const librarian = !sim.rules230 && librarianOf(sim) === who ? librarianLine(sim) : '';
+    const hasPhone = inv.some((v) => itemOf(v) === PHONE);
+    // The games (P22): the dice tapped belong to one game on the table.
+    const gv = this.games(sim);
+    const game = gv?.dice ? gv.id : -1;
+    if (game !== this.diceGame) {
+      this.diceGame = game;
+      this.diceMask = 0;
+    }
+    const now = performance.now();
+    const shown = gv?.show;
+    const gamesKey = gv
+      ? [
+          gv.id,
+          gv.open,
+          gv.why,
+          gv.left,
+          gv.seen,
+          gv.dice?.mine.join(',') ?? '',
+          shown ? (now < shown.shownAt ? 1 : 2) : 0,
+          shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '',
+          gv.arm,
+          gv.tired,
+          gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '',
+          this.diceMask,
+          gv.stakes.map((x) => x.ok).join(','),
+          gv.court,
+          gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : '',
+          gv.football ? `${gv.football.open}${gv.football.why}` : '',
+          gv.ink ? `${gv.ink.why}|${gv.ink.mineWhy}|${gv.ink.inked.join()}` : '',
+          gv.inkHeat,
+        ].join(':')
+      : '';
+    // The crew (P23): a follower's orders; everyone's line of work.
+    const cv = this.crew(sim, who);
+    const spec = specialityOf(sim.world, who, m.cell);
+    // (A brawl's countdown is written in place: the panel isn't rebuilt every second for it.)
+    const crewKey = cv ? JSON.stringify(cv).replace(/\d+:\d\d/g, '') : '';
+    const statusEl = cv ? this.el.querySelector('.crew-status') : null;
+    if (statusEl && statusEl.textContent !== cv!.status) statusEl.textContent = cv!.status;
+    // The pay phone's queue (P34): ahead of the player, his place is for sale.
+    const mine = s.line.indexOf(-1);
+    const his = s.line.indexOf(who);
+    const ahead = mine > 0 && his >= 0 && his < mine;
+    const oj = this.oddJob(sim, who);
+    const key = [
+      oj?.key ?? '',
+      crewKey,
+      gamesKey,
+      who,
+      m.opinion,
+      fixer,
+      librarian,
+      hasPhone,
+      ahead,
+      favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '',
+      shop?.join(',') ?? '',
+      sim.shopsOpen,
+      sim.fixerOpen,
+      s.cash,
+      inv.join(','),
+      s.followers.join(','),
+      s.jobs.join(','),
+      s.tipDay[who] ?? 0,
+      s.tips.length,
+      s.items.known.length,
+      s.items.int,
+      sim.clock.day,
+      currentLang(),
+      this.greeting,
+    ].join('|');
+    if (key === this.drawn) return;
+    this.drawn = key;
+    const first = this.who !== who;
+    const delta = first ? 0 : m.opinion - this.opinion;
+    this.who = who;
+    this.opinion = m.opinion;
+    const mood = moodOf(m.opinion);
+    const following = s.followers.includes(who);
+    const job = s.jobs.indexOf(who);
+    const chips = [
+      merchant >= 0 ? `<span class="chip shop">${icon('cart', 13)}${t('role.merchant')}</span>` : '',
+      fixer ? `<span class="chip fixer">${icon('phone', 13)}${t('role.fixer')}</span>` : '',
+      librarian ? `<span class="chip">${icon('book', 13)}${t('role.librarian')}</span>` : '',
+      job >= 0 ? `<span class="chip">${icon('briefcase', 13)}${esc(t(`job.${sim.prison.jobs[job].id}` as Key))}</span>` : '',
+      following ? `<span class="chip ally">${icon('star', 13)}${t('role.follower')}</span>` : '',
+      `<span class="chip spec" data-spec="${spec}">${icon(SPEC_ICON[spec], 13)}${t(`spec.${spec}`)}</span>`,
+    ].join('');
+    // The favor: what they ask, what it pays, what can be done about it now.
+    let favorHtml = '';
+    if (favor) {
+      const carrying = favor.item ? inv.some((v) => itemOf(v) === favor.item) : false;
+      const ready =
+        favor.state === FAVOR_STATE.DONE ||
+        ((favor.kind === FAVOR.SCAVENGE || favor.kind === FAVOR.RETRIEVE) && favor.state === FAVOR_STATE.TAKEN && carrying);
+      const status =
+        favor.state === FAVOR_STATE.OFFERED
+          ? `<button class="big-btn primary small" data-act="${TALK.ACCEPT}">${icon('check', 16)}<span>${t('talk.accept')}</span></button>`
+          : ready
+            ? `<button class="big-btn primary small" data-act="${TALK.HAND_IN}">${icon('coin', 16)}<span>${t('talk.handIn')}</span></button>`
+            : `<span class="talk-status">${t(favor.kind === FAVOR.SCAVENGE || favor.kind === FAVOR.RETRIEVE ? 'talk.bringIt' : 'talk.underWay')}</span>`;
+      favorHtml = `<section class="talk-favor" data-state="${favor.state}"><div class="box-label">${icon('chat', 14)}<span>${t('talk.favor')}</span></div>
+        <p class="talk-quote">${esc(favorText(sim, favor))}</p>
+        <div class="talk-row"><span class="talk-reward">${icon('coin', 14)}$${favor.reward}<em>${t('talk.opinionGain', { n: 15 })}</em></span>${status}</div></section>`;
+    }
+    // The shop: only during free time, never for someone who despises the player.
+    let shopHtml = '';
+    if (shop) {
+      const off = Math.round(discountOf(m.opinion) * 100);
+      const closed = !sim.shopsOpen;
+      const grudge = m.opinion <= OPINION_LOW;
+      const items = shop
+        .map((v, k) => {
+          if (!v) return '';
+          const n = itemOf(v);
+          const d = itemDef(n);
+          const price = priceOf(d.value, m.opinion);
+          const afford = s.cash >= price;
+          return `<button class="shop-item${afford ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}<span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
+        })
+        .join('');
+      // (P28: the staples, always in stock: sugar and seed packets.)
+      const staples = STAPLES.map((id, k) => {
+        const n = itemNumber(id);
+        const d = itemDef(n);
+        const price = priceOf(d.value, m.opinion);
+        return `<button class="shop-item staple${s.cash >= price ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${stapleSlot(k)}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
+      }).join('');
+      // (P28: what the merchant buys from the hotbar: ripe pruno, vegetables.)
+      const sales = inv
+        .map((v, k) => {
+          const n = itemOf(v);
+          const price = v ? saleOf(n) : 0;
+          return price
+            ? `<button class="shop-item sell" data-act="${TALK.SELL}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.sell', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(t('talk.sellItem', { item: itemName(n) }))}</span><b>+$${price}</b></button>`
+            : '';
+        })
+        .join('');
+      // (Its own stock sold out, the staples still on offer: no "sold out" over them.)
+      const note = grudge ? t('talk.shopGrudge') : closed ? t(twist(s, 'closedShop') ? 'talk.shopShut' : 'talk.shopClosed') : '';
+      shopHtml = `<section class="talk-shop"><div class="box-label">${icon('cart', 14)}<span>${t('talk.shop')}</span>${off > 0 && !grudge ? `<em class="discount">${t('talk.discount', { n: off })}</em>` : ''}</div>
+        ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}<div class="shop-list staples">${staples}</div>${sales ? `<div class="box-label sales-label"><span>${t('talk.theyBuy')}</span></div><div class="shop-list sales">${sales}</div>` : ''}</section>`;
+    }
+    // The fixer's burner phone (P21): in the merchants' hours, to a friend, one at a time.
+    let phoneHtml = '';
+    if (fixer) {
+      const closed = !sim.fixerOpen;
+      const friend = m.opinion >= PHONE_OPINION;
+      const ok = !closed && friend && !hasPhone;
+      const note = hasPhone
+        ? t('phone.haveOne')
+        : closed
+          ? t('phone.closed')
+          : !friend
+            ? t('phone.needOpinion', { n: PHONE_OPINION })
+            : s.cash < PHONE_PRICE
+              ? t('phone.needCash', { n: PHONE_PRICE })
+              : t('phone.offer');
+      phoneHtml = `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.fixerTitle')}</span></div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('item.burner_phone')}</b><small>${esc(note)}</small></span><button class="big-btn ${ok && s.cash >= PHONE_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.PHONE}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirmBuy', { n: PHONE_PRICE }))}" aria-label="${esc(t('talk.buy', { item: t('item.burner_phone'), price: PHONE_PRICE }))}"><img class="btn-item" src="${itemIcons()[PHONE]}" alt="" draggable="false"><span>$${PHONE_PRICE}</span></button></div></section>`;
+    }
+    // Odd jobs (P40): the job handed in to the one who asked, the fixer's own, a debt called in.
+    let ojHtml = '';
+    if (oj) {
+      const rows: string[] = [];
+      if (oj.give)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.giveParcel')}</b><small>${esc(oj.give.text)}</small></span><button class="big-btn primary small" data-act="${TALK.GIFT}" data-arg="${oj.give.slot}">${icon('gift', 16)}<span>${t('oddjob.give')}</span></button></div>`,
+        );
+      if (oj.handIn)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.handIn.text)}</b><small>${esc(oj.handIn.why || oj.handIn.pay)}</small></span><button class="big-btn ${oj.handIn.why ? 'ghost' : 'primary'} small" data-act="${TALK.JOB_IN}" ${oj.handIn.why ? 'disabled' : ''}>${icon('coin', 16)}<span>${t('oddjob.handIn')}</span></button></div>`,
+        );
+      if (oj.offer)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.offer.text)}</b><small>${esc(oj.offer.why || oj.offer.pay)}</small></span><button class="big-btn ${oj.offer.why ? 'ghost' : 'primary'} small" data-act="${TALK.ODD_JOB}" aria-label="${esc(`${t('oddjob.take')}: ${oj.offer.text}`)}" ${oj.offer.why ? 'disabled' : ''}>${icon('check', 16)}<span>${t('oddjob.take')}</span></button></div>`,
+        );
+      if (oj.owed !== null)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.owes')}</b><small>${esc(oj.owed || t('oddjob.owesNote'))}</small></span><button class="big-btn primary small" data-act="${TALK.CALL_IN}" data-confirm="${esc(t('oddjob.callInSure'))}">${icon('wrench', 16)}<span>${t('oddjob.callIn')}</span></button></div>`,
+        );
+      ojHtml = `<section class="talk-phone talk-oddjob"><div class="box-label">${icon('pin', 14)}<span>${t(oj.offer ? 'oddjob.fixerTitle' : 'oddjob.talkTitle')}</span></div>${rows.join('')}</section>`;
+    }
+    // The pay phone's queue (P34): the place of an inmate ahead, bought.
+    const swapHtml = ahead
+      ? `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.title')}</span></div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('talk.swap')}</b><small>${esc(t('talk.swapNote', { n: his + 1 }))}</small></span><button class="big-btn ${s.cash >= SWAP_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.SWAP}" ${s.cash >= SWAP_PRICE ? '' : 'disabled'} aria-label="${esc(t('talk.swapAria', { n: SWAP_PRICE }))}"><span>$${SWAP_PRICE}</span></button></div></section>`
+      : '';
+    // The games (P22): dice and an arm-wrestle.
+    const gamesHtml = gv ? gamesSection(gv, this.diceMask, now) : '';
+    // Gifts: anything worth something from the hotbar, or a little cash.
+    const gifts = inv
+      .map((v, k) => {
+        if (!v) return '';
+        const n = itemOf(v);
+        const value = itemDef(n).value;
+        if (value <= 0) return '';
+        // (A delivery's parcel: handed over from its own row above, not as a gift.)
+        if (oj?.give && oj.give.slot === k) return '';
+        return `<button class="slot gift" data-act="${TALK.GIFT}" data-arg="${k}" data-confirm="${esc(t('talk.confirmGive'))}" aria-label="${esc(t('talk.giveItem', { item: itemName(n) }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><i class="gift-gain">+${giftOpinion(value)}</i></button>`;
+      })
+      .join('');
+    const cashBtns = CASH_GIFTS.map(
+      (d) =>
+        `<button class="cash-btn" data-act="${TALK.GIFT_CASH}" data-arg="${d}" ${s.cash < d ? 'disabled' : ''}>$${d}<i>+${cashOpinion(d)}</i></button>`,
+    ).join('');
+    const giftHtml = `<section class="talk-gift"><div class="box-label">${icon('gift', 14)}<span>${t('talk.gifts')}</span><em>${t('talk.giftsNote')}</em></div>
+      ${gifts ? `<div class="slot-grid gift-grid">${gifts}</div>` : ''}<div class="cash-row">${cashBtns}</div></section>`;
+    // A recipe tip (P8+): from those who like the player enough, once a day each.
+    const tipped = (s.tipDay[who] ?? 0) === sim.clock.day;
+    const none = nextTip(sim) < 0;
+    const tipOk = m.opinion >= TIP_OPINION && !tipped && !none;
+    const tipHtml = `<button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${none ? t('talk.tipNone') : tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span>`;
+    // Recruiting (GDD §10.3): from 80 opinion, two at most.
+    let foot: string;
+    if (following)
+      foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t(nightOf(s, who) ? 'talk.followingNight' : 'talk.followingNote')}</span>`;
+    else {
+      const full = s.followers.length >= MAX_FOLLOWERS;
+      // (P26: a Lone Wolf Daily, nobody signs up.)
+      const lone = twist(s, 'loneWolf');
+      // (P40: one who owes the player from an odd job signs up whatever he thinks of them.)
+      const owed = oj?.owed !== null && oj?.owed !== undefined && m.opinion < OPINION_HIGH;
+      const ok = (m.opinion >= OPINION_HIGH || owed) && !full && !lone;
+      foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${lone ? t('refused.loneWolf') : ok ? t(owed ? 'oddjob.recruitOwed' : 'talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
+    }
+    // (A redraw keeps the keyboard's place: the die or button that had the focus has it again.)
+    const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
+    const again =
+      had?.dataset.die !== undefined
+        ? `[data-die="${had.dataset.die}"]`
+        : had?.dataset.stand
+          ? '[data-stand]'
+          : had?.dataset.act
+            ? `[data-act="${had.dataset.act}"]${had.dataset.arg !== undefined ? `[data-arg="${had.dataset.arg}"]` : ''}`
+            : '';
+    // (And a bet asking twice stays asking across a redraw: a guard glancing over doesn't disarm it.)
+    const armed = this.el.querySelector<HTMLElement>('.armed[data-act]');
+    const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
+    this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
+      ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+    if (rearm) {
+      const b = this.el.querySelector<HTMLElement>(rearm);
+      if (b && !(b as HTMLButtonElement).disabled) confirmed(b);
+    }
+    // (The button gone, the games' first live control takes the focus: a die, a stake, else the panel's close.)
+    // (P23: an order given greys its own button: the focus goes on to the crew's next live one.)
+    if (again)
+      (
+        this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ??
+        (had?.closest('.talk-crew') ? this.el.querySelector<HTMLElement>('.talk-crew button:not([disabled])') : null) ??
+        (had?.closest('.talk-games')
+          ? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])')
+          : null) ??
+        this.el.querySelector<HTMLElement>('[data-act="close"]')
+      )?.focus();
+    if (first) {
+      this.el.classList.remove('hidden');
+      this.el.setAttribute('aria-label', inmateName(sim, who));
+    }
+  }
+
+  /**
+   * Talking to a guard (P15): who it is, its key, its ways once a rumor told them, what it says,
+   * and the two bribes. Any guard can be offered one (only a corrupt one takes it, a strict one
+   * reports it: that's the gamble), each asking twice before the money changes hands.
+   */
+  private updateGuard(sim: Sim, who: number) {
+    const s = sim.state;
+    const k = who - s.inmates.length;
+    const g = s.guards[k];
+    const def = sim.prison.guards[k];
+    // (P26: a Straight-Laced Daily, the crooked and the idle are by the book today.)
+    const known = this.knows(`trait:${k}`) ? traitOf(def) : null;
+    const trait = known && (known === 'corrupt' || known === 'lazy') && twist(s, 'straightLaced') ? 'steady' : known;
+    const look = lookAwayPrice(sim.prison.difficulty);
+    const paper = paperPrice(sim.prison.difficulty);
+    // Looking away until when (the clock's time: it reads like the HUD's, and only changes with a new bribe).
+    const until = lookingAway(g, s.step) ? formatTime(clockAt(g.bribed)) : '';
+    const paperDone = g.paperDay === sim.today;
+    // Its key on its belt, unless it was taken from it out cold (the pockets are the last containers).
+    const pocket = s.items.containers[s.items.containers.length - s.guards.length + k];
+    const keyItem = itemNumber(`key_${def.key}`);
+    const hasKey = !!pocket && pocket.some((v) => itemOf(v) === keyItem);
+    const key = ['g', who, s.cash, s.heat > 0, until, paperDone, trait, hasKey, currentLang(), this.greeting].join('|');
+    if (key === this.drawn) return;
+    this.drawn = key;
+    const first = this.who !== who;
+    this.who = who;
+    const name = guardTitle(sim, k);
+    const keyName = t(`keyColor.${def.key}` as Key);
+    const chip = trait
+      ? `<span class="chip trait" data-trait="${trait}">${icon(TRAIT_ICON[trait], 13)}${t(`trait.${trait}` as Key)}</span>`
+      : `<span class="chip trait unknown">${icon('ear', 13)}${t('trait.unknown')}</span>`;
+    // Known not to take money, or short of it: the offer stays possible (a gamble; the guard
+    // answers, a strict one reports it), drawn as a long shot.
+    const pay = (kind: number, price: number) =>
+      `<button class="big-btn ${(trait && trait !== 'corrupt') || s.cash < price ? 'ghost' : 'primary'} small" data-act="${TALK.BRIBE}" data-arg="${kind}" data-confirm="${esc(t('bribe.confirm', { n: price }))}" aria-label="${esc(t('bribe.payFor', { what: t(kind === BRIBE.LOOK ? 'bribe.look' : 'bribe.paper'), n: price }))}">${icon('coin', 16)}<span>$${price}</span></button>`;
+    // Under the offers: the risk while its ways are unknown, else what to expect of this one.
+    const note = !trait
+      ? t('bribe.risk', { n: BRIBE_REPORT_HEAT })
+      : trait === 'strict'
+        ? t('bribe.strictNote', { n: BRIBE_REPORT_HEAT })
+        : trait !== 'corrupt'
+          ? t('bribe.honestNote')
+          : '';
+    const hours = LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60;
+    const lookEnd = until
+      ? `<span class="talk-status bribe-on">${icon('eyeOff', 14)}<span>${t('bribe.lookingAway', { time: until })}</span></span>`
+      : pay(BRIBE.LOOK, look);
+    const paperEnd = paperDone
+      ? `<span class="talk-status">${t('bribe.paperDone')}</span>`
+      : s.heat > 0
+        ? pay(BRIBE.PAPER, paper)
+        : `<span class="talk-status">${t('bribe.noHeat')}</span>`;
+    this.el.innerHTML = `<div class="panel-head"><span class="talk-face guard"${hasKey ? ` data-key="${def.key}"` : ''}>${icon('shield', 20)}</span><span class="talk-who"><b>${esc(name)}</b><small>${esc(t(hasKey ? 'talk.guardKey' : 'talk.guardKeyGone', { key: keyName }))}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
+      ${this.greeting ? `<p class="talk-greet guard">${esc(this.greeting)}</p>` : ''}<div class="talk-chips">${chip}</div>
+      <section class="talk-bribe"><div class="box-label">${icon('coin', 14)}<span>${t('bribe.title')}</span><em>${t('bribe.note')}</em></div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('bribe.look')}</b><small>${t('bribe.lookNote', { n: hours })}</small></span>${lookEnd}</div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('bribe.paper')}</b><small>${t('bribe.paperNote', { n: PAPER_HEAT })}</small></span>${paperEnd}</div>
+        ${note ? `<p class="talk-note bribe-risk">${icon(trait === 'strict' ? 'siren' : 'eye', 13)}<span>${note}</span></p>` : ''}</section>`;
+    if (first) {
+      this.el.classList.remove('hidden');
+      this.el.setAttribute('aria-label', name);
+    }
+  }
+}
+
+/** The icon of each of a guard's ways. */
+const TRAIT_ICON: Record<string, string> = { steady: 'check', lazy: 'moon', strict: 'siren', corrupt: 'coin' };
