@@ -166,3 +166,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Reading made playable (v2.34.0)
 - Street lamps that lean over what they light (v2.34.1)
 - Lint, types and one layout for the code (v2.34.2, not released yet)
+- The action button decided once (v2.34.2, not released yet)

@@ -69,7 +69,7 @@ import {
   ACTION_IDS,
   boxTitle,
   describeAttack,
-  describePlan,
+  actionWords,
   describeTool,
   describeToss,
   describeTreat,
@@ -205,13 +205,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   v.boxTheirs = !!box && !sim.rules222 && sim.world.cellOf[box.prop.z * MAP_W + box.prop.x] > 1;
   v.carried = st.carried;
   v.tips = st.tips;
-  // The action button: the words for what a press does (the sim's plan), unless the screen is taken: a
-  // panel or a talk open, a set or a game going (seated, only those that cover the chair). In solitary
-  // and stowed away the button stays (a potato, climbing out); asleep, knocked out or over, it goes.
-  const covered =
-    st.seat >= 0
-      ? (st.train >= 0 && !sim.rules230) || it.open >= 0 || st.talk >= 0
-      : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length > 0 || socialOpen();
+  // The action button: the vending machine's and the menu board's own panels, else the words for what a
+  // press does (labels.ts), unless something has the screen; knocked out or over, nothing.
   v.action =
     st.ko > 0 || g.over
       ? null
@@ -219,11 +214,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
         ? vendAction(sim)
         : st.menuOpen
           ? menuAction()
-          : st.solitary > 0 || st.stowed
-            ? describePlan(sim, memo.plan, held)
-            : busy || covered
-              ? null
-              : describePlan(sim, memo.plan, held);
+          : actionWords(sim, memo.plan, held, busy, socialOpen());
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -448,7 +439,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it (not over the warden's morning card: after it).
-  if (reachesSomething(memo.plan) && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk'))
+  if (!busy && reachesSomething(memo.plan) && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk'))
     hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   hudFrame(g, a, tile, busy);
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.

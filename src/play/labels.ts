@@ -205,6 +205,28 @@ function say(key: string, verb: Key, what: () => string): ActionWords {
 }
 const none = () => '';
 
+/** A new game: no words kept from the last one (the same key can name another place, person or vehicle). */
+export function forgetWords() {
+  actionKey = '';
+}
+
+/**
+ * The action button's words, or none while something has the screen: a panel or a talk open, a set or
+ * a game going (seated, only those that cover the chair; `panel`: one of the play layer's own, the
+ * talk, the job board, a profile), or the player busy (asleep, out cold, paused, over), except in
+ * solitary and stowed away, where the button stays (a potato, climbing out).
+ */
+export function actionWords(sim: Sim, plan: Plan | null, held: number, busy: boolean, panel: boolean): ActionWords | null {
+  const st = sim.state;
+  const it = st.items;
+  if (st.solitary > 0 || st.stowed) return describePlan(sim, plan, held);
+  const covered =
+    st.seat >= 0
+      ? (st.train >= 0 && !sim.rules230) || it.open >= 0 || st.talk >= 0
+      : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length > 0 || panel;
+  return busy || covered ? null : describePlan(sim, plan, held);
+}
+
 /** The words for what a press does now (interact.ts's plan): it says what the sim will do, never decides it. */
 export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionWords | null {
   if (!plan) return null;
@@ -351,7 +373,7 @@ function fixtureWords(sim: Sim, target: Extract<Target, { kind: 'fixture' }>, la
   });
 }
 
-/** The delivery's vehicle by name ("the van"). */
+/** Delivery day (P18): the vehicle that comes ("Supply truck"), as said in a sentence ("the supply truck"). */
 const vehicleOf = (sim: Sim) => sim.prison.delivery?.vehicle ?? 'truck';
 export const vehicleName = (sim: Sim) => t(`vehicle.${vehicleOf(sim)}` as Key);
 export const vehicleThe = (sim: Sim) => t(`vehicle.the.${vehicleOf(sim)}` as Key);

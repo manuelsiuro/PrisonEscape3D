@@ -43,6 +43,7 @@ import { chatterStart, chatterStop, director } from './chatter';
 import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
 import { resetButtons } from './reach';
+import { forgetWords } from './labels';
 import {
   banner,
   board,
@@ -178,6 +179,7 @@ export function startGame(
   tools.show(true);
   combatUI.show(true);
   resetButtons();
+  forgetWords();
   clearPlayTimers();
   resetRat();
   resetSmuggle();

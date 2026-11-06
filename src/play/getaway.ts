@@ -9,8 +9,8 @@ import { play } from './game';
 import { glideSecs } from '../render/Getaway';
 
 /**
- * Bluff & glider on screen (P24): what the action button says at the checkpoint's window, the
- * chip while its gates stand open, and the toasts and sounds of being waved through and of a glide.
+ * Bluff & glider on screen (P24): the chip while the checkpoint's gates stand open, and the toasts and
+ * sounds of being waved through and of a glide (the action button's words at its window: labels.ts).
  */
 
 /** Seconds the checkpoint's gates stay open for the player (`a`: the frame's way into the next step), null while they're shut. */

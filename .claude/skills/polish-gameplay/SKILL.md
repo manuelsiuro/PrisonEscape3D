@@ -44,10 +44,11 @@ line is something that was missed or broke at some point.
   (and, latent since 2.32, the vending machine) refuse holes old logs had dug.
 
 **What the player meets**
-- The action button: `labels.ts` must say exactly what `actions.ts` does, in the same order of priority.
-  The highlight (`focusOf`) must agree with both. `buttons.ts` can replace the target before the label sees it: an
-  offer put ahead of it (a machine, a board faced) must still give way to whatever `actions.ts` checks first, even
-  behind the player (a meal's tray at the counter at their back took the press while the button said "Read").
+- The action button: what a press does is decided once, by `interactPlan` (`sim/systems/interact.ts`, since
+  2.34.2), the one order of priority. A new action is a kind of `Plan` there, done in `actions.ts`'s `doPlan`, worded
+  in `labels.ts`'s `describePlan`, marked in `play/focus.ts`, and given its effect and verb in `buttontest`'s tables.
+  Never decide it again in the play layer (before, four copies drifted: a meal's tray at the counter at the
+  player's back took the press while the button said "Read").
 - Keyboard and touch; the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
 - Who gets in the way: a crowd changes what the button targets and who stands where.
 - A warning promises time: measure the whole job from nothing, from where people really are, against it. 30 s looked generous for a job a bot does in 18 s, and a third of the jobs couldn't finish.

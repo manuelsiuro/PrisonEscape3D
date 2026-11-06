@@ -123,8 +123,8 @@ export function updateTargets(sim: Sim, busy: boolean, panel: boolean, held: num
     memo.busy = busy;
     memo.panel = panel;
     memo.rev = it.rev;
-    // The action button: what a press does, as the sim decides it (interact.ts); while busy only the label
-    // reads it (a potato in solitary, climbing out of the vehicle). (P29: in a match, the players running
+    // The action button: what a press does, as the sim decides it (interact.ts); while busy, only the label
+    // shows it, and only in solitary and stowed away (a potato, climbing out; labels.ts's actionWords). (P29: in a match, the players running
     // by aren't offered for a talk: the action button never pops up under the thumb for them.)
     const plan = interactPlan(sim);
     memo.plan = plan?.do === 'talk' && st.match?.team.includes(plan.target.who) ? null : plan;

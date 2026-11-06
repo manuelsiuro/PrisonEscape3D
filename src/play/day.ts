@@ -86,7 +86,7 @@ export const EVENT_COLOR: Record<DayEvent, string> = {
 export const eventIcon = (sim: Sim, e: DayEvent) =>
   e === 'delivery' && sim.prison.delivery?.vehicle === 'helicopter' ? 'heli' : EVENT_ICON[e];
 
-/** Delivery day (P18): the vehicle that comes ("Supply truck"), as said in a sentence ("the supply truck"), and who supervises it. */
+/** Delivery day (P18): who supervises the vehicle (its name: labels.ts's vehicleName, vehicleThe). */
 const supervisorOf = (sim: Sim) => {
   const name = sim.prison.guards[sim.prison.delivery?.supervisor ?? -1]?.name;
   return name ? t('guard.the', { name }) : t('guard.nameless');
