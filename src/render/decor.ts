@@ -234,7 +234,8 @@ const BUILDERS: Record<DecorKind, Builder> = {
     }
     return { parts };
   },
-  flagpole: () => ({ parts: [cyl(0.2, 0.15, 0x9aa1a9, 0, 0, 0, 10), cyl(0.04, 3.4, STEEL, 0, 0.15, 0, 8), box(0.02, 0.48, 0.8, 0x2b5fb8, 0, 2.95, 0.42), box(0.025, 0.12, 0.8, WHITE, 0, 3.1, 0.42)] }),
+  flagpole: () => ({ parts: [cyl(0.2, 0.15, 0x9aa1a9, 0, 0, 0, 10), cyl(0.04, 3.4, STEEL, 0, 0.15, 0, 8), // The flag flies west, across the camera's view: flown toward the camera it was only an edge.
+    box(0.8, 0.48, 0.02, 0x2b5fb8, -0.42, 2.95, 0), box(0.8, 0.12, 0.025, WHITE, -0.42, 3.1, 0)] }),
   tree: () => ({ parts: [cyl(0.14, 1.2, 0x6e4a2b, 0, 0, 0, 8)], canopy: CANOPY.map((c, k) => cyl(c.r, c.y1 - c.y0, [LEAF, GREEN, 0x5d9e46][k], c.x, c.y0, c.z, k === 2 ? 8 : 9)) }),
   bush: () => ({ parts: [cyl(0.42, 0.42, LEAF, 0, 0, 0, 8), cyl(0.3, 0.3, GREEN, 0.12, 0.32, 0.06, 7)] }),
   cactus: () => ({
