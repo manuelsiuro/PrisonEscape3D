@@ -583,7 +583,7 @@ export function announce(e: SimEvent, sim: Sim) {
         sound.click();
         play.game?.pilot.stop();
         if (sim.rules230 || e.use !== 'study') coachOnce('trainBeat', TOUCH ? 'hint.trainBeatTouch' : 'hint.trainBeatKeys');
-        else coachOnce('readKeys', TOUCH ? 'hint.readTouch' : 'hint.readKeys');
+        else coachOnce('readWait', TOUCH ? 'hint.readTouch' : 'hint.readKeys');
       }
       break;
     case 'count':

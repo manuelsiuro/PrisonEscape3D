@@ -1,8 +1,9 @@
 /**
  * The library (2.31): reading as its own game, the day's limit, subjects and what's next, readers, chairs and the
- * librarian, in all five prisons, walked by real commands. Old logs play as they did.
+ * librarian, in all five prisons, walked by real commands. 2.34: the marker at half the speed, waiting at each key
+ * word; slow readers measured. Old logs play as they did.
  */
-import { keyAt, keyFrom, pageTokens, READ_GAPS, READ_KEYS, READ_PAGE_STEPS, READ_TAIL, SUBJECTS, subjectOf } from '../src/content/books';
+import { keyAt, keyFrom, pageTokens, READ_GAPS, READ_KEYS, READ_PACE, READ_PAGE_STEPS, READ_TAIL, SUBJECTS, subjectOf } from '../src/content/books';
 import { zoneIndex } from '../src/content/zones';
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
@@ -19,9 +20,10 @@ import { interactTarget } from '../src/sim/systems/items';
 import { nextTip, nextUnlock, suggestSubject, toLearn, usableHere } from '../src/sim/systems/recipes';
 import { freeReadSeat, headFull, librarianOf, readSeated } from '../src/sim/systems/training';
 import { canDigFloor } from '../src/sim/systems/structure';
-import { ATTR_MAX, READ_FILL_EVERY, READ_HIT, READ_SETS_A_DAY, READ_WINDOW, STEPS_PER_SECOND, UNIT } from '../src/sim/tuning';
+import { ATTR_MAX, READ_FILL_EVERY, READ_HIT, READ_LEAD, READ_SETS_A_DAY, READ_WAIT, READ_WINDOW, STEPS_PER_SECOND, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
+import { loadSave, saveFileOf, type SaveFile } from '../src/game/saves';
 import { Bot } from './bots';
 
 let failures = 0;
@@ -44,6 +46,9 @@ const minute = (sim: Sim) => clockAt(sim.state.step).minuteOfDay;
   for (const gaps of READ_GAPS) check(gaps.length === READ_KEYS && gaps.reduce((a, b) => a + b, 0) === READ_PAGE_STEPS, 'a page: its key words and its length');
   check(keyAt(0) === READ_GAPS[0][0] - READ_TAIL && keyAt(READ_KEYS) === READ_PAGE_STEPS + READ_GAPS[1][0] - READ_TAIL, 'key words count on from page to page');
   for (let k = 0; k < 40; k++) check(keyFrom(keyAt(k)) === k && keyFrom(keyAt(k) + READ_WINDOW, READ_WINDOW) === k && keyAt(k + 1) > keyAt(k), `key word ${k} found again`);
+  for (let k = 0; k < 40; k++) check(keyAt(k, READ_PACE) === keyAt(k) * READ_PACE && keyFrom(keyAt(k, READ_PACE), 0, READ_PACE) === k && keyFrom(keyAt(k, READ_PACE) - 1, 0, READ_PACE) === k, `2.34: key word ${k} at half the speed`);
+  // 2.34: lit from READ_LEAD before: never two lit at once, nor lit while the last is still waited on.
+  for (const gaps of READ_GAPS) check(Math.min(...gaps) * READ_PACE > READ_LEAD + 1, 'key words far enough apart at the new pace');
   // The keys' gaps never fit in a window: the marker can't be near two at once.
   for (const gaps of READ_GAPS) check(Math.min(...gaps) > 2 * READ_WINDOW + 1, 'key words far enough apart to tell one from the next');
   // Every page in both languages: as many key words as the rule has.
@@ -149,23 +154,60 @@ const reader = (seed = 3) => {
   bot.open(shelfOf(bot));
   return bot;
 };
+// A reader who presses `react` steps after each key word lights up (READ_LEAD before the marker gets there): the steps a set takes, and the words missed.
+const human = (react: number, old = false) => {
+  const b = reader();
+  if (old) b.sim.rules233 = true;
+  b.read(0);
+  const pace = old ? 1 : READ_PACE;
+  const was = b.st.items.int;
+  const t0 = b.st.step;
+  let lit = -1;
+  let litAt = 0;
+  let missed = 0;
+  while (b.st.items.int === was && b.st.step - t0 < 2000) {
+    // (What the page shows next step: the first key word not underlined, lit.)
+    const pos = b.st.step + 1 - b.st.readFrom;
+    const k = keyFrom(pos, 0, pace);
+    const on = k >= b.st.repBeat && keyAt(k, pace) - pos <= (old ? READ_WINDOW : READ_LEAD) ? k : -1;
+    if (on !== lit) {
+      lit = on;
+      litAt = b.st.step;
+    }
+    const press = lit >= 0 && b.st.step - litAt === react;
+    const beat = b.st.repBeat;
+    b.step(press ? command(0, OP.TRAIN, 1) : 0);
+    if (!press && b.st.repBeat > beat) missed++;
+  }
+  return { steps: b.st.step - t0, missed };
+};
 {
-  // Hands off: the bar fills by itself, and slowly.
+  // Hands off: the bar fills by itself, and slowly; the marker waits at each key word, then goes on.
   const idle = reader();
   idle.read(0);
   const was = idle.st.items.int;
   const start = idle.st.step;
-  idle.until(() => idle.st.items.int !== was, 2000);
+  let waited = 0;
+  idle.until(() => {
+    waited = Math.max(waited, idle.st.readWait);
+    return idle.st.items.int !== was;
+  }, 2000);
   const alone = idle.st.step - start;
   check(alone >= 95 * READ_FILL_EVERY && alone <= 105 * READ_FILL_EVERY, `untouched, a set still finishes, slowly (${alone} steps)`);
-  // Kept up with: about as long as the old set on the beat (4.8 s).
+  check(waited === READ_WAIT && idle.st.repBeat >= 2, `untouched, the marker waits ${READ_WAIT} steps at a key word, then goes on (${waited}, ${idle.st.repBeat} passed)`);
+  // Kept up with: on each key word as the marker reaches it.
   const kept = reader();
   kept.read(0);
   const k0 = kept.st.step;
   kept.set();
   const fast = kept.st.step - k0;
-  check(fast >= 60 && fast <= 130, `kept up with, about 5 s a set (${fast} steps)`);
+  check(fast >= 120 && fast <= 220, `kept up with, about 8 s a set (${fast} steps)`);
   console.log(`a set: ${(alone / STEPS_PER_SECOND).toFixed(1)} s untouched, ${(fast / STEPS_PER_SECOND).toFixed(1)} s kept up with, a hit worth ${READ_HIT}%`);
+  // Slow readers: a press 0.5, 1, 2 s after each word lights all count; 4 s is too late, and a set is no slower than untouched.
+  const by = [10, 20, 40, 80].map((r) => ({ r, ...human(r) }));
+  console.log(`pressing after a word lights: ${by.map((h) => `${h.r / STEPS_PER_SECOND} s → ${(h.steps / STEPS_PER_SECOND).toFixed(1)} s a set, ${h.missed} missed`).join('; ')}`);
+  for (const h of by.slice(0, 3)) check(h.missed === 0 && h.steps < alone * 0.8, `a press ${h.r / STEPS_PER_SECOND} s after a word lights counts (${h.missed} missed, ${h.steps} steps)`);
+  check(by[3].missed > 0 && by[3].steps <= alone, `4 s after is too late, and no slower than untouched (${by[3].missed} missed, ${by[3].steps} steps)`);
   // Tapping away gains nothing.
   const mash = reader();
   mash.read(0);
@@ -177,23 +219,61 @@ const reader = (seed = 3) => {
     if (mash.sim.events.some((e) => e.type === 'rep' && e.hit)) hits++;
   }
   check(hits <= 1 && mash.st.step - m0 >= alone * 0.85, `tapping every step gains nothing (${hits} hits, ${mash.st.step - m0} steps against ${alone})`);
-  // A press every half second, whatever's on the page: no better than a slow reader.
-  const lazy = reader();
-  lazy.read(0);
-  const l0 = lazy.st.step;
-  const lw = lazy.st.items.int;
-  while (lazy.st.items.int === lw && lazy.st.step - l0 < 2000) lazy.step((lazy.st.step - l0) % 10 === 0 ? command(0, OP.TRAIN, 1) : 0);
-  console.log(`a press every 0.5 s, not looking: ${((lazy.st.step - l0) / STEPS_PER_SECOND).toFixed(1)} s a set`);
-  check(lazy.st.step - l0 > fast * 1.5, 'pressing blind is slower than reading');
-  // Late or early by the window counts, a step further doesn't.
+  // Pressing blind at a steady rhythm, from 0.5 s to 6 s: never quicker than reading. (A rhythm of 2.5 to 4 s, started
+  // at the right moment, lands in every lit word, as the marker waits there for the press: a reader's pace, and as
+  // quick as one at best. A known limit of a marker that waits.)
+  const blind: string[] = [];
+  let quickest = Infinity;
+  for (let every = 10; every <= 120; every += 10) {
+    // (Its best of four starts: the first press at once, or a quarter, half, three quarters of the way into the rhythm.)
+    let best = Infinity;
+    for (let phase = 0; phase < 4; phase++) {
+      const lazy = reader();
+      lazy.read(0);
+      const l0 = lazy.st.step - Math.floor((every * phase) / 4);
+      const lw = lazy.st.items.int;
+      while (lazy.st.items.int === lw && lazy.st.step - l0 < 2000) lazy.step((lazy.st.step - l0) % every === 0 ? command(0, OP.TRAIN, 1) : 0);
+      best = Math.min(best, lazy.st.step - l0 - Math.floor((every * phase) / 4));
+    }
+    quickest = Math.min(quickest, best);
+    blind.push(`${every / STEPS_PER_SECOND} s ${(best / STEPS_PER_SECOND).toFixed(1)}`);
+  }
+  console.log(`pressing blind every … (the best start): ${blind.join(', ')} s a set`);
+  check(quickest >= fast, `no blind rhythm quicker than reading (${quickest} steps against ${fast})`);
+  // From the moment it lights to the end of the wait counts, a step before doesn't, nor once the marker's gone on.
+  const arrive = (b: Bot) => b.st.readFrom + keyAt(0, READ_PACE);
+  for (const [off, should] of [[-READ_LEAD, true], [0, true], [READ_WAIT, true], [-READ_LEAD - 1, false]] as const) {
+    const b = reader();
+    b.read(0);
+    const target = arrive(b) + off;
+    while (b.st.step + 1 < target) b.step(0);
+    b.step(command(0, OP.TRAIN, 1));
+    const e = b.sim.events.find((x) => x.type === 'rep');
+    check(!!e && e.type === 'rep' && !!e.hit === should && e.key === 0, `a press ${off} steps from the marker reaching a key word: ${should ? 'counts' : 'does not'}`);
+  }
+  {
+    const b = reader();
+    b.read(0);
+    const target = arrive(b) + READ_WAIT + 1;
+    while (b.st.step + 1 < target) b.step(0);
+    check(b.st.repBeat === 1 && b.st.readWait === 0, `the wait over, the word's missed and the marker goes on (${b.st.repBeat}, ${b.st.readWait})`);
+    b.step(command(0, OP.TRAIN, 1));
+    const e = b.sim.events.find((x) => x.type === 'rep');
+    check(!!e && e.type === 'rep' && !e.hit && e.key === 1, 'a press then is stray, and spends the next');
+  }
+  // Under the old rules, as 2.31 had it: the marker never waits, a press within READ_WINDOW, about 5 s kept up with.
+  const was231 = human(READ_WINDOW, true);
+  check(was231.steps >= 60 && was231.steps <= 130 && was231.missed === 0, `the old rules: about 5 s a set kept up with (${was231.steps})`);
   for (const [off, should] of [[-READ_WINDOW, true], [READ_WINDOW, true], [-READ_WINDOW - 1, false], [READ_WINDOW + 1, false]] as const) {
     const b = reader();
+    b.sim.rules233 = true;
     b.read(0);
     const target = b.st.readFrom + keyAt(0) + off;
     while (b.st.step + 1 < target) b.step(0);
     b.step(command(0, OP.TRAIN, 1));
     const e = b.sim.events.find((x) => x.type === 'rep');
-    check(!!e && e.type === 'rep' && !!e.hit === should, `a press ${off} steps off a key word: ${should ? 'counts' : 'does not'}`);
+    check(!!e && e.type === 'rep' && !!e.hit === should, `the old rules: a press ${off} steps off a key word: ${should ? 'counts' : 'does not'}`);
+    check(b.st.readWait === 0, 'the old rules: the marker never waits');
   }
 }
 {
@@ -393,6 +473,7 @@ const reader = (seed = 3) => {
   old.sim.rules230 = true;
   old.sim.rules231 = true;
   old.sim.rules232 = true;
+  old.sim.rules2331 = true;
   old.sim.rules233 = true;
   old.routineUntil(1, 10 * 60 + 1);
   check(old.sim.world.plainBooks, 'the old rules');
@@ -412,6 +493,7 @@ const reader = (seed = 3) => {
   iron.sim.rules230 = true;
   iron.sim.rules231 = true;
   iron.sim.rules232 = true;
+  iron.sim.rules2331 = true;
   iron.sim.rules233 = true;
   const chair = iron.sim.world.props.findIndex((p) => p.kind === 'readChair');
   iron.st.player.x = iron.sim.world.props[chair].x * UNIT + UNIT / 2;
@@ -424,6 +506,7 @@ const reader = (seed = 3) => {
     was.rules230 = true;
     was.rules231 = true;
     was.rules232 = true;
+    was.rules2331 = true;
     was.rules233 = true;
     const bare = new Sim({ ...p, props: p.props.filter((q) => q.kind !== 'readChair' && q.kind !== 'deskChair') }, 3);
     for (const q of p.props) {
@@ -437,16 +520,17 @@ const reader = (seed = 3) => {
   was230.rules230 = true;
   was230.rules231 = true;
   was230.rules232 = true;
+  was230.rules2331 = true;
   was230.rules233 = true;
   const prev = new RunRecorder(was230, { seed: 24, game: '2.30.0' });
   for (let k = 0; k < 4800; k++) prev.step(0);
   check(!!replayLog(prev.toLog(), CENTER_PERKS)?.ok, 'a 2.30 log replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.33.2' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.33.2' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.33.2' });
+  check(!replayLog({ ...prev.toLog(), game: '2.34.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.34.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.34.0' });
   for (let k = 0; k < 4800; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.33.3' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.34.1' }).toLog().seed === 24, 'and is carried on');
   // A save with a book in hand comes back with it; a mid-page one too.
   const s = reader();
   s.read(0);
@@ -454,6 +538,15 @@ const reader = (seed = 3) => {
   const back = new Sim(CENTER_PERKS, 3);
   back.restore(snap);
   check(back.state.book === 1 && back.state.readFrom === s.st.readFrom && back.state.train === s.st.train, 'a save mid-page');
+  // A save from before 2.34 mid-page: its place was at the old pace, so the book opens at its first page again; one from now keeps its place.
+  s.set(() => s.st.repBeat >= 8);
+  const file: SaveFile = saveFileOf(s.sim, 0, '2.34.0');
+  const kept = loadSave(file)!;
+  check(kept.state.readFrom === s.st.readFrom && kept.state.repBeat === s.st.repBeat, 'a save from 2.34 mid-page keeps its place');
+  const oldSnap = JSON.parse(JSON.stringify(file.snap));
+  delete oldSnap.state.readWait;
+  const pre = loadSave({ ...file, snap: oldSnap })!;
+  check(pre.state.readFrom === pre.state.step && pre.state.repBeat === 0 && pre.state.book === 1 && pre.state.train === s.st.train, 'a save from before 2.34 mid-page opens the book at its first page');
 }
 
 console.log(failures ? `${failures} failures` : 'library ok');

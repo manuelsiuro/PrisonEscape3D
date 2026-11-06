@@ -17,7 +17,7 @@ import { freeReadSeat } from '../src/sim/systems/training';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
-import { beatAt, beatOf } from '../src/sim/systems/training';
+import { beatAt, beatOf, readPace } from '../src/sim/systems/training';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -30,10 +30,12 @@ export const tileOf = (x: number, z: number) => z * MAP_W + x;
 export function beatPress(sim: Sim): number {
   const s = sim.state;
   const prop = sim.world.props[s.train];
-  // (2.31: a book: on each key word as the marker reaches it.)
+  // (2.31: a book: on each key word as the marker reaches it. 2.34: at half the speed; it would wait there.)
   if (prop?.kind === 'shelf' && !sim.rules230) {
     const pos = s.step + 1 - s.readFrom;
-    return keyAt(keyFrom(pos)) === pos ? command(0, OP.TRAIN, 1) : 0;
+    const pace = readPace(sim);
+    const k = keyFrom(pos, 0, pace);
+    return keyAt(k, pace) === pos && k >= s.repBeat ? command(0, OP.TRAIN, 1) : 0;
   }
   if (!prop || beatAt(s.step + 1, beatOf(prop.kind).beat).off !== 0) return 0;
   return command(0, OP.TRAIN, s.repSide === 1 ? 2 : 1);
