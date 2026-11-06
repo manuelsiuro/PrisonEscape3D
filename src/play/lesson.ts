@@ -25,7 +25,8 @@ import {
   view,
 } from './context';
 import { play, type Game } from './game';
-import { type LessonCtx } from '../tutorial/kit';
+import { type Lesson, type LessonCtx } from '../tutorial/kit';
+import { inPlace } from './lazy';
 
 /**
  * A tutorial lesson under way (P8+): its steps ticked off as the game shows them done, the
@@ -35,6 +36,8 @@ import { type LessonCtx } from '../tutorial/kit';
  */
 export interface LessonRun {
   index: number;
+  /** The lesson (LESSONS[index]): what the rest of the game reads of it, without the lessons' file (play/lazy.ts). */
+  lesson: Lesson;
   progress: LessonProgress;
   /** The step the card shows (it lags the progress while a done step shows its tick). */
   shown: number;
@@ -49,13 +52,15 @@ export interface LessonRun {
   seen: number;
 }
 
-const card = new LessonCard(hud.el);
+// (Made as its code comes in: put where it was made before, at the end of the HUD, see lazy.ts.)
+const card = inPlace('lesson', () => new LessonCard(hud.el));
 const ctx: LessonCtx = { sim: null as never, craftOpen: false };
 /** A done step's tick shows this long before the next step. */
 const TICK = 0.9;
 
 export function newLessonRun(index: number, finish: (r: LessonResult | 'quit') => void): LessonRun {
-  return { index, progress: new LessonProgress(LESSONS[index]), shown: 0, tick: 0, since: 0, finish, ended: false, seen: 0 };
+  const lesson = LESSONS[index];
+  return { index, lesson, progress: new LessonProgress(lesson), shown: 0, tick: 0, since: 0, finish, ended: false, seen: 0 };
 }
 
 /** The step's goal (a tile) for the floor arrows, if it has one. */

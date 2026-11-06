@@ -13,7 +13,8 @@ import { UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { PastimesFrame } from '../render/Pastimes';
 import type { BoardView, CheatView, CourtView } from '../ui/pastimes';
-import { banner, cheatCard, courtCard, itemsUI, matchCard, sound, stageCard } from './context';
+import { banner, itemsUI, sound } from './context';
+import { gameCards, whenCards } from './lazy';
 import { lanePress, setLaneFlash } from './nights';
 import { kickKey } from './team';
 import { play, playLater, playNow, sendOp } from './game';
@@ -446,17 +447,21 @@ export function shootKey(down: boolean): boolean {
 let shooting = false;
 
 export function wirePastimes() {
-  courtCard.onHold = (down) => shootKey(down);
-  // (P29: the match's Kick pad.)
-  matchCard.onHold = (down) => kickKey(down);
-  // (P30: the stage's lane pads, and their flash from the keys.)
-  stageCard.onLane = (lane) => lanePress(lane);
-  setLaneFlash((lane) => stageCard.flash(lane));
+  // (The cards' buttons, once they're made: lazy.ts.)
+  whenCards(({ courtCard, matchCard, stageCard }) => {
+    courtCard.onHold = (down) => shootKey(down);
+    // (P29: the match's Kick pad.)
+    matchCard.onHold = (down) => kickKey(down);
+    // (P30: the stage's lane pads, and their flash from the keys.)
+    stageCard.onLane = (lane) => lanePress(lane);
+    setLaneFlash((lane) => stageCard.flash(lane));
+  });
 }
 
 /** Keys for the cards (P27): 1–5 choose cards, Enter lays them, L calls; returns whether the key was theirs. */
 export function pastimeKey(code: string): boolean {
-  if (!cheatCard.open) return false;
+  const cheatCard = gameCards()?.cheatCard;
+  if (!cheatCard?.open) return false;
   const digit = /^Digit([1-5])$/.exec(code);
   if (digit) {
     cheatCard.toggle(Number(digit[1]) - 1);

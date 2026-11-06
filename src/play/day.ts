@@ -30,7 +30,6 @@ import { play, type Game } from './game';
 import { seenTip } from './tips';
 import { visitPlaceAt } from './smuggle';
 import { SPORTS_PRIZE, SPORTS_WINS } from '../content/games';
-import { LESSONS } from '../tutorial/lessons';
 import { jobKey, jobRow } from './oddjobs';
 import { jobRooms } from '../sim/systems/economy';
 import { workWarningAt } from '../sim/systems/jobs';
@@ -137,8 +136,7 @@ export function weatherName(sim: Sim, w: Weather): WeatherName {
 }
 
 /** Whether a prison has days at all (the Training Block doesn't), and the game isn't a lesson (but one about the day). */
-export const hasDays = (g: Game | null): g is Game =>
-  !!g && (!g.lesson || !!LESSONS[g.lesson.index].days) && !!DAY_BOOKS[g.rec.sim.prison.id];
+export const hasDays = (g: Game | null): g is Game => !!g && (!g.lesson || !!g.lesson.lesson.days) && !!DAY_BOOKS[g.rec.sim.prison.id];
 
 /** When an event happens, as the card and the file say it. */
 export function whenOf(p: DayPlan): string {

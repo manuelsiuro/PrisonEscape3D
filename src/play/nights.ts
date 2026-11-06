@@ -40,8 +40,8 @@ import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
 import { inmateName } from '../ui/names';
-import { type StageView } from '../ui/stage';
-import { type QuizView } from '../ui/quiz';
+import type { StageView } from '../ui/stage';
+import type { QuizView } from '../ui/quiz';
 
 /**
  * Stage nights (P30) on screen: talent night's card and quiz night's, filled from the sim; the

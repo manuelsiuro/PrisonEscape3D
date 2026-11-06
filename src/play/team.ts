@@ -35,7 +35,8 @@ import { routineEnd } from '../content/routine';
 import { LAYER } from '../sim/world/World';
 import type { InkView, MatchView } from '../ui/team';
 import type { TeamFrame } from '../render/Team';
-import { banner, inkCard, itemsUI, sound } from './context';
+import { banner, itemsUI, sound } from './context';
+import { gameCards } from './lazy';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
@@ -250,8 +251,8 @@ export function inkNow(sim: Sim, a: number): InkView | null {
 /** The needle's op this step (2.22): with the finger or the mouse down on the design, the needle set down where it first touched, then drawn after it. Null otherwise. */
 export function needleOp(sim: Sim): [number, number, number, number] | null {
   const o = sim.state.ink;
-  const p = inkCard.touch;
-  if (!o || o.mine || !p.down || sim.rules221) return null;
+  const p = gameCards()?.inkCard.touch;
+  if (!o || o.mine || !p?.down || sim.rules221) return null;
   const [b, c] = needleArgs(p.x, p.y);
   const fresh = p.fresh;
   p.fresh = false;

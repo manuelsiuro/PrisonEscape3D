@@ -24,7 +24,7 @@ import { pauseReplay } from './replay';
 import { aiming, cancelThrow, throwAhead } from './aim';
 import { toggleWait } from './day';
 import { toggleCrew } from './crew';
-import { openObjectives } from './lesson';
+import { openObjectives } from './lazy';
 import { openDay } from './daycard';
 import { pastimeKey, shootKey } from './pastimes';
 import { kickKey } from './team';
@@ -37,7 +37,7 @@ import { VEND } from '../content/vending';
 import { paroleBusy, paroleKey } from './parole';
 import { reading } from '../sim/systems/training';
 import { closeOddJobsCard, jobCardShown, oddjobKey } from './oddjobs';
-import { huntKey } from './hunt';
+import { huntKey } from './lazy';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {

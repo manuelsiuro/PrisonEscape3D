@@ -1,8 +1,7 @@
 import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
-import { t, type Key, type Lang } from '../i18n';
+import { barksOf, t, type Key, type Lang } from '../i18n';
 import { enBarks, type BankId, type Barks } from '../i18n/barks/en';
-import { frBarks } from '../i18n/barks/fr';
 import { itemPhrase, type DayEvent } from '../i18n/barks/grammar';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt } from '../sim/systems/clock';
@@ -38,7 +37,8 @@ import { twoAtCooler } from '../sim/systems/cooler';
  * left, the speaker stays quiet: silence beats repetition.
  */
 
-const BANKS: Record<Lang, Barks> = { en: enBarks, fr: frBarks };
+/** A language's lines (French once loaded, English in its place until then). */
+const banksOf = (lang: Lang): Barks => barksOf(lang) ?? enBarks;
 const BANK_IDS = Object.keys(enBarks) as BankId[];
 const BANK_INDEX = new Map<BankId, number>(BANK_IDS.map((b, i) => [b, i]));
 /** Lines per bank, at most (line ids are bank × this + index). */
@@ -109,7 +109,7 @@ const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
 function whenBanks(lang: Lang): ReadonlySet<BankId> {
-  return new Set(BANK_IDS.filter((b) => BANKS[lang][b].some((l) => typeof l !== 'string' && !!l.when)));
+  return new Set(BANK_IDS.filter((b) => banksOf(lang)[b].some((l) => typeof l !== 'string' && !!l.when)));
 }
 /** How many reactions may wait at once (the rest are dropped, the least pressing first). */
 const QUEUE_MAX = 24;
@@ -324,7 +324,7 @@ export class Director {
     relax = true,
     avoid?: readonly number[],
   ): { line: number; text: string; def: LineDef; slots: Map<string, string> } | null {
-    const lines = BANKS[this.lang][bank];
+    const lines = banksOf(this.lang)[bank];
     if (!lines?.length) return null;
     const voice = this.voiceOf(speaker);
     const tags = this.timed.has(bank) ? this.tags(sim, speaker) : NO_TAGS;

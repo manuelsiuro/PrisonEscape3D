@@ -5,7 +5,8 @@
 // that changes the order of Math.random calls shows up too, as it should: what's drawn changed.
 //   const d = await import('/scripts/dev/drawhash.ts');
 //   const lines = await d.run();          // [`center-perks d1 08:00 f30 <hash>`, …]
-// Built for session 3 (splitting View.ts and Character.ts, v2.34.2); keep it for any render refactor.
+// Built for session 3 (splitting View.ts and Character.ts, v2.34.2), the manhunt's frames added in session 4;
+// keep it for any render refactor.
 import { play } from '../../src/play/game';
 import { frame } from '../../src/play/loop';
 import { renderer, view } from '../../src/play/context';
@@ -117,6 +118,14 @@ export const SCENES: Scene[] = [
   }),
   ...PLAYER_FORCES.map((force) => ['center-perks', 1, 905, force] as Scene),
 ];
+/** The manhunt (P41), outside each prison that has one: [prison, way out, minute] (session 4, v2.34.2: its code a file of its own). */
+const HUNTS: Array<[string, 'wall' | 'gate', number]> = [
+  ['center-perks', 'wall', 23 * 60 + 40],
+  ['stalag-flucht', 'wall', 12 * 60],
+  ['shankton', 'gate', 23 * 60 + 40],
+  ['irongate', 'wall', 6 * 60 + 30],
+  ['san-pancho', 'wall', 23 * 60 + 40],
+];
 /** Frames at which the canvas is fingerprinted (60 a second). */
 const SHOTS = [1, 30, 90];
 
@@ -161,7 +170,7 @@ export async function check(fresh = false): Promise<{ kept: boolean; lines: numb
   return { kept: false, lines: lines.length, differ };
 }
 
-export async function run(scenes = SCENES): Promise<string[]> {
+export async function run(scenes = SCENES, hunts = HUNTS): Promise<string[]> {
   const realRaf = window.requestAnimationFrame;
   const realRandom = Math.random;
   const out: string[] = [];
@@ -208,6 +217,27 @@ export async function run(scenes = SCENES): Promise<string[]> {
       if (forced) delete (view as Partial<typeof view>).draw;
       if (force === 'shift') view.setShift(0, 0);
       for (const [f, url] of caught) out.push(`${prison} d${day} ${hhmm(minute)}${force ? ` ${force}` : ''} f${f} ${await sha(url)}`);
+    }
+    // The manhunt outside each prison (straight from the title, as the dev build's __manhunt starts it).
+    const manhunt = (window as unknown as { __manhunt: (p: string, k: string, more: object) => Promise<unknown> }).__manhunt;
+    for (const [prison, kind, minute] of hunts) {
+      Math.random = seeded(minute + 7);
+      if (play.game) endGame();
+      void manhunt(prison, kind, { minute, headStart: 30 });
+      // (Its code fetched first, the first time.)
+      for (let k = 0; k < 200 && !play.game?.hunt; k++) await new Promise((r) => setTimeout(r, 10));
+      if (!play.game?.hunt) throw new Error(`drawhash: no manhunt at ${prison}`);
+      Math.random = seeded(minute + 7);
+      const caught: Array<[number, string]> = [];
+      now = 150_000;
+      play.last = now;
+      play.acc = 0;
+      for (let f = 1; f <= SHOTS[SHOTS.length - 1]; f++) {
+        now += 1000 / 60;
+        frame(now);
+        if (SHOTS.includes(f)) caught.push([f, renderer.domElement.toDataURL()]);
+      }
+      for (const [f, url] of caught) out.push(`hunt ${prison} ${kind} ${hhmm(minute)} f${f} ${await sha(url)}`);
     }
     // Then the title again with the Intake's preview (your prisoner in the cell), and the map viewer's picture of the last prison.
     Math.random = seeded(2);
