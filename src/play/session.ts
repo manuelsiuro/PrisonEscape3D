@@ -1,4 +1,5 @@
 import { routineName, setZonesHere } from '../ui/hud';
+import { hideLoading } from '../ui/loading';
 import { buzz } from '../app/haptics';
 import { resetRat } from './rat';
 import { resetSmuggle } from './smuggle';
@@ -204,6 +205,8 @@ export function startGame(
   // Irongate's surf and gulls (P12).
   sound.setCoast(sim.world.def.theme === 'island');
   fadeIn();
+  // (The loading veil, if the start put one up: ui/loading.ts.)
+  hideLoading();
   document.body.classList.add('is-playing');
   const g = play.game;
   // (Held back while the game is paused, by the day's card or the help: never lost. Dropped once a manhunt runs, P41: the inside's banners don't belong over the outside.)

@@ -125,6 +125,7 @@ export const fr: Partial<Strings> = {
   "settings.developer": "Développeur",
   "settings.perf": "Compteur d’images",
   "settings.perfNote": "Images par seconde, temps d’une image et ce qui est dessiné, dans un coin du jeu. L’adresse l’active aussi : ?perf (et le coupe : ?perf=0).",
+  "loading.prison": "On prépare la prison…",
   "perf.fps": "{n} i/s",
   "perf.frame": "image {ms} ms, la plus lente {worst}",
   "perf.gpu": "carte graphique {ms} ms",
