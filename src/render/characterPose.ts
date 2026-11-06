@@ -22,8 +22,9 @@ export interface Limbs {
  */
 export interface Moves {
   dt: number;
-  /** The time with the character's own offset, and how far into the activity (0 with reduced motion). */
+  /** The time with the character's own offset. */
   t: number;
+  /** How far into the activity (0 with reduced motion). */
   a: number;
   motion: boolean;
   moving: boolean;

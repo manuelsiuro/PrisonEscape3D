@@ -650,7 +650,7 @@ export class Hunt {
     return k >= this.def.searchers.length;
   }
 
-  // ---------------------------------------------------------------- the searchers
+  // ---------------------------------------------------------------- what the searchers know (they're searchers.ts)
 
   /** Where the player is known to be now (seen, lit, heard, found). */
   know(t: number) {
@@ -683,9 +683,7 @@ export class Hunt {
     return t;
   }
 
-  // ---------------------------------------------------------------- the dogs
-
-  // ---------------------------------------------------------------- the helicopter
+  // (The dogs: dogs.ts; the helicopter: heli.ts.)
 
   // ---------------------------------------------------------------- the lookout, the end
   /** Where a crew member out too keeps watch (units). */

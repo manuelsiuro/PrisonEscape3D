@@ -63,11 +63,11 @@ The user picked all sixteen from a survey of the code, the UI, the 3D and the ga
 one development session each. The order puts safety nets before refactors, measurements before
 fixes, and polished systems before the feature built on them; the user may reorder. Each session
 starts by asking the user's choices, and ends with its history entry; take it off here when done
-(the numbers stay: 1, lint and types, and 2, the action button's test, were done in v2.34.2).
+(the numbers stay: 1, lint and types, 2, the action button's test, and 3, the giant modules split,
+were done in v2.34.2).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 3 | Split the giant modules | `View.ts` 2,098 lines, `Character.ts` 1,478, `director.ts` 1,376, `Hunt.ts` 1,262; snapshots unchanged |
 | 4 | Faster first load | One 3 MB bundle, no dynamic import: the tutorial, manhunt, minigames and French loaded on demand |
 | 5 | Phone performance pass | `budgettest` counts the static world headless (30–37 calls); nothing measures the browser: frame time, the whole scene's calls (166–254 at roll call, v2.5.0), day and night |
 | 6 | Hitches and memory | `budgettest` proves a world frees what it made; not measured: shader-compile stalls, garbage collection, memory over a long game in a browser |

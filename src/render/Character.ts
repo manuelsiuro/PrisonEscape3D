@@ -55,7 +55,7 @@ const TRAY_FOOD: ReadonlyArray<readonly [number, number, number, number, number,
 export const BED_TOP = 0.6;
 export const BED_FEET = 0.55;
 
-/** What people wash in (2.26), and their towels. */
+/** The towels after the showers (2.26; the shorts are characterBody.ts's). */
 const TOWEL = 0xf0f1ec;
 const TOWEL_EDGE = 0xc9d4de;
 

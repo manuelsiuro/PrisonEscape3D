@@ -1184,7 +1184,7 @@ export class View {
     // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
     this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
     // (2.28: a dummy in the player's bed shows, but not under them, nor from the tunnels.)
-    // (2.29: the bars: the player's, and those the inmates have up, gathered above.)
+    // (2.29: the bars: the player's, and those the inmates have up, gathered by Crowd.drawInmates.)
     if (f.doing === DOING.BENCH) this.gearUses.push({ prop: f.trainProp, up: this.player.pressed });
     this.gear.update(dt, this.gearUses, !this.reducedMotion);
     this.workGear.update(time, f.running, !this.reducedMotion);
