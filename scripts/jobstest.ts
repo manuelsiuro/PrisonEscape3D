@@ -197,6 +197,7 @@ check(
   old.sim.rules232 = true;
   old.sim.rules2331 = true;
   old.sim.rules233 = true;
+  old.sim.rules234 = true;
   hire(old.sim, job);
   check(old.routineUntil(1, WORK + 1), 'the old mop: to work');
   old.st.items.inv[1] = itemNumber('mop');
@@ -355,6 +356,7 @@ function watched(def: typeof CENTER_PERKS, zone: string, seed = 3, job = -1, rul
     bot.sim.rules232 = true;
     bot.sim.rules2331 = true;
     bot.sim.rules233 = true;
+    bot.sim.rules234 = true;
   }
   if (job >= 0) hire(bot.sim, job);
   check(bot.routineUntil(1, WORK + 5), `${def.id}: to work`);
@@ -558,6 +560,7 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
   was.rules232 = true;
   was.rules2331 = true;
   was.rules233 = true;
+  was.rules234 = true;
   const prev = new RunRecorder(was, { seed: 24, game: '2.29.0' });
   for (let k = 0; k < (WORK + 60 - 8 * 60) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(
@@ -566,10 +569,10 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
   );
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules229 === true, 'a 2.29 log through work replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.34.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.34.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.34.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.35.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.35.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.35.0' });
   for (let k = 0; k < (WORK + 60 - 8 * 60) * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.34.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.35.1' }).toLog().seed === 24, 'and is carried on');
 }

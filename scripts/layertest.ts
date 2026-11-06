@@ -498,7 +498,12 @@ function quiet(sim: Sim) {
   plant(g, 16, 22, 9);
   g.doing = 0;
   carry(sim, 'plastic_fork');
+  // (2.35: once the guard is sure, a moment after the strike: 4 tiles off, under a second.)
   const ev = use(sim);
+  for (let k = 0; k < 20 && !st.lockdown; k++) {
+    sim.step(command(0));
+    ev.push(...sim.events);
+  }
   check(st.lockdown && ev.some((e) => e.type === 'spotted' && e.reason === 'tampering'), 'a guard who sees a strike raises the alarm');
   console.log(`seen at work: heat ${st.heat}${st.lockdown ? ', LOCKDOWN' : ''}`);
 }
@@ -510,11 +515,12 @@ function quiet(sim: Sim) {
   stand(sim, 25, 12, EAST, LAYER.ROOF);
   plant(g, 22, 13, 1);
   g.doing = 0;
-  sim.step(command(0));
+  // (2.35: a guard takes a moment to be sure: 40 steps, enough from anywhere in its sight.)
+  for (let k = 0; k < 40; k++) sim.step(command(0));
   const inside = st.heat;
   plant(g, 30, 12, 9);
   g.doing = 0;
-  sim.step(command(0));
+  for (let k = 0; k < 40 && !st.lockdown; k++) sim.step(command(0));
   console.log(`roof: a guard indoors → heat ${inside}; a guard in the yard → heat ${st.heat}`);
   check(inside === 0 && st.heat === 100, 'only a guard in the open sees the roof');
 }

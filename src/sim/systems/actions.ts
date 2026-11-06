@@ -113,7 +113,8 @@ export function useItems(sim: SimContext, cmd: number) {
   const ev = sim.events as ItemEvent[];
   const a = argA(cmd);
   // Every op may change items (the UI redraws on rev); a held use button asks every step, so strikes bump it themselves.
-  if (opOf(cmd) !== OP.NONE && opOf(cmd) !== OP.USE) it.rev++;
+  // (2.35: nor does the block, held and sent every step: it changes no item.)
+  if (opOf(cmd) !== OP.NONE && opOf(cmd) !== OP.USE && !(opOf(cmd) === OP.EXT && a === EXT.BLOCK)) it.rev++;
   switch (opOf(cmd)) {
     case OP.INTERACT: {
       // From the open desk panel: down the tunnel under the player's desk (in solitary: a potato, as the plan has it).
@@ -250,6 +251,8 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.WHISTLE && s.solitary <= 0) whistle(sim);
       // Holidays (P42): the holiday's treat from the open furniture.
       else if (a === EXT.HOLIDAY && s.solitary <= 0) takeTreat(sim, argB(cmd));
+      // 2.35: the block, held.
+      else if (a === EXT.BLOCK && !sim.rules234) s.blockAt = s.step;
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         stopWash(sim);

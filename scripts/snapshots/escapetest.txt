@@ -170,7 +170,7 @@
   saved and loaded at day 1 15:54 (sports) resumes, day 1 22:13 (rollCall) resumes, day 1 23:29 (vents) resumes, day 1 23:43 (roof) resumes
   ledger: nothing; walked 442 tiles; days escaped
   → out day 1 23:48 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-  takeover: health 47/140, guards down 8/8, xxxxxxxx
+  takeover: health 48/140, guards down 8/8, xxxxxxxx
 == shankton: takeover
   day 1 08:26 spotted: skipping
   day 1 08:46 knocked out #13
@@ -179,21 +179,27 @@
   day 1 08:49 spotted: skipping
   day 1 08:50 spotted: contraband
   day 1 08:50 knocked out #15
-  day 1 08:50 spotted: fight
-  day 1 08:50 LOCKDOWN
+  day 1 08:50 spotted: skipping
+  day 1 08:51 spotted: contraband
   day 1 08:51 knocked out #18
+  day 1 08:51 spotted: skipping
+  day 1 08:51 spotted: contraband
   day 1 08:51 knocked out #11
+  day 1 08:52 detector TRIPPED
+  day 1 08:52 spotted: detector
+  day 1 08:52 LOCKDOWN
   day 1 08:53 knocked out #12
-  day 1 08:53 knocked out #14
-  day 1 08:54 detector TRIPPED
-  day 1 08:57 knocked out #16
-  day 1 08:57 TAKEOVER: the gates are open
-  day 1 08:59 knocked out #17
-  day 1 09:06 sniper warning shot
-  day 1 09:09 ESCAPED (takeover)
-  saved and loaded at day 1 08:34 (cellBlock) resumes, day 1 09:02 (generator) resumes, day 1 09:08 (perimeter) resumes, day 1 09:09 (perimeter) resumes
-  ledger: blows 11, koGuards 8, lockdowns 1, spotted 5, maxHeat 100, recruits 2, flung 4, crew 2; walked 187 tiles; days spotted+wanted+lockdown+fight+escaped
-  → out day 1 09:09 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
+  day 1 08:55 knocked out #14
+  day 1 08:56 detector TRIPPED
+  day 1 08:57 detector TRIPPED
+  day 1 08:59 knocked out #16
+  day 1 08:59 TAKEOVER: the gates are open
+  day 1 09:01 knocked out #17
+  day 1 09:08 sniper warning shot
+  day 1 09:11 ESCAPED (takeover)
+  saved and loaded at day 1 08:35 (corridor) resumes, day 1 09:04 (none) resumes, day 1 09:10 (perimeter) resumes, day 1 09:11 (perimeter) resumes
+  ledger: blows 11, koGuards 8, lockdowns 1, spotted 9, maxHeat 100, recruits 2, flung 4, crew 2; walked 195 tiles; days spotted+wanted+lockdown+fight+escaped
+  → out day 1 09:11 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
 == shankton: bluff
   day 1 19:12 detector: shielded (19 passes left)
   day 1 19:15 detector: shielded (18 passes left)
@@ -292,13 +298,12 @@
   day 1 23:43 grapnel → layer 3
   day 1 23:48 rope → layer 1
   day 1 23:49 knocked out #21
-  day 1 23:49 spotted: fight
-  day 1 23:49 LOCKDOWN
+  day 1 23:50 spotted: contraband
   day 1 23:50 knocked out #22
-  day 1 23:51 ESCAPED (helicopter)
-  saved and loaded at day 1 15:55 (gym) resumes, day 1 22:16 (rollCall) resumes, day 1 23:32 (vents) resumes, day 1 23:46 (roof) resumes
-  ledger: koGuards 2, lockdowns 1, spotted 1, maxHeat 100, flung 2; walked 434 tiles; days spotted+wanted+lockdown+fight+escaped
-  → out day 1 23:51 by helicopter; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
+  day 1 23:52 ESCAPED (helicopter)
+  saved and loaded at day 1 15:56 (gym) resumes, day 1 22:16 (rollCall) resumes, day 1 23:33 (vents) resumes, day 1 23:47 (roof) resumes
+  ledger: koGuards 2, spotted 1, maxHeat 2, flung 2; walked 437 tiles; days spotted+fight+escaped
+  → out day 1 23:52 by helicopter; heat peak 2%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
   takeover: health 18/150, guards down 10/10, xxxxxxxxxx
 == irongate: takeover
   day 1 08:24 spotted: skipping

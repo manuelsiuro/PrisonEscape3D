@@ -461,6 +461,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.cooler = coolerOk(s.cooler, s.inmates.length, 2) ? s.cooler : newCooler();
   // 2.34: the marker not stopped (it stops again at once if it's on a key word).
   if (!Number.isInteger(s.readWait) || s.readWait < 0) s.readWait = 0;
+  if (!Number.isInteger(s.blockAt) || s.blockAt > s.step) s.blockAt = -1000;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];

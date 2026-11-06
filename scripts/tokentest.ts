@@ -1,5 +1,5 @@
 /**
- * The colours' tokens (session 7, v2.34.3): no stylesheet writes a colour where it's used. A colour lives in a
+ * The colours' tokens (session 7, v2.35.0): no stylesheet writes a colour where it's used. A colour lives in a
  * custom property on `:root`: in `01-base.css` when more than one file uses it, at the top of its file when one
  * alone does; a translucent one is its `-rgb` twin with the alpha where it's used (`rgba(var(--x-rgb), 0.4)`).
  * Checked here: no raw colour anywhere else (hex, rgb()/hsl() with numbers, a colour's name), each token

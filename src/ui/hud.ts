@@ -23,6 +23,8 @@ export interface HudState {
   lockdown: boolean;
   /** A guard sees the player right now. */
   seen: boolean;
+  /** 2.35: lying low (where the routine wants the player): heat cools twice as fast. */
+  lyingLow?: boolean;
   /** Game minutes left in solitary, null when not there. */
   solitaryMinutes: number | null;
   /** Dollars (GDD §13.2: CASH in the top bar). */
@@ -112,6 +114,10 @@ export class Hud {
   private readonly heatPill: HTMLElement;
   private readonly heatFill: HTMLElement;
   private readonly heatText: HTMLElement;
+  /** 2.35: the lying-low arrow, and what it shows now. */
+  private readonly lowEl: HTMLElement;
+  private shownLow = false;
+  private lowStamp = '';
   private shownSeen = false;
   private shownDog: HudState['dog'] = null;
   private readonly paw: HTMLElement;
@@ -143,7 +149,7 @@ export class Hud {
       </div>
       <div class="hud-row">
         <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><span class="hud-routine-head"><b></b><small></small></span><span class="hud-routine-place"></span></span><em class="hud-badge"></em></span>
-        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span><span class="hud-paw" role="img">${icon('paw', 16)}</span><span class="sr-only hud-paw-sr" role="status"></span></span>
+        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-low" role="img">${icon('down', 14)}</span><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span><span class="hud-paw" role="img">${icon('paw', 16)}</span><span class="sr-only hud-paw-sr" role="status"></span></span>
       </div>
       <div class="hud-row hud-alerts">
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
@@ -174,6 +180,7 @@ export class Hud {
     this.heatPill = q('.hud-heat');
     this.heatFill = q('.hud-heat-bar i');
     this.heatText = q('.hud-heat b');
+    this.lowEl = q('.hud-low');
     this.paw = q('.hud-paw');
     this.pawSr = q('.hud-paw-sr');
     for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill])
@@ -570,6 +577,16 @@ export class Hud {
       this.cashPill.title = TOUCH ? t('hud.profile') : `${t('hud.profile')} (${keyLabel('KeyI')})`;
       this.label();
       setText(this.tip, t('hud.profile'));
+    }
+    // 2.35: lying low, the heat cooling twice as fast: a down arrow beside the figure.
+    const low = !!s.lyingLow;
+    if (low !== this.shownLow || (low && this.lowStamp !== textStamp())) {
+      this.shownLow = low;
+      this.lowStamp = textStamp();
+      this.heatPill.classList.toggle('lying-low', low);
+      const say = low ? t('hud.lyingLow') : '';
+      this.lowEl.title = say;
+      this.lowEl.setAttribute('aria-label', say);
     }
     // The eye opens while a guard is looking (so stealth can be read at a glance).
     if (s.seen !== this.shownSeen) {

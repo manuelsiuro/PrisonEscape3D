@@ -81,6 +81,9 @@ export interface Guard extends Walker, Fighter {
   paperDay: number;
   /** 2.27, on the count: 1 until the square it's come to has been called. */
   toCall?: number;
+  /** 2.35: steps it has watched the player at an offence (its "?" filling), and how many make it sure (stealth.ts). */
+  notice?: number;
+  noticeNeed?: number;
 }
 
 /** Guards stroll on their rounds and run when chasing (the player walks at 184). */

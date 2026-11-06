@@ -16,6 +16,7 @@ import {
   CONTRABAND_HEAT,
   LIGHTS_OUT_GRACE,
   LIGHTS_OUT_GRACE_227,
+  NOTICE_HOLD,
   RECOGNIZE_RANGE,
   RECOGNIZE_STEPS,
   SEARCHLIGHT_HEAT,
@@ -45,6 +46,8 @@ import { TIPSY_HEAT } from '../../content/long';
 import { centerX, centerZ } from '../world/grid';
 import { snooping } from './snoop';
 import { stranger } from './jobs';
+import { darkNow, notice } from './stealth';
+import { seesInDark, type Dark } from '../ai/light';
 
 /** A tipsy player seen again within this long (steps) is the same sighting: no more heat for it. */
 const TIPSY_SEEN_GAP = 5 * 20;
@@ -65,8 +68,10 @@ export function watch(sim: SimContext) {
   let eyes = false;
   // (Hidden in the delivery's vehicle, P18: nobody sees the player at all.)
   const hidden = sim.away || s.stowed;
+  // (2.35: at night, beyond a few tiles only along lit tiles.)
+  const dark = darkNow(sim);
   for (const g of s.guards) {
-    g.sees = !hidden && awake(g) && inView(sim, g);
+    g.sees = !hidden && awake(g) && inView(sim, g, dark);
     if (g.sees) {
       g.lastSeen = here;
       seen = true;
@@ -79,6 +84,8 @@ export function watch(sim: SimContext) {
   if (hidden) {
     s.spotted = 0;
     s.near = 0;
+    // (2.35: nobody makes sure of someone they can't see: the "?"s empty.)
+    for (const g of s.guards) if (g.notice) g.notice = 0;
     if (found && sim.away) repair(sim);
     // Hidden in the delivery's vehicle (P18), the player is still the one the damage points to: the alarm goes up all the same.
     if (found && s.stowed && !sim.away) {
@@ -102,15 +109,27 @@ export function watch(sim: SimContext) {
   // A scuffle (hitting back, or P17's food fight) never hides tools at work or damage found; a food fight's blows at inmates in the canteen are noticed not at all.
   const swung = seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS;
   const tampered = seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS;
+  const outLate = !cleared && late && zone !== 'playerCell';
+  const staffOnly = !cleared && RESTRICTED.includes(zone);
+  // 2.35: a guard takes a moment to be sure of those (its "?" filling); seen, then not, it comes to look.
+  const sure = sim.rules234
+    ? { fight: swung && !s.selfDefense, work: tampered, late: eyes && outLate, restricted: eyes && staffOnly }
+    : notice(sim, {
+        fight: s.step - s.swingAt <= NOTICE_HOLD && !s.selfDefense,
+        work: s.step - s.struckAt <= NOTICE_HOLD,
+        late: outLate,
+        restricted: staffOnly,
+      });
   // (A run logged before 1.11 replays as it was played: a scuffle came first then.)
   if (sim.legacy && swung)
     [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
-  else if (swung && !s.selfDefense) [reason, heat] = [SPOT.indexOf('fight'), 100];
-  else if (tampered) [reason, heat] = [SPOT.indexOf('tampering'), 100];
+  else if (sure.fight) [reason, heat] = [SPOT.indexOf('fight'), 100];
+  else if (sure.work) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
-  else if (swung && !inFoodFight(sim)) [reason, heat] = [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0];
-  else if (eyes && !cleared && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
-  else if (eyes && !cleared && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
+  else if (swung && s.selfDefense && !inFoodFight(sim))
+    [reason, heat] = [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0];
+  else if (sure.late) [reason, heat] = [SPOT.indexOf('night'), 100];
+  else if (sure.restricted) [reason, heat] = [SPOT.indexOf('restricted'), 100];
   // A camera sees what a guard would sound the alarm for (GDD §5.6).
   const filmed = cameraSeesPlayer(sim);
   if (!reason && filmed) {
@@ -207,14 +226,21 @@ export function afterHours(sim: Pick<SimContext, 'state' | 'rules227'>): boolean
  * roof, from the open yard (nothing on the ground is in the way); in the vents and the
  * tunnels, never. As far as it sees today (P17: the weather, the inspectors).
  */
-function inView(sim: SimContext, g: Guard): boolean {
+function inView(sim: SimContext, g: Guard, dark: Dark | null): boolean {
   const s = sim.state;
   const eye = g.body;
+  const p = s.player;
   // (P29: a guard watching a match sees what's off the pitch at half his range.)
-  if (s.layer === LAYER.GROUND) return canSee(sim.world, eye, s.player, sightFor(sim, g, s.player.x, s.player.z));
+  // (2.35: at night, further than DARK_SIGHT only along lit tiles.)
+  if (s.layer === LAYER.GROUND)
+    return canSee(sim.world, eye, p, sightFor(sim, g, p.x, p.z)) && (!dark || seesInDark(sim.world, dark, eye.x, eye.z, p.x, p.z));
   if (s.layer !== LAYER.ROOF) return false;
   const t = tileOfBody(eye);
-  return TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]].outdoor && canSee(sim.world, eye, s.player, sightOf(sim, g), false);
+  return (
+    TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]].outdoor &&
+    canSee(sim.world, eye, p, sightOf(sim, g), false) &&
+    (!dark || seesInDark(sim.world, dark, eye.x, eye.z, p.x, p.z, false))
+  );
 }
 
 /**

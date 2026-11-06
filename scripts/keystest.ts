@@ -1,5 +1,5 @@
 /**
- * Session 9 (v2.34.3): the player's keys and the interface's size. The binding table (input/bindings.ts):
+ * Session 9 (v2.35.0): the player's keys and the interface's size. The binding table (input/bindings.ts):
  * a key moved acts as its action's default everywhere, the default it left does nothing, two actions swap,
  * the keys the game keeps are refused, stored keys are checked. The texts: every key is written as a
  * placeholder (`%KeyE%`, `%Space%`), so it shows the player's key, in both languages alike. The scale's cap
@@ -68,6 +68,11 @@ check(
 check(eq(clean({ act: 'KeyK', lock: 'KeyK' }), {}), 'two actions on one key should put every key back');
 check(eq(clean({ act: 'KeyW' }), {}), 'an action on another default (W, still walking up) should put every key back');
 check(eq(clean({ act: 'KeyE' }), {}), 'an action on its own default stores nothing');
+// (2.35: a set stored before the block, with V given to dropping: the block takes Q, dropping's default, nothing lost.)
+check(
+  eq(clean({ drop: 'KeyV', throwAhead: 'KeyK' }), { drop: 'KeyV', throwAhead: 'KeyK', block: 'KeyQ' }),
+  `a key stored before the block, on V: ${JSON.stringify(clean({ drop: 'KeyV', throwAhead: 'KeyK' }))}`,
+);
 setBindings({});
 
 // The texts: no key written in words (it would not follow the player's keys), the same keys in both languages.

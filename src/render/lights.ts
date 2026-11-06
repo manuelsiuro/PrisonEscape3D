@@ -1,12 +1,10 @@
 import * as THREE from 'three';
+import { CELL_BLOCK, OPEN_AIR } from '../content/zones';
 import { TILE_INFO } from '../sim/world/tiles';
 import { MAP_W, type World } from '../sim/world/World';
 import { LAMP_BULB_Y, lampHeads } from './props';
 
-/** Zones lit by daylight only (open sky); every other zone gets ceiling lights at night. */
-const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none', 'sports', 'garden']);
-/** Where the lights go out at Lights Out (2.28), and how far: enough left to see by on a phone. */
-const CELL_BLOCK = new Set(['cellBlock', 'playerCell', 'inmateCell']);
+/** How far the cell block's lights go out at Lights Out (2.28): enough left to see by on a phone. */
 const NIGHT_LIGHT = 0.8;
 
 /** A soft round glow, white in the middle and fading out: one for every prison (made once, never freed with a view). */
@@ -79,7 +77,9 @@ export class Lights {
         for (let b = 0; b < nz; b++) {
           const x = x0 + ((a + 0.5) * (x1 - x0 + 1)) / nx;
           const z = z0 + ((b + 0.5) * (z1 - z0 + 1)) / nz;
-          if (TILE_INFO[world.ground.kind[Math.floor(z) * MAP_W + Math.floor(x)]].solid) continue;
+          // (2.35: nor out in the open, a walkway or a minefield: ceiling lights belong indoors, and the dark's rule says so.)
+          const info = TILE_INFO[world.ground.kind[Math.floor(z) * MAP_W + Math.floor(x)]];
+          if (info.solid || info.outdoor) continue;
           to.push([x, z, Math.min(6, Math.max(3.5, Math.min(x1 - x0 + 1, z1 - z0 + 1) * 1.1))]);
         }
       }

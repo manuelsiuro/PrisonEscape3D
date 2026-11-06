@@ -298,3 +298,27 @@
 body.card-up .toasts {
   bottom: max(var(--card-clear, 0px), var(--hint-clear, 0px)) !important;
 }
+
+/* 2.35: lying low (where the routine wants the player): a green down arrow, the heat cooling twice as fast. */
+.hud-low {
+  display: none;
+}
+
+.hud-heat.lying-low:not([data-level='none']) .hud-low {
+  display: flex;
+}
+
+.hud .hud-heat .hud-low .ic {
+  color: var(--green-81);
+  animation: low-sink 1.6s ease-in-out infinite;
+}
+
+@keyframes low-sink {
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+body.reduced-motion .hud .hud-heat .hud-low .ic {
+  animation: none;
+}

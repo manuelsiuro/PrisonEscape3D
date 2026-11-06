@@ -1,5 +1,5 @@
 /**
- * The keys of the main actions, which the player may change (session 9, v2.34.3). The game reads
+ * The keys of the main actions, which the player may change (session 9, v2.35.0). The game reads
  * physical keys (`e.code`) and every handler still tests an action's default key ('KeyE' acts):
  * `keyCode` turns the key pressed into the default of the action it's bound to, once, where a key
  * comes in. So two actions swapped swap everywhere, and a default key given away does nothing.
@@ -19,6 +19,8 @@ export const ACTIONS = [
   { id: 'act', key: 'KeyE', group: 'do' },
   { id: 'use', key: 'Space', group: 'do' },
   { id: 'lock', key: 'KeyR', group: 'do' },
+  // (2.35: held, half the damage of a blow.)
+  { id: 'block', key: 'KeyV', group: 'do' },
   { id: 'drop', key: 'KeyQ', group: 'do' },
   { id: 'throwAhead', key: 'KeyF', group: 'do' },
   { id: 'digUp', key: 'KeyU', group: 'do' },
@@ -53,12 +55,22 @@ let toDefault = new Map<string, string>();
 /** Default keys bound to nothing now (their action moved): they do nothing. */
 let freed = new Set<string>();
 
+/** Actions added after the Keys card was built (session 9): a set stored before may give their key away. */
+const ADDED: ReadonlySet<string> = new Set(['block']);
+
 /** Stored keys, checked: an unknown action or a kept key is dropped; two actions on one key put every key back. */
 export function clean(raw: unknown): Bindings {
   const out: Bindings = {};
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
   for (const [id, code] of Object.entries(raw as Record<string, unknown>))
     if (DEFAULT.has(id) && typeof code === 'string' && !reserved(code) && code !== DEFAULT.get(id)) out[id as Action] = code;
+  // An action added since keys could be changed (2.35's block): a set stored before never names it, and its default
+  // may be a key the player gave another action. It takes that action's default instead, if that's free.
+  for (const n of ACTIONS) {
+    if (!ADDED.has(n.id) || out[n.id]) continue;
+    const taker = ACTIONS.find((a) => out[a.id] === n.key);
+    if (taker && !ACTIONS.some((a) => (out[a.id] ?? a.key) === taker.key)) out[n.id] = taker.key;
+  }
   const used = ACTIONS.map((a) => out[a.id] ?? a.key);
   return new Set(used).size === used.length ? out : {};
 }

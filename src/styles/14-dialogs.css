@@ -151,7 +151,7 @@
 }
 
 /* ------------------------------------------------------------ settings */
-/* A section's heading (the Developer section, v2.34.3): small capitals over its rows. */
+/* A section's heading (the Developer section, v2.35.0): small capitals over its rows. */
 .set-head {
   display: flex;
   align-items: center;

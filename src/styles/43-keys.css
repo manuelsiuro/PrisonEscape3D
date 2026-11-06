@@ -53,5 +53,6 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin-left: auto;
+  /* (Not the link button's own margins, made for a button under a card's text: they lifted it off the row's middle.) */
+  margin: 0 0 0 auto;
 }

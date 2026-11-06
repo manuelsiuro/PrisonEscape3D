@@ -1,3 +1,5 @@
+import { darkNow } from '../sim/systems/stealth';
+import { litTile } from '../sim/ai/light';
 import type { Plan } from '../sim/systems/interact';
 import { itemDef, itemNumber } from '../content/items';
 import { t } from '../i18n';
@@ -248,6 +250,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (!busy && held === CAUGHT_RAT) coachOnce('caughtRat', 'hint.caughtRat');
   // (P24: a glider, the first time one is in hand on a roof.)
   if (!busy && held === GLIDER && st.layer === LAYER.ROOF) coachOnce('glider', 'hint.glider');
+  // 2.35: the dark, the first time the player is out of the cell at night off a lit tile; lying low, the first time it cools heat.
+  if (!busy && st.layer === LAYER.GROUND && !seenTip('dark') && sim.playerZone !== 'playerCell') {
+    const dark = darkNow(sim);
+    if (dark && !litTile(sim.world, dark, Math.floor(st.player.x / UNIT), Math.floor(st.player.z / UNIT))) coachOnce('dark', 'hint.dark');
+  }
+  if (!busy && hudState.lyingLow) coachOnce('lyingLow', 'hint.lyingLow');
   // A guard dozing close by, in plain sight (P15): what it means, the first time one is seen.
   if (
     !busy &&

@@ -14,6 +14,7 @@ const NAMES: Record<Action, Key> = {
   act: 'help.k.act',
   use: 'help.k.use',
   lock: 'help.k.lock',
+  block: 'help.k.block',
   drop: 'help.k.drop',
   throwAhead: 'help.k.throwAhead',
   digUp: 'help.k.digUp',

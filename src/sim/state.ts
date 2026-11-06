@@ -397,6 +397,8 @@ export interface SimState {
   cooler: CoolerState;
   /** 2.34: the steps the reading marker has stood at the key word it's on, waiting for the press (0: not waiting). */
   readWait: number;
+  /** 2.35: the step the player last held the block (fights.ts blocking). */
+  blockAt: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -599,5 +601,6 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     drank: 0,
     cooler: newCooler(),
     readWait: 0,
+    blockAt: -1000,
   };
 }
