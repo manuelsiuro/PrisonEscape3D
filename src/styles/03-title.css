@@ -222,6 +222,20 @@
   color: var(--ink-soft);
 }
 
+/* A small phone, or one turned: a long line under a button's name (French "n°19 · Stalag Flucht · 2 règles
+   du jour") on two lines rather than cut; the button grows only then (session 8). */
+@media (max-width: 400px), (max-height: 520px) {
+  .menu-text small {
+    white-space: normal;
+  }
+
+  .menu-btn:has(.menu-text small) {
+    height: auto;
+    min-height: 56px;
+    padding-block: 6px;
+  }
+}
+
 .menu-text small .ic {
   display: inline-block;
   vertical-align: -2px;

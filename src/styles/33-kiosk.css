@@ -581,6 +581,13 @@ body.vending .up-prompt {
   position: absolute;
   inset: -5px;
 }
+/* A small phone upright: the machine's window narrower, so a shelf's names fit (at 360 wide "Chocolate"
+   and "Toothpaste" were cut, session 8). */
+@media (max-width: 400px) and (min-height: 501px) {
+  .vend-body {
+    grid-template-columns: minmax(0, 1fr) 100px;
+  }
+}
 /* A phone on its side: the height's what's short. Four to a shelf, above the hotbar. */
 @media (max-height: 500px) {
   .vend-card {

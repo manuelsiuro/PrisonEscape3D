@@ -231,6 +231,8 @@ body.reduced-motion .race-card {
 }
 
 .race-card .train-head .race-close {
+  /* (Its size kept beside a long title: squeezed to 29 px wide on a small phone turned, session 8.) */
+  flex: none;
   margin-left: 6px;
   color: var(--white);
   background: rgba(var(--white-rgb), 0.1);

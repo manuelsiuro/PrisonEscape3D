@@ -206,10 +206,17 @@
 }
 
 .help-tabs button {
-  flex: 1;
+  /* (As wide as its word: equal shares cut "Prison life" at 360 wide, session 8.) */
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 400px) {
+  .help-tabs button {
+    padding-inline: 6px;
+  }
 }
 
 .help-body {
@@ -667,6 +674,44 @@ body.touch .saved-mark {
   }
   .coach-text b {
     font-size: 13px;
+  }
+}
+
+/* A small phone turned: the top row has no room left beside a long zone's name (at 640×360 the guide was
+   160 px wide, a word a line, down over the heat meter), so it sits under the heat meter at the right,
+   clear of the routine's card at the left and of the buttons at the bottom (session 8). */
+@media (max-height: 520px) and (max-width: 820px) and (orientation: landscape) {
+  /* (The first day's guide only: a lesson's card, a .coach too, has its own places, below.) */
+  .coach:not(.lesson-coach) {
+    top: calc(max(10px, env(safe-area-inset-top)) + 96px);
+    right: max(12px, env(safe-area-inset-right));
+    max-width: min(330px, calc(50vw - 20px));
+  }
+  /* (While an activity's card is up it waits, out of the way: the wider cards reach where it sits.) */
+  body:is(
+      .gaming,
+      .training,
+      .phoning,
+      .kiosking,
+      .courting,
+      .performing,
+      .quizzing,
+      .matching,
+      .jobbing,
+      .paroling,
+      .racing,
+      .reading,
+      .vending,
+      .staging,
+      .inking,
+      .seated-game,
+      .panel-open,
+      .items-open,
+      .menu-reading
+    )
+    .hud
+    > .coach:not(.lesson-coach) {
+    visibility: hidden;
   }
 }
 

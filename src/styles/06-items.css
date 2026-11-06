@@ -186,6 +186,13 @@ body.reduced-motion .tabs .has-new::after {
   padding: 0;
   color: var(--white);
   background: none;
+  /* Only what's drawn takes a touch: the box around the tag and the round button has an empty corner,
+     which sat over the hotbar's craft button on a small phone turned (640×360, session 8). */
+  pointer-events: none;
+}
+
+.act-btn > * {
+  pointer-events: auto;
 }
 
 /* The round button: an icon and the verb. */
@@ -764,6 +771,24 @@ kbd {
   }
 }
 
+/* A small phone turned (under 820 wide): the hotbar at the left, not the middle, so the tool and action
+   buttons at the right keep their room (centred, its end sat under the tool button at 640×360, session 8). */
+@media (max-height: 520px) and (max-width: 820px) {
+  .hotbar {
+    left: max(14px, env(safe-area-inset-left));
+    transform: none;
+  }
+
+  /* (Craft by its hammer alone, as on a small phone upright: "Fabriquer" made the bar reach the tool button.) */
+  .craft-btn {
+    padding: 0 7px;
+  }
+
+  .craft-btn span {
+    display: none;
+  }
+}
+
 /* Landscape phones: panels to the side, short. */
 @media (max-height: 520px) {
   .slot {
@@ -906,8 +931,12 @@ body.reduced-motion .slot.arrive {
     gap: 6px;
   }
 
+  /* (Wide enough for one line nearly always: the lock-on button steps up over a one-line tag, session 8.) */
   .act-what {
-    max-width: 200px;
+    max-width: min(260px, 40vw);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .touch.is-playing .hint {

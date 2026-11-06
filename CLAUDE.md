@@ -43,7 +43,8 @@ Rules that matter every time:
 - **UI**: screens are functions returning a Promise; no colour written where it's used: a token on `:root`
   (in `src/styles/01-base.css` if more than one file uses it, else at its file's top; translucent:
   `rgba(var(--x-rgb), 0.4)`), which `tokentest` checks; check desktop, phone portrait (412×915) and
-  phone landscape (915×412).
+  phone landscape (915×412), and after a layout change `scripts/dev/screensweep.ts` at its eight sizes
+  (every screen and moment of play, in English and French; a phone turned in Chrome is only ~274 tall).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
   prison and moment and drives it by real keys. A render change meant to draw nothing new (a refactor,

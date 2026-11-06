@@ -224,6 +224,39 @@
   box-shadow: 0 1px 4px rgba(var(--blue-28-rgb), 0.18);
 }
 
+/* ------------------------------------------------------------ a finger's reach (session 8)
+   On touch, controls drawn smaller than a fingertip (23–31 px tall) take a touch a little around them, a
+   clear margin that changes nothing on screen: the switches, the title's pills, the stakes, a card's close
+   cross. The segments get the height itself (some clip what overflows them, the margin with it), and so do
+   links stacked close; a slider its thumb's height. */
+.touch :is(.switch, .sound-toggle, .share-toggle, .cash-btn, .train-stop) {
+  position: relative;
+}
+
+.touch .seg button {
+  min-height: 36px;
+}
+
+.touch :is(.switch, .sound-toggle, .share-toggle, .cash-btn)::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+
+.touch .train-stop::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.touch .link-btn {
+  min-height: 40px;
+}
+
+.touch input[type='range'] {
+  height: 32px;
+}
+
 /* ------------------------------------------------------------ coach hint */
 .hint {
   position: fixed;

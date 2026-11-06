@@ -165,6 +165,9 @@
 
 .hd-page {
   display: grid;
+  /* (One column no wider than the card: a long line that can't wrap shortens instead of widening the page
+     past the screen, as "Jouer la leçon : La commission de libération" did at 360 wide, session 8.) */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   padding-top: 2px;
   font-size: 14.5px;
@@ -709,6 +712,25 @@
   white-space: nowrap;
   text-align: right;
   color: var(--accent-2);
+}
+
+/* A small phone: a long time ("Une semaine plus tard, 10:00") on two lines, the event keeping its room. */
+@media (max-width: 400px) {
+  .hd-tl time {
+    max-width: 8em;
+    white-space: normal;
+  }
+
+  .hd-lessons .big-btn {
+    height: auto;
+    min-height: 44px;
+    padding-block: 6px;
+  }
+
+  .hd-lessons .big-btn span {
+    white-space: normal;
+    text-align: left;
+  }
 }
 
 .hd-tl span {

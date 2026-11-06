@@ -263,6 +263,13 @@ body.reduced-motion .phone-card {
   animation: none !important;
   transition: none !important;
 }
+/* At the phone, the calls before you (your turn, a call, its result), the action and the lock-on aren't its
+   business, and on a phone upright they sat over the card's last calls and its Leave button (as at the kiosk).
+   Not while queueing: the action button talks to the one ahead to swap places, and a man cut in front of
+   may swing at you (session 8, its review). */
+.touch:has(.phone-card:not(.hidden):not([data-phase='queue'])) :is(.act-btn, .lock-btn) {
+  display: none;
+}
 /* On Lou's line the digits are the phrases: the tool button, its prompt and the lock-on step aside. */
 body.phoning[data-phone='on'] .tool-btn,
 body.phoning[data-phone='on'] .tool-prompt,
@@ -270,4 +277,12 @@ body.phoning[data-phone='on'] .lock-btn,
 body.phoning[data-phone='on'] .act-btn,
 body.phoning[data-phone='on'] .act-prompt {
   display: none;
+}
+
+/* A small phone turned (under 440 tall): wider into the room on the right, the calls on fewer lines (in French
+   the fourth was below the card's edge at 640×360, session 8). */
+@media (max-height: 440px) {
+  .phone-card {
+    width: min(360px, calc(100vw - 280px));
+  }
 }

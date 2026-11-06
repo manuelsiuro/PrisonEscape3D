@@ -567,3 +567,11 @@ body.reduced-motion .wrestle-card.surge .wrestle-surge {
 .dice-stake .ic {
   flex: none;
 }
+
+/* A very short window: a pad lowered there (the hoops', clear of the pause button) would sit on the lock-on,
+   which a game at a table or a court has no use for (session 8). */
+@media (max-height: 340px) {
+  body:is(.gaming, .courting) .lock-btn {
+    display: none;
+  }
+}

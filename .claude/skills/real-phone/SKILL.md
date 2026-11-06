@@ -80,6 +80,18 @@ Read where things are with `eval` (an element's rect, the player's tile, the les
   button below the fold landed on Android's Back and brought another app of the user's to the front.) When one
   refuses, read why; don't work round it with raw `adb shell input`.
 
+## 4b. Screens and turning the phone
+
+- Its window in Chrome: 360×641 upright, 697×274 turned (the address bar and Android's buttons take a
+  third of the height). Turned, the game goes full screen at the first real tap in a game (780×360):
+  start one (`playat`'s `at()` by `eval`), then `tap` once. A script's `click()` doesn't count.
+- To turn it, Android's settings (the user's, so put them back exactly): read `settings get system
+  accelerometer_rotation` and `user_rotation` first, then `settings put system accelerometer_rotation 0`
+  and `user_rotation 1`; after, `user_rotation 0` and `accelerometer_rotation 1`, one at a time, and read
+  them back (put together, the second was lost once).
+- The layout's audit runs there as in the browser: `const s = await import('/scripts/dev/screensweep.ts');
+  return await s.sweep();` (about two minutes; the phone shows French).
+
 ## 5. Long runs
 
 - The phone can lock itself mid-run even with the screen kept on (2026-11-06, a 10-minute run lost): Chrome
@@ -93,8 +105,9 @@ Read where things are with `eval` (an element's rect, the player's tile, the les
 ## 6. The user's phone
 
 It's the user's own: other tabs are open (the live site, the Play Console). The tool only ever touches tabs on
-`localhost:5310`. Don't install the game on it, change its settings or leave the screen forced on: run `cleanup`
-when done, and tell the user what's still open there (the game's tab, the counter on: `?perf=0` turns it off).
+`localhost:5310`. Don't install the game on it, change its settings (but its rotation for a run, put back as
+§4b says) or leave the screen forced on: run `cleanup` when done, and tell the user what's still open there
+(the game's tab, the counter on: `?perf=0` turns it off; full screen, which Back leaves).
 
 ## 7. Writing it down
 

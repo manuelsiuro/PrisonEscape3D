@@ -259,6 +259,12 @@
     bottom: calc(max(18px, env(safe-area-inset-bottom)) + 74px);
   }
 
+  /* The action button's tag goes above it there, where the lock-on sat ("Hide in the supply truck" over it
+     at 915×412): up above the tag while one shows (session 8). */
+  .touch:has(.act-btn:not(.hidden) .act-what) .lock-btn {
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 120px);
+  }
+
   .target-card,
   .banner-up .target-card {
     top: calc(max(10px, env(safe-area-inset-top)) + 54px);

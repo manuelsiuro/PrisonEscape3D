@@ -19,6 +19,13 @@
   text-overflow: ellipsis;
 }
 
+/* (A small phone, or one turned: on two lines, as the title's others, 03-title.css.) */
+@media (max-width: 400px), (max-height: 520px) {
+  .daily-btn .menu-text small {
+    white-space: normal;
+  }
+}
+
 .daily-pill {
   display: inline-flex;
   flex: none;
