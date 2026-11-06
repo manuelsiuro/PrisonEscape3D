@@ -841,19 +841,7 @@ export class View {
     this.me.dress(f.outfit, f.inked);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)
     this.showLayer(this.getaway.aloft ? LAYER.ROOF : f.layer);
-    // Damage, grates and tunnels redrawn when the tiles change.
-    const below = f.deskAside;
-    if (f.tilesRev !== this.tilesRev || below !== this.drawnBelow) {
-      if (f.tilesRev !== this.tilesRev) this.underground?.refresh();
-      this.tilesRev = f.tilesRev;
-      this.drawnBelow = below;
-      this.structure?.refresh(below);
-      this.wearRev = -1;
-    }
-    if (f.wearRev !== this.wearRev) {
-      this.wearRev = f.wearRev;
-      this.structure?.refreshWear(f.wear);
-    }
+    this.redrawTiles(f);
     // (P24: hanging from a glider's bar in flight, both hands up.)
     const doing = this.getaway.flying
       ? DOING.LIFT
@@ -871,6 +859,62 @@ export class View {
         this.dust.puff(f.x, f.z, dust[f.surface], 2);
       this.onStep(f.surface);
     }
+    this.followPlayer(f, dt);
+    // The see-through cut: on the ground floor and in the tunnels (nothing stands over the vents or the roof).
+    const cut = f.layer === LAYER.GROUND || f.layer === LAYER.UNDER;
+    this.crowd.drawInmates(f, dt, time, this.reducedMotion);
+    this.drawPuddles(f, time);
+    if (this.minefield) {
+      this.minefield.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
+      this.minefield.update(f.craters);
+    }
+    this.doorsOpen.clear();
+    this.crowd.drawGuards(f, dt, time, this.reducedMotion);
+    this.openAround(f, dt, time);
+    this.drawSleepers(f, dt, time);
+    this.drawSky(f, dt, time);
+    this.drawWatch(f, dt, time);
+    this.drawCarried(f, dt, time);
+    this.drawPastimes(f, dt, time);
+    // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
+    const upright =
+      !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
+    this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
+    this.player.root.rotation.z = this.tipsySway > 0.001 ? Math.sin(time * 2.3) * 0.07 * this.tipsySway : 0;
+    // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
+    const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
+    if (drone && (this.buzzClock -= dt) <= 0) {
+      this.buzzClock = 1.3;
+      this.onDrone(drone.x, drone.z);
+    } else if (!drone) this.buzzClock = 0;
+    this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
+    this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);
+    this.guide.setPath(f.guide);
+    this.guide.setTap(f.tap);
+    this.guide.update(dt, time, f, !this.reducedMotion);
+    this.lighting.alarm += ((f.alarm ? 1 : 0) - this.lighting.alarm) * Math.min(1, dt * 3);
+    this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
+  }
+
+  /** Damage, grates and tunnels redrawn when the tiles change (the desk over a tunnel pushed aside while the player is below). */
+  private redrawTiles(f: Frame) {
+    // Damage, grates and tunnels redrawn when the tiles change.
+    const below = f.deskAside;
+    if (f.tilesRev !== this.tilesRev || below !== this.drawnBelow) {
+      if (f.tilesRev !== this.tilesRev) this.underground?.refresh();
+      this.tilesRev = f.tilesRev;
+      this.drawnBelow = below;
+      this.structure?.refresh(below);
+      this.wearRev = -1;
+    }
+    if (f.wearRev !== this.wearRev) {
+      this.wearRev = f.wearRev;
+      this.structure?.refreshWear(f.wear);
+    }
+  }
+
+  /** The camera after the player: a look-ahead where they walk, a glide's ring, a match's goals; cut, not panned, when they're carried far. */
+  private followPlayer(f: Frame, dt: number) {
     // Look-ahead: up to a tile and a half in the walking direction, eased.
     const lead = f.moving && !this.reducedMotion ? 1.4 : 0;
     this.cam.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
@@ -890,16 +934,10 @@ export class View {
     else this.cam.target.lerp(this.v.set(f.x, y, f.z).add(this.cam.ahead), Math.min(1, dt * 7));
     this.underground?.follow(f.x, f.z);
     this.feet.set(f.x, 0, f.z);
-    // The see-through cut: on the ground floor and in the tunnels (nothing stands over the vents or the roof).
-    const cut = f.layer === LAYER.GROUND || f.layer === LAYER.UNDER;
-    this.crowd.drawInmates(f, dt, time, this.reducedMotion);
-    this.drawPuddles(f, time);
-    if (this.minefield) {
-      this.minefield.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
-      this.minefield.update(f.craters);
-    }
-    this.doorsOpen.clear();
-    this.crowd.drawGuards(f, dt, time, this.reducedMotion);
+  }
+
+  /** The trees' leaves over people, the doors the player and the delivery's vehicle open, the gates waved through. */
+  private openAround(f: Frame, dt: number, time: number) {
     // A tree's leaves fade over anyone standing under or behind them (P23: a lookout posted there stays in view).
     if (this.decor) {
       const at = this.people;
@@ -939,6 +977,10 @@ export class View {
     const cp = this.world?.def.checkpoint;
     if (f.getaway.waved && cp) for (const q of cp.gates) this.doorsOpen.add(q.z * MAP_W + q.x);
     if (dv.stowed) this.player.root.visible = false;
+  }
+
+  /** Z's over everyone asleep, the dogs (asleep too, some of them), the snores. */
+  private drawSleepers(f: Frame, dt: number, time: number) {
     // Z's over everyone asleep on the ground floor (the player too).
     this.sleepers.length = 0;
     if (f.layer === LAYER.GROUND) {
@@ -964,6 +1006,10 @@ export class View {
     );
     this.noSleepers.length = 0;
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
+  }
+
+  /** The snow and the weather (P17), and the day's events: the film, the food fight, the inspectors. */
+  private drawSky(f: Frame, dt: number, time: number) {
     // Snow over an alpine prison, or on a Big Freeze Daily anywhere (P26), out in the open (ground floor and roofs).
     const wx = f.weather;
     const snowing = this.world?.def.theme === 'alpine' || wx.snow;
@@ -1023,6 +1069,10 @@ export class View {
       f.layer !== LAYER.UNDER,
       this.security?.powerLevel ?? 1,
     );
+  }
+
+  /** The holiday (P42), the lock-on ring, the guards' cones, the cameras and searchlights, a takeover's riot. */
+  private drawWatch(f: Frame, dt: number, time: number) {
     // The holiday (P42): its decor, the water fight's sprays, New Year's fireworks (from anywhere but a tunnel).
     this.holidaysView.dress(f.holiday.kind, this.later);
     this.holidaysView.group.visible = f.layer !== LAYER.UNDER;
@@ -1036,6 +1086,10 @@ export class View {
       this.security.update(f.security, dt, time, this.lighting.night, !this.reducedMotion);
     }
     this.riot = f.takeover;
+  }
+
+  /** Carried off (the raft, the helicopter, the delivery's truck, a glider: the camera goes with them), then the rats, on the floor or the shoulder. */
+  private drawCarried(f: Frame, dt: number, time: number) {
     this.carrying = false;
     if (this.island) {
       this.island.group.visible = f.layer !== LAYER.UNDER;
@@ -1086,6 +1140,10 @@ export class View {
         ? this.player.shoulder(this.shoulderAt)
         : null;
     this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+  }
+
+  /** The rest of the day's pieces: smuggling, the side games and pastimes, the long games, the pitch, the stage, the phone, the kiosk, the machines, the boards, the gym, the bed dummy, the release desk. */
+  private drawPastimes(f: Frame, dt: number, time: number) {
     // Smuggling (P21): the drone, the drops, visiting day's arches and visitors.
     // (From the vents and the roof the ground floor shows too, its visitors and arches with it.)
     this.smuggling.group.visible = f.layer !== LAYER.UNDER;
@@ -1134,24 +1192,6 @@ export class View {
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.crowd.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
-    // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
-    const upright =
-      !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
-    this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
-    this.player.root.rotation.z = this.tipsySway > 0.001 ? Math.sin(time * 2.3) * 0.07 * this.tipsySway : 0;
-    // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
-    const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
-    if (drone && (this.buzzClock -= dt) <= 0) {
-      this.buzzClock = 1.3;
-      this.onDrone(drone.x, drone.z);
-    } else if (!drone) this.buzzClock = 0;
-    this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
-    this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);
-    this.guide.setPath(f.guide);
-    this.guide.setTap(f.tap);
-    this.guide.update(dt, time, f, !this.reducedMotion);
-    this.lighting.alarm += ((f.alarm ? 1 : 0) - this.lighting.alarm) * Math.min(1, dt * 3);
-    this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
   }
 
   /** A sleeper's head, for the snores. */
