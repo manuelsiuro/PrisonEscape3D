@@ -1,4 +1,23 @@
 /* P5: combat. The target card, the lock button, floating numbers, the hurt flash. */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --combat-stone-96: #fff0dc;
+  --combat-stone-96-rgb: 255, 240, 220;
+  --combat-stone-92: #ffd9d9;
+  --combat-red-69: #f2676b;
+  --combat-red-57: #dc141e;
+  --combat-red-57-rgb: 220, 20, 30;
+  --combat-red-51: #b42a33;
+  --combat-red-45: #96242c;
+  --combat-red-45-rgb: 150, 36, 44;
+  --combat-red-30: #5a0a14;
+  --combat-red-30-rgb: 90, 10, 20;
+  --combat-orange-21: #281400;
+  --combat-orange-21-rgb: 40, 20, 0;
+  --combat-gold-81: #ffb02e;
+  --combat-gold-81-rgb: 255, 176, 46;
+  --combat-green-78: #6fd45a;
+}
 
 /* ------------------------------------------------------------ the target card (under the HUD) */
 .target-card {
@@ -11,11 +30,11 @@
   gap: 9px;
   max-width: calc(100vw - 32px);
   padding: 6px 12px 6px 7px;
-  border: 2px solid rgba(255, 176, 46, 0.85);
+  border: 2px solid rgba(var(--combat-gold-81-rgb), 0.85);
   border-radius: 16px;
-  color: white;
-  background: rgba(18, 24, 36, 0.86);
-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.86);
+  box-shadow: 0 10px 24px -12px rgba(var(--black-rgb), 0.8);
   transform: translateX(-50%);
   pointer-events: none;
   transition: top 0.28s var(--ease);
@@ -39,7 +58,7 @@
 
 /* Out of reach: the frame dims (walk in closer). */
 .target-card.far {
-  border-color: rgba(255, 176, 46, 0.35);
+  border-color: rgba(var(--combat-gold-81-rgb), 0.35);
 }
 
 .target-ic {
@@ -49,14 +68,14 @@
   height: 32px;
   flex: none;
   border-radius: 50%;
-  color: #1b1206;
+  color: var(--stone-19);
   background: var(--gold);
 }
 
 .target-card[data-mood='angry'] .target-ic,
 .target-card[data-mood='chasing'] .target-ic {
-  color: white;
-  background: #e5484d;
+  color: var(--white);
+  background: var(--red-63);
 }
 
 .target-text {
@@ -85,14 +104,14 @@
   border-radius: 999px;
   font: 700 11px/1.4 var(--font-ui);
   font-style: normal;
-  color: #cfe3ff;
-  background: rgba(111, 147, 184, 0.3);
+  color: var(--slate-91);
+  background: rgba(var(--steel-rgb), 0.3);
 }
 
 .target-card[data-mood='angry'] .target-head em,
 .target-card[data-mood='chasing'] .target-head em {
-  color: #ffd9d9;
-  background: rgba(229, 72, 77, 0.35);
+  color: var(--combat-stone-92);
+  background: rgba(var(--red-63-rgb), 0.35);
 }
 
 .target-row {
@@ -107,7 +126,7 @@
   height: 7px;
   overflow: hidden;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--white-rgb), 0.14);
 }
 
 .target-bar {
@@ -123,20 +142,20 @@
 
 /* The health just lost lingers as a pale trail, then catches up. */
 .target-bar .trail {
-  background: rgba(255, 240, 220, 0.75);
+  background: rgba(var(--combat-stone-96-rgb), 0.75);
   transition: width 0.5s var(--ease) 0.35s;
 }
 
 /* The target's bar by how much is left: green, amber, red (never the player's own heart red). */
 .target-bar .fill {
-  background: #6fd45a;
+  background: var(--combat-green-78);
   transition:
     width 0.18s var(--ease),
     background 0.2s;
 }
 
 .target-card[data-health='mid'] .target-bar .fill {
-  background: #ffb02e;
+  background: var(--combat-gold-81);
 }
 
 .target-card[data-health='low'] .target-bar .fill {
@@ -159,7 +178,7 @@
 
 .target-row small {
   font: 700 11px var(--font-ui);
-  color: #b8c4d4;
+  color: var(--silver-2);
   white-space: nowrap;
 }
 
@@ -176,7 +195,7 @@
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 180px);
   z-index: 31;
   padding: 0;
-  color: white;
+  color: var(--white);
   background: none;
   touch-action: none;
 }
@@ -186,10 +205,10 @@
   place-items: center;
   width: 50px;
   height: 50px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(var(--white-rgb), 0.25);
   border-radius: 50%;
-  background: rgba(30, 40, 58, 0.82);
-  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.9);
+  background: rgba(var(--slate-28-rgb), 0.82);
+  box-shadow: 0 8px 18px -8px rgba(var(--black-rgb), 0.9);
   transition:
     transform 0.08s,
     background 0.15s;
@@ -201,25 +220,25 @@
 
 /* Locked on: lit in the ring's amber. */
 .lock-btn.on .lock-round {
-  color: #1b1206;
-  border-color: rgba(255, 255, 255, 0.6);
-  background: radial-gradient(circle at 40% 30%, #ffd27a, #f29a1a);
+  color: var(--stone-19);
+  border-color: rgba(var(--white-rgb), 0.6);
+  background: radial-gradient(circle at 40% 30%, var(--gold-88), var(--gold-76));
 }
 
 /* Fighting: the tool button turns red. */
 .tool-btn.attack .tool-round {
-  background: radial-gradient(circle at 40% 30%, #f2676b, #b42a33);
+  background: radial-gradient(circle at 40% 30%, var(--combat-red-69), var(--combat-red-51));
   box-shadow:
-    0 10px 22px -8px rgba(90, 10, 20, 0.9),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    0 10px 22px -8px rgba(var(--combat-red-30-rgb), 0.9),
+    inset 0 2px 0 rgba(var(--white-rgb), 0.3);
 }
 
 .tool-prompt.attack {
-  background: rgba(150, 36, 44, 0.88);
+  background: rgba(var(--combat-red-45-rgb), 0.88);
 }
 
 .tool-prompt.attack b {
-  color: #ffd2d2;
+  color: var(--red-90b);
 }
 
 @media (max-width: 520px) {
@@ -253,22 +272,22 @@
   font: 900 22px/1 var(--font-ui);
   color: var(--gold);
   text-shadow:
-    0 2px 0 rgba(40, 20, 0, 0.9),
-    0 0 10px rgba(0, 0, 0, 0.5);
+    0 2px 0 rgba(var(--combat-orange-21-rgb), 0.9),
+    0 0 10px rgba(var(--black-rgb), 0.5);
   transform: translate(-50%, -50%);
   pointer-events: none;
   animation: float-up 0.9s var(--ease) forwards;
 }
 
 .float-num.taken {
-  color: #ff6b6b;
+  color: var(--red-71b);
 }
 
 .float-num.ko {
   /* Above the last blow's number, a beat after it. */
   margin-top: -30px;
   font-size: 18px;
-  color: white;
+  color: var(--white);
   letter-spacing: 0.02em;
   animation-duration: 1.3s;
   animation-delay: 0.12s;
@@ -317,7 +336,7 @@ body.reduced-motion .energy .vital .ic {
   inset: 0;
   z-index: 21;
   opacity: 0;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(220, 20, 30, 0.55));
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(var(--combat-red-57-rgb), 0.55));
   pointer-events: none;
 }
 
@@ -326,7 +345,7 @@ body.reduced-motion .energy .vital .ic {
 }
 
 .hurt-flash.heavy {
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(220, 20, 30, 0.75));
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(var(--combat-red-57-rgb), 0.75));
 }
 
 @keyframes hurt-flash {

@@ -1,8 +1,13 @@
 /* ------------------------------------------------------------ the parole board (P39) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --parole-purple-86: #d9c8ff;
+  --parole-purple-60: #8a6bd1;
+}
 
 /* The card: at the release desk (how it stands, the record, Apply), before the board (the members, the question, the file, three answers), the verdict. */
 .parole-card .train-ic {
-  background: #8a6bd1;
+  background: var(--parole-purple-60);
 }
 .parole-card .train-head b {
   min-width: 0;
@@ -14,16 +19,16 @@
 .parole-status {
   margin: 8px 0 0;
   font: 700 13px/1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(var(--white-rgb), 0.85);
 }
 .parole-status.ok {
-  color: #9fe6b9;
+  color: var(--green-87);
 }
 .parole-status.bad {
-  color: #ffb3b5;
+  color: var(--red-84b);
 }
 .parole-status.job {
-  color: #d9c8ff;
+  color: var(--parole-purple-86);
 }
 
 /* The record's lines, for and against, with their points. */
@@ -43,8 +48,8 @@
   padding: 3px 8px;
   border-radius: 8px;
   font: 600 12px/1.25 var(--font-ui);
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.05);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.05);
 }
 .parole-lines li span {
   min-width: 0;
@@ -56,23 +61,23 @@
   font-variant-numeric: tabular-nums;
 }
 .parole-lines li.good b {
-  color: #9fe6b9;
+  color: var(--green-87);
 }
 .parole-lines li.bad {
-  color: #ffd0d1;
-  background: rgba(229, 72, 77, 0.16);
+  color: var(--red-90b);
+  background: rgba(var(--red-63-rgb), 0.16);
 }
 .parole-lines li.bad b {
-  color: #ff9a9d;
+  color: var(--red-79);
 }
 .parole-lines li.quiet b {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(var(--white-rgb), 0.45);
 }
 .parole-weighed li {
   position: relative;
   padding: 3px 8px 3px 18px;
   font: 600 12.5px/1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--white-rgb), 0.9);
 }
 .parole-weighed li::before {
   content: '';
@@ -82,7 +87,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #d9c8ff;
+  background: var(--parole-purple-86);
 }
 
 /* The board: three faces, the one asking lit, and their name. */
@@ -101,7 +106,7 @@
   height: 30px;
   border-radius: 50%;
   overflow: hidden;
-  color: white;
+  color: var(--white);
   background: color-mix(in srgb, var(--member) 45%, transparent);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--member) 70%, transparent);
   opacity: 0.6;
@@ -116,12 +121,12 @@
 .parole-board li.on i {
   background: var(--member);
   opacity: 1;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(var(--white-rgb), 0.8);
 }
 .parole-board li.who {
   margin-left: 4px;
   font: 700 12px var(--font-ui);
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
 }
 .parole-q {
   margin: 8px 0 0;
@@ -133,7 +138,7 @@
   gap: 5px;
   margin: 4px 0 0;
   font: 600 11.5px/1.3 var(--font-ui);
-  color: #d9c8ff;
+  color: var(--parole-purple-86);
 }
 .parole-file .ic {
   flex: none;
@@ -154,9 +159,9 @@
   border-radius: 12px;
   text-align: left;
   font: 700 12.5px/1.25 var(--font-ui);
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--white-rgb), 0.12);
 }
 .parole-answer kbd {
   flex: none;
@@ -167,7 +172,7 @@
   border-radius: 6px;
   font: 800 11px var(--font-ui);
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(var(--white-rgb), 0.85);
 }
 .touch .parole-answer kbd {
   display: none;
@@ -183,23 +188,23 @@
   opacity: 0.5;
 }
 .parole-answer.mine {
-  box-shadow: inset 0 0 0 2px #d9c8ff;
+  box-shadow: inset 0 0 0 2px var(--parole-purple-86);
 }
 .parole-answer.good {
-  background: rgba(63, 199, 154, 0.5);
+  background: rgba(var(--green-75-rgb), 0.5);
 }
 .parole-answer.bad {
-  background: rgba(229, 72, 77, 0.45);
+  background: rgba(var(--red-63-rgb), 0.45);
 }
 .parole-react {
   margin: 6px 0 0;
   font: italic 700 13px/1.3 var(--font-ui);
 }
 .parole-react.good {
-  color: #9fe6b9;
+  color: var(--green-87);
 }
 .parole-react.bad {
-  color: #ffb3b5;
+  color: var(--red-84b);
 }
 .parole-verdict {
   display: flex;
@@ -211,10 +216,10 @@
   font: 800 16px var(--font-ui);
 }
 .parole-verdict.good {
-  background: rgba(63, 199, 154, 0.35);
+  background: rgba(var(--green-75-rgb), 0.35);
 }
 .parole-verdict.bad {
-  background: rgba(229, 72, 77, 0.3);
+  background: rgba(var(--red-63-rgb), 0.3);
 }
 .parole-bar.hidden,
 .parole-apply.hidden {
@@ -224,7 +229,7 @@
   margin-top: 8px;
 }
 .parole-bar > i {
-  background: linear-gradient(90deg, #8a6bd1, #d9c8ff);
+  background: linear-gradient(90deg, var(--parole-purple-60), var(--parole-purple-86));
 }
 .parole-apply {
   margin-top: 8px;

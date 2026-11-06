@@ -1,8 +1,21 @@
 /* ------------------------------------------------------------ the odd jobs board (P40) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --oddjobs-grey-26: #28221e;
+  --oddjobs-grey-26-rgb: 40, 34, 30;
+  --oddjobs-slate-21: #161820;
+  --oddjobs-slate-21-rgb: 22, 24, 32;
+  --oddjobs-stone-24: #2b1d10;
+  --oddjobs-gold-89: #f0d6aa;
+  --oddjobs-gold-89-rgb: 240, 214, 170;
+  --oddjobs-gold-84: #e8c77a;
+  --oddjobs-gold-84-rgb: 232, 199, 122;
+  --oddjobs-gold-67: #b98a55;
+}
 
 /* Its card at the board: the job held (its steps), the day's pins, the story's card. */
 .oddjobs-card .train-ic {
-  background: #b98a55;
+  background: var(--oddjobs-gold-67);
 }
 /* The job's own card: its Close button at the end of its head (Escape and its chip close it too). */
 .oddjobs-card .oddjobs-close {
@@ -39,12 +52,12 @@ body.touch .oddjobs-card .oddjobs-close {
   gap: 8px;
   padding: 8px 10px;
   border-radius: 14px;
-  background: rgba(255, 248, 230, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(240, 214, 170, 0.22);
+  background: rgba(var(--stone-98-rgb), 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--oddjobs-gold-89-rgb), 0.22);
 }
 .oddjob-pin.story {
-  background: rgba(232, 199, 122, 0.16);
-  box-shadow: inset 0 0 0 1.5px rgba(232, 199, 122, 0.55);
+  background: rgba(var(--oddjobs-gold-84-rgb), 0.16);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--oddjobs-gold-84-rgb), 0.55);
 }
 .oddjob-pin.held {
   grid-template-columns: auto minmax(0, 1fr);
@@ -55,8 +68,8 @@ body.touch .oddjobs-card .oddjobs-close {
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  color: #2b1d10;
-  background: #e8c77a;
+  color: var(--oddjobs-stone-24);
+  background: var(--oddjobs-gold-84);
 }
 .oddjob-text {
   display: grid;
@@ -66,21 +79,21 @@ body.touch .oddjobs-card .oddjobs-close {
 }
 .oddjob-text b {
   font: 700 13px var(--font-ui);
-  color: #fff;
+  color: var(--white);
 }
 .oddjob-text em {
   font: 700 11px var(--font-ui);
   font-style: normal;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #e8c77a;
+  color: var(--oddjobs-gold-84);
 }
 .oddjob-text small {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
   font-size: 12px;
 }
 .oddjob-meta {
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(var(--white-rgb), 0.62);
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
 }
@@ -89,7 +102,7 @@ body.touch .oddjobs-card .oddjobs-close {
   font-weight: 700;
 }
 .oddjob-text .oddjob-why {
-  color: #ffb08a;
+  color: var(--orange-83);
 }
 .oddjob-steps {
   display: grid;
@@ -103,14 +116,14 @@ body.touch .oddjobs-card .oddjobs-close {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--white-rgb), 0.6);
 }
 .oddjob-steps li svg {
   flex: none;
   margin-top: 2px;
 }
 .oddjob-steps li.now {
-  color: #fff;
+  color: var(--white);
   font-weight: 700;
 }
 .oddjob-steps li.done {
@@ -130,7 +143,7 @@ body.touch .oddjobs-card .oddjobs-close {
   gap: 4px;
   margin-right: auto;
   font: 600 12px var(--font-ui);
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(var(--white-rgb), 0.72);
 }
 .oddjobs-card .big-btn.urgent {
   animation: job-urgent 0.9s ease-in-out infinite;
@@ -139,8 +152,8 @@ body.touch .oddjobs-card .oddjobs-close {
 @keyframes job-urgent {
   50% {
     box-shadow:
-      inset 0 0 0 2px #ff6b4a,
-      0 0 14px rgba(255, 107, 74, 0.6);
+      inset 0 0 0 2px var(--energy-low),
+      0 0 14px rgba(var(--energy-low-rgb), 0.6);
   }
 }
 
@@ -150,17 +163,17 @@ body.touch .oddjobs-card .oddjobs-close {
   cursor: pointer;
   pointer-events: auto;
   font-family: inherit;
-  background: rgba(40, 32, 22, 0.9);
-  box-shadow: inset 0 0 0 1.5px rgba(232, 199, 122, 0.6);
+  background: rgba(var(--stone-24-rgb), 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--oddjobs-gold-84-rgb), 0.6);
   max-width: min(320px, 46vw);
 }
 .hud-alert.hud-job .hud-job-ic {
   display: inline-grid;
-  color: #e8c77a;
+  color: var(--oddjobs-gold-84);
 }
 .hud-alert.hud-job b {
   overflow: hidden;
-  color: #fbe9c4;
+  color: var(--gold-94b);
   font-weight: 700;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -170,20 +183,20 @@ body.touch .oddjobs-card .oddjobs-close {
   flex: none;
   font-style: normal;
   font-weight: 700;
-  color: #e8c77a;
+  color: var(--oddjobs-gold-84);
   font-variant-numeric: tabular-nums;
 }
 .hud-alert.hud-job .hud-job-tail:empty {
   display: none;
 }
 .hud-alert.hud-job .hud-alert-bar i {
-  background: #e8c77a;
+  background: var(--oddjobs-gold-84);
 }
 .hud-alert.hud-job.done {
   box-shadow: inset 0 0 0 2px var(--ok);
 }
 .hud-alert.hud-job.urgent {
-  box-shadow: inset 0 0 0 2px #ff6b4a;
+  box-shadow: inset 0 0 0 2px var(--energy-low);
   animation: job-urgent 0.9s ease-in-out infinite;
 }
 
@@ -201,12 +214,12 @@ body.touch .oddjobs-card .oddjobs-close {
   /* (The dialogs' dark skin, warmed with the board's cork: a tint and an amber edge, never a light page.) */
   color: var(--dlg-text);
   background:
-    linear-gradient(90deg, transparent 8%, rgba(232, 199, 122, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
-    radial-gradient(120% 70% at 50% 0%, rgba(232, 199, 122, 0.14), transparent 65%),
-    linear-gradient(180deg, rgba(40, 34, 30, 0.97), rgba(22, 24, 32, 0.97));
+    linear-gradient(90deg, transparent 8%, rgba(var(--oddjobs-gold-84-rgb), 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    radial-gradient(120% 70% at 50% 0%, rgba(var(--oddjobs-gold-84-rgb), 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(var(--oddjobs-grey-26-rgb), 0.97), rgba(var(--oddjobs-slate-21-rgb), 0.97));
   box-shadow:
-    0 20px 50px -14px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1.5px rgba(232, 199, 122, 0.5);
+    0 20px 50px -14px rgba(var(--black-rgb), 0.7),
+    inset 0 0 0 1.5px rgba(var(--oddjobs-gold-84-rgb), 0.5);
   animation: sheet-in 0.3s var(--spring);
 }
 .story-head {
@@ -220,26 +233,26 @@ body.touch .oddjobs-card .oddjobs-close {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  color: #fff;
-  background: #b98a55;
+  color: var(--white);
+  background: var(--oddjobs-gold-67);
 }
 .story-head span {
   display: grid;
 }
 .story-head b {
   font: 700 15px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 .story-head small {
   font: 600 11px var(--font-ui);
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #e8c77a;
+  color: var(--oddjobs-gold-84);
 }
 .story-text {
   margin: 10px 0 12px;
   font: 500 14px/1.45 var(--font-ui);
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(var(--white-rgb), 0.88);
 }
 .story-ok {
   margin-left: auto;

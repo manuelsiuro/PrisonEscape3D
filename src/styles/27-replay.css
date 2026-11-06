@@ -1,4 +1,17 @@
 /* ------------------------------------------------------------ the replay viewer (P25) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --replay-red-76: #ff8a80;
+  --replay-red-58: #c94848;
+  --replay-orange-56: #b0562a;
+  --replay-gold-30: #3b2a00;
+  --replay-indigo-87: #d4ceff;
+  --replay-indigo-78: #b4aaff;
+  --replay-indigo-78-rgb: 180, 170, 255;
+  --replay-indigo-60: #7b6fd6;
+  --replay-indigo-60-rgb: 123, 111, 214;
+  --replay-indigo-47: #5546b3;
+}
 
 /* In a replay the HUD only shows: no pause button (the bar has its own), nothing to press. */
 body.is-replay .hud-pause,
@@ -44,9 +57,9 @@ body.is-replay .hud button {
   color: var(--dlg-text);
   background: linear-gradient(180deg, var(--dlg-top), var(--dlg-bottom));
   box-shadow:
-    inset 0 1px 0 rgba(255, 140, 60, 0.55),
+    inset 0 1px 0 rgba(var(--orange-75b-rgb), 0.55),
     inset 0 0 0 1px var(--dlg-line),
-    0 14px 34px -12px rgba(0, 0, 0, 0.7);
+    0 14px 34px -12px rgba(var(--black-rgb), 0.7);
 }
 
 .rp-head {
@@ -65,8 +78,8 @@ body.is-replay .hud button {
   font: 700 11.5px var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #fff;
-  background: linear-gradient(135deg, #7b6fd6, #5546b3);
+  color: var(--white);
+  background: linear-gradient(135deg, var(--replay-indigo-60), var(--replay-indigo-47));
 }
 
 .rp-title {
@@ -88,7 +101,7 @@ body.is-replay .hud button {
   flex: none;
   max-width: 70%;
   font: 600 16px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .rp-title small {
@@ -102,8 +115,8 @@ body.is-replay .hud button {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.1);
   box-shadow: none;
 }
 
@@ -123,14 +136,14 @@ body.is-replay .hud button {
   box-shadow:
     0 0 0 3px var(--dlg-top),
     0 0 0 6px var(--orange),
-    0 2px 6px rgba(0, 0, 0, 0.5);
+    0 2px 6px rgba(var(--black-rgb), 0.5);
 }
 
 .rp-track {
   position: relative;
   height: 6px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--white-rgb), 0.08);
 }
 
 .rp-scouted,
@@ -143,7 +156,7 @@ body.is-replay .hud button {
 }
 
 .rp-scouted {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--white-rgb), 0.2);
 }
 
 .rp.checking .rp-scouted {
@@ -152,7 +165,7 @@ body.is-replay .hud button {
 
 @keyframes rp-check {
   to {
-    background: rgba(255, 255, 255, 0.34);
+    background: rgba(var(--white-rgb), 0.34);
   }
 }
 
@@ -167,10 +180,10 @@ body.is-replay .hud button {
   height: 16px;
   margin: -8px 0 0 -8px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--white);
   box-shadow:
-    0 0 0 4px rgba(255, 119, 20, 0.35),
-    0 2px 6px rgba(0, 0, 0, 0.5);
+    0 0 0 4px rgba(var(--orange-rgb), 0.35),
+    0 2px 6px rgba(var(--black-rgb), 0.5);
 }
 
 .rp-days i {
@@ -180,7 +193,7 @@ body.is-replay .hud button {
   width: 2px;
   margin-left: -1px;
   border-radius: 1px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(var(--white-rgb), 0.4);
 }
 
 .rp-days span {
@@ -201,21 +214,21 @@ body.is-replay .hud button {
   height: 18px;
   margin-left: -9px;
   border-radius: 50%;
-  color: #fff;
-  background: #3d5f84;
+  color: var(--white);
+  background: var(--steel-2);
   box-shadow:
     0 0 0 1.5px var(--dlg-top),
-    0 1px 3px rgba(0, 0, 0, 0.5);
+    0 1px 3px rgba(var(--black-rgb), 0.5);
 }
 
 .rp-mark.caught,
 .rp-mark.lockdown,
 .rp-mark.mishap {
-  background: #c94848;
+  background: var(--replay-red-58);
 }
 
 .rp-mark.ko {
-  background: #b0562a;
+  background: var(--replay-orange-56);
 }
 
 .rp-mark.escape {
@@ -240,8 +253,8 @@ body.is-replay .hud button {
   padding: 0 10px;
   border-radius: 13px;
   font: 700 14px var(--font-ui);
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.1);
 }
 
 .rp-btn:disabled {
@@ -251,7 +264,7 @@ body.is-replay .hud button {
 .rp-play {
   width: 50px;
   background: linear-gradient(135deg, var(--orange), var(--orange-2));
-  box-shadow: 0 6px 14px -6px rgba(242, 107, 29, 0.8);
+  box-shadow: 0 6px 14px -6px rgba(var(--accent-rgb), 0.8);
 }
 
 .rp-speed {
@@ -285,9 +298,9 @@ body.is-replay .hud button {
 }
 
 .rp-quiet.on {
-  color: #fff;
-  background: rgba(123, 111, 214, 0.5);
-  box-shadow: inset 0 0 0 1px rgba(180, 170, 255, 0.55);
+  color: var(--white);
+  background: rgba(var(--replay-indigo-60-rgb), 0.5);
+  box-shadow: inset 0 0 0 1px rgba(var(--replay-indigo-78-rgb), 0.55);
 }
 
 .rp-time {
@@ -305,9 +318,9 @@ body.is-replay .hud button {
   padding: 7px 14px;
   border-radius: 99px;
   font: 700 14px var(--font-ui);
-  color: #fff;
-  background: rgba(18, 28, 44, 0.9);
-  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.6);
+  color: var(--white);
+  background: rgba(var(--dlg-bottom-rgb), 0.9);
+  box-shadow: 0 6px 18px -6px rgba(var(--black-rgb), 0.6);
   opacity: 0;
   transform: translateY(6px);
   transition:
@@ -325,7 +338,7 @@ body.is-replay .hud button {
   padding: 8px 14px;
   border-radius: 14px;
   font: 600 13px var(--font-ui);
-  color: #3b2a00;
+  color: var(--replay-gold-30);
   background: var(--gold);
 }
 
@@ -441,14 +454,14 @@ body.is-replay .hud button {
   padding: 7px 12px;
   border-radius: 99px;
   font: 700 13px var(--font-ui);
-  color: #fff;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.14);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.22);
 }
 
 .v-watch:hover,
 .v-watch:focus-visible {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(var(--white-rgb), 0.24);
 }
 
 .v-watch .ic {
@@ -487,7 +500,7 @@ body.is-replay .hud button {
 }
 
 .replays .shelf-sub .ic {
-  color: #b3a9ff;
+  color: var(--replay-indigo-78);
 }
 
 .replay-list {
@@ -515,8 +528,8 @@ body.is-replay .hud button {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  color: #d4ceff;
-  background: rgba(123, 111, 214, 0.22);
+  color: var(--replay-indigo-87);
+  background: rgba(var(--replay-indigo-60-rgb), 0.22);
 }
 
 .rr-text {
@@ -528,7 +541,7 @@ body.is-replay .hud button {
 
 .rr-text b {
   font: 600 15px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .rr-text small {
@@ -545,7 +558,7 @@ body.is-replay .hud button {
   padding: 0 12px;
   border-radius: 11px;
   font: 700 13px var(--font-ui);
-  color: #fff;
+  color: var(--white);
   background: linear-gradient(135deg, var(--orange), var(--orange-2));
 }
 
@@ -554,8 +567,8 @@ body.is-replay .hud button {
   width: 38px;
   height: 38px;
   border-radius: 11px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.1);
   box-shadow: none;
 }
 
@@ -582,7 +595,7 @@ body.is-replay .hud button {
   border-radius: 11px;
   font: 600 13px var(--font-ui);
   color: var(--dlg-text);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--white-rgb), 0.08);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
 }
 
@@ -592,5 +605,5 @@ body.is-replay .hud button {
 }
 
 .replay-msg.bad {
-  color: #ff8a80;
+  color: var(--replay-red-76);
 }

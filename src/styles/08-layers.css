@@ -1,4 +1,21 @@
 /* P4: tools, energy, layers, the escape. */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --layers-stone-91: #f2dcc0;
+  --layers-stone-55: #787062;
+  --layers-stone-55-rgb: 120, 112, 98;
+  --layers-orange-44b: #78460a;
+  --layers-orange-44b-rgb: 120, 70, 10;
+  --layers-orange-44: #6e4a26;
+  --layers-orange-38: #5a3c23;
+  --layers-orange-38-rgb: 90, 60, 35;
+  --layers-orange-29: #3c240c;
+  --layers-orange-29-rgb: 60, 36, 12;
+  --layers-gold-88: #f0d4b0;
+  --layers-gold-88b: #ffd05c;
+  --layers-gold-66: #b48a5c;
+  --layers-blue-86: #b8d4f0;
+}
 
 /* ------------------------------------------------------------ the tool button (touch) */
 .tool-btn {
@@ -7,7 +24,7 @@
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 172px);
   z-index: 31;
   padding: 0;
-  color: white;
+  color: var(--white);
   background: none;
   touch-action: none;
 }
@@ -26,8 +43,8 @@
   font-style: normal;
   background: radial-gradient(circle at 40% 30%, var(--steel), var(--steel-2));
   box-shadow:
-    0 10px 22px -8px rgba(20, 40, 70, 0.9),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    0 10px 22px -8px rgba(var(--blue-28-rgb), 0.9),
+    inset 0 2px 0 rgba(var(--white-rgb), 0.3);
   transition: transform 0.08s;
 }
 
@@ -46,9 +63,9 @@
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  background: conic-gradient(var(--gold) var(--p, 0%), rgba(255, 255, 255, 0.14) 0);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  background: conic-gradient(var(--gold) var(--p, 0%), rgba(var(--white-rgb), 0.14) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), var(--black) calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), var(--black) calc(100% - 3px));
 }
 
 .tool-btn.down .tool-round {
@@ -57,7 +74,7 @@
 
 /* The tool in hand can't do it: grey, pressing says what is needed. */
 .tool-btn.no .tool-round {
-  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+  background: radial-gradient(circle at 40% 30%, var(--slate-65), var(--slate-48));
 }
 
 /* ------------------------------------------------------------ the Space prompt (keyboard) */
@@ -71,9 +88,9 @@
   gap: 8px;
   padding: 6px 14px 6px 6px;
   border-radius: 999px;
-  color: white;
+  color: var(--white);
   font: 600 14px var(--font-ui);
-  background: rgba(30, 50, 76, 0.86);
+  background: rgba(var(--blue-31-rgb), 0.86);
   transform: translateX(-50%);
   pointer-events: none;
   animation: toast-in 0.25s var(--spring);
@@ -81,15 +98,15 @@
 
 .tool-prompt b {
   font-weight: 800;
-  color: #b8d4f0;
+  color: var(--layers-blue-86);
 }
 
 .tool-prompt.no {
-  background: rgba(60, 64, 72, 0.86);
+  background: rgba(var(--grey-37-rgb), 0.86);
 }
 
 .tool-prompt.no b {
-  color: #c8ccd2;
+  color: var(--grey-84);
 }
 
 kbd.wide {
@@ -102,7 +119,7 @@ kbd.wide {
   height: 6px;
   overflow: hidden;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(var(--white-rgb), 0.16);
 }
 
 .tool-bar i {
@@ -124,7 +141,7 @@ kbd.wide {
   padding: 3px 9px 3px 6px;
   border-radius: 999px;
   color: var(--energy);
-  background: rgba(18, 24, 36, 0.8);
+  background: rgba(var(--slate-21-rgb), 0.8);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -135,7 +152,7 @@ kbd.wide {
   height: 6px;
   overflow: hidden;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--white-rgb), 0.14);
 }
 
 .energy-bar i {
@@ -251,7 +268,7 @@ body:not(.touch) .act-prompt {
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
   z-index: 31;
   padding: 0;
-  color: white;
+  color: var(--white);
   background: none;
   touch-action: none;
 }
@@ -267,10 +284,10 @@ body:not(.touch) .act-prompt {
   border-radius: 50%;
   font: 800 10px/1.1 var(--font-ui);
   font-style: normal;
-  background: radial-gradient(circle at 40% 30%, #b48a5c, #6e4a26);
+  background: radial-gradient(circle at 40% 30%, var(--layers-gold-66), var(--layers-orange-44));
   box-shadow:
-    0 10px 22px -8px rgba(60, 36, 12, 0.9),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    0 10px 22px -8px rgba(var(--layers-orange-29-rgb), 0.9),
+    inset 0 2px 0 rgba(var(--white-rgb), 0.3);
   transition: transform 0.08s;
 }
 
@@ -287,7 +304,7 @@ body:not(.touch) .act-prompt {
 }
 
 .up-btn.no .up-round {
-  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+  background: radial-gradient(circle at 40% 30%, var(--slate-65), var(--slate-48));
 }
 
 /* The U prompt (keyboard), above the Space prompt. */
@@ -301,9 +318,9 @@ body:not(.touch) .act-prompt {
   gap: 8px;
   padding: 6px 14px 6px 6px;
   border-radius: 999px;
-  color: white;
+  color: var(--white);
   font: 600 14px var(--font-ui);
-  background: rgba(92, 60, 32, 0.9);
+  background: rgba(var(--orange-39-rgb), 0.9);
   transform: translateX(-50%);
   pointer-events: none;
   animation: toast-in 0.25s var(--spring);
@@ -311,15 +328,15 @@ body:not(.touch) .act-prompt {
 
 .up-prompt b {
   font-weight: 800;
-  color: #f0d4b0;
+  color: var(--layers-gold-88);
 }
 
 .up-prompt.no {
-  background: rgba(60, 64, 72, 0.86);
+  background: rgba(var(--grey-37-rgb), 0.86);
 }
 
 .up-prompt.no b {
-  color: #c8ccd2;
+  color: var(--grey-84);
 }
 
 .item-card .up-prompt {
@@ -346,7 +363,7 @@ body:not(.touch) .act-prompt {
   position: fixed;
   inset: 0;
   z-index: 22;
-  background: #07090c;
+  background: var(--grey-14);
   pointer-events: none;
   animation: layer-fade 0.42s var(--ease) forwards;
 }
@@ -369,9 +386,9 @@ body:not(.touch) .act-prompt {
   margin-bottom: 10px;
   padding: 8px 8px 8px 12px;
   border-radius: 12px;
-  color: #f2dcc0;
+  color: var(--layers-stone-91);
   font: 600 13px var(--font-ui);
-  background: rgba(90, 60, 35, 0.55);
+  background: rgba(var(--layers-orange-38-rgb), 0.55);
 }
 
 /* (2.23: another inmate's furniture: a guard who sees the player at it minds.) */
@@ -382,9 +399,9 @@ body:not(.touch) .act-prompt {
   margin-bottom: 10px;
   padding: 6px 10px;
   border-radius: 10px;
-  color: #ffd27a;
+  color: var(--gold-88);
   font: 600 12.5px var(--font-ui);
-  background: rgba(120, 70, 10, 0.45);
+  background: rgba(var(--layers-orange-44b-rgb), 0.45);
 }
 .box-warn.hidden {
   display: none;
@@ -410,9 +427,9 @@ body:not(.touch) .act-prompt {
   height: 64px;
   margin: 0 auto 6px;
   border-radius: 50%;
-  color: white;
-  background: radial-gradient(circle at 40% 30%, #ffd05c, #e08a12);
-  box-shadow: 0 12px 26px -8px rgba(224, 138, 18, 0.8);
+  color: var(--white);
+  background: radial-gradient(circle at 40% 30%, var(--layers-gold-88b), var(--orange-71));
+  box-shadow: 0 12px 26px -8px rgba(var(--orange-71-rgb), 0.8);
 }
 
 /* ------------------------------------------------------------ toasts clear the tool controls */
@@ -459,15 +476,15 @@ body:not(.touch) .act-prompt {
 
 /* ------------------------------------------------------------ the layer the player is on, in the zone pill */
 .hud .pill.hud-zone[data-layer='under'] {
-  background: rgba(92, 60, 32, 0.9);
+  background: rgba(var(--orange-39-rgb), 0.9);
 }
 
 .hud .pill.hud-zone[data-layer='vents'] {
-  background: rgba(61, 95, 132, 0.92);
+  background: rgba(var(--steel-2-rgb), 0.92);
 }
 
 .hud .pill.hud-zone[data-layer='roof'] {
-  background: rgba(120, 112, 98, 0.92);
+  background: rgba(var(--layers-stone-55-rgb), 0.92);
 }
 
 /* Desktop: the coach hint sits above the Space prompt. */

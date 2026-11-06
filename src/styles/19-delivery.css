@@ -2,6 +2,23 @@
    leaves, the search), the Wait button, a bar to the departure; the screen's edges dark between
    the crates' slats. */
 
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --delivery-grey-14: #080a08;
+  --delivery-grey-14-rgb: 8, 10, 8;
+  --delivery-stone-26: #0d2a22;
+  --delivery-stone-23: #0e221e;
+  --delivery-stone-23-rgb: 14, 34, 30;
+  --delivery-gold-90: #ffd68c;
+  --delivery-gold-90-rgb: 255, 214, 140;
+  --delivery-green-96: #c8ffe6;
+  --delivery-green-88: #8ff0c8;
+  --delivery-green-88-rgb: 143, 240, 200;
+  --delivery-green-79: #4fd6a2;
+  --delivery-teal-36: #1e463c;
+  --delivery-teal-36-rgb: 30, 70, 60;
+}
+
 .stow-panel {
   position: fixed;
   left: 50%;
@@ -14,11 +31,11 @@
   padding: 10px 12px 14px 12px;
   overflow: hidden;
   border-radius: 20px;
-  color: white;
-  background: linear-gradient(180deg, rgba(30, 70, 60, 0.95), rgba(14, 34, 30, 0.95));
+  color: var(--white);
+  background: linear-gradient(180deg, rgba(var(--delivery-teal-36-rgb), 0.95), rgba(var(--delivery-stone-23-rgb), 0.95));
   box-shadow:
-    0 16px 36px -12px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 16px 36px -12px rgba(var(--black-rgb), 0.6),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.12);
   transform: translateX(-50%);
   animation: banner-in 0.5s var(--spring) both;
 }
@@ -34,9 +51,9 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  color: #8ff0c8;
-  background: rgba(63, 199, 154, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(143, 240, 200, 0.25);
+  color: var(--delivery-green-88);
+  background: rgba(var(--green-75-rgb), 0.18);
+  box-shadow: inset 0 0 0 1px rgba(var(--delivery-green-88-rgb), 0.25);
 }
 
 .stow-text {
@@ -59,7 +76,7 @@
 .stow-time {
   font: 800 21px var(--font-display, var(--font-ui));
   font-variant-numeric: tabular-nums;
-  color: #c8ffe6;
+  color: var(--delivery-green-96);
 }
 
 .stow-text small {
@@ -69,7 +86,7 @@
 }
 
 .stow-search.good {
-  color: #8ff0c8;
+  color: var(--delivery-green-88);
   opacity: 1;
 }
 
@@ -87,13 +104,13 @@
   padding: 0 14px;
   border: 0;
   border-radius: 14px;
-  color: #0d2a22;
-  background: linear-gradient(180deg, #8ff0c8, #4fd6a2);
+  color: var(--delivery-stone-26);
+  background: linear-gradient(180deg, var(--delivery-green-88), var(--delivery-green-79));
   font: 800 14px var(--font-ui);
   cursor: pointer;
   box-shadow:
-    0 6px 14px -6px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 6px 14px -6px rgba(var(--black-rgb), 0.5),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.5);
   transition:
     transform 0.12s var(--ease),
     filter 0.12s;
@@ -108,14 +125,14 @@
 }
 
 .stow-wait:focus-visible {
-  outline: 3px solid #fff;
+  outline: 3px solid var(--white);
   outline-offset: 2px;
 }
 
 .stow-wait.on {
-  color: #c8ffe6;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(143, 240, 200, 0.45);
+  color: var(--delivery-green-96);
+  background: rgba(var(--white-rgb), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--delivery-green-88-rgb), 0.45);
 }
 
 .stow-wait.gone {
@@ -129,14 +146,14 @@
   bottom: 6px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--white-rgb), 0.12);
 }
 
 .stow-bar i {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: #4fd6a2;
+  background: var(--delivery-green-79);
   transform-origin: left center;
 }
 
@@ -173,8 +190,13 @@
   inset: 0;
   z-index: 20;
   background:
-    radial-gradient(ellipse 58% 52% at 50% 46%, transparent 30%, rgba(8, 10, 8, 0.78) 100%),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0) 0 46px, rgba(255, 214, 140, 0.05) 46px 52px, rgba(0, 0, 0, 0) 52px 58px);
+    radial-gradient(ellipse 58% 52% at 50% 46%, transparent 30%, rgba(var(--delivery-grey-14-rgb), 0.78) 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(var(--black-rgb), 0) 0 46px,
+      rgba(var(--delivery-gold-90-rgb), 0.05) 46px 52px,
+      rgba(var(--black-rgb), 0) 52px 58px
+    );
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.9s var(--ease);

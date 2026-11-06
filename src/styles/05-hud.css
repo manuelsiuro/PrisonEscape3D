@@ -1,4 +1,36 @@
 /* ------------------------------------------------------------ in-game HUD */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --hud-red-68: #ff5a2a;
+  --hud-red-67: #ff4a2a;
+  --hud-red-60: #e62e1e;
+  --hud-red-60-rgb: 230, 46, 30;
+  --hud-red-57: #dc140a;
+  --hud-red-57-rgb: 220, 20, 10;
+  --hud-red-54: #d0121a;
+  --hud-red-54b: #c82814;
+  --hud-red-54b-rgb: 200, 40, 20;
+  --hud-red-53: #c81e16;
+  --hud-red-53-rgb: 200, 30, 22;
+  --hud-red-49: #b01812;
+  --hud-red-49-rgb: 176, 24, 18;
+  --hud-red-48: #aa1e14;
+  --hud-red-48-rgb: 170, 30, 20;
+  --hud-red-44: #961e18;
+  --hud-red-44-rgb: 150, 30, 24;
+  --hud-red-39: #820c0a;
+  --hud-red-39-rgb: 130, 12, 10;
+  --hud-orange-78: #ff9f3d;
+  --hud-green-80: #7fd49a;
+  --hud-green-77: #34d399;
+  --hud-green-54: #248246;
+  --hud-green-54-rgb: 36, 130, 70;
+  --hud-green-38: #104e3a;
+  --hud-green-38-rgb: 16, 78, 58;
+  --hud-blue-84: #b9c8ff;
+  --hud-blue-29: #1e2c46;
+  --hud-blue-29-rgb: 30, 44, 70;
+}
 .hud {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
@@ -21,9 +53,9 @@
 .hud .pill.big {
   gap: 6px;
   min-width: 0;
-  color: white;
-  background: rgba(18, 24, 36, 0.78);
-  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.5);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.78);
+  box-shadow: 0 6px 18px -6px rgba(var(--black-rgb), 0.5);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -55,8 +87,8 @@
 
 .hud-pause {
   margin-left: auto;
-  color: white;
-  background: rgba(18, 24, 36, 0.78);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.78);
 }
 
 /* Touch stick: appears under the thumb; the knob follows it. */
@@ -69,9 +101,9 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.08) 55%,
-    rgba(255, 255, 255, 0.22) 56%,
-    rgba(255, 255, 255, 0.12) 70%,
+    rgba(var(--white-rgb), 0.08) 55%,
+    rgba(var(--white-rgb), 0.22) 56%,
+    rgba(var(--white-rgb), 0.12) 70%,
     transparent 71%
   );
   pointer-events: none;
@@ -84,8 +116,8 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.95), rgba(220, 228, 240, 0.8));
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 40% 35%, rgba(var(--white-rgb), 0.95), rgba(var(--slate-93-rgb), 0.8));
+  box-shadow: 0 6px 16px rgba(var(--black-rgb), 0.35);
 }
 
 .hud-sky {
@@ -94,7 +126,7 @@
 }
 
 .hud-sky.moon {
-  color: #b9c8ff;
+  color: var(--hud-blue-84);
 }
 
 .hud-zone.pulse {
@@ -104,7 +136,7 @@
 @keyframes zone-pulse {
   30% {
     transform: scale(1.08);
-    background: rgba(242, 107, 29, 0.9);
+    background: rgba(var(--accent-rgb), 0.9);
   }
 }
 
@@ -193,23 +225,23 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #2a1a05;
+  color: var(--stone-23);
   background: var(--gold);
 }
 
 /* (2.23: being counted: the badge fills with green as the minutes add up.) */
 .hud-badge.counting {
-  background: linear-gradient(90deg, #7fd49a var(--fill, 0%), var(--gold) var(--fill, 0%));
+  background: linear-gradient(90deg, var(--hud-green-80) var(--fill, 0%), var(--gold) var(--fill, 0%));
   font-variant-numeric: tabular-nums;
 }
 
 .hud-badge.done {
-  color: white;
-  background: #2f9e55;
+  color: var(--white);
+  background: var(--green-62);
 }
 
 .hud .hud-badge .ic {
-  color: white;
+  color: var(--white);
 }
 
 .hud-badge.pop {
@@ -227,17 +259,17 @@
 }
 
 .hud .hud-routine.alarm {
-  background: rgba(176, 24, 18, 0.9);
+  background: rgba(var(--hud-red-49-rgb), 0.9);
   animation: alarm-pill 1.2s ease-in-out infinite;
 }
 
 .hud .hud-routine.alarm .ic {
-  color: white;
+  color: var(--white);
 }
 
 @keyframes alarm-pill {
   50% {
-    background: rgba(230, 46, 30, 0.95);
+    background: rgba(var(--hud-red-60-rgb), 0.95);
   }
 }
 
@@ -247,7 +279,7 @@
 }
 
 .hud .hud-heat .ic {
-  color: #ff8a3d;
+  color: var(--orange-75b);
 }
 
 .hud-heat-bar {
@@ -256,7 +288,7 @@
   height: 8px;
   overflow: hidden;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(var(--white-rgb), 0.16);
 }
 
 .hud-heat-bar i {
@@ -264,7 +296,7 @@
   inset: 0 auto 0 0;
   width: 0;
   border-radius: 99px;
-  background: linear-gradient(90deg, #ffc23d, #ff8a3d);
+  background: linear-gradient(90deg, var(--gold), var(--orange-75b));
   transition: width 0.6s var(--ease);
 }
 
@@ -280,15 +312,15 @@
 }
 
 .hud-heat[data-level='mid'] .hud-heat-bar i {
-  background: linear-gradient(90deg, #ff9f3d, #ff5a2a);
+  background: linear-gradient(90deg, var(--hud-orange-78), var(--hud-red-68));
 }
 
 .hud-heat[data-level='high'] .hud-heat-bar i {
-  background: linear-gradient(90deg, #ff4a2a, #d0121a);
+  background: linear-gradient(90deg, var(--hud-red-67), var(--hud-red-54));
 }
 
 .hud-heat[data-level='high'] b {
-  color: #ff6b5a;
+  color: var(--red-71);
 }
 
 .hud-heat.bump {
@@ -298,7 +330,7 @@
 @keyframes heat-bump {
   30% {
     transform: scale(1.12);
-    background: rgba(200, 40, 20, 0.92);
+    background: rgba(var(--hud-red-54b-rgb), 0.92);
   }
 }
 
@@ -317,11 +349,11 @@
   max-width: calc(100vw - 32px);
   padding: 12px 22px 12px 16px;
   border-radius: 20px;
-  color: white;
-  background: linear-gradient(180deg, rgba(30, 44, 70, 0.94), rgba(18, 24, 36, 0.94));
+  color: var(--white);
+  background: linear-gradient(180deg, rgba(var(--hud-blue-29-rgb), 0.94), rgba(var(--slate-21-rgb), 0.94));
   box-shadow:
-    0 18px 40px -12px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 18px 40px -12px rgba(var(--black-rgb), 0.6),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.12);
   transform: translateX(-50%);
   pointer-events: none;
   animation: banner-in 0.55s var(--spring) both;
@@ -355,11 +387,11 @@
 }
 
 .banner.alarm {
-  background: linear-gradient(180deg, rgba(200, 30, 22, 0.96), rgba(130, 12, 10, 0.96));
+  background: linear-gradient(180deg, rgba(var(--hud-red-53-rgb), 0.96), rgba(var(--hud-red-39-rgb), 0.96));
 }
 
 .banner.alarm .ic {
-  color: white;
+  color: var(--white);
 }
 
 .banner.alarm b {
@@ -422,9 +454,9 @@
   font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
-  color: white;
-  background: rgba(18, 24, 36, 0.86);
-  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.86);
+  box-shadow: 0 8px 20px -8px rgba(var(--black-rgb), 0.5);
   animation: toast-in 0.4s var(--spring) both;
 }
 
@@ -434,16 +466,16 @@
 }
 
 .toast.bad {
-  background: rgba(170, 30, 20, 0.92);
+  background: rgba(var(--hud-red-48-rgb), 0.92);
 }
 
 .toast.bad .ic,
 .toast.good .ic {
-  color: white;
+  color: var(--white);
 }
 
 .toast.good {
-  background: rgba(36, 130, 70, 0.92);
+  background: rgba(var(--hud-green-54-rgb), 0.92);
 }
 
 .toast.leaving {
@@ -464,7 +496,7 @@
   inset: 0;
   z-index: 20;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(220, 20, 10, 0.5) 100%);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(var(--hud-red-57-rgb), 0.5) 100%);
   opacity: 0;
   transition: opacity 0.6s;
 }
@@ -559,8 +591,8 @@ body.reduced-motion .alarm-vignette.on {
   padding: 6px 12px 9px;
   font-weight: 700;
   font-size: 0.86rem;
-  color: #fff;
-  background: rgba(18, 35, 58, 0.86);
+  color: var(--white);
+  background: rgba(var(--blue-25-rgb), 0.86);
   overflow: hidden;
   animation: alert-in 0.35s var(--spring);
 }
@@ -569,10 +601,10 @@ body.reduced-motion .alarm-vignette.on {
   color: var(--gold);
 }
 .hud-alert.hud-riot {
-  background: rgba(150, 30, 24, 0.9);
+  background: rgba(var(--hud-red-44-rgb), 0.9);
 }
 .hud-alert.low b {
-  color: #ff8a7a;
+  color: var(--red-76);
   animation: alert-tick 1s steps(2) infinite;
 }
 .hud-alert-bar {
@@ -582,7 +614,7 @@ body.reduced-motion .alarm-vignette.on {
   bottom: 4px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(var(--white-rgb), 0.18);
 }
 .hud-alert-bar i {
   display: block;
@@ -612,7 +644,7 @@ body.reduced-motion .alarm-vignette.on {
 /* A guard bribed to look the other way (P15): an emerald chip (the cone's green), until when. */
 .hud-alert.hud-bribe {
   max-width: calc(100vw - 24px);
-  background: rgba(16, 78, 58, 0.92);
+  background: rgba(var(--hud-green-38-rgb), 0.92);
 }
 /* A long name on a narrow phone: the name gives way (ellipsis), the time stays whole. */
 .hud-alert.hud-bribe > span {
@@ -623,15 +655,15 @@ body.reduced-motion .alarm-vignette.on {
 }
 
 .hud-alert.hud-bribe .ic {
-  color: #34d399;
+  color: var(--hud-green-77);
 }
 .hud-alert.hud-bribe b {
   flex: none;
-  color: #c4f5dd;
+  color: var(--green-93);
 }
 .hud-alert.hud-bribe.low b {
-  color: #ff8a7a;
+  color: var(--red-76);
 }
 .hud-alert.hud-bribe .hud-alert-bar i {
-  background: #34d399;
+  background: var(--hud-green-77);
 }
