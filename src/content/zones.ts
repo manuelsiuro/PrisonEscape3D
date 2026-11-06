@@ -50,6 +50,11 @@ export type ZoneId = (typeof ZONES)[number];
 
 export const zoneIndex = (id: ZoneId): number => ZONES.indexOf(id);
 
+/** Zones lit by daylight only (open sky); every other zone has ceiling lights at night (the 3D's pools, and the dark's rule, 2.35). */
+export const OPEN_AIR: ReadonlySet<string> = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none', 'sports', 'garden']);
+/** Where the lights go out at Lights Out (2.28), past the walk home. */
+export const CELL_BLOCK: ReadonlySet<string> = new Set(['cellBlock', 'playerCell', 'inmateCell']);
+
 /** Staff only: seen in one without a guard outfit means instant 100% heat (GDD §5.2). */
 export const RESTRICTED: readonly ZoneId[] = [
   'generator',

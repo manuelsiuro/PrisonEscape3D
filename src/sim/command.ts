@@ -107,6 +107,8 @@ export const EXT = {
   /** 2.33: the menu board (b = content/menu.ts MENU), the water cooler (b = content/cooler.ts COOLER). */
   MENU: 36,
   COOLER: 37,
+  /** 2.35: the block, held (sent every step while held, like a strike): a blow on the player does half, the player walks at half pace. */
+  BLOCK: 38,
 } as const;
 
 /** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */

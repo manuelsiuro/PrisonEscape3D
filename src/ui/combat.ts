@@ -51,7 +51,7 @@ export class CombatUI {
     this.card = h(
       'div',
       'target-card hidden',
-      `<i class="target-ic"></i><span class="target-text"><span class="target-head"><b role="status" aria-live="polite"></b><em></em></span><span class="target-row"><i class="target-bar"><i class="trail"></i><i class="fill"></i></i><small></small></span></span>${TOUCH ? '' : `<span class="target-keys"><kbd class="lock-key"></kbd><kbd class="wide"></kbd></span>`}`,
+      `<i class="target-ic"></i><span class="target-text"><span class="target-head"><b role="status" aria-live="polite"></b><em></em></span><span class="target-row"><i class="target-bar"><i class="trail"></i><i class="fill"></i></i><small></small></span></span>${TOUCH ? '' : `<span class="target-keys"><kbd class="lock-key"></kbd><kbd class="wide"></kbd><kbd class="block-key"></kbd></span>`}`,
     );
     this.cardKeys = this.card.querySelector('.target-keys kbd.wide');
     this.cardName = this.card.querySelector('.target-head b')!;
@@ -88,6 +88,13 @@ export class CombatUI {
     if (this.cardKeys) this.cardKeys.textContent = keyLabel('Space');
     const lockKey = this.card.querySelector('.lock-key');
     if (lockKey) lockKey.textContent = keyLabel('KeyR');
+    // (2.35: the block's key, with its shield.)
+    const blockKey = this.card.querySelector('.block-key');
+    if (blockKey) {
+      blockKey.innerHTML = `${icon('shield', 12)}<span></span>`;
+      blockKey.querySelector('span')!.textContent = keyLabel('KeyV');
+      blockKey.setAttribute('title', t('combat.block'));
+    }
     this.shownName = this.shownMood = '';
     this.shownStr = -1;
   }

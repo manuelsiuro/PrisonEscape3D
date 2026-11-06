@@ -3,7 +3,7 @@ stalag-flucht: 6 heads, each turned on from under it and from in front, lined up
 shankton: 8 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
 san-pancho: 4 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
 irongate: 5 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
-washing, 5 s: +13 energy, heat down 3 where standing dry it falls 1
+washing, 5 s: +13 energy, heat down 6 where standing dry it falls 2
 traps: come for the soap, the next press searches; a head in use refused; off by a step, a blow, a lockdown, a knockout or the bell; standing still is nothing
 center-perks #41: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 center-perks #42: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0

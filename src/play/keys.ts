@@ -255,6 +255,8 @@ function onKeyDown(e: KeyboardEvent) {
     tools.held = true;
     usePress();
   }
+  // V: the block (2.35), held.
+  if (code === 'KeyV' && !itemsUI.panelOpen && !socialOpen()) tools.holdBlock(true);
   // U: dig up, in a tunnel (held, it strikes on).
   if (code === 'KeyU' && !itemsUI.panelOpen && !socialOpen()) {
     tools.upHeld = true;
@@ -279,6 +281,7 @@ export function listenKeys() {
       keysAt = keysVersion();
       tools.release();
       tools.releaseUp();
+      tools.holdBlock(false);
       kickKey(false);
       shootKey(false);
     }
@@ -289,10 +292,12 @@ export function listenKeys() {
       tools.release();
     }
     if (code === 'KeyU') tools.releaseUp();
+    if (code === 'KeyV') tools.holdBlock(false);
   });
   // Focus gone with Space held: the keyup never comes.
   addEventListener('blur', () => {
     tools.release();
+    tools.holdBlock(false);
     kickKey(false);
     shootKey(false);
   });

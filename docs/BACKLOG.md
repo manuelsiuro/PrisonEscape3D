@@ -16,8 +16,6 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 | Free time | Not reviewed |
 | Items and crafting | Not reviewed |
 | Searching and looting | Not reviewed |
-| Fights | Not reviewed |
-| Stealth and heat | Not reviewed |
 | Tools, digging, vents and roofs | Not reviewed |
 | Talking, favors and opinion | Not reviewed |
 | Merchants and money | Not reviewed |
@@ -35,7 +33,7 @@ date and version here when one is done.
 | Check | Why a person | Last done |
 |---|---|---|
 | Play on a real phone, portrait and landscape: the reading game, the beat of a set, the tattoo, the action button, the joystick | Touch is simulated in the browser: a finger's timing and reach aren't | not recorded |
-| A real phone's speed: the `?perf` counter read in a busy yard, day and night, the phone's model noted | A computer's graphics card is 10–20 times a phone's: only a phone says whether a lighter look is needed | 2026-11-06, v2.34.3: a Galaxy S24 (flagship), 60 fps everywhere at every tier; a mid-range phone still to do |
+| A real phone's speed: the `?perf` counter read in a busy yard, day and night, the phone's model noted | A computer's graphics card is 10–20 times a phone's: only a phone says whether a lighter look is needed | 2026-11-06, v2.35.0: a Galaxy S24 (flagship), 60 fps everywhere at every tier; a mid-range phone still to do |
 | An iPhone, upright and turned: every screen and card (`scripts/dev/screensweep.ts` in its Safari) | No iPhone here (the tools drive Android by adb); its Safari can't go full screen, so turned it has only the height its own bars leave | not recorded |
 | Listen: sounds, music, a phone's vibration | Nobody has heard them since they were made; no test can | not recorded |
 | French read by a native speaker, on screen | The French is checked for coverage and length, not for how it reads | not recorded |
@@ -56,6 +54,9 @@ measured and re-tuned, as the sports grounds were).
   grumbling barks) the player can spark (a canteen food fight, a yard brawl). Guards fall back to
   hold doors, some doors jam, storerooms are looted: an escape window. Then the riot squad, a full
   shakedown, a lockdown day. Better after gangs (a gang war can tip into a riot).
+- **Gamepad support** (session 10 of the queue, moved here by the user on 2026-11-06): no controller input
+  (`getGamepads` nowhere); it would build on the actions table of 2.35.0 (`input/bindings.ts`), the block
+  of 2.35 included.
 - **Photo mode and postcards**, **a custom escape** (a twist sandbox and Hard time), **the escape
   planner corkboard**, **a story through the prisons** (2026-10-23, offered with parole, not picked).
 
@@ -67,13 +68,11 @@ fixes, and polished systems before the feature built on them; the user may reord
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
 4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
-7, the design tokens, 8, the screen sizes, and 9, the accessibility options, in v2.34.3; 9's colour-blind
-palette was left out by the user).
+7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 9's colour-blind palette was
+left out by the user; 10, gamepad support, was moved to §3 by the user).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 10 | Gamepad support | No controller input (`getGamepads` nowhere); builds on 9's actions table (`input/bindings.ts`) |
-| 11 | Fights, stealth and heat | §1; the core of an escape, never reviewed |
 | 12 | Tools, digging, items, looting | §1: tools, digging, vents and roofs; items and crafting; searching and looting |
 | 13 | Talk, merchants, crew | §1: talking, favours and opinion; merchants and money; the crew |
 | 14 | Picture review of every prison | Day and night, materials, shadows, light: a report first, then the fixes picked (as the lamps) |

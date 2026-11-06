@@ -392,12 +392,16 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
   reload(bot.sim, bribed);
   bot.op(OP.CLOSE);
   check(bot.st.talk === -1, 'the talk ends');
-  // Tampering is never overlooked: a strike seen is 100%.
+  // Tampering is never overlooked: a strike seen is 100% (2.35: once he's sure, a moment after).
   reload(bot.sim, bribed);
   bot.st.struckAt = bot.st.step + 1;
-  bot.sim.step(0);
+  const seenAt: SimEvent[] = [];
+  for (let k = 0; k < 15 && !bot.st.lockdown; k++) {
+    bot.sim.step(0);
+    seenAt.push(...bot.sim.events);
+  }
   check(
-    bot.st.guards[PRATT].sees && bot.st.heat === 100 && bot.sim.events.some((e) => e.type === 'spotted' && e.reason === 'tampering'),
+    bot.st.guards[PRATT].sees && bot.st.heat === 100 && seenAt.some((e) => e.type === 'spotted' && e.reason === 'tampering'),
     'tools at work in front of Pratt: tampering, 100%',
   );
   // It runs out on time: 2 game hours after it was paid for.

@@ -239,6 +239,12 @@ export class Sound extends SoundEffects {
     this.hiss(0.42, 'bandpass', 2000, 3, 0.012);
   }
 
+  /** 2.35: a guard starting to make sure of what it saw: a short rising "hm?". */
+  huh() {
+    this.tone(520, 760, 0.12, 'triangle', 0.06);
+    this.tone(760, 980, 0.1, 'sine', 0.04, 0.1);
+  }
+
   /** A brawl breaking out (P23): a scuffle of thumps and a grunt or two. */
   scuffle() {
     for (const d of [0, 0.16, 0.29, 0.5]) {

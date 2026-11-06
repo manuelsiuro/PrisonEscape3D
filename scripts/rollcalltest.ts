@@ -236,7 +236,11 @@ for (const def of PRISONS) {
   put(top, square(top));
   check(untilCalled(top), 'called');
   top.st.heat = CHASE_HEAT - 1;
-  top.until(() => top.st.calling === 0, 200);
+  // (2.35: on the square, lying low, the heat cools while the call waits: kept at the top.)
+  top.until(() => {
+    top.st.heat = CHASE_HEAT - 1;
+    return top.st.calling === 0;
+  }, 200);
   check(!top.events.some((e) => e.type === 'count' && e.what === 'missed'), 'at the very top: not a +0%');
 
   // A box open when called: closed, so the button is there.
@@ -393,14 +397,15 @@ for (const def of PRISONS) {
   was226.rules232 = true;
   was226.rules2331 = true;
   was226.rules233 = true;
+  was226.rules234 = true;
   const prev = new RunRecorder(was226, { seed: 24, game: '2.26.0' });
   for (let k = 0; k < (1440 + 30) * STEPS_PER_MINUTE; k++) prev.step(0);
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.34.0' }).toLog().seed === -1, 'a log from 2.26 is not carried on');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.35.0' }).toLog().seed === -1, 'a log from 2.26 is not carried on');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules226 === true, 'and replays whole under the old rules');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.34.0' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.35.0' });
   for (let k = 0; k < (1440 + 30) * STEPS_PER_MINUTE; k++) now.step(0);
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.34.1' }).toLog().seed === 25, "a log of today's is carried on");
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.35.1' }).toLog().seed === 25, "a log of today's is carried on");
   const again = replayLog(now.toLog(), CENTER_PERKS);
   check(!!again?.ok && again.sim.rules226 === false, "and replays under today's");
 

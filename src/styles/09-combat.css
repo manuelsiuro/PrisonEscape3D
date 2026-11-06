@@ -373,3 +373,78 @@ body.reduced-motion .energy .vital .ic {
     bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 84px), var(--hint-clear, 0px));
   }
 }
+
+/* ------------------------------------------------------------ the block (2.35): held, left of the lock button */
+.block-btn {
+  position: fixed;
+  right: calc(max(23px, calc(env(safe-area-inset-right) + 7px)) + 136px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 180px);
+  z-index: 31;
+  padding: 0;
+  color: var(--white);
+  background: none;
+  touch-action: none;
+}
+
+.block-round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(var(--white-rgb), 0.25);
+  border-radius: 50%;
+  font: 800 9px/1.1 var(--font-ui);
+  font-style: normal;
+  background: rgba(var(--slate-28-rgb), 0.82);
+  box-shadow: 0 8px 18px -8px rgba(var(--black-rgb), 0.9);
+  transition:
+    transform 0.08s,
+    background 0.15s;
+}
+
+.block-round span {
+  max-width: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Held: lit, as the lock is. */
+.block-btn.down .block-round {
+  color: var(--stone-19);
+  border-color: rgba(var(--white-rgb), 0.6);
+  background: radial-gradient(circle at 40% 30%, var(--gold-88), var(--gold-76));
+  transform: scale(0.92);
+}
+
+.target-keys .block-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+body.blocking .target-keys .block-key {
+  color: var(--stone-19);
+  background: var(--gold-88);
+}
+
+@media (max-width: 520px) {
+  .block-btn {
+    right: calc(max(20px, calc(env(safe-area-inset-right) + 4px)) + 134px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 160px);
+  }
+}
+
+/* Landscape phones: left of the lock button, above the tool button's row. */
+@media (max-height: 520px) {
+  .block-btn {
+    right: calc(max(16px, env(safe-area-inset-right)) + 155px);
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 74px);
+  }
+
+  .touch:has(.act-btn:not(.hidden) .act-what) .block-btn {
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 120px);
+  }
+}

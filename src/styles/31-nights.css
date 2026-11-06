@@ -516,6 +516,7 @@ body.quizzing[data-quiz='on'] .act-prompt {
 }
 /* (Nor the lock-on button: it would sit over the lanes on a phone.) */
 body.performing .lock-btn,
+body.performing .block-btn,
 body.quizzing[data-quiz='on'] .lock-btn {
   display: none;
 }

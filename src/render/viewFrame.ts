@@ -1,3 +1,4 @@
+import type { Dark } from '../sim/ai/light';
 import { LAYER } from '../sim/world/World';
 /** What the view is handed each frame (play/frame.ts and play/hunt.ts fill it), and its quality settings. */
 import type { BedPose } from './Character';
@@ -59,6 +60,11 @@ export interface Frame {
   bedDummy: boolean;
   /** 2.28: Lights Out past the walk home, and no lockdown: the cell block's lights are off. */
   blockDark: boolean;
+  /** 2.35: at night, what the lamps and room lights do (the guards' sight is cut where it's dark); null by day. */
+  dark: Dark | null;
+  /** 2.35: the player holding the block; the locked-on person's health (0–1). */
+  blocking: boolean;
+  lockHealth: number;
   /** Knocked out on the floor. */
   knockedOut: boolean;
   /** The guards, interpolated like everyone else. */
@@ -166,6 +172,8 @@ export interface GuardFrame {
   stir: number;
   /** How far it sees now (tiles; P17: the weather, the inspectors): its cone is drawn that long. */
   range: number;
+  /** 2.35: how sure it is of what it's watching the player at (0–1: the "?" filling). */
+  notice: number;
 }
 
 export interface InmateFrame {
@@ -227,6 +235,9 @@ export function emptyFrame(): Frame {
     sleeping: false,
     bedDummy: false,
     blockDark: false,
+    dark: null,
+    blocking: false,
+    lockHealth: 0,
     knockedOut: false,
     guards: [],
     layer: LAYER.GROUND,
