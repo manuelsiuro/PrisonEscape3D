@@ -33,7 +33,7 @@ import {
   view,
   workChips,
 } from './context';
-import { press, targets } from './buttons';
+import { press, targets } from './reach';
 import { buildFrame } from './frame';
 import { play, tickPlayClock, type Game } from './game';
 import { escapeScene, stageWorld } from './stage';
@@ -424,7 +424,8 @@ export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
   remember(g);
   // Nothing the last game worked out for its buttons carries into the picture (the focus ring, a lock on someone).
   targets.step = -1;
-  targets.target = targets.climb = targets.tool = targets.up = targets.station = null;
+  targets.plan = null;
+  targets.tool = targets.up = null;
   targets.canLock = targets.fighting = false;
   press.toolNow = null;
   // The escape card's game steps aside (its controls with it) while the replay is on.

@@ -50,7 +50,7 @@ import { squareNeeded, wardenOf } from '../sim/systems/rollcall';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
-import { press } from './buttons';
+import { press } from './reach';
 import {
   aimUI,
   banner,
@@ -74,7 +74,7 @@ import { play } from './game';
 import { NEED } from './labels';
 import { outOfBounds } from '../sim/systems/k9';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
-import { vehicleThe } from './day';
+import { vehicleThe } from './labels';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
 import { announceOddJob } from './oddjobs';

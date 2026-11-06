@@ -1,6 +1,7 @@
 import { t } from '../i18n';
 import { EXT, OP } from '../sim/command';
-import { targets, upPress, usePress } from './buttons';
+import { upPress, usePress } from './buttons';
+import { targets } from './reach';
 import {
   board,
   click,

@@ -1,3 +1,4 @@
+import { vehicleName, vehicleThe } from './labels';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import {
@@ -86,9 +87,6 @@ export const eventIcon = (sim: Sim, e: DayEvent) =>
   e === 'delivery' && sim.prison.delivery?.vehicle === 'helicopter' ? 'heli' : EVENT_ICON[e];
 
 /** Delivery day (P18): the vehicle that comes ("Supply truck"), as said in a sentence ("the supply truck"), and who supervises it. */
-const vehicleOf = (sim: Sim) => sim.prison.delivery?.vehicle ?? 'truck';
-export const vehicleName = (sim: Sim) => t(`vehicle.${vehicleOf(sim)}` as Key);
-export const vehicleThe = (sim: Sim) => t(`vehicle.the.${vehicleOf(sim)}` as Key);
 const supervisorOf = (sim: Sim) => {
   const name = sim.prison.guards[sim.prison.delivery?.supervisor ?? -1]?.name;
   return name ? t('guard.the', { name }) : t('guard.nameless');

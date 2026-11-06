@@ -40,9 +40,10 @@ export type Plan =
   | { do: 'getUp' } // seated or resting
   | { do: 'climbOut' } // stowed in the delivery vehicle
   | { do: 'stow' } // at its open tail
-  | { do: 'report' } // the release desk, the name called
-  | { do: 'fileForm' } // its tray, a forged form
-  | { do: 'showId' } // the checkpoint's window, papers in the hotbar
+  // (These three keep what's in reach there, for the highlight: the desk, its tray.)
+  | { do: 'report'; target: Target } // the release desk, the name called
+  | { do: 'fileForm'; target: Target } // its tray, a forged form
+  | { do: 'showId'; target: Target } // the checkpoint's window, papers in the hotbar
   | { do: 'climb'; climb: ClimbTarget }
   | { do: 'work'; station: Station }
   | { do: 'tray'; offer: TrayOffer; target: Target }
@@ -123,10 +124,10 @@ export function interactPlan(sim: SimContext): Plan | null {
   const target = reachTarget(sim);
   const up = reachClimb(sim, target);
   // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
-  if (atRelease(sim)) return { do: 'report' };
-  if (atTray(sim)) return { do: 'fileForm' };
+  if (atRelease(sim)) return { do: 'report', target };
+  if (atTray(sim)) return { do: 'fileForm', target };
   // The checkpoint (P24): a fake ID shown at its window, first at the shift change (else when there's nothing else to do here).
-  if (atWindow(sim) && windowFirst(sim, !!target || !!up)) return { do: 'showId' };
+  if (atWindow(sim) && windowFirst(sim, !!target || !!up)) return { do: 'showId', target };
   if (up) return { do: 'climb', climb: up };
   // On the job (GDD §11): the station's step comes first.
   const job = s.layer === LAYER.GROUND ? station(sim) : null;

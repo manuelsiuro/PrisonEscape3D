@@ -1,0 +1,29 @@
+127938 places and moments, 7661 different presses tried
+  bed: 5 did it
+  climb: 40 did it
+  cooler: 0 did it, 50 said why not
+  fixture:board: 50 did it
+  fixture:generator: 60 did it
+  fixture:helicopter: 0 did it, 10 said why not
+  fixture:mat: 70 did it
+  fixture:pullup: 50 did it
+  fixture:punchingBag: 50 did it
+  fixture:rest: 140 did it
+  fixture:sit: 1697 did it, 41 said why not
+  fixture:treadmill: 100 did it
+  fixture:vending: 0 did it, 19 said why not
+  fixture:weights: 190 did it
+  flush: 580 did it
+  getUp: 50 did it
+  menu: 3 did it
+  nothing: 50 did nothing
+  pickUp: 50 did it
+  pockets: 843 did it
+  search: 2491 did it
+  shower: 45 did it, 19 said why not
+  sleep: 5 did it
+  talk: 845 did it
+  tray: 53 did it
+  vend: 50 did it
+  work: 5 did it
+every press does what its plan says (or says why not); a press with no plan does nothing; each says it in English and French, and its highlight is in reach

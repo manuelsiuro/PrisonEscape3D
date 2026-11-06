@@ -42,7 +42,7 @@ import { announce } from './announce';
 import { chatterStart, chatterStop, director } from './chatter';
 import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
-import { resetButtons } from './buttons';
+import { resetButtons } from './reach';
 import {
   banner,
   board,
