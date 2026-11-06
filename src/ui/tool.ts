@@ -1,4 +1,4 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { keyLabel } from '../i18n/keys';
 import { h, TOUCH } from './dom';
 import { icon } from './icons';
@@ -58,7 +58,7 @@ export class ToolControls {
   private shown = '';
   private shownEnergy = -1;
   private shownHealth = -1;
-  private lang = currentLang();
+  private lang = textStamp();
   private ring: HTMLElement | null = null;
   private bar: HTMLElement | null = null;
   /** Held down (touch or Space). */
@@ -148,7 +148,7 @@ export class ToolControls {
     document.body.classList.toggle('dig-up', on);
     if (!on) this.releaseUp();
     if (!on || !v) return;
-    const key = `${v.fits}|${v.heard}|${currentLang()}`;
+    const key = `${v.fits}|${v.heard}|${textStamp()}`;
     if (key !== this.upShown) {
       this.upShown = key;
       const ear = v.heard ? `<i class="tool-ear" title="${t('tool.heard')}">${icon('ear', TOUCH ? 13 : 14)}</i>` : '';
@@ -183,7 +183,7 @@ export class ToolControls {
     document.body.classList.toggle('tool-up', on);
     if (!on) this.release();
     if (on && v) {
-      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}|${!!v.armed}`;
+      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}|${!!v.armed}|${textStamp()}`;
       if (key !== this.shown) {
         this.shown = key;
         // Within a guard's earshot (P14): an ear says so, on the button or the prompt.
@@ -196,7 +196,7 @@ export class ToolControls {
           this.ring = this.btn.querySelector('.tool-ring');
           this.btn.setAttribute('aria-label', `${v.verb} ${v.what}${v.heard ? `. ${t('tool.heard')}` : ''}`);
         } else {
-          this.prompt.innerHTML = `<kbd class="wide">${t('key.space')}</kbd><span></span><b></b>${ear}${v.progress === null ? '' : '<i class="tool-bar"><i></i></i>'}`;
+          this.prompt.innerHTML = `<kbd class="wide">${keyLabel('Space')}</kbd><span></span><b></b>${ear}${v.progress === null ? '' : '<i class="tool-bar"><i></i></i>'}`;
           this.prompt.querySelector('span')!.textContent = v.verb;
           this.prompt.querySelector('b')!.textContent = v.what;
           this.bar = this.prompt.querySelector('.tool-bar i');
@@ -221,8 +221,8 @@ export class ToolControls {
     this.energy.classList.toggle('hidden', !vitals);
     document.body.classList.toggle('has-vitals', vitals);
     // A language change rewrites the bars' titles.
-    if (currentLang() !== this.lang) {
-      this.lang = currentLang();
+    if (textStamp() !== this.lang) {
+      this.lang = textStamp();
       this.shownEnergy = this.shownHealth = -1;
     }
     this.energyPart.classList.toggle('hidden', !showEnergy);

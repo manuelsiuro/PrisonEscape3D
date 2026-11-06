@@ -1,4 +1,5 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
+import { keyLabel } from '../i18n/keys';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -42,7 +43,7 @@ export class CombatUI {
   private shownStr = -1;
   private shownReach: boolean | null = null;
   private shownHealth = -1;
-  private lang = currentLang();
+  private lang = textStamp();
   /** Pressed: lock on to the next (R on a keyboard). */
   onLock: () => void = () => {};
 
@@ -50,7 +51,7 @@ export class CombatUI {
     this.card = h(
       'div',
       'target-card hidden',
-      `<i class="target-ic"></i><span class="target-text"><span class="target-head"><b role="status" aria-live="polite"></b><em></em></span><span class="target-row"><i class="target-bar"><i class="trail"></i><i class="fill"></i></i><small></small></span></span>${TOUCH ? '' : `<span class="target-keys"><kbd>R</kbd><kbd class="wide"></kbd></span>`}`,
+      `<i class="target-ic"></i><span class="target-text"><span class="target-head"><b role="status" aria-live="polite"></b><em></em></span><span class="target-row"><i class="target-bar"><i class="trail"></i><i class="fill"></i></i><small></small></span></span>${TOUCH ? '' : `<span class="target-keys"><kbd class="lock-key"></kbd><kbd class="wide"></kbd></span>`}`,
     );
     this.cardKeys = this.card.querySelector('.target-keys kbd.wide');
     this.cardName = this.card.querySelector('.target-head b')!;
@@ -80,11 +81,13 @@ export class CombatUI {
     document.body.append(this.card, this.lockBtn, this.flash);
   }
 
-  /** Text that follows the language: the lock button's label, the Space key. */
+  /** Text that follows the language and the keys: the lock button's label, the lock-on's and Space's keys. */
   private relabel() {
-    this.lang = currentLang();
+    this.lang = textStamp();
     this.lockBtn.setAttribute('aria-label', t('combat.lock'));
-    if (this.cardKeys) this.cardKeys.textContent = t('key.space');
+    if (this.cardKeys) this.cardKeys.textContent = keyLabel('Space');
+    const lockKey = this.card.querySelector('.lock-key');
+    if (lockKey) lockKey.textContent = keyLabel('KeyR');
     this.shownName = this.shownMood = '';
     this.shownStr = -1;
   }
@@ -103,7 +106,7 @@ export class CombatUI {
    * shows then), and whether controls are busy (asleep, out cold, a panel open).
    */
   update(target: TargetInfo | null, canLock: boolean, busy: boolean) {
-    if (this.lang !== currentLang()) this.relabel();
+    if (this.lang !== textStamp()) this.relabel();
     const card = !!target && !busy;
     this.card.classList.toggle('hidden', !card);
     const btn = TOUCH && !busy && (canLock || !!target);

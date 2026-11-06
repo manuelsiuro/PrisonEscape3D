@@ -1,4 +1,4 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -122,13 +122,12 @@ export class RatPanel {
     setText(this.status, v.status);
     setText(this.say, v.say);
     this.el.setAttribute('aria-label', v.name);
-    const key = JSON.stringify([v.ready, v.rows, v.more, v.leave, v.leaveNo, v.loose, v.looseNote]) + currentLang();
+    const key = JSON.stringify([v.ready, v.rows, v.more, v.leave, v.leaveNo, v.loose, v.looseNote]) + textStamp();
     if (key === this.drawn) return;
     this.drawn = key;
     // (Only distances or the crowd's count changed, walking along: written in place, the focus and the screen reader left be.)
     const shape =
-      JSON.stringify([v.ready, v.rows.map((r) => [r.container, r.name, r.key, r.icon]), v.more, v.leave, v.leaveNo, v.loose]) +
-      currentLang();
+      JSON.stringify([v.ready, v.rows.map((r) => [r.container, r.name, r.key, r.icon]), v.more, v.leave, v.leaveNo, v.loose]) + textStamp();
     if (shape === this.shape && this.patch(v)) return;
     this.shape = shape;
     this.el.querySelector('[data-rat="close"]')!.setAttribute('aria-label', t('box.close'));

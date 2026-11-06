@@ -1,6 +1,7 @@
 import { t } from '../../i18n';
 import { esc, h, TOUCH } from '../dom';
 import { icon } from '../icons';
+import { keyCode } from '../../input/bindings';
 
 /** A chip at the card's head: today's event, the weather (or tomorrow's). */
 export interface DayChip {
@@ -118,7 +119,7 @@ export function showDay(v: DayView, click: () => void): Promise<void> {
     };
     // Escape or J again: back to the game (the pause key must not reach the game behind).
     const key = (e: KeyboardEvent) => {
-      if (e.repeat || (e.code !== 'Escape' && e.code !== 'KeyJ')) return;
+      if (e.repeat || (e.code !== 'Escape' && keyCode(e.code) !== 'KeyJ')) return;
       e.stopImmediatePropagation();
       done();
     };

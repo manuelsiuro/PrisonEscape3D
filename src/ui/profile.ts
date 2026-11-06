@@ -7,7 +7,7 @@ import { prisonDay } from '../sim/systems/clock';
 import { ATTR_MAX, ATTR_MIN, ATTR_START, TRUST_FRIEND } from '../sim/tuning';
 import { FAVOR, FAVOR_STATE, jobRooms } from '../sim/systems/economy';
 import { ATTRS, type Sim } from '../sim/Sim';
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { esc, h } from './dom';
 import { icon } from './icons';
 import { PLAYER } from '../talk/fill';
@@ -81,9 +81,9 @@ export class ProfilePanel {
    */
   newsFor(sim: Sim): boolean {
     const tick = Math.floor(sim.state.step / 20);
-    if (sim !== this.newsSim || currentLang() !== this.newsLang) {
+    if (sim !== this.newsSim || textStamp() !== this.newsLang) {
       this.newsSim = sim;
-      this.newsLang = currentLang();
+      this.newsLang = textStamp();
       this.seen = new Set(this.newsKeys(sim));
       this.newsTick = tick;
       return (this.news = false);
@@ -143,7 +143,7 @@ export class ProfilePanel {
       s.followers.join(','),
       favors.map((f) => `${f.by}:${f.state}`).join(','),
       sim.today,
-      currentLang(),
+      textStamp(),
       PLAYER.name,
       this.face,
     ].join('|');

@@ -5,7 +5,7 @@
  * functions decide everything shown.
  */
 import { CHARTS, INSTRUMENT, SONGS } from '../content/nights';
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { withKeys } from '../i18n/keys';
 import { EXT, OP } from '../sim/command';
 import { STAGE_QUIT } from '../sim/systems/talent';
@@ -198,7 +198,7 @@ export class StageCard {
       this.drawn = '';
       return false;
     }
-    const lang = currentLang();
+    const lang = textStamp();
     const key = [
       v.phase,
       v.why,
@@ -315,7 +315,8 @@ export class StageCard {
   /** The lanes: the notes coming down to the line (shapes by lane), those played gone, those missed greyed. */
   private draw(v: StageView) {
     const c = this.lanes;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // (Session 9: the interface scaled, a CSS pixel is that many more of the screen's.)
+    const dpr = Math.min(2, window.devicePixelRatio || 1) * (window.visualViewport?.scale ?? 1);
     const w = c.clientWidth;
     const hgt = c.clientHeight;
     if (!w || !hgt) return;

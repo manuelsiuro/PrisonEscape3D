@@ -216,6 +216,13 @@
     overflow-y: auto;
   }
 }
+/* (Session 9: a short phone upright, 300×534 with the interface scaled up: the two rats and the line under them
+   fit, over the routine's pill; the first day's guide steps aside, 12-complete.css.) */
+@media (max-width: 899px) and (min-height: 521px) and (max-height: 600px) {
+  .race-card {
+    max-height: calc(100vh - 300px);
+  }
+}
 body.reduced-motion .race-card {
   animation: none !important;
 }

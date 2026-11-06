@@ -40,11 +40,16 @@ Rules that matter every time:
   every key, every zone and prison has a name). The one exception: the loading screen's lines, in
   `index.html` in both languages (shown before the game's text is in). French is fetched on demand:
   `loadLang` before using it outside the game (tests, dev tools).
+- **Keys** the player can change (`src/input/bindings.ts`): a handler reads `keyCode(e.code)`, never
+  `e.code`, for an action's key; a text names a key as `%KeyE%` or `%Space%` (the player's key, labelled),
+  never in words; a cache of drawn text keys on `textStamp()`, not the language alone (`keystest`).
 - **UI**: screens are functions returning a Promise; no colour written where it's used: a token on `:root`
   (in `src/styles/01-base.css` if more than one file uses it, else at its file's top; translucent:
   `rgba(var(--x-rgb), 0.4)`), which `tokentest` checks; check desktop, phone portrait (412×915) and
   phone landscape (915×412), and after a layout change `scripts/dev/screensweep.ts` at its eight sizes
-  (every screen and moment of play, in English and French; a phone turned in Chrome is only ~274 tall).
+  (every screen and moment of play, in English and French; a phone turned in Chrome is only ~274 tall;
+  the interface scaled up lays a phone out on as little as 300 across: 360×641 at 130%, an Android
+  user agent in the emulation, `app/scale.ts`).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
   prison and moment and drives it by real keys. A render change meant to draw nothing new (a refactor,

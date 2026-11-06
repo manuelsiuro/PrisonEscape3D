@@ -1,6 +1,6 @@
 import { twist } from '../sim/systems/twists';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../content/items';
-import { currentLang, t, type Key } from '../i18n';
+import { currentLang, t, textStamp, type Key } from '../i18n';
 import { lineOfSight } from '../sim/ai/sight';
 import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
@@ -177,7 +177,7 @@ export function boxTitle(sim: Sim, index: number) {
   // Someone's pockets: and how long before they come round.
   const who = ownerOf(sim.world, index);
   const ko = who >= 0 ? (personOf(sim.state, who)?.ko ?? 0) : 0;
-  const key = `${index}:${currentLang()}:${Math.ceil(ko / STEPS_PER_SECOND)}`;
+  const key = `${index}:${textStamp()}:${Math.ceil(ko / STEPS_PER_SECOND)}`;
   if (key !== titleKey) {
     titleKey = key;
     const name = thingName(sim, index);
@@ -230,7 +230,7 @@ export function actionWords(sim: Sim, plan: Plan | null, held: number, busy: boo
 /** The words for what a press does now (interact.ts's plan): it says what the sim will do, never decides it. */
 export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionWords | null {
   if (!plan) return null;
-  const lang = currentLang();
+  const lang = textStamp();
   const st = sim.state;
   switch (plan.do) {
     case 'peel':

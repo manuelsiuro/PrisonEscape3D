@@ -1,4 +1,4 @@
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { MEMBERS } from '../content/parole';
 import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
@@ -154,7 +154,7 @@ export class ParoleCard {
       v.weighed.join(),
       v.faces.length,
       this.picked,
-      currentLang(),
+      textStamp(),
       TOUCH,
     ].join('|');
     if (key !== this.drawn) {
