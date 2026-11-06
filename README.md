@@ -47,7 +47,7 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
 - **A living prison.** Inmates follow the routine, chat, gossip and hold grudges. The rumours you overhear are
   true, if you know how to read them. Every guard has a name and a temperament: some are lazy and doze off,
   some are strict and search cells, and a few can be bribed.
-- **Make your own tools.** 146 items to find, buy, steal or craft: from a toothbrush shiv and a wire
+- **Make your own tools.** 149 items to find, buy, steal or craft: from a toothbrush shiv and a wire
   lockpick to a bed dummy, a sheet rope, a grapnel and a glider. Intelligence opens harder recipes.
 - **Work and money.** Seven jobs, merchants among the inmates, favors to do for cash, a black market with a
   fixer, a burner phone, drone drops and visitors. A cork board in the canteen has odd jobs every day, and
@@ -225,9 +225,9 @@ build and tests pass → commit → `npm version minor` (or `patch`) → `git pu
 ### Documents
 
 - [`docs/FEATURES.md`](docs/FEATURES.md): every feature at a high level, what the code offers as a toolkit, its limits and the ways to extend it.
-- [`docs/the_escapists_3d_complete_game_design_document.md`](docs/the_escapists_3d_complete_game_design_document.md): the game design document, the source of truth.
+- [`docs/source/the_escapists_3d_complete_game_design_document.md`](docs/source/the_escapists_3d_complete_game_design_document.md): the game design document, the source of truth.
 - [`docs/README.md`](docs/README.md): where to find what in the documents.
 - [`docs/PLAN.md`](docs/PLAN.md): decisions, the architecture, tests, the release routine and the status; [`docs/decisions/`](docs/decisions/) what was decided, area by area; [`docs/phases/`](docs/phases/) the phases (P0 to P42 and the polish series) as planned and built.
 - [`docs/HISTORY.md`](docs/HISTORY.md): every release, one line each; the full entries, what the reviews found and what was accepted, in [`docs/history/`](docs/history/).
-- [`docs/tech_plan.md`](docs/tech_plan.md): engineering details the design document leaves open.
+- [`docs/source/tech_plan.md`](docs/source/tech_plan.md): engineering details the design document leaves open.
 - [`CLAUDE.md`](CLAUDE.md): the rules for working on the code.

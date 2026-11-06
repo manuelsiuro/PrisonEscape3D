@@ -178,9 +178,9 @@ seen and where), or "not checked". Never tick a line from memory.
 | Independent review done, findings fixed | |
 | Not checked (say what, and how much it matters) | |
 
-Then, with the work:
-- `docs/POLISH.md`: the area's row, with the user's choices and the known limits.
-- The history entry (what changed, what the review found, what was accepted) at the end of the latest `docs/history/` file, "(vX.Y.Z, not released yet)" until it is, and its line in `docs/HISTORY.md`; the area's row in its `docs/decisions/` file; the pass's row in `docs/phases/8-polish.md`; `docs/PLAN.md` §8's status line and counts. `docs/FEATURES.md` and the README's counts if they moved.
+Then, with the work, the documents as the `docs-upkeep` skill says (each fact once, in its home):
+- `docs/POLISH.md`: the area's row, with the user's choices and the known limits, short.
+- The history entry and its index line, the area's `docs/decisions/` row, the pass's row in `docs/phases/8-polish.md`, the counts. `docs/FEATURES.md` and the README's counts if they moved.
 - Anything general the pass taught goes in `web-sim-game-playbook`; anything about this project's method, here.
 
 Commit, merge and release only when the user asks, following `CLAUDE.md`'s Release rule, with `npm run released` in the background.

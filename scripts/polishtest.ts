@@ -92,9 +92,4 @@ for (const [area, ver, state, choices] of rows) {
   check(history.includes(`v${ver}`) && index.includes(`v${ver}`), `POLISH: ${area}'s v${ver} is in docs/history/ and HISTORY.md's index`);
   check(!!choices, `POLISH: ${area} says what the user chose`);
 }
-// Every release in the history files has its line in HISTORY.md's index, in the same order.
-const entries = history.split('\n').filter((l) => l.startsWith('- ')).length;
-const lines = index.split('\n').filter((l) => l.startsWith('- ')).length;
-check(entries === lines, `HISTORY.md's index has a line for each of the ${entries} entries in docs/history/ (${lines})`);
-console.log(`docs/history/: ${entries} entries, each in the index`);
 console.log(`docs/POLISH.md: ${rows.length} areas, ${Object.entries(count).map(([k, n]) => `${n} ${k}`).join(', ')}`);

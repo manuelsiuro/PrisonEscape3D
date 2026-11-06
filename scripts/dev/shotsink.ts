@@ -1,6 +1,9 @@
 // Dev tool: receives How to play's pictures from helpshot.ts in the dev build and writes them to
 // public/help/, and the map viewer's in-game pictures from mapshot.ts (and their frames' numbers)
 // to assets/maps/ (the browser can't write files). Run: npx tsx scripts/dev/shotsink.ts (port 5311).
+// It may already be running from an earlier session (check the port; restart it if its code changed
+// since). `npm run preview` uses 5311 too. It accepts pictures from http://localhost:5310 only, so
+// take them on the main checkout's dev server, not a worktree's.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 

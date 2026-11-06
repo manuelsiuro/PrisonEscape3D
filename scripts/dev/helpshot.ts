@@ -9,6 +9,13 @@
 // Retake them when what they show changes; helptest checks every topic's picture is there.
 // Run it in an isolated browser profile: each shot is a game started, so its escapes, stats and
 // trophies land in that profile's storage.
+// Retake a picture at the viewport it was taken in, or its framing changes: most were taken at 915×412
+// (landscape emulation, device pixel ratio 2), night.webp at 1440×844 (ratio 1). Compare old and new
+// pixel by pixel. A shot's zoom: set `zoom` and call `applyZoom()` (an equal zoom never re-applies);
+// past 1.9 is fine here. Offset the camera by steering `view.target`, not the camera in a render hook
+// (the see-through cut lands on a wall as a dark patch). Fake daylight must null `security.beams` too;
+// clear `g.guide` after freezing, or the floor arrows show. A `live` play-on runs in real time, so
+// its result varies: look at each picture.
 import { PLANS, quiet, runRoute, type Route } from '../escapes';
 import { Bot, DIR } from '../bots';
 import { placesOf } from '../../src/sim/ai/places';
