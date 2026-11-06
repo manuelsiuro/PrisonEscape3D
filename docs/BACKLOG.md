@@ -36,6 +36,7 @@ date and version here when one is done.
 |---|---|---|
 | Play on a real phone, portrait and landscape: the reading game, the beat of a set, the tattoo, the action button, the joystick | Touch is simulated in the browser: a finger's timing and reach aren't | not recorded |
 | A real phone's speed: the `?perf` counter read in a busy yard, day and night, the phone's model noted | A computer's graphics card is 10–20 times a phone's: only a phone says whether a lighter look is needed | 2026-11-06, v2.34.3: a Galaxy S24 (flagship), 60 fps everywhere at every tier; a mid-range phone still to do |
+| An iPhone, upright and turned: every screen and card (`scripts/dev/screensweep.ts` in its Safari) | No iPhone here (the tools drive Android by adb); its Safari can't go full screen, so turned it has only the height its own bars leave | not recorded |
 | Listen: sounds, music, a phone's vibration | Nobody has heard them since they were made; no test can | not recorded |
 | French read by a native speaker, on screen | The French is checked for coverage and length, not for how it reads | not recorded |
 | Every lesson from the Tutorial menu, start to finish, by hand | Bots pass what people fail (`CLAUDE.md`); done per lesson when it changes, never all at once | not recorded |
@@ -65,12 +66,11 @@ one development session each. The order puts safety nets before refactors, measu
 fixes, and polished systems before the feature built on them; the user may reorder. Each session
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
-4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory, and
-7, the design tokens, in v2.34.3).
+4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
+7, the design tokens, and 8, the screen sizes, in v2.34.3).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 8 | Screen-size sweep | Every screen at desktop, 412×915, 915×412, 360×640 and a tablet, then the fixes |
 | 9 | Accessibility options | No text size, colour-blind palette or key remapping (built on 7's colour tokens; the ~500 font sizes are still px in each file) |
 | 10 | Gamepad support | No controller input (`getGamepads` nowhere); shares 9's remapping |
 | 11 | Fights, stealth and heat | §1; the core of an escape, never reviewed |

@@ -186,6 +186,7 @@ for (const s of code)
   }
 
 const colourTokens = [...tokens.values()].filter((d) => !d.prop.endsWith('-rgb') && unquoted(d.value).match(RAW));
-console.log(`${files.length} stylesheets, ${all.length} declarations, ${raw} raw colours outside tokens`);
+// (Not the declarations' count: every change of style would move the snapshot.)
+console.log(`${files.length} stylesheets, ${raw} raw colours outside tokens`);
 console.log(`${tokens.size} tokens on :root (${colourTokens.length} colours, ${twins} -rgb twins), ${local} of them a file's own`);
 console.log(`${used.size} custom properties used, every one defined; ${inline} inline styles in the code, none with a colour`);

@@ -541,10 +541,20 @@ body.reduced-motion .alarm-vignette.on {
   }
 }
 
-/* Narrow phones: the deadline joins the place line (hud.ts), so the block keeps its name. */
-@media (max-width: 440px) {
+/* Narrow phones, and small ones turned: the deadline joins the place line (hud.ts's NARROW, the same
+   query), so the block keeps its name. */
+@media (max-width: 440px), (max-height: 520px) and (max-width: 820px) {
   .hud-routine-head small {
     display: none;
+  }
+}
+
+/* Narrow phones. */
+@media (max-width: 440px) {
+  /* A long block's name beside a badge ("Extinction des feux" by PRÉSENT at 360 wide) on two lines rather
+     than cut; the pill grows only then (session 8). */
+  .hud-routine-head b {
+    white-space: normal;
   }
 
   /* No heat at all: the empty bar gives way (the flame and 0% say it), the routine pill takes the room. */
@@ -666,4 +676,47 @@ body.reduced-motion .alarm-vignette.on {
 }
 .hud-alert.hud-bribe .hud-alert-bar i {
   background: var(--hud-green-77);
+}
+
+/* Phones turned: an activity's card docked at the left rises over the routine's line, which showed through
+   its head ("Free time until 22:00" behind "Quiz night"): the line steps aside while one is up, the clock
+   staying; the alerts' chips ("Quiz night until 21:00") centre on the room right of the card, as beside
+   an odd job's (session 8). */
+@media (max-height: 520px) {
+  body:has(
+      :is(
+        .quiz-card,
+        .stage-card,
+        .parole-card,
+        .cheat-card,
+        .board-card,
+        .ink-card,
+        .match-card,
+        .wrestle-card,
+        .gym-card,
+        .phone-card,
+        .kiosk-card
+      ):not(.hidden)
+    )
+    .hud-alerts {
+    padding-left: calc(min(380px, 50vw - 20px) + 10px);
+  }
+  body:has(
+      :is(
+        .quiz-card,
+        .stage-card,
+        .parole-card,
+        .cheat-card,
+        .board-card,
+        .ink-card,
+        .match-card,
+        .wrestle-card,
+        .gym-card,
+        .phone-card,
+        .kiosk-card
+      ):not(.hidden)
+    )
+    .hud-routine {
+    visibility: hidden;
+  }
 }

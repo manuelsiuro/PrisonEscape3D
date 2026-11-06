@@ -1421,3 +1421,18 @@ body.cinema-on > :not(canvas, .cinema, .trophy-toast, .v-confetti) {
     padding-top: 8px;
   }
 }
+
+/* A very short window (a phone turned in the browser: 274 tall on the Galaxy S24 with Chrome's bars): the
+   head (the inmate, the totals, the tabs) took it all and the list had 22 px; the whole card scrolls
+   instead (session 8). */
+@media (max-height: 340px) {
+  .shelf-card {
+    overflow-y: auto;
+  }
+
+  .shelf-card .help-body {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+  }
+}
