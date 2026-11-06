@@ -6,18 +6,16 @@ import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { SUBJECTS } from '../content/books';
 import { machineOffer, onMachine } from '../sim/systems/training';
-import { counterTray, trayOffer } from '../sim/systems/canteen';
-import { canAnswer } from '../sim/systems/rollcall';
-import { showerOffer } from '../sim/systems/showers';
-import { bedOffer } from '../sim/systems/upkeep';
+import type { Plan } from '../sim/systems/interact';
+import { atRelease, atTray, releaseRefusal, trayRefusal } from '../sim/systems/paperwork';
+import { bluffRefusal } from '../sim/systems/getaway';
 import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/systems/combat';
-import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
 import { genOf, offFor } from '../sim/systems/power';
 import { helicopterIn } from '../sim/systems/sea';
 import { clockRinging } from '../sim/systems/noise';
-import { CHOC_EGG, DIRT, ICE_LOLLY, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { CHOC_EGG, ICE_LOLLY, STRIKES, underSea, type ToolTarget } from '../sim/systems/structure';
 import { energyCost } from '../sim/systems/weather';
 import { dogDef } from '../sim/systems/k9';
 import { petOf, trapChance } from '../sim/systems/rats';
@@ -29,9 +27,8 @@ import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
 import { hiddenIn } from '../sim/systems/kiosk';
 import { foodUse } from '../sim/systems/vending';
-import { menuOffer } from '../sim/systems/menu';
 import type { ToolView } from '../ui/tool';
-import { drinkArmed, press } from './buttons';
+import { drinkArmed, press } from './reach';
 import { trackCheck } from '../sim/systems/races';
 import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
@@ -191,213 +188,240 @@ export function boxTitle(sim: Sim, index: number) {
   return titleText;
 }
 
-/** The action label for what is in reach, worked out only when the target (or language) changes. */
-const actionLabel = { verb: '', what: '' };
+/** What the action button says: a verb ("Search") and what to ("your desk"); `no`: greyed, saying why it won't. */
+export type ActionWords = { verb: string; what: string; no?: boolean };
+
+/** The action label, worked out only when the plan (or language) changes, into one object refilled in place. */
+const actionLabel: ActionWords = { verb: '', what: '', no: false };
 let actionKey = '';
-export function describeTarget(
-  sim: Sim,
-  target: Target,
-  climb: ClimbTarget | null,
-  held: number,
-  station: Station | null = null,
-): { verb: string; what: string } | null {
-  // Called by the warden at roll call (2.27): nothing comes before answering.
-  if (canAnswer(sim)) {
-    const key = `here:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      Object.assign(actionLabel, { verb: t('act.here'), what: '' });
-    }
-    return actionLabel;
-  }
-  if (station && !climb) {
-    // On the job: the station's step ("Load the washer", "Take out: clean laundry").
-    const key = `station:${station.act}:${station.prop}:${station.item}:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      const prop = sim.world.props[station.prop];
-      const what =
-        station.act === 'take' || station.act === 'unload' || station.act === 'put' || station.act === 'load'
-          ? itemName(station.item)
-          : prop
-            ? t(`thing.${prop.kind}` as Key)
-            : t('thing.puddle');
-      Object.assign(actionLabel, {
-        verb: t(`work.${station.act}` as Key),
-        what:
-          station.act === 'mop'
-            ? t('thing.puddle')
-            : station.act === 'running' || station.act === 'full'
-              ? prop
-                ? t(`thing.${prop.kind}` as Key)
-                : ''
-              : what,
-      });
-    }
-    return actionLabel;
-  }
-  if (climb) {
-    const key = `climb:${climb.action}:${climb.item ?? 0}:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      const what: Record<string, string> = {
-        climbVent: t('thing.vent'),
-        dropDown: '',
-        climbRoof: t('thing.ladderRoof'),
-        climbDownLadder: '',
-        climbDown: t('thing.tunnel'),
-        climbUp: '',
-        uncover: climb.item ? itemName(climb.item) : '',
-      };
-      Object.assign(actionLabel, { verb: t(`act.${climb.action}` as Key), what: what[climb.action] });
-    }
-    return actionLabel;
-  }
-  // At the serving counter during a meal (2.25): the tray first, a search at the next press.
-  const offer = counterTray(sim) ?? (target?.kind === 'container' ? trayOffer(sim, target.index) : null);
-  if (offer) {
-    const key = `tray:${offer}:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      Object.assign(actionLabel, { verb: t(offer === 'take' ? 'act.takeTray' : 'act.returnTray'), what: '' });
-    }
-    return actionLabel;
-  }
-  // Under a shower at shower time (2.26): the water first, a search at the next press.
-  if (showerOffer(sim, target) >= 0) {
-    const key = `shower:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      Object.assign(actionLabel, { verb: t('act.shower'), what: '' });
-    }
-    return actionLabel;
-  }
-  // The vending machine (2.32), ahead of whoever's beside it, as actions.ts has it.
-  if (target?.kind === 'fixture' && target.use === 'vending') {
-    const key = `vending:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      Object.assign(actionLabel, { verb: t('act.vending'), what: t('thing.vending') });
-    }
-    return actionLabel;
-  }
-  // The water cooler and the menu board (2.33), ahead of whoever's beside them, as actions.ts has it.
-  if (target?.kind === 'fixture' && target.use === 'cooler') {
-    const key = `cooler:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      Object.assign(actionLabel, { verb: t('act.drinkAt'), what: t('thing.cooler') });
-    }
-    return actionLabel;
-  }
-  if (menuOffer(sim)) {
-    const key = `menu:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      Object.assign(actionLabel, { verb: t('act.readMenu'), what: t('thing.menu') });
-    }
-    return actionLabel;
-  }
-  if (!target) return null;
-  // The bed at night (2.28): the dummy in or out first; the next press lies down.
-  if (target.kind === 'sleep') {
-    const bed = bedOffer(sim, target.index);
-    if (bed) {
-      const key = `bed:${bed}:${currentLang()}`;
-      if (key !== actionKey) {
-        actionKey = key;
-        Object.assign(actionLabel, { verb: t(bed === 'tuck' ? 'act.tuckIn' : 'act.takeOut'), what: itemName(BED_DUMMY) });
-      }
-      return actionLabel;
-    }
-  }
-  // Dirt in hand at a toilet: down it goes.
-  const flush =
-    target.kind === 'container' && (held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet';
-  if (target.kind === 'person') {
-    // The player's letter for them (the mail round), else a talk.
-    const letter = LETTER;
-    const it = sim.state.items;
-    const mail =
-      sim.onDuty &&
-      sim.state.mail.includes(target.who) &&
-      it.inv.slice(0, 6).some((v) => itemOf(v) === letter && usesOf(v) - 1 === target.who);
-    const key = `person:${target.who}:${mail}:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      const n = sim.state.inmates.length;
-      // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
-      const guard = target.who >= n ? sim.prison.guards[target.who - n] : undefined;
-      const what = !guard
-        ? inmateName(sim, target.who)
-        : guard.name
-          ? t('guard.addressed', { name: guard.name })
-          : t('guard.addressedNameless');
-      Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk'), what });
-    }
-    return actionLabel;
-  }
-  if (target.kind === 'fixture') {
-    // The generator says which way it would go (GDD §5.5), and at Irongate which one it is (P12); the helipad, whether the helicopter is in.
-    const gen = target.use === 'generator' ? genOf(sim.world, target.index) : 0;
-    const power = target.use === 'generator' ? offFor(sim.state, gen) === 0 : target.use === 'helicopter' ? helicopterIn(sim) : true;
-    const kind = sim.world.props[target.index].kind;
-    // (2.29: someone on the machine: they're asked for it, or with no use for it talked to. As actions.ts does.)
-    const offer = machineOffer(sim, target.index);
-    const on = offer === 'talk' ? onMachine(sim, target.index) : -1;
-    // (2.31: a book in hand, at a library chair: it's read there.)
-    const book =
-      target.use === 'sit' &&
-      sim.state.book > 0 &&
-      sim.world.zoneAt(sim.world.props[target.index].x, sim.world.props[target.index].z) === 'library'
-        ? sim.state.book
-        : 0;
-    const key = `fixture:${target.use}:${kind}:${power}:${gen}:${offer}:${on}:${book}:${currentLang()}`;
-    if (key !== actionKey) {
-      actionKey = key;
-      const verb = book
-        ? 'act.read'
-        : offer === 'ask'
-          ? 'act.askTurn'
-          : offer === 'talk'
-            ? 'act.talk'
-            : target.use === 'generator'
-              ? power
-                ? 'act.powerOff'
-                : 'act.powerOn'
-              : target.use === 'helicopter' && !power
-                ? 'act.helipad'
-                : `act.${target.use}`;
-      // A seat, bench or chair by its own name; an infirmary bed; GEN-1 and GEN-2 by what they run.
-      const thing =
-        target.use === 'board'
-          ? 'jobBoard'
-          : target.use === 'sit'
-            ? kind
-            : target.use === 'rest'
-              ? 'infirmaryBed'
-              : target.use === 'generator' && sim.world.def.grid
-                ? `gen${gen + 1}`
-                : target.use === 'helicopter' && !power
-                  ? 'helipad'
-                  : target.use;
-      Object.assign(actionLabel, {
-        verb: t(verb as Key),
-        what: book ? t(`book.${SUBJECTS[book - 1]}.title` as Key) : on >= 0 ? inmateName(sim, on) : t(`thing.${thing}` as Key),
-      });
-    }
-    return actionLabel;
-  }
-  const key = `${target.kind}:${target.index}:${target.kind === 'ground' ? target.item : 0}:${flush}:${currentLang()}`;
+function say(key: string, verb: Key, what: () => string): ActionWords {
   if (key !== actionKey) {
     actionKey = key;
-    if (target.kind === 'ground') Object.assign(actionLabel, { verb: t('act.pickUpVerb'), what: itemName(target.item) });
-    else if (target.kind === 'sleep') Object.assign(actionLabel, { verb: t('act.sleep'), what: '' });
-    else if (target.kind === 'pockets') Object.assign(actionLabel, { verb: t('act.searchVerb'), what: t('thing.pockets') });
-    else if (flush) Object.assign(actionLabel, { verb: t('act.flush'), what: itemName(held) });
-    else Object.assign(actionLabel, { verb: t('act.searchVerb'), what: thingName(sim, target.index) });
+    actionLabel.verb = t(verb);
+    actionLabel.what = what();
+    actionLabel.no = false;
   }
   return actionLabel;
+}
+const none = () => '';
+
+/** A new game: no words kept from the last one (the same key can name another place, person or vehicle). */
+export function forgetWords() {
+  actionKey = '';
+}
+
+/**
+ * The action button's words, or none while something has the screen: a panel or a talk open, a set or
+ * a game going (seated, only those that cover the chair; `panel`: one of the play layer's own, the
+ * talk, the job board, a profile), or the player busy (asleep, out cold, paused, over), except in
+ * solitary and stowed away, where the button stays (a potato, climbing out).
+ */
+export function actionWords(sim: Sim, plan: Plan | null, held: number, busy: boolean, panel: boolean): ActionWords | null {
+  const st = sim.state;
+  const it = st.items;
+  if (st.solitary > 0 || st.stowed) return describePlan(sim, plan, held);
+  const covered =
+    st.seat >= 0
+      ? (st.train >= 0 && !sim.rules230) || it.open >= 0 || st.talk >= 0
+      : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length > 0 || panel;
+  return busy || covered ? null : describePlan(sim, plan, held);
+}
+
+/** The words for what a press does now (interact.ts's plan): it says what the sim will do, never decides it. */
+export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionWords | null {
+  if (!plan) return null;
+  const lang = currentLang();
+  const st = sim.state;
+  switch (plan.do) {
+    case 'peel':
+      return say(`peel:${lang}`, 'act.peel', () => t('act.potato'));
+    // Called by the warden at roll call (2.27): nothing comes before answering.
+    case 'answer':
+      return say(`here:${lang}`, 'act.here', none);
+    // (Reading at a chair: the reading game has the screen and its own buttons.)
+    case 'underline':
+      return null;
+    case 'readOn':
+      return say(`readOn:${st.book}:${lang}`, 'act.read', () => t(`book.${SUBJECTS[st.book - 1]}.title` as Key));
+    case 'getUp':
+      return say(`getUp:${lang}`, 'act.getUp', none);
+    case 'climbOut':
+      return say(`climbOut:${lang}`, 'act.climbOut', none);
+    case 'stow':
+      return say(`stow:${lang}`, 'act.stow', () => vehicleThe(sim));
+    case 'report':
+    case 'fileForm':
+      return deskAction(sim);
+    case 'showId':
+      return windowAction(sim);
+    case 'work': {
+      // On the job: the station's step ("Load the washer", "Take out: clean laundry").
+      const station = plan.station;
+      return say(`station:${station.act}:${station.prop}:${station.item}:${lang}`, `work.${station.act}` as Key, () => {
+        const prop = sim.world.props[station.prop];
+        if (station.act === 'mop') return t('thing.puddle');
+        if (station.act === 'running' || station.act === 'full') return prop ? t(`thing.${prop.kind}` as Key) : '';
+        if (station.act === 'take' || station.act === 'unload' || station.act === 'put' || station.act === 'load')
+          return itemName(station.item);
+        return prop ? t(`thing.${prop.kind}` as Key) : t('thing.puddle');
+      });
+    }
+    case 'climb': {
+      const climb = plan.climb;
+      return say(`climb:${climb.action}:${climb.item ?? 0}:${lang}`, `act.${climb.action}` as Key, () => {
+        const what: Record<string, string> = {
+          climbVent: t('thing.vent'),
+          dropDown: '',
+          climbRoof: t('thing.ladderRoof'),
+          climbDownLadder: '',
+          climbDown: t('thing.tunnel'),
+          climbUp: '',
+          uncover: climb.item ? itemName(climb.item) : '',
+        };
+        return what[climb.action];
+      });
+    }
+    // At the serving counter during a meal (2.25): the tray first, a search at the next press.
+    case 'tray':
+      return say(`tray:${plan.offer}:${lang}`, plan.offer === 'take' ? 'act.takeTray' : 'act.returnTray', none);
+    // Under a shower at shower time (2.26): the water first, a search at the next press.
+    case 'shower':
+      return say(`shower:${lang}`, 'act.shower', none);
+    // The vending machine (2.32), the water cooler and the menu board (2.33), ahead of whoever's beside them.
+    case 'vend':
+      return say(`vending:${lang}`, 'act.vending', () => t('thing.vending'));
+    case 'cooler':
+      return say(`cooler:${lang}`, 'act.drinkAt', () => t('thing.cooler'));
+    case 'menu':
+      return say(`menu:${lang}`, 'act.readMenu', () => t('thing.menu'));
+    // The bed at night (2.28): the dummy in or out first; the next press lies down.
+    case 'bed':
+      return say(`bed:${plan.bed}:${lang}`, plan.bed === 'tuck' ? 'act.tuckIn' : 'act.takeOut', () => itemName(BED_DUMMY));
+    case 'sleep':
+      return say(`sleep:${lang}`, 'act.sleep', none);
+    case 'talk': {
+      // The player's letter for them (the mail round), else a talk.
+      const who = plan.target.who;
+      const it = st.items;
+      const mail = sim.onDuty && st.mail.includes(who) && it.inv.slice(0, 6).some((v) => itemOf(v) === LETTER && usesOf(v) - 1 === who);
+      const n = st.inmates.length;
+      // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
+      const guard = who >= n ? sim.prison.guards[who - n] : undefined;
+      return say(`person:${who}:${mail}:${lang}`, mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk', () =>
+        !guard ? inmateName(sim, who) : guard.name ? t('guard.addressed', { name: guard.name }) : t('guard.addressedNameless'),
+      );
+    }
+    case 'fixture':
+      return fixtureWords(sim, plan.target, lang);
+    case 'pickUp':
+      return say(`ground:${plan.target.index}:${plan.target.item}:${lang}`, 'act.pickUpVerb', () => itemName(plan.target.item));
+    case 'pockets':
+      return say(`pockets:${plan.target.index}:${lang}`, 'act.searchVerb', () => t('thing.pockets'));
+    // Dirt in hand at a toilet: down it goes.
+    case 'flush':
+      return say(`flush:${plan.target.index}:${held}:${lang}`, 'act.flush', () => itemName(held));
+    case 'search':
+      return say(`container:${plan.target.index}:${lang}`, 'act.searchVerb', () => thingName(sim, plan.target.index));
+  }
+}
+
+/** A fixture's words: the generator says which way it would go (GDD §5.5), and at Irongate which one it is (P12); the helipad, whether the helicopter is in. */
+function fixtureWords(sim: Sim, target: Extract<Target, { kind: 'fixture' }>, lang: string): ActionWords {
+  if (target.use === 'vending') return say(`vending:${lang}`, 'act.vending', () => t('thing.vending'));
+  if (target.use === 'cooler') return say(`cooler:${lang}`, 'act.drinkAt', () => t('thing.cooler'));
+  const gen = target.use === 'generator' ? genOf(sim.world, target.index) : 0;
+  const power = target.use === 'generator' ? offFor(sim.state, gen) === 0 : target.use === 'helicopter' ? helicopterIn(sim) : true;
+  const kind = sim.world.props[target.index].kind;
+  // (2.29: someone on the machine: they're asked for it, or with no use for it talked to. As actions.ts does.)
+  const offer = machineOffer(sim, target.index);
+  const on = offer === 'talk' ? onMachine(sim, target.index) : -1;
+  // (2.31: a book in hand, at a library chair: it's read there.)
+  const book =
+    target.use === 'sit' &&
+    sim.state.book > 0 &&
+    sim.world.zoneAt(sim.world.props[target.index].x, sim.world.props[target.index].z) === 'library'
+      ? sim.state.book
+      : 0;
+  const verb = book
+    ? 'act.read'
+    : offer === 'ask'
+      ? 'act.askTurn'
+      : offer === 'talk'
+        ? 'act.talk'
+        : target.use === 'generator'
+          ? power
+            ? 'act.powerOff'
+            : 'act.powerOn'
+          : target.use === 'helicopter' && !power
+            ? 'act.helipad'
+            : `act.${target.use}`;
+  return say(`fixture:${target.use}:${kind}:${power}:${gen}:${offer}:${on}:${book}:${lang}`, verb as Key, () => {
+    // A seat, bench or chair by its own name; an infirmary bed; GEN-1 and GEN-2 by what they run.
+    const thing =
+      target.use === 'board'
+        ? 'jobBoard'
+        : target.use === 'sit'
+          ? kind
+          : target.use === 'rest'
+            ? 'infirmaryBed'
+            : target.use === 'generator' && sim.world.def.grid
+              ? `gen${gen + 1}`
+              : target.use === 'helicopter' && !power
+                ? 'helipad'
+                : target.use;
+    return book ? t(`book.${SUBJECTS[book - 1]}.title` as Key) : on >= 0 ? inmateName(sim, on) : t(`thing.${thing}` as Key);
+  });
+}
+
+/** Delivery day (P18): the vehicle that comes ("Supply truck"), as said in a sentence ("the supply truck"). */
+const vehicleOf = (sim: Sim) => sim.prison.delivery?.vehicle ?? 'truck';
+export const vehicleName = (sim: Sim) => t(`vehicle.${vehicleOf(sim)}` as Key);
+export const vehicleThe = (sim: Sim) => t(`vehicle.the.${vehicleOf(sim)}` as Key);
+
+const DESK = { verb: '', what: '', no: false };
+const TRAY_WHY: Record<string, Key> = {
+  watched: 'thing.trayWatched',
+  hunted: 'thing.hunted',
+  onList: 'thing.onList',
+  trayLate: 'thing.trayLate',
+};
+const DESK_WHY: Record<string, Key> = { heat: 'thing.releaseHeat', lockdown: 'thing.hunted', contraband: 'thing.releaseContraband' };
+
+/** At the release desk (P36): Report (the name called; said what the desk will mind, it can still be tried), or File the form (greyed, saying why, when it wouldn't go in). */
+export function deskAction(sim: Sim): ActionWords | null {
+  if (atRelease(sim)) {
+    const r = releaseRefusal(sim.state);
+    DESK.verb = t('act.report');
+    DESK.what = t(r ? DESK_WHY[r] : 'thing.releaseDesk');
+    DESK.no = false;
+    return DESK;
+  }
+  if (atTray(sim)) {
+    const r = trayRefusal(sim);
+    DESK.verb = t('act.fileForm');
+    DESK.what = t(r ? TRAY_WHY[r] : 'thing.releaseTray');
+    DESK.no = !!r;
+    return DESK;
+  }
+  return null;
+}
+
+const SHOW_ID = { verb: '', what: '', no: false };
+/** Why not, as the button's second line (the sim's own refusal). */
+const WHY: Record<string, Key> = {
+  notShift: 'thing.shiftAt',
+  notGuard: 'thing.needUniform',
+  papersHot: 'thing.papersHot',
+  hunted: 'thing.hunted',
+};
+
+/** At the checkpoint's window with a fake ID in the hotbar (P24): the action button shows it (greyed, saying why, when it wouldn't do now). */
+export function windowAction(sim: Sim): ActionWords {
+  const why = bluffRefusal(sim);
+  SHOW_ID.verb = t('act.showId');
+  SHOW_ID.what = t(why ? (WHY[why] ?? 'thing.gatekeeper') : 'thing.gatekeeper');
+  SHOW_ID.no = !!why;
+  return SHOW_ID;
 }
 
 /** The weapon the player fights with: one in hand, else the weapon slot (0: fists). */

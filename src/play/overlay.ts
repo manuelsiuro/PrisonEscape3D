@@ -1,5 +1,6 @@
+import type { Plan } from '../sim/systems/interact';
 import { itemDef, itemNumber } from '../content/items';
-import { type Key, t } from '../i18n';
+import { t } from '../i18n';
 import { maxHealth } from '../sim/systems/combat';
 import { nearestProp, STATION_REACH } from '../sim/systems/economy';
 import type { ItemState } from '../sim/systems/items';
@@ -7,22 +8,19 @@ import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { lineOfSight } from '../sim/ai/sight';
 import { prisonDay } from '../sim/systems/clock';
 import { energyCost } from '../sim/systems/weather';
-import { stowCard, vehicleThe } from './day';
-import { atTail } from '../sim/systems/delivery';
+import { stowCard } from './day';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
-import { SUBJECTS } from '../content/books';
 import { shelfBooks } from '../ui/reading';
 import { vendAction, vendingNow } from './vending';
 import { coolerHint, menuAction, menuNow } from './menuBoard';
-import { readSeated } from '../sim/systems/training';
 import type { ItemsView } from '../ui/items';
 import type { UpView } from '../ui/tool';
-import { disarmDrink, press, targets } from './buttons';
+import { disarmDrink, press, targets } from './reach';
 import {
   aimUI,
   board,
@@ -71,7 +69,7 @@ import {
   ACTION_IDS,
   boxTitle,
   describeAttack,
-  describeTarget,
+  actionWords,
   describeTool,
   describeToss,
   describeTreat,
@@ -83,8 +81,6 @@ import { DOG, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
 import { coachOnce, seenTip } from './tips';
 import { FIRECRACKER, GLIDER } from '../sim/systems/structure';
-import { windowAction } from './getaway';
-import { deskAction } from './paperwork';
 const PEPPER = itemNumber('pepper');
 /** The Dig up button's face, refilled in place. */
 const upView: UpView = { fits: true, progress: 0, heard: false };
@@ -129,13 +125,23 @@ const itemsView: ItemsView = {
   books: null,
   take: [],
 };
-const GET_UP = { verb: '', what: '' };
-/** 2.31: on a library chair with a book. */
-const READ_ON = { verb: '', what: '' };
-/** Delivery day (P18): into the vehicle at its tail, out of it while hidden. */
-const STOW = { verb: '', what: '' };
-const CLIMB_OUT = { verb: '', what: '' };
-const PEEL_ACTION = { verb: '', what: '' };
+
+/** The press acts on something in reach (a thing, a person, a machine), for the first-time hint. */
+const REACHES = new Set<Plan['do']>([
+  'vend',
+  'cooler',
+  'tray',
+  'shower',
+  'pickUp',
+  'bed',
+  'sleep',
+  'talk',
+  'fixture',
+  'pockets',
+  'flush',
+  'search',
+]);
+const reachesSomething = (plan: Plan | null) => !!plan && REACHES.has(plan.do);
 
 const projectAt = (x: number, y: number, z: number, out: { x: number; y: number }) => view.screenAt(x, y, z, out);
 /** Over someone's head (P23: the crew's chips). */
@@ -190,8 +196,6 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const st = sim.state;
   const it = st.items;
   const memo = targets;
-  const climb = memo.climb;
-  const target = memo.target;
   const box = containersOf(sim.world)[it.open];
   const v = itemsView;
   v.items = it;
@@ -201,24 +205,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   v.boxTheirs = !!box && !sim.rules222 && sim.world.cellOf[box.prop.z * MAP_W + box.prop.x] > 1;
   v.carried = st.carried;
   v.tips = st.tips;
-  if (st.solitary > 0) {
-    PEEL_ACTION.verb = t('act.peel');
-    PEEL_ACTION.what = t('act.potato');
-  }
-  if (st.seat >= 0) GET_UP.verb = t('act.getUp');
-  if (st.book > 0) {
-    READ_ON.verb = t('act.read');
-    READ_ON.what = t(`book.${SUBJECTS[st.book - 1]}.title` as Key);
-  }
-  // (At the vehicle's tail, the tailgate open: climbing in comes before anything else there.)
-  const tail = atTail(sim);
-  if (st.stowed) CLIMB_OUT.verb = t('act.climbOut');
-  if (tail) {
-    STOW.verb = t('act.stow');
-    STOW.what = vehicleThe(sim);
-  }
-  // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
-  const papers = tail || st.stowed ? null : (deskAction(sim) ?? windowAction(sim, !!target || !!climb));
+  // The action button: the vending machine's and the menu board's own panels, else the words for what a
+  // press does (labels.ts), unless something has the screen; knocked out or over, nothing.
   v.action =
     st.ko > 0 || g.over
       ? null
@@ -226,21 +214,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
         ? vendAction(sim)
         : st.menuOpen
           ? menuAction()
-          : st.solitary > 0
-            ? PEEL_ACTION
-            : st.stowed
-              ? CLIMB_OUT
-              : st.seat >= 0 && st.train >= 0 && !sim.rules230
-                ? null
-                : st.seat >= 0 && it.open < 0 && st.talk < 0
-                  ? readSeated(sim)
-                    ? READ_ON
-                    : GET_UP
-                  : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen()
-                    ? null
-                    : tail
-                      ? STOW
-                      : (papers ?? describeTarget(sim, target, climb, held, memo.station));
+          : actionWords(sim, memo.plan, held, busy, socialOpen());
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -465,7 +439,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it (not over the warden's morning card: after it).
-  if (target && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk'))
+  if (!busy && reachesSomething(memo.plan) && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk'))
     hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   hudFrame(g, a, tile, busy);
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.

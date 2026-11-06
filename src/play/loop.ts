@@ -7,7 +7,7 @@ import { tileOfBody } from '../sim/systems/movement';
 import { STEPS_PER_SECOND, STRIKE_STEPS, UNIT } from '../sim/tuning';
 import { announce, tickTock } from './announce';
 import { chatterEvent } from './chatter';
-import { press, targets, updateTargets } from './buttons';
+import { press, targets, updateTargets } from './reach';
 import { controls, hint, itemsUI, settings, socialOpen, tools, view } from './context';
 import { buildFrame } from './frame';
 import { play, tickPlayClock, type Game } from './game';
@@ -193,7 +193,7 @@ export function frame(now: number) {
   document.body.classList.toggle('items-open', itemsUI.panelOpen);
   // (P27: and a hand of Cheat's card, the old-timer's board, on a phone.)
   keepPlayerClear((panel || document.body.classList.contains('seated-game')) && !g.paused);
-  updateTargets(sim, g.ladderFoot, busy, panel, held);
+  updateTargets(sim, busy, panel, held);
   view.draw(buildFrame(g, a, tile, busy, held), dt, now / 1000);
   dayFrame(g, dt, g.over || st.ko > 0 || st.solitary > 0);
   updateOverlay(g, a, tile, busy, held, panel);

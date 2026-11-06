@@ -3,7 +3,7 @@ import { FREED_STEPS, RECORDS_HEAT, RECORDS_MINUTE, RELEASE_FROM, RELEASE_TO } f
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { prisonDay } from '../sim/systems/calendar';
-import { atRelease, atTray, calledNow, freedNow, releaseRefusal, trayRefusal } from '../sim/systems/paperwork';
+import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import { banner, itemsUI, sound } from './context';
@@ -11,39 +11,10 @@ import { coachOnce } from './tips';
 import { announcePa, dayTime } from './warden';
 
 /**
- * The paperwork escape on screen (P36): what the action button says at the release desk (slip a
- * forged form into the tray, or report there when the name is called), the chips (report by
- * 10:30; the way out open), and the toasts, sounds and the PA's call. Everything said is the
- * sim's own (paperwork.ts).
+ * The paperwork escape on screen (P36): the chips (report by 10:30; the way out open), the toasts,
+ * sounds and the PA's call (the action button's words at the desk: labels.ts). Everything said is
+ * the sim's own (paperwork.ts).
  */
-
-const ACT = { verb: '', what: '', no: false };
-const TRAY_WHY: Record<string, Key> = {
-  watched: 'thing.trayWatched',
-  hunted: 'thing.hunted',
-  onList: 'thing.onList',
-  trayLate: 'thing.trayLate',
-};
-const DESK_WHY: Record<string, Key> = { heat: 'thing.releaseHeat', lockdown: 'thing.hunted', contraband: 'thing.releaseContraband' };
-
-/** At the release desk: Report (the name called; said what the desk will mind, it can still be tried), or File the form (greyed, saying why, when it wouldn't go in). */
-export function deskAction(sim: Sim): { verb: string; what: string; no: boolean } | null {
-  if (atRelease(sim)) {
-    const r = releaseRefusal(sim.state);
-    ACT.verb = t('act.report');
-    ACT.what = t(r ? DESK_WHY[r] : 'thing.releaseDesk');
-    ACT.no = false;
-    return ACT;
-  }
-  if (atTray(sim)) {
-    const r = trayRefusal(sim);
-    ACT.verb = t('act.fileForm');
-    ACT.what = t(r ? TRAY_WHY[r] : 'thing.releaseTray');
-    ACT.no = !!r;
-    return ACT;
-  }
-  return null;
-}
 
 /** Seconds the release's way out stays open for the player (`a`: the frame's way into the next step), null while it's shut. */
 export function freedLeft(sim: Sim, a: number): number | null {

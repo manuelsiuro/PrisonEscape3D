@@ -1,8 +1,7 @@
 import { buzz } from '../app/haptics';
 import { WAVED_STEPS } from '../content/getaways';
-import { t, type Key } from '../i18n';
+import { t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { atWindow, bluffRefusal, windowFirst } from '../sim/systems/getaway';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { banner, itemsUI, sound, view } from './context';
 import { coachOnce } from './tips';
@@ -10,32 +9,9 @@ import { play } from './game';
 import { glideSecs } from '../render/Getaway';
 
 /**
- * Bluff & glider on screen (P24): what the action button says at the checkpoint's window, the
- * chip while its gates stand open, and the toasts and sounds of being waved through and of a glide.
+ * Bluff & glider on screen (P24): the chip while the checkpoint's gates stand open, and the toasts and
+ * sounds of being waved through and of a glide (the action button's words at its window: labels.ts).
  */
-
-const SHOW_ID = { verb: '', what: '', no: false };
-/** Why not, as the button's second line (the sim's own refusal). */
-const WHY: Record<string, Key> = {
-  notShift: 'thing.shiftAt',
-  notGuard: 'thing.needUniform',
-  papersHot: 'thing.papersHot',
-  hunted: 'thing.hunted',
-};
-
-/**
- * At the checkpoint's window with a fake ID in the hotbar: the action button shows it (greyed,
- * saying why, when it wouldn't do now), as the sim has it (`other`: something else in reach
- * there, which comes first outside the shift change).
- */
-export function windowAction(sim: Sim, other: boolean): { verb: string; what: string; no: boolean } | null {
-  if (!atWindow(sim) || !windowFirst(sim, other)) return null;
-  const why = bluffRefusal(sim);
-  SHOW_ID.verb = t('act.showId');
-  SHOW_ID.what = t(why ? (WHY[why] ?? 'thing.gatekeeper') : 'thing.gatekeeper');
-  SHOW_ID.no = !!why;
-  return SHOW_ID;
-}
 
 /** Seconds the checkpoint's gates stay open for the player (`a`: the frame's way into the next step), null while they're shut. */
 export function wavedLeft(sim: Sim, a: number): number | null {

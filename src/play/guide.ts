@@ -17,7 +17,7 @@ import { jobRooms } from '../sim/systems/economy';
 import { itemOf, usesOf } from '../sim/systems/items';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
-import { lockList } from './buttons';
+import { lockList } from './reach';
 import { nextWork } from '../sim/systems/jobs';
 import { freeReadSeat } from '../sim/systems/training';
 import { calledNow, freedNow } from '../sim/systems/paperwork';

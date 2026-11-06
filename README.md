@@ -167,7 +167,7 @@ in 374 files (formatted by Prettier), and 41,000 more in the tests and tools.
 ```sh
 npm ci
 npm run dev       # dev server on port 5310 (also on your network, to test on a phone)
-npm test          # 67 headless tests (npm test -- -u accepts new snapshots)
+npm test          # 68 headless tests (npm test -- -u accepts new snapshots)
 npm run build     # type-check and build to dist/
 npm run lint      # oxlint, with type-aware rules
 npm run format    # Prettier (npm run format:check only checks)

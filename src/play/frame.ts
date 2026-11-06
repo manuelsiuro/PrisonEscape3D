@@ -1,3 +1,4 @@
+import { focusNow } from './focus';
 import { JOBS } from '../content/jobs';
 import { SCENT_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
 import { checkpointOf, shiftChange } from '../sim/systems/getaway';
@@ -8,12 +9,10 @@ import { ROOF_Y } from '../render/Structure';
 import { rollCallShows } from '../render/ground';
 import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
-import { personOf } from '../sim/systems/combat';
-import { jobRooms, type Station } from '../sim/systems/economy';
+import { jobRooms } from '../sim/systems/economy';
 import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
-import { eatingNow, mealOn, mealSteps, servingCounter, TRAY, traysHere } from '../sim/systems/canteen';
-import { canAnswer, wardenOf } from '../sim/systems/rollcall';
-import { showerOffer } from '../sim/systems/showers';
+import { eatingNow, mealOn, mealSteps, TRAY, traysHere } from '../sim/systems/canteen';
+import { wardenOf } from '../sim/systems/rollcall';
 import { dummyInBed } from '../sim/systems/justice';
 import { afterHours } from '../sim/systems/watch';
 import { DOING, dutyCarry, dutyMachine, inmateEatSteps } from '../sim/systems/inmates';
@@ -23,14 +22,12 @@ import type { Prop, World } from '../sim/world/World';
 import { benchBack } from '../render/GymGear';
 import type { BedPose } from '../render/Character';
 import { TRAY_AT } from '../render/Character';
-import { itemOf, ownerOf, type ItemState, type Target } from '../sim/systems/items';
+import { itemOf, type ItemState } from '../sim/systems/items';
 import { seatSpot } from '../sim/systems/rest';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
-import type { ClimbTarget } from '../sim/systems/structure';
-import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
-import { press, targets } from './buttons';
+import { press, targets } from './reach';
 import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
 import { dayMinute, eventOn, fogNow, prisonDay, today, weatherNow } from '../sim/systems/calendar';
@@ -50,7 +47,7 @@ import { carWaiting, commsOf } from '../sim/systems/phone';
 import { kioskOf, loggedIn } from '../sim/systems/kiosk';
 import { atVending, VEND_NOBODY, VEND_PLAYER, vendProp } from '../sim/systems/vending';
 import { coolerProp } from '../sim/systems/cooler';
-import { atMenu, menuOffer } from '../sim/systems/menu';
+import { atMenu } from '../sim/systems/menu';
 import { SIP_STEPS } from '../content/cooler';
 import { menuFrame } from './menuBoard';
 import { COIL_STEPS, INMATE_COIL_STEPS, THUMP_STEPS } from '../content/vending';
@@ -76,97 +73,11 @@ const BOOK = itemNumber('thick_book');
 /** 2.33: the water cooler's paper cup (the plastic cup's look). */
 const CUP = itemNumber('plastic_cup');
 
-const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
 /** Whether the player's bed holds a dummy: read again when the items change, never every frame. */
 const dummyMemo: { sim: Sim | null; rev: number; there: boolean } = { sim: null, rev: -1, there: false };
-/** The shower the action button would turn on (2.26), as something to highlight. */
-function showerHead(sim: Sim, target: Target): Target | null {
-  const head = showerOffer(sim, target);
-  if (head < 0) return null;
-  const index = containersOf(sim.world).findIndex((c) => c.prop.kind === 'shower' && c.prop.z * MAP_W + c.prop.x === head);
-  return index < 0 ? null : { kind: 'container', index };
-}
-
 /** 2.30: the player's hands on a station for a moment after a press (real time: the view's alone, nothing of the sim's). */
 export const workPose = { until: 0, doing: 0 };
 
-/** 2.33: the menu board, the action button's (no prop): a strip along the wall it hangs on. */
-function menuFocus(sim: Sim) {
-  const m = sim.world.def.menu!;
-  focusAt.x0 = m.x + 0.1;
-  focusAt.x1 = m.x + m.w - 0.1;
-  focusAt.z0 = m.z + 0.04;
-  focusAt.z1 = m.z + 0.42;
-  return focusAt;
-}
-
-function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, station: Station | null = null) {
-  if (station && !climb) {
-    if (station.prop < 0) {
-      focusAt.x0 = (station.tile % MAP_W) + 0.06;
-      focusAt.z0 = Math.floor(station.tile / MAP_W) + 0.06;
-      focusAt.x1 = focusAt.x0 + 0.88;
-      focusAt.z1 = focusAt.z0 + 0.88;
-      return focusAt;
-    }
-    const p = sim.world.props[station.prop];
-    focusAt.x0 = p.x;
-    focusAt.z0 = p.z;
-    focusAt.x1 = p.x + p.w;
-    focusAt.z1 = p.z + p.d;
-    return focusAt;
-  }
-  if (climb) {
-    focusAt.x0 = (climb.tile % MAP_W) + 0.08;
-    focusAt.z0 = Math.floor(climb.tile / MAP_W) + 0.08;
-    focusAt.x1 = focusAt.x0 + 0.84;
-    focusAt.z1 = focusAt.z0 + 0.84;
-    return focusAt;
-  }
-  if (!target) return null;
-  if (target.kind === 'pockets') {
-    // Lying where they fell, head back along the way they faced.
-    const b = personOf(sim.state, target.who)!.body;
-    const cx = b.x / UNIT - (DIR_X[b.facing] / 1024) * 0.62;
-    const cz = b.z / UNIT - (DIR_Z[b.facing] / 1024) * 0.62;
-    const along = Math.abs(DIR_X[b.facing]) > Math.abs(DIR_Z[b.facing]);
-    focusAt.x0 = cx - (along ? 0.82 : 0.5);
-    focusAt.x1 = cx + (along ? 0.82 : 0.5);
-    focusAt.z0 = cz - (along ? 0.5 : 0.82);
-    focusAt.z1 = cz + (along ? 0.5 : 0.82);
-    return focusAt;
-  }
-  if (target.kind === 'person') {
-    const b = personOf(sim.state, target.who)!.body;
-    focusAt.x0 = b.x / UNIT - 0.45;
-    focusAt.z0 = b.z / UNIT - 0.45;
-    focusAt.x1 = focusAt.x0 + 0.9;
-    focusAt.z1 = focusAt.z0 + 0.9;
-    return focusAt;
-  }
-  if (target.kind === 'fixture') {
-    const p = sim.world.props[target.index];
-    focusAt.x0 = p.x;
-    focusAt.z0 = p.z;
-    focusAt.x1 = p.x + p.w;
-    focusAt.z1 = p.z + p.d;
-    return focusAt;
-  }
-  if (target.kind === 'ground') {
-    const tile = tileOfKey(sim.state.items.ground[target.index][0]);
-    focusAt.x0 = (tile % MAP_W) + 0.2;
-    focusAt.z0 = Math.floor(tile / MAP_W) + 0.2;
-    focusAt.x1 = focusAt.x0 + 0.6;
-    focusAt.z1 = focusAt.z0 + 0.6;
-    return focusAt;
-  }
-  const p = containersOf(sim.world)[target.index].prop;
-  focusAt.x0 = p.x;
-  focusAt.z0 = p.z;
-  focusAt.x1 = p.x + p.w;
-  focusAt.z1 = p.z + p.d;
-  return focusAt;
-}
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
 /** Firecrackers burning (P14): their tiles. */
 const fuseFrame: number[] = [];
@@ -490,30 +401,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.groundRev = it.rev * 4 + st.layer;
   fuseFrame.length = 0;
   for (const [key] of st.fuses) fuseFrame.push(tileOfKey(key));
+  // The frame stays on an open container (what the panel shows), else on what a press acts on.
   const memo = targets;
-  const climb = memo.climb;
-  const target = memo.target;
-  // The frame stays on an open container (what the panel shows), else on what is in reach.
-  const openWho = ownerOf(sim.world, it.open);
-  // (The counter the player faces, offering a tray: what the action button means, whoever stands by.)
-  const serving = servingCounter(sim);
-  f.focus =
-    it.open >= 0
-      ? focusOf(sim, openWho >= 0 ? { kind: 'pockets', index: it.open, who: openWho } : { kind: 'container', index: it.open })
-      : st.talk >= 0
-        ? focusOf(sim, { kind: 'person', who: st.talk })
-        : st.train >= 0 || st.seat >= 0
-          ? null
-          : canAnswer(sim)
-            ? null
-            : !target && !climb && !memo.station && serving < 0 && menuOffer(sim)
-              ? menuFocus(sim)
-              : focusOf(
-                  sim,
-                  serving >= 0 ? { kind: 'container', index: serving } : (showerHead(sim, target) ?? target),
-                  climb,
-                  memo.station,
-                );
+  f.focus = focusNow(sim, busy ? null : memo.plan);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
   // The tray: in both hands, unless it's set down on a table (below).
