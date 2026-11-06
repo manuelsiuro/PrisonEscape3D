@@ -10,7 +10,9 @@
     "test": "tsx scripts/test.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
     "lint": "oxlint --type-aware --deny-warnings src scripts",
-    "check": "npm run typecheck && npm run lint && tsx scripts/test.ts",
+    "format": "prettier --write \"src/**/*.{ts,css}\" \"scripts/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,css}\" \"scripts/**/*.ts\"",
+    "check": "npm run typecheck && npm run lint && npm run format:check && tsx scripts/test.ts",
     "maps": "tsx scripts/dev/mapimage.ts",
     "released": "sh scripts/dev/released.sh",
     "docs:released": "tsx scripts/dev/docsreleased.ts",
@@ -24,6 +26,7 @@
     "@types/three": "^0.186.0",
     "oxlint": "^1.91.0",
     "oxlint-tsgolint": "^7.0.2006",
+    "prettier": "3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.3"
