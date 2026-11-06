@@ -1,0 +1,5 @@
+# Commits that only change the layout: `git blame` skips them (GitHub reads this file; locally:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs).
+
+# Prettier over src/ and scripts/ (v2.34.2)
+afb3a1d69a982a16041861f4742d1a9ffc44d1ce

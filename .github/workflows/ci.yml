@@ -17,15 +17,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # The tests and tools type-checked too (the build checks src/), the linter, the layout.
+      - run: npx tsc --noEmit -p scripts
+      - run: npm run lint
+      - run: npm run format:check
       - run: npm test
       # Does this push change the game? Not when every file it touches is the docs, the tests and dev
-      # tools, the skills or the map viewer (none of them is in dist/). Unsure (a manual run, 20 or more
-      # commits, whose file lists GitHub cuts short): deploy.
+      # tools, the skills, the map viewer or the lint and format settings (none of them is in dist/).
+      # Unsure (a manual run, 20 or more commits, whose file lists GitHub cuts short): deploy.
       - id: site
         run: |
           node -e '
             const e = require(process.env.GITHUB_EVENT_PATH);
-            const tools = /^(docs\/|scripts\/|\.claude\/|assets\/maps\/|[^/]+\.md$)/;
+            const tools = /^(docs\/|scripts\/|\.claude\/|assets\/maps\/|[^/]+\.md$|\.(oxlintrc\.json|prettierrc\.json|prettierignore|git-blame-ignore-revs)$)/;
             const commits = e.commits ?? [];
             const files = commits.flatMap((c) => [...(c.added ?? []), ...(c.removed ?? []), ...(c.modified ?? [])]);
             const known = commits.length > 0 && commits.length < 20;

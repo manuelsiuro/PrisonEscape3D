@@ -172,12 +172,17 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
 - **Render without a GPU** (`rendertest`, `budgettest`, `pitchframetest`, `playclocktest`):
   geometry rules, draw-call budgets per prison, camera framing, the play clock.
 
+**Lint and layout** (v2.34.2): `npm run typecheck` checks `src/` and, through `scripts/tsconfig.json`,
+the tests and tools; `npm run lint` is oxlint with its type-aware rules (`.oxlintrc.json` says
+which are off and why); `npm run format` is Prettier (the text tables in `src/i18n/` left out).
+
 A bot passing is not a person passing: lessons and minigames are also played by hand in the
 browser at the three sizes (§4).
 
 ## 7. Release routine
 
-`npm run build` and `npm test` both pass (gate on their exit codes), then commit,
+`npm run build`, `npm test`, `npm run lint`, `npm run format:check` and the scripts' type check
+(`npm run check` runs all but the build; gate on their exit codes) pass, then commit,
 `npm version minor|patch`, `git push --follow-tags origin main`, and `npm run released` in the
 background: it waits for CI on HEAD, then for the live bundle to carry the version, and exits 1
 on a failed run or a timeout. After that, `npm run docs:released` (the history entry marked released, the status line, the map viewer: the `docs-upkeep` skill), update the

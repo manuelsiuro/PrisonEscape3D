@@ -32,6 +32,9 @@ Rules that matter every time:
   (`-u` to accept, after reading the diff, then run it all again and gate on exit 0). Keep snapshot
   output platform-independent. The escape bots are knife-edge: after a map change, also
   `ONLY=<prison> npx tsx scripts/escapetest.ts`.
+- **Lint and layout**: `npm run typecheck` (`src/` and `scripts/`), `npm run lint` (oxlint,
+  type-aware) and `npm run format` (Prettier; `src/i18n/` left out) before committing; CI fails on
+  any of them. A rule turned off says why in `.oxlintrc.json`; a line excused says why after `--`.
 - **Storage** only through `src/game/storage.ts` (prefix `pe3d.`, never throws, migrations).
 - **Text** goes through `t()` (`src/i18n/`, English and French; `i18ntest` checks French covers
   every key, every zone and prison has a name).
@@ -60,7 +63,7 @@ Rules that matter every time:
   Its picture is a `SHOTS` entry in `scripts/dev/helpshot.ts` (a bot's run or a lesson replayed
   in the dev build, posted to `public/help/` through the shot sink); a topic seen from the start
   is pictured at Center Perks. Retake a picture when what it shows changes.
-- **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
+- **Release**: build, `npm run check` green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
   background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
   Read what it printed, not only its exit code: a timeout with the deploy still running is checked
