@@ -37,7 +37,10 @@ go to [`PLAN.md`](PLAN.md); for the original design, the
 
 - **Runs in the browser**, on desktop, phone and tablet, with no download and no account.
 - **Installable app (PWA):** a service worker stores the whole game, so an installed copy plays
-  offline and offers updates. The title screen's Install button guides each browser.
+  offline and offers updates (an update downloads only the files that changed). The title screen's
+  Install button guides each browser.
+- **A quick start:** a loading screen with a prison joke shows at once while the game downloads;
+  French, the tutorial, the manhunt and the side games' cards come in their own files.
 - **Screen shapes:** checked at desktop, phone portrait (412×915) and phone landscape (915×412).
 - **Performance:** three graphics tiers. On Auto, phones start one tier lower, and the game steps
   down when play averages under 40 fps.

@@ -42,7 +42,9 @@ import { PLANS, runRoute, type Route } from './escapes';
 
 // The words come from the play layer, which reads the screen's size as it loads: a page without one.
 GlobalRegistrator.register({ url: 'http://localhost:5310/', width: 1440, height: 844 });
-const { setLang, t } = await import('../src/i18n');
+const { loadLang, setLang, t } = await import('../src/i18n');
+// (French is a file of its own since 2.34.2, loaded as the game loads it.)
+await loadLang('fr');
 const { actionWords, describePlan } = await import('../src/play/labels');
 const { focusNow } = await import('../src/play/focus');
 const { targets, updateTargets } = await import('../src/play/reach');

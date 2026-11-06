@@ -1,5 +1,5 @@
 import { en, type Strings } from './en';
-import { fr } from './fr';
+import type { Barks } from './barks/en';
 import { withKeys } from './keys';
 
 /**
@@ -11,14 +11,41 @@ import { withKeys } from './keys';
 export type Lang = 'en' | 'fr';
 export type Key = keyof Strings;
 
-const TABLES: Record<Lang, Partial<Strings>> = { en, fr };
+/** The languages' text: English always there, French once loaded (a file of its own, see loadLang). */
+const TABLES: Partial<Record<Lang, Partial<Strings>>> = { en };
+/** The speech bubbles' lines of a language other than English, once loaded. */
+const BARKS: Partial<Record<Lang, Barks>> = {};
 let lang: Lang = 'en';
 
 const detectLang = (): Lang => (navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en');
 
+/** The language a setting means (an unknown stored value falls back to the browser's language). */
+export const langOf = (l: Lang | 'auto'): Lang => (l === 'en' || l === 'fr' ? l : detectLang());
+
+/**
+ * Loads a language's text (French: its own file, fetched once; the offline copy has it too). Never
+ * fails: a language that can't be fetched leaves English in its place. Resolves true once it's there.
+ */
+export async function loadLang(l: Lang | 'auto'): Promise<boolean> {
+  const want = langOf(l);
+  if (TABLES[want]) return true;
+  try {
+    const m = await import('./french');
+    TABLES.fr = m.fr;
+    BARKS.fr = m.frBarks;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The speech bubbles' lines in a language, if loaded (null: English's are used). */
+export const barksOf = (l: Lang): Barks | null => BARKS[l] ?? null;
+
+/** Sets the language (its text loaded first by loadLang; one that couldn't be, English in its place). */
 export function setLang(l: Lang | 'auto') {
-  // An unknown stored value falls back to the browser's language.
-  lang = l === 'en' || l === 'fr' ? l : detectLang();
+  const want = langOf(l);
+  lang = TABLES[want] ? want : 'en';
   document.documentElement.lang = lang;
   // The game speaks French itself: the browser shouldn't translate it again. English pages
   // stay translatable for players of other languages.

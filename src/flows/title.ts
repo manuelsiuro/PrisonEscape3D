@@ -18,8 +18,8 @@ import { play } from '../play/game';
 import { startGame, takePlayAgain, untilQuit } from '../play/session';
 import { settingsChanged } from '../play/tips';
 import { lessonsDone } from '../game/lessons';
-import { LESSONS } from '../tutorial/lessons';
-import { tutorialFlow } from './tutorial';
+import { LESSON_IDS } from '../tutorial/lessonIds';
+import { tutorialFlow } from '../play/lazy';
 import { dailyFlow } from './daily';
 import { dailyNumber, dailyOf } from '../content/daily';
 import { dailyRecord, streakOf } from '../game/daily';
@@ -70,7 +70,7 @@ export async function titleFlow() {
               saves: ALL_SLOTS.some((k) => readSave(k)),
               tutorial: t(lessonsDone().length < 2 ? 'title.tutorialSub1' : 'title.tutorialSub', {
                 n: lessonsDone().length,
-                of: LESSONS.length,
+                of: LESSON_IDS.length,
               }),
               newcomer: !resume && lessonsDone().length === 0 && !found,
               daily: dailyCard(found > 0),
@@ -102,7 +102,7 @@ export async function titleFlow() {
         const picked = await showHelp(click, { lessons: true, topic });
         if (!picked) break;
         topic = picked.topic;
-        const k = LESSONS.findIndex((l) => l.id === picked.lesson);
+        const k = LESSON_IDS.indexOf(picked.lesson);
         const played = await tutorialFlow(k);
         view.setWorld(new Sim(backdrop).world);
         if (played) {

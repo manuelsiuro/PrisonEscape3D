@@ -11,7 +11,6 @@ import { aimUI, combatUI, controls, hooks, hud, itemsUI, renderer, sound, tools,
 import { armThrow, cancelThrow, onAim } from './play/aim';
 import { play, sendOp } from './play/game';
 import { onTap } from './play/guide';
-import { openObjectives } from './play/lesson';
 import { openDay } from './play/daycard';
 import { act, listenKeys } from './play/keys';
 import { frame } from './play/loop';
@@ -24,7 +23,7 @@ import { wirePhone } from './play/smuggle';
 import { wireGames } from './play/games';
 import { wirePastimes } from './play/pastimes';
 import { wireOddJobs } from './play/oddjobs';
-import { runHunt } from './play/hunt';
+import { fetchParts, holdPlace, openObjectives, runHunt } from './play/lazy';
 import { pause, startGame } from './play/session';
 import { itemNumber } from './content/items';
 import type { Carry } from './sim/hunt/state';
@@ -35,6 +34,9 @@ import type { Carry } from './sim/hunt/state';
  * so each flow reads as a script (title → play → pause → …). The simulation runs in fixed steps;
  * the view interpolates between the last two (play/loop.ts).
  */
+// The places on the page of the parts fetched later (lazy.ts): where they were made before.
+holdPlace('hunt');
+holdPlace('lesson', hud.el);
 // (A replay, P25: the HUD's pause waits the replay.)
 hooks.pause = () => (play.game?.replay ? pauseReplay() : pause());
 view.onStep = (surface) => sound.step(surface);
@@ -72,8 +74,22 @@ requestAnimationFrame(frame);
 void titleFlow();
 // Item icons are photographed once; do it while the title is up, not at the first slot drawn.
 setTimeout(() => warmIcons(), 1200);
-// The game started: the boot guard in index.html stands down.
+// The parts in files of their own (the manhunt…), fetched once the title is up: in before anyone needs them.
+setTimeout(fetchParts, 2000);
+// The game started: the boot guard in index.html stands down, and its loading screen fades away.
 (window as { __pe3dBooted?: boolean }).__pe3dBooted = true;
+// (Once the game's styles are in: index.html loads them without holding up the first paint.)
+const css = document.querySelector<HTMLLinkElement>('link[data-game-css]');
+const styled =
+  !css || css.media === 'all'
+    ? Promise.resolve()
+    : new Promise((done) => ['load', 'error'].forEach((e) => css.addEventListener(e, done, { once: true })));
+void styled.then(() => {
+  const boot = document.getElementById('boot');
+  if (!boot) return;
+  boot.classList.add('gone');
+  setTimeout(() => boot.remove(), 400);
+});
 registerServiceWorker(offerUpdate);
 // Dev only: the running game, for probing from the browser console.
 if (import.meta.env.DEV)

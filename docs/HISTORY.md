@@ -168,3 +168,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Lint, types and one layout for the code (v2.34.2, not released yet)
 - The action button decided once (v2.34.2, not released yet)
 - The giant modules split (v2.34.2, not released yet)
+- A faster first load (v2.34.2, not released yet)

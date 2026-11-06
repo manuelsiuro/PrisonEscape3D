@@ -28,9 +28,15 @@ export function serviceWorker(): Plugin {
         .filter((f) => f !== 'sw.js' && !f.endsWith('.map'))
         .sort();
       const hash = createHash('sha256').update(SW);
-      for (const f of files) hash.update(f).update(readFileSync(join(out, f)));
+      // Each file with a sum of what's in it: an update copies the files whose sum it already has.
+      const sums = new Map<string, string>();
+      for (const f of files) {
+        const bytes = readFileSync(join(out, f));
+        hash.update(f).update(bytes);
+        sums.set(f, createHash('sha256').update(bytes).digest('hex').slice(0, 16));
+      }
       const version = hash.digest('hex').slice(0, 12);
-      const assets = ['./', ...files.map((f) => `./${f}`)];
+      const assets = [['./', sums.get('index.html')], ...files.map((f) => [`./${f}`, sums.get(f)])];
       const app = JSON.parse(readFileSync(join(config.root, 'package.json'), 'utf8')).version as string;
       writeFileSync(join(out, 'sw.js'), SW.replace('__VERSION__', version).replace('__APP__', app).replace('__ASSETS__', JSON.stringify(assets)));
     },
@@ -42,7 +48,10 @@ const CACHE = 'pe3d-__VERSION__';
 /** The game version this worker serves (shown in the "new version" banner). */
 const APP = '__APP__';
 const FONTS = 'pe3d-fonts';
+/** Every file of the build, with a sum of what's in it: [url, sum]. */
 const ASSETS = __ASSETS__;
+/** The header a stored file keeps its sum in. */
+const SUM = 'x-pe3d-sum';
 
 /** The files a stored index.html loads (./assets/…), which must be stored with it. */
 const refsOf = (html) => [...html.matchAll(/(?:src|href)="\\.\\/(assets\\/[^"]+)"/g)].map((m) => './' + m[1]);
@@ -55,18 +64,40 @@ async function whole(cache) {
   return true;
 }
 
+/** A file as a stored version has it, when its sum there is the one wanted (an unchanged file). */
+async function storedCopy(url, sum, keys) {
+  for (const key of keys) {
+    const hit = await (await caches.open(key)).match(url);
+    if (hit && hit.headers.get(SUM) === sum) return hit;
+  }
+  return null;
+}
+
 // Install: store this build, fresh from the server. The HTTP cache (Pages keeps pages for
 // 10 minutes) could hand back the previous build's index.html, whose files a deploy has
 // deleted: a blank page. So every file skips it (and the CDN, with a version tag), and
-// the copy is checked whole before it's used.
+// the copy is checked whole before it's used. A file the version already stored has with the
+// same sum (Three.js, most pictures) is copied from it rather than fetched again (v2.34.2).
 self.addEventListener('install', (e) => {
   e.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE);
-      for (const url of ASSETS) {
+      const older = (await caches.keys()).filter((k) => k.startsWith('pe3d-') && k !== CACHE && k !== FONTS);
+      for (const [url, sum] of ASSETS) {
+        const kept = await storedCopy(url, sum, older);
+        if (kept) {
+          await cache.put(url, kept);
+          continue;
+        }
         const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'sw=' + CACHE, { cache: 'reload' });
         if (!res.ok) throw new Error('could not store ' + url);
-        await cache.put(url, res);
+        // Stored with the sum of what came (the build's, unless the server handed back another
+        // version), for the next update to find.
+        const body = await res.arrayBuffer();
+        const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', body));
+        const headers = new Headers(res.headers);
+        headers.set(SUM, [...digest.slice(0, 8)].map((b) => b.toString(16).padStart(2, '0')).join(''));
+        await cache.put(url, new Response(body, { status: res.status, statusText: res.statusText, headers }));
       }
       if (!(await whole(cache))) throw new Error('the stored build is not whole');
       // The copy players run now is broken (a blank page): take over at once instead of waiting.

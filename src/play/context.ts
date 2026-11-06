@@ -10,7 +10,7 @@ import { TIERS, tierFor } from '../app/quality';
 import { Sound } from '../audio/Sound';
 import { loadSettings, saveSettings } from '../game/settings';
 import { migrateStorage } from '../game/storage';
-import { setLang, t } from '../i18n';
+import { loadLang, setLang, t } from '../i18n';
 import { Controls } from '../input/Controls';
 import { View } from '../render/View';
 import { OP } from '../sim/command';
@@ -27,10 +27,6 @@ import { StowPanel } from '../ui/stow';
 import { RatPanel } from '../ui/rat';
 import { CrewChips, CrewPanel } from '../ui/crew';
 import { PhonePanel } from '../ui/phone';
-import { PickCard, WrestleCard } from '../ui/games';
-import { BoardCard, CheatCard, CourtCard } from '../ui/pastimes';
-import { RaceCard } from '../ui/long';
-import { InkCard, MatchCard } from '../ui/team';
 import { TalkPanel } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
@@ -38,16 +34,16 @@ import { TrophyToast } from '../ui/trophyToast';
 import { PaBoard } from '../ui/pa';
 import { trophyHooks } from '../game/trophies';
 import { play, sendOp } from './game';
+import { holdPlace } from './lazy';
 import { BoardPanel, TrainCard, WorkChips } from '../ui/work';
-import { StageCard } from '../ui/stage';
-import { QuizCard } from '../ui/quiz';
 import { ReadCard } from '../ui/reading';
 
 /**
  * The long-lived objects every play module shares: storage first, then settings, sound, the
- * view and the controls, then the HUD and panels. Made here once, in this order, and nowhere
- * else: each appends itself to the page, and the order they're appended is the order they stack.
- * This module imports no other play module, so anything can import it without a cycle.
+ * view and the controls, then the HUD and panels. Made here once, in this order: each appends itself
+ * to the page, and the order they're appended is the order they stack. (The side games' cards, the
+ * manhunt's HUD and the lesson's card are in files fetched later, made then and put in their place:
+ * lazy.ts.) This module imports no other play module, so anything can import it without a cycle.
  */
 migrateStorage();
 export const settings = loadSettings();
@@ -72,7 +68,9 @@ export function applySettings() {
   view.setQuality(TIERS[tierFor(settings.quality)]);
   saveSettings(settings);
 }
-// Before anything below is built: they read the language as they make their text.
+// Before anything below is built: they read the language as they make their text (French first
+// fetched: its own file, v2.34.2; index.html has already asked for it when it's the one wanted).
+await loadLang(settings.lang);
 applySettings();
 
 /**
@@ -138,21 +136,8 @@ export const aimUI = new AimUI();
 export const ratPanel = new RatPanel(click);
 /** The burner phone's panel (P21). */
 export const phonePanel = new PhonePanel(click);
-/** The side games (P22): the arm-wrestle's card and the lockpick's. */
-export const wrestleCard = new WrestleCard(sendOp);
-export const pickCard = new PickCard();
-/** Card sharks (P27): a hand of Cheat, the court's card, the old-timer's checkers board. */
-export const cheatCard = new CheatCard(sendOp, click);
-export const courtCard = new CourtCard();
-export const boardCard = new BoardCard(sendOp, click);
-/** Long games (P28): the race card at the track. */
-export const raceCard = new RaceCard(sendOp, click);
-/** Team & ink (P29): the match's card, the tattoo's. */
-export const matchCard = new MatchCard();
-export const inkCard = new InkCard(sendOp, click);
-/** Stage nights (P30): talent night's card, quiz night's. */
-export const stageCard = new StageCard(sendOp, click);
-export const quizCard = new QuizCard(sendOp, click);
+/** The side games' cards (P22, P27–P30): a file of their own (cards.ts), made once it's fetched, here (lazy.ts). */
+holdPlace('games');
 /** The pay phone's card (P34). */
 export const payphoneCard = new PayphoneCard(sendOp, click);
 /** The internet kiosk's card (P35). */

@@ -13,9 +13,148 @@
     <meta name="apple-mobile-web-app-title" content="Escape 3D" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- The fonts and the game's styles don't hold up the first paint: the loading screen below shows at once (v2.34.2). -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media = 'all'" onerror="this.media = 'all'" data-fonts />
+    <script>
+      // The language the game will speak, as src/i18n/index.ts decides it (the stored setting, else the
+      // browser's): for the loading screen's lines below, and French fetched early (vite.config.ts).
+      window.__pe3dLang = (function () {
+        var lang = 'auto';
+        try {
+          lang = JSON.parse(localStorage.getItem('pe3d.settings') || '{}').lang || 'auto';
+        } catch (e) {}
+        return lang === 'fr' || (lang !== 'en' && (navigator.language || '').toLowerCase().indexOf('fr') === 0) ? 'fr' : 'en';
+      })();
+    </script>
+    <style>
+      /* The loading screen (v2.34.2): written here so it shows at once, while the game downloads; main.ts takes it away. */
+      html,
+      body {
+        margin: 0;
+        background: #1b2230;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 22px;
+        background: #1b2230;
+        transition: opacity 0.35s ease;
+      }
+      #boot.gone {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot h1 {
+        margin: 0;
+        font: 700 clamp(36px, min(9vw, 9vh), 72px) / 1 'Fredoka', system-ui, sans-serif;
+        color: #fff;
+        text-shadow: 0 3px 0 #33415a, 0 6px 0 #222c3d;
+        text-align: center;
+      }
+      #boot h1 span {
+        color: #ff7714;
+      }
+      #boot i {
+        position: relative;
+        overflow: hidden;
+        width: 160px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      #boot i::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        width: 40%;
+        border-radius: 2px;
+        background: #ff7714;
+        animation: boot 1.3s ease-in-out infinite;
+      }
+      #boot p {
+        min-height: 2.6em;
+        max-width: 300px;
+        margin: 0;
+        padding: 0 16px;
+        font: 500 15px / 1.3 'Inter', system-ui, sans-serif;
+        color: rgba(255, 255, 255, 0.62);
+        text-align: center;
+        transition: opacity 0.3s ease;
+      }
+      #boot p.out {
+        opacity: 0;
+      }
+      @keyframes boot {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(250%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot i::after {
+          width: 100%;
+          opacity: 0.5;
+          animation: none;
+        }
+        #boot p {
+          transition: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot" aria-busy="true"><h1>Prison Escape <span>3D</span></h1><i></i><p aria-hidden="true"></p></div>
+    <script>
+      // The loading screen's lines, while the game downloads: written here (the game's text, src/i18n/,
+      // isn't in yet), in its two languages. One every 2.2 s, from a random one; they stop with the screen.
+      (function () {
+        var LINES = {
+          en: [
+            'Counting the bricks in your cell…',
+            'Hiding a spoon in the mattress…',
+            'Teaching the guard dogs to sit…',
+            'Bribing the cook with chocolate…',
+            'Learning the guards’ rounds by heart…',
+            'Digging, one spoonful at a time…',
+            'Ironing the orange jumpsuits…',
+            'Checking the vents for rats…',
+            'Polishing the bars. They stay shut…',
+            'Sneaking past roll call…',
+          ],
+          fr: [
+            'On compte les briques de ta cellule…',
+            'On cache une cuillère dans le matelas…',
+            'On apprend aux chiens à s’asseoir…',
+            'On soudoie le cuistot avec du chocolat…',
+            'On apprend par cœur les rondes des gardiens…',
+            'On creuse, une cuillerée à la fois…',
+            'On repasse les combinaisons orange…',
+            'On cherche des rats dans les conduits…',
+            'On astique les barreaux. Ils restent fermés…',
+            'On se faufile pendant l’appel…',
+          ],
+        };
+        var lines = LINES[window.__pe3dLang] || LINES.en;
+        var p = document.querySelector('#boot p');
+        var k = Math.floor(Math.random() * lines.length);
+        p.textContent = lines[k];
+        var timer = setInterval(function () {
+          if (!document.getElementById('boot')) return clearInterval(timer);
+          p.className = 'out';
+          setTimeout(function () {
+            k = (k + 1) % lines.length;
+            p.textContent = lines[k];
+            p.className = '';
+          }, 300);
+        }, 2200);
+      })();
+    </script>
     <script>
       // The browser's install dialog (Chrome, Edge) can be offered before the game has loaded:
       // kept for the title screen's Install button (src/app/install.ts).
