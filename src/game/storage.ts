@@ -14,6 +14,8 @@ export const KEYS = {
   settings: `${PREFIX}.settings`,
   /** Hints and intro cards already shown. */
   seen: `${PREFIX}.seen`,
+  /** The frame counter's on (app/perf.ts: `?perf` in the address; `?perf=0` off). */
+  perf: `${PREFIX}.perf`,
   // Progress.
   /** Escapes per prison (records.ts): the routes found and the quickest. */
   escapes: `${PREFIX}.escapes`,

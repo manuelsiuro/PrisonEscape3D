@@ -35,6 +35,7 @@ date and version here when one is done.
 | Check | Why a person | Last done |
 |---|---|---|
 | Play on a real phone, portrait and landscape: the reading game, the beat of a set, the tattoo, the action button, the joystick | Touch is simulated in the browser: a finger's timing and reach aren't | not recorded |
+| A real phone's speed: the `?perf` counter read in a busy yard, day and night, the phone's model noted | A computer's graphics card is 10–20 times a phone's: only a phone says whether a lighter look is needed | 2026-11-06, v2.34.3: a Galaxy S24 (flagship), 60 fps everywhere at every tier; a mid-range phone still to do |
 | Listen: sounds, music, a phone's vibration | Nobody has heard them since they were made; no test can | not recorded |
 | French read by a native speaker, on screen | The French is checked for coverage and length, not for how it reads | not recorded |
 | Every lesson from the Tutorial menu, start to finish, by hand | Bots pass what people fail (`CLAUDE.md`); done per lesson when it changes, never all at once | not recorded |
@@ -64,11 +65,10 @@ one development session each. The order puts safety nets before refactors, measu
 fixes, and polished systems before the feature built on them; the user may reorder. Each session
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
-4, the faster first load, were done in v2.34.2).
+4, the faster first load, were done in v2.34.2; 5, the phone performance pass, in v2.34.3).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 5 | Phone performance pass | `budgettest` counts the static world headless (30–37 calls); nothing measures the browser: frame time, the whole scene's calls (166–254 at roll call, v2.5.0), day and night |
 | 6 | Hitches and memory | `budgettest` proves a world frees what it made; not measured: shader-compile stalls, garbage collection, memory over a long game in a browser |
 | 7 | Design-token cleanup | ~720 colours written into the CSS outside `01-base.css`, 79 inline styles; 380 KB of CSS |
 | 8 | Screen-size sweep | Every screen at desktop, 412×915, 915×412, 360×640 and a tablet, then the fixes |

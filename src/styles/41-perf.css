@@ -1,0 +1,16 @@
+/* The frame counter (app/perfCounter.ts, `?perf`): bottom left, over the item bar (the player stands mid-screen, the HUD's cards at the top); nothing in it can be pressed. */
+.perf-counter {
+  position: fixed;
+  left: max(6px, env(safe-area-inset-left));
+  bottom: calc(env(safe-area-inset-bottom) + 70px);
+  z-index: 70;
+  max-width: calc(100vw - 12px);
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font: 500 9px/1.3 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  pointer-events: none;
+}
