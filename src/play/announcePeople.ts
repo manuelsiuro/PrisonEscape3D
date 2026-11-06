@@ -18,7 +18,7 @@ import { gainAt, tilesTo } from './loudness';
 import { guardSubject, inmateName, jobName } from '../ui/names';
 import { cant } from './announceKit';
 
-/** When a cup was last thrown (real ms), and how long it's in the air (View's flight). */
+/** When a cup was last thrown (real ms), and how long it's in the air (the flight in viewEffects.ts). */
 let thrownAt = -1e9;
 const THROW_FLIGHT_MS = 320;
 

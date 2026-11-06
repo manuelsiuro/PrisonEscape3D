@@ -43,8 +43,8 @@ Rules that matter every time:
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
   prison and moment and drives it by real keys. A render change meant to draw nothing new (a refactor,
-  a speed-up): `scripts/dev/drawhash.ts` fingerprints 237 frames (every prison and moment, forced
-  weather, layers, stances, the cameras), its baseline taken on the old code first.
+  a speed-up): `scripts/dev/drawhash.ts` fingerprints 243 frames (every prison and moment, forced
+  weather, layers, stances, effects, the cameras), its baseline taken on the old code first.
 - **Dev server**: `npm run dev` on port 5310, the game at `http://localhost:5310/` (not
   `/PrisonEscape3D/`, where public files come back as the page). One may already be running from an
   earlier session: reuse it. In dev builds `]` fast-forwards the clock ×30.

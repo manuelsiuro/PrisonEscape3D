@@ -1,6 +1,6 @@
 // Dev tool, run in the browser on the dev server (see trailer.ts): the trailer's score, rendered
 // offline (score.wav, 48 kHz stereo). It is the game's own music: its progression in D minor
-// (Dm–B♭–Gm–A, Sound.ts), its voices (the walking bass, the pads, the tension mood's driving
+// (Dm–B♭–Gm–A, soundMusic.ts), its voices (the walking bass, the pads, the tension mood's driving
 // ostinato, ticking hat and heartbeat) and its effects (the bell, the PA, a shovel, a coin, the
 // glider, the escape's fanfare), arranged on the cut: the day's march at 88 bpm, the plan's
 // drive at 126. Every note is scheduled on the offline clock; the effects, which play "now",
@@ -16,7 +16,7 @@ const SR = 48000;
 /** The frame the glider leaves the roof (read off the film). */
 const TAKEOFF = 952;
 
-/** The game's chords (Sound.ts): the root, then the voices, in semitones above D3. */
+/** The game's chords (soundMusic.ts): the root, then the voices, in semitones above D3. */
 const DM = [0, 0, 3, 7, 10];
 const BB = [-4, -4, 0, 3, 7];
 const GM = [-7, 5, 8, 12, 15];

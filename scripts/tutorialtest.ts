@@ -1,7 +1,7 @@
 /**
  * The tutorial's lessons (P8+), each played by a bot through the real simulation on the
  * Training Block with ordinary commands: every step must come up and be ticked off, in order,
- * and the lesson end done. The lessons are data (src/tutorial/lessons.ts); this proves none
+ * and the lesson end done. The lessons are data (src/tutorial/lessons*.ts); this proves none
  * can get stuck.
  */
 import { TRAY } from '../src/sim/systems/inmates';
