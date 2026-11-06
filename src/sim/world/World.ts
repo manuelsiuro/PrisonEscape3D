@@ -93,7 +93,7 @@ export class World {
     for (const p of this.props) if (p.kind === 'cooler') this.propSolid[p.z * MAP_W + p.x] = on ? 0 : 1;
     this.refreshBlock();
   }
-  /** Replaying a run from before 2.33.2: the checkpoint's booth is only drawn, to be walked through as it was (Sim.rules233). */
+  /** Replaying a run from before 2.33.2: the checkpoint's booth is only drawn, to be walked through as it was (Sim.rules2331). */
   private boothDecor = false;
   get plainBooth() {
     return this.boothDecor;

@@ -2,8 +2,8 @@
 import { nearestDir } from '../ai/path';
 import type { SimContext } from '../context';
 import { type Attr, ATTRS } from '../events';
-import { ATTR_MAX, GIVE_WAY_STEPS, GYM_ENERGY, READ_FILL_EVERY, READ_HIT, READ_SETS_A_DAY, READ_WINDOW, REP_DRAIN_STEPS, REP_GAIN, SET_BEATS, STUDY_ENERGY, STUDY_TIP_EVERY, TALK_REACH, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
-import { keyAt, keyFrom, SUBJECTS } from '../../content/books';
+import { ATTR_MAX, GIVE_WAY_STEPS, GYM_ENERGY, READ_FILL_EVERY, READ_HIT, READ_LEAD, READ_SETS_A_DAY, READ_WAIT, READ_WINDOW, REP_DRAIN_STEPS, REP_GAIN, SET_BEATS, STUDY_ENERGY, STUDY_TIP_EVERY, TALK_REACH, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
+import { keyAt, keyFrom, READ_PACE, SUBJECTS } from '../../content/books';
 import { containersOf } from '../world/containers';
 import { LAYER, MAP_W } from '../world/World';
 import type { FixtureUse } from './items';
@@ -71,6 +71,9 @@ export const headFull = (sim: Pick<SimContext, 'state' | 'rules230'>) => !sim.ru
 
 /** Why a book can't be read now (shown on the shelf's panel), or null. */
 export const cantRead = (sim: SimContext) => refused(sim, 'int');
+
+/** How slowly the marker reads (books.ts READ_PACE): at 2.31's speed in a run from before 2.34. */
+export const readPace = (sim: Pick<SimContext, 'rules233'>) => (sim.rules233 ? 1 : READ_PACE);
 
 /** Reading a book now (2.31), rather than the old set at the shelf. */
 export const reading = (sim: SimContext) => !sim.rules230 && sim.state.train >= 0 && sim.world.props[sim.state.train].kind === 'shelf';
@@ -197,6 +200,7 @@ export function startTraining(sim: SimContext, prop: number, use: FixtureUse | '
   s.reps = 0;
   s.repSide = 0;
   s.repBeat = sim.rules230 || p.kind !== 'shelf' ? -1 : 0;
+  s.readWait = 0;
   s.askTurn = [];
   sim.events.push({ type: 'train', on: true, use });
 }
@@ -221,15 +225,21 @@ export function study(sim: SimContext, subject = 0) {
   if (!seat) startTraining(sim, shelf, 'study');
 }
 
-/** A key word underlined, as the marker reaches it (2.31). A stray press spends the next one, so that tapping away gains nothing. */
+/**
+ * A key word underlined, as the marker reaches it (2.31). A stray press spends the next one, so that tapping away gains
+ * nothing. 2.34: the word is lit from READ_LEAD steps before the marker gets there until the marker goes on from it
+ * (it waits there, keepBook), and a press any time it's lit underlines it.
+ */
 function underline(sim: SimContext) {
   const s = sim.state;
   const pos = s.step - s.readFrom;
-  const k = keyFrom(pos, READ_WINDOW);
+  const pace = readPace(sim);
+  const k = sim.rules233 ? keyFrom(pos, READ_WINDOW) : keyFrom(pos, 0, pace);
   // (Gone already, underlined or spent: the press does no more harm.)
   if (k < s.repBeat) return;
-  const hit = keyAt(k) <= pos + READ_WINDOW;
+  const hit = sim.rules233 ? keyAt(k) <= pos + READ_WINDOW : keyAt(k, pace) - pos <= READ_LEAD;
   s.repBeat = k + 1;
+  s.readWait = 0;
   if (hit) s.reps = Math.min(100, s.reps + READ_HIT);
   sim.events.push({ type: 'rep', hit, key: k });
   if (s.reps >= 100) setDone(sim);
@@ -321,7 +331,24 @@ function keepBook(sim: SimContext) {
     stopTraining(sim);
     return;
   }
-  if ((s.step - s.readFrom) % READ_FILL_EVERY === 0 && ++s.reps >= 100) setDone(sim);
+  if (sim.rules233) {
+    if ((s.step - s.readFrom) % READ_FILL_EVERY === 0 && ++s.reps >= 100) setDone(sim);
+    return;
+  }
+  // 2.34: the marker stops at a key word still to be underlined, up to READ_WAIT steps (its place held by moving the
+  // start on), then goes on and the word's missed. The bar fills by the clock, as the place no longer does.
+  const pos = s.step - s.readFrom;
+  const k = keyFrom(pos, 0, READ_PACE);
+  if (keyAt(k, READ_PACE) === pos && k >= s.repBeat) {
+    if (s.readWait < READ_WAIT) {
+      s.readWait++;
+      s.readFrom++;
+    } else {
+      s.repBeat = k + 1;
+      s.readWait = 0;
+    }
+  } else s.readWait = 0;
+  if (s.step % READ_FILL_EVERY === 0 && ++s.reps >= 100) setDone(sim);
 }
 
 /** Each step on the equipment: a lockdown, a knockout or a blow ends it; before 2.29, the bar drains. */

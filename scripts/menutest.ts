@@ -80,6 +80,7 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     // (Old runs: the cooler was walked through and dug beside as decor.)
     const old = new Sim(def, 3);
     old.rules232 = true;
+    old.rules2331 = true;
     old.rules233 = true;
     check(old.world.propSolid[c.z * MAP_W + c.x] === 0 && fixtureUse(old.world, old.world.props[old.world.props.length - 1]) === undefined, `${def.id}: before 2.33 the cooler is decoration`);
     check(canDigFloor(old.world, c.z * MAP_W + c.x, []) === canDigFloor(new Sim(def, 3).world, c.z * MAP_W + c.x, []) || !canDigFloor(sim.world, c.z * MAP_W + c.x, []), `${def.id}: digging under the cooler as it was`);
@@ -87,9 +88,11 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     const was = new Sim(def, 3);
     was.rules231 = true;
     was.rules232 = true;
+    was.rules2331 = true;
     was.rules233 = true;
     const bare = new Sim({ ...def, props: def.props.filter((q) => q.kind !== 'vending' && q.kind !== 'cooler') }, 3);
     // (The old map: the checkpoint's booth only drawn too, as before 2.33.2.)
+    bare.rules2331 = true;
     bare.rules233 = true;
     check([...reserved(was.world)].sort().join() === [...reserved(bare.world)].sort().join(), `${def.id}: before 2.32 the tiles nobody may dig are the map's without the machine and the cooler`);
     lines.push(`${def.id} board ${m.x}–${m.x + m.w - 1},${m.z}, cooler ${c.x},${c.z} (drink at ${c.spots.map((s) => `${s.x},${s.z}`).join(' ')})`);
@@ -378,20 +381,22 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
 {
   const was = new Sim(CENTER_PERKS, 24);
   was.rules232 = true;
+  was.rules2331 = true;
   was.rules233 = true;
   const prev = new RunRecorder(was, { seed: 24, game: '2.32.0' });
   for (let k = 0; k < (34 * 60) * STEPS_PER_MINUTE && prev.sim.state.step < DAY_STEPS + 9 * 60 * STEPS_PER_MINUTE; k++) prev.step(0);
   check(dishNow(prev.sim) === null, 'the old rules: no dish');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules232 === true, 'a 2.32 log replays whole under the old rules');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.33.2' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.33.2' });
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.34.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.34.0' });
   for (let k = 0; k < 2 * 60 * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.33.3' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.34.1' }).toLog().seed === 24, 'and is carried on');
   // Under the old rules, no card, no cup.
   const old = new Bot(CENTER_PERKS, 3);
   old.sim.rules232 = true;
+  old.sim.rules2331 = true;
   old.sim.rules233 = true;
   old.routineUntil(1, 10 * 60 + 5);
   const m = CENTER_PERKS.menu!;

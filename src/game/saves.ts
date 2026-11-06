@@ -120,6 +120,13 @@ export function loadSave(f: SaveFile): Sim | null {
   try {
     const sim = new Sim(prison, 1);
     sim.restore(f.snap);
+    // (A save from before 2.34 with a book open: its place on the page was at the old pace, so the page starts over.
+    // Here, not in loadState: a log's start snapshot from then replays at the old pace.)
+    const st = sim.state;
+    if ((f.snap.state as { readWait?: number }).readWait === undefined && st.book && st.train >= 0) {
+      st.readFrom = st.step;
+      st.repBeat = 0;
+    }
     return sim;
   } catch {
     return null;

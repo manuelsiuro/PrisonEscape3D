@@ -1,15 +1,16 @@
 /**
  * Reading a book (2.31): the page on screen, a marker going along it word by word, the key words to underline as it
  * reaches them. The rule is the sim's (training.ts, content/books.ts): here each language's words are laid over its
- * key words, however many words lie between them. Word by word, so reduced motion has nothing to change.
+ * key words, however many words lie between them. Word by word, so reduced motion has nothing to change. 2.34: half
+ * the speed, and the marker waits at each lit key word, the time it has left shown under it.
  */
 import { keyAt, keyFrom, pageTokens, READ_GAPS, READ_KEYS, READ_PAGE_STEPS, READ_TAIL, SUBJECTS, type Token } from '../content/books';
 import { currentLang, type Key, t } from '../i18n';
 import { OP } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { nextUnlock, suggestSubject, toLearn } from '../sim/systems/recipes';
-import { headFull } from '../sim/systems/training';
-import { READ_SETS_A_DAY, READ_WINDOW } from '../sim/tuning';
+import { headFull, readPace } from '../sim/systems/training';
+import { READ_LEAD, READ_SETS_A_DAY, READ_WAIT, READ_WINDOW } from '../sim/tuning';
 import { setText, TOUCH } from './dom';
 import { icon } from './icons';
 import type { ShelfBooks } from './items';
@@ -63,7 +64,8 @@ export class ReadCard {
   private first = 0;
   private readonly hits = new Set<number>();
   private seen = '';
-  private from = -1;
+  /** The game whose page this is (its state): a game loaded in its place starts with nothing underlined. */
+  private game: object | null = null;
   onPage: () => void = () => {};
 
   constructor(private readonly send: (op: number, a?: number) => void) {
@@ -123,9 +125,9 @@ export class ReadCard {
   }
 
   /** The word the marker's on, `within` steps into the page: evenly along the words between two key words. */
-  private wordAt(page: number, within: number): number {
-    const gaps = READ_GAPS[page % READ_GAPS.length];
-    let from = -READ_TAIL;
+  private wordAt(page: number, within: number, pace: number): number {
+    const gaps = READ_GAPS[page % READ_GAPS.length].map((g) => g * pace);
+    let from = -READ_TAIL * pace;
     let word = 0;
     for (let k = 0; k < READ_KEYS; k++) {
       const to = from + gaps[k];
@@ -147,14 +149,18 @@ export class ReadCard {
       this.seen = '';
       return;
     }
-    if (this.from !== s.readFrom) {
-      this.from = s.readFrom;
+    // (A book begun again starts from its first key word, and another game is another book: what was underlined before
+    // is another reading's.)
+    if (this.game !== s) {
+      this.game = s;
       this.hits.clear();
     }
+    for (const n of this.hits) if (n >= s.repBeat) this.hits.delete(n);
     const subject = SUBJECTS[Math.max(0, s.book - 1)];
+    const pace = readPace(sim);
     const pos = s.step - s.readFrom;
-    const page = Math.floor(pos / READ_PAGE_STEPS);
-    const within = pos - page * READ_PAGE_STEPS;
+    const page = Math.floor(pos / (READ_PAGE_STEPS * pace));
+    const within = pos - page * READ_PAGE_STEPS * pace;
     const lang = currentLang();
     const key = `${subject}|${page % READ_GAPS.length}|${page}|${lang}`;
     if (key !== this.drawn) {
@@ -165,20 +171,25 @@ export class ReadCard {
       this.draw(pageTokens(t(`book.${subject}.p${page % READ_GAPS.length}` as Key)));
     }
     // The marker goes along; the key words light as they come into reach, and stay underlined or go dim.
-    const at = this.wordAt(page, within);
+    const at = this.wordAt(page, within, pace);
     if (at !== this.at) {
       this.words[this.at]?.classList.remove('at');
       this.words[at]?.classList.add('at');
       this.at = at;
     }
-    const near = keyFrom(pos, READ_WINDOW);
-    const live = keyAt(near) <= pos + READ_WINDOW ? near : -1;
+    const grace = sim.rules233 ? READ_WINDOW : 0;
+    const near = keyFrom(pos, grace, pace);
+    const live = keyAt(near, pace) <= pos + (sim.rules233 ? READ_WINDOW : READ_LEAD) ? near : -1;
     this.keys.forEach((w, k) => {
       const n = this.first + k;
       const el = this.words[w];
+      const lit = n === live && n >= s.repBeat;
       el.classList.toggle('hit', this.hits.has(n));
-      el.classList.toggle('near', n === live && n >= s.repBeat);
-      el.classList.toggle('gone', !this.hits.has(n) && (keyAt(n) < pos - READ_WINDOW || n < s.repBeat));
+      el.classList.toggle('near', lit);
+      el.classList.toggle('gone', !this.hits.has(n) && (keyAt(n, pace) < pos - grace || n < s.repBeat));
+      // (2.34: the marker waiting on it, the time left as a bar under the word.)
+      if (lit && !sim.rules233) el.style.setProperty('--left', String(1 - s.readWait / READ_WAIT));
+      else el.style.removeProperty('--left');
     });
     this.fill.style.width = `${s.reps}%`;
     const shown = `${subject}|${s.items.int}|${s.readToday}|${sim.setCost('int')}|${lang}`;

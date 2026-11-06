@@ -278,6 +278,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.menu = menuOk(s.menu) ? s.menu : newMenu();
   if (!Number.isInteger(s.drank) || s.drank < 0) s.drank = 0;
   s.cooler = coolerOk(s.cooler, s.inmates.length, 2) ? s.cooler : newCooler();
+  // 2.34: the marker not stopped (it stops again at once if it's on a key word).
+  if (!Number.isInteger(s.readWait) || s.readWait < 0) s.readWait = 0;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]]) s.askTurn = [];
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)
