@@ -667,7 +667,8 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   g.text(M, 30, `${tr(`prison.${def.id}`, def.id)} — the outside (P41, the manhunt): starts, the safe point, cover, searchers, roadblocks, the helicopter`, 'font-size="24" font-weight="700" fill="#111"');
-  g.text(W - M, 30, `v${pkg.version} · ${def.theme ?? 'suburban'} · picture ${o.w}×${o.h} at ${o.ox},${o.oz}`, 'font-size="15" fill="#555" text-anchor="end"');
+  // (No version in a drawn picture's title since 2.34.1: it changes only when the map does, not at every release.)
+  g.text(W - M, 30, `${def.theme ?? 'suburban'} · picture ${o.w}×${o.h} at ${o.ox},${o.oz}`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, false);
   for (let i = 0; i < MAP_W * MAP_H; i++) {
     const x = i % MAP_W;
@@ -775,7 +776,7 @@ function picture(def: PrisonDef, kind: PictureKind): string {
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
   const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'roof' ? 'roofs: the ladder, sniper range, grapnel throws, glider launches, landings' : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
-  g.text(W - M, 30, `v${pkg.version} · map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
+  g.text(W - M, 30, `map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, kind !== 'layout');
   drawGrid(g);
   if (kind === 'layout') {

@@ -23,8 +23,9 @@ Write each fact once, in its home, and link to it from elsewhere. Don't retell i
 | A polish pass: the snapshots it moved and why | its row in `docs/phases/8-polish.md` | |
 | A new roadmap of phases | a new file in `docs/phases/` (`9-<name>.md`), listed in `PLAN.md` §4 | |
 | The status, the counts | `PLAN.md` §8 (`docstest` checks the counts against the game) | |
+| What's open: areas not polished, checks only a person can do, parked ideas, upkeep | `docs/BACKLOG.md` (a pass that polishes an area takes it off; a check done by hand gets its date) | the detail, which stays in its home |
 | What the game has, for players | `docs/FEATURES.md`, the README | |
-| The user's preferences, how they like to work, ideas they parked | the project memory | anything `git log` or the docs already say |
+| The user's preferences, how they like to work | the project memory | anything `git log` or the docs already say (parked ideas: `BACKLOG.md`) |
 
 The design documents in `docs/source/` are never edited: a departure from them is a row in `docs/decisions/`.
 
@@ -55,7 +56,8 @@ the measurements go in the history entry.
 
 - **Finishing work** (on its branch, before asking to release): the history entry ("not released yet") and
   its index line; the decisions row if a rule changed; the `POLISH.md` and `phases/8-polish.md` rows for a
-  polish pass; the counts in `PLAN.md` §8, `FEATURES.md` and the README if they moved (a new test script counts).
+  polish pass; the counts in `PLAN.md` §8, `FEATURES.md` and the README if they moved (a new test script counts);
+  `BACKLOG.md` (an area polished comes off; a check done by hand, its date; a new idea parked, its sketch).
 - **Releasing** (`CLAUDE.md`'s Release rule): after `npm run released` sees it live, run `npm run docs:released`.
   It marks the entry released, sets the status line and restamps the map viewer, then prints the commit to make.
 - **Memory:** a note only for what the repo can't tell (the user's preferences, a decision's why when it isn't
@@ -64,7 +66,7 @@ the measurements go in the history entry.
 ## 4. When a file outgrows its size
 
 `docstest` fails over these: `PLAN.md` 30 KB, `HISTORY.md` 24 KB, a `decisions/` file 40 KB, a `history/` file
-80 KB, a `phases/` file 60 KB, `POLISH.md` 40 KB, `CLAUDE.md` 10 KB, `docs/README.md` 8 KB.
+80 KB, a `phases/` file 60 KB, `POLISH.md` 40 KB, `BACKLOG.md` 16 KB, `CLAUDE.md` 10 KB, `docs/README.md` 8 KB.
 
 - A history file: the next range starts every ten minor versions (`v2.40-v2.49.md` from 2.40). `docstest` names
   the file the version belongs in. List it in `HISTORY.md` under its own heading.
