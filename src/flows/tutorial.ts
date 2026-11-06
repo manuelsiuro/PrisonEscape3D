@@ -9,6 +9,7 @@ import { endGame, startGame } from '../play/session';
 import { newLessonRun } from '../play/lesson';
 import { lessonHunt, loadHunt } from '../play/lazy';
 import { play } from '../play/game';
+import { showLoading, withLoading } from '../ui/loading';
 
 /**
  * The tutorial from the title (P8+): the list of lessons, then a lesson on the Training Block,
@@ -24,7 +25,7 @@ export async function tutorialFlow(first: number | null = null): Promise<boolean
   for (;;) {
     if (k === null) {
       if (once) return false;
-      view.setWorld(new Sim(TRAINING).world);
+      await withLoading(() => view.setWorld(new Sim(TRAINING).world));
       k = await showLessons(LESSONS, lessonsDone(), click);
       if (k === null) return false;
     }
@@ -47,6 +48,8 @@ async function runLesson(k: number): Promise<LessonResult | 'quit'> {
     ))
   )
     return 'quit';
+  // (The veil up before the lesson's prison is built: ui/loading.ts; startGame takes it down.)
+  await showLoading();
   return new Promise((resolve) => {
     const sim = new Sim(lesson.prison ?? TRAINING, lesson.seed ?? 7 + k);
     lesson.setup(sim);

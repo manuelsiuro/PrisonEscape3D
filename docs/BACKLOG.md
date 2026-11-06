@@ -65,11 +65,11 @@ one development session each. The order puts safety nets before refactors, measu
 fixes, and polished systems before the feature built on them; the user may reorder. Each session
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
-4, the faster first load, were done in v2.34.2; 5, the phone performance pass, in v2.34.3).
+4, the faster first load, were done in v2.34.2; 5, the phone performance pass, and 6, hitches and memory,
+in v2.34.3).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 6 | Hitches and memory | `budgettest` proves a world frees what it made; not measured: shader-compile stalls, garbage collection, memory over a long game in a browser |
 | 7 | Design-token cleanup | ~720 colours written into the CSS outside `01-base.css`, 79 inline styles; 380 KB of CSS |
 | 8 | Screen-size sweep | Every screen at desktop, 412×915, 915×412, 360×640 and a tablet, then the fixes |
 | 9 | Accessibility options | No text size, colour-blind palette or key remapping (built on 7's tokens) |

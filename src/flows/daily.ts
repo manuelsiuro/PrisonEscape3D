@@ -11,6 +11,7 @@ import { saveWhen } from '../ui/screens/saves';
 import { banner, click, view } from '../play/context';
 import { startGame, untilQuit } from '../play/session';
 import { takeDailyAgain } from '../play/daily';
+import { hideLoading, showLoading, withLoading } from '../ui/loading';
 
 /**
  * The Daily Escape from the title (P26): its card, and from it a try (a new game of the Daily's
@@ -32,6 +33,8 @@ export async function dailyFlow(): Promise<void> {
     if (!choice) return;
     // A new try replaces the saved run of another Daily (asked first).
     if (choice.act === 'play' && saved !== null && !(await ask(t('daily.replaceSure', { n: saved + 1 }), t('daily.play'), click))) continue;
+    // (The veil up before the prison is built: ui/loading.ts.)
+    await showLoading();
     const d = dailyOf(choice.n);
     let sim: Sim | null;
     // (P31: a run saved before its prison was rebuilt can't go on: a fresh try of the same Daily.)
@@ -44,11 +47,13 @@ export async function dailyFlow(): Promise<void> {
       sim = loadSave(f);
       // (A Three Days run saved as its time ran out: over, its slot let go.)
       if (sim?.timeUp) {
+        hideLoading();
         deleteSave('daily');
         banner.toast(t('daily.timeUp'), 'bad');
         continue;
       }
       if (!sim) {
+        hideLoading();
         banner.toast(t('toast.loadFailed'), 'bad');
         continue;
       }
@@ -59,7 +64,7 @@ export async function dailyFlow(): Promise<void> {
       startGame(sim, false, null, [], { seed: d.seed }, { n: choice.n, tries });
     }
     await untilQuit();
-    view.setWorld(new Sim(d.prison).world);
+    await withLoading(() => view.setWorld(new Sim(d.prison).world));
     next = takeDailyAgain();
     if (next === null) return;
   }

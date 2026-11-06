@@ -126,6 +126,7 @@ export const en = {
   "settings.developer": "Developer",
   "settings.perf": "Frame counter",
   "settings.perfNote": "Frames a second, a frame's time and what's drawn, in a corner of the game. The address turns it on too: ?perf (and off: ?perf=0).",
+  "loading.prison": "Getting the prison ready…",
   "perf.fps": "{n} fps",
   "perf.frame": "frame {ms} ms, slowest {worst}",
   "perf.gpu": "graphics {ms} ms",
