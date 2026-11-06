@@ -139,7 +139,7 @@ for (const def of [...PRISONS, TRAINING]) {
   const b = CENTER_PERKS.checkpoint!.booth;
   const push = (old: boolean) => {
     const sim = new Sim(CENTER_PERKS, 1);
-    sim.rules233 = old;
+    sim.rules2331 = old;
     sim.state.player.x = (b.x - 1) * UNIT + UNIT / 2;
     sim.state.player.z = b.z * UNIT + UNIT / 2;
     for (let k = 0; k < 40; k++) sim.step(command(1));
@@ -152,7 +152,7 @@ for (const def of [...PRISONS, TRAINING]) {
   for (let k = 0; k < 200; k++) rec.step(0);
   const old = replayLog(rec.toLog(), CENTER_PERKS);
   const today = replayLog({ ...rec.toLog(), game: '2.33.2' }, CENTER_PERKS);
-  check(!!old?.ok && old.sim.rules233 && !!today?.ok && !today.sim.rules233, 'a log from 2.33.1 replays with the booth walked through; one from 2.33.2 with it in the way');
+  check(!!old?.ok && old.sim.rules2331 && !!today?.ok && !today.sim.rules2331, 'a log from 2.33.1 replays with the booth walked through; one from 2.33.2 with it in the way');
   check(new RunRecorder(rec.sim, { log: rec.toLog(), game: '2.33.2' }).toLog().seed === -1, 'and a log from 2.33.1 is not carried on');
 }
 const card = CATALOGUE.findIndex((c) => c.item === 'blank_id');

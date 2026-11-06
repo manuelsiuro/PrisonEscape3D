@@ -1559,14 +1559,19 @@ body.reduced-motion .item-panel .armed::after {
 }
 
 .read-page span.key {
+  /* 2.34: a key phrase never split over two lines, its glow and time left in one piece. */
+  white-space: nowrap;
   font-weight: 700;
   color: #6b3fb5;
 }
 
+/* 2.34: lit, the marker waiting on it: the bar under it is the time left (none in a replay from before, which never waits). */
 .read-page span.key.near {
   color: white;
-  background: #7c5cff;
-  box-shadow: 0 0 0 2px #7c5cff;
+  background:
+    linear-gradient(#ffd34d, #ffd34d) left bottom / calc(var(--left, 0) * 100%) 3px no-repeat,
+    #7c5cff;
+  box-shadow: 0 0 0 3px #7c5cff;
 }
 
 .read-page span.key.hit {

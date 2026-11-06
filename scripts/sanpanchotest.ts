@@ -275,6 +275,7 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   was.sim.rules230 = true;
   was.sim.rules231 = true;
   was.sim.rules232 = true;
+  was.sim.rules2331 = true;
   was.sim.rules233 = true;
   was.st.calendar = quietCalendar();
   let early = 0;
