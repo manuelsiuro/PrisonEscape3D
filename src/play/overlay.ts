@@ -43,16 +43,6 @@ import {
   tools,
   trainCard,
   readCard,
-  pickCard,
-  wrestleCard,
-  cheatCard,
-  courtCard,
-  boardCard,
-  raceCard,
-  matchCard,
-  inkCard,
-  stageCard,
-  quizCard,
   payphoneCard,
   kioskCard,
   vendCard,
@@ -65,6 +55,7 @@ import {
   fileAway,
 } from './context';
 import { play, type Game } from './game';
+import { gameCards } from './lazy';
 import {
   ACTION_IDS,
   boxTitle,
@@ -315,21 +306,23 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The side games (P22): the arm-wrestle's card, the lockpick's (the tool controls step aside for them).
   const bout = busy ? null : wrestleNow(sim, frameDt(g));
   const pick = busy ? null : pickNow(sim, a);
-  wrestleCard.update(bout);
-  pickCard.update(pick, !settings.reducedMotion);
+  // (The side games' cards: once their file is in, lazy.ts.)
+  const cards = gameCards();
+  cards?.wrestleCard.update(bout);
+  cards?.pickCard.update(pick, !settings.reducedMotion);
   // Card sharks (P27): a hand of Cheat and the old-timer's board have their cards (as a bout); the court's card while on a spot.
   const cheat = busy ? null : cheatNow(sim);
   const boardV = busy ? null : boardNow(sim);
   const court = busy || panel ? null : courtNow(sim, a);
-  cheatCard.update(cheat);
-  boardCard.update(boardV);
-  courtCard.update(court);
+  cards?.cheatCard.update(cheat);
+  cards?.boardCard.update(boardV);
+  cards?.courtCard.update(court);
   // Long games (P28): the race card at the track (not over another game's card).
   // Team & ink (P29): the match's card, the tattoo's (the needle's buzz meanwhile).
   const match = busy ? null : matchNow(sim, a);
   const inkV = busy ? null : inkNow(sim, a);
-  matchCard.update(match);
-  inkCard.update(inkV);
+  cards?.matchCard.update(match);
+  cards?.inkCard.update(inkV);
   teamSounds(sim, g.paused || g.over);
   document.body.classList.toggle('matching', !!match);
   document.body.classList.toggle('inking', !!inkV);
@@ -337,8 +330,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const otherGame = !!(bout || pick || cheat || boardV || match || inkV);
   const stageV = busy || otherGame ? null : stageNow(sim, a);
   const quizV = busy || otherGame || stageV ? null : quizNow(sim);
-  stageCard.update(stageV);
-  quizCard.update(quizV);
+  cards?.stageCard.update(stageV);
+  cards?.quizCard.update(quizV);
   setSongOn(nightsSounds(sim, a, g.paused || g.over));
   document.body.classList.toggle('performing', stageV?.phase === 'play');
   document.body.classList.toggle('staging', !!stageV);
@@ -406,7 +399,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     storyCard.open
       ? null
       : raceNow(sim, a);
-  const raceShown = raceCard.update(race);
+  const raceShown = cards?.raceCard.update(race) ?? false;
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
   // (The race card up: the lesson's card steps aside in landscape; while the race is run, the hotbar too.)

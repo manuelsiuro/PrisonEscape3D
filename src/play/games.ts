@@ -29,7 +29,8 @@ import { STEPS_PER_SECOND, TIRED } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { GamesFrame } from '../render/Games';
 import type { DiceShow, GamesView, PickView, WrestleView } from '../ui/games';
-import { banner, itemsUI, pickCard, sound, talk } from './context';
+import { banner, itemsUI, sound, talk } from './context';
+import { whenCards } from './lazy';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { crewTalk } from './crew';
@@ -362,15 +363,17 @@ export function pickNow(sim: Sim, a: number): PickView | null {
 export function wireGames() {
   talk.games = gamesOffer;
   talk.crew = crewTalk;
-  pickCard.onSet = () => {
-    const g = play.game;
-    if (!g || g.paused) return;
-    sendOp(OP.USE, 1);
-  };
-  pickCard.onStop = () => {
-    sound.click();
-    sendOp(OP.CLOSE);
-  };
+  whenCards(({ pickCard }) => {
+    pickCard.onSet = () => {
+      const g = play.game;
+      if (!g || g.paused) return;
+      sendOp(OP.USE, 1);
+    };
+    pickCard.onStop = () => {
+      sound.click();
+      sendOp(OP.CLOSE);
+    };
+  });
 }
 
 // ------------------------------------------------------------------ the picture

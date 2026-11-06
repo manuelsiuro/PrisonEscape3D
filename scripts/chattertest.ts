@@ -18,6 +18,7 @@ import { en } from '../src/i18n/en';
 import { enBarks, type BankId } from '../src/i18n/barks/en';
 import { frBarks } from '../src/i18n/barks/fr';
 import { CHAT_ITEMS, itemPhrase, placePhrase, PUBLIC_PLACES } from '../src/i18n/barks/grammar';
+import { loadLang } from '../src/i18n';
 import { Director, GLOBAL_MEMORY, SPEAKER_MEMORY, type Bubble, type Stage } from '../src/talk/director';
 import { fill, SLOTS, slotsOf, typo } from '../src/talk/fill';
 import { generatorsOf, switchPower } from '../src/sim/systems/power';
@@ -235,6 +236,8 @@ console.log(
   const bot = new Bot(prison, 9);
   const dd = new Director();
   dd.reset(bot.sim, 9);
+  // (French is a file of its own since 2.34.2, loaded as the game loads it.)
+  await loadLang('fr');
   dd.setLang('fr');
   const out: string[] = [];
   dd.onSay = (b) => out.push(b.text);

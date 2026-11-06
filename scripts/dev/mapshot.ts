@@ -58,6 +58,8 @@ export async function shootOutside(k: number) {
   const w = window as unknown as { __view: View; __manhunt: (p: string, kind: string, more: object) => Promise<unknown> };
   const view = w.__view;
   void w.__manhunt(def.id, od.starts.wall ? 'wall' : 'gate', { minute: 600, headStart: 60 });
+  // (Its code a file of its own since 2.34.2: fetched first, the first time.)
+  while (!play.game?.hunt) await frames(1);
   await frames(40);
   if (play.game) play.game.paused = true;
   await frames(5);

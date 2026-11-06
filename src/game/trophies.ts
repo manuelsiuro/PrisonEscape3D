@@ -6,7 +6,7 @@ import { ESCAPES, type Sim } from '../sim/Sim';
 import { FEAT, FEATS } from '../sim/systems/ledger';
 import { weatherNow } from '../sim/systems/calendar';
 import { UNIT } from '../sim/tuning';
-import { LESSONS } from '../tutorial/lessons';
+import { LESSON_IDS } from '../tutorial/lessonIds';
 import { lessonsDone } from './lessons';
 import { recordOf, type EscapeRecord } from './records';
 import { addStats, readStats, type Stats } from './stats';
@@ -213,8 +213,8 @@ export function careerOf(stats = readStats()): Career {
         clean: Object.values(r.byRoute).filter((b) => b.clean).length,
       };
     }),
-    lessons: lessonsDone().filter((id) => LESSONS.some((l) => l.id === id)).length,
-    lessonsOf: LESSONS.length,
+    lessons: lessonsDone().filter((id) => LESSON_IDS.includes(id)).length,
+    lessonsOf: LESSON_IDS.length,
   };
 }
 

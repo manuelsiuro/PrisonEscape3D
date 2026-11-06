@@ -1,5 +1,5 @@
 import { resetProgress, resetTips, type Settings } from '../../game/settings';
-import { t, type Key } from '../../i18n';
+import { loadLang, t, type Key } from '../../i18n';
 import { h } from '../dom';
 import { icon } from '../icons';
 
@@ -94,12 +94,15 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
     </div>`;
   };
   render();
+  /** A language picked and being fetched (closing waits for it). */
+  let langLoad: Promise<void> = Promise.resolve();
   return new Promise((resolve) => {
     const close = () => {
       click();
       removeEventListener('keydown', key, true);
       el.remove();
-      resolve();
+      // (A language being fetched: the screen behind redrawn once it's in.)
+      void langLoad.then(() => resolve());
     };
     const key = (e: KeyboardEvent) => {
       if (e.code === 'Escape') {
@@ -152,14 +155,25 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         settings[k] = !settings[k];
       }
       const ch = target.closest<HTMLElement>('[data-choice]');
+      const langBefore = settings.lang;
       if (ch) (settings as unknown as Record<string, string>)[ch.dataset.choice!] = ch.dataset.value!;
       if (!tg && !ch && !act) return;
       click();
-      apply();
-      // Re-render (the language may have changed every label), keeping the scroll.
-      const top = el.querySelector('.settings-scroll')?.scrollTop ?? 0;
-      render();
-      el.querySelector('.settings-scroll')!.scrollTop = top;
+      const redo = () => {
+        apply();
+        // Re-render (the language may have changed every label), keeping the scroll.
+        const top = el.querySelector('.settings-scroll')?.scrollTop ?? 0;
+        render();
+        el.querySelector('.settings-scroll')!.scrollTop = top;
+      };
+      // A language picked: its text fetched first (French is a file of its own, v2.34.2), then shown;
+      // not fetched (an old tab after an update deleted its files), the language stays as it was.
+      if (ch?.dataset.choice === 'lang')
+        langLoad = loadLang(settings.lang).then((ok) => {
+          if (!ok) settings.lang = langBefore;
+          redo();
+        });
+      else redo();
     };
     document.body.append(el);
   });

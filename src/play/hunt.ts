@@ -20,17 +20,18 @@ import { HuntHud } from '../ui/hunt';
 import { buzz } from '../app/haptics';
 import { banner, click, combatUI, controls, hint, hooks, hud, itemsUI, settings, sound, tools, view, vignette } from './context';
 import { play, playLater, tickPlayClock, type Game } from './game';
-import { lessonHuntGoal, updateLesson } from './lesson';
 import { barks, barksIn, hideBarks, say } from './huntBarks';
 import { Bubbles } from '../ui/bubbles';
 import { actionOf, frameOf, hudOf, huntFrameOf, INMATE_OUTFIT } from './huntFrame';
+import { inPlace, lessonHuntGoal, updateLesson } from './lazy';
 
 /**
  * The manhunt in play (P41): its own simulation (sim/hunt/) stepped at the inside's pace from
  * the same controls (the stick, the keys, a tap to walk), drawn by the same view on the
  * outside's world (the searchers cast as guards with their dogs, the lookout as an inmate,
  * render/Hunt.ts the rest), its own HUD, sounds, toasts and the searchers' barks. The inside
- * run is over and kept as it ended: nothing here touches it.
+ * run is over and kept as it ended: nothing here touches it. A file of its own (v2.34.2), fetched
+ * once the title is up: the rest of the game reaches it through lazy.ts.
  */
 
 /** How a hunt ended (or 'quit': left from the pause card). */
@@ -68,10 +69,14 @@ export interface HuntRun {
   sirenUntil: number;
 }
 
-const huntView = new HuntView();
-view.scene.add(huntView.group);
-const huntHud = new HuntHud();
-barksIn(new Bubbles());
+// (Made as its code comes in, after the rest of the page: put where they were made before, see lazy.ts.)
+const [huntView, huntHud] = inPlace('hunt', () => {
+  const v = new HuntView();
+  view.scene.add(v.group);
+  const hud = new HuntHud();
+  barksIn(new Bubbles());
+  return [v, hud] as const;
+});
 huntHud.onPause = () => hooks.pause();
 huntHud.onAct = () => {
   click();
@@ -88,9 +93,6 @@ const TREAT_ITEMS = [itemNumber('jerky'), itemNumber('pepper'), itemNumber('slee
 
 /** Where a prison is, by id (the Training Block has no outside: its lessons are Center Perks'). */
 const prisonOf = (id: string): PrisonDef => prisonById(id) ?? CENTER_PERKS;
-
-/** Whether a prison has an outside to run in. */
-export const hasOutside = (prison: string) => !!outsideOf(prison);
 
 /**
  * Into the manhunt: the outside on screen, the player where their way out left them, the HUD

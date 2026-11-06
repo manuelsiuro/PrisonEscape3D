@@ -18,7 +18,6 @@ import { dayHud } from './day';
 import { TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
-import { LESSONS } from '../tutorial/lessons';
 import { hud, paBoard, profile, settings, sound, vignette, view } from './context';
 import { playNow, type Game } from './game';
 import { portraitOf } from '../render/portrait';
@@ -117,7 +116,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   else if (hudState.presence?.[0] !== present || hudState.presence[1] !== need / STEPS_PER_MINUTE)
     hudState.presence = [present, need / STEPS_PER_MINUTE];
   // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
-  hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
+  hudState.quietRoutine = !!g.lesson && g.lesson.lesson.routine === false;
   // At roll call (2.27): where to stand till counted; on it, the morning's shakedown, until it's over.
   hudState.square =
     squareNeeded(sim) && !st.attended && !onOwnSquare(sim) ? t('routine.yourSquare') : (shakedownLine(sim) ?? homeLine(sim, g));
@@ -292,7 +291,7 @@ function homeLine(sim: Sim, g: Game): string | null {
   const st = sim.state;
   // (A lesson about something else, set up at night, has its own place to send them.)
   if (
-    (g.lesson && LESSONS[g.lesson.index].id !== 'night') ||
+    (g.lesson && g.lesson.lesson.id !== 'night') ||
     sim.rules227 ||
     st.lockdown ||
     ROUTINE[st.routine].id !== 'lightsOut' ||

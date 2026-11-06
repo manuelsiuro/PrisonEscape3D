@@ -54,8 +54,15 @@ import { BOARD, J, KIND, STAGE } from '../src/content/oddjobs';
 import { check } from './assert';
 import { aimToss } from '../src/sim/systems/throwing';
 import { type LessonCtx, myDesk } from '../src/tutorial/kit';
+import { LESSON_IDS } from '../src/tutorial/lessonIds';
 
 const tile = (x: number, z: number) => z * MAP_W + x;
+
+// The ids the title and the medals count without the lessons' file (v2.34.2): every lesson's, in order.
+check(
+  LESSON_IDS.join() === LESSONS.map((l) => l.id).join(),
+  `LESSON_IDS (src/tutorial/lessonIds.ts) lists every lesson in LESSONS' order: ${LESSONS.map((l) => l.id).join(', ')}`,
+);
 
 /** Plays a lesson: its scene set up (on its prison, from its seed, as the game sets it), the bot's moves, the steps followed every step. */
 function play(id: string, moves: (bot: Bot, ctx: LessonCtx) => void) {

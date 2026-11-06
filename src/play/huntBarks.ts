@@ -1,8 +1,7 @@
 /** What the searchers say during the hunt: a line of their bank in a bubble over them, murmured; a shout read out. */
 import type { Line } from '../talk/types';
-import { currentLang } from '../i18n';
+import { barksOf, currentLang } from '../i18n';
 import { enBarks, type BankId } from '../i18n/barks/en';
-import { frBarks } from '../i18n/barks/fr';
 import { typo } from '../talk/fill';
 import type { Bubbles } from '../ui/bubbles';
 import { settings, sound, view } from './context';
@@ -20,7 +19,7 @@ export function say(run: HuntRun, who: number, bank: BankId, style: 'say' | 'sho
   if (settings.chatter === 'off' || who < 0) return;
   if (settings.chatter === 'some' && style === 'say' && Math.random() < 0.5) return;
   const lang = currentLang();
-  const all = (lang === 'fr' ? frBarks : enBarks)[bank] ?? enBarks[bank];
+  const all = (barksOf(lang) ?? enBarks)[bank] ?? enBarks[bank];
   // (A line for the dark only after dark: torches, a warm bed.)
   const night = run.hunt.night;
   const fits = ((all ?? []) as readonly Line[])
