@@ -1,4 +1,4 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { CALLEE, JOB, LAWYER } from '../content/phone';
 import { EXT, LINE, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
@@ -186,7 +186,7 @@ export class PayphoneCard {
       this.pick.hour,
       this.pick.cell,
       armed,
-      currentLang(),
+      textStamp(),
       TOUCH,
     ].join('|');
     if (key !== this.drawn) {

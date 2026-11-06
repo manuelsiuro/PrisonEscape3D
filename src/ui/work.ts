@@ -9,7 +9,7 @@ import { HOLDER, jobRooms, qualifies } from '../sim/systems/economy';
 import { nextWork } from '../sim/systems/jobs';
 import type { Sim } from '../sim/Sim';
 import { itemIcons } from '../render/itemIcons';
-import { currentLang, type Key, t } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { inmateName } from './names';
@@ -58,7 +58,7 @@ export class BoardPanel {
       return;
     }
     const s = sim.state;
-    const key = [s.jobs.join(','), s.items.int, s.jobDay, sim.today, s.paid, s.quota, currentLang()].join('|');
+    const key = [s.jobs.join(','), s.items.int, s.jobDay, sim.today, s.paid, s.quota, textStamp()].join('|');
     this.el.classList.remove('hidden');
     if (key === this.drawn) return;
     this.drawn = key;
@@ -210,7 +210,7 @@ export class TrainCard {
     if (beats) this.keepTime(sim, sim.world.props[s.train].kind);
     this.beat.classList.toggle('hidden', !beats);
     const cost = sim.setCost(a);
-    const key = `${s.train}|${value}|${cost}|${currentLang()}`;
+    const key = `${s.train}|${value}|${cost}|${textStamp()}`;
     if (key !== this.shown) {
       const was = this.shown;
       this.shown = key;

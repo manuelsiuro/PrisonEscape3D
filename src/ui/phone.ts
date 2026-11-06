@@ -1,4 +1,4 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { itemIcons } from '../render/itemIcons';
 import { confirmed, esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -115,7 +115,7 @@ export class PhonePanel {
     setText(this.say, v.say);
     // (A way nothing can come by: the first open one instead, never a panel of dead buttons.)
     if (!v.ways.some((w) => w.way === this.way && w.open)) this.way = (v.ways.find((w) => w.open) ?? v.ways[0])?.way ?? 0;
-    const key = JSON.stringify([v.ready, v.note, v.ways, v.rows, v.cash, this.way]) + currentLang();
+    const key = JSON.stringify([v.ready, v.note, v.ways, v.rows, v.cash, this.way]) + textStamp();
     if (key === this.drawn) return;
     this.drawn = key;
     this.el.querySelector('[data-phone="close"]')!.setAttribute('aria-label', t('box.close'));

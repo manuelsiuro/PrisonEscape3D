@@ -38,6 +38,7 @@ import { paroleBusy, paroleKey } from './parole';
 import { reading } from '../sim/systems/training';
 import { closeOddJobsCard, jobCardShown, oddjobKey } from './oddjobs';
 import { huntKey } from './lazy';
+import { keyCode, keysVersion } from '../input/bindings';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -72,19 +73,29 @@ export function act() {
 function onKeyDown(e: KeyboardEvent) {
   const game = play.game;
   if (!game || game.paused || game.replay || e.metaKey || e.ctrlKey || e.repeat) return;
+  // (Session 9: the key as the action it's bound to: every test below names an action's default key.)
+  const code = keyCode(e.code);
+  // (Space given to another action, or to none: the page's own Space, pressing the button with the focus (the
+  // clock's, after its card), stays off as it is when Space uses the tool; but in a panel whose buttons it presses.)
+  if (
+    e.code === 'Space' &&
+    code !== 'Space' &&
+    !(document.activeElement as HTMLElement | null)?.closest('.rat-panel, .phone-panel, .crew-panel, .talk-panel, .train-card')
+  )
+    e.preventDefault();
   // The manhunt (P41): its own keys (Escape, H and O as in a game, below).
-  if (game.hunt && e.code !== 'Escape' && e.code !== 'KeyH' && e.code !== 'KeyO') {
-    huntKey(e);
+  if (game.hunt && code !== 'Escape' && code !== 'KeyH' && code !== 'KeyO') {
+    huntKey(code, e);
     return;
   }
   if (game.hunt) {
-    if (e.code === 'Escape') void pause();
-    else if (e.code === 'KeyH') void openHelp();
-    else if (e.code === 'KeyO' && game.lesson) void openObjectives();
+    if (code === 'Escape') void pause();
+    else if (code === 'KeyH') void openHelp();
+    else if (code === 'KeyO' && game.lesson) void openObjectives();
     return;
   }
   // Escape closes a panel first (or lets go of an aim), and pauses only when none is open.
-  if (e.code === 'Escape') {
+  if (code === 'Escape') {
     if (aiming()) cancelThrow();
     else if (itemsUI.panelOpen) itemsUI.closePanels();
     else if (socialOpen()) closeSocial();
@@ -105,24 +116,24 @@ function onKeyDown(e: KeyboardEvent) {
   }
   const g = game;
   // O: a lesson's objectives (asleep, hidden in a vehicle or knocked out too: the card is down then).
-  if (e.code === 'KeyO' && g.lesson) {
+  if (code === 'KeyO' && g.lesson) {
     void openObjectives();
     return;
   }
   // J: the day's card (asleep, knocked out or hidden in a vehicle too: when does the next block start?).
-  if (e.code === 'KeyJ') {
+  if (code === 'KeyJ') {
     void openDay();
     return;
   }
   // Asleep: only waking up (E) and the file (I) mean anything; knocked out, only I (it says the file waits).
-  if ((g.rec.sim.state.ko > 0 || g.rec.sim.state.sleeping) && e.code === 'KeyI') {
+  if ((g.rec.sim.state.ko > 0 || g.rec.sim.state.sleeping) && code === 'KeyI') {
     click();
     toggleProfile();
     return;
   }
   if (g.rec.sim.state.ko > 0) return;
-  if (g.rec.sim.state.sleeping && e.code !== 'KeyE') return;
-  if (e.code === 'KeyE') {
+  if (g.rec.sim.state.sleeping && code !== 'KeyE') return;
+  if (code === 'KeyE') {
     // E again closes what it opened (a container, a talk, the board) and steps off the equipment.
     const st = g.rec.sim.state;
     // (2.31: not while reading: it underlines; X or a step closes the book.)
@@ -133,75 +144,75 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Hidden in the delivery's vehicle (P18): E climbs out (above), Space waits (the clock fast until the search), H opens the help, I says the file waits; nothing else.
   if (g.rec.sim.state.stowed) {
-    if (e.code === 'Space') {
+    if (code === 'Space') {
       e.preventDefault();
       toggleWait();
     }
-    if (e.code === 'KeyI') {
+    if (code === 'KeyI') {
       click();
       toggleProfile();
     }
-    if (e.code === 'KeyH') void openHelp();
+    if (code === 'KeyH') void openHelp();
     return;
   }
   // Card sharks (P27): the hand of Cheat's keys (1–5, Enter, L) come before the hotbar's.
-  if (pastimeKey(e.code)) {
+  if (pastimeKey(code)) {
     e.preventDefault();
     return;
   }
   // Stage nights (P30): the lanes' keys on the stage, the answers' (1–4) at the quiz.
-  if (nightsKey(e.code)) {
+  if (nightsKey(code)) {
     e.preventDefault();
     return;
   }
   // The pay phone (P34): on Lou's line, 1–3 say a phrase.
-  if (payphoneKey(e.code)) {
+  if (payphoneKey(code)) {
     e.preventDefault();
     return;
   }
   // The kiosk (P35): in a course, 1–4 answer.
-  if (kioskKey(e.code)) {
+  if (kioskKey(code)) {
     e.preventDefault();
     return;
   }
   // The vending machine (2.32): at its card, 1–7 choose a row.
-  if (vendKey(e.code)) {
+  if (vendKey(code)) {
     e.preventDefault();
     return;
   }
   // The menu board (2.33): at its card, X scribbles.
-  if (menuKey(e.code)) {
+  if (menuKey(code)) {
     e.preventDefault();
     return;
   }
   // The parole board (P39): before it, 1–3 answer.
-  if (paroleKey(e.code)) {
+  if (paroleKey(code)) {
     e.preventDefault();
     return;
   }
   // B: the odd job's card (P40; on watch at a dig, the whistle).
-  if (oddjobKey(e.code)) {
+  if (oddjobKey(code)) {
     e.preventDefault();
     return;
   }
-  if (e.code === 'KeyC') {
+  if (code === 'KeyC') {
     closeSocial();
     itemsUI.toggleCraft();
   }
-  if (e.code === 'KeyI') {
+  if (code === 'KeyI') {
     click();
     toggleProfile();
   }
-  if (e.code === 'KeyH') void openHelp();
+  if (code === 'KeyH') void openHelp();
   // T: the pet rat's panel (P20).
-  if (e.code === 'KeyT' && !itemsUI.panelOpen) {
+  if (code === 'KeyT' && !itemsUI.panelOpen) {
     if (!ratPanel.isOpen) closeSocial();
     toggleRat(true);
   }
   // P: the burner phone's panel (P21).
-  if (e.code === 'KeyP' && !itemsUI.panelOpen) togglePhone(true);
+  if (code === 'KeyP' && !itemsUI.panelOpen) togglePhone(true);
   // G: the crew's panel (P23).
-  if (e.code === 'KeyG' && !itemsUI.panelOpen && g.rec.sim.state.followers.length) {
+  if (code === 'KeyG' && !itemsUI.panelOpen && g.rec.sim.state.followers.length) {
     if (!crewPanel.isOpen) closeSocial();
     toggleCrew(true);
   }
@@ -209,13 +220,13 @@ function onKeyDown(e: KeyboardEvent) {
   // (2.29: waiting for a turn too: off to a start is no way to lose it. A press now counts for nothing.)
   if (
     (g.rec.sim.state.train >= 0 || g.rec.sim.state.askTurn.length || g.rec.sim.state.bout.length) &&
-    (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')
+    (code === 'KeyA' || code === 'ArrowLeft' || code === 'KeyD' || code === 'ArrowRight')
   ) {
-    sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
+    sendOp(OP.TRAIN, code === 'KeyA' || code === 'ArrowLeft' ? 1 : 2);
     return;
   }
   // R: lock on to the next nearest person (past the last, none).
-  if (e.code === 'KeyR' && !itemsUI.panelOpen && !socialOpen()) {
+  if (code === 'KeyR' && !itemsUI.panelOpen && !socialOpen()) {
     // Nobody in reach (and nobody locked): say so rather than nothing.
     if (!targets.canLock && g.rec.sim.state.lock < 0) {
       sound.sting();
@@ -223,7 +234,7 @@ function onKeyDown(e: KeyboardEvent) {
     } else sendOp(OP.LOCK);
   }
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
-  if (e.code === 'Space') {
+  if (code === 'Space') {
     // (A button in the rat's panel with the focus: Space presses it.)
     if (ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
     if (phonePanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.phone-panel')) return;
@@ -245,29 +256,39 @@ function onKeyDown(e: KeyboardEvent) {
     usePress();
   }
   // U: dig up, in a tunnel (held, it strikes on).
-  if (e.code === 'KeyU' && !itemsUI.panelOpen && !socialOpen()) {
+  if (code === 'KeyU' && !itemsUI.panelOpen && !socialOpen()) {
     tools.upHeld = true;
     upPress();
   }
-  if (e.code === 'KeyQ' && g.rec.sim.state.items.inv[g.rec.sim.state.items.hand]) sendOp(OP.DROP, g.rec.sim.state.items.hand);
+  if (code === 'KeyQ' && g.rec.sim.state.items.inv[g.rec.sim.state.items.hand]) sendOp(OP.DROP, g.rec.sim.state.items.hand);
   // F: the item in hand thrown straight ahead (P14).
-  if (e.code === 'KeyF' && !itemsUI.panelOpen && !socialOpen()) throwAhead();
-  const digit = /^Digit([1-6])$/.exec(e.code);
+  if (code === 'KeyF' && !itemsUI.panelOpen && !socialOpen()) throwAhead();
+  const digit = /^Digit([1-6])$/.exec(code);
   if (digit) sendOp(OP.SELECT, Number(digit[1]) - 1);
   // Dev builds: fast-forward the prison clock (×30) to test the routine.
-  if (import.meta.env.DEV && e.code === 'BracketRight' && play.game) play.game.speed = play.game.speed === 1 ? 30 : 1;
+  if (import.meta.env.DEV && code === 'BracketRight' && play.game) play.game.speed = play.game.speed === 1 ? 30 : 1;
 }
 
 /** The keyboard, and the page losing focus or going out of sight. */
 export function listenKeys() {
   addEventListener('keydown', onKeyDown);
+  /** A key held while the keys change (the Keys card): its keyup reads as another, so what it held is let go. */
+  let keysAt = keysVersion();
   addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
+    if (keysAt !== keysVersion()) {
+      keysAt = keysVersion();
+      tools.release();
+      tools.releaseUp();
+      kickKey(false);
+      shootKey(false);
+    }
+    const code = keyCode(e.code);
+    if (code === 'Space') {
       shootKey(false);
       kickKey(false);
       tools.release();
     }
-    if (e.code === 'KeyU') tools.releaseUp();
+    if (code === 'KeyU') tools.releaseUp();
   });
   // Focus gone with Space held: the keyup never comes.
   addEventListener('blur', () => {

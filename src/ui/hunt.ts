@@ -1,4 +1,5 @@
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
+import { keyLabel } from '../i18n/keys';
 import { h, setText } from './dom';
 import { icon } from './icons';
 import { spanText } from '../sim/systems/clock';
@@ -116,12 +117,13 @@ export class HuntHud {
   }
 
   update(s: HuntHudState) {
-    if (currentLang() !== this.lang) {
-      this.lang = currentLang();
+    if (textStamp() !== this.lang) {
+      this.lang = textStamp();
       // (Not a value any of them takes: each is written again.)
       this.shownGoal = this.shownAct = this.shownState = this.shownTiers = '?';
       setText(this.stoneBtn.querySelector('span')!, t('manhunt.stone'));
       this.el.querySelector('.hunt-pause')!.setAttribute('aria-label', t('hud.pause'));
+      this.stoneBtn.setAttribute('aria-keyshortcuts', keyLabel('Space'));
     }
     if (s.goal !== this.shownGoal) {
       this.shownGoal = s.goal;
@@ -174,7 +176,7 @@ export class HuntHud {
         this.act.querySelector('.act-round span')!.textContent = t(s.act.verb);
         if (s.act.what) this.act.querySelector('.act-what')!.textContent = s.act.what;
         this.act.setAttribute('aria-label', `${t(s.act.verb)}${s.act.what ? ` ${s.act.what}` : ''}`);
-        this.act.setAttribute('aria-keyshortcuts', 'E');
+        this.act.setAttribute('aria-keyshortcuts', keyLabel('KeyE'));
       }
     }
     this.act.style.setProperty('--cut', String(s.cut));

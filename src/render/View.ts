@@ -294,8 +294,13 @@ export class View {
     addEventListener('resize', () => this.resize());
   }
 
+  /** Session 9: CSS pixels per screen point, with the interface scaled (app/scale.ts): the 3D keeps its sharpness. */
+  pixelScale = 1;
+  private quality: Quality | null = null;
+
   setQuality(q: Quality) {
-    this.renderer.setPixelRatio(q.pixelRatio);
+    this.quality = q;
+    this.renderer.setPixelRatio(q.pixelRatio * this.pixelScale);
     const on = q.shadows > 0;
     this.renderer.shadowMap.enabled = on;
     this.lighting.sun.castShadow = on;
@@ -557,6 +562,12 @@ export class View {
   /** The floor point under a screen point (tiles), for tap-to-walk. */
   groundAt(clientX: number, clientY: number): { x: number; z: number } | null {
     return this.cam.groundAt(clientX, clientY);
+  }
+
+  /** The interface's scale changed (session 9): the same pixels drawn as before, on fewer CSS pixels. */
+  setPixelScale(s: number) {
+    this.pixelScale = s;
+    if (this.quality) this.setQuality(this.quality);
   }
 
   resize() {

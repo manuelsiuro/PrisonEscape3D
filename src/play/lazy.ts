@@ -118,7 +118,7 @@ export const lessonHunt = (g: Game, spec: Parameters<HuntPart['lessonHunt']>[1])
 export const stopHunt = (g: Game | null) => hunt?.stopHunt(g);
 
 /** Keys in a hunt (hunt.ts): false while none is under way. */
-export const huntKey = (e: KeyboardEvent): boolean => hunt?.huntKey(e) ?? false;
+export const huntKey = (code: string, e: KeyboardEvent): boolean => hunt?.huntKey(code, e) ?? false;
 
 /** A tap on the ground in a hunt (hunt.ts). */
 export const huntTap = (cx: number, cy: number) => hunt?.huntTap(cx, cy);

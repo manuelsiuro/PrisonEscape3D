@@ -7,6 +7,8 @@ import { OddJobsCard, StoryCard } from '../ui/oddjobs';
 import * as THREE from 'three';
 import { setHaptics } from '../app/haptics';
 import { TIERS, tierFor } from '../app/quality';
+import { onScale, setUiScale, uiScale } from '../app/scale';
+import { setBindings } from '../input/bindings';
 import { Sound } from '../audio/Sound';
 import { loadSettings, saveSettings } from '../game/settings';
 import { migrateStorage } from '../game/storage';
@@ -54,6 +56,9 @@ export const click = () => sound.click();
 export const renderer = new THREE.WebGLRenderer({ antialias: true, stencil: true, powerPreference: 'high-performance' });
 document.body.append(renderer.domElement);
 export const view = new View(renderer, TIERS[tierFor(settings.quality)]);
+// (Session 9: the interface scaled, the 3D drawn with as many of the screen's pixels as before.)
+view.setPixelScale(uiScale());
+onScale((s) => view.setPixelScale(s));
 export const controls = new Controls(renderer.domElement, (f) => view.zoomBy(f));
 
 /** Applies every setting (on start and on each change in the settings screen). */
@@ -66,6 +71,8 @@ export function applySettings() {
   view.shakeOn = settings.shake;
   document.body.classList.toggle('reduced-motion', settings.reducedMotion);
   view.setQuality(TIERS[tierFor(settings.quality)]);
+  setBindings(settings.keys);
+  setUiScale(settings.uiScale);
   saveSettings(settings);
 }
 // Before anything below is built: they read the language as they make their text (French first

@@ -1,5 +1,5 @@
 import type { Speciality } from '../content/crew';
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { ORDER, TALK } from '../sim/command';
 import { esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -137,9 +137,9 @@ export class CrewPanel {
     this.el.classList.remove('hidden');
     setText(this.el.querySelector('.panel-head span')!, t('crew.panelTitle'));
     this.el.setAttribute('aria-label', t('crew.panelTitle'));
-    const key = JSON.stringify(rows) + currentLang();
+    const key = JSON.stringify(rows) + textStamp();
     if (key === this.drawn) return;
-    const shape = JSON.stringify(rows.map((r) => [r.who, r.recall, r.night])) + currentLang();
+    const shape = JSON.stringify(rows.map((r) => [r.who, r.recall, r.night])) + textStamp();
     const was = this.drawn ? this.last : [];
     this.drawn = key;
     this.last = rows;

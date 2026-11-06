@@ -1,4 +1,4 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { BOARD } from '../content/oddjobs';
 import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
@@ -148,7 +148,7 @@ export class OddJobsCard {
       this.drawn = '';
       return false;
     }
-    const key = JSON.stringify(v) + currentLang() + TOUCH;
+    const key = JSON.stringify(v) + textStamp() + TOUCH;
     if (key === this.drawn) return true;
     // (A Give up armed stays armed across a redraw of the rest.)
     if (this.el.querySelector('.armed')) return true;

@@ -243,12 +243,12 @@ function huntStone() {
   run.ops.push([OP.EXT, EXT.HUNT_THROW, b, c]);
 }
 
-/** Keys in a hunt: Escape pauses, E acts, Space throws a stone, H the help (the moves are Controls'). */
-export function huntKey(e: KeyboardEvent): boolean {
+/** Keys in a hunt (`code` as the action bound, input/bindings.ts): Escape pauses, E acts, Space throws a stone, H the help (the moves are Controls'). */
+export function huntKey(code: string, e: KeyboardEvent): boolean {
   const g = play.game;
   if (!g?.hunt) return false;
-  if (e.code === 'KeyE' || e.code === 'Enter') huntAct();
-  else if (e.code === 'Space' || e.code === 'KeyF') {
+  if (code === 'KeyE' || code === 'Enter') huntAct();
+  else if (code === 'Space' || code === 'KeyF') {
     e.preventDefault();
     huntStone();
   } else return false;

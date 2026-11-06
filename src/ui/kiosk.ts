@@ -1,4 +1,4 @@
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { APPS, COURSE_QUESTIONS, KIOSK } from '../content/kiosk';
 import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
@@ -174,7 +174,7 @@ export class KioskCard {
       v.said,
       v.result,
       this.app,
-      currentLang(),
+      textStamp(),
       TOUCH,
     ].join('|');
     if (key !== this.drawn) {
