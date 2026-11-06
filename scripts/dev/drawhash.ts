@@ -129,7 +129,19 @@ const HUNTS: Array<[string, 'wall' | 'gate', number]> = [
 /** Frames at which the canvas is fingerprinted (60 a second). */
 const SHOTS = [1, 30, 90];
 
+/**
+ * The frames' Math.random, seeded. three.js draws four numbers for every object's id
+ * (`generateUUID`): those come from a stream of their own, so a view that makes more or fewer objects
+ * (session 5 split the trees round a prison into pieces) leaves the characters' blinks and glances
+ * where they were. Ids never reach a pixel.
+ */
 function seeded(seed: number) {
+  const draw = stream(seed);
+  const ids = stream(seed ^ 0x5bd1e995);
+  return () => (new Error().stack?.includes('generateUUID') ? ids() : draw());
+}
+
+function stream(seed: number) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;

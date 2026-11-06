@@ -1,5 +1,6 @@
 import './styles/index.css';
 import { registerServiceWorker } from './app/pwa';
+import { startPerf } from './app/perf';
 import { prisonById, PRISONS } from './content/prisons';
 import { openPrisons } from './game/campaign';
 import { offerUpdate, titleFlow } from './flows/title';
@@ -76,6 +77,8 @@ void titleFlow();
 setTimeout(() => warmIcons(), 1200);
 // The parts in files of their own (the manhunt…), fetched once the title is up: in before anyone needs them.
 setTimeout(fetchParts, 2000);
+// The frame counter, when the address asks for it (`?perf`) or asked before.
+startPerf();
 // The game started: the boot guard in index.html stands down, and its loading screen fades away.
 (window as { __pe3dBooted?: boolean }).__pe3dBooted = true;
 // (Once the game's styles are in: index.html loads them without holding up the first paint.)
