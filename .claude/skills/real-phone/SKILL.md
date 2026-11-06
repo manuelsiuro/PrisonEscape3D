@@ -80,13 +80,23 @@ Read where things are with `eval` (an element's rect, the player's tile, the les
   button below the fold landed on Android's Back and brought another app of the user's to the front.) When one
   refuses, read why; don't work round it with raw `adb shell input`.
 
-## 5. The user's phone
+## 5. Long runs
+
+- The phone can lock itself mid-run even with the screen kept on (2026-11-06, a 10-minute run lost): Chrome
+  stops the page under the lock screen, and nothing here can unlock it (ask the user). Keep each `eval` under
+  about five minutes (one prison's day at ×10 is 2.5), and keep results on `window` as well as returning them.
+- The phone loads the same dev server: an edit to anything the page imports reloads it there too, and a run
+  in progress dies. Write only new, unimported files while one runs.
+- `performance.memory` doesn't move on Android Chrome (110.6 MB throughout): read memory from the
+  renderer's counts there, the heap on the desktop.
+
+## 6. The user's phone
 
 It's the user's own: other tabs are open (the live site, the Play Console). The tool only ever touches tabs on
 `localhost:5310`. Don't install the game on it, change its settings or leave the screen forced on: run `cleanup`
 when done, and tell the user what's still open there (the game's tab, the counter on: `?perf=0` turns it off).
 
-## 6. Writing it down
+## 7. Writing it down
 
 A check from `BACKLOG.md` §2 done on the phone gets its date, version and the phone's model there. Results go in
 the work's history entry (`docs-upkeep`): what ran on which phone, the numbers, and what still needs a person.
