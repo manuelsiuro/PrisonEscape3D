@@ -48,7 +48,11 @@ i=0
 while :; do
   r=$(jobs)
   case "$r" in
-    limited|error|"") echo "CI: GitHub API unavailable ($r); watching the site instead (a deploy runs only once the tests pass)"; break ;;
+    limited|error|"")
+      # A new version going live proves the tests passed (the deploy waits for them); one already
+      # live proves nothing about this commit (a docs push, a retry).
+      live "a" && { echo "CI: GitHub API unavailable ($r), and the site was already at $VERSION: this commit's tests can't be read. Run again in an hour"; exit 2; }
+      echo "CI: GitHub API unavailable ($r); watching the site instead (a deploy runs only once the tests pass)"; break ;;
     *tests:failure*) echo "TESTS FAILED ($r): nothing deployed"; exit 1 ;;
     *tests:success*) echo "tests passed"; break ;;
   esac
