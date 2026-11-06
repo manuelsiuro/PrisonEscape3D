@@ -1,5 +1,6 @@
 import { dailyTimeUp } from './daily';
 import { governQuality } from '../app/quality';
+import { perfHook } from '../app/perf';
 import { ROUTINE } from '../content/routine';
 import { command, EXT, OP } from '../sim/command';
 import { itemOf } from '../sim/systems/items';
@@ -153,6 +154,15 @@ function stepSim(g: Game, dt: number) {
  */
 export function frame(now: number) {
   requestAnimationFrame(frame);
+  // (The frame counter, when it's on: app/perf.ts.)
+  if (!perfHook.end) return frameWork(now);
+  perfHook.begin?.();
+  const start = performance.now();
+  frameWork(now);
+  perfHook.end(performance.now() - start, now);
+}
+
+function frameWork(now: number) {
   const dt = Math.min(0.1, (now - play.last) / 1000);
   play.last = now;
   const g = play.game;

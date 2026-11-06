@@ -169,3 +169,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The action button decided once (v2.34.2)
 - The giant modules split (v2.34.2)
 - A faster first load (v2.34.2)
+- The phone performance pass (v2.34.3, not released yet)

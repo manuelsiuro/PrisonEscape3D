@@ -53,12 +53,20 @@ const { Minefield } = await import('../src/render/Minefield');
 const { Underground } = await import('../src/render/Underground');
 const { Island } = await import('../src/render/Island');
 
-/** The draw calls a tree asks for, culling aside (one per material group drawn; an empty instanced mesh none). */
+/**
+ * The draw calls a tree asks for, culling aside (one per material group drawn; an empty instanced mesh
+ * none). A set split into squares for culling (render/chunks.ts: the trees round a prison, the
+ * minefield) counts once: the browser draws the pieces in view, counted by perfprobe's check().
+ */
 function calls(root: THREE.Object3D): number {
   let n = 0;
+  const sets = new Set<unknown>();
   const walk = (o: THREE.Object3D) => {
     if (!o.visible) return;
     const m = o as THREE.Mesh;
+    const set = o.userData.chunkedSet as unknown;
+    if (set && sets.has(set)) return;
+    if (set) sets.add(set);
     if (
       (m.isMesh || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) &&
       !((o as THREE.InstancedMesh).isInstancedMesh && (o as THREE.InstancedMesh).count === 0)

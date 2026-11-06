@@ -1,0 +1,185 @@
+{
+  "note": "perfprobe.ts check(): each scene's draw calls, shadow-pass calls and triangles (both passes) on a phone held upright (412x915, the phone's quality tier), measured 2026-11-06 (v2.34.3). A scene over by more than a sixth (and 3) fails; after a change meant to draw more, pp.record() gives this file's new text.",
+  "scenes": {
+    "training d1 07:50": {
+      "calls": 57,
+      "shadowCalls": 22,
+      "tris": 52998
+    },
+    "training d1 08:02": {
+      "calls": 54,
+      "shadowCalls": 24,
+      "tris": 54874
+    },
+    "training d1 12:10": {
+      "calls": 55,
+      "shadowCalls": 22,
+      "tris": 52803
+    },
+    "training d1 15:05": {
+      "calls": 56,
+      "shadowCalls": 24,
+      "tris": 57358
+    },
+    "training d1 18:40": {
+      "calls": 57,
+      "shadowCalls": 23,
+      "tris": 55322
+    },
+    "training d1 23:30": {
+      "calls": 64,
+      "shadowCalls": 26,
+      "tris": 56491
+    },
+    "center-perks d1 07:50": {
+      "calls": 73,
+      "shadowCalls": 30,
+      "tris": 108795
+    },
+    "center-perks d1 08:02": {
+      "calls": 67,
+      "shadowCalls": 30,
+      "tris": 110277
+    },
+    "center-perks d1 12:10": {
+      "calls": 60,
+      "shadowCalls": 35,
+      "tris": 95046
+    },
+    "center-perks d1 15:05": {
+      "calls": 60,
+      "shadowCalls": 37,
+      "tris": 97475
+    },
+    "center-perks d1 18:40": {
+      "calls": 67,
+      "shadowCalls": 22,
+      "tris": 103641
+    },
+    "center-perks d1 23:30": {
+      "calls": 90,
+      "shadowCalls": 36,
+      "tris": 106783
+    },
+    "stalag-flucht d1 07:50": {
+      "calls": 60,
+      "shadowCalls": 29,
+      "tris": 92213
+    },
+    "stalag-flucht d1 08:02": {
+      "calls": 49,
+      "shadowCalls": 29,
+      "tris": 92085
+    },
+    "stalag-flucht d1 12:10": {
+      "calls": 74,
+      "shadowCalls": 34,
+      "tris": 96335
+    },
+    "stalag-flucht d1 15:05": {
+      "calls": 55,
+      "shadowCalls": 29,
+      "tris": 94148
+    },
+    "stalag-flucht d1 18:40": {
+      "calls": 58,
+      "shadowCalls": 27,
+      "tris": 91317
+    },
+    "stalag-flucht d1 23:30": {
+      "calls": 85,
+      "shadowCalls": 42,
+      "tris": 95438
+    },
+    "shankton d1 07:50": {
+      "calls": 79,
+      "shadowCalls": 36,
+      "tris": 144000
+    },
+    "shankton d1 08:02": {
+      "calls": 71,
+      "shadowCalls": 37,
+      "tris": 147773
+    },
+    "shankton d1 12:10": {
+      "calls": 84,
+      "shadowCalls": 61,
+      "tris": 154083
+    },
+    "shankton d1 15:05": {
+      "calls": 74,
+      "shadowCalls": 45,
+      "tris": 146091
+    },
+    "shankton d1 18:40": {
+      "calls": 76,
+      "shadowCalls": 34,
+      "tris": 142736
+    },
+    "shankton d1 23:30": {
+      "calls": 100,
+      "shadowCalls": 42,
+      "tris": 144445
+    },
+    "irongate d1 07:50": {
+      "calls": 85,
+      "shadowCalls": 36,
+      "tris": 162094
+    },
+    "irongate d1 08:02": {
+      "calls": 78,
+      "shadowCalls": 40,
+      "tris": 165835
+    },
+    "irongate d1 12:10": {
+      "calls": 116,
+      "shadowCalls": 63,
+      "tris": 175558
+    },
+    "irongate d1 15:05": {
+      "calls": 89,
+      "shadowCalls": 58,
+      "tris": 173432
+    },
+    "irongate d1 18:40": {
+      "calls": 85,
+      "shadowCalls": 35,
+      "tris": 160691
+    },
+    "irongate d1 23:30": {
+      "calls": 112,
+      "shadowCalls": 44,
+      "tris": 161664
+    },
+    "san-pancho d1 07:50": {
+      "calls": 80,
+      "shadowCalls": 40,
+      "tris": 90567
+    },
+    "san-pancho d1 08:02": {
+      "calls": 79,
+      "shadowCalls": 42,
+      "tris": 97696
+    },
+    "san-pancho d1 12:10": {
+      "calls": 73,
+      "shadowCalls": 48,
+      "tris": 88513
+    },
+    "san-pancho d1 15:05": {
+      "calls": 73,
+      "shadowCalls": 61,
+      "tris": 77069
+    },
+    "san-pancho d1 18:40": {
+      "calls": 78,
+      "shadowCalls": 38,
+      "tris": 94132
+    },
+    "san-pancho d1 23:30": {
+      "calls": 103,
+      "shadowCalls": 49,
+      "tris": 97427
+    }
+  }
+}
