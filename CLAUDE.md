@@ -29,16 +29,20 @@ Rules that matter every time:
   `src/sim/world/tiles.ts`) plus zones, cells and props. `maptest` validates every map
   (reachability, containment, props on floor, zones on every floor tile).
 - **`npm test`** runs `scripts/*test*.ts` against golden outputs in `scripts/snapshots/`
-  (`-u` to accept, after reading the diff). Keep snapshot output platform-independent.
+  (`-u` to accept, after reading the diff, then run it all again and gate on exit 0). Keep snapshot
+  output platform-independent. The escape bots are knife-edge: after a map change, also
+  `ONLY=<prison> npx tsx scripts/escapetest.ts`.
 - **Storage** only through `src/game/storage.ts` (prefix `pe3d.`, never throws, migrations).
 - **Text** goes through `t()` (`src/i18n/`, English and French; `i18ntest` checks French covers
   every key, every zone and prison has a name).
 - **UI**: screens are functions returning a Promise; tokens in `src/styles/01-base.css`;
   check desktop, phone portrait (412×915) and phone landscape (915×412).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
-  Dev builds expose `window.__game()` and `window.__view`; `scripts/dev/playat.ts` puts the game at any
+  Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
   prison and moment and drives it by real keys.
-- **Dev server**: `npm run dev` on port 5310. In dev builds `]` fast-forwards the clock ×30.
+- **Dev server**: `npm run dev` on port 5310, the game at `http://localhost:5310/` (not
+  `/PrisonEscape3D/`, where public files come back as the page). One may already be running from an
+  earlier session: reuse it. In dev builds `]` fast-forwards the clock ×30.
 - **Map viewer** (`assets/maps/index.html`): keep it in step with the prisons. When a phase
   changes a map or adds something placed on it (props, decor, guards, a new `PrisonDef` field
   such as `comms`), draw the new data in `scripts/dev/mapimage.ts` (picture, legend and the
@@ -59,6 +63,8 @@ Rules that matter every time:
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
   background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
+  Read what it printed, not only its exit code: a timeout with the deploy still running is checked
+  by fetching the live bundle as `released.sh` does, not with a hand-written polling loop.
   Once it's live, `npm run docs:released` (the history entry marked released, the status line, the map
   viewer), then commit and push what it lists.
 - **Bots pass what people fail**: lessons and minigames are also played by hand in the browser

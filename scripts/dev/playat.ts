@@ -7,6 +7,8 @@
 //   await p.to(53, 10); await p.press('KeyE');     // walked there by keys, the action button
 //   p.freeze(); p.zoom(3);                         // held still, the canvas enlarged on the player
 //   p.lang('fr'); p.info();
+// Every prison open in a test profile: seed `pe3d.escapes` with a route for each of the first four
+// prisons in an isolated context, then reload (once more, so no achievement toast is left on screen).
 import { PRISONS } from '../../src/content/prisons';
 import { TRAINING } from '../../src/content/prisons/training';
 import { setLang } from '../../src/i18n';
