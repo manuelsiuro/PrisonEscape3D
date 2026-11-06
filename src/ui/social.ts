@@ -23,7 +23,7 @@ import {
 } from '../sim/tuning';
 import { clockAt, formatTime } from '../sim/systems/clock';
 import { itemIcons } from '../render/itemIcons';
-import { currentLang, type Key, t } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { confirmed, esc, h, type Send } from './dom';
 import { icon } from './icons';
 import { itemName } from './items';
@@ -204,7 +204,7 @@ export class TalkPanel {
       s.items.known.length,
       s.items.int,
       sim.clock.day,
-      currentLang(),
+      textStamp(),
       this.greeting,
     ].join('|');
     if (key === this.drawn) return;
@@ -421,7 +421,7 @@ export class TalkPanel {
     const pocket = s.items.containers[s.items.containers.length - s.guards.length + k];
     const keyItem = itemNumber(`key_${def.key}`);
     const hasKey = !!pocket && pocket.some((v) => itemOf(v) === keyItem);
-    const key = ['g', who, s.cash, s.heat > 0, until, paperDone, trait, hasKey, currentLang(), this.greeting].join('|');
+    const key = ['g', who, s.cash, s.heat > 0, until, paperDone, trait, hasKey, textStamp(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;

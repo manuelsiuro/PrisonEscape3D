@@ -1,4 +1,4 @@
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -275,7 +275,7 @@ export class WrestleCard {
       this.shown = '';
       return;
     }
-    const key = `${v.name}|${currentLang()}`;
+    const key = `${v.name}|${textStamp()}`;
     if (key !== this.shown) {
       this.shown = key;
       setText(this.title, t('wrestle.title', { name: v.name }));
@@ -401,7 +401,7 @@ export class PickCard {
       this.slips = 0;
       return;
     }
-    const key = `${v.key}|${v.of}|${currentLang()}`;
+    const key = `${v.key}|${v.of}|${textStamp()}`;
     if (key !== this.shown) {
       this.shown = key;
       this.el.dataset.key = v.key;

@@ -4,7 +4,7 @@
  * sim (play/nights.ts): the sim's own functions decide everything shown.
  */
 import { QUIZ_QUESTIONS } from '../content/nights';
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -112,9 +112,7 @@ export class QuizCard {
       this.drawn = '';
       return false;
     }
-    const key = [v.phase, v.why, v.names.join(), v.pts.join(), v.said.join(), v.got, v.q, v.question, v.end, currentLang(), TOUCH].join(
-      '|',
-    );
+    const key = [v.phase, v.why, v.names.join(), v.pts.join(), v.said.join(), v.got, v.q, v.question, v.end, textStamp(), TOUCH].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;

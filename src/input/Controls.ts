@@ -1,4 +1,5 @@
 import { dirFromVector } from '../sim/command';
+import { keyCode, keysVersion } from './bindings';
 
 /** How far the thumb can pull the stick's knob, and the dead zone, in CSS pixels. */
 const STICK_RADIUS = 56;
@@ -21,6 +22,13 @@ export class Controls {
   enabled = false;
   /** A replay (P25): with the controls off, the wheel and a two-finger pinch still zoom; nothing steers or taps. */
   zoomOnly = false;
+  /** The keys' version the held keys were read with: a key held while the keys change would never come up (session 9). */
+  private keysAt = keysVersion();
+  private keysChanged() {
+    if (this.keysAt === keysVersion()) return;
+    this.keysAt = keysVersion();
+    this.held.clear();
+  }
   private readonly held = new Set<string>();
   private readonly stick: HTMLElement;
   private readonly knob: HTMLElement;
@@ -47,12 +55,18 @@ export class Controls {
   ) {
     addEventListener('keydown', (e) => {
       if (!this.enabled || e.metaKey || e.ctrlKey) return;
-      if (e.code in KEYS_X || e.code in KEYS_Z) {
+      // (Session 9: the key as the action it's bound to.)
+      this.keysChanged();
+      const code = keyCode(e.code);
+      if (code in KEYS_X || code in KEYS_Z) {
         e.preventDefault();
-        this.held.add(e.code);
+        this.held.add(code);
       }
     });
-    addEventListener('keyup', (e) => this.held.delete(e.code));
+    addEventListener('keyup', (e) => {
+      this.keysChanged();
+      this.held.delete(keyCode(e.code));
+    });
     addEventListener('blur', () => this.reset());
 
     this.stick = document.createElement('div');

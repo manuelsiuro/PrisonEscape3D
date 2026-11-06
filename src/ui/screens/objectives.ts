@@ -1,6 +1,7 @@
 import { t, type Key } from '../../i18n';
 import { TOUCH, h } from '../dom';
 import { icon } from '../icons';
+import { keyCode } from '../../input/bindings';
 
 /** A lesson's objectives, as the bulb (O) shows them: where it stands, the steps done, the one to do now. */
 export interface Objectives {
@@ -59,7 +60,7 @@ export function showObjectives(o: Objectives, click: () => void): Promise<void> 
     // Escape or O again: back to the game (the pause key must not reach the game behind).
     const key = (e: KeyboardEvent) => {
       // (A held O, repeating, never closes what it just opened.)
-      if (e.repeat || (e.code !== 'Escape' && e.code !== 'KeyO')) return;
+      if (e.repeat || (e.code !== 'Escape' && keyCode(e.code) !== 'KeyO')) return;
       e.stopImmediatePropagation();
       done();
     };

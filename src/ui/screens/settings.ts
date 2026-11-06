@@ -1,4 +1,7 @@
-import { resetProgress, resetTips, type Settings } from '../../game/settings';
+import { resetProgress, resetTips, UI_SCALES, type Settings } from '../../game/settings';
+import { IOS, SCALES, uiScale } from '../../app/scale';
+import { MOBILE } from '../dom';
+import { showKeys } from './keys';
 import { loadLang, t, type Key } from '../../i18n';
 import { h } from '../dom';
 import { perfOn, setPerf } from '../../app/perf';
@@ -50,6 +53,10 @@ type Toggle = 'haptics' | 'reducedMotion' | 'shake' | 'tips' | 'voices';
 export function showSettings(settings: Settings, apply: () => void, click: () => void, fromTitle = false): Promise<void> {
   const el = h('div', 'modal');
   const canVibrate = typeof navigator.vibrate === 'function';
+  // (Session 9: the Keys card where there's likely a keyboard: not a phone, or a tablet with a trackpad.)
+  const keyboard = !MOBILE || matchMedia('(any-pointer: fine)').matches;
+  /** The Keys card is up over this one: the keys are its. */
+  let sub = false;
   /** A button waiting for its second press, and what was just done. */
   let armed = '';
   let done = '';
@@ -69,6 +76,20 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
       .join('')}</div></div>`;
   const slider = (k: 'sfx' | 'music', label: Key, value: number, ic: string) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="volume"><input type="range" min="0" max="100" step="5" value="${Math.round(value * 100)}" data-volume="${k}" aria-label="${t(label)}"></div></div>`;
+  /**
+   * Session 9: the interface's size, where the page's viewport tag sizes it (a phone, a tablet; app/scale.ts),
+   * with what this screen allows when that's less; elsewhere, the browser's own zoom does it, and the row says so.
+   */
+  const scaleRow = () => {
+    if (!SCALES)
+      return `<div class="set-row"><span class="set-name">${icon('search', 17)}${t('settings.scale')}</span></div><p class="set-note">${t(IOS ? 'settings.scaleSafari' : 'settings.scaleZoom')}</p>`;
+    const row = `<div class="set-row"><span class="set-name">${icon('search', 17)}${t('settings.scale')}</span><div class="seg" role="radiogroup" aria-label="${t('settings.scale')}">${UI_SCALES.map(
+      (v) =>
+        `<button role="radio" aria-checked="${settings.uiScale === v}" class="${settings.uiScale === v ? 'on' : ''}" data-choice="uiScale" data-value="${v}">${Math.round(v * 100)}%</button>`,
+    ).join('')}</div></div>`;
+    const now = uiScale();
+    return now + 0.01 < settings.uiScale ? `${row}<p class="set-note">${t('settings.scaleCapped', { n: Math.round(now * 100) })}</p>` : row;
+  };
   const render = () => {
     el.innerHTML = `<div class="card settings-card">
       <div class="settings-head"><h2>${t('settings.title')}</h2><button class="icon-btn" data-close aria-label="${t('common.close')}">${icon('close')}</button></div>
@@ -86,7 +107,9 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         ${settings.holidays === 'pick' ? choice('holidayPick', 'holiday.settingPick', 'calendar', HOLIDAY_PICK).replace('class="set-row"', 'class="set-row set-wide"') : ''}
         ${settings.holidays !== 'off' ? `<p class="set-note">${t('holiday.settingNote')}</p>` : ''}
         ${choice('quality', 'settings.quality', 'sun', QUALITY)}
+        ${scaleRow()}
         ${choice('lang', 'settings.language', 'chat', LANGS)}
+        ${keyboard ? `<div class="set-row"><span class="set-name">${icon('keyboard', 17)}${t('settings.keys')}</span><button class="link-btn set-open" data-act="keys">${t('settings.keysChange')}${icon('chevronRight', 15)}</button></div>` : ''}
         <h3 class="set-head">${icon('wrench', 14)}${t('settings.developer')}</h3>
         <div class="set-row"><span class="set-name">${icon('monitor', 17)}${t('settings.perf')}</span><button class="switch ${perfOn() ? 'on' : ''}" role="switch" aria-checked="${perfOn()}" data-dev="perf" aria-label="${t('settings.perf')}"><i></i></button></div>
         <p class="set-note">${t('settings.perfNote')}</p>
@@ -109,6 +132,7 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
       void langLoad.then(() => resolve());
     };
     const key = (e: KeyboardEvent) => {
+      if (sub) return;
       if (e.code === 'Escape') {
         e.stopImmediatePropagation();
         close();
@@ -143,6 +167,15 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
       const target = e.target as HTMLElement;
       if (target === el || target.closest('[data-close]')) return close();
       const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
+      if (act === 'keys') {
+        click();
+        sub = true;
+        void showKeys(settings, apply, click).then(() => {
+          sub = false;
+          el.querySelector<HTMLElement>('[data-act="keys"]')?.focus();
+        });
+        return;
+      }
       if (act === 'tips') {
         resetTips();
         done = 'tips';
@@ -163,7 +196,8 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
       if (dev) setPerf(!perfOn());
       const ch = target.closest<HTMLElement>('[data-choice]');
       const langBefore = settings.lang;
-      if (ch) (settings as unknown as Record<string, string>)[ch.dataset.choice!] = ch.dataset.value!;
+      if (ch?.dataset.choice === 'uiScale') settings.uiScale = Number(ch.dataset.value);
+      else if (ch) (settings as unknown as Record<string, string>)[ch.dataset.choice!] = ch.dataset.value!;
       if (!tg && !ch && !act && !dev) return;
       click();
       const redo = () => {

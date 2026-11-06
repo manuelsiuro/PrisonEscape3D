@@ -1,0 +1,57 @@
+/* ------------------------------------------------------------ the Keys card (session 9) */
+/* Each action's key as a key cap, like How to play's; the one waiting for a key glows, a key moved off its default is gold. */
+.keys-card .set-row {
+  flex-wrap: nowrap;
+  min-height: 48px;
+}
+.keys-card .set-name {
+  min-width: 0;
+  font-weight: 500;
+}
+.keycap {
+  flex: none;
+  min-width: 64px;
+  min-height: 40px;
+  margin-left: auto;
+  padding: 0 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--white);
+  background: linear-gradient(180deg, var(--blue-37), var(--dlg-top));
+  box-shadow:
+    inset 0 -2px 0 rgba(var(--black-rgb), 0.45),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.1);
+  cursor: pointer;
+}
+.keycap.moved {
+  color: var(--gold);
+}
+.keycap.waiting {
+  min-width: 0;
+  font-weight: 600;
+  box-shadow:
+    inset 0 -2px 0 rgba(var(--black-rgb), 0.45),
+    0 0 0 2px var(--orange);
+  animation: keycap-wait 1s ease-in-out infinite alternate;
+}
+@keyframes keycap-wait {
+  to {
+    box-shadow:
+      inset 0 -2px 0 rgba(var(--black-rgb), 0.45),
+      0 0 0 4px rgba(var(--orange-rgb), 0.4);
+  }
+}
+.reduced-motion .keycap.waiting {
+  animation: none;
+}
+.keys-note {
+  min-height: 3em;
+}
+/* The settings' row that opens the card. */
+.set-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}

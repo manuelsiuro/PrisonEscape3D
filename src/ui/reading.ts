@@ -5,7 +5,7 @@
  * the speed, and the marker waits at each lit key word, the time it has left shown under it.
  */
 import { keyAt, keyFrom, pageTokens, READ_GAPS, READ_KEYS, READ_PAGE_STEPS, READ_TAIL, SUBJECTS, type Token } from '../content/books';
-import { currentLang, type Key, t } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { OP } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { nextUnlock, suggestSubject, toLearn } from '../sim/systems/recipes';
@@ -170,7 +170,7 @@ export class ReadCard {
     const pos = s.step - s.readFrom;
     const page = Math.floor(pos / (READ_PAGE_STEPS * pace));
     const within = pos - page * READ_PAGE_STEPS * pace;
-    const lang = currentLang();
+    const lang = textStamp();
     const key = `${subject}|${page % READ_GAPS.length}|${page}|${lang}`;
     if (key !== this.drawn) {
       // (A turned page, not the first.)

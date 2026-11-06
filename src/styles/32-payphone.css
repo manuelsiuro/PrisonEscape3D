@@ -215,6 +215,15 @@
   }
 }
 
+/* (Session 9: a short phone upright, the interface scaled up on a 360-wide phone (300×534): the card rises
+   over the HUD's second row, so "Leave the line" fits under the four calls; the first day's guide steps aside,
+   12-complete.css.) */
+@media (max-width: 899px) and (min-height: 521px) and (max-height: 600px) {
+  .phone-card {
+    max-height: calc(100vh - 170px);
+  }
+}
+
 /* Landscape phones: docked to the left, below the clock; the hotbar steps aside. */
 @media (max-height: 520px) {
   .phone-card {

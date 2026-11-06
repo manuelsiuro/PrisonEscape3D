@@ -1,5 +1,5 @@
 import { DESIGNS } from '../content/team';
-import { currentLang, t } from '../i18n';
+import { t, textStamp } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -112,7 +112,7 @@ export class MatchCard {
       v.atFeet,
       v.mates.join(),
       v.rivals.join(),
-      currentLang(),
+      textStamp(),
       TOUCH,
     ].join('|');
     if (key !== this.drawn) {
@@ -288,7 +288,7 @@ export class InkCard {
       return;
     }
     const d = DESIGNS[v.design];
-    const key = [v.name, v.design, v.mine, v.lead, v.seen, v.left, v.mine ? '' : v.pays, currentLang(), TOUCH].join('|');
+    const key = [v.name, v.design, v.mine, v.lead, v.seen, v.left, v.mine ? '' : v.pays, textStamp(), TOUCH].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       const design = t(`design.${d.id}` as 'design.heart');

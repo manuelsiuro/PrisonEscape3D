@@ -75,7 +75,9 @@
 
 .help-tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* (Two columns that may shrink below their longest word: at 300 wide, the interface scaled up (session 9), a
+     "1fr" column kept to its content's width and pushed the card past the screen.) */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -904,9 +906,6 @@
 
 /* ------------------------------------------------------------ phones */
 @media (max-width: 440px) {
-  .help-tiles {
-    grid-template-columns: 1fr 1fr;
-  }
   .help-tile {
     flex-direction: column;
     gap: 8px;
@@ -955,5 +954,17 @@
   .hd-more[open] summary .ic {
     transform: none;
     transition: none;
+  }
+}
+
+/* (Session 9: under 340 wide, the interface scaled up on a phone, two columns of tiles left 90 px for a line
+   like "Reach the road outside the fence": one tile a row, the icon beside its words.) */
+@media (max-width: 340px) {
+  .help-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .help-tile {
+    flex-direction: row;
+    gap: 10px;
   }
 }

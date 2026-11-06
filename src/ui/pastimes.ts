@@ -1,4 +1,4 @@
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
 import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -131,7 +131,7 @@ export class CheatCard {
     }
     // (A card gone from the hand: the selection can't point past it.)
     this.sel &= (1 << v.mine.length) - 1;
-    const key = JSON.stringify(v) + this.sel + currentLang() + TOUCH;
+    const key = JSON.stringify(v) + this.sel + textStamp() + TOUCH;
     if (key === this.drawn) return;
     this.drawn = key;
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
@@ -323,7 +323,7 @@ export class CourtCard {
       v.turn,
       v.practice,
       v.of,
-      currentLang(),
+      textStamp(),
       TOUCH,
     ].join('|');
     if (key !== this.drawn) {
@@ -465,7 +465,7 @@ export class BoardCard {
     // (One piece that can move: it's chosen already.)
     const froms = [...new Set(v.steps.map((s) => s.from))];
     if (this.chosen < 0 && froms.length === 1) this.chosen = froms[0];
-    const key = JSON.stringify(v) + this.chosen + currentLang();
+    const key = JSON.stringify(v) + this.chosen + textStamp();
     if (key === this.drawn) return;
     this.drawn = key;
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;

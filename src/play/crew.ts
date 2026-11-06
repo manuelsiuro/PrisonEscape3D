@@ -1,7 +1,7 @@
 import { buzz } from '../app/haptics';
 import { ROUTINE } from '../content/routine';
 import { BACK_REACH, BRAWL_GUARDS, BRAWL_RANGE, NIGHT_OPINION, WATCH_RANGE } from '../content/crew';
-import { currentLang, type Key, lowerFirst, t } from '../i18n';
+import { lowerFirst, t, textStamp, type Key } from '../i18n';
 import { EXT, OP, ORDER } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { brawlWith, cantOrder, carryingOf, crewEntry, nightOf, orderOf, ORDERS_OF, shaftOf, specialityOf } from '../sim/systems/crew';
@@ -125,8 +125,8 @@ function orderNote(sim: Sim, who: number, order: number): string {
 /** The talk panel's crew section for a follower (null: not one of the crew), worked out once a step (the panel asks every frame). */
 let talkMemo: { step: number; who: number; lang: string; v: CrewTalkView | null } = { step: -1, who: -1, lang: '', v: null };
 export function crewTalk(sim: Sim, who: number): CrewTalkView | null {
-  if (talkMemo.step === sim.state.step && talkMemo.who === who && talkMemo.lang === currentLang()) return talkMemo.v;
-  talkMemo = { step: sim.state.step, who, lang: currentLang(), v: crewTalkNow(sim, who) };
+  if (talkMemo.step === sim.state.step && talkMemo.who === who && talkMemo.lang === textStamp()) return talkMemo.v;
+  talkMemo = { step: sim.state.step, who, lang: textStamp(), v: crewTalkNow(sim, who) };
   return talkMemo.v;
 }
 function crewTalkNow(sim: Sim, who: number): CrewTalkView | null {
@@ -170,8 +170,8 @@ const recallable = (sim: Sim, who: number) => {
 /** The crew's panel rows (worked out once a step: the panel asks every frame). */
 let rowsMemo: { step: number; lang: string; rows: CrewRow[] } = { step: -1, lang: '', rows: [] };
 export function crewRows(sim: Sim): CrewRow[] {
-  if (rowsMemo.step === sim.state.step && rowsMemo.lang === currentLang()) return rowsMemo.rows;
-  rowsMemo = { step: sim.state.step, lang: currentLang(), rows: crewRowsNow(sim) };
+  if (rowsMemo.step === sim.state.step && rowsMemo.lang === textStamp()) return rowsMemo.rows;
+  rowsMemo = { step: sim.state.step, lang: textStamp(), rows: crewRowsNow(sim) };
   return rowsMemo.rows;
 }
 function crewRowsNow(sim: Sim): CrewRow[] {
@@ -197,9 +197,9 @@ export function crewPill(sim: Sim, now = performance.now()): CrewHud | null {
   if (!s.crew.length) return null;
   crewHud.alert = false;
   for (const e of s.crew) if (now - (whistled.get(e[0]) ?? -1e9) < ALERT_MS) crewHud.alert = true;
-  if (pillAt === s.step && pillLang === currentLang()) return crewHud;
+  if (pillAt === s.step && pillLang === textStamp()) return crewHud;
   pillAt = s.step;
-  pillLang = currentLang();
+  pillLang = textStamp();
   crewHud.icons.length = 0;
   let first = -1;
   for (const e of s.crew) {
