@@ -326,6 +326,16 @@
   }
 }
 
+/* A small phone turned (under 400 tall): asked a question, the card rises over the routine's line and
+   widens into the room on the right, so the three answers are all in sight (the third was below the card's
+   edge at 640×360, session 8). */
+@media (max-height: 400px) {
+  .parole-card[data-phase='ask'] {
+    width: min(360px, calc(100vw - 280px));
+    max-height: calc(100vh - max(10px, env(safe-area-inset-bottom)) - max(12px, env(safe-area-inset-top)) - 52px);
+  }
+}
+
 /* Wide screens: docked left. */
 @media (min-width: 900px) and (min-height: 521px) {
   .parole-card {

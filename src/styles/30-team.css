@@ -101,9 +101,11 @@
   border-radius: 3px;
   background: linear-gradient(90deg, var(--team-yellow-87), var(--orange-68));
 }
-/* In a match the Kick pad takes the tool button's place. */
+/* In a match the Kick pad takes the tool button's place; the lock-on, with nothing to strike with, steps
+   aside too (on a tablet upright the pad sat over it, session 8). */
 body.matching .tool-btn,
-body.matching .tool-prompt {
+body.matching .tool-prompt,
+body.matching .lock-btn {
   display: none;
 }
 
@@ -259,7 +261,8 @@ body.matching .tool-prompt {
   .match-card .match-pad {
     position: fixed;
     right: max(14px, env(safe-area-inset-right));
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 136px);
+    /* (Lower on a very short window, clear of the pause button, as the hoops' pad.) */
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + min(136px, 100dvh - 166px));
     width: 150px;
     height: 92px;
     margin: 0;
@@ -285,8 +288,10 @@ body.matching .tool-prompt {
     grid-area: art;
     margin: 0;
   }
+  /* (Narrower than the card leaves it on a small phone turned: the card's 210 px clear, its column, gap and
+     padding; at 640×360 the column was cut, its Give up button with it, session 8.) */
   .ink-card .ink-art svg {
-    width: min(320px, calc(100vh - 44px));
+    width: min(320px, calc(100vh - 44px), calc(100vw - 376px));
     min-width: 0;
   }
   .ink-card .ink-bar {

@@ -101,6 +101,10 @@ function clearChrome() {
 
 /** The screen's size in device pixels (an override if one is set). */
 function screenSize(): [number, number] {
+  // (As the screen is turned: `wm size` says it upright whatever the rotation, and a tap at its "middle"
+  // missed the screen turned on its side, session 8.)
+  const cur = /\bcur=(\d+)x(\d+)/.exec(adb('shell', 'dumpsys', 'window', 'displays'));
+  if (cur) return [Number(cur[1]), Number(cur[2])];
   const m = /(\d+)x(\d+)\s*$/.exec(adb('shell', 'wm', 'size'));
   if (!m) throw new Error('phone: no screen size');
   return [Number(m[1]), Number(m[2])];
@@ -133,7 +137,11 @@ async function place(): Promise<Place> {
   const [w, h] = screenSize();
   chromeInFront();
   adb('shell', 'input', 'tap', String(Math.round(w / 2)), String(Math.round(h / 2)));
-  const [cx, cy] = (await run('return await window.__phonePlace;')) as [number, number];
+  // (Not waited on for ever: a touch that never reaches the page fails here, in seconds.)
+  const got = (await run('return await Promise.race([window.__phonePlace, new Promise((r) => setTimeout(() => r(null), 3000))]);')) as
+    [number, number] | null;
+  if (!got) throw new Error("phone: the touch at the screen's middle never reached the page (a sheet over it? another app?)");
+  const [cx, cy] = got;
   const dpr = size[2];
   const at: Place = { dpr, dx: w / 2 / dpr - cx, dy: h / 2 / dpr - cy, w: size[0], h: size[1] };
   writeFileSync(file, JSON.stringify(at));

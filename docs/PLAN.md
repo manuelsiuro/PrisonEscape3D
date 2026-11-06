@@ -128,7 +128,8 @@ changes the state the rules read).
 ## 4. Phases (vertical slices)
 
 Each phase ships sim, render, phone and desktop UI, i18n, a help entry and tests, then a
-release with `npm version`. Visual checks are done at desktop size, 412×915 and 915×412.
+release with `npm version`. Visual checks are done at desktop size, 412×915 and 915×412 (the sweep's
+eight sizes after a layout change, `scripts/dev/screensweep.ts`).
 A phase that changes a map or places something new on it also brings the map viewer
 (`assets/maps/`) up to date: drawn in `scripts/dev/mapimage.ts`, `npm run maps`, and the
 "In game" photos retaken when it shows in 3D (CLAUDE.md, Map viewer).

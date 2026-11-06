@@ -39,6 +39,8 @@
   min-width: 0;
 }
 .cheat-chips em {
+  /* ("You" whole: at 640×360 it was "Y…", session 8.) */
+  flex-shrink: 0;
   font-style: normal;
   color: rgba(var(--white-rgb), 0.75);
   overflow: hidden;
@@ -435,7 +437,8 @@ body.courting .tool-prompt {
   .court-card .court-pad {
     position: fixed;
     right: max(14px, env(safe-area-inset-right));
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 136px);
+    /* (Lower on a very short window, clear of the pause button: 274 tall in Chrome's bars, session 8.) */
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + min(136px, 100dvh - 166px));
     width: 150px;
     height: 92px;
     margin: 0;
@@ -532,8 +535,9 @@ body.courting .tool-prompt {
   .cheat-card .cheat-acts {
     flex-wrap: nowrap;
   }
+  /* Each as wide as its words ("Pick 1 to 3 cards" was cut to "Pick 1 to 3…" at 640×360, session 8). */
   .cheat-card .cheat-acts .big-btn {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-width: 0;
     height: 36px;
     padding: 0 8px;
@@ -611,5 +615,14 @@ body.reduced-motion .board-card {
   .cheat-card .train-stop {
     width: 42px;
     height: 42px;
+  }
+}
+
+/* A small phone turned (under 440 tall): the card widens into the room on the right, so its two buttons keep
+   their words and stay in sight (French "Choisis 1 à 3 cartes" was cut and below the card's edge at
+   640×360, session 8). */
+@media (max-height: 440px) {
+  .cheat-card {
+    width: min(360px, calc(100vw - 280px));
   }
 }

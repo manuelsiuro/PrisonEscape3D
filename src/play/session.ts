@@ -90,6 +90,7 @@ import { carryFrom } from '../sim/hunt/carry';
 import { OVER } from '../sim/hunt/state';
 import { inmateName } from '../ui/names';
 import { type Rumor } from '../talk/gossip';
+import { armFullscreen } from '../app/fullscreen';
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and
@@ -144,6 +145,8 @@ export function startGame(
   stageWorld(sim, prisoner);
   // (Where the routine sends the player, as this prison has it: P31's sports ground only where there is one.)
   setZonesHere(new Set(sim.world.def.zones.map(([z]) => z)));
+  // (A phone turned: this game's first tap asks for full screen, app/fullscreen.ts.)
+  armFullscreen();
   PLAYER.name = prisoner?.name ?? '';
   // The speech bubbles (P13): this prison's voices, and the rumors the save kept.
   chatterStart(sim, rumors);
