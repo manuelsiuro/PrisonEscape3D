@@ -137,14 +137,19 @@ play('dig', (bot) => {
 
 play('fight', (bot) => {
   bot.op(OP.LOCK, 2);
-  // Up to him, then blows until he's down (he hits back).
+  // Up to him, a blow; the block held until one of his lands on it (2.35); then blows until he's down.
   const m = bot.st.inmates[0];
-  for (let k = 0; k < 600 && m.ko === 0; k++) {
+  let blocked = false;
+  for (let k = 0; k < 900 && m.ko === 0; k++) {
     const dx = m.body.x - bot.st.player.x;
     const dz = m.body.z - bot.st.player.z;
     if (Math.hypot(dx, dz) > 1.1 * UNIT) bot.step(command(dirFromVector(dx, dz)));
-    else bot.op(OP.USE, 1);
+    else if (m.angry > 0 && !blocked) {
+      bot.op(OP.EXT, EXT.BLOCK);
+      blocked = bot.sim.events.some((e) => e.type === 'hurt' && !!e.blocked);
+    } else bot.op(OP.USE, 1);
   }
+  check(blocked, 'fight: a blow of his landed on the block');
 });
 
 play('noise', (bot) => {

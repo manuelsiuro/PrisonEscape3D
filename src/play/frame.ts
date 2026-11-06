@@ -10,7 +10,14 @@ import { rollCallShows } from '../render/ground';
 import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
-import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
+import { ALERT, alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
+import { maxHealth, personOf } from '../sim/systems/combat';
+import { blocking } from '../sim/systems/fights';
+import { darkNow } from '../sim/systems/stealth';
+import type { Dark } from '../sim/ai/light';
+
+/** 2.35: the dark as the frame shows it (one object, refilled). */
+const darkFrame: Dark = { power: true, blockDark: false };
 import { eatingNow, mealOn, mealSteps, TRAY, traysHere } from '../sim/systems/canteen';
 import { wardenOf } from '../sim/systems/rollcall';
 import { dummyInBed } from '../sim/systems/justice';
@@ -290,6 +297,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       awayLeft: 0,
       stir: 0,
       range: 7,
+      notice: 0,
     });
     const q = g.prevGuards[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
@@ -298,7 +306,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
     o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     o.doing = m.doing;
-    o.alert = alertOf(m);
+    // (2.35: its "?" filling: the cone turns orange as it does.)
+    o.notice = m.notice ? Math.min(1, m.notice / Math.max(1, m.noticeNeed ?? 1)) : 0;
+    o.alert = o.notice > 0 ? Math.max(alertOf(m), ALERT.SUSPICIOUS) : alertOf(m);
     o.away = lookingAway(m, st.step);
     o.awayLeft = o.away ? m.bribed - st.step : 0;
     o.stir = m.doze > 0 ? Math.min(1, m.stir / stirSteps(sim.state)) : 0;
@@ -541,6 +551,16 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   if (dummyMemo.sim !== sim || dummyMemo.rev !== it.rev) Object.assign(dummyMemo, { sim, rev: it.rev, there: dummyInBed(sim) });
   f.bedDummy = dummyMemo.there;
   f.blockDark = !st.lockdown && afterHours(sim);
+  // 2.35: the dark (the cones cut short off lit tiles), the block, the locked-on person's health.
+  const dark = darkNow(sim);
+  if (dark) {
+    darkFrame.power = dark.power;
+    darkFrame.blockDark = dark.blockDark;
+  }
+  f.dark = dark ? darkFrame : null;
+  f.blocking = blocking(sim);
+  const locked = st.lock >= 0 ? personOf(st, st.lock) : undefined;
+  f.lockHealth = locked ? locked.hp / maxHealth(locked.str) : 0;
   // Security (GDD §5.4–5.6) as the sim has it: cameras on their sweep, the searchlights at night, a sniper's aim.
   const sec = f.security;
   // What has power (Irongate's two generators each run their half, P12).

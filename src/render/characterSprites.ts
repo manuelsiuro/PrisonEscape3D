@@ -61,6 +61,42 @@ export function koTexture(): THREE.CanvasTexture {
   return starTexture;
 }
 
+/** 2.35: a guard making sure of what it sees: a "?" whose disc fills from the bottom (`level` of NOTICE_LEVELS), drawn once each. */
+export const NOTICE_LEVELS = 8;
+const noticeTextures: THREE.CanvasTexture[] = [];
+export function noticeTexture(level: number): THREE.CanvasTexture {
+  const k = Math.max(1, Math.min(NOTICE_LEVELS, level));
+  const had = noticeTextures[k];
+  if (had) return had;
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  const g = c.getContext('2d')!;
+  g.beginPath();
+  g.arc(48, 46, 36, 0, Math.PI * 2);
+  g.fillStyle = 'rgba(40, 24, 6, 0.78)';
+  g.fill();
+  // The fill rising: orange, red as it nears the top.
+  g.save();
+  g.clip();
+  const top = 82 - (72 * k) / NOTICE_LEVELS;
+  g.fillStyle = k === NOTICE_LEVELS ? '#ff3b30' : '#ff9f1a';
+  g.fillRect(0, top, 96, 96 - top);
+  g.restore();
+  g.beginPath();
+  g.arc(48, 46, 36, 0, Math.PI * 2);
+  g.strokeStyle = 'rgba(30, 10, 0, 0.85)';
+  g.lineWidth = 6;
+  g.stroke();
+  g.font = '900 60px Fredoka, system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#fff';
+  g.fillText('?', 48, 50);
+  const t = canvasTexture(c);
+  noticeTextures[k] = t;
+  return t;
+}
+
 /** "!" (red, spotted), "?" (orange, searching) and "$" (green, bribed: P15) over a guard's head, drawn once each. */
 const markTextures = new Map<string, THREE.CanvasTexture>();
 export function markTexture(ch: string): THREE.CanvasTexture {

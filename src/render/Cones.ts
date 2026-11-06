@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { darkReach, type Dark } from '../sim/ai/light';
 import { SIGHT_HALF_ANGLE, SIGHT_RANGE, sightReach } from '../sim/ai/sight';
 import { ALERT } from '../sim/systems/guards';
 import { UNIT } from '../sim/tuning';
@@ -137,7 +138,7 @@ export class Cones {
   }
 
   /** Redraws every cone; `night` (0–1) makes them a little stronger in the dark. */
-  update(guards: readonly ConeFrame[], dt: number, night: number, motion: boolean) {
+  update(guards: readonly ConeFrame[], dt: number, night: number, motion: boolean, dark: Dark | null = null) {
     const w = this.world;
     this.clock += dt;
     let any = false;
@@ -179,7 +180,9 @@ export class Cones {
       const range = c.range;
       for (let r = 0; r <= RAYS; r++) {
         const a = c.angle - SIGHT_HALF_ANGLE + (2 * SIGHT_HALF_ANGLE * r) / RAYS;
-        const reach = sightReach(w, g.x, g.z, a, range);
+        // (2.35: at night, past DARK_SIGHT only as far as the tiles stay lit: the rule's own samples, ai/light.ts.)
+        const wall = sightReach(w, g.x, g.z, a, range);
+        const reach = dark ? darkReach(w, dark, g.x, g.z, a, wall) : wall;
         const v = o + r + 1;
         p[v * 3] = g.x + Math.cos(a) * reach;
         p[v * 3 + 1] = 0.05;

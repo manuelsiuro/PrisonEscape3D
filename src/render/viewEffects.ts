@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { canvasTexture } from './canvas';
 import { MAP_W, LAYER } from '../sim/world/World';
 import type { Character } from './Character';
 import type { Dust } from './Dust';
@@ -46,7 +47,41 @@ function lockRing(): THREE.Mesh {
   return m;
 }
 
+/** 2.35: the locked-on person's health over their head, in BAR_LEVELS steps (a texture each, drawn once). */
+const BAR_LEVELS = 20;
+const barTextures: THREE.CanvasTexture[] = [];
+function barTexture(level: number): THREE.CanvasTexture {
+  const had = barTextures[level];
+  if (had) return had;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 20;
+  const g = c.getContext('2d')!;
+  g.fillStyle = 'rgba(20, 14, 10, 0.82)';
+  g.beginPath();
+  g.roundRect(1, 1, 126, 18, 9);
+  g.fill();
+  const f = level / BAR_LEVELS;
+  if (level > 0) {
+    g.fillStyle = f > 0.6 ? '#4cc27a' : f > 0.3 ? '#f2b33d' : '#e5484d';
+    g.beginPath();
+    g.roundRect(4, 4, Math.max(8, 120 * f), 12, 6);
+    g.fill();
+  }
+  g.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.roundRect(1, 1, 126, 18, 9);
+  g.stroke();
+  const t = canvasTexture(c);
+  barTextures[level] = t;
+  return t;
+}
+
 export class Effects {
+  /** 2.35: the bar over the locked-on person's head (its level shown now). */
+  readonly bar = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }));
+  private barLevel = -1;
   /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
   readonly ring = lockRing();
   readonly cup = new THREE.Mesh(
@@ -88,6 +123,9 @@ export class Effects {
     private readonly layer: () => number,
   ) {
     this.cup.visible = false;
+    this.bar.visible = false;
+    this.bar.renderOrder = 31;
+    this.bar.scale.set(0.9, 0.14, 1);
     this.puddles.count = 0;
     this.puddles.renderOrder = 0.15;
     // Instances spread over the whole map: the mesh's own bounds (at the origin) would cull them.
@@ -246,6 +284,17 @@ export class Effects {
       mat.opacity = f.lockFar ? 0.45 : 0.92;
       this.ring.scale.setScalar(pulse);
       this.ring.rotation.y = this.reduced() ? 0 : time * 0.8;
+    }
+    // 2.35: their health over their head (above a "?" or "!").
+    this.bar.visible = this.ring.visible;
+    if (target) {
+      const level = Math.max(0, Math.min(BAR_LEVELS, Math.ceil(f.lockHealth * BAR_LEVELS)));
+      if (level !== this.barLevel) {
+        this.barLevel = level;
+        this.bar.material.map = barTexture(level);
+        this.bar.material.needsUpdate = true;
+      }
+      this.bar.position.set(target.x, 2.45, target.z);
     }
     if (this.cupT < 1) {
       this.cupT = Math.min(1, this.cupT + dt / 0.32);

@@ -2,13 +2,14 @@ sight: 60° cone, 7 tiles, walls and shut doors block it
 contraband in hand (trowel): lockdown after 50 steps in sight
 restricted rooms: 100% heat when seen, unless disguised
 == out at night, no disguise
-day 2 00:01 spotted: night
-day 2 00:01 LOCKDOWN
-day 2 00:05 caught → solitary
-day 2 00:05 lockdown over
+day 2 00:03 spotted: contraband
+day 2 00:03 spotted: night
+day 2 00:03 LOCKDOWN
+day 2 00:06 caught → solitary
+day 2 00:06 lockdown over
 day 2 00:30 bed check: start
-day 2 00:35 into solitary (3 taken)
-solitary: 217 presses to get out, back in the cell at day 2 00:46
+day 2 00:36 into solitary (3 taken)
+solitary: 217 presses to get out, back in the cell at day 2 00:47
 review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard
 == wanted at 85%
 day 1 10:10 spotted: wanted

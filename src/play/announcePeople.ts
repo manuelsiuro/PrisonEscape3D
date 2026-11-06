@@ -53,7 +53,8 @@ export function announcePeople(e: SimEvent, sim: Sim) {
       buzz('strike');
       combatUI.hurt(e.dmg >= 25);
       if (e.by >= 0) view.blow(e.by, -1, false);
-      floatAt(-1, `${e.dmg}`, 'taken');
+      // (2.35: a blow blocked says so.)
+      floatAt(-1, e.blocked ? t('combat.blocked', { n: e.dmg }) : `${e.dmg}`, 'taken');
       // Hit while working: the tool stops (a fight goes on: a held Hit button keeps swinging).
       if (!press.toolNow?.attack) tools.release();
       break;

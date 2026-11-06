@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { DOING } from '../sim/systems/inmates';
 import { kitMaterial, merge } from './kit';
 import { type Look } from './look';
-import { badgeTexture, type BadgeKind, koTexture, markTexture, sleepTexture } from './characterSprites';
+import { glowTexture } from './lights';
+import { badgeTexture, type BadgeKind, koTexture, markTexture, NOTICE_LEVELS, noticeTexture, sleepTexture } from './characterSprites';
 import { activityPose, type Limbs, type Moves } from './characterPose';
 import { instrumentGeometry, instruments, part } from './characterParts';
 import { bodyMaterial, buildFigure, ghostSkin } from './characterBody';
@@ -138,6 +139,11 @@ export class Character {
   /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
   private recoil = 0;
+  /** 2.35: the block held (from the frame), and its forearms raised (eased); a blow's white flash (made at the first). */
+  blocking = false;
+  private guardUp = 0;
+  private flash = 0;
+  private flashSprite: THREE.Sprite | null = null;
   /** The key on a guard's belt (a bone: scaled to nothing once taken). */
   private readonly keyTag: THREE.Bone | null = null;
   /** The floor's height under the character (vents and roofs stand above the ground floor). */
@@ -184,6 +190,7 @@ export class Character {
   private readonly markSprite: THREE.Sprite;
   private markShown = '';
   private markAge = 0;
+  private markLevel = 0;
   /** The badge over the head (favor, shop, mail, follower), and how long it has shown. */
   private readonly badgeSprite: THREE.Sprite;
   private badgeShown: BadgeKind = '';
@@ -420,16 +427,19 @@ export class Character {
    * a couple of seconds (the alert is in the cone's color from then on). A "$" (bribed, P15)
    * settles small and stays, out of the way of a doze's Z's.
    */
-  mark(ch: string, dt: number, motion: boolean) {
-    if (ch !== this.markShown) {
+  mark(ch: string, dt: number, motion: boolean, fill = 0) {
+    // (2.35: a "?" filling while the guard makes sure: shown as long as it fills, its disc rising.)
+    const level = ch === '?' && fill > 0 ? Math.max(1, Math.ceil(fill * NOTICE_LEVELS)) : 0;
+    if (ch !== this.markShown || level !== this.markLevel) {
+      if (ch !== this.markShown) this.markAge = 0;
       this.markShown = ch;
-      this.markAge = 0;
-      if (ch) this.markSprite.material.map = markTexture(ch);
+      this.markLevel = level;
+      if (ch) this.markSprite.material.map = level ? noticeTexture(level) : markTexture(ch);
       this.markSprite.material.needsUpdate = true;
     }
     this.markAge += dt;
     const keep = ch === '$';
-    const show = !!ch && (this.markAge < 2.2 || keep) && !(keep && this.doze > 0.3);
+    const show = !!ch && (this.markAge < 2.2 || keep || level > 0) && !(keep && this.doze > 0.3);
     this.markSprite.visible = show;
     if (!show) return;
     const t = this.markAge;
@@ -442,7 +452,8 @@ export class Character {
       return;
     }
     const pop = motion ? Math.min(1, t * 7) * (1 + Math.max(0, 0.35 - t) * 1.6) : 1;
-    const out = t > 1.9 ? 1 - (t - 1.9) / 0.3 : 1;
+    // (A filling "?" stays as long as it fills: no shrinking away, 2.35.)
+    const out = t > 1.9 && !level ? 1 - (t - 1.9) / 0.3 : 1;
     this.markSprite.scale.setScalar(0.62 * pop * out);
     this.markSprite.material.opacity = 1;
     this.markSprite.position.y = 1.85 + (motion ? Math.sin(t * 9) * 0.04 : 0);
@@ -519,9 +530,25 @@ export class Character {
     this.jab = 1;
   }
 
-  /** Hit: a jolt back. */
+  /** Hit: a jolt back, and a white flash (2.35). */
   flinch() {
     this.recoil = 1;
+    this.flash = 1;
+    if (!this.flashSprite) {
+      const s = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: glowTexture(),
+          color: 0xffffff,
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      s.position.set(0, 1.05, 0.1);
+      s.renderOrder = 28;
+      this.root.add(s);
+      this.flashSprite = s;
+    }
   }
 
   /** Shows or hides the key on a guard's belt. */
@@ -567,6 +594,14 @@ export class Character {
     this.hit = Math.max(0, this.hit - dt * 3.2);
     this.jab = Math.max(0, this.jab - dt * 4.5);
     this.recoil = Math.max(0, this.recoil - dt * 4);
+    this.flash = Math.max(0, this.flash - dt * 7);
+    if (this.flashSprite) {
+      this.flashSprite.visible = this.flash > 0;
+      this.flashSprite.material.opacity = this.flash * 0.9;
+      this.flashSprite.scale.setScalar(0.9 + (1 - this.flash) * 0.5);
+    }
+    this.guardUp += ((this.blocking && !ko ? 1 : 0) - this.guardUp) * k(14);
+    if (this.guardUp < 0.002) this.guardUp = 0;
     this.pumped = Math.max(0, this.pumped - dt * 3);
     this.at.set(x, this.baseY, z);
     let turn = facing;
@@ -730,6 +765,14 @@ export class Character {
       l.armRx = -1.7 * out * out * (3 - 2 * out);
       l.armLx = Math.min(l.armLx, -1.1 * Math.min(1, j * 2));
       l.armLz = -0.25 * j;
+    }
+    // The block (2.35): both forearms up before the face.
+    if (this.guardUp > 0) {
+      const g = this.guardUp;
+      l.armLx += (-2.1 - l.armLx) * g;
+      l.armRx += (-2.1 - l.armRx) * g;
+      l.armLz += (-0.55 - l.armLz) * g;
+      l.armRz += (0.55 - l.armRz) * g;
     }
     this.legL.rotation.set(l.legL, 0, -l.legZ);
     this.legR.rotation.set(l.legR, 0, l.legZ);

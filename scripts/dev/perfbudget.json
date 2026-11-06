@@ -1,5 +1,5 @@
 {
-  "note": "perfprobe.ts check(): each scene's draw calls, shadow-pass calls and triangles (both passes) on a phone held upright (412x915, the phone's quality tier), measured 2026-11-06 (v2.34.3). A scene over by more than a sixth (and 3) fails; after a change meant to draw more, pp.record() gives this file's new text.",
+  "note": "perfprobe.ts check(): each scene's draw calls, shadow-pass calls and triangles (both passes) on a phone held upright (412x915, the phone's quality tier), measured 2026-11-06 (v2.35.0). A scene over by more than a sixth (and 3) fails; after a change meant to draw more, pp.record() gives this file's new text.",
   "scenes": {
     "training d1 07:50": {
       "calls": 57,

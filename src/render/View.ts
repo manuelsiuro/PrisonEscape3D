@@ -262,6 +262,7 @@ export class View {
       this.noiseFx.group,
       this.cones.group,
       this.fx.ring,
+      this.fx.bar,
       this.fx.cup,
       this.fx.puddles,
       this.pieces.weather.group,
@@ -899,7 +900,7 @@ export class View {
     );
     this.sparks.update(dt);
     this.fx.drawLock(f, dt, time);
-    this.cones.update(f.guards, dt, this.lighting.night, !this.reducedMotion);
+    this.cones.update(f.guards, dt, this.lighting.night, !this.reducedMotion, f.dark);
     // Cameras, searchlights and snipers belong to the ground floor (from below or in the ducts, out of the picture).
     if (this.security) {
       this.security.group.visible = f.layer !== LAYER.UNDER;

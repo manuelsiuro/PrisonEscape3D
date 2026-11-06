@@ -8,7 +8,7 @@ description: "Testing Prison Escape 3D on the real Android phone plugged into th
 The browser's phone profile simulates touch and slows the CPU; it can't tell what a phone's graphics card does, or
 how a real touch lands. A phone is plugged into this computer by USB (on 2026-11-06 a Galaxy S24, Exynos 2400,
 Android, Chrome; check what's there, it may change). `scripts/dev/phone.ts` drives it; this says how and what
-to watch for. It was built in session 5 (the phone performance pass, v2.34.3), whose history entry has the
+to watch for. It was built in session 5 (the phone performance pass, v2.35.0), whose history entry has the
 first results.
 
 ## 1. Set up

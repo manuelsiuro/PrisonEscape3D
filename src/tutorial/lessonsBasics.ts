@@ -158,6 +158,18 @@ export const BASICS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.fight.lock', touch: 'lesson.fight.lockTouch', done: (c) => c.sim.state.lock === 0 || c.sim.state.inmates[0].ko > 0 },
+      // (2.35: a blow, then the block as he hits back; knocked out first, the lesson goes on.)
+      {
+        text: 'lesson.fight.first',
+        touch: 'lesson.fight.firstTouch',
+        done: (c) => c.sim.state.inmates[0].angry > 0 || c.sim.state.inmates[0].ko > 0,
+      },
+      {
+        text: 'lesson.fight.block',
+        touch: 'lesson.fight.blockTouch',
+        on: (e) => e.type === 'hurt' && !!e.blocked,
+        done: (c) => c.sim.state.inmates[0].ko > 0,
+      },
       { text: 'lesson.fight.hit', touch: 'lesson.fight.hitTouch', done: (c) => c.sim.state.inmates[0].ko > 0 },
     ],
   },

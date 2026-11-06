@@ -54,6 +54,11 @@ import { TIPSY_BLOW } from '../../content/long';
 import { raiseKeyAlarm, roomFor } from './keys';
 import { closeCard } from './vendState';
 import { closeMenu } from './menuState';
+import { sureOf } from './stealth';
+
+/** 2.35: the block held this step or the one before (a press of something else in between doesn't drop it). */
+const BLOCK_KEEP = 2;
+export const blocking = (sim: Pick<SimContext, 'state' | 'rules234'>) => !sim.rules234 && sim.state.step - sim.state.blockAt <= BLOCK_KEEP;
 
 /** The weapon the player fights with: one in hand, else the one in the weapon slot (0: fists). */
 function weapon(sim: SimContext): { item: number; slot: number } {
@@ -128,6 +133,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     // Dozing on its round (P15): a blow wakes it as surely as it would in bed.
     else if (rouse(g)) sim.events.push({ type: 'nap', guard: who - s.inmates.length, on: false });
     g.face = g.body.facing;
+    // (2.35: and it's sure who it was at once.)
+    sureOf(sim, g);
   } else {
     const m = f as Inmate;
     // Hitting back at someone already after the player: self-defense (GDD §10.3 ambushes). In a food fight (P17) everyone's at it.
@@ -299,9 +306,17 @@ function blow(sim: SimContext, f: Fighter, id: number, pace: number, attack: num
 }
 
 /** The player takes a blow (by Cast id, -1 for the tunnel roof): at 0 health, out cold. */
-export function hurt(sim: SimContext, dmg: number, by: number) {
+export function hurt(sim: SimContext, dmg0: number, by: number) {
   const s = sim.state;
+  // (2.35: a blow blocked does half, rounded up.)
+  const dmg = by >= 0 && blocking(sim) ? Math.ceil(dmg0 / 2) : dmg0;
   s.health = Math.max(0, s.health - dmg);
+  // (2.35: an inmate who hits the player, with nobody locked on, is locked on: Space hits back. Not a guard's
+  // baton: in a chase the next Space is the fence or the wall, and a blow at the guard would be the lockdown.)
+  if (!sim.rules234 && by >= 0 && !isGuard(s, by) && s.lock < 0 && s.layer === LAYER.GROUND && personOf(s, by)?.ko === 0) {
+    s.lock = by;
+    sim.events.push({ type: 'lock', who: by });
+  }
   if (s.sleeping) {
     s.sleeping = false;
     sim.events.push({ type: 'sleep', on: false });
@@ -315,7 +330,7 @@ export function hurt(sim: SimContext, dmg: number, by: number) {
   if (s.vendOpen) closeCard(sim);
   // (2.33: and the menu board's.)
   if (s.menuOpen || s.menu.until) closeMenu(sim);
-  sim.events.push({ type: 'hurt', by, dmg });
+  sim.events.push(by >= 0 && dmg !== dmg0 ? { type: 'hurt', by, dmg, blocked: true } : { type: 'hurt', by, dmg });
   if (s.health > 0) return;
   // Put down by a guard: caught (solitary or the infirmary). By anyone else: the infirmary.
   if (by >= 0 && isGuard(s, by)) caught(sim);
