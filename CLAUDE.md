@@ -5,11 +5,10 @@ web-game-starter with the **web-game-playbook** and **web-sim-game-playbook** sk
 
 - **The plan**: `docs/README.md` says where to find what; read only the file you need. `docs/PLAN.md`
   (decisions, architecture, tests, release routine; §8 the status). The design source of truth is
-  `docs/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/tech_plan.md` fills
+  `docs/source/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/source/tech_plan.md` fills
   engineering gaps only. A new conflict goes into its area's file in `docs/decisions/` in the same
-  commit. Every release: one line in `docs/HISTORY.md` (the index), its entry (what changed, what
-  reviews found, what was accepted) in the latest file of `docs/history/` (one per ten minor
-  versions). The finished phase plans are in `docs/phases/`.
+  commit. **Writing to the docs** (a feature, a fix, a release, the memory): the `docs-upkeep` skill,
+  which says where each fact goes; `docstest` checks it.
 - **Vertical slices**: every phase ships sim + render + phone/desktop UI + i18n + tests, then
   a release.
 
@@ -60,6 +59,7 @@ Rules that matter every time:
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
   background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
-  Then add the release to the end of the latest `docs/history/` file and its line to `docs/HISTORY.md`.
+  Once it's live, `npm run docs:released` (the history entry marked released, the status line, the map
+  viewer), then commit and push what it lists.
 - **Bots pass what people fail**: lessons and minigames are also played by hand in the browser
   at the three sizes before a release.

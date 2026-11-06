@@ -4,9 +4,9 @@ A 3D web take on *The Escapists*. It is built with the **web-game-playbook** and
 **web-sim-game-playbook** skills, starting from `~/ClaudeProjects/web-game-starter`.
 
 Sources:
-- `docs/the_escapists_3d_complete_game_design_document.md` (**GDD, the source of truth**);
-- `docs/game_idea.md` (feature list);
-- `docs/tech_plan.md` (engineering details, used where the GDD says nothing).
+- `docs/source/the_escapists_3d_complete_game_design_document.md` (**GDD, the source of truth**);
+- `docs/source/game_idea.md` (feature list);
+- `docs/source/tech_plan.md` (engineering details, used where the GDD says nothing).
 
 The history of every release (what changed, what the reviews found, what was accepted) is in
 [`docs/HISTORY.md`](HISTORY.md), an index of `docs/history/`; §8 below gives the status. Where to find
@@ -180,7 +180,7 @@ browser at the three sizes (§4).
 `npm run build` and `npm test` both pass (gate on their exit codes), then commit,
 `npm version minor|patch`, `git push --follow-tags origin main`, and `npm run released` in the
 background: it waits for CI on HEAD, then for the live bundle to carry the version, and exits 1
-on a failed run or a timeout. After that, add the release to the latest `docs/history/` file and its line to `docs/HISTORY.md`, update the
+on a failed run or a timeout. After that, `npm run docs:released` (the history entry marked released, the status line, the map viewer: the `docs-upkeep` skill), update the
 project memory and report what changed, what wasn't verified (sound, vibration, real touch
 feel) and the known limits. A phase that touches a map also brings the map viewer up to date
 (CLAUDE.md, Map viewer).
@@ -192,7 +192,7 @@ campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports 
 the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
 its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), the tattoo drawn by hand (v2.22.0), the guards keeping watch over the routine and the cells (v2.23.0), the stats laid out (v2.24.0) and meals at the serving counter (v2.25.0), the showers turned on and taken in turns (v2.26.0), roll call on your own square with the guard walking the line (v2.27.0), the night's rules, with energy only asleep and the lights really going out (v2.28.0), sets in time with a beat, with inmates on the machines (v2.29.0), jobs made clear and alive, with inmates at their stations and guards minding work rooms (v2.30.0), the library, with reading as a game of its own, a daily limit, subjects and a librarian (v2.31.0), a working vending machine in every canteen, with snacks that do something, jams thumped free and inmates queueing at it (v2.32.0), and the menu board and water cooler, with a dish of the day, a scribble for a laugh and gossip overheard at the cooler (v2.33.0). In numbers: 5 prisons and the Training Block,
 38 ways out, 149 items, 60 recipes, 142 achievements, 55 lessons in 4 chapters, 65 help topics,
-4,785 text keys in English and French, 65 test scripts.
+4,785 text keys in English and French, 67 test scripts.
 
 Parked ideas, none planned: gangs and turf, the riot, photo mode and postcards, a custom
 escape (twist sandbox), the escape planner corkboard, a story through the prisons.

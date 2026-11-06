@@ -6,7 +6,7 @@ nothing to do with prisons.
 
 Numbers are as of **v2.24.0**, read from the content modules. For the rules of a single feature
 go to [`PLAN.md`](PLAN.md); for the original design, the
-[game design document](the_escapists_3d_complete_game_design_document.md).
+[game design document](source/the_escapists_3d_complete_game_design_document.md).
 
 **Contents:** [At a glance](#at-a-glance) · [Platforms](#platforms) · [Controls](#controls) ·
 [Game modes](#game-modes) · [Core mechanics](#core-mechanics) · [People and money](#people-and-money) ·

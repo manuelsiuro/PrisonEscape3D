@@ -12,7 +12,7 @@ record. Nothing was rewritten: rows and entries moved word for word.
 | What one release changed, what its reviews found | [`HISTORY.md`](HISTORY.md), one line per release, then its range's file in [`history/`](history/) |
 | How a phase was planned and proved (P0–P42, the polish series) | [`phases/`](phases/), one file per roadmap (the list is in `PLAN.md` §4) |
 | What the game has, for players | [`FEATURES.md`](FEATURES.md) |
-| The original design | [`the_escapists_3d_complete_game_design_document.md`](the_escapists_3d_complete_game_design_document.md) (the GDD, the source of truth), [`game_idea.md`](game_idea.md), [`tech_plan.md`](tech_plan.md) (engineering, where the GDD says nothing) |
+| The original design | [`the_escapists_3d_complete_game_design_document.md`](source/the_escapists_3d_complete_game_design_document.md) (the GDD, the source of truth), [`game_idea.md`](source/game_idea.md), [`tech_plan.md`](source/tech_plan.md) (engineering, where the GDD says nothing) |
 
 **Finding one area's story.** Its row in `POLISH.md`, its file in `decisions/`, then search
 `history/` for its name (`grep -l "vending" docs/history/*.md`).
@@ -20,9 +20,7 @@ record. Nothing was rewritten: rows and entries moved word for word.
 **Old references.** `PLAN.md` §9–§13 and §5 are now in `phases/`, under headings that still say
 which section they were (search for "PLAN.md §11"). `PLAN.md` §2's rows are in `decisions/`.
 
-**Adding to them.**
-- A new conflict or decision: a row in its area's file in `decisions/`.
-- A release: its entry at the end of the latest file in `history/` (a new file every ten minor
-  versions: `v2.40-v2.49.md` from 2.40), and its line in `HISTORY.md`.
-- A polish pass: its row in `POLISH.md`, its row in `phases/8-polish.md`, its history entry.
-- The status line: `PLAN.md` §8.
+**Adding to them.** Each fact has one home; the `docs-upkeep` skill
+([`../.claude/skills/docs-upkeep/SKILL.md`](../.claude/skills/docs-upkeep/SKILL.md)) says which, how to
+write it and the release's docs step (`npm run docs:released`). `docstest` checks the links, the index,
+the sizes and the counts.
