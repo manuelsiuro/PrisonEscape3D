@@ -49,6 +49,8 @@ Rules that matter every time:
   weather, layers, stances, effects, the cameras, the manhunt), its baseline taken on the old code first.
   A change to what's drawn: `scripts/dev/perfprobe.ts`'s `check()` in a phone's profile (draw calls and
   triangles of 36 scenes against `perfbudget.json`; `record()` after a change meant to draw more).
+- **The real phone** (an Android phone on USB, adb): testing, measuring or playing by touch on it, the
+  `real-phone` skill (`scripts/dev/phone.ts`).
 - **Dev server**: `npm run dev` on port 5310, the game at `http://localhost:5310/` (not
   `/PrisonEscape3D/`, where public files come back as the page). One may already be running from an
   earlier session: reuse it. In dev builds `]` fast-forwards the clock ×30.
