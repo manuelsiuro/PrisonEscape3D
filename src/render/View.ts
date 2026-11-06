@@ -17,10 +17,8 @@ import { DecorView } from './decor';
 import { rollCallLayer } from './ground';
 import { Minefield } from './Minefield';
 import { Guide } from './Guide';
-import { itemDef, itemNumber } from '../content/items';
 import type { Prisoner } from '../content/prisoner';
 import { lookFor } from './prisonerLook';
-import { itemGeometry } from './itemModels';
 import { Pickups } from './Pickups';
 import { updateOcclusion } from './occlusion';
 import { ShowerWater } from './ShowerWater';
@@ -57,34 +55,17 @@ import { ReleaseView } from './Release';
 import { handlersOf } from '../sim/systems/k9';
 import type { Frame, Quality } from './viewFrame';
 import { CameraRig, CAMERA_OFFSET } from './viewCamera';
+import { Crowd } from './viewCrowd';
+import { PlayerView } from './viewPlayer';
 import { Lighting } from './viewLight';
-import { guardLook, INMATE_LOOK, inmateLook, type Look } from './look';
-
-/** The old-timer's hair (P27): white with age. */
-const ELDER_HAIR = 0xd8d3c8;
+import { INMATE_LOOK, type Look } from './look';
 
 const NO_FUSES: readonly number[] = [];
-/** How far apart two arm-wrestlers stand, centre to centre (tiles): their right hands, each reaching about half of it, meet between them. */
-const BOUT_GAP = 1.0;
-/** How far each steps to its own left (tiles), so the right hands (a shoulder's width off the middle) meet on the line between them. */
-const BOUT_SIDE = 0.21;
-/** How far the one winning leans in, and the other gives way, at the most (tiles). */
-const BOUT_LEAN = 0.09;
-/** Where the player stands to pick a lock: this far from the door tile's middle (the hands at its face, the pick in the keyhole). */
-const PICK_STAND = 0.7;
 const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
-const GUARD_OUTFIT = itemNumber('guard_outfit');
-const INMATE_OUTFIT = itemNumber('inmate_outfit');
-const COSTUME = itemNumber('costume');
-const OWN_CLOTHES = itemNumber('own_clothes');
-const OWN_JEANS = 0x4a6a96;
 /** The Intake preview's zoom (P16): close on your prisoner in their cell. */
 const PREVIEW_ZOOM = 4.2;
-
-/** How long the player keeps the towel round their neck after washing (s). */
-const PLAYER_DRY = 2.5;
 
 /** Dust colors by ground (only soft ground and dirt puffs); in the snow, powder. */
 const DUST: Record<number, number> = {
@@ -164,14 +145,19 @@ export class View {
   private world: World | null = null;
   /** The football pitch in use with it (setWorld). */
   private pitch: Pitch | null = null;
-  player = new Character(INMATE_LOOK);
+  /** The player's character (viewPlayer.ts). */
+  private readonly me = new PlayerView(
+    (c) => this.scene.add(c.root),
+    (c) => this.retireCharacter(c),
+    () => ({ gear: this.gear, running: this.running, crowd: this.crowd }),
+  );
+  get player(): Character {
+    return this.me.c;
+  }
   /** How the player is drawn now (the HUD's portrait follows it: portrait.ts). */
-  playerLook: Look = INMATE_LOOK;
-  private outfit = -1;
-  /** The tattoos inked in the prison the player is drawn with (P29). */
-  private inkedShown: number[] = [];
-  /** Your prisoner (P16): how the player looks (null: the plain jumpsuit). */
-  private prisoner: Prisoner | null = null;
+  get playerLook(): Look {
+    return this.me.look;
+  }
   /** The Intake's preview (P16): your prisoner standing in their cell behind the title, turned by `previewTurn`. */
   private model: Character | null = null;
   previewTurn = 0;
@@ -181,27 +167,14 @@ export class View {
   /** The raft or the helicopter carries the player off (the camera follows it). */
   private carrying = false;
   private readonly pickups = new Pickups();
-  private cast: Character[] = [];
-  private guardCast: Character[] = [];
-  /** Where each guard sleeps (by guard). */
-  private guardBeds: Array<BedPose | undefined> = [];
   private readonly cones = new Cones();
   /** Door tiles a guard is walking through this frame (they open for guards' keys). */
   private readonly doorsOpen = new Set<number>();
-  /** Each cell's bed, for sleepers (by cell number). */
-  private beds: Array<BedPose | undefined> = [];
-  /** The infirmary bed the player rested on, while they get up from it. */
-  private lastRest: BedPose | null = null;
-  /** 1 on tiles under a shower head. */
-  private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
   private readonly showerWater = new ShowerWater();
   /** The tiles of the heads someone's washing under, this frame. */
   private readonly running = new Set<number>();
-  private wasWashing = false;
-  /** Seconds left with the towel, after stepping out from under the water. */
-  private dryingFor = 0;
   private readonly blobs = new Blobs();
   /** Everyone on stage, for the contact shadows (refilled per frame). */
   private readonly onStage: Character[] = [];
@@ -249,8 +222,6 @@ export class View {
   private readonly releaseView = new ReleaseView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
-  /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
-  private taps = 0;
   private buzzClock = 0;
   /** The drone overhead (P21): its buzz, every so often while it's about (the play layer plays it, louder the nearer). */
   onDrone: (x: number, z: number) => void = () => {};
@@ -279,8 +250,6 @@ export class View {
   private readonly snores = new Snores();
   /** Sleepers' heads this frame ([x, y, z] each), for the snores. */
   private readonly sleepers: number[] = [];
-  /** Chair tiles (someone sitting there sits a little higher). */
-  private readonly chairs = new Set<number>();
   private decor: DecorView | null = null;
   /** The roll call's paint over a football pitch (P29), and how far it's faded in (0 … 1). */
   private rollCallPaint: THREE.Mesh | null = null;
@@ -310,14 +279,19 @@ export class View {
   private blockDarkGoal = 0;
   /** The bed dummy in the player's bed (2.28). */
   private readonly dummy = bedDummyMesh();
-  /** 2.29: the bars and the bags; for each inmate, how far onto its machine it's drawn, where that was, the bench it's getting up from, the rep it's at. */
+  /** 2.29: the bars and the bags (what's pressed on them this frame, gathered). */
   private readonly gear = new GymGear();
   private readonly workGear = new WorkGear();
   private readonly gearUses: GearUse[] = [];
-  private readonly machineBlend: number[] = [];
-  private readonly machineAt: Array<{ x: number; z: number; y: number }> = [];
-  private readonly machineRest: Array<BedPose | null> = [];
-  private readonly machineRep: number[] = [];
+  /** Everyone but the player (viewCrowd.ts). */
+  private readonly crowd = new Crowd(
+    (c) => this.scene.add(c.root),
+    (c) => this.retireCharacter(c),
+    this.gear,
+    this.gearUses,
+    this.running,
+    this.doorsOpen,
+  );
   private readonly feet = new THREE.Vector3();
   private readonly v = new THREE.Vector3();
   private readonly carried = new THREE.Vector3();
@@ -349,16 +323,6 @@ export class View {
   );
   private puddlesRev = -1;
   private readonly m4 = new THREE.Matrix4();
-  /** Easing onto the training equipment (0 standing where the sim has them, 1 on it). */
-  private trainBlend = 0;
-  /** Where the side games (P22) draw the player off their spot (an arm-wrestle's stance, leaning in to a lock), and the one wrestling them (and who), eased in and out. */
-  private readonly gameOff = { x: 0, z: 0 };
-  private readonly rivalOff = { x: 0, z: 0 };
-  private rivalWho = -1;
-  /** The dice partner's throw seen (its fling plays once). */
-  private rivalThrew = false;
-  private readonly trainPos = new THREE.Vector3();
-  private reps = 0;
   /** No camera drift, idle glances or dust. */
   reducedMotion = false;
   /** The camera jolts on blows, breaks and shots (a setting; never with reduced motion). */
@@ -517,9 +481,9 @@ export class View {
     setTheme(world.def.theme ?? 'suburban');
     this.world = world;
     this.pitch = pitch;
-    this.chairs.clear();
+    this.crowd.chairs.clear();
     for (const p of world.props)
-      if (p.kind === 'chair' || p.kind === 'readChair' || p.kind === 'deskChair') this.chairs.add(p.z * MAP_W + p.x);
+      if (p.kind === 'chair' || p.kind === 'readChair' || p.kind === 'deskChair') this.crowd.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
     if (!same) {
       this.decor = new DecorView(world.def.decor ?? []);
@@ -582,15 +546,13 @@ export class View {
     this.warmDay();
     this.lighting.newWorld();
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
-    this.outfit = -1;
-    this.showers.fill(0);
-    for (const p of world.props) if (p.kind === 'shower') this.showers[p.z * MAP_W + p.x] = 1;
+    this.me.newWorld();
+    this.crowd.showers.fill(0);
+    for (const p of world.props) if (p.kind === 'shower') this.crowd.showers[p.z * MAP_W + p.x] = 1;
     this.showerWater.setWorld(world.props, MAP_W);
     this.running.clear();
-    this.wasWashing = false;
-    this.dryingFor = 0;
-    this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
-    if (this.beds[1]) placeInBed(this.dummy, this.beds[1]);
+    this.crowd.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
+    if (this.crowd.beds[1]) placeInBed(this.dummy, this.crowd.beds[1]);
     this.dummy.visible = false;
     this.gear.build(world);
     this.workGear.build(world);
@@ -601,22 +563,13 @@ export class View {
 
   /** The guards: one character each (its key's color on the belt), and the bed each sleeps in at night (if any). */
   setGuards(beds: Array<BedPose | undefined>, keys: number[] = []) {
-    for (const c of this.guardCast) this.retireCharacter(c);
-    this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k], !!this.world?.def.guards[k]?.riot)));
-    this.guardBeds = beds;
-    for (const c of this.guardCast) this.scene.add(c.root);
+    this.crowd.setGuards(beds, keys, (k) => !!this.world?.def.guards[k]?.riot);
     this.cones.setCount(beds.length);
   }
 
   /** The other inmates: one character each, looks varied by cell, legs paced by walking speed (P27: the old-timer's hair gone white). */
   setCast(cast: Array<{ cell: number; gait: number; elder?: boolean }> | 0) {
-    for (const c of this.cast) this.retireCharacter(c);
-    this.cast = cast
-      ? cast.map(
-          (c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait }),
-        )
-      : [];
-    for (const c of this.cast) this.scene.add(c.root);
+    this.crowd.setCast(cast);
   }
 
   /**
@@ -688,8 +641,7 @@ export class View {
 
   /** Someone by Cast id (inmates, then guards; -1 the player). */
   private who(id: number): Character | undefined {
-    if (id < 0) return this.player;
-    return id < this.cast.length ? this.cast[id] : this.guardCast[id - this.cast.length];
+    return id < 0 ? this.player : this.crowd.who(id);
   }
 
   /**
@@ -838,8 +790,7 @@ export class View {
 
   /** Your prisoner (P16): the player is dressed again as them at the next frame. */
   setPrisoner(p: Prisoner | null) {
-    this.prisoner = p;
-    this.outfit = -1;
+    this.me.setPrisoner(p);
   }
 
   /**
@@ -878,32 +829,6 @@ export class View {
     this.cam.zoomTo(z);
   }
 
-  /** Dresses the player: your prisoner in the outfit (a white vest with none on; the guard cap with the guard's uniform). */
-  private dress(outfit: number, inked: readonly number[] = []) {
-    // (The designs compared one by one: no string a frame.)
-    const same = inked.length === this.inkedShown.length && inked.every((d, k) => d === this.inkedShown[k]);
-    if (outfit === this.outfit && same) return;
-    this.outfit = outfit;
-    this.inkedShown = inked.slice();
-    const old = this.player;
-    this.playerLook = lookFor(
-      this.prisoner,
-      outfit ? itemDef(outfit).color : null,
-      outfit === GUARD_OUTFIT,
-      outfit === INMATE_OUTFIT,
-      inked,
-    );
-    // (P36: their own clothes on release: an off-white tee over jeans, nothing like a guard's navy.)
-    if (outfit === OWN_CLOTHES) this.playerLook = { ...this.playerLook, trousers: OWN_JEANS };
-    // (P42: the costume on costume night: a witch's robe and hat. It fools nobody.)
-    if (outfit === COSTUME) this.playerLook = { ...this.playerLook, trousers: 0x2a1f36, hat: 13, hatColor: 0x2a1f36 };
-    this.player = new Character(this.playerLook);
-    this.player.root.position.copy(old.root.position);
-    this.player.root.rotation.copy(old.root.rotation);
-    this.retireCharacter(old);
-    this.scene.add(this.player.root);
-  }
-
   /** A character off screen, freed after the next frame (its materials' shaders kept for the next one's: setWorld). */
   private retireCharacter(c: Character) {
     this.scene.remove(c.root);
@@ -913,7 +838,7 @@ export class View {
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
   draw(f: Frame, dt: number, time: number) {
     this.noiseFx.group.visible = true;
-    this.dress(f.outfit, f.inked);
+    this.me.dress(f.outfit, f.inked);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)
     this.showLayer(this.getaway.aloft ? LAYER.ROOF : f.layer);
     // Damage, grates and tunnels redrawn when the tiles change.
@@ -929,22 +854,6 @@ export class View {
       this.wearRev = f.wearRev;
       this.structure?.refreshWear(f.wear);
     }
-    this.player.root.visible = true;
-    // (A tray takes both hands: what's in hand is out of sight while it does.)
-    this.player.hold(
-      f.sleeping ||
-        f.knockedOut ||
-        f.trayAt ||
-        f.doing === DOING.SHOWER ||
-        f.doing === DOING.BENCH ||
-        f.doing === DOING.PULLUP ||
-        f.doing === DOING.PUSHUP ||
-        f.doing === DOING.BAG
-        ? 0
-        : f.held,
-      f.held ? itemGeometry(itemDef(f.held)) : null,
-    );
-    this.player.trayPose(f.trayAt, f.trayLeft);
     // (P24: hanging from a glider's bar in flight, both hands up.)
     const doing = this.getaway.flying
       ? DOING.LIFT
@@ -955,89 +864,7 @@ export class View {
           : f.layer === LAYER.VENTS
             ? DOING.CRAWL
             : f.doing;
-    // Onto the treadmill's belt and off it again, eased; a rep pumps the arms.
-    this.trainBlend += ((f.trainAt ? 1 : 0) - this.trainBlend) * Math.min(1, dt * 8);
-    if (f.trainAt) this.trainPos.set(f.trainAt.x, f.trainAt.y, f.trainAt.z);
-    const tb = this.trainBlend > 0.001 ? this.trainBlend : 0;
-    if (f.reps !== this.reps) {
-      if (f.reps > this.reps) {
-        this.player.pump();
-        if (f.doing === DOING.BAG) this.gear.hit(f.trainProp, !this.reducedMotion);
-      }
-      this.reps = f.reps;
-    }
-    let px = f.x + (this.trainPos.x - f.x) * tb;
-    let pz = f.z + (this.trainPos.z - f.z) * tb;
-    let facing = f.trainAt ? f.trainAt.facing : f.facing;
-    // An arm-wrestle (P22): the two square on at arm's length, each a step to its own left so the
-    // right hands meet on the line between them; the one winning leans in, the other gives way.
-    // At a lock: leaning in to the door. Eased in and out (never a jump).
-    if (!f.games.dice || f.games.dice.t[2] < 0) this.rivalThrew = false;
-    const bout = f.games.bout;
-    const rival = bout ? f.inmates[bout.who] : null;
-    let gx = 0;
-    let gz = 0;
-    let rx = 0;
-    let rz = 0;
-    if (bout && rival) {
-      const dx = rival.x - f.x;
-      const dz = rival.z - f.z;
-      const d = Math.hypot(dx, dz) || 1;
-      const fx = dx / d;
-      const fz = dz / d;
-      const along = Math.max(-0.45, Math.min(0.7, (d - BOUT_GAP) / 2));
-      const lean = BOUT_LEAN * bout.strain;
-      // (A body's own left, the side away from the arm that grips: the player's (−fz, fx), the rival's the opposite.)
-      gx = fx * (along + lean) - fz * BOUT_SIDE;
-      gz = fz * (along + lean) + fx * BOUT_SIDE;
-      rx = -fx * (along - lean) + fz * BOUT_SIDE;
-      rz = -fz * (along - lean) - fx * BOUT_SIDE;
-      facing = Math.atan2(dx, dz);
-      this.rivalWho = bout.who;
-      this.player.strain = bout.strain;
-      this.player.shudder = bout.surge;
-    } else if (f.doing === DOING.PICK && f.games.lock) {
-      // (Up to the door, from wherever the player stopped: never through it.)
-      const fx = Math.sin(f.facing);
-      const fz = Math.cos(f.facing);
-      const lean = Math.max(0, (f.games.lock.x - fx * PICK_STAND - f.x) * fx + (f.games.lock.z - fz * PICK_STAND - f.z) * fz);
-      gx = fx * lean;
-      gz = fz * lean;
-    }
-    const ge = Math.min(1, dt * 8);
-    this.gameOff.x += (gx - this.gameOff.x) * ge;
-    this.gameOff.z += (gz - this.gameOff.z) * ge;
-    this.rivalOff.x += (rx - this.rivalOff.x) * ge;
-    this.rivalOff.z += (rz - this.rivalOff.z) * ge;
-    if (Math.abs(this.gameOff.x) + Math.abs(this.gameOff.z) < 1e-4) this.gameOff.x = this.gameOff.z = 0;
-    if (!bout && Math.abs(this.rivalOff.x) + Math.abs(this.rivalOff.z) < 0.002) {
-      this.rivalWho = -1;
-      this.rivalOff.x = this.rivalOff.z = 0;
-    }
-    px += this.gameOff.x;
-    pz += this.gameOff.z;
-    if (f.games.taps !== this.taps) {
-      if (f.games.taps > this.taps) this.player.pump();
-      this.taps = f.games.taps;
-    }
-    this.player.baseY = LAYER_Y[f.layer] + this.trainPos.y * tb;
-    // (2.26: in shorts, and a moment after with a towel round the neck on the way off.)
-    const washing = f.doing === DOING.SHOWER;
-    if (this.wasWashing && !washing && !f.knockedOut && !f.sleeping) this.dryingFor = PLAYER_DRY;
-    this.wasWashing = washing;
-    this.dryingFor = washing || f.knockedOut || f.sleeping ? 0 : Math.max(0, this.dryingFor - dt);
-    this.player.undressed = washing || this.dryingFor > 0;
-    this.player.towel = this.dryingFor > 0 ? 1 : 0;
-    this.running.clear();
-    if (washing) this.running.add(Math.floor(f.z) * MAP_W + Math.floor(f.x));
-    // Off an infirmary bed: the body eases up from that bed (not the cell's) until it stands.
-    if (f.restBed) this.lastRest = f.restBed;
-    else if (this.player.lying === 0) this.lastRest = null;
-    // (A pet rat on the shoulder, P20: the arm under it holds still, glances stay small.)
-    let perchedRat = false;
-    for (const r of f.rats) if (r.mode === 'shoulder') perchedRat = true;
-    this.player.perched = perchedRat;
-    if (this.player.pose(px, pz, facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
+    if (this.me.draw(f, dt, time, doing, this.reducedMotion)) {
       const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
       const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : DUST;
       if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER))
@@ -1065,126 +892,21 @@ export class View {
     this.feet.set(f.x, 0, f.z);
     // The see-through cut: on the ground floor and in the tunnels (nothing stands over the vents or the roof).
     const cut = f.layer === LAYER.GROUND || f.layer === LAYER.UNDER;
-    f.inmates.forEach((m, k) => {
-      const c = this.cast[k];
-      if (!c) return;
-      // In the tunnels the ground floor and everyone on it are out of the picture.
-      c.root.visible = f.layer !== LAYER.UNDER;
-      // (2.26: the water's the head's own; a turn at the showers in shorts, a towel while waiting and after.)
-      const tile = Math.floor(m.z) * MAP_W + Math.floor(m.x);
-      if (m.doing === DOING.SHOWER && this.showers[tile] === 1) this.running.add(tile);
-      c.undressed = m.bare;
-      c.towel = m.towel;
-      c.attention = m.attention;
-      c.trayPose(m.trayAt, m.trayLeft);
-      // (2.30: what it's carrying at work.)
-      c.hold(m.held, m.held ? itemGeometry(itemDef(m.held)) : null);
-      // On a chair, a little higher than on a canteen bench.
-      // (2.29: on a machine, drawn on it, and at it: an arm or a body going of its own accord, slower than anyone is asked to keep time.)
-      const onGear = m.prop >= 0 && m.doing !== DOING.BENCH;
-      const blend = (this.machineBlend[k] =
-        (this.machineBlend[k] ?? 0) + ((onGear ? 1 : 0) - (this.machineBlend[k] ?? 0)) * Math.min(1, dt * 8));
-      const gearAt = (this.machineAt[k] ??= { x: m.x, z: m.z, y: 0 });
-      if (onGear) Object.assign(gearAt, { x: m.at.x, z: m.at.z, y: m.at.y });
-      if (m.doing === DOING.BENCH) this.machineRest[k] = m.bench;
-      else if (c.lying === 0) this.machineRest[k] = null;
-      if (m.prop >= 0 && !this.reducedMotion) {
-        const rep = Math.floor((time + k * 0.37) / (m.doing === DOING.BAG ? 0.6 : 1.2));
-        if (rep !== this.machineRep[k]) {
-          this.machineRep[k] = rep;
-          c.pump();
-          if (m.doing === DOING.BAG) this.gear.hit(m.prop, true);
-        }
-      }
-      if (m.doing === DOING.BENCH && m.prop >= 0) this.gearUses.push({ prop: m.prop, up: c.pressed });
-      const lift =
-        (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x))
-          ? 0.1
-          : blend > 0.001
-            ? gearAt.y * blend
-            : 0;
-      c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);
-      // The one arm-wrestling the player (P22): square on to them in its stance, straining the other way (eased back to its spot after).
-      if (bout && bout.who === k) {
-        c.strain = -bout.strain;
-        c.shudder = bout.surge;
-        c.pose(
-          m.x + this.rivalOff.x,
-          m.z + this.rivalOff.z,
-          Math.atan2(f.x - m.x, f.z - m.z),
-          false,
-          dt,
-          time,
-          !this.reducedMotion,
-          DOING.WRESTLE,
-          this.beds[m.cell],
-        );
-      } else if (f.games.dice && f.games.dice.who === k) {
-        // The dice partner (P22): shaking its dice until it throws, a fling as it does.
-        const threw = f.games.dice.t[2] >= 0;
-        if (threw && !this.rivalThrew) c.pump();
-        this.rivalThrew = threw;
-        c.diceShake = !threw;
-        c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
-      } else if (this.rivalWho === k)
-        c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
-      else if (blend > 0.001)
-        c.pose(
-          m.x + (gearAt.x - m.x) * blend,
-          m.z + (gearAt.z - m.z) * blend,
-          onGear ? m.at.facing : m.facing,
-          m.moving,
-          dt,
-          time,
-          !this.reducedMotion,
-          m.doing,
-          this.beds[m.cell],
-        );
-      else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.machineRest[k] ?? this.beds[m.cell]);
-      c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
-      c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
-    });
+    this.crowd.drawInmates(f, dt, time, this.reducedMotion);
     this.drawPuddles(f, time);
     if (this.minefield) {
       this.minefield.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
       this.minefield.update(f.craters);
     }
     this.doorsOpen.clear();
-    f.guards.forEach((g, k) => {
-      const c = this.guardCast[k];
-      if (!c) return;
-      c.root.visible = f.layer !== LAYER.UNDER;
-      c.gait = g.pace;
-      c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
-      c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
-      // "$" pops over a guard as it takes the money (and again once it's calm, still paid).
-      // (Not over one floored while looking into something: a "$" already up stays, small.)
-      c.mark(
-        g.alert === ALERT.HOSTILE
-          ? '!'
-          : g.alert === ALERT.SUSPICIOUS
-            ? '?'
-            : g.away && (g.alert === ALERT.CALM || c.markChar === '$')
-              ? '$'
-              : '',
-        dt,
-        !this.reducedMotion,
-      );
-      c.stir = g.stir;
-      c.showKey(g.hasKey);
-      // A guard's key opens the door it walks through (and the one just ahead).
-      const tx = Math.floor(g.x + Math.sin(g.facing) * 0.6);
-      const tz = Math.floor(g.z + Math.cos(g.facing) * 0.6);
-      this.doorsOpen.add(Math.floor(g.z) * MAP_W + Math.floor(g.x));
-      if (g.moving) this.doorsOpen.add(tz * MAP_W + tx);
-    });
+    this.crowd.drawGuards(f, dt, time, this.reducedMotion);
     // A tree's leaves fade over anyone standing under or behind them (P23: a lookout posted there stays in view).
     if (this.decor) {
       const at = this.people;
       let n = 0;
       if (f.layer === LAYER.GROUND && this.player.root.visible) {
-        at[0] = px;
-        at[1] = pz;
+        at[0] = this.me.x;
+        at[1] = this.me.z;
         n = 1;
       }
       for (const m of f.inmates) {
@@ -1221,9 +943,11 @@ export class View {
     this.sleepers.length = 0;
     if (f.layer === LAYER.GROUND) {
       if (f.sleeping) this.head(this.player);
-      for (let k = 0; k < f.inmates.length; k++) if (f.inmates[k].doing === DOING.SLEEP && this.cast[k]) this.head(this.cast[k]);
+      for (let k = 0; k < f.inmates.length; k++)
+        if (f.inmates[k].doing === DOING.SLEEP && this.crowd.cast[k]) this.head(this.crowd.cast[k]);
       // (A guard dozing on its feet has its own Z's, over its cap: Character.)
-      for (let k = 0; k < f.guards.length; k++) if (f.guards[k].doing === DOING.SLEEP && this.guardCast[k]) this.head(this.guardCast[k]);
+      for (let k = 0; k < f.guards.length; k++)
+        if (f.guards[k].doing === DOING.SLEEP && this.crowd.guardCast[k]) this.head(this.crowd.guardCast[k]);
     }
     // The dogs (P19): out of the picture below ground; asleep, Z's over them too.
     this.dogs.group.visible = f.layer !== LAYER.UNDER;
@@ -1407,7 +1131,7 @@ export class View {
     this.gear.update(dt, this.gearUses, !this.reducedMotion);
     this.workGear.update(time, f.running, !this.reducedMotion);
     this.gearUses.length = 0;
-    this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.beds[1];
+    this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.crowd.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
@@ -1782,7 +1506,7 @@ export class View {
     this.lighting.placeSun(minute, this.cam.target, this.cam.shadowHalf);
     const stage = this.onStage;
     stage.length = 0;
-    stage.push(this.player, ...this.cast, ...this.guardCast, ...this.inspecting);
+    stage.push(this.player, ...this.crowd.cast, ...this.crowd.guardCast, ...this.inspecting);
     if (this.model) stage.push(this.model);
     this.blobs.update(stage);
     updateOcclusion(this.renderer, this.cam.camera, focus, dt);

@@ -12,7 +12,9 @@ import { renderer, view } from '../../src/play/context';
 import { endGame } from '../../src/play/session';
 import { LAYER } from '../../src/sim/world/World';
 import type { Frame } from '../../src/render/viewFrame';
+import { itemNumber } from '../../src/content/items';
 import { DEFAULT_PRISONER } from '../../src/content/prisoner';
+import { DOING } from '../../src/sim/systems/inmates';
 import { at } from './playat';
 
 /** [prison, day, minute]: waking, roll call, a job, lunch, the yard and gym, showers, night. */
@@ -23,7 +25,7 @@ const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irong
  * Perks' 12:10 and Stalag Flucht's 23:30): a storm, fog in a heatwave, snow, a lockdown, a takeover,
  * the lights out, a lock-on, the vents, the roofs, the tunnels, knocked out.
  */
-const FORCES: Record<string, (f: Frame) => void> = {
+const FORCES: Record<string, (f: Frame, n: number) => void> = {
   storm: (f) => void (f.weather = { rain: 2, fog: 0, heat: false, windAngle: 1, windForce: 2, snow: false }),
   fogHeat: (f) => void (f.weather = { rain: 0, fog: 1, heat: true, windAngle: 0, windForce: 0, snow: false }),
   snow: (f) => void (f.weather = { rain: 1, fog: 0, heat: false, windAngle: 2, windForce: 1, snow: true }),
@@ -35,7 +37,55 @@ const FORCES: Record<string, (f: Frame) => void> = {
   roof: (f) => void (f.layer = LAYER.ROOF),
   under: (f) => void (f.layer = LAYER.UNDER),
   ko: (f) => void (f.knockedOut = true),
+  // The player's own stances (Center Perks' 15:05 only): an arm-wrestle, a lock, the dice, a machine, the showers and the towel, a tray, dressed as a guard and inked holding something, up from a bed.
+  bout: (f, n) => {
+    f.games.bout = { who: 0, strain: Math.sin(n / 10), surge: n % 20 < 5 };
+    f.doing = DOING.WRESTLE;
+  },
+  pick: (f, n) => {
+    f.games.lock = { x: f.x + 1, z: f.z };
+    f.games.taps = Math.floor(n / 15);
+    f.doing = DOING.PICK;
+  },
+  dice: (f, n) => {
+    const t = n / 60;
+    f.games.dice = {
+      who: 1,
+      x: f.x + 0.5,
+      z: f.z,
+      fromX: f.x,
+      fromZ: f.z,
+      oppX: f.x + 1,
+      oppZ: f.z,
+      mine: [3, 4],
+      theirs: [0, 0],
+      t: [t, t, n > 60 ? t - 1 : -1, -1],
+      seed: 5,
+    };
+    f.doing = DOING.DICE;
+  },
+  machine: (f, n) => {
+    f.trainAt = { x: f.x + 0.5, z: f.z + 0.3, facing: 1, y: 0.2 };
+    f.reps = Math.floor(n / 20);
+    f.doing = DOING.RUN;
+  },
+  shower: (f, n) => void (f.doing = n < 50 ? DOING.SHOWER : DOING.NOTHING),
+  tray: (f, n) => {
+    f.trayAt = n < 50 ? 1 : 2;
+    f.trayLeft = 1 - n / 90;
+    f.doing = n < 50 ? DOING.NOTHING : DOING.EAT;
+  },
+  guard: (f) => {
+    f.outfit = itemNumber('guard_outfit');
+    f.inked = [1, 2];
+    f.held = itemNumber('plastic_spoon');
+  },
+  rest: (f, n) => {
+    f.restBed = { x: f.x + 1, z: f.z, angle: 0.5 };
+    f.sleeping = n < 45;
+  },
 };
+const PLAYER_FORCES = ['bout', 'pick', 'dice', 'machine', 'shower', 'tray', 'guard', 'rest'];
 /** What's done to the view before the frames: the escape camera, the picture slid for a panel, zoomed in. */
 const ACTS: Record<string, () => void> = {
   cinema: () => void view.cinema(true, false),
@@ -47,8 +97,11 @@ export const SCENES: Scene[] = [
   ...PRISONS.flatMap((p) => MOMENTS.map((m) => [p, 1, m] as Scene)),
   ...['center-perks|730', 'stalag-flucht|1410'].flatMap((pm) => {
     const [p, m] = pm.split('|');
-    return [...Object.keys(FORCES), ...Object.keys(ACTS)].map((force) => [p, 1, Number(m), force] as Scene);
+    return [...Object.keys(FORCES).filter((k) => !PLAYER_FORCES.includes(k)), ...Object.keys(ACTS)].map(
+      (force) => [p, 1, Number(m), force] as Scene,
+    );
   }),
+  ...PLAYER_FORCES.map((force) => ['center-perks', 1, 905, force] as Scene),
 ];
 /** Frames at which the canvas is fingerprinted (60 a second). */
 const SHOTS = [1, 30, 90];
@@ -119,8 +172,9 @@ export async function run(scenes = SCENES): Promise<string[]> {
       const forced = force ? FORCES[force] : null;
       if (forced) {
         const draw = view.draw.bind(view);
+        let n = 0;
         view.draw = (f, dt, time) => {
-          forced(f);
+          forced(f, ++n);
           draw(f, dt, time);
         };
       }
