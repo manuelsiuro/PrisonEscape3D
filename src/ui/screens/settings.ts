@@ -1,6 +1,7 @@
 import { resetProgress, resetTips, type Settings } from '../../game/settings';
 import { loadLang, t, type Key } from '../../i18n';
 import { h } from '../dom';
+import { perfOn, setPerf } from '../../app/perf';
 import { icon } from '../icons';
 
 type Choice<K extends keyof Settings> = Array<[Settings[K], Key]>;
@@ -44,7 +45,7 @@ type Toggle = 'haptics' | 'reducedMotion' | 'shake' | 'tips' | 'voices';
  * Settings, as a card over the game; every change applies at once through `apply` (sound,
  * music, motion, graphics, language). Resolves when closed. Vibration only shows where the
  * device can vibrate. From the title (`fromTitle`), the progress can be wiped (asked twice);
- * the tips can be shown again from anywhere.
+ * the tips can be shown again from anywhere. Last, a Developer section: the frame counter (app/perf.ts).
  */
 export function showSettings(settings: Settings, apply: () => void, click: () => void, fromTitle = false): Promise<void> {
   const el = h('div', 'modal');
@@ -86,6 +87,9 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         ${settings.holidays !== 'off' ? `<p class="set-note">${t('holiday.settingNote')}</p>` : ''}
         ${choice('quality', 'settings.quality', 'sun', QUALITY)}
         ${choice('lang', 'settings.language', 'chat', LANGS)}
+        <h3 class="set-head">${icon('wrench', 14)}${t('settings.developer')}</h3>
+        <div class="set-row"><span class="set-name">${icon('monitor', 17)}${t('settings.perf')}</span><button class="switch ${perfOn() ? 'on' : ''}" role="switch" aria-checked="${perfOn()}" data-dev="perf" aria-label="${t('settings.perf')}"><i></i></button></div>
+        <p class="set-note">${t('settings.perfNote')}</p>
         <div class="set-actions">
           <button class="link-btn${done === 'tips' ? ' done' : ''}" data-act="tips">${icon(done === 'tips' ? 'check' : 'bulb', 15)}${t(done === 'tips' ? 'settings.tipsReset' : 'settings.resetTips')}</button>
           ${fromTitle ? `<button class="link-btn danger${armed === 'progress' ? ' armed' : ''}${done === 'progress' ? ' done' : ''}" data-act="progress">${icon(done === 'progress' ? 'check' : 'trash', 15)}${t(done === 'progress' ? 'settings.progressReset' : armed === 'progress' ? 'settings.resetSure' : 'settings.resetProgress')}</button>` : ''}
@@ -154,10 +158,13 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         const k = tg.dataset.toggle as Toggle;
         settings[k] = !settings[k];
       }
+      // (The developer's frame counter: kept apart from the settings, as `?perf` sets it too: app/perf.ts.)
+      const dev = target.closest<HTMLElement>('[data-dev]');
+      if (dev) setPerf(!perfOn());
       const ch = target.closest<HTMLElement>('[data-choice]');
       const langBefore = settings.lang;
       if (ch) (settings as unknown as Record<string, string>)[ch.dataset.choice!] = ch.dataset.value!;
-      if (!tg && !ch && !act) return;
+      if (!tg && !ch && !act && !dev) return;
       click();
       const redo = () => {
         apply();

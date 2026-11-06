@@ -1,9 +1,9 @@
-/* The frame counter (app/perfCounter.ts, `?perf`): bottom left, over the item bar (the player stands mid-screen, the HUD's cards at the top); nothing in it can be pressed. */
+/* The frame counter (app/perfCounter.ts, `?perf`, the settings' Developer section): bottom left, over the item bar (the player stands mid-screen, the HUD's cards at the top), over the HUD but under the dialogs (z 50: Settings, the pause card); nothing in it can be pressed. */
 .perf-counter {
   position: fixed;
   left: max(6px, env(safe-area-inset-left));
   bottom: calc(env(safe-area-inset-bottom) + 70px);
-  z-index: 70;
+  z-index: 45;
   max-width: calc(100vw - 12px);
   padding: 4px 6px;
   border-radius: 6px;

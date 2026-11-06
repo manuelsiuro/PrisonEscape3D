@@ -27,11 +27,30 @@ export function perfWanted(search = location.search): boolean {
   return readJSON<boolean>(KEYS.perf, false) === true;
 }
 
+/** The counter's code, once fetched. */
+let counter: Promise<typeof import('./perfCounter')> | null = null;
+const fetchCounter = () => (counter ??= import('./perfCounter'));
+
 /** Puts the counter up when it's wanted (its code fetched then). */
 export function startPerf() {
   if (!perfWanted()) return;
-  void import('./perfCounter').then(
+  void fetchCounter().then(
     (m) => m.showCounter(),
-    () => {},
+    () => (counter = null),
+  );
+}
+
+/** Whether the counter is on (as remembered). */
+export const perfOn = () => readJSON<boolean>(KEYS.perf, false) === true;
+
+/** The counter turned on or off from the settings' Developer section: at once, and remembered (as `?perf` does). */
+export function setPerf(on: boolean) {
+  if (on) writeJSON(KEYS.perf, true);
+  else removeKey(KEYS.perf);
+  // (Off with its code never fetched: nothing to take down.)
+  if (!on && !counter) return;
+  void fetchCounter().then(
+    (m) => (on ? m.showCounter() : m.hideCounter()),
+    () => (counter = null),
   );
 }
