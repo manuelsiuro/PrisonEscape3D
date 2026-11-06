@@ -19,7 +19,23 @@ import { DAY_BOOKS, DAY_EVENTS, MOVIE_NOISE } from '../src/content/days';
 import { itemNumber, KEY_ITEM_COLORS } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
 import { ROUTINE } from '../src/content/routine';
-import { APPLAUSE, CHARTS, countIn, GOODWILL, GOODWILL_HEAT, HISTORY, INSTRUMENT, LATE, NO_SHOW, QUESTION_STEPS, QUIZ_GATHER, QUIZ_PRIZE, QUIZ_QUESTIONS, SONGS, songSteps } from '../src/content/nights';
+import {
+  APPLAUSE,
+  CHARTS,
+  countIn,
+  GOODWILL,
+  GOODWILL_HEAT,
+  HISTORY,
+  INSTRUMENT,
+  LATE,
+  NO_SHOW,
+  QUESTION_STEPS,
+  QUIZ_GATHER,
+  QUIZ_PRIZE,
+  QUIZ_QUESTIONS,
+  SONGS,
+  songSteps,
+} from '../src/content/nights';
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { command, EXT } from '../src/sim/command';
@@ -29,7 +45,21 @@ import { DAY_STEPS } from '../src/sim/systems/clock';
 import { dayPlan, muffled } from '../src/sim/systems/calendar';
 import { DOING } from '../src/sim/systems/inmates';
 import { slot } from '../src/sim/systems/items';
-import { acted, actNow, actsOf, boardsOf, markOf, musicOn, noShow, placeOf, prizeOf, stageFreeFrom, stageOf, tonight, turnFrom } from '../src/sim/systems/talent';
+import {
+  acted,
+  actNow,
+  actsOf,
+  boardsOf,
+  markOf,
+  musicOn,
+  noShow,
+  placeOf,
+  prizeOf,
+  stageFreeFrom,
+  stageOf,
+  tonight,
+  turnFrom,
+} from '../src/sim/systems/talent';
 import { questionNow, questionsOf, quizOf, type Choice } from '../src/sim/systems/quiz';
 import { beforeFixes, beforeStage, prepareReplay } from '../src/sim/runlog';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
@@ -38,14 +68,18 @@ import { check } from './assert';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
 const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
-const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
+const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 const TALENT = DAY_EVENTS.indexOf('talent');
 const QUIZ = DAY_EVENTS.indexOf('quiz');
 
 /** A game kept calm (heat and lockdowns cleared each step), day 1 forced to a card (else quiet). */
 function game(card: number, prison = CENTER_PERKS, seed = 5) {
   const sim = new Sim(prison, seed);
-  sim.state.calendar = [[0, 0, 0], [1, card, 0]];
+  sim.state.calendar = [
+    [0, 0, 0],
+    [1, card, 0],
+  ];
   const seen: SimEvent[] = [];
   let calm = true;
   const step = (cmd = 0) => {
@@ -89,10 +123,16 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
       return w.zoneAt(x, z) !== zone || w.blocked(x, z) || prop || decor;
     };
     const bad = boardsOf(st).filter((t) => blocked(t % MAP_W, Math.floor(t / MAP_W), 'canteen'));
-    check(bad.length === 0, `${p.id}: the stage's boards are open canteen floor (${bad.map((t) => `${t % MAP_W},${Math.floor(t / MAP_W)}`).join(' ')})`);
+    check(
+      bad.length === 0,
+      `${p.id}: the stage's boards are open canteen floor (${bad.map((t) => `${t % MAP_W},${Math.floor(t / MAP_W)}`).join(' ')})`,
+    );
     check([1, 5, 9, 13].includes(st.face) && [1, 5, 9, 13].includes(pl.face), `${p.id}: the stage and the quiz face a compass point`);
     const spots = pl.spots.filter((q) => blocked(q.x, q.z, 'library'));
-    check(pl.spots.length === 4 && spots.length === 0, `${p.id}: four quiz places, open library floor (${spots.map((q) => `${q.x},${q.z}`).join(' ')})`);
+    check(
+      pl.spots.length === 4 && spots.length === 0,
+      `${p.id}: four quiz places, open library floor (${spots.map((q) => `${q.x},${q.z}`).join(' ')})`,
+    );
     check(new Set(pl.spots.map((q) => q.z * MAP_W + q.x)).size === 4, `${p.id}: four different places`);
     // Every one of them reachable on foot from the player's cell (the inmates' paths).
     const from = sim.state.player;
@@ -104,7 +144,12 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
       const t = queue.pop()!;
       const x = t % MAP_W;
       const z = Math.floor(t / MAP_W);
-      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const nt = (z + dz) * MAP_W + x + dx;
         if (reach.has(nt) || !w.inside(x + dx, z + dz) || w.npcBlock[nt]) continue;
         reach.add(nt);
@@ -115,20 +160,33 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
     check(lost.length === 0, `${p.id}: the stage and the places can be walked to`);
     // The deck: each card once, the cards they took the places of named.
     const book = DAY_BOOKS[p.id];
-    check(book.deck.filter((e) => e === 'talent').length === 1 && book.deck.filter((e) => e === 'quiz').length === 1 && book.deck.length === 7, `${p.id}: a talent night and a quiz night once a week`);
-    check(!!book.beforeStage && !book.deck.includes(book.beforeStage.talent) && !book.deck.includes(book.beforeStage.quiz), `${p.id}: the cards they took the places of are gone from the deck`);
-    lines.push(`${p.id}: stage ${st.x},${st.z} facing ${st.face}; quiz ${pl.spots.map((q) => `${q.x},${q.z}`).join(' ')}; was ${book.beforeStage!.talent}/${book.beforeStage!.quiz}`);
+    check(
+      book.deck.filter((e) => e === 'talent').length === 1 && book.deck.filter((e) => e === 'quiz').length === 1 && book.deck.length === 7,
+      `${p.id}: a talent night and a quiz night once a week`,
+    );
+    check(
+      !!book.beforeStage && !book.deck.includes(book.beforeStage.talent) && !book.deck.includes(book.beforeStage.quiz),
+      `${p.id}: the cards they took the places of are gone from the deck`,
+    );
+    lines.push(
+      `${p.id}: stage ${st.x},${st.z} facing ${st.face}; quiz ${pl.spots.map((q) => `${q.x},${q.z}`).join(' ')}; was ${book.beforeStage!.talent}/${book.beforeStage!.quiz}`,
+    );
   }
   check(!TRAINING.leisure?.stage && !TRAINING.leisure?.quiz, 'the Training Block has neither (no day cards)');
   // The songs.
   for (const [k, s] of SONGS.entries()) {
     const chart = CHARTS[k];
     const gaps = chart.slice(1).map((n, i) => n[0] - chart[i][0]);
-    check(s.bars.every((b) => b.length === 8 && /^[012.]+$/.test(b)) && s.bars.length === s.chords.length, `${s.id}: eight eighths a bar, a chord a bar`);
+    check(
+      s.bars.every((b) => b.length === 8 && /^[012.]+$/.test(b)) && s.bars.length === s.chords.length,
+      `${s.id}: eight eighths a bar, a chord a bar`,
+    );
     check(Math.min(...gaps) >= 4, `${s.id}: notes at least 4 steps apart (one press a step, and the windows apart)`);
     const secs = songSteps(k) / 20;
     check(secs >= 36 && secs <= 42, `${s.id}: about 40 seconds (${secs})`);
-    lines.push(`${s.id}: level ${s.level}, ${chart.length} notes, ${secs.toFixed(1)} s, lanes ${[0, 1, 2].map((l) => chart.filter((n) => n[1] === l).length).join('/')}`);
+    lines.push(
+      `${s.id}: level ${s.level}, ${chart.length} notes, ${secs.toFixed(1)} s, lanes ${[0, 1, 2].map((l) => chart.filter((n) => n[1] === l).length).join('/')}`,
+    );
   }
   console.log(lines.join('\n'));
 }
@@ -138,9 +196,18 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   const g = game(TALENT);
   const { sim } = g;
   const acts = actsOf(sim.state, 1);
-  check(acts.length >= 2 && acts.length <= 3 && new Set(acts.map((a) => a.who)).size === acts.length, `two or three acts, different inmates (${acts.length})`);
-  check(acts.every((a) => a.mark >= 50 && a.mark <= 85), 'their marks 50–85');
-  check(JSON.stringify(actsOf(sim.state, 1)) === JSON.stringify(acts) && JSON.stringify(actsOf(sim.state, 2)) !== JSON.stringify(acts), 'the same for the night, another the next');
+  check(
+    acts.length >= 2 && acts.length <= 3 && new Set(acts.map((a) => a.who)).size === acts.length,
+    `two or three acts, different inmates (${acts.length})`,
+  );
+  check(
+    acts.every((a) => a.mark >= 50 && a.mark <= 85),
+    'their marks 50–85',
+  );
+  check(
+    JSON.stringify(actsOf(sim.state, 1)) === JSON.stringify(acts) && JSON.stringify(actsOf(sim.state, 2)) !== JSON.stringify(acts),
+    'the same for the night, another the next',
+  );
   // Each performer on the stage in its slot.
   const st = stageOf(sim.world)!;
   let onStage = 0;
@@ -157,17 +224,27 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   }
   check(onStage === acts.length, `each act's performer on the stage in its slot, playing, facing the room (${onStage}/${acts.length})`);
   check(music === acts.length, `while an act plays, a noise in the canteen carries as little as on movie night (${music}/${acts.length})`);
-  check(acts.every((_, k) => acted(sim.state, k) && !noShow(sim, k)), 'every act stood');
+  check(
+    acts.every((_, k) => acted(sim.state, k) && !noShow(sim, k)),
+    'every act stood',
+  );
   // Afterwards: off again.
   g.jump(1, 20, 0);
   for (let j = 0; j < 400; j++) g.step();
-  check(acts.every((a) => sim.state.inmates[a.who].doing !== DOING.DRUMS && sim.state.inmates[a.who].doing !== DOING.GUITAR), 'off the stage after their slot');
+  check(
+    acts.every((a) => sim.state.inmates[a.who].doing !== DOING.DRUMS && sim.state.inmates[a.who].doing !== DOING.GUITAR),
+    'off the stage after their slot',
+  );
   // The crowd in the canteen.
-  const inCanteen = sim.state.inmates.filter((m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'canteen').length;
+  const inCanteen = sim.state.inmates.filter(
+    (m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'canteen',
+  ).length;
   check(inCanteen >= sim.state.inmates.length / 2, `the evening's crowd in the canteen (${inCanteen}/${sim.state.inmates.length})`);
   // The music's cover: over with the acts.
   check(muffled(sim, LAYER.GROUND, t, 10) === 10, 'no music after the acts: a noise in the canteen carries as ever');
-  console.log(`acts: ${acts.map((a) => `${a.who} ${SONGS[a.song].id} ${a.inst ? 'guitar' : 'drums'} ${a.mark}% ${a.at}–${a.until}`).join(' | ')}; ${inCanteen} in the canteen`);
+  console.log(
+    `acts: ${acts.map((a) => `${a.who} ${SONGS[a.song].id} ${a.inst ? 'guitar' : 'drums'} ${a.mark}% ${a.at}–${a.until}`).join(' | ')}; ${inCanteen} in the canteen`,
+  );
 }
 
 /**
@@ -175,7 +252,15 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
  * one), and a stray press every `stray` steps (0 none). At 19:45 with every act stood (as if the
  * evening had been played through), or on a game `given` where it stands.
  */
-function playSong(song: number, late: number, every = 1, stray = 0, inst: number = INSTRUMENT.DRUMS, seed = 5, given?: ReturnType<typeof game>) {
+function playSong(
+  song: number,
+  late: number,
+  every = 1,
+  stray = 0,
+  inst: number = INSTRUMENT.DRUMS,
+  seed = 5,
+  given?: ReturnType<typeof game>,
+) {
   const g = given ?? game(TALENT, CENTER_PERKS, seed);
   const { sim } = g;
   const st = stageOf(sim.world)!;
@@ -259,18 +344,26 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
     check(spam.mark === 0, `${s.id}: mashing every step: 0 (${spam.mark})`);
     const misses = of(none.g.seen, 'stage').filter((e) => e.what === 'miss').length;
     check(misses === CHARTS[k].length, `${s.id}: each note let go by: missed (${misses})`);
-    lines.push(`${s.id}: perfect ${perfect.mark}, ±1 ${early1.mark}/${late1.mark}, +2 ${late2.mark}, half ${half.mark}, none ${none.mark}, mashing ${spam.mark}`);
+    lines.push(
+      `${s.id}: perfect ${perfect.mark}, ±1 ${early1.mark}/${late1.mark}, +2 ${late2.mark}, half ${half.mark}, none ${none.mark}, mashing ${spam.mark}`,
+    );
   }
   // The verdict.
   const best = playSong(2, 0);
   const d = best.done!;
   const acts = tonight(best.g.sim);
   check(d.place === 0 && d.prize === prizeOf(0, 2) && d.prize === 60, `first with the hardest song: $60 (${d.prize})`);
-  check(d.heat === Math.min(40, GOODWILL_HEAT) && best.g.sim.state.heat <= 40 - GOODWILL_HEAT + 1, `a mark of ${GOODWILL}+: the warden's goodwill, ${GOODWILL_HEAT} heat off`);
+  check(
+    d.heat === Math.min(40, GOODWILL_HEAT) && best.g.sim.state.heat <= 40 - GOODWILL_HEAT + 1,
+    `a mark of ${GOODWILL}+: the warden's goodwill, ${GOODWILL_HEAT} heat off`,
+  );
   check((d.crowd ?? 0) > 0, `the room won over (${d.crowd})`);
   const mid = playSong(0, 0, 2);
   const dm = mid.done!;
-  check(dm.place === placeOf(dm.mark!, acts) && dm.heat === 0, `a middling act: placed by the marks (${dm.mark}% → ${dm.place}), no goodwill`);
+  check(
+    dm.place === placeOf(dm.mark!, acts) && dm.heat === 0,
+    `a middling act: placed by the marks (${dm.mark}% → ${dm.place}), no goodwill`,
+  );
   check(dm.place! > 0 || dm.mark! >= Math.max(...acts.map((a) => a.mark)), 'behind every act marked higher');
   check(prizeOf(3, 0) === 0 && prizeOf(1, 1) === 22 && prizeOf(2, 0) === 5, 'prizes by place, more for a harder song');
   const poor = playSong(0, 0, 0);
@@ -286,7 +379,9 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
   g.step();
   check(!g.sim.state.show && of(g.seen, 'stage').some((e) => e.what === 'off'), 'a lockdown: the act is off');
   console.log(lines.join('\n'));
-  console.log(`verdict: the hardest song perfect: place ${d.place}, $${d.prize}, ${d.crowd} won over, ${d.heat} heat off; every other note of the easiest: ${dm.mark}% place ${dm.place} $${dm.prize}`);
+  console.log(
+    `verdict: the hardest song perfect: place ${d.place}, $${d.prize}, ${d.crowd} won over, ${d.heat} heat off; every other note of the easiest: ${dm.mark}% place ${dm.place} $${dm.prize}`,
+  );
 }
 
 // ------------------------------------------------------------------ talent night: no-shows (2.5.1)
@@ -303,16 +398,25 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
   while (sim.state.step < at(1, 19, 1)) g.step();
   check(actNow(sim) === 0 && !musicOn(sim) && muffled(sim, LAYER.GROUND, t, 10) === 10, 'a performer out cold: his slot, but no music');
   while (sim.state.step < at(1, 19, NO_SHOW)) g.step();
-  check(noShow(sim, 0) && actNow(sim) === -1 && !acted(sim.state, 0), `${NO_SHOW} minutes in with nobody on the boards: a no-show, the slot empty`);
+  check(
+    noShow(sim, 0) && actNow(sim) === -1 && !acted(sim.state, 0),
+    `${NO_SHOW} minutes in with nobody on the boards: a no-show, the slot empty`,
+  );
   const last = acts[acts.length - 1];
   while (sim.state.step < at(1, 19, last.at - 660 + NO_SHOW) - 2) g.step();
   put(sim.state.player, st.x, st.z);
   g.ext(EXT.STAGE, 0, 0);
-  check(!sim.state.show && refusals(g.seen).includes('actsOn'), 'the last act\'s grace not over: not yet');
+  check(!sim.state.show && refusals(g.seen).includes('actsOn'), "the last act's grace not over: not yet");
   g.step();
-  check(stageFreeFrom(sim) === last.at + NO_SHOW && stageFreeFrom(sim) < turnFrom(acts), `the stage free at ${last.at + NO_SHOW}, not ${turnFrom(acts)}`);
+  check(
+    stageFreeFrom(sim) === last.at + NO_SHOW && stageFreeFrom(sim) < turnFrom(acts),
+    `the stage free at ${last.at + NO_SHOW}, not ${turnFrom(acts)}`,
+  );
   const r = playSong(0, 0, 2, 0, INSTRUMENT.DRUMS, 5, g);
-  check(r.mark >= APPLAUSE && r.done?.place === 0 && r.done.prize === prizeOf(0, 0), `every act a no-show: ${r.mark}% is first, $${r.done?.prize} (marks ${acts.map((a) => a.mark).join(' ')} out of the running)`);
+  check(
+    r.mark >= APPLAUSE && r.done?.place === 0 && r.done.prize === prizeOf(0, 0),
+    `every act a no-show: ${r.mark}% is first, $${r.done?.prize} (marks ${acts.map((a) => a.mark).join(' ')} out of the running)`,
+  );
   // A rival kept from the boards by the player (following them through his slot): his act stands, mark and all, with no music.
   const h = game(TALENT);
   const hs = h.sim.state;
@@ -320,7 +424,10 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
   h.jump(1, 18, 45);
   hs.followers.push(hacts[0].who);
   while (hs.step < at(1, 19, NO_SHOW + 1)) h.step();
-  check(acted(hs, 0) && !noShow(h.sim, 0) && actNow(h.sim) === 0 && !musicOn(h.sim), 'a performer the player keeps from the boards: his act stands (no music)');
+  check(
+    acted(hs, 0) && !noShow(h.sim, 0) && actNow(h.sim) === 0 && !musicOn(h.sim),
+    'a performer the player keeps from the boards: his act stands (no music)',
+  );
   // Some acts on, one knocked out: placed among those that stood.
   const k = game(TALENT, CENTER_PERKS, 1);
   const kacts = tonight(k.sim);
@@ -331,8 +438,13 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
   const stood = kacts.filter((_, i) => !noShow(k.sim, i));
   check(stood.length === kacts.length - 1 && noShow(k.sim, top), `the best act (${kacts[top].mark}%) out cold: a no-show, the rest stood`);
   const kr = playSong(0, 0, 2, 0, INSTRUMENT.DRUMS, 1, k);
-  check(kr.done?.place === placeOf(kr.mark, stood), `placed among the acts that stood (${kr.mark}% → ${kr.done?.place} of ${stood.length + 1})`);
-  console.log(`no-shows: all out cold, ${r.mark}% first at ${last.at + NO_SHOW}; the best of ${kacts.length} out cold, ${kr.mark}% placed ${kr.done?.place}`);
+  check(
+    kr.done?.place === placeOf(kr.mark, stood),
+    `placed among the acts that stood (${kr.mark}% → ${kr.done?.place} of ${stood.length + 1})`,
+  );
+  console.log(
+    `no-shows: all out cold, ${r.mark}% first at ${last.at + NO_SHOW}; the best of ${kacts.length} out cold, ${kr.mark}% placed ${kr.done?.place}`,
+  );
 }
 
 // ------------------------------------------------------------------ talent night: every performer called in time (2.5.1)
@@ -363,7 +475,10 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
         else {
           total += acts.length;
           now += seen.size;
-          check(acts.every((_, k) => acted(sim.state, k) === seen.has(k)), `${p.id} seed ${seed}: an act stood exactly when its performer took the boards`);
+          check(
+            acts.every((_, k) => acted(sim.state, k) === seen.has(k)),
+            `${p.id} seed ${seed}: an act stood exactly when its performer took the boards`,
+          );
         }
       }
   check(now === total, `every performer on the boards in his slot (${now}/${total})`);
@@ -400,8 +515,17 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
         if (q.id === 'showers' && !(right.kind === 'time' && right.m === time('showers'))) bad++;
         if (q.id === 'delivery' && !(right.kind === 'time' && right.m === 14 * 60 + 30)) bad++;
         if (q.id === 'visiting' && !(right.kind === 'time' && right.m === 10 * 60)) bad++;
-        if (q.id === 'cells' && !(right.kind === 'n' && right.n === p.cells.length && q.choices.every((c) => c.kind === 'n' && c.n > 0))) bad++;
-        if (q.id === 'key' && !(right.kind === 'colour' && right.c === p.guards[q.guard!].key && q.choices.every((c) => c.kind === 'colour' && KEY_ITEM_COLORS.some(([k]) => k === c.c)))) bad++;
+        if (q.id === 'cells' && !(right.kind === 'n' && right.n === p.cells.length && q.choices.every((c) => c.kind === 'n' && c.n > 0)))
+          bad++;
+        if (
+          q.id === 'key' &&
+          !(
+            right.kind === 'colour' &&
+            right.c === p.guards[q.guard!].key &&
+            q.choices.every((c) => c.kind === 'colour' && KEY_ITEM_COLORS.some(([k]) => k === c.c))
+          )
+        )
+          bad++;
         if (q.id.startsWith('trait.')) {
           const trait = q.id.slice(6);
           if (!(right.kind === 'guard' && p.guards[right.k].trait === trait)) bad++;
@@ -420,15 +544,39 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
     const where = new Map<number, number>();
     for (let day = 1; day <= 30; day++) for (const q of questionsOf(sim, day)) where.set(q.answer, (where.get(q.answer) ?? 0) + 1);
     check(bad === 0, `${p.id}: 30 nights' questions: eight, four different choices each, the right one true (${bad} wrong)`);
-    check([0, 1, 2, 3].every((k) => (where.get(k) ?? 0) >= 30), `${p.id}: the right answer anywhere among the four (${[0, 1, 2, 3].map((k) => where.get(k) ?? 0).join('/')})`);
+    check(
+      [0, 1, 2, 3].every((k) => (where.get(k) ?? 0) >= 30),
+      `${p.id}: the right answer anywhere among the four (${[0, 1, 2, 3].map((k) => where.get(k) ?? 0).join('/')})`,
+    );
     check(local === 30 * (QUIZ_QUESTIONS - 4), `${p.id}: half about the prison`);
-    lines.push(`${p.id}: ${kinds.size} kinds asked over 30 nights (${[...kinds].filter((k) => !k.startsWith('h.')).sort().join(' ')})`);
+    lines.push(
+      `${p.id}: ${kinds.size} kinds asked over 30 nights (${[...kinds]
+        .filter((k) => !k.startsWith('h.'))
+        .sort()
+        .join(' ')})`,
+    );
   }
   // The text: every question and its four answers in both languages.
   const keys = (d: Record<string, string>) => new Set(Object.keys(d));
   const ke = keys(en as Record<string, string>);
   const kf = keys(fr as Record<string, string>);
-  const want = [...HISTORY.flatMap((h) => [`quiz.h.${h}`, ...[0, 1, 2, 3].map((k) => `quiz.h.${h}.${k}`)]), ...['rollCall', 'lightsOut', 'breakfast', 'showers', 'delivery', 'visiting', 'cells', 'key', 'recipe', 'trait.corrupt', 'trait.lazy', 'trait.strict'].map((k) => `quiz.${k}`)];
+  const want = [
+    ...HISTORY.flatMap((h) => [`quiz.h.${h}`, ...[0, 1, 2, 3].map((k) => `quiz.h.${h}.${k}`)]),
+    ...[
+      'rollCall',
+      'lightsOut',
+      'breakfast',
+      'showers',
+      'delivery',
+      'visiting',
+      'cells',
+      'key',
+      'recipe',
+      'trait.corrupt',
+      'trait.lazy',
+      'trait.strict',
+    ].map((k) => `quiz.${k}`),
+  ];
   const missing = want.filter((k) => !ke.has(k) || !kf.has(k));
   check(missing.length === 0, `every question in English and French (${missing.slice(0, 6).join(' ')})`);
   console.log(lines.join('\n'));
@@ -484,12 +632,18 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
     return Math.floor(m.body.x / UNIT) === pl.spots[o.seats[j + 1]].x && Math.floor(m.body.z / UNIT) === pl.spots[o.seats[j + 1]].z;
   }).length;
   check(sim.state.quiz!.q === 0, `the first question once they're there (${sim.state.step - o.from} steps, ${there}/3 at their places)`);
-  check(o.who.every((k) => sim.state.inmates[k].doing === DOING.QUIZ), 'the contestants at the buzzers');
+  check(
+    o.who.every((k) => sim.state.inmates[k].doing === DOING.QUIZ),
+    'the contestants at the buzzers',
+  );
   // A wrong answer: out of that question.
   const q = questionNow(sim)!;
   g.ext(EXT.ANSWER, (q.answer + 1) % 4);
   g.ext(EXT.ANSWER, q.answer);
-  check(sim.state.quiz!.pts[0] === 0 && of(g.seen, 'quiz').filter((e) => e.what === 'wrong' && e.by === 0).length === 1, 'a wrong answer: out of that question, no second go');
+  check(
+    sim.state.quiz!.pts[0] === 0 && of(g.seen, 'quiz').filter((e) => e.what === 'wrong' && e.by === 0).length === 1,
+    'a wrong answer: out of that question, no second go',
+  );
   // Walking off: off.
   put(sim.state.player, pl.spots[1].x, pl.spots[1].z + 5);
   g.step();
@@ -533,7 +687,9 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
   check(silent.won === 0 && silent.tie === 0, 'never answering: never');
   const r = playQuiz(1, 60, true);
   check(r.end?.what === 'won' && r.end.prize === QUIZ_PRIZE && r.end.int === 2, `a win: $${QUIZ_PRIZE} and 2 Intellect`);
-  console.log(`quiz bots over 40 nights: knows, 3 s: ${quick.won} won ${quick.tie} tied; knows, 5 s: ${mid.won} won ${mid.tie} tied; knows, 7.5 s: ${slow.won} won ${slow.tie} tied; knows, 10 s: ${slower.won} won ${slower.tie} tied; guesses, 1.5 s: ${guess.won} won ${guess.tie} tied; silent: ${silent.won}; before 2.16, knows, 5 s: ${old.won} won`);
+  console.log(
+    `quiz bots over 40 nights: knows, 3 s: ${quick.won} won ${quick.tie} tied; knows, 5 s: ${mid.won} won ${mid.tie} tied; knows, 7.5 s: ${slow.won} won ${slow.tie} tied; knows, 10 s: ${slower.won} won ${slower.tie} tied; guesses, 1.5 s: ${guess.won} won ${guess.tie} tied; silent: ${silent.won}; before 2.16, knows, 5 s: ${old.won} won`,
+  );
 }
 
 // ------------------------------------------------------------------ saves and logs
@@ -557,7 +713,10 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
     sim.step(cmd);
     back.step(cmd);
   }
-  check(JSON.stringify(back.state) === JSON.stringify(sim.state) && markOf(sim.state.show!) === markOf(back.state.show!), 'and plays on the same');
+  check(
+    JSON.stringify(back.state) === JSON.stringify(sim.state) && markOf(sim.state.show!) === markOf(back.state.show!),
+    'and plays on the same',
+  );
   // Mid-quiz.
   const q = game(QUIZ);
   const pl = quizOf(q.sim.world)!;
@@ -584,7 +743,10 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
   for (const k of ['show', 'stageDay', 'quiz', 'quizDay']) delete old[k];
   const loaded = loadState(plain.world, CENTER_PERKS, old);
   const was = DAY_BOOKS['center-perks'].beforeStage!;
-  check(dayPlan('center-perks', loaded.salt, day, loaded.calendar).event === was.talent && loaded.show === null && loaded.stageDay === 0, `a save from before P30 on a talent night: ${was.talent} instead`);
+  check(
+    dayPlan('center-perks', loaded.salt, day, loaded.calendar).event === was.talent && loaded.show === null && loaded.stageDay === 0,
+    `a save from before P30 on a talent night: ${was.talent} instead`,
+  );
   const fresh = loadState(plain.world, CENTER_PERKS, JSON.parse(JSON.stringify(plain.state)));
   check(dayPlan('center-perks', fresh.salt, day, fresh.calendar).event === 'talent', 'a save from after: the talent night stands');
   // A save from 2.5.0 made at 19:40, its acts played: loaded, none of them turns into a no-show.
@@ -598,7 +760,10 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
     delete old250.acted;
     const twin = new Sim(CENTER_PERKS, 5);
     twin.state = loadState(twin.world, CENTER_PERKS, old250);
-    check(tonight(twin).every((_, k) => !noShow(twin, k)), 'a save from 2.5.0 mid talent night: its acts stand (none a no-show)');
+    check(
+      tonight(twin).every((_, k) => !noShow(twin, k)),
+      'a save from 2.5.0 mid talent night: its acts stand (none a no-show)',
+    );
     const now = new Sim(CENTER_PERKS, 5);
     now.state = loadState(now.world, CENTER_PERKS, JSON.parse(JSON.stringify(n.sim.state)));
     check(JSON.stringify(now.state.acted) === JSON.stringify(n.sim.state.acted), 'one from 2.5.1 keeps its own');
@@ -614,14 +779,37 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
     check(mid.acted[1] === 3, `made at 19:13: the two acts begun stand, the rest are judged as ever (${JSON.stringify(mid.acted)})`);
   }
   // A log from before stage nights.
-  check(beforeStage('2.4.0') && beforeStage('1.20.3') && !beforeStage('2.5.0') && !beforeStage('3.0.1'), 'logs from before 2.5.0 are from before stage nights');
-  const log = { v: 1 as const, prison: 'center-perks', seed: 7, game: '2.4.0', from: 0, steps: at(day + 1, 8), data: '', sums: [] as Array<[number, string]> };
+  check(
+    beforeStage('2.4.0') && beforeStage('1.20.3') && !beforeStage('2.5.0') && !beforeStage('3.0.1'),
+    'logs from before 2.5.0 are from before stage nights',
+  );
+  const log = {
+    v: 1 as const,
+    prison: 'center-perks',
+    seed: 7,
+    game: '2.4.0',
+    from: 0,
+    steps: at(day + 1, 8),
+    data: '',
+    sums: [] as Array<[number, string]>,
+  };
   const set = prepareReplay(log, CENTER_PERKS);
   check(!!set && planOfDay(set.sim, day) === was.talent, 'a replay of a 2.4.0 run deals the old card that night');
-  check(beforeFixes('2.5.0') && beforeFixes('2.4.9') && beforeFixes('1.22.1') && !beforeFixes('2.5.1') && !beforeFixes('2.6.0') && !beforeFixes('3.0.0'), 'logs from 2.5.0 and before are from before the P23–P30 fixes');
+  check(
+    beforeFixes('2.5.0') &&
+      beforeFixes('2.4.9') &&
+      beforeFixes('1.22.1') &&
+      !beforeFixes('2.5.1') &&
+      !beforeFixes('2.6.0') &&
+      !beforeFixes('3.0.0'),
+    'logs from 2.5.0 and before are from before the P23–P30 fixes',
+  );
   const was250 = prepareReplay({ ...log, game: '2.5.0' }, CENTER_PERKS);
   const now251 = prepareReplay({ ...log, game: '2.5.1' }, CENTER_PERKS);
-  check(!!was250 && was250.sim.rules250 && !!now251 && !now251.sim.rules250, 'a replay of a 2.5.0 run plays by its rules (no no-shows, no clocks), one from 2.5.1 by today\'s');
+  check(
+    !!was250 && was250.sim.rules250 && !!now251 && !now251.sim.rules250,
+    "a replay of a 2.5.0 run plays by its rules (no no-shows, no clocks), one from 2.5.1 by today's",
+  );
   console.log(`saves: mid-act and mid-quiz round trips ok; an old save's talent night (day ${day}) is ${was.talent} again`);
 }
 function planOfDay(sim: Sim, day: number) {
@@ -635,7 +823,15 @@ function planOfDay(sim: Sim, day: number) {
     const g = game(card);
     g.jump(1, 18, 50);
     for (let k = 0; k < 150 * STEPS_PER_MINUTE; k++) g.step();
-    check(!g.sim.state.show && !g.sim.state.quiz && g.sim.state.stageDay === 0 && g.sim.state.quizDay === 0 && !of(g.seen, 'stage').length && !of(g.seen, 'quiz').length, `${DAY_EVENTS[card]} night untouched: nothing of the player's`);
+    check(
+      !g.sim.state.show &&
+        !g.sim.state.quiz &&
+        g.sim.state.stageDay === 0 &&
+        g.sim.state.quizDay === 0 &&
+        !of(g.seen, 'stage').length &&
+        !of(g.seen, 'quiz').length,
+      `${DAY_EVENTS[card]} night untouched: nothing of the player's`,
+    );
   }
 }
 
@@ -662,11 +858,14 @@ function planOfDay(sim: Sim, day: number) {
   const side = boardsOf(st)[3];
   put(g.sim.state.player, side % MAP_W, Math.floor(side / MAP_W));
   g.ext(EXT.STAGE, 0, 0);
-  check(Math.floor(g.sim.state.player.x / UNIT) === st.x && Math.floor(g.sim.state.player.z / UNIT) === st.z, 'an act begun on the boards: on the performer\'s own tile');
+  check(
+    Math.floor(g.sim.state.player.x / UNIT) === st.x && Math.floor(g.sim.state.player.z / UNIT) === st.z,
+    "an act begun on the boards: on the performer's own tile",
+  );
   g.ext(EXT.STAGE, 255);
   check(!g.sim.state.show && of(g.seen, 'stage').some((e) => e.what === 'off'), 'an act given up: off');
   g.ext(EXT.STAGE, 0, 0);
-  check(refusals(g.seen).includes('performed'), 'and the night\'s turn used');
+  check(refusals(g.seen).includes('performed'), "and the night's turn used");
   // On the stage, no talk, no seat, no strike: only the act's own commands.
   const h = game(TALENT);
   h.jump(1, 19, 45);
@@ -684,10 +883,16 @@ function planOfDay(sim: Sim, day: number) {
   q.jump(1, 19, 35);
   put(q.sim.state.player, pl.spots[0].x, pl.spots[0].z);
   q.ext(EXT.QUIZ, 0);
-  check(!q.sim.state.quiz && refusals(q.seen).includes('quizLate'), 'after 19:30: too late to start the quiz (2.16: the questions are read first, longer)');
+  check(
+    !q.sim.state.quiz && refusals(q.seen).includes('quizLate'),
+    'after 19:30: too late to start the quiz (2.16: the questions are read first, longer)',
+  );
   // Joined at the last minute: over before evening roll call, whatever happens.
   const latest = playQuizAt(19, 29, -1);
-  check(latest.ended >= 0 && latest.ended < 22 * 60, `joined at 19:29: over by ${Math.floor(latest.ended / 60)}:${String(latest.ended % 60).padStart(2, '0')}`);
+  check(
+    latest.ended >= 0 && latest.ended < 22 * 60,
+    `joined at 19:29: over by ${Math.floor(latest.ended / 60)}:${String(latest.ended % 60).padStart(2, '0')}`,
+  );
   // A contestant knocked out: off, never a win by default.
   const k = game(QUIZ);
   k.jump(1, 19, 0);
@@ -696,13 +901,18 @@ function planOfDay(sim: Sim, day: number) {
   for (let j = 0; j < QUIZ_GATHER + 10; j++) k.step();
   k.sim.state.inmates[k.sim.state.quiz!.who[0]].ko = 200;
   k.step();
-  check(!k.sim.state.quiz && of(k.seen, 'quiz').some((e) => e.what === 'off') && !of(k.seen, 'quiz').some((e) => e.what === 'won'), 'a contestant knocked out: the quiz is off');
+  check(
+    !k.sim.state.quiz && of(k.seen, 'quiz').some((e) => e.what === 'off') && !of(k.seen, 'quiz').some((e) => e.what === 'won'),
+    'a contestant knocked out: the quiz is off',
+  );
   // Straight-Laced (P26): no question about who takes bribes or who dozes.
   const sl = new Sim(CENTER_PERKS, 3, ['straightLaced']);
   let asked = 0;
   for (let day = 1; day <= 30; day++) asked += questionsOf(sl, day).filter((x) => x.id === 'trait.corrupt' || x.id === 'trait.lazy').length;
   check(asked === 0, 'under Straight-Laced, no bribe or nap questions');
-  console.log(`reviews: every card dealt; ${two} two-act nights pay nothing for nothing; give-up, the performer's tile, late join and knockouts checked`);
+  console.log(
+    `reviews: every card dealt; ${two} two-act nights pay nothing for nothing; give-up, the performer's tile, late join and knockouts checked`,
+  );
 }
 
 /** A quiz joined at a time, answered never (-1) or `wait` steps in: the minute of the prison clock it ended at. */

@@ -16,7 +16,15 @@
  * Inmates never touch any of it, and nothing here draws on the state's RNG.
  */
 import { itemDef, itemNumber } from '../../content/items';
-import { FREED_STEPS, RECORDS_HEAT, RECORDS_MINUTE, RELEASE_FAIL_HEAT, RELEASE_FROM, RELEASE_HEAT, RELEASE_TO } from '../../content/paperwork';
+import {
+  FREED_STEPS,
+  RECORDS_HEAT,
+  RECORDS_MINUTE,
+  RELEASE_FAIL_HEAT,
+  RELEASE_FROM,
+  RELEASE_HEAT,
+  RELEASE_TO,
+} from '../../content/paperwork';
 import type { CommsDef } from '../../content/prisons/types';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
@@ -35,7 +43,8 @@ const FORGED = itemNumber('forged_release');
 const OWN_CLOTHES = itemNumber('own_clothes');
 
 /** The prison's release desk (none at the Training Block). */
-export const releaseOf = (sim: Pick<SimContext, 'world'>): CommsDef['release'] | null => (sim.world.def.rules?.relaxed ? null : (sim.world.def.comms?.release ?? null));
+export const releaseOf = (sim: Pick<SimContext, 'world'>): CommsDef['release'] | null =>
+  sim.world.def.rules?.relaxed ? null : (sim.world.def.comms?.release ?? null);
 
 /** Cleared for release: the way out open for the player alone. */
 export const freedNow = (s: Pick<SimState, 'release'>) => s.release[1] > 0;
@@ -65,7 +74,8 @@ export function atDesk(sim: SimContext): boolean {
 export const atRelease = (sim: SimContext) => atDesk(sim) && calledNow(sim.state) && !freedNow(sim.state);
 
 /** At the desk with a forged form in hand (and not called: then it's reporting). */
-export const atTray = (sim: SimContext) => atDesk(sim) && !calledNow(sim.state) && itemOf(sim.state.items.inv[sim.state.items.hand]) === FORGED;
+export const atTray = (sim: SimContext) =>
+  atDesk(sim) && !calledNow(sim.state) && itemOf(sim.state.items.inv[sim.state.items.hand]) === FORGED;
 
 // ------------------------------------------------------------------ the tray
 

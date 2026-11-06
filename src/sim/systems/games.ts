@@ -12,7 +12,32 @@ import { keepActs, keepShow } from './talent';
 import { keepQuiz } from './quiz';
 import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { BAR, BOUT_ENERGY, BOUT_STEPS, CROWD_OPINION, CROWD_RANGE, DICE_HEAT, DRAIN_BASE, GAME_BLOCKS, GAME_OPINION, GAMES_A_DAY, PICK_HIT_NOISE, PICK_MISS_NOISE, PICK_SPEED, PICK_ZONE, PICKED_STEPS, PINS, PLAY_OPINION, PUSH_BASE, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES, SURGE_ODDS, WIN_OPINION } from '../../content/games';
+import {
+  BAR,
+  BOUT_ENERGY,
+  BOUT_STEPS,
+  CROWD_OPINION,
+  CROWD_RANGE,
+  DICE_HEAT,
+  DRAIN_BASE,
+  GAME_BLOCKS,
+  GAME_OPINION,
+  GAMES_A_DAY,
+  PICK_HIT_NOISE,
+  PICK_MISS_NOISE,
+  PICK_SPEED,
+  PICK_ZONE,
+  PICKED_STEPS,
+  PINS,
+  PLAY_OPINION,
+  PUSH_BASE,
+  SPORTS_OPINION,
+  SPORTS_PRIZE,
+  SPORTS_WINS,
+  STAKES,
+  SURGE_ODDS,
+  WIN_OPINION,
+} from '../../content/games';
 import { nearestDir } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
@@ -90,7 +115,8 @@ export function eyesOn(s: Pick<SimState, 'guards'>, at: number): boolean {
 }
 
 /** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout, the player at the old-timer's board; P29: a match, a tattoo sitting). */
-export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'match' | 'ink' | 'show' | 'quiz'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink || !!s.show || !!s.quiz;
+export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'match' | 'ink' | 'show' | 'quiz'>) =>
+  s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink || !!s.show || !!s.quiz;
 
 // ------------------------------------------------------------------ dice
 
@@ -132,7 +158,15 @@ export function reroll(sim: SimContext, mask: number) {
   if ((mask & 3) === 3) return;
   if (mask & 1) s.dice[2] = die(s.salt, s.step, 2);
   if (mask & 2) s.dice[3] = die(s.salt, s.step, 3);
-  if (mask & 3) sim.events.push({ type: 'dice', what: 'rerolled', who: s.dice[0], stake: STAKES[s.dice[1]], mine: [s.dice[2], s.dice[3]], mask: mask & 3 });
+  if (mask & 3)
+    sim.events.push({
+      type: 'dice',
+      what: 'rerolled',
+      who: s.dice[0],
+      stake: STAKES[s.dice[1]],
+      mine: [s.dice[2], s.dice[3]],
+      mask: mask & 3,
+    });
   settleDice(sim);
 }
 
@@ -187,7 +221,8 @@ export function startBout(sim: SimContext, who: number) {
 export const pushOf = (str: number) => PUSH_BASE + Math.floor(str / 4);
 
 /** Whether the inmate surges at a step of the bout (`t` steps in): the first half of some seconds, drawn for the bout. */
-export const surging = (salt: number, from: number, t: number) => t % 20 < 10 && rollInt(salt, SALT.SURGE, from, Math.floor(t / 20), 100) < SURGE_ODDS;
+export const surging = (salt: number, from: number, t: number) =>
+  t % 20 < 10 && rollInt(salt, SALT.SURGE, from, Math.floor(t / 20), 100) < SURGE_ODDS;
 
 /** How hard the inmate pushes back a step (`t` steps into the bout). */
 export const drainOf = (str: number, surge: boolean) => Math.floor(((str + DRAIN_BASE) * (surge ? 3 : 2)) / 20);
@@ -289,7 +324,8 @@ function keepBout(sim: SimContext) {
   if (!s.bout.length) return;
   const [who, , , from] = s.bout;
   const m = s.inmates[who];
-  if (!m || m.ko > 0 || m.angry > 0 || s.talk !== who || sim.away || s.lockdown || s.sleeping || s.layer !== LAYER.GROUND) return endBout(sim, 'off');
+  if (!m || m.ko > 0 || m.angry > 0 || s.talk !== who || sim.away || s.lockdown || s.sleeping || s.layer !== LAYER.GROUND)
+    return endBout(sim, 'off');
   const t = s.step - from;
   s.bout[1] = Math.max(0, s.bout[1] - drainOf(m.str, surging(s.salt, from, t)));
   if (s.bout[1] <= 0) return endBout(sim, 'lost');
@@ -395,7 +431,17 @@ function keepPick(sim: SimContext) {
   const s = sim.state;
   if (!s.pick.length) return;
   const it = s.items;
-  if (sim.away || s.sleeping || s.stowed || s.train >= 0 || s.seat >= 0 || s.layer !== LAYER.GROUND || itemOf(it.inv[it.hand]) !== LOCKPICK || lockAt(sim.world, s.pick[0]) !== 'lock') stopPick(sim);
+  if (
+    sim.away ||
+    s.sleeping ||
+    s.stowed ||
+    s.train >= 0 ||
+    s.seat >= 0 ||
+    s.layer !== LAYER.GROUND ||
+    itemOf(it.inv[it.hand]) !== LOCKPICK ||
+    lockAt(sim.world, s.pick[0]) !== 'lock'
+  )
+    stopPick(sim);
 }
 
 /**

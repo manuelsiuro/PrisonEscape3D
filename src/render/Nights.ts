@@ -63,7 +63,10 @@ export class NightsView {
   /** The stage, in its own terms: the performer's tile at the origin, the room toward +z. */
   private buildStage(st: Stage, backed: boolean) {
     // The boards: three tiles across, two deep, planks of two woods, a trim along the front (thin: feet stand on them, not in them).
-    const boards = [...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => box(0.3, 0.012, 1.96, k % 2 ? 0x8a5a33 : 0x9c6a3e, -1.35 + k * 0.3, 0, 0.5)), box(3, 0.02, 0.05, 0xd9a441, 0, 0, 1.47)];
+    const boards = [
+      ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => box(0.3, 0.012, 1.96, k % 2 ? 0x8a5a33 : 0x9c6a3e, -1.35 + k * 0.3, 0, 0.5)),
+      box(3, 0.02, 0.05, 0xd9a441, 0, 0, 1.47),
+    ];
     const floor = new THREE.Mesh(merge(boards, false), kitMaterial);
     floor.receiveShadow = true;
     this.stage.add(floor);
@@ -95,7 +98,11 @@ export class NightsView {
     this.stage.add(m);
     // The bulbs on their drops, lower in the middle; lit, they twinkle.
     if (backed) {
-      const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.055, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), BULBS.length);
+      const bulbs = new THREE.InstancedMesh(
+        new THREE.SphereGeometry(0.055, 8, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffffff }),
+        BULBS.length,
+      );
       BULBS.forEach((c, k) => {
         const x = -1.3 + (k * 2.6) / (BULBS.length - 1);
         const at = new THREE.Matrix4().makeTranslation(x, bulbY(x) - 0.04, -0.42);
@@ -113,7 +120,11 @@ export class NightsView {
   /** The buzzers: a little podium in front of each place, its button on top. */
   private buildQuiz(q: QuizPlace) {
     // (Waist-high: the right hand comes down on the button, a little to that side.)
-    const podium = merge([box(0.44, 0.46, 0.22, 0x2f4a6d, 0, 0, 0), box(0.46, 0.04, 0.24, 0xd9a441, 0, 0.46, 0), box(0.3, 0.14, 0.01, 0xf4efe0, 0, 0.26, 0.115)]);
+    const podium = merge([
+      box(0.44, 0.46, 0.22, 0x2f4a6d, 0, 0, 0),
+      box(0.46, 0.04, 0.24, 0xd9a441, 0, 0.46, 0),
+      box(0.3, 0.14, 0.01, 0xf4efe0, 0, 0.26, 0.115),
+    ]);
     // (Each podium a little in front of its place, its button on top to the right: in the podium's frame.)
     podium.translate(0, 0, 0.4);
     const button = new THREE.CylinderGeometry(0.075, 0.085, 0.06, 14).translate(0.15, 0.53, 0.4);

@@ -78,7 +78,10 @@ function shelfSpots(w: World): Spot[] {
   for (const p of w.props) {
     if (p.kind !== 'shelf' || w.ground.zone[p.z * MAP_W + p.x] !== lib) continue;
     for (let x = p.x; x < p.x + p.w; x++)
-      for (const [z, face] of [[p.z + p.d, N], [p.z - 1, S]] as const) {
+      for (const [z, face] of [
+        [p.z + p.d, N],
+        [p.z - 1, S],
+      ] as const) {
         const t = z * MAP_W + x;
         if (isFloor(w, x, z) && w.ground.zone[t] === lib && !(kiosk && kiosk.x === x && kiosk.z === z)) out.push({ tile: t, face });
       }
@@ -89,7 +92,11 @@ function shelfSpots(w: World): Spot[] {
 /** The library's chairs, for anyone to read on (not the librarian's), 2.31. */
 function readSeats(w: World): Spot[] {
   const lib = zoneIndex('library');
-  return w.props.flatMap((p) => ((p.kind === 'chair' || p.kind === 'readChair') && w.ground.zone[p.z * MAP_W + p.x] === lib ? [{ tile: p.z * MAP_W + p.x, face: facingAt(w, p, p.x, p.z) }] : []));
+  return w.props.flatMap((p) =>
+    (p.kind === 'chair' || p.kind === 'readChair') && w.ground.zone[p.z * MAP_W + p.x] === lib
+      ? [{ tile: p.z * MAP_W + p.x, face: facingAt(w, p, p.x, p.z) }]
+      : [],
+  );
 }
 
 function machineSpots(w: World, free: (t: number) => boolean): Array<Spot & { prop: number }> {
@@ -151,7 +158,8 @@ function dutyStops(w: World, free: (t: number) => boolean): Duty[] {
     const def = JOBS[id];
     const zone = zoneIndex(def.zone);
     const main = mainFloor(w, zone, free);
-    const inRoom = (kind: string | undefined) => w.props.map((p, prop) => ({ p, prop })).filter(({ p }) => p.kind === kind && w.ground.zone[p.z * MAP_W + p.x] === zone);
+    const inRoom = (kind: string | undefined) =>
+      w.props.map((p, prop) => ({ p, prop })).filter(({ p }) => p.kind === kind && w.ground.zone[p.z * MAP_W + p.x] === zone);
     const stop = (e: { p: Prop; prop: number } | undefined) => {
       if (!e) return null;
       const spot = roundProp(e.p).find((q) => main.has(q.tile));
@@ -164,7 +172,14 @@ function dutyStops(w: World, free: (t: number) => boolean): Duty[] {
     if (def.flow === 'mop') for (let t = 0; t < w.ground.zone.length; t++) if (w.ground.zone[t] === corridor && free(t)) halls.push(t);
     // (Every seventh tile, wherever that falls: spread along the corridors, the same every day.)
     const round = halls.filter((_, k) => k % 7 === 0);
-    return { take: stop(takes[0]), machines: inRoom(def.machine).map(stop).filter((q) => !!q), put: stop(puts[puts.length - 1]), round };
+    return {
+      take: stop(takes[0]),
+      machines: inRoom(def.machine)
+        .map(stop)
+        .filter((q) => !!q),
+      put: stop(puts[puts.length - 1]),
+      round,
+    };
   });
 }
 
@@ -202,7 +217,8 @@ function build(w: World): Places {
   const rests: Spot[] = [];
   for (const p of w.props) {
     if (p.kind === 'chair' || p.kind === 'bench' || p.kind === 'bleachers')
-      for (let x = p.x; x < p.x + p.w; x++) for (let z = p.z; z < p.z + p.d; z++) rests.push({ tile: z * MAP_W + x, face: facingAt(w, p, x, z) });
+      for (let x = p.x; x < p.x + p.w; x++)
+        for (let z = p.z; z < p.z + p.d; z++) rests.push({ tile: z * MAP_W + x, face: facingAt(w, p, x, z) });
     if (p.kind === 'table' && g.zone[p.z * MAP_W + p.x] === canteen) {
       for (let x = p.x; x < p.x + p.w; x++) {
         if (isFloor(w, x, p.z - 1)) seats.push({ tile: (p.z - 1) * MAP_W + x, face: S });
@@ -233,7 +249,12 @@ function build(w: World): Places {
   // (North of the square first: the line faces that way. Nothing else's square, nothing solid.)
   const squares = new Set(rollCall.map((r) => r.tile));
   const countStops = rollCall.map((r) => {
-    const free = [[-MAP_W, S], [-1, E], [1, W], [MAP_W, N]].find(([d]) => !squares.has(r.tile + d) && !w.guardBlock[r.tile + d]);
+    const free = [
+      [-MAP_W, S],
+      [-1, E],
+      [1, W],
+      [MAP_W, N],
+    ].find(([d]) => !squares.has(r.tile + d) && !w.guardBlock[r.tile + d]);
     return free ? { tile: r.tile + free[0], face: free[1] } : { tile: r.tile, face: S };
   });
   const bedside = [-1];
@@ -242,11 +263,19 @@ function build(w: World): Places {
   w.def.cells.forEach((_, k) => {
     const inCell = (i: number) => w.cellOf[i] === k + 1;
     bedside.push(beside(w, w.cellBed[k + 1], inCell));
-    deskside.push(beside(w, w.props.find((p) => p.kind === 'desk' && inCell(p.z * MAP_W + p.x)), inCell));
+    deskside.push(
+      beside(
+        w,
+        w.props.find((p) => p.kind === 'desk' && inCell(p.z * MAP_W + p.x)),
+        inCell,
+      ),
+    );
     // The door's neighbour outside the cell.
     const door = w.cellDoor[k + 1];
     let step = -1;
-    if (door >= 0) for (const d of [-MAP_W, MAP_W, -1, 1]) if (step < 0 && !inCell(door + d) && isFloor(w, (door + d) % MAP_W, Math.floor((door + d) / MAP_W))) step = door + d;
+    if (door >= 0)
+      for (const d of [-MAP_W, MAP_W, -1, 1])
+        if (step < 0 && !inCell(door + d) && isFloor(w, (door + d) % MAP_W, Math.floor((door + d) / MAP_W))) step = door + d;
     doorstep.push(step);
   });
   const bedIn = (zone: string) => {

@@ -68,7 +68,10 @@ function dayView(g: Game): DayView {
     const p = today(sim);
     const m = dayMinute(st.step);
     const [ev, wx, ...hol] = dayRows(sim, p, false, true);
-    chips.push({ icon: ev.icon, color: ev.color, text: ev.title, when: ev.when }, { icon: wx.icon, color: wx.color, text: wx.title, when: '' });
+    chips.push(
+      { icon: ev.icon, color: ev.color, text: ev.title, when: ev.when },
+      { icon: wx.icon, color: wx.color, text: wx.title, when: '' },
+    );
     // (P42: the holiday's own day, a chip and a pin where it falls.)
     holidayDays(sim, p.day).forEach((id, k) => {
       const r = hol[k];
@@ -84,10 +87,20 @@ function dayView(g: Game): DayView {
     const begun = m >= p.at;
     if (p.event !== 'none' && (begun || (p.event !== 'drill' && p.event !== 'foodFight'))) {
       const over = m >= p.until;
-      const pin: DayPin = { icon: eventIcon(sim, p.event), color: EVENT_COLOR[p.event], title: ev.title, when: p.event === 'drill' ? t('day.rang', { time: dayTime(p.at) }) : whenOf(p), sub: over ? t('day.eventD.over') : ev.sub, over, tag: '', tagTone: '' };
+      const pin: DayPin = {
+        icon: eventIcon(sim, p.event),
+        color: EVENT_COLOR[p.event],
+        title: ev.title,
+        when: p.event === 'drill' ? t('day.rang', { time: dayTime(p.at) }) : whenOf(p),
+        sub: over ? t('day.eventD.over') : ev.sub,
+        over,
+        tag: '',
+        tagTone: '',
+      };
       if (p.event === 'drill') {
         if (st.eventFlags & TODAY.MUSTERED) Object.assign(pin, { tag: t('routine.mustered'), tagTone: 'ok' });
-        else if (st.eventFlags & TODAY.MISSED_DRILL) Object.assign(pin, { tag: t('dayCard.missedHeat', { n: DRILL_HEAT }), tagTone: 'bad' });
+        else if (st.eventFlags & TODAY.MISSED_DRILL)
+          Object.assign(pin, { tag: t('dayCard.missedHeat', { n: DRILL_HEAT }), tagTone: 'bad' });
         else if (st.eventFlags & TODAY.EXCUSED) Object.assign(pin, { tag: t('dayCard.excused'), tagTone: 'quiet' });
       }
       if (p.event === 'foodFight') pin.when = t('day.when', { from: dayTime(p.at), to: dayTime(p.until) });
@@ -96,7 +109,10 @@ function dayView(g: Game): DayView {
     // Tomorrow, once the warden has forecast it (22:00).
     if (m >= FORECAST_AT) {
       const next = dayRows(sim, planOf(sim, p.day + 1), true, true);
-      tomorrow = { label: t(sim.clock.day !== p.day ? 'profile.fromMorning' : 'profile.tomorrow'), chips: next.map((r) => ({ icon: r.icon, color: r.color, text: r.title, when: r.when })) };
+      tomorrow = {
+        label: t(sim.clock.day !== p.day ? 'profile.fromMorning' : 'profile.tomorrow'),
+        chips: next.map((r) => ({ icon: r.icon, color: r.color, text: r.title, when: r.when })),
+      };
     }
   }
   // Race night (odd nights, at a prison with a rat track): a chip, and the card's hours pinned in the evening (with the player's bet, their rat entered).
@@ -112,7 +128,16 @@ function dayView(g: Game): DayView {
     chips.push({ icon: 'race', color: RACE_COLOR, text: t('dayCard.race'), when: hhmm(RACE_MINUTE) });
     const bet = r && r[RACE.LANE] >= 0 ? t('dayCard.raceBet', { n: BETS[r[RACE.STAKE]] ?? 0 }) : '';
     const entered = r && r[RACE.ENTERED] ? t('dayCard.raceEntered', { name: petName(g) }) : '';
-    const pin: DayPin = { icon: 'race', color: RACE_COLOR, title: t('dayCard.race'), when: t('day.when', { from: hhmm(from), to: hhmm(RACE_MINUTE) }), sub: over ? t('day.eventD.over') : t(petOf(st) ? 'dayCard.raceSubPet' : 'dayCard.raceSub'), over, tag: [entered, bet].filter(Boolean).join(' · '), tagTone: 'ok' };
+    const pin: DayPin = {
+      icon: 'race',
+      color: RACE_COLOR,
+      title: t('dayCard.race'),
+      when: t('day.when', { from: hhmm(from), to: hhmm(RACE_MINUTE) }),
+      sub: over ? t('day.eventD.over') : t(petOf(st) ? 'dayCard.raceSubPet' : 'dayCard.raceSub'),
+      over,
+      tag: [entered, bet].filter(Boolean).join(' · '),
+      tagTone: 'ok',
+    };
     const k = routineAt(from);
     const was = pins.get(k);
     pins.set(k, was ? [...was, pin] : [pin]);
@@ -126,11 +151,21 @@ function dayView(g: Game): DayView {
     const m = dayMinute(st.step);
     const over = m >= HEARING_TO && !st.hearing;
     chips.push({ icon: 'scale', color: PAROLE_COLOR, text: t('dayCard.hearing'), when: dayTime(HEARING_FROM) });
-    const pin: DayPin = { icon: 'scale', color: PAROLE_COLOR, title: t('dayCard.hearing'), when: t('day.when', { from: dayTime(HEARING_FROM), to: dayTime(HEARING_TO) }), sub: t('dayCard.hearingSub', { room: roomOf(sim) }), over, tag: st.hearing ? t('dayCard.hearingOn') : '', tagTone: 'ok' };
+    const pin: DayPin = {
+      icon: 'scale',
+      color: PAROLE_COLOR,
+      title: t('dayCard.hearing'),
+      when: t('day.when', { from: dayTime(HEARING_FROM), to: dayTime(HEARING_TO) }),
+      sub: t('dayCard.hearingSub', { room: roomOf(sim) }),
+      over,
+      tag: st.hearing ? t('dayCard.hearingOn') : '',
+      tagTone: 'ok',
+    };
     const k = blockOf(HEARING_FROM);
     const was = pins.get(k);
     pins.set(k, was ? [...was, pin] : [pin]);
-  } else if (hearing && hearing === pd + 1 && tomorrow) tomorrow.chips.push({ icon: 'scale', color: PAROLE_COLOR, text: t('dayCard.hearing'), when: dayTime(HEARING_FROM) });
+  } else if (hearing && hearing === pd + 1 && tomorrow)
+    tomorrow.chips.push({ icon: 'scale', color: PAROLE_COLOR, text: t('dayCard.hearing'), when: dayTime(HEARING_FROM) });
   const job = sim.jobActive();
   const def = job >= 0 ? jobRooms(sim.world)[job].def : null;
   const blocks = ROUTINE.map((r, k): DayBlock => {
@@ -142,7 +177,15 @@ function dayView(g: Game): DayView {
     const worked = work && (at === 'past' ? b !== 0 : !!def);
     const must = !!r.miss || worked || cell;
     let place = routinePlace(k);
-    if (work) place = def && worked ? t(`zone.${def.zone}` as Key) : worked ? t('dayCard.firedPlace') : sim.playerJob >= 0 ? t('dayCard.jobTomorrow') : t('dayCard.noJob');
+    if (work)
+      place =
+        def && worked
+          ? t(`zone.${def.zone}` as Key)
+          : worked
+            ? t('dayCard.firedPlace')
+            : sim.playerJob >= 0
+              ? t('dayCard.jobTomorrow')
+              : t('dayCard.noJob');
     let tag: DayBlock['tag'] = null;
     if (work && at === 'past') {
       if (b === BLOCK.ATTENDED) tag = { text: t('routine.paid'), tone: 'ok', icon: 'check' };
@@ -153,24 +196,44 @@ function dayView(g: Game): DayView {
       else if (at === 'now') tag = { text: `${st.quota}/${def.quota}`, tone: 'job' };
       else if (at === 'next') tag = { text: t('dayCard.quota', { n: def.quota }), tone: 'job' };
     } else if (cell) {
-      tag = at === 'now' && sim.playerZone === 'playerCell' ? { text: t('help.mustCell'), tone: 'ok', icon: 'check' } : { text: t('dayCard.cell'), tone: at === 'now' ? 'warn' : 'quiet' };
+      tag =
+        at === 'now' && sim.playerZone === 'playerCell'
+          ? { text: t('help.mustCell'), tone: 'ok', icon: 'check' }
+          : { text: t('dayCard.cell'), tone: at === 'now' ? 'warn' : 'quiet' };
     } else if (r.miss) {
       const lock = r.miss === 'lockdown';
       if (at === 'past') {
         if (b === BLOCK.ATTENDED) tag = { text: t('routine.attended'), tone: 'ok', icon: 'check' };
-        else if (b === BLOCK.MISSED) tag = { text: lock ? t('dayCard.missedLock') : t('dayCard.missedHeat', { n: MISSED_ROUTINE_HEAT }), tone: 'bad' };
+        else if (b === BLOCK.MISSED)
+          tag = { text: lock ? t('dayCard.missedLock') : t('dayCard.missedHeat', { n: MISSED_ROUTINE_HEAT }), tone: 'bad' };
         else if (b === BLOCK.LEFT) tag = { text: t('dayCard.leftEarly', { n: MISSED_ROUTINE_HEAT }), tone: 'bad' };
         else if (b === BLOCK.EXCUSED) tag = { text: t('dayCard.excused'), tone: 'quiet' };
       } else if (at === 'now') {
         // (2.23: being counted, the minutes so far.)
         const need = presenceNeeded(sim) / STEPS_PER_MINUTE;
         const so = Math.floor(st.present / STEPS_PER_MINUTE);
-        tag = st.attended ? { text: t('routine.attended'), tone: 'ok', icon: 'check' } : st.excused ? { text: t('dayCard.excused'), tone: 'quiet' } : need && so ? { text: t('routine.present', { n: so, of: need }), tone: 'warn' } : { text: t('routine.pending'), tone: 'warn' };
+        tag = st.attended
+          ? { text: t('routine.attended'), tone: 'ok', icon: 'check' }
+          : st.excused
+            ? { text: t('dayCard.excused'), tone: 'quiet' }
+            : need && so
+              ? { text: t('routine.present', { n: so, of: need }), tone: 'warn' }
+              : { text: t('routine.pending'), tone: 'warn' };
       }
       // (In a lockdown the blocks ahead are let off as they come: nothing said of missing them.)
-      else if (stakes && !st.lockdown) tag = { text: lock ? t('dayCard.missLock') : t('dayCard.missHeat', { n: MISSED_ROUTINE_HEAT }), tone: lock ? 'bad' : 'warn' };
+      else if (stakes && !st.lockdown)
+        tag = { text: lock ? t('dayCard.missLock') : t('dayCard.missHeat', { n: MISSED_ROUTINE_HEAT }), tone: lock ? 'bad' : 'warn' };
     }
-    const block: DayBlock = { time: hhmm(r.start), icon: BLOCK_ICON[r.id], name: routineName(k), place, at, must, tag, pins: pins.get(k) ?? [] };
+    const block: DayBlock = {
+      time: hhmm(r.start),
+      icon: BLOCK_ICON[r.id],
+      name: routineName(k),
+      place,
+      at,
+      must,
+      tag,
+      pins: pins.get(k) ?? [],
+    };
     if (at === 'now') {
       const len = (routineEnd(k) - r.start + 1440) % 1440;
       const into = (mod - r.start + 1440) % 1440;

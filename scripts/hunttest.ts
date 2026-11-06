@@ -36,7 +36,20 @@ const OUTFITS = [
   ['uniform', 'guard_outfit'],
 ] as const;
 
-const carry = (prison: string, kind: StartKind, more: Partial<Carry>): Carry => ({ prison, via: 'fence', kind, spd: 40, outfit: itemNumber('inmate_outfit'), kit: [], crew: 0, lou: false, headStart: HUNT.headStartMax, minute: 23 * 60 + 40, salt: 1, ...more });
+const carry = (prison: string, kind: StartKind, more: Partial<Carry>): Carry => ({
+  prison,
+  via: 'fence',
+  kind,
+  spd: 40,
+  outfit: itemNumber('inmate_outfit'),
+  kit: [],
+  crew: 0,
+  lou: false,
+  headStart: HUNT.headStartMax,
+  minute: 23 * 60 + 40,
+  salt: 1,
+  ...more,
+});
 const avg = (a: number[]) => (a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0);
 
 let caught = 0;
@@ -77,8 +90,10 @@ for (const def of OUTSIDES) {
             }
           }
           n++;
-          if (h.state.over === OVER.CAUGHT) c++, cc++;
-          else if (h.state.over !== OVER.RUNNING) secs.push(Math.round(h.state.step / 20));
+          if (h.state.over === OVER.CAUGHT) {
+            c++;
+            cc++;
+          } else if (h.state.over !== OVER.RUNNING) secs.push(Math.round(h.state.step / 20));
           const key = `${light}, ${how}, ${dress}`;
           const b = byCond.get(key) ?? [0, 0];
           byCond.set(key, [b[0] + (h.state.over === OVER.CAUGHT ? 1 : 0), b[1] + 1]);
@@ -87,27 +102,38 @@ for (const def of OUTSIDES) {
         // The expert bot that knows everything: clean away (with the first salt, else another).
         let away = 0;
         for (const salt of EXPERT_SALTS) {
-          const full = new HuntBot(new Hunt(def, prison, carry(def.prison, kind, { minute, headStart, salt, outfit: itemNumber(outfit) }))).run();
+          const full = new HuntBot(
+            new Hunt(def, prison, carry(def.prison, kind, { minute, headStart, salt, outfit: itemNumber(outfit) })),
+          ).run();
           if (full.over === OVER.SAFE) {
             away = salt;
             break;
           }
           expertMisses++;
         }
-        if (away !== EXPERT_SALTS[0]) expertNotes.push(`${def.prison} ${kind} ${light} ${how} ${dress}: ${away ? `away with salt ${away}` : 'NOT AWAY'}`);
+        if (away !== EXPERT_SALTS[0])
+          expertNotes.push(`${def.prison} ${kind} ${light} ${how} ${dress}: ${away ? `away with salt ${away}` : 'NOT AWAY'}`);
         if (!away) fullFails++;
         check(away > 0, `${def.prison} ${kind} ${light} ${how} ${dress}: the expert bot gets clean away (with one of the salts)`);
       }
     caught += c;
     runs += n;
     safeSecs.push(...secs);
-    lines.push(`${`${def.prison} ${kind}`.padEnd(21)} caught ${String(c).padStart(2)}/${n} ${`${Math.round((100 * c) / n)}%`.padStart(4)} [${cells.join(' ')}]  away in ${avg(secs)} s (${secs.length ? `${Math.min(...secs)}–${Math.max(...secs)}` : '-'})`);
+    lines.push(
+      `${`${def.prison} ${kind}`.padEnd(21)} caught ${String(c).padStart(2)}/${n} ${`${Math.round((100 * c) / n)}%`.padStart(4)} [${cells.join(' ')}]  away in ${avg(secs)} s (${secs.length ? `${Math.min(...secs)}–${Math.max(...secs)}` : '-'})`,
+    );
   }
 }
-console.log(`the careful bot (${VIEW}-tile view), ${SALTS.length} salts; caught per start, then by night/day × head start/seen going × jumpsuit/uniform:`);
+console.log(
+  `the careful bot (${VIEW}-tile view), ${SALTS.length} salts; caught per start, then by night/day × head start/seen going × jumpsuit/uniform:`,
+);
 for (const l of lines) console.log(`  ${l}`);
-console.log(`all: caught ${caught}/${runs} (${Math.round((100 * caught) / runs)}%), away in ${avg(safeSecs)} s on average (${Math.min(...safeSecs)}–${Math.max(...safeSecs)}); nobody came on in sight (${badSpawns} did)`);
-console.log(`the expert bot (it sees everything): away from ${runs / SALTS.length - fullFails}/${runs / SALTS.length}, ${expertNotes.length} of them not with the first salt:`);
+console.log(
+  `all: caught ${caught}/${runs} (${Math.round((100 * caught) / runs)}%), away in ${avg(safeSecs)} s on average (${Math.min(...safeSecs)}–${Math.max(...safeSecs)}); nobody came on in sight (${badSpawns} did)`,
+);
+console.log(
+  `the expert bot (it sees everything): away from ${runs / SALTS.length - fullFails}/${runs / SALTS.length}, ${expertNotes.length} of them not with the first salt:`,
+);
 for (const l of expertNotes) console.log(`  ${l}`);
 console.log(`by condition: ${[...byCond].map(([k, [a, b]]) => `${k} ${Math.round((100 * a) / b)}%`).join('; ')}`);
 check(caught / runs >= 0.15 && caught / runs <= 0.45, `the careful bot caught ${caught}/${runs}: about 20–40%`);
@@ -117,7 +143,10 @@ for (const def of OUTSIDES) {
   const prison = PRISONS.find((p) => p.id === def.prison)!;
   const kind = START_KINDS.find((k) => def.starts[k])!;
   const out: string[] = [];
-  for (const [light, minute] of [['day', 14 * 60], ['night', 23 * 60 + 40]] as const) {
+  for (const [light, minute] of [
+    ['day', 14 * 60],
+    ['night', 23 * 60 + 40],
+  ] as const) {
     const h = new Hunt(def, prison, carry(def.prison, kind, { headStart: 0, minute }));
     let best = -1;
     for (let i = 0; i < MAP_W * MAP_W; i++) if (h.out.cover[i] && h.toGoal[i] >= 0 && (best < 0 || h.toGoal[i] < h.toGoal[best])) best = i;
@@ -134,9 +163,14 @@ for (const def of OUTSIDES) {
     // (And in a guard's uniform: it fools them only so long.)
     const u = new Hunt(def, prison, carry(def.prison, kind, { minute, outfit: itemNumber('guard_outfit') }));
     for (let k = 0; k < 20 * 600 && !u.state.over; k++) u.step(0);
-    check(u.state.over === OVER.CAUGHT && u.state.overAt <= 20 * 240, `${def.prison} ${light}: standing in the open in a guard's uniform, caught within 4 minutes`);
+    check(
+      u.state.over === OVER.CAUGHT && u.state.overAt <= 20 * 240,
+      `${def.prison} ${light}: standing in the open in a guard's uniform, caught within 4 minutes`,
+    );
     const when = (x: Hunt) => (x.state.over === OVER.CAUGHT ? `${Math.round(x.state.overAt / 20)} s` : 'never');
-    out.push(`${light}: in cover ${h.toGoal[best]} tiles from safety caught at ${camp}, in the open at the start ${when(o)} (in a guard's uniform ${when(u)})`);
+    out.push(
+      `${light}: in cover ${h.toGoal[best]} tiles from safety caught at ${camp}, in the open at the start ${when(o)} (in a guard's uniform ${when(u)})`,
+    );
   }
   console.log(`keeping still, ${def.prison}: ${out.join('; ')}`);
 }

@@ -37,6 +37,7 @@ function crayon(c: CanvasRenderingContext2D, id: (typeof PHOTOS)[number], seed: 
     for (let pass = 0; pass < 2; pass++) {
       c.globalAlpha = pass ? 0.55 : 0.9;
       c.beginPath();
+      // oxlint-disable-next-line typescript/unbound-method -- called on the canvas with .call(c)
       for (let i = 0; i < pts.length; i += 2) (i ? c.lineTo : c.moveTo).call(c, pts[i] + j(1.6), pts[i + 1] + j(1.6));
       if (close) c.closePath();
       c.stroke();
@@ -46,7 +47,8 @@ function crayon(c: CanvasRenderingContext2D, id: (typeof PHOTOS)[number], seed: 
   /** A wobbly ring. */
   const ring = (color: string, w: number, x: number, y: number, rx: number, ry = rx) => {
     const pts: number[] = [];
-    for (let a = 0; a <= 16; a++) pts.push(x + Math.cos((a / 16) * Math.PI * 2) * (rx + j(1.2)), y + Math.sin((a / 16) * Math.PI * 2) * (ry + j(1.2)));
+    for (let a = 0; a <= 16; a++)
+      pts.push(x + Math.cos((a / 16) * Math.PI * 2) * (rx + j(1.2)), y + Math.sin((a / 16) * Math.PI * 2) * (ry + j(1.2)));
     line(color, w, pts);
   };
   /** Colored in: back-and-forth strokes over a box, straying a little past it. */
@@ -189,7 +191,12 @@ function crayon(c: CanvasRenderingContext2D, id: (typeof PHOTOS)[number], seed: 
       scribble('#8fd0ff', 98, 72, 128, 98, 3.4);
       for (let a = 0; a < 14; a++) {
         const r = (a / 14) * Math.PI * 2 + j(0.1);
-        line(a % 2 ? '#f5a623' : '#ff7f2a', 3, [64 + Math.cos(r) * 31, 49 + Math.sin(r) * 31, 64 + Math.cos(r) * 45, 49 + Math.sin(r) * 45]);
+        line(a % 2 ? '#f5a623' : '#ff7f2a', 3, [
+          64 + Math.cos(r) * 31,
+          49 + Math.sin(r) * 31,
+          64 + Math.cos(r) * 45,
+          49 + Math.sin(r) * 45,
+        ]);
       }
       blob('#ffd23f', 64, 49, 26);
       ring('#f5a623', 3, 64, 49, 26);
@@ -210,7 +217,7 @@ function crayon(c: CanvasRenderingContext2D, id: (typeof PHOTOS)[number], seed: 
       // The sea in waves, a brown hull, the mast and its white sail, a gull or two.
       scribble('#3b8fd6', 0, 66, DRAW_W, DRAW_H, 3);
       const wave: number[] = [];
-      for (let x = 0; x <= DRAW_W; x += 8) wave.push(x, 66 + (x / 8) % 2 * 4);
+      for (let x = 0; x <= DRAW_W; x += 8) wave.push(x, 66 + ((x / 8) % 2) * 4);
       line('#1f5f9e', 2.5, wave);
       c.save();
       c.beginPath();

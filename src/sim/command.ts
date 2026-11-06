@@ -125,7 +125,36 @@ export const LINE = { JOIN: 0, LEAVE: 1, CUT: 2 } as const;
  * his place in the pay phone's queue bought; P40's ODD_JOB, the fixer's own odd job taken; JOB_IN, the odd job held
  * handed in to the one who asked; CALL_IN, the debt he owes the player called in: a tool). Never renumber.
  */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20, SELL: 21, FOOTBALL: 22, TATTOO: 23, INK_ME: 24, SWAP: 25, ODD_JOB: 28, JOB_IN: 29, CALL_IN: 30 } as const;
+export const TALK = {
+  BUY: 1,
+  GIFT: 2,
+  GIFT_CASH: 3,
+  ACCEPT: 4,
+  HAND_IN: 5,
+  RECRUIT: 6,
+  DISMISS: 7,
+  TIP: 8,
+  BRIBE: 9,
+  PHONE: 10,
+  DICE: 11,
+  REROLL: 12,
+  WRESTLE: 13,
+  CREW: 14,
+  CHEAT: 15,
+  PLAY: 16,
+  LIAR: 17,
+  HOOPS: 18,
+  CHECKERS: 19,
+  MOVE: 20,
+  SELL: 21,
+  FOOTBALL: 22,
+  TATTOO: 23,
+  INK_ME: 24,
+  SWAP: 25,
+  ODD_JOB: 28,
+  JOB_IN: 29,
+  CALL_IN: 30,
+} as const;
 
 /**
  * What a follower in the crew is told (P23, TALK.CREW's b): back at the player's heels, keep
@@ -141,9 +170,10 @@ export const BRIBE = { LOOK: 1, PAPER: 2 } as const;
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */
 export const SLOT = { HOTBAR: 0, WEAPON: 6, OUTFIT: 7, CONTAINER: 8 } as const;
 
-export const command = (dir: number, op = 0, a = 0, b = 0, c = 0) => (dir & 31) | ((op & 15) << 5) | ((a & 255) << 9) | ((b & 255) << 17) | ((c & 63) << 25);
+export const command = (dir: number, op = 0, a = 0, b = 0, c = 0) =>
+  (dir & 31) | ((op & 15) << 5) | ((a & 255) << 9) | ((b & 255) << 17) | ((c & 63) << 25);
 /** The direction asked for; 17–31 (no compass point: a corrupt or hand-made log) is standing still. */
-export const dirOf = (cmd: number) => (cmd & 31) <= DIRS ? cmd & 31 : 0;
+export const dirOf = (cmd: number) => ((cmd & 31) <= DIRS ? cmd & 31 : 0);
 export const opOf = (cmd: number) => (cmd >>> 5) & 15;
 export const argA = (cmd: number) => (cmd >>> 9) & 255;
 export const argB = (cmd: number) => (cmd >>> 17) & 255;
@@ -165,7 +195,10 @@ export function needleArgs(x: number, y: number): [number, number] {
   return [gx | ((gy & 1) << 7), gy >> 1];
 }
 /** …and back (box units). */
-export const needlePoint = (b: number, c: number): [number, number] => [Math.round(((b & 127) * 1000) / NEEDLE_GRID), Math.round((((c << 1) | (b >> 7)) * 1000) / NEEDLE_GRID)];
+export const needlePoint = (b: number, c: number): [number, number] => [
+  Math.round(((b & 127) * 1000) / NEEDLE_GRID),
+  Math.round((((c << 1) | (b >> 7)) * 1000) / NEEDLE_GRID),
+];
 
 /**
  * Unit vectors for the 16 directions, scaled to 1024 and rounded, so every platform gets

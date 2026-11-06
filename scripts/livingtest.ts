@@ -19,7 +19,8 @@ const at = (bot: Bot, tile: number, facing: number) => {
   bot.st.player.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
   bot.st.player.facing = facing;
 };
-const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => boolean = () => true) => sim.world.props.findIndex((p) => p.kind === kind && test(p));
+const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => boolean = () => true) =>
+  sim.world.props.findIndex((p) => p.kind === kind && test(p));
 
 // ------------------------------------------------------------------ a meal
 {
@@ -138,13 +139,16 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   const bot = new Bot(CENTER_PERKS, 8);
   let sitting = 0;
   let reading = 0;
-  bot.keepRoutine(() => {
-    for (const m of bot.st.inmates) {
-      if (m.doing === DOING.SIT) sitting++;
-      if (m.doing === DOING.SIT_READ) reading++;
-    }
-    return bot.st.step > 20 * 60 * 8;
-  }, 20 * 60 * 9);
+  bot.keepRoutine(
+    () => {
+      for (const m of bot.st.inmates) {
+        if (m.doing === DOING.SIT) sitting++;
+        if (m.doing === DOING.SIT_READ) reading++;
+      }
+      return bot.st.step > 20 * 60 * 8;
+    },
+    20 * 60 * 9,
+  );
   check(sitting > 0 && reading > 0, 'inmates sit and read in free time');
   console.log(`free time, day 1: inmate-steps sitting ${sitting}, reading ${reading}`);
 }
@@ -218,7 +222,10 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   const w = bot.sim.world;
   const seats = placesOf(w).seats;
   // A seat facing south (the table below it), its east neighbour a seat too, the tile behind that free floor.
-  const s = seats.find((q) => q.face === DIR.SOUTH && seats.some((r) => r.tile === q.tile + 1) && !w.blocked((q.tile + 1) % MAP_W, Math.floor(q.tile / MAP_W) - 1))!;
+  const s = seats.find(
+    (q) =>
+      q.face === DIR.SOUTH && seats.some((r) => r.tile === q.tile + 1) && !w.blocked((q.tile + 1) % MAP_W, Math.floor(q.tile / MAP_W) - 1),
+  )!;
   const m = bot.st.inmates[0];
   m.body.x = (s.tile % MAP_W) * UNIT + UNIT / 2;
   m.body.z = Math.floor(s.tile / MAP_W) * UNIT + UNIT / 2;

@@ -67,7 +67,17 @@ export function aimToss(sim: SimContext, dx: number, dz: number, out: TossAim = 
   out.why = null;
   const r = tossRange(s.str);
   if (!itemOf(it.inv[it.hand])) out.why = 'nothing';
-  else if (s.layer !== LAYER.GROUND || s.sleeping || s.ko > 0 || s.solitary > 0 || s.seat >= 0 || s.train >= 0 || s.talk >= 0 || it.open >= 0) out.why = 'busy';
+  else if (
+    s.layer !== LAYER.GROUND ||
+    s.sleeping ||
+    s.ko > 0 ||
+    s.solitary > 0 ||
+    s.seat >= 0 ||
+    s.train >= 0 ||
+    s.talk >= 0 ||
+    it.open >= 0
+  )
+    out.why = 'busy';
   else if (dx * dx + dz * dz > r * r || dx < -8 || dx > 7 || dz < -8 || dz > 7) out.why = 'far';
   if (out.why) return out;
   const p = s.player;

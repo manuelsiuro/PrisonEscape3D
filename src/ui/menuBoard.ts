@@ -115,7 +115,12 @@ export class MenuCard {
       this.day.textContent = v.day;
       this.meals.innerHTML = v.today
         .map((m) => {
-          const tag = m.state === 'now' ? `<em class="menu-tag now">${esc(t('menu.now'))}</em>` : m.state === 'eaten' ? `<em class="menu-tag eaten">${icon('check', 12)}${esc(t('menu.eaten'))}</em>` : '';
+          const tag =
+            m.state === 'now'
+              ? `<em class="menu-tag now">${esc(t('menu.now'))}</em>`
+              : m.state === 'eaten'
+                ? `<em class="menu-tag eaten">${icon('check', 12)}${esc(t('menu.eaten'))}</em>`
+                : '';
           return `<div class="menu-meal${m.feast ? ' feast' : ''}${m.state === 'over' || m.state === 'eaten' ? ' done' : ''}" role="listitem">
             <span class="menu-when"><b>${esc(m.label)}</b><i>${esc(m.time)}</i></span>
             <span class="menu-dish">${esc(m.dish)}${tag}</span>

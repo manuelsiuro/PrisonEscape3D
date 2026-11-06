@@ -14,7 +14,28 @@
  * shuffle and every choice comes from roll(): nothing here touches the state's rng, and nothing
  * happens without the player asking.
  */
-import { CALL_DOUBT, CALL_FLOOR, CALL_MAX, CALL_STUCK, CARD, CHIPS, CLAIM_MAX, DECK, DICE_HEAT, FALSE_TELL, HAND, PLAY_OPINION, REVEAL_STEPS, STAKES, TELL_BASE, TELL_MAX, TELLS, THINK_STEPS, TURN_STEPS, type Tell } from '../../content/games';
+import {
+  CALL_DOUBT,
+  CALL_FLOOR,
+  CALL_MAX,
+  CALL_STUCK,
+  CARD,
+  CHIPS,
+  CLAIM_MAX,
+  DECK,
+  DICE_HEAT,
+  FALSE_TELL,
+  HAND,
+  PLAY_OPINION,
+  REVEAL_STEPS,
+  STAKES,
+  TELL_BASE,
+  TELL_MAX,
+  TELLS,
+  THINK_STEPS,
+  TURN_STEPS,
+  type Tell,
+} from '../../content/games';
 import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
@@ -115,7 +136,24 @@ export function startCheat(sim: SimContext, who: number, b: number) {
   closeBox(sim);
   s.cash -= stake;
   sim.events.push({ type: 'cash', n: -stake, why: 'dice' });
-  const c: Cheat = { who, stake: b, chips: [CHIPS, CHIPS], round: 0, table: CARD.KING, mine: [], theirs: [], turn: 0, at: 0, last: [], by: -1, pile: 0, tell: false, lead: 0, laid: 0, spent: 0 };
+  const c: Cheat = {
+    who,
+    stake: b,
+    chips: [CHIPS, CHIPS],
+    round: 0,
+    table: CARD.KING,
+    mine: [],
+    theirs: [],
+    turn: 0,
+    at: 0,
+    last: [],
+    by: -1,
+    pile: 0,
+    tell: false,
+    lead: 0,
+    laid: 0,
+    spent: 0,
+  };
   s.cheat = c;
   deal(sim, c, 0);
   changeOpinion(sim, who, PLAY_OPINION);

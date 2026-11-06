@@ -22,7 +22,56 @@
  * Every draw comes from roll() (SALT.CALLS, SALT.TAP), never the state's RNG.
  */
 import { applyParole, applyRefusal } from './parole';
-import { APPEAL_HEAT, CAKE_ENERGY, CALL_STEPS, CALL_WANT, CALLEE, CAR_FROM, CAR_TO, CATCH, CLARITY, CLEAR_NEED, codeBit, COINS, CUT_OPINION, CUT_SWING, DIVERT_AHEAD, DIVERT_GUARDS, DIVERT_LOOK, HOME_ENERGY, HOSTILE_SWING, INMATE_CALL_MIN, INMATE_CALL_SPAN, JOB, JOB_FEES, LAWYER, LAWYER_FEES, LEARNED_CLARITY, LINE_DAY, LINE_MAX, LINE_REACH, LINE_STEPS, MAIL_MINUTE, MONEY_EVERY, MONEY_MIN, MONEY_SPAN, OVERHEAR_RANGE, OVERHEAR_STEPS, REACH_STEPS, RETAINER_DAYS, WANT_WITHIN, RISK, SNITCH_ODDS, SNITCH_OPINION, SWAP_PRICE, TAP_HEAT, TIER, TIP_HEAT, TURN_STEPS, VARIANTS } from '../../content/phone';
+import {
+  APPEAL_HEAT,
+  CAKE_ENERGY,
+  CALL_STEPS,
+  CALL_WANT,
+  CALLEE,
+  CAR_FROM,
+  CAR_TO,
+  CATCH,
+  CLARITY,
+  CLEAR_NEED,
+  codeBit,
+  COINS,
+  CUT_OPINION,
+  CUT_SWING,
+  DIVERT_AHEAD,
+  DIVERT_GUARDS,
+  DIVERT_LOOK,
+  HOME_ENERGY,
+  HOSTILE_SWING,
+  INMATE_CALL_MIN,
+  INMATE_CALL_SPAN,
+  JOB,
+  JOB_FEES,
+  LAWYER,
+  LAWYER_FEES,
+  LEARNED_CLARITY,
+  LINE_DAY,
+  LINE_MAX,
+  LINE_REACH,
+  LINE_STEPS,
+  MAIL_MINUTE,
+  MONEY_EVERY,
+  MONEY_MIN,
+  MONEY_SPAN,
+  OVERHEAR_RANGE,
+  OVERHEAR_STEPS,
+  REACH_STEPS,
+  RETAINER_DAYS,
+  WANT_WITHIN,
+  RISK,
+  SNITCH_ODDS,
+  SNITCH_OPINION,
+  SWAP_PRICE,
+  TAP_HEAT,
+  TIER,
+  TIP_HEAT,
+  TURN_STEPS,
+  VARIANTS,
+} from '../../content/phone';
 import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { PARCEL_MINUTE } from '../../content/smuggling';
@@ -54,7 +103,8 @@ const FILE = itemNumber('metal_file');
 export const PLAYER_IN_LINE = -1;
 
 /** The prison's pay phone (none at the Training Block, whose rules are relaxed). */
-export const commsOf = (sim: Pick<SimContext, 'world'>): CommsDef | null => (sim.world.def.rules?.relaxed ? null : sim.world.def.comms ?? null);
+export const commsOf = (sim: Pick<SimContext, 'world'>): CommsDef | null =>
+  sim.world.def.rules?.relaxed ? null : (sim.world.def.comms ?? null);
 
 /** The phone's hours: the free times, outside a lockdown. */
 export const phoneOpen = (sim: SimContext) => !!commsOf(sim) && sim.fixerOpen && !drillOn(sim);
@@ -88,7 +138,7 @@ export const placeInLine = (s: Pick<SimState, 'line'>) => s.line.indexOf(PLAYER_
 export const retained = (s: Pick<SimState, 'phoned' | 'step'>) => s.phoned[2] > 0 && prisonDay(s.step) < s.phoned[2];
 
 /** What a call costs up front: coins (Lou's fee is paid once he understands), the lawyer's fee. */
-const callCost = (to: number, sub: number): number => (to === CALLEE.LAWYER ? LAWYER_FEES[sub] ?? LAWYER_FEES[0] : COINS);
+const callCost = (to: number, sub: number): number => (to === CALLEE.LAWYER ? (LAWYER_FEES[sub] ?? LAWYER_FEES[0]) : COINS);
 
 /** The step a diversion called for at an hour goes off: that hour's next stroke at least DIVERT_AHEAD on (-1 no such hour). */
 export function divertStep(step: number, hour: number): number {
@@ -129,7 +179,16 @@ function freeToQueue(sim: SimContext, k: number, waiting = false): boolean {
   // (One already waiting may chat with the player: he keeps his place.)
   if (!m || m.ko > 0 || m.angry > 0 || (s.talk === k && !waiting) || s.followers.includes(k)) return false;
   if (m.doing === DOING.SLEEP || m.doing === DOING.BRAWL) return false;
-  if (s.match?.team.includes(k) || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k || s.quiz?.who.includes(k)) return false;
+  if (
+    s.match?.team.includes(k) ||
+    s.ink?.who === k ||
+    s.cheat?.who === k ||
+    s.shootout?.who === k ||
+    s.dice[0] === k ||
+    s.bout[0] === k ||
+    s.quiz?.who.includes(k)
+  )
+    return false;
   return true;
 }
 
@@ -141,7 +200,14 @@ function queue(sim: SimContext) {
   // Inmates who want a call join at their minute, if there's room (from LINE_DAY; never in a replay from before the phone).
   // (Not while the day's event has everyone elsewhere: a movie, talent night.)
   // (And only once the player has used the phone: a run that never does plays as it did before the phone.)
-  if (s.step % STEPS_PER_MINUTE === 0 && b >= 0 && day >= LINE_DAY && phoneUsed(s) && !sim.noQueue && crowdPlan(sim, s.routine) === s.routine) {
+  if (
+    s.step % STEPS_PER_MINUTE === 0 &&
+    b >= 0 &&
+    day >= LINE_DAY &&
+    phoneUsed(s) &&
+    !sim.noQueue &&
+    crowdPlan(sim, s.routine) === s.routine
+  ) {
     if (s.rang.length !== 2 || s.rang[0] !== day) s.rang = [day, 0];
     const m = dayMinute(s.step);
     for (let k = 0; k < s.inmates.length && k < 15; k++) {
@@ -149,7 +215,8 @@ function queue(sim: SimContext) {
       if (s.rang[1] & bit) continue;
       const at = wantsCall(s.salt, day, b, k);
       if (at < 0 || m < at) continue;
-      if (s.line.filter((x) => x !== PLAYER_IN_LINE).length >= LINE_MAX || s.booth[0] === k || s.line.includes(k) || !freeToQueue(sim, k)) continue;
+      if (s.line.filter((x) => x !== PLAYER_IN_LINE).length >= LINE_MAX || s.booth[0] === k || s.line.includes(k) || !freeToQueue(sim, k))
+        continue;
       s.rang[1] |= bit;
       s.line.push(k);
       s.inmates[k].path = [];
@@ -201,14 +268,20 @@ function booth(sim: SimContext, c: CommsDef) {
     // (At the phone, or a tile from it with someone in the way: he reaches over.)
     if (offBy(c.phone, m.body.x, m.body.z) <= (s.step - s.booth[3] > REACH_STEPS / 3 ? 1 : 0) && !m.body.moving) {
       const day = prisonDay(s.step);
-      s.booth[1] = s.step + (INMATE_CALL_MIN + rollInt(s.salt, SALT.CALLS, day, 2000 + k * 2 + Math.max(0, blockNow(s)), INMATE_CALL_SPAN)) * STEPS_PER_MINUTE;
+      s.booth[1] =
+        s.step +
+        (INMATE_CALL_MIN + rollInt(s.salt, SALT.CALLS, day, 2000 + k * 2 + Math.max(0, blockNow(s)), INMATE_CALL_SPAN)) * STEPS_PER_MINUTE;
       sim.events.push({ type: 'phone', what: 'inmateCall', who: k });
     } else if (s.step - s.booth[3] > REACH_STEPS) s.booth = [-1, 0, 0, 0];
     return;
   }
   if (s.step >= s.booth[1]) return void (s.booth = [-1, 0, 0, 0]);
   // Listening in: close by, on the ground, not on a call of their own.
-  if (playerUp(sim) && !s.call && Math.max(Math.abs(s.player.x - m.body.x), Math.abs(s.player.z - m.body.z)) <= OVERHEAR_RANGE * UNIT + UNIT / 2) {
+  if (
+    playerUp(sim) &&
+    !s.call &&
+    Math.max(Math.abs(s.player.x - m.body.x), Math.abs(s.player.z - m.body.z)) <= OVERHEAR_RANGE * UNIT + UNIT / 2
+  ) {
     const day = prisonDay(s.step);
     if (s.phoned[5] !== day) {
       s.phoned[4] = 0;
@@ -383,7 +456,16 @@ export function startCall(sim: SimContext, b: number, c: number) {
   endTalk(sim);
   const ear = to === CALLEE.COUSIN ? listener(sim) : -1;
   if (to === CALLEE.COUSIN) s.lou[1]++;
-  s.call = { to, sub, arg: c, from: s.step, ends: s.step + (to === CALLEE.COUSIN ? LINE_STEPS : CALL_STEPS[to]), at: 0, said: [-1, -1, -1], ear };
+  s.call = {
+    to,
+    sub,
+    arg: c,
+    from: s.step,
+    ends: s.step + (to === CALLEE.COUSIN ? LINE_STEPS : CALL_STEPS[to]),
+    at: 0,
+    said: [-1, -1, -1],
+    ear,
+  };
   sim.events.push({ type: 'phone', what: 'call', to, sub, arg: c });
 }
 
@@ -417,7 +499,13 @@ export function phrasesOf(s: Pick<SimState, 'salt' | 'lou'>, call: Call, line: n
 }
 
 /** What a phrase said is worth to Lou (clarity) and to the listener (risk). */
-export function phraseWorth(s: Pick<SimState, 'lou'>, job: number, line: number, tier: number, v: number): { clarity: number; risk: number } {
+export function phraseWorth(
+  s: Pick<SimState, 'lou'>,
+  job: number,
+  line: number,
+  tier: number,
+  v: number,
+): { clarity: number; risk: number } {
   if (tier === TIER.DEEP && s.lou[0] & codeBit(job, line, v)) return { clarity: LEARNED_CLARITY, risk: RISK[TIER.DEEP] };
   return { clarity: CLARITY[tier], risk: RISK[tier] };
 }
@@ -505,8 +593,7 @@ function louHears(sim: SimContext) {
     s.lou[4] = blown ? 2 : 1;
     // (Baked and brought in from tomorrow: the next visit or parcel after today.)
     s.lou[7] = prisonDay(s.step);
-  }
-  else if (job === JOB.CAR) {
+  } else if (job === JOB.CAR) {
     s.lou[5] = prisonDay(s.step);
     s.lou[6] = blown ? 1 : 0;
   }
@@ -662,7 +749,8 @@ export function cakeAtVisit(sim: SimContext) {
 function cakeParcel(sim: SimContext) {
   const s = sim.state;
   const d = smugglingOf(sim);
-  if (!s.lou[4] || prisonDay(s.step) <= s.lou[7] || !d?.parcel || dayMinute(s.step) < PARCEL_MINUTE || today(sim).event !== 'delivery') return;
+  if (!s.lou[4] || prisonDay(s.step) <= s.lou[7] || !d?.parcel || dayMinute(s.step) < PARCEL_MINUTE || today(sim).event !== 'delivery')
+    return;
   if (s.lou[4] === 2) {
     s.lou[4] = 0;
     sim.events.push({ type: 'phone', what: 'cakeSeized' });
@@ -698,7 +786,8 @@ export function wheels(sim: SimContext, via: string) {
 }
 
 /** Lou's car waits on the road now (the view draws it): tonight, unless blown. */
-export const carWaiting = (s: Pick<SimState, 'lou' | 'step'>) => s.lou[5] > 0 && !s.lou[6] && s.lou[5] === prisonDay(s.step) && dayMinute(s.step) >= CAR_FROM && dayMinute(s.step) < CAR_TO;
+export const carWaiting = (s: Pick<SimState, 'lou' | 'step'>) =>
+  s.lou[5] > 0 && !s.lou[6] && s.lou[5] === prisonDay(s.step) && dayMinute(s.step) >= CAR_FROM && dayMinute(s.step) < CAR_TO;
 
 /** Each step: the queue, the inmate on the phone, the player's call, the mail, Lou's jobs, a tip's search. */
 export function phone(sim: SimContext) {

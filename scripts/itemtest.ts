@@ -17,7 +17,21 @@ import { command, OP, SLOT } from '../src/sim/command';
 import { Recorder } from '../src/sim/Recorder';
 import { Sim } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
-import { benchCheck, canCraft, craft as craftWith, dropItem, HOTBAR, ingredientSlots, interactTarget, itemOf, maskOf, PILE, restock, slot, usesOf } from '../src/sim/systems/items';
+import {
+  benchCheck,
+  canCraft,
+  craft as craftWith,
+  dropItem,
+  HOTBAR,
+  ingredientSlots,
+  interactTarget,
+  itemOf,
+  maskOf,
+  PILE,
+  restock,
+  slot,
+  usesOf,
+} from '../src/sim/systems/items';
 
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -69,11 +83,13 @@ for (const [name, t] of Object.entries(LOOT)) {
     inTable.get(src)!.add(id);
   }
 }
-for (const d of ITEMS) for (const src of d.from) if (Object.values(TABLE_SOURCE).includes(src)) check(inTable.get(src)?.has(d.id) ?? false, `${d.id} is in a '${src}' table`);
+for (const d of ITEMS)
+  for (const src of d.from)
+    if (Object.values(TABLE_SOURCE).includes(src)) check(inTable.get(src)?.has(d.id) ?? false, `${d.id} is in a '${src}' table`);
 
 // The recipe graph is closed: everything can be had.
 const have = new Set(ITEMS.filter((d) => d.from.length > 0).map((d) => d.id));
-for (let changed = true; changed; ) {
+for (let changed = true; changed;) {
   changed = false;
   for (const r of RECIPES) {
     if (have.has(r.result)) continue;
@@ -87,7 +103,7 @@ for (const d of ITEMS) check(have.has(d.id), `${d.id} can be obtained`);
 // What Level 1 offers today (containers only, before merchants, guards and jobs).
 const NOW: Source[] = ['desk', 'bed', 'toilet', 'shelf', 'canteen', 'shower', 'woodshop', 'start'];
 const today = new Set(ITEMS.filter((d) => d.from.some((f) => NOW.includes(f))).map((d) => d.id));
-for (let changed = true; changed; ) {
+for (let changed = true; changed;) {
   changed = false;
   for (const r of RECIPES) {
     if (!today.has(r.result) && r.ingredients.every((ing) => choices(ing).some((c) => today.has(c)))) {
@@ -109,15 +125,27 @@ const list = containersOf(w);
 const it = () => sim.state.items;
 const kinds = new Map<string, number>();
 for (const c of list) kinds.set(`${c.prop.kind}:${c.table}`, (kinds.get(`${c.prop.kind}:${c.table}`) ?? 0) + 1);
-console.log('containers:', [...kinds].sort().map(([k, n]) => `${k} ${n}`).join(', '));
+console.log(
+  'containers:',
+  [...kinds]
+    .sort()
+    .map(([k, n]) => `${k} ${n}`)
+    .join(', '),
+);
 check(list.filter((c) => c.table === 'inmateDesk').length === 7, 'seven inmate desks');
 check(list.filter((c) => c.mine).length === 3, "the player's cell has a desk, a bed and a toilet");
 
 const myDesk = list.findIndex((c) => c.mine && c.prop.kind === 'desk');
 const myBed = list.findIndex((c) => c.mine && c.prop.kind === 'bed');
 const deskOf = (cell: number) => list.findIndex((c) => c.prop.kind === 'desk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
-check(it().containers[myDesk].every((v) => !v), "the player's desk starts empty");
-check(it().containers[myBed].map(itemOf).join() === [itemNumber('pillow'), itemNumber('bed_sheet')].join(), "the player's bed has a pillow and a sheet");
+check(
+  it().containers[myDesk].every((v) => !v),
+  "the player's desk starts empty",
+);
+check(
+  it().containers[myBed].map(itemOf).join() === [itemNumber('pillow'), itemNumber('bed_sheet')].join(),
+  "the player's bed has a pillow and a sheet",
+);
 check(itemOf(it().inv[SLOT.OUTFIT]) === itemNumber('inmate_outfit'), 'the player wears the orange outfit');
 
 /** Runs commands (one op per step) and dirs; returns after the op. */
@@ -149,7 +177,10 @@ op(OP.INTERACT);
 check(it().open === myBed, 'interacting opens the bed');
 op(OP.MOVE, SLOT.CONTAINER + 0, 0);
 op(OP.MOVE, SLOT.CONTAINER + 1, 1);
-check(itemOf(it().inv[0]) === itemNumber('pillow') && itemOf(it().inv[1]) === itemNumber('bed_sheet'), 'pillow and sheet move to the hotbar');
+check(
+  itemOf(it().inv[0]) === itemNumber('pillow') && itemOf(it().inv[1]) === itemNumber('bed_sheet'),
+  'pillow and sheet move to the hotbar',
+);
 // The outfit slot only takes outfits.
 op(OP.MOVE, 0, SLOT.OUTFIT);
 check(itemOf(it().inv[SLOT.OUTFIT]) === itemNumber('inmate_outfit'), 'a pillow is not an outfit');
@@ -164,7 +195,9 @@ check(it().ground.length === 0 && itemOf(it().inv[0]) === itemNumber('pillow'), 
 
 // Raid the inmate in cell 2: take everything from their desk.
 const theirs = deskOf(2);
-const loot = it().containers[theirs].filter((v) => v).map((v) => ITEMS[itemOf(v) - 1].id);
+const loot = it()
+  .containers[theirs].filter((v) => v)
+  .map((v) => ITEMS[itemOf(v) - 1].id);
 console.log(`cell 2's desk on day 1: ${loot.join(', ')}`);
 check(walkTo(theirs), "the bot reaches cell 2's desk");
 op(OP.INTERACT);
@@ -201,7 +234,10 @@ for (let k = 2; k < HOTBAR; k++) if (it().inv[k]) op(OP.DROP, k);
 op(OP.MOVE, SLOT.CONTAINER + 1, 2);
 check(canCraft(it(), sheetRope) === 'ok', 'two sheets make a sheet rope');
 op(OP.CRAFT, maskOf(ingredientSlots(it(), sheetRope)!));
-check(it().inv.some((v) => itemOf(v) === itemNumber('sheet_rope')) && it().known.includes(sheetRope), 'the sheet rope is crafted and in the handbook');
+check(
+  it().inv.some((v) => itemOf(v) === itemNumber('sheet_rope')) && it().known.includes(sheetRope),
+  'the sheet rope is crafted and in the handbook',
+);
 check(!it().inv.some((v) => itemOf(v) === itemNumber('bed_sheet')), 'both sheets were used');
 
 // INT gates and kept ingredients (set up directly: guards arrive in P3).
@@ -211,7 +247,10 @@ const moldRed = RECIPES.findIndex((r) => r.result === 'mold_red');
 check(canCraft(it(), moldRed) === 'int', 'a key mold needs 50 INT');
 it().int = 60;
 op(OP.CRAFT, maskOf(ingredientSlots(it(), moldRed)!));
-check(it().inv.some((v) => itemOf(v) === itemNumber('mold_red')) && it().inv.some((v) => itemOf(v) === itemNumber('key_red')), 'the mold is made and the real key comes back');
+check(
+  it().inv.some((v) => itemOf(v) === itemNumber('mold_red')) && it().inv.some((v) => itemOf(v) === itemNumber('key_red')),
+  'the mold is made and the real key comes back',
+);
 it().int = 40;
 it().inv[5] = slot(itemNumber('nail_file'));
 check(usesOf(it().inv[5]) === 8, 'a nail file has 8 uses');
@@ -220,7 +259,10 @@ for (let k = 0; k < HOTBAR; k++) if (it().inv[k] && itemOf(it().inv[k]) !== item
 const free = it().inv.indexOf(0);
 it().inv[free] = slot(itemNumber('guard_outfit'));
 op(OP.EQUIP, free);
-check(itemOf(it().inv[SLOT.OUTFIT]) === itemNumber('guard_outfit') && itemOf(it().inv[free]) === itemNumber('inmate_outfit'), 'equipping swaps the outfits');
+check(
+  itemOf(it().inv[SLOT.OUTFIT]) === itemNumber('guard_outfit') && itemOf(it().inv[free]) === itemNumber('inmate_outfit'),
+  'equipping swaps the outfits',
+);
 
 // The hidden compartment: stash in my desk; the morning restock leaves my desk alone.
 check(walkTo(myDesk), 'the bot reaches its desk');
@@ -265,7 +307,10 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
     check(benchCheck(st, maskOf(used)).check === 'ok', `${r.result}: its ingredients make it`);
     craftNow(st, used);
     const carried = st.inv.filter((v) => v).map(itemOf);
-    check(carried.filter((i) => i === n(r.result)).length === 1 && carried.length === 1 + (r.keep?.length ?? 0), `${r.result}: crafted into a slot, ingredients used`);
+    check(
+      carried.filter((i) => i === n(r.result)).length === 1 && carried.length === 1 + (r.keep?.length ?? 0),
+      `${r.result}: crafted into a slot, ingredients used`,
+    );
   });
 
   // The worn outfit on the bench (a spare in the hotbar): the cushioned one is worn after.
@@ -273,7 +318,10 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
     const st = fresh();
     st.inv = [slot(n('inmate_outfit')), slot(n('pillow')), slot(n('duct_tape')), 0, 0, 0, 0, slot(n('inmate_outfit'))];
     craftNow(st, [SLOT.OUTFIT, 1, 2]);
-    check(itemOf(st.inv[SLOT.OUTFIT]) === n('cushioned_outfit') && itemOf(st.inv[0]) === n('inmate_outfit'), 'the worn outfit is the one crafted, and it stays worn');
+    check(
+      itemOf(st.inv[SLOT.OUTFIT]) === n('cushioned_outfit') && itemOf(st.inv[0]) === n('inmate_outfit'),
+      'the worn outfit is the one crafted, and it stays worn',
+    );
   }
   // The wielded bat: the spiked bat is wielded after.
   {
@@ -302,15 +350,26 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
     st.inv[0] = slot(itemNumber('sock'));
     dropItem(st, 0, body, ev as never);
   }
-  check(st.ground.length === PILE && ev.some((e) => e.type === 'noRoom') && itemOf(st.inv[0]) === itemNumber('sock'), `a tile holds at most ${PILE} items; the next stays in hand`);
+  check(
+    st.ground.length === PILE && ev.some((e) => e.type === 'noRoom') && itemOf(st.inv[0]) === itemNumber('sock'),
+    `a tile holds at most ${PILE} items; the next stays in hand`,
+  );
 
   // The workbench previewed a sock mace, but the slots changed meanwhile: nothing is crafted.
   st.inv = [slot(itemNumber('sock')), slot(itemNumber('battery')), 0, 0, 0, 0, 0, 0];
   const mace = RECIPES.findIndex((r) => r.result === 'sock_mace');
   craftWith(st, maskOf([0, 1]), ev as never, mace);
   check(itemOf(st.inv[0]) === itemNumber('sock') && itemOf(st.inv[1]) === itemNumber('battery'), 'a stale preview crafts nothing');
-  craftWith(st, maskOf([0, 1]), ev as never, RECIPES.findIndex((r) => r.result === 'super_sock_mace'));
-  check(st.inv.some((v) => itemOf(v) === itemNumber('super_sock_mace')), 'the previewed recipe is crafted');
+  craftWith(
+    st,
+    maskOf([0, 1]),
+    ev as never,
+    RECIPES.findIndex((r) => r.result === 'super_sock_mace'),
+  );
+  check(
+    st.inv.some((v) => itemOf(v) === itemNumber('super_sock_mace')),
+    'the previewed recipe is crafted',
+  );
 
   // The player's own toilet is restocked like the others (only the desk and bed are kept).
   const s2 = new Sim(CENTER_PERKS, 4);

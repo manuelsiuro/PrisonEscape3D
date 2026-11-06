@@ -176,10 +176,12 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (hol && (id + sim.clock.hour) % 3 === 1) return mood(hol, 0.45, 'say', some('in.idle', friend));
   if (friend) return mood('in.friendly', 0.6, 'say', some('in.idle', weather, today));
   if (block === 'lightsOut' || block === 'eveningRollCall') return mood('in.sleepy', 0.5, 'say', ['in.idle']);
-  if (block === 'rollCall' || (minute >= 16 * 60 + 30 && minute < 17 * 60) || (minute >= 8 * 60 + 30 && minute < 9 * 60)) return mood('in.hungry', 0.5, 'say', some('in.idle', weather));
+  if (block === 'rollCall' || (minute >= 16 * 60 + 30 && minute < 17 * 60) || (minute >= 8 * 60 + 30 && minute < 9 * 60))
+    return mood('in.hungry', 0.5, 'say', some('in.idle', weather));
   if (weather) return mood(weather, weather === 'in.sea' ? 0.35 : 0.5, 'say', ['in.idle', 'in.bored']);
   if (block === 'eveningFreeTime' && (id + sim.clock.hour) % 3 === 0) return mood('in.homesick', 0.3, 'say', ['in.idle']);
-  if (block === 'freeTime' || block === 'eveningFreeTime' || block === 'work') return mood('in.bored', 0.4, 'say', some('in.idle', block === 'eveningFreeTime' && 'in.homesick'));
+  if (block === 'freeTime' || block === 'eveningFreeTime' || block === 'work')
+    return mood('in.bored', 0.4, 'say', some('in.idle', block === 'eveningFreeTime' && 'in.homesick'));
   return mood('in.idle', 0.3, 'say', ['in.bored']);
 }
 
@@ -193,7 +195,12 @@ function holidayBank(sim: Sim, id: number): BankId | null {
   const h = holidayOf(sim);
   if (!h) return null;
   const theme = sim.prison.theme;
-  const seasonal = h === HOLIDAY.CHRISTMAS && (theme === 'alpine' || theme === 'desert') && (id + sim.clock.hour) % 2 === 0 ? (theme === 'alpine' ? 'in.hol.snow' : 'in.hol.desert') : null;
+  const seasonal =
+    h === HOLIDAY.CHRISTMAS && (theme === 'alpine' || theme === 'desert') && (id + sim.clock.hour) % 2 === 0
+      ? theme === 'alpine'
+        ? 'in.hol.snow'
+        : 'in.hol.desert'
+      : null;
   if (!holidayDays(sim).length) return seasonal;
   if (h === HOLIDAY.EASTER) return 'in.hol.easter';
   if (h === HOLIDAY.SUMMER) return 'in.hol.summer';
@@ -228,7 +235,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (s.holiday && soaked(sim, g)) return mood('gu.hol.soaked', 0.8, 'shout');
   const block = ROUTINE[s.routine].id;
   // Night duty: its own lines only (the day's grumbles don't fit after Lights Out; a storm's do).
-  if (block === 'lightsOut') return mood('gu.drowsy', 0.5, 'say', some(weatherNow(sim) === 'storm' && sim.prison.theme !== 'alpine' && 'gu.wx.storm'));
+  if (block === 'lightsOut')
+    return mood('gu.drowsy', 0.5, 'say', some(weatherNow(sim) === 'storm' && sim.prison.theme !== 'alpine' && 'gu.wx.storm'));
   const weather = weatherBank(sim, g.body, true);
   // The day's event (P17): the drill, the inspectors, the film.
   if (drillOn(sim)) return mood('gu.day.drill', 0.7, 'shout');
@@ -243,6 +251,7 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   const zone = sim.world.zoneAt(t.x, t.z);
   if (block === 'rollCall') return mood('gu.morning', 0.4, 'say', some(usual, weather));
   if ((block === 'breakfast' || block === 'dinner') && zone === 'canteen') return mood('gu.meal', 0.4, 'say', some(usual, other));
-  if (block === 'exercise' && (zone === 'yard' || zone === 'gym' || zone === 'sports')) return mood('gu.yard', 0.4, 'say', some(usual, weather));
+  if (block === 'exercise' && (zone === 'yard' || zone === 'gym' || zone === 'sports'))
+    return mood('gu.yard', 0.4, 'say', some(usual, weather));
   return mood(usual, g.body.moving ? 0.3 : 0.4, 'say', some(other, weather));
 }

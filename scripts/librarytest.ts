@@ -3,7 +3,18 @@
  * librarian, in all five prisons, walked by real commands. 2.34: the marker at half the speed, waiting at each key
  * word; slow readers measured. Old logs play as they did.
  */
-import { keyAt, keyFrom, pageTokens, READ_GAPS, READ_KEYS, READ_PACE, READ_PAGE_STEPS, READ_TAIL, SUBJECTS, subjectOf } from '../src/content/books';
+import {
+  keyAt,
+  keyFrom,
+  pageTokens,
+  READ_GAPS,
+  READ_KEYS,
+  READ_PACE,
+  READ_PAGE_STEPS,
+  READ_TAIL,
+  SUBJECTS,
+  subjectOf,
+} from '../src/content/books';
 import { zoneIndex } from '../src/content/zones';
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
@@ -20,7 +31,17 @@ import { interactTarget } from '../src/sim/systems/items';
 import { nextTip, nextUnlock, suggestSubject, toLearn, usableHere } from '../src/sim/systems/recipes';
 import { freeReadSeat, headFull, librarianOf, readSeated } from '../src/sim/systems/training';
 import { canDigFloor } from '../src/sim/systems/structure';
-import { ATTR_MAX, READ_FILL_EVERY, READ_HIT, READ_LEAD, READ_SETS_A_DAY, READ_WAIT, READ_WINDOW, STEPS_PER_SECOND, UNIT } from '../src/sim/tuning';
+import {
+  ATTR_MAX,
+  READ_FILL_EVERY,
+  READ_HIT,
+  READ_LEAD,
+  READ_SETS_A_DAY,
+  READ_WAIT,
+  READ_WINDOW,
+  STEPS_PER_SECOND,
+  UNIT,
+} from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
 import { loadSave, saveFileOf, type SaveFile } from '../src/game/saves';
@@ -34,7 +55,8 @@ const check = (ok: boolean, what: string) => {
   }
 };
 const at = (t: number) => [t % MAP_W, Math.floor(t / MAP_W)];
-const shelfOf = (bot: Bot) => containersOf(bot.sim.world).findIndex((b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library');
+const shelfOf = (bot: Bot) =>
+  containersOf(bot.sim.world).findIndex((b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library');
 const minute = (sim: Sim) => clockAt(sim.state.step).minuteOfDay;
 
 // ---------------------------------------------------------------- the books as data
@@ -43,21 +65,41 @@ const minute = (sim: Sim) => clockAt(sim.state.step).minuteOfDay;
   check(!missing.length, `every recipe has a subject (${missing.join(', ')})`);
   const counts = SUBJECTS.map((_, k) => RECIPES.filter((r) => subjectOf(r.result) === k).length);
   console.log(`recipes by subject: ${SUBJECTS.map((s, k) => `${s} ${counts[k]}`).join(', ')}`);
-  for (const gaps of READ_GAPS) check(gaps.length === READ_KEYS && gaps.reduce((a, b) => a + b, 0) === READ_PAGE_STEPS, 'a page: its key words and its length');
-  check(keyAt(0) === READ_GAPS[0][0] - READ_TAIL && keyAt(READ_KEYS) === READ_PAGE_STEPS + READ_GAPS[1][0] - READ_TAIL, 'key words count on from page to page');
-  for (let k = 0; k < 40; k++) check(keyFrom(keyAt(k)) === k && keyFrom(keyAt(k) + READ_WINDOW, READ_WINDOW) === k && keyAt(k + 1) > keyAt(k), `key word ${k} found again`);
-  for (let k = 0; k < 40; k++) check(keyAt(k, READ_PACE) === keyAt(k) * READ_PACE && keyFrom(keyAt(k, READ_PACE), 0, READ_PACE) === k && keyFrom(keyAt(k, READ_PACE) - 1, 0, READ_PACE) === k, `2.34: key word ${k} at half the speed`);
+  for (const gaps of READ_GAPS)
+    check(gaps.length === READ_KEYS && gaps.reduce((a, b) => a + b, 0) === READ_PAGE_STEPS, 'a page: its key words and its length');
+  check(
+    keyAt(0) === READ_GAPS[0][0] - READ_TAIL && keyAt(READ_KEYS) === READ_PAGE_STEPS + READ_GAPS[1][0] - READ_TAIL,
+    'key words count on from page to page',
+  );
+  for (let k = 0; k < 40; k++)
+    check(
+      keyFrom(keyAt(k)) === k && keyFrom(keyAt(k) + READ_WINDOW, READ_WINDOW) === k && keyAt(k + 1) > keyAt(k),
+      `key word ${k} found again`,
+    );
+  for (let k = 0; k < 40; k++)
+    check(
+      keyAt(k, READ_PACE) === keyAt(k) * READ_PACE &&
+        keyFrom(keyAt(k, READ_PACE), 0, READ_PACE) === k &&
+        keyFrom(keyAt(k, READ_PACE) - 1, 0, READ_PACE) === k,
+      `2.34: key word ${k} at half the speed`,
+    );
   // 2.34: lit from READ_LEAD before: never two lit at once, nor lit while the last is still waited on.
   for (const gaps of READ_GAPS) check(Math.min(...gaps) * READ_PACE > READ_LEAD + 1, 'key words far enough apart at the new pace');
   // The keys' gaps never fit in a window: the marker can't be near two at once.
   for (const gaps of READ_GAPS) check(Math.min(...gaps) > 2 * READ_WINDOW + 1, 'key words far enough apart to tell one from the next');
   // Every page in both languages: as many key words as the rule has.
-  for (const [lang, table] of [['en', en], ['fr', fr]] as const)
+  for (const [lang, table] of [
+    ['en', en],
+    ['fr', fr],
+  ] as const)
     for (const s of SUBJECTS)
       for (let p = 0; p < READ_GAPS.length; p++) {
         const text = (table as Record<string, string>)[`book.${s}.p${p}`];
         const toks = text ? pageTokens(text) : [];
-        check(toks.filter((w) => w.key).length === READ_KEYS, `${lang} ${s} page ${p}: ${READ_KEYS} key words (${toks.filter((w) => w.key).length})`);
+        check(
+          toks.filter((w) => w.key).length === READ_KEYS,
+          `${lang} ${s} page ${p}: ${READ_KEYS} key words (${toks.filter((w) => w.key).length})`,
+        );
       }
 }
 
@@ -69,7 +111,10 @@ for (const def of PRISONS) {
   const lib = def.leisure?.librarian;
   check(places.readSeats.length >= 2, `${def.id}: at least two chairs to read on (${places.readSeats.length})`);
   check(places.shelves.length >= 2, `${def.id}: shelf tiles to choose a book at (${places.shelves.length})`);
-  check(!!lib && !def.merchants.includes(lib.cell) && def.smuggling?.fixer !== lib.cell && def.leisure?.oldTimer !== lib.cell, `${def.id}: the librarian is nobody else's job`);
+  check(
+    !!lib && !def.merchants.includes(lib.cell) && def.smuggling?.fixer !== lib.cell && def.leisure?.oldTimer !== lib.cell,
+    `${def.id}: the librarian is nobody else's job`,
+  );
   check(!!lib && !places.readSeats.some((q) => q.tile === lib.z * MAP_W + lib.x), `${def.id}: the librarian's chair isn't one for readers`);
   const quiz = def.leisure?.quiz?.spots ?? [];
   for (const q of [...places.readSeats, ...places.shelves]) {
@@ -114,7 +159,10 @@ for (const def of PRISONS) {
     b.z = Math.floor(q.tile / MAP_W) * UNIT + UNIT / 2;
     b.facing = q.face;
     const t = interactTarget(w, bot.st.items, b, false, bot.st.layer, [...bot.st.inmates, ...bot.st.guards], bot.st.inmates.length);
-    check(t?.kind === 'container' && containersOf(w)[t.index].prop.kind === 'shelf', `${def.id}: with readers either side, the shelf from ${at(q.tile)} (${t?.kind})`);
+    check(
+      t?.kind === 'container' && containersOf(w)[t.index].prop.kind === 'shelf',
+      `${def.id}: with readers either side, the shelf from ${at(q.tile)} (${t?.kind})`,
+    );
   }
   // Walked: the shelf, a chair, a set, the book back on leaving.
   // (Someone between them and the shelf is who the button talks to, and says so: to the next tile, as anyone would.)
@@ -133,7 +181,9 @@ for (const def of PRISONS) {
   check(sat, `${def.id}: on a chair with it`);
   bot.set();
   check(bot.st.items.int === was + 2, `${def.id}: a set read (${bot.st.items.int})`);
-  console.log(`${def.id}: shelf to a set done ${((bot.st.step - from) / STEPS_PER_SECOND).toFixed(1)} s, ${places.readSeats.length} chairs, ${places.shelves.length} shelf tiles, librarian in cell ${lib?.cell}`);
+  console.log(
+    `${def.id}: shelf to a set done ${((bot.st.step - from) / STEPS_PER_SECOND).toFixed(1)} s, ${places.readSeats.length} chairs, ${places.shelves.length} shelf tiles, librarian in cell ${lib?.cell}`,
+  );
   bot.op(OP.TRAIN, 3);
   check(bot.st.train < 0 && bot.st.seat >= 0 && bot.st.book === 1, `${def.id}: the book shut, still on the chair`);
   bot.act();
@@ -194,7 +244,10 @@ const human = (react: number, old = false) => {
   }, 2000);
   const alone = idle.st.step - start;
   check(alone >= 95 * READ_FILL_EVERY && alone <= 105 * READ_FILL_EVERY, `untouched, a set still finishes, slowly (${alone} steps)`);
-  check(waited === READ_WAIT && idle.st.repBeat >= 2, `untouched, the marker waits ${READ_WAIT} steps at a key word, then goes on (${waited}, ${idle.st.repBeat} passed)`);
+  check(
+    waited === READ_WAIT && idle.st.repBeat >= 2,
+    `untouched, the marker waits ${READ_WAIT} steps at a key word, then goes on (${waited}, ${idle.st.repBeat} passed)`,
+  );
   // Kept up with: on each key word as the marker reaches it.
   const kept = reader();
   kept.read(0);
@@ -202,12 +255,23 @@ const human = (react: number, old = false) => {
   kept.set();
   const fast = kept.st.step - k0;
   check(fast >= 120 && fast <= 220, `kept up with, about 8 s a set (${fast} steps)`);
-  console.log(`a set: ${(alone / STEPS_PER_SECOND).toFixed(1)} s untouched, ${(fast / STEPS_PER_SECOND).toFixed(1)} s kept up with, a hit worth ${READ_HIT}%`);
+  console.log(
+    `a set: ${(alone / STEPS_PER_SECOND).toFixed(1)} s untouched, ${(fast / STEPS_PER_SECOND).toFixed(1)} s kept up with, a hit worth ${READ_HIT}%`,
+  );
   // Slow readers: a press 0.5, 1, 2 s after each word lights all count; 4 s is too late, and a set is no slower than untouched.
   const by = [10, 20, 40, 80].map((r) => ({ r, ...human(r) }));
-  console.log(`pressing after a word lights: ${by.map((h) => `${h.r / STEPS_PER_SECOND} s → ${(h.steps / STEPS_PER_SECOND).toFixed(1)} s a set, ${h.missed} missed`).join('; ')}`);
-  for (const h of by.slice(0, 3)) check(h.missed === 0 && h.steps < alone * 0.8, `a press ${h.r / STEPS_PER_SECOND} s after a word lights counts (${h.missed} missed, ${h.steps} steps)`);
-  check(by[3].missed > 0 && by[3].steps <= alone, `4 s after is too late, and no slower than untouched (${by[3].missed} missed, ${by[3].steps} steps)`);
+  console.log(
+    `pressing after a word lights: ${by.map((h) => `${h.r / STEPS_PER_SECOND} s → ${(h.steps / STEPS_PER_SECOND).toFixed(1)} s a set, ${h.missed} missed`).join('; ')}`,
+  );
+  for (const h of by.slice(0, 3))
+    check(
+      h.missed === 0 && h.steps < alone * 0.8,
+      `a press ${h.r / STEPS_PER_SECOND} s after a word lights counts (${h.missed} missed, ${h.steps} steps)`,
+    );
+  check(
+    by[3].missed > 0 && by[3].steps <= alone,
+    `4 s after is too late, and no slower than untouched (${by[3].missed} missed, ${by[3].steps} steps)`,
+  );
   // Tapping away gains nothing.
   const mash = reader();
   mash.read(0);
@@ -218,7 +282,10 @@ const human = (react: number, old = false) => {
     mash.step(command(0, OP.TRAIN, 1));
     if (mash.sim.events.some((e) => e.type === 'rep' && e.hit)) hits++;
   }
-  check(hits <= 1 && mash.st.step - m0 >= alone * 0.85, `tapping every step gains nothing (${hits} hits, ${mash.st.step - m0} steps against ${alone})`);
+  check(
+    hits <= 1 && mash.st.step - m0 >= alone * 0.85,
+    `tapping every step gains nothing (${hits} hits, ${mash.st.step - m0} steps against ${alone})`,
+  );
   // Pressing blind at a steady rhythm, from 0.5 s to 6 s: never quicker than reading. (A rhythm of 2.5 to 4 s, started
   // at the right moment, lands in every lit word, as the marker waits there for the press: a reader's pace, and as
   // quick as one at best. A known limit of a marker that waits.)
@@ -232,7 +299,8 @@ const human = (react: number, old = false) => {
       lazy.read(0);
       const l0 = lazy.st.step - Math.floor((every * phase) / 4);
       const lw = lazy.st.items.int;
-      while (lazy.st.items.int === lw && lazy.st.step - l0 < 2000) lazy.step((lazy.st.step - l0) % every === 0 ? command(0, OP.TRAIN, 1) : 0);
+      while (lazy.st.items.int === lw && lazy.st.step - l0 < 2000)
+        lazy.step((lazy.st.step - l0) % every === 0 ? command(0, OP.TRAIN, 1) : 0);
       best = Math.min(best, lazy.st.step - l0 - Math.floor((every * phase) / 4));
     }
     quickest = Math.min(quickest, best);
@@ -242,21 +310,32 @@ const human = (react: number, old = false) => {
   check(quickest >= fast, `no blind rhythm quicker than reading (${quickest} steps against ${fast})`);
   // From the moment it lights to the end of the wait counts, a step before doesn't, nor once the marker's gone on.
   const arrive = (b: Bot) => b.st.readFrom + keyAt(0, READ_PACE);
-  for (const [off, should] of [[-READ_LEAD, true], [0, true], [READ_WAIT, true], [-READ_LEAD - 1, false]] as const) {
+  for (const [off, should] of [
+    [-READ_LEAD, true],
+    [0, true],
+    [READ_WAIT, true],
+    [-READ_LEAD - 1, false],
+  ] as const) {
     const b = reader();
     b.read(0);
     const target = arrive(b) + off;
     while (b.st.step + 1 < target) b.step(0);
     b.step(command(0, OP.TRAIN, 1));
     const e = b.sim.events.find((x) => x.type === 'rep');
-    check(!!e && e.type === 'rep' && !!e.hit === should && e.key === 0, `a press ${off} steps from the marker reaching a key word: ${should ? 'counts' : 'does not'}`);
+    check(
+      !!e && e.type === 'rep' && !!e.hit === should && e.key === 0,
+      `a press ${off} steps from the marker reaching a key word: ${should ? 'counts' : 'does not'}`,
+    );
   }
   {
     const b = reader();
     b.read(0);
     const target = arrive(b) + READ_WAIT + 1;
     while (b.st.step + 1 < target) b.step(0);
-    check(b.st.repBeat === 1 && b.st.readWait === 0, `the wait over, the word's missed and the marker goes on (${b.st.repBeat}, ${b.st.readWait})`);
+    check(
+      b.st.repBeat === 1 && b.st.readWait === 0,
+      `the wait over, the word's missed and the marker goes on (${b.st.repBeat}, ${b.st.readWait})`,
+    );
     b.step(command(0, OP.TRAIN, 1));
     const e = b.sim.events.find((x) => x.type === 'rep');
     check(!!e && e.type === 'rep' && !e.hit && e.key === 1, 'a press then is stray, and spends the next');
@@ -264,7 +343,12 @@ const human = (react: number, old = false) => {
   // Under the old rules, as 2.31 had it: the marker never waits, a press within READ_WINDOW, about 5 s kept up with.
   const was231 = human(READ_WINDOW, true);
   check(was231.steps >= 60 && was231.steps <= 130 && was231.missed === 0, `the old rules: about 5 s a set kept up with (${was231.steps})`);
-  for (const [off, should] of [[-READ_WINDOW, true], [READ_WINDOW, true], [-READ_WINDOW - 1, false], [READ_WINDOW + 1, false]] as const) {
+  for (const [off, should] of [
+    [-READ_WINDOW, true],
+    [READ_WINDOW, true],
+    [-READ_WINDOW - 1, false],
+    [READ_WINDOW + 1, false],
+  ] as const) {
     const b = reader();
     b.sim.rules233 = true;
     b.read(0);
@@ -272,7 +356,10 @@ const human = (react: number, old = false) => {
     while (b.st.step + 1 < target) b.step(0);
     b.step(command(0, OP.TRAIN, 1));
     const e = b.sim.events.find((x) => x.type === 'rep');
-    check(!!e && e.type === 'rep' && !!e.hit === should, `the old rules: a press ${off} steps off a key word: ${should ? 'counts' : 'does not'}`);
+    check(
+      !!e && e.type === 'rep' && !!e.hit === should,
+      `the old rules: a press ${off} steps off a key word: ${should ? 'counts' : 'does not'}`,
+    );
     check(b.st.readWait === 0, 'the old rules: the marker never waits');
   }
 }
@@ -288,15 +375,22 @@ const human = (react: number, old = false) => {
     if (b.st.items.int !== v) sets++;
     if (b.st.energy < 30) b.st.energy = 100;
   }
-  check(sets === READ_SETS_A_DAY && b.st.items.int === was + READ_SETS_A_DAY * 2, `${READ_SETS_A_DAY} sets a day (${sets}, Intellect ${b.st.items.int})`);
+  check(
+    sets === READ_SETS_A_DAY && b.st.items.int === was + READ_SETS_A_DAY * 2,
+    `${READ_SETS_A_DAY} sets a day (${sets}, Intellect ${b.st.items.int})`,
+  );
   check(b.st.book === 0 && b.st.train < 0, 'the head full, the book goes back');
   check(headFull(b.sim), 'and it says so');
   b.st.seat = -1;
   b.walkTo(placesOf(b.sim.world).shelves[0].tile);
   b.face(13);
   b.open(shelfOf(b));
+  const told = b.events.length;
   b.op(OP.TRAIN, 0, 1);
-  check(b.st.book === 0 && b.has?.('cantTrain') !== false, 'tomorrow, not today: refused at the shelf, no book');
+  check(
+    b.st.book === 0 && b.events.slice(told).some((e) => e.type === 'cantTrain' || e.type === 'refused'),
+    'tomorrow, not today: refused at the shelf, no book',
+  );
   b.close();
   const others = b.st.items.int;
   b.st.items.int += 3; // A course on top: nothing stops it (kiosk.ts adds directly).
@@ -324,18 +418,36 @@ const human = (react: number, old = false) => {
   check(toLearn(b.sim, 2) === 0, 'weapons told out');
   b.read(2);
   b.set();
-  check(b.st.tips.length > 0 && subjectOf(RECIPES[b.st.tips[b.st.tips.length - 1]].result) !== 2, 'its next recipe comes from another shelf');
+  check(
+    b.st.tips.length > 0 && subjectOf(RECIPES[b.st.tips[b.st.tips.length - 1]].result) !== 2,
+    'its next recipe comes from another shelf',
+  );
   // What's next: the lowest mark above, with its job and recipes. At Center Perks from 40: 50.
   const n = reader();
   const next = nextUnlock(n.sim)!;
-  check(next.at === 50 && next.jobs.includes('mailman') && next.wage === 55 && next.recipes > 0, `what's next at 40: ${JSON.stringify(next)}`);
+  check(
+    next.at === 50 && next.jobs.includes('mailman') && next.wage === 55 && next.recipes > 0,
+    `what's next at 40: ${JSON.stringify(next)}`,
+  );
   n.st.items.int = ATTR_MAX;
   check(nextUnlock(n.sim) === null, 'at 100, nothing next');
   // What's suggested has the most to tell, and it's a real number.
   const s = reader();
   const best = suggestSubject(s.sim);
   check(best >= 0 && SUBJECTS.every((_, k) => toLearn(s.sim, k) <= toLearn(s.sim, best)), 'the librarian suggests the fullest shelf');
-  check(toLearn(s.sim, best) === RECIPES.filter((r, k) => subjectOf(r.result) === best && r.int <= s.st.items.int && !s.st.items.known.includes(k) && !s.st.tips.includes(k) && (usableHere(s.sim.world, k)) && !(r.keep || r.ingredients.some((i) => i.startsWith('mold_')))).length, 'and what it counts is what can be told');
+  check(
+    toLearn(s.sim, best) ===
+      RECIPES.filter(
+        (r, k) =>
+          subjectOf(r.result) === best &&
+          r.int <= s.st.items.int &&
+          !s.st.items.known.includes(k) &&
+          !s.st.tips.includes(k) &&
+          usableHere(s.sim.world, k) &&
+          !(r.keep || r.ingredients.some((i) => i.startsWith('mold_'))),
+      ).length,
+    'and what it counts is what can be told',
+  );
   check(nextTip(s.sim, best) >= 0, 'and something can be');
 }
 {
@@ -351,7 +463,10 @@ const human = (react: number, old = false) => {
   near.opinion = 50;
   talky.st.player.facing = 1;
   talky.act();
-  check(talky.st.seat >= 0 && talky.st.train >= 0 && talky.st.talk < 0, `book in hand, someone beside the chair: it's read, not a talk (seat ${talky.st.seat}, talk ${talky.st.talk})`);
+  check(
+    talky.st.seat >= 0 && talky.st.train >= 0 && talky.st.talk < 0,
+    `book in hand, someone beside the chair: it's read, not a talk (seat ${talky.st.seat}, talk ${talky.st.talk})`,
+  );
   // A set costs the card's 10, less only what any standing about gives back: a chair is no way round it.
   for (const hands of [true, false]) {
     const b = reader();
@@ -375,7 +490,10 @@ const human = (react: number, old = false) => {
   foe.windup = 0;
   const hp = hit.st.health;
   hit.until(() => hit.st.health < hp, 400);
-  check(hit.st.health < hp && hit.st.train < 0 && hit.st.seat < 0, `a blow: the book shut, up off the chair (train ${hit.st.train}, seat ${hit.st.seat})`);
+  check(
+    hit.st.health < hp && hit.st.train < 0 && hit.st.seat < 0,
+    `a blow: the book shut, up off the chair (train ${hit.st.train}, seat ${hit.st.seat})`,
+  );
   const spent = reader();
   spent.read(0);
   spent.op(OP.TRAIN, 3);
@@ -425,7 +543,10 @@ const human = (react: number, old = false) => {
     m.plan = full.st.routine;
   });
   full.op(OP.TRAIN, 0, 0);
-  check(full.st.train >= 0 && full.st.seat < 0 && full.st.book === 1, `no chair free: read at the shelf (train ${full.st.train}, seat ${full.st.seat})`);
+  check(
+    full.st.train >= 0 && full.st.seat < 0 && full.st.book === 1,
+    `no chair free: read at the shelf (train ${full.st.train}, seat ${full.st.seat})`,
+  );
 }
 {
   // Inmates: readers at the shelves and chairs over free time, on several seeds; the librarian at the desk.
@@ -447,7 +568,9 @@ const human = (react: number, old = false) => {
       while (minute(bot.sim) < end) {
         bot.step(0);
         if (bot.st.step % 40) continue;
-        const here = bot.st.inmates.filter((m) => m.ko === 0 && bot.sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'library');
+        const here = bot.st.inmates.filter(
+          (m) => m.ko === 0 && bot.sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'library',
+        );
         total += here.length;
         samples++;
         most = Math.max(most, here.length);
@@ -457,10 +580,23 @@ const human = (react: number, old = false) => {
           deskSamples++;
           if (Math.floor(m.body.x / UNIT) === desk.x && Math.floor(m.body.z / UNIT) === desk.z) atDesk++;
         }
-        if (here.some((o) => o.book === 1 && o.wait === 0 && !o.path.length && o.goal >= 0 && !o.body.moving && Math.floor(o.body.x / UNIT) + Math.floor(o.body.z / UNIT) * MAP_W !== o.goal)) stuck++;
+        if (
+          here.some(
+            (o) =>
+              o.book === 1 &&
+              o.wait === 0 &&
+              !o.path.length &&
+              o.goal >= 0 &&
+              !o.body.moving &&
+              Math.floor(o.body.x / UNIT) + Math.floor(o.body.z / UNIT) * MAP_W !== o.goal,
+          )
+        )
+          stuck++;
       }
     }
-    lines.push(`${def.id} ${(total / samples).toFixed(1)} in the library (most ${most}), ${(books / samples).toFixed(1)} reading, librarian at the desk ${Math.round((atDesk / deskSamples) * 100)}%`);
+    lines.push(
+      `${def.id} ${(total / samples).toFixed(1)} in the library (most ${most}), ${(books / samples).toFixed(1)} reading, librarian at the desk ${Math.round((atDesk / deskSamples) * 100)}%`,
+    );
     check(total / samples >= 1, `${def.id}: the library's used (${(total / samples).toFixed(1)})`);
     check(atDesk / deskSamples >= 0.7, `${def.id}: the librarian at the desk (${atDesk}/${deskSamples})`);
     check(stuck === 0, `${def.id}: nobody stuck on the way to a shelf (${stuck})`);
@@ -546,7 +682,10 @@ const human = (react: number, old = false) => {
   const oldSnap = JSON.parse(JSON.stringify(file.snap));
   delete oldSnap.state.readWait;
   const pre = loadSave({ ...file, snap: oldSnap })!;
-  check(pre.state.readFrom === pre.state.step && pre.state.repBeat === 0 && pre.state.book === 1 && pre.state.train === s.st.train, 'a save from before 2.34 mid-page opens the book at its first page');
+  check(
+    pre.state.readFrom === pre.state.step && pre.state.repBeat === 0 && pre.state.book === 1 && pre.state.train === s.st.train,
+    'a save from before 2.34 mid-page opens the book at its first page',
+  );
 }
 
 console.log(failures ? `${failures} failures` : 'library ok');

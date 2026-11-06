@@ -27,7 +27,11 @@ export const comms = (
   gate: { x: gate[0], z: gate[1] },
   car: { x: car[0], z: car[1], face: car[2] },
   kiosk: { x: kiosk[0], z: kiosk[1], face: kiosk[2] },
-  release: { at: release.at.map(([x, z]) => ({ x, z })), gates: release.gates.map(([x, z]) => ({ x, z })), ...(release.bridge ? { bridge: true } : {}) },
+  release: {
+    at: release.at.map(([x, z]) => ({ x, z })),
+    gates: release.gates.map(([x, z]) => ({ x, z })),
+    ...(release.bridge ? { bridge: true } : {}),
+  },
 });
 
 // ------------------------------------------------------------------ who's called
@@ -84,7 +88,7 @@ export const WANT_WITHIN = 60;
 export const INMATE_CALL_MIN = 10;
 export const INMATE_CALL_SPAN = 11;
 /** The first in line has this long to reach the phone, else he's out of the line (steps). */
-export const REACH_STEPS = 60 * STEPS_PER_MINUTE / 2;
+export const REACH_STEPS = (60 * STEPS_PER_MINUTE) / 2;
 /** The player's turn: a call must be begun within this many steps, else the place is lost. */
 export const TURN_STEPS = 15 * STEPS_PER_MINUTE;
 /** Within this many tiles of the phone (the larger way): at it (one), in the queue's reach (LINE_REACH). */

@@ -22,7 +22,29 @@ import { TRAINING } from '../src/content/prisons/training';
 import { DAY_EVENTS } from '../src/content/days';
 import { DECOR } from '../src/content/decor';
 import { itemNumber } from '../src/content/items';
-import { APPEAL_HEAT, CALLEE, CATCH, CLEAR_NEED, COINS, CUT_OPINION, CUT_SWING, DIVERT_GUARDS, HOME_ENERGY, JOB, JOB_FEES, LAWYER, LINE_MAX, LINE_STEPS, MONEY_EVERY, OVERHEAR_STEPS, SWAP_PRICE, TAP_HEAT, TIER, TIP_HEAT, TURN_STEPS } from '../src/content/phone';
+import {
+  APPEAL_HEAT,
+  CALLEE,
+  CATCH,
+  CLEAR_NEED,
+  COINS,
+  CUT_OPINION,
+  CUT_SWING,
+  DIVERT_GUARDS,
+  HOME_ENERGY,
+  JOB,
+  JOB_FEES,
+  LAWYER,
+  LINE_MAX,
+  LINE_STEPS,
+  MONEY_EVERY,
+  OVERHEAR_STEPS,
+  SWAP_PRICE,
+  TAP_HEAT,
+  TIER,
+  TIP_HEAT,
+  TURN_STEPS,
+} from '../src/content/phone';
 import { command, EXT, LINE, OP, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { WAKE } from '../src/sim/events';
@@ -38,7 +60,8 @@ import { MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
-const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
+const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 const news = (seen: SimEvent[], what: string) => of(seen, 'phone').filter((e) => e.what === what);
 const refusals = (seen: SimEvent[]) => of(seen, 'refused').map((e) => e.why);
 
@@ -94,19 +117,32 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
     if (!c) continue;
     const open = (x: number, z: number) => {
       const prop = w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d);
-      const decor = (p.decor ?? []).some((d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
+      const decor = (p.decor ?? []).some(
+        (d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1),
+      );
       return !w.blocked(x, z) && !prop && !decor;
     };
     const zone = w.zoneAt(c.phone.x, c.phone.z);
-    check(open(c.phone.x, c.phone.z) && ['corridor', 'canteen', 'cellBlock'].includes(zone), `${p.id}: the phone's tile is open floor in a corridor (${zone})`);
+    check(
+      open(c.phone.x, c.phone.z) && ['corridor', 'canteen', 'cellBlock'].includes(zone),
+      `${p.id}: the phone's tile is open floor in a corridor (${zone})`,
+    );
     check(c.phone.face === 13 && w.blocked(c.phone.x, c.phone.z - 1), `${p.id}: the phone hangs on a north wall (the camera sees it)`);
-    const wallDecor = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && d.z === c.phone.z && d.x <= c.phone.x && d.x + (d.w ?? 1) > c.phone.x);
+    const wallDecor = (p.decor ?? []).filter(
+      (d) => DECOR[d.kind].wall && d.z === c.phone.z && d.x <= c.phone.x && d.x + (d.w ?? 1) > c.phone.x,
+    );
     check(wallDecor.length === 0, `${p.id}: nothing else hangs on the phone's bit of wall (${wallDecor.map((d) => d.kind).join(' ')})`);
     const bad = c.line.filter((t) => !open(t.x, t.z) || w.zoneAt(t.x, t.z) !== zone);
-    check(c.line.length === LINE_MAX && bad.length === 0, `${p.id}: ${LINE_MAX} queue tiles, open floor beside it (${bad.map((t) => `${t.x},${t.z}`).join(' ')})`);
+    check(
+      c.line.length === LINE_MAX && bad.length === 0,
+      `${p.id}: ${LINE_MAX} queue tiles, open floor beside it (${bad.map((t) => `${t.x},${t.z}`).join(' ')})`,
+    );
     const tiles = [c.phone, ...c.line].map((t) => t.z * MAP_W + t.x);
     check(new Set(tiles).size === tiles.length, `${p.id}: the phone and its queue on different tiles`);
-    check(c.line.every((t, k) => Math.abs(t.x - (k ? c.line[k - 1] : c.phone).x) + Math.abs(t.z - (k ? c.line[k - 1] : c.phone).z) === 1), `${p.id}: the queue a tile after another`);
+    check(
+      c.line.every((t, k) => Math.abs(t.x - (k ? c.line[k - 1] : c.phone).x) + Math.abs(t.z - (k ? c.line[k - 1] : c.phone).z) === 1),
+      `${p.id}: the queue a tile after another`,
+    );
     // Everyone walks to it; guards walk to the gate (keys: every colour).
     w.setPlayerKeys(new Set([1, 2, 3, 4, 5]) as never);
     const from = sim.state.player;
@@ -116,17 +152,27 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
       const t = queue.pop()!;
       const x = t % MAP_W;
       const z = Math.floor(t / MAP_W);
-      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const nt = (z + dz) * MAP_W + x + dx;
         if (reach.has(nt) || !w.inside(x + dx, z + dz) || w.npcBlock[nt]) continue;
         reach.add(nt);
         queue.push(nt);
       }
     }
-    check(tiles.every((t) => reach.has(t)), `${p.id}: the phone and its queue can be walked to`);
+    check(
+      tiles.every((t) => reach.has(t)),
+      `${p.id}: the phone and its queue can be walked to`,
+    );
     check(!w.blocked(c.gate.x, c.gate.z), `${p.id}: the gate's inside is open floor`);
     check(w.zoneAt(c.car.x, c.car.z) === 'outside' && [1, 5, 9, 13].includes(c.car.face), `${p.id}: Lou's car waits on the road`);
-    lines.push(`${p.id}: phone ${c.phone.x},${c.phone.z} (${zone}); queue ${c.line.map((t) => `${t.x},${t.z}`).join(' ')}; gate ${c.gate.x},${c.gate.z} (${w.zoneAt(c.gate.x, c.gate.z)}); car ${c.car.x},${c.car.z}`);
+    lines.push(
+      `${p.id}: phone ${c.phone.x},${c.phone.z} (${zone}); queue ${c.line.map((t) => `${t.x},${t.z}`).join(' ')}; gate ${c.gate.x},${c.gate.z} (${w.zoneAt(c.gate.x, c.gate.z)}); car ${c.car.x},${c.car.z}`,
+    );
   }
   check(!TRAINING.comms, 'the Training Block has none');
   console.log(lines.join('\n'));
@@ -153,30 +199,43 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   let calls = 0;
   const lengths: number[] = [];
   for (let day = 2; day <= 5; day++) {
-    for (const [from, until] of [[10, 12], [18, 22]] as const) {
+    for (const [from, until] of [
+      [10, 12],
+      [18, 22],
+    ] as const) {
       if (day === 2 && from === 10) continue;
       g.jump(day, from);
       const begun = seen.length;
       while (sim.state.step < at(day, until)) {
         g.step();
         most = Math.max(most, sim.state.line.length);
-        for (const e of sim.events) if (e.type === 'phone' && e.what === 'inmateCall') {
-          calls++;
-          lengths.push((sim.state.booth[1] - sim.state.step) / STEPS_PER_MINUTE);
-        }
+        for (const e of sim.events)
+          if (e.type === 'phone' && e.what === 'inmateCall') {
+            calls++;
+            lengths.push((sim.state.booth[1] - sim.state.step) / STEPS_PER_MINUTE);
+          }
       }
       const joined = news(seen.slice(begun), 'joined').map((e) => e.who!);
       const b = from === 10 ? 0 : 1;
       const wanted = sim.state.inmates.map((_, k) => k).filter((k) => wantsCall(sim.state.salt, day, b, k) >= 0);
-      check(joined.every((k) => wanted.includes(k)), `day ${day} ${from}:00: only those who want a call join`);
+      check(
+        joined.every((k) => wanted.includes(k)),
+        `day ${day} ${from}:00: only those who want a call join`,
+      );
       check(new Set(joined).size === joined.length, `day ${day} ${from}:00: each joins once`);
     }
     check(sim.state.line.length === 0 && sim.state.booth[0] < 0, `day ${day}: the queue gone at 22:00`);
   }
   check(most <= LINE_MAX, `never more than ${LINE_MAX} waiting (${most})`);
   check(calls >= 4, `inmates call (${calls} calls over four days)`);
-  check(lengths.every((m) => m >= 10 && m <= 20), `calls last 10–20 minutes (${Math.min(...lengths)}–${Math.max(...lengths)})`);
-  check(sim.state.inmates.every((m) => m.doing !== DOING.QUEUE || sim.state.line.length > 0), 'nobody left standing in a queue');
+  check(
+    lengths.every((m) => m >= 10 && m <= 20),
+    `calls last 10–20 minutes (${Math.min(...lengths)}–${Math.max(...lengths)})`,
+  );
+  check(
+    sim.state.inmates.every((m) => m.doing !== DOING.QUEUE || sim.state.line.length > 0),
+    'nobody left standing in a queue',
+  );
   console.log(`queue: ${calls} inmate calls over days 2–5, at most ${most} waiting`);
 }
 
@@ -207,7 +266,10 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   check(ov.length >= 1, `a secret overheard (${ov.length}, ${tries} steps beside a caller)`);
   const byDay = new Map<string, number>();
   for (const e of ov) byDay.set(`${e.who}`, (byDay.get(`${e.who}`) ?? 0) + 1);
-  check([...byDay.values()].every((n) => n === 1), 'each caller overheard once a day');
+  check(
+    [...byDay.values()].every((n) => n === 1),
+    'each caller overheard once a day',
+  );
   check(OVERHEAR_STEPS === 8 * STEPS_PER_MINUTE, 'eight minutes of listening');
 }
 
@@ -243,7 +305,11 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   put(sim.state.player, c.line[3].x, c.line[3].z);
   // A place bought from the inmate ahead.
   // Only the place just ahead is for sale: never the whole line at once.
-  sim.state.line = [sim.state.line.find((k) => k >= 0)!, ...[0, 1, 2, 3, 4, 5].filter((k) => !sim.state.line.includes(k) && k !== sim.state.booth[0]).slice(0, 1), PLAYER_IN_LINE];
+  sim.state.line = [
+    sim.state.line.find((k) => k >= 0)!,
+    ...[0, 1, 2, 3, 4, 5].filter((k) => !sim.state.line.includes(k) && k !== sim.state.booth[0]).slice(0, 1),
+    PLAYER_IN_LINE,
+  ];
   const [first, ahead] = sim.state.line;
   sim.state.cash = 50;
   put(sim.state.inmates[first].body, c.line[0].x, c.line[0].z);
@@ -256,7 +322,10 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   put(sim.state.player, c.line[2].x, c.line[2].z);
   sim.state.talk = ahead;
   g.step(command(0, OP.TALK, TALK.SWAP));
-  check(sim.state.line[1] === PLAYER_IN_LINE && sim.state.line[2] === ahead && sim.state.cash === 50 - SWAP_PRICE, `the place just ahead bought for $${SWAP_PRICE}`);
+  check(
+    sim.state.line[1] === PLAYER_IN_LINE && sim.state.line[2] === ahead && sim.state.cash === 50 - SWAP_PRICE,
+    `the place just ahead bought for $${SWAP_PRICE}`,
+  );
   sim.state.talk = -1;
   // Walked off: out of the line.
   put(sim.state.player, c.phone.x + 9, c.phone.z + 1);
@@ -268,7 +337,10 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   const before = passed.map((k) => sim.state.inmates[k].opinion);
   g.ext(EXT.LINE, LINE.CUT);
   check(sim.state.line[0] === PLAYER_IN_LINE, 'cut in at the front');
-  check(passed.every((k, j) => sim.state.inmates[k].opinion === Math.max(0, before[j] + CUT_OPINION)), `everyone passed: ${CUT_OPINION} opinion`);
+  check(
+    passed.every((k, j) => sim.state.inmates[k].opinion === Math.max(0, before[j] + CUT_OPINION)),
+    `everyone passed: ${CUT_OPINION} opinion`,
+  );
   // The turn: once the phone is free, a call within TURN_STEPS or the place is gone.
   while (sim.state.booth[0] >= 0) g.step();
   g.step();
@@ -383,7 +455,10 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   sim.state.wake = WAKE.SOLITARY;
   sim.state.ko = 1;
   g.step();
-  check(sim.state.solitary === SOLITARY_STEPS / 2 || sim.state.solitary === SOLITARY_STEPS / 2 - 1, `solitary halved on a retainer (${sim.state.solitary})`);
+  check(
+    sim.state.solitary === SOLITARY_STEPS / 2 || sim.state.solitary === SOLITARY_STEPS / 2 - 1,
+    `solitary halved on a retainer (${sim.state.solitary})`,
+  );
 }
 
 // Tips: the cell searched; found or empty; word getting round.
@@ -416,7 +491,10 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
     empty += e;
     snitched += news(seen, 'snitch').length;
     g.call(CALLEE.TIP, 0, cell);
-    check(refusals(seen).at(-1) === 'tipped' || refusals(seen).at(-1) === 'phoneLine' || refusals(seen).at(-1) === 'phoneBusy', `seed ${seed}: one tip a day`);
+    check(
+      refusals(seen).at(-1) === 'tipped' || refusals(seen).at(-1) === 'phoneLine' || refusals(seen).at(-1) === 'phoneBusy',
+      `seed ${seed}: one tip a day`,
+    );
   }
   console.log(`tips: ${found} found something, ${empty} found nothing, word got round ${snitched} times in 12`);
 }
@@ -434,7 +512,13 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   check(!!call && call.to === CALLEE.COUSIN && sim.state.cash === 500 - COINS, "Lou's call: coins only so far");
   for (let line = 0; line < 3; line++) {
     const ph = phrasesOf(sim.state, call, line);
-    check(ph.map(([t]) => t).sort().join() === '0,1,2', `line ${line}: one plain, one coded, one deep code`);
+    check(
+      ph
+        .map(([t]) => t)
+        .sort()
+        .join() === '0,1,2',
+      `line ${line}: one plain, one coded, one deep code`,
+    );
   }
   // Silence: Lou hangs up.
   for (let k = 0; k <= LINE_STEPS + 1; k++) g.step();
@@ -459,7 +543,10 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   const ear = call.ear;
   for (let line = 0; line < 3; line++) {
     const ph = phrasesOf(sim.state, call, line);
-    g.ext(EXT.SAY, ph.findIndex(([t]) => t === tiers[line]));
+    g.ext(
+      EXT.SAY,
+      ph.findIndex(([t]) => t === tiers[line]),
+    );
   }
   const lou = news(seen, 'lou')[0];
   return { lou, ear, sim, catchAt: catchAt(sim, ear), cash: sim.state.cash };
@@ -467,7 +554,14 @@ function louCall(tiers: number[], seed: number, learned = 0) {
 
 {
   // Ways of talking, measured over many calls (each a listener drawn).
-  const ways: Record<string, number[]> = { plain: [0, 0, 0], coded: [1, 1, 1], deep: [2, 2, 2], plainCodedDeep: [0, 1, 2], codedCodedPlain: [1, 1, 0], plainDeepDeep: [0, 2, 2] };
+  const ways: Record<string, number[]> = {
+    plain: [0, 0, 0],
+    coded: [1, 1, 1],
+    deep: [2, 2, 2],
+    plainCodedDeep: [0, 1, 2],
+    codedCodedPlain: [1, 1, 0],
+    plainDeepDeep: [0, 2, 2],
+  };
   const rows: string[] = [];
   const firstCallSafe: string[] = [];
   for (const [name, tiers] of Object.entries(ways)) {
@@ -479,7 +573,7 @@ function louCall(tiers: number[], seed: number, learned = 0) {
       const r = louCall(tiers, seed);
       if (!r?.lou) continue;
       n++;
-      const trait = r.ear < 0 ? 'nobody' : CENTER_PERKS.guards[r.ear].trait ?? 'steady';
+      const trait = r.ear < 0 ? 'nobody' : (CENTER_PERKS.guards[r.ear].trait ?? 'steady');
       const good = r.lou.ok && !r.lou.blown;
       byTrait[trait][0]++;
       if (good) byTrait[trait][1]++;
@@ -491,10 +585,17 @@ function louCall(tiers: number[], seed: number, learned = 0) {
       if (r.lou.blown) check(r.sim.state.heat >= TAP_HEAT - 2, `${name}: blown calls heat`);
     }
     if (Object.entries(byTrait).every(([t, [k, g]]) => t === 'nobody' || k === 0 || g === k)) firstCallSafe.push(name);
-    rows.push(`${name}: understood ${ok}/${n}, blown ${blown}; safe and clear by listener: ${Object.entries(byTrait).map(([t, [k, g]]) => `${t} ${g}/${k}`).join(', ')}`);
+    rows.push(
+      `${name}: understood ${ok}/${n}, blown ${blown}; safe and clear by listener: ${Object.entries(byTrait)
+        .map(([t, [k, g]]) => `${t} ${g}/${k}`)
+        .join(', ')}`,
+    );
   }
   console.log(rows.join('\n'));
-  check(firstCallSafe.length === 0, `no way of talking is safe and clear with every listener at the first call (${firstCallSafe.join(', ')})`);
+  check(
+    firstCallSafe.length === 0,
+    `no way of talking is safe and clear with every listener at the first call (${firstCallSafe.join(', ')})`,
+  );
   // The numbers behind it: pure.
   check(CLEAR_NEED === 3 && CATCH.strict === 3, 'clarity 3 to understand; strict catches 3');
   // Learned codes: plain, plain, deep teaches the deep one; then deep, deep, deep is clear and silent.
@@ -505,7 +606,11 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   const call = { to: CALLEE.COUSIN, sub: JOB.CAR, arg: 0, from: 0, ends: 0, at: 0, said: [-1, -1, -1], ear: -1 };
   const ph = phrasesOf({ salt: r!.sim.state.salt, lou: [learned] }, call, 2);
   const deep = ph.find(([t]) => t === TIER.DEEP)!;
-  check(phraseWorth({ lou: [learned] }, JOB.CAR, 2, TIER.DEEP, deep[1]).clarity === 2 && phraseWorth({ lou: [learned] }, JOB.CAR, 2, TIER.DEEP, deep[1]).risk === 0, 'a learned deep code: clear and silent');
+  check(
+    phraseWorth({ lou: [learned] }, JOB.CAR, 2, TIER.DEEP, deep[1]).clarity === 2 &&
+      phraseWorth({ lou: [learned] }, JOB.CAR, 2, TIER.DEEP, deep[1]).risk === 0,
+    'a learned deep code: clear and silent',
+  );
   // Every code learned: deep three times is clear and safe with anyone.
   let all = 0;
   for (let j = 0; j < 3; j++) for (let l = 0; l < 3; l++) for (let v = 0; v < 3; v++) all |= 1 << (j * 9 + l * 3 + v);
@@ -528,7 +633,11 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   sim.state.lou[0] = 0x7ffffff;
   g.call(CALLEE.COUSIN, JOB.DIVERSION, 14);
   const call = sim.state.call!;
-  for (let line = 0; line < 3; line++) g.ext(EXT.SAY, phrasesOf(sim.state, call, line).findIndex(([t]) => t === TIER.DEEP));
+  for (let line = 0; line < 3; line++)
+    g.ext(
+      EXT.SAY,
+      phrasesOf(sim.state, call, line).findIndex(([t]) => t === TIER.DEEP),
+    );
   check(sim.state.lou[2] === divertStep(at(1, 10, 5), 14) && sim.state.lou[2] === at(1, 14), 'the diversion booked for 14:00');
   g.call(CALLEE.COUSIN, JOB.DIVERSION, 16);
   check(refusals(seen).at(-1) === 'divertBooked', 'one diversion at a time');
@@ -540,7 +649,10 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   const looking = sim.state.guards.filter((q) => q.mode === GUARD.INVESTIGATE && q.target === c.gate.z * MAP_W + c.gate.x);
   check(looking.length >= Math.min(DIVERT_GUARDS, 2), `guards go and look at the gate (${looking.length})`);
   g.to(1, 15, 30);
-  check(sim.state.guards.every((q) => q.target !== c.gate.z * MAP_W + c.gate.x || q.mode !== GUARD.INVESTIGATE), 'they go back to their beats after');
+  check(
+    sim.state.guards.every((q) => q.target !== c.gate.z * MAP_W + c.gate.x || q.mode !== GUARD.INVESTIGATE),
+    'they go back to their beats after',
+  );
   // Blown: the alarm goes, nobody moves.
   const b = game();
   b.jump(1, 10, 5);
@@ -549,7 +661,11 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   b.sim.state.lou[2] = at(1, 14);
   b.sim.state.lou[3] = 1;
   b.to(1, 14, 1);
-  check(news(b.seen, 'ignored').length === 1 && !b.sim.state.guards.some((q) => q.mode === GUARD.INVESTIGATE && q.target === c.gate.z * MAP_W + c.gate.x), 'blown: ignored');
+  check(
+    news(b.seen, 'ignored').length === 1 &&
+      !b.sim.state.guards.some((q) => q.mode === GUARD.INVESTIGATE && q.target === c.gate.z * MAP_W + c.gate.x),
+    'blown: ignored',
+  );
 }
 
 {
@@ -572,12 +688,24 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   if (news(seen, 'cake').length) {
     check(inHand >= 0, 'the cake in the hotbar');
     g.to(2, 12, 2);
-    check(sim.state.items.inv.slice(0, 6).some((x) => (x & 255) === cake), 'the frisk lets a cake through');
+    check(
+      sim.state.items.inv.slice(0, 6).some((x) => (x & 255) === cake),
+      'the frisk lets a cake through',
+    );
     sim.state.items.hand = sim.state.items.inv.slice(0, 6).findIndex((x) => (x & 255) === cake);
     sim.state.energy = 50;
     g.step(command(0, OP.USE, 1));
-    check((sim.state.items.inv[sim.state.items.hand] & 255) === itemNumber('metal_file') && sim.state.energy >= 70, 'eaten: energy, and the file in hand');
-  } else check(false, `the visitor brings the cake (${of(seen, 'smuggle').map((e) => e.what).join(' ')})`);
+    check(
+      (sim.state.items.inv[sim.state.items.hand] & 255) === itemNumber('metal_file') && sim.state.energy >= 70,
+      'eaten: energy, and the file in hand',
+    );
+  } else
+    check(
+      false,
+      `the visitor brings the cake (${of(seen, 'smuggle')
+        .map((e) => e.what)
+        .join(' ')})`,
+    );
   // Blown: seized at the visit.
   const h = game(CENTER_PERKS, 5, [[2, VISITING, 0]]);
   h.sim.state.lou[4] = 2;
@@ -612,12 +740,16 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   check(carWaiting(sim.state), 'waiting at 23:30');
   // Out on the road (through the fence, the cutout's way).
   const road = (() => {
-    for (let z = 63; z > 0; z--) for (let x = 0; x < 64; x++) if (sim.world.zoneAt(x, z) === 'outside' && !sim.world.blocked(x, z)) return [x, z];
+    for (let z = 63; z > 0; z--)
+      for (let x = 0; x < 64; x++) if (sim.world.zoneAt(x, z) === 'outside' && !sim.world.blocked(x, z)) return [x, z];
     return [0, 0];
   })();
   put(sim.state.player, road[0], road[1] - 1);
   for (let k = 0; k < 40 && !sim.state.escaped; k++) g.step(command(5));
-  check(!!sim.state.escaped && news(seen, 'wheels').length === 1 && sim.state.lou[5] === -1, `out on the road: away in Lou's car (${sim.state.escaped ? 'out' : 'not out'})`);
+  check(
+    !!sim.state.escaped && news(seen, 'wheels').length === 1 && sim.state.lou[5] === -1,
+    `out on the road: away in Lou's car (${sim.state.escaped ? 'out' : 'not out'})`,
+  );
   // Blown: no car.
   const b = game();
   b.sim.state.lou[5] = 1;
@@ -637,8 +769,15 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   sim.state.lou[0] = 0x7ffffff;
   g.call(CALLEE.COUSIN, JOB.CAR);
   sim.state.cash = 10;
-  for (let line = 0; line < 3; line++) g.ext(EXT.SAY, phrasesOf(sim.state, sim.state.call!, line).findIndex(([t]) => t === TIER.DEEP));
-  check(sim.state.cash === 10 && sim.state.lou[5] === 0 && news(seen, 'lou')[0]?.ok === false, 'the fee spent meanwhile: nothing booked, no debt');
+  for (let line = 0; line < 3; line++)
+    g.ext(
+      EXT.SAY,
+      phrasesOf(sim.state, sim.state.call!, line).findIndex(([t]) => t === TIER.DEEP),
+    );
+  check(
+    sim.state.cash === 10 && sim.state.lou[5] === 0 && news(seen, 'lou')[0]?.ok === false,
+    'the fee spent meanwhile: nothing booked, no debt',
+  );
   // The listener: the same all day, however often Lou is called.
   const ears = new Set<number>();
   sim.state.cash = 100;
@@ -687,7 +826,14 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   for (const k of ['booth', 'line', 'turn', 'call', 'lou', 'phoned', 'rang']) delete old[k];
   const o = new Sim(CENTER_PERKS, 5);
   o.state = loadState(o.world, CENTER_PERKS, old);
-  check(o.state.booth.join() === '-1,0,0,0' && o.state.line.length === 0 && o.state.call === null && o.state.lou.length === 8 && o.state.phoned.length === 7, 'a save from before the phone: nobody on it');
+  check(
+    o.state.booth.join() === '-1,0,0,0' &&
+      o.state.line.length === 0 &&
+      o.state.call === null &&
+      o.state.lou.length === 8 &&
+      o.state.phoned.length === 7,
+    'a save from before the phone: nobody on it',
+  );
   const bad = JSON.parse(JSON.stringify(sim.state));
   bad.call.said = [9];
   bad.line = [99];

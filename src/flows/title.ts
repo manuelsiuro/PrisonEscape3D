@@ -56,30 +56,37 @@ export async function titleFlow() {
     syncCareer();
     const earned = Object.keys(earnedTrophies()).length;
     const resume = readSave('auto');
-    const choice: TitleChoice = again || next
-      ? 'play'
-      : await showTitle(
-          {
-            prisonLine: open.length > 1 ? t('title.prisonsOpen', { n: open.length, of: PRISONS.length }) : t('title.prison', { name: prisonName(open[0]), security: securityOf(open[0]) }),
-            record: found ? t('title.record', { n: found, of: PRISONS.reduce((n, p) => n + escapesOf(p).length, 0) }) : '',
-            resume: resume ? saveWhen(resume) : undefined,
-            saves: ALL_SLOTS.some((k) => readSave(k)),
-            tutorial: t(lessonsDone().length < 2 ? 'title.tutorialSub1' : 'title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
-            newcomer: !resume && lessonsDone().length === 0 && !found,
-            daily: dailyCard(found > 0),
-            trophies: { n: earned, of: ACHIEVEMENTS.length },
-            trophiesNew: unseenTrophies().length > 0,
-            focus: back,
-            muted: settings.muted,
-            toggleSound: () => {
-              settings.muted = !settings.muted;
-              if (!settings.muted && settings.sfxVolume === 0) settings.sfxVolume = 0.8;
-              applySettings();
-              return settings.muted;
+    const choice: TitleChoice =
+      again || next
+        ? 'play'
+        : await showTitle(
+            {
+              prisonLine:
+                open.length > 1
+                  ? t('title.prisonsOpen', { n: open.length, of: PRISONS.length })
+                  : t('title.prison', { name: prisonName(open[0]), security: securityOf(open[0]) }),
+              record: found ? t('title.record', { n: found, of: PRISONS.reduce((n, p) => n + escapesOf(p).length, 0) }) : '',
+              resume: resume ? saveWhen(resume) : undefined,
+              saves: ALL_SLOTS.some((k) => readSave(k)),
+              tutorial: t(lessonsDone().length < 2 ? 'title.tutorialSub1' : 'title.tutorialSub', {
+                n: lessonsDone().length,
+                of: LESSONS.length,
+              }),
+              newcomer: !resume && lessonsDone().length === 0 && !found,
+              daily: dailyCard(found > 0),
+              trophies: { n: earned, of: ACHIEVEMENTS.length },
+              trophiesNew: unseenTrophies().length > 0,
+              focus: back,
+              muted: settings.muted,
+              toggleSound: () => {
+                settings.muted = !settings.muted;
+                if (!settings.muted && settings.sfxVolume === 0) settings.sfxVolume = 0.8;
+                applySettings();
+                return settings.muted;
+              },
             },
-          },
-          click,
-        );
+            click,
+          );
     next = null;
     // Back on the title after this choice's screen (closed, or a game over): its button gets the focus.
     back = choice;
@@ -108,7 +115,14 @@ export async function titleFlow() {
     if (choice === 'trophies') {
       // The shelf, and from it the Intake or a replay (P25; back to the shelf after).
       let back: Awaited<ReturnType<typeof showTrophies>> = null;
-      while ((back = await showTrophies({ earned: earnedTrophies(), unseen: unseenTrophies(), career: careerOf(), prisoner: readPrisoner() }, click, back?.tab, back?.to === 'intake' ? '[data-intake]' : back?.to === 'watch' ? back.from : null))) {
+      while (
+        (back = await showTrophies(
+          { earned: earnedTrophies(), unseen: unseenTrophies(), career: careerOf(), prisoner: readPrisoner() },
+          click,
+          back?.tab,
+          back?.to === 'intake' ? '[data-intake]' : back?.to === 'watch' ? back.from : null,
+        ))
+      ) {
         markTrophiesSeen();
         if (back.to === 'watch') {
           await watchReplay(back.replay, null);

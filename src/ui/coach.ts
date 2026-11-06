@@ -34,7 +34,13 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { id: 'rollCall', ic: 'pin', text: () => t('coach.rollCall'), done: (s) => s.routine === 'rollCall' && s.attended, gone: (s) => s.routine !== 'rollCall' },
+  {
+    id: 'rollCall',
+    ic: 'pin',
+    text: () => t('coach.rollCall'),
+    done: (s) => s.routine === 'rollCall' && s.attended,
+    gone: (s) => s.routine !== 'rollCall',
+  },
   // (2.23: breakfast before the desk, eaten and counted: a guard minds a block skipped.)
   {
     id: 'meal',
@@ -44,7 +50,13 @@ const STEPS: Step[] = [
     gone: (s) => s.routine !== 'breakfast' && s.routine !== 'rollCall',
   },
   // (2.25: the tray back to the counter, and counted.)
-  { id: 'mealBack', ic: 'check', text: () => t('coach.mealBack'), done: (s) => s.routine === 'breakfast' && !s.tray && s.attended, gone: (s) => s.routine !== 'breakfast' },
+  {
+    id: 'mealBack',
+    ic: 'check',
+    text: () => t('coach.mealBack'),
+    done: (s) => s.routine === 'breakfast' && !s.tray && s.attended,
+    gone: (s) => s.routine !== 'breakfast',
+  },
   { id: 'desk', ic: 'briefcase', text: () => t(TOUCH ? 'coach.desk' : 'coach.deskKeys'), done: (s) => s.openMine, own: true },
   { id: 'loot', ic: 'hand', text: () => t('coach.loot'), done: (s) => s.openOther || s.pickedUp, own: true },
   { id: 'craft', ic: 'hammer', text: () => t(TOUCH ? 'coach.craft' : 'coach.craftKeys'), done: (s) => s.craftOpen, own: true },

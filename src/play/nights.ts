@@ -6,8 +6,30 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, hhmm } from '../sim/systems/clock';
 import { today } from '../sim/systems/calendar';
 import { HOTBAR, itemOf } from '../sim/systems/items';
-import { actNow, boardsOf, GUITAR, markOf, noShow, prizeOf, stageFreeFrom, stageOf, stageRefusal, talentOn, tonight } from '../sim/systems/talent';
-import { nearestPlace, questionNow, questionSteps, quizOf, quizOn, quizRefusal, readOf, type Choice, type Question } from '../sim/systems/quiz';
+import {
+  actNow,
+  boardsOf,
+  GUITAR,
+  markOf,
+  noShow,
+  prizeOf,
+  stageFreeFrom,
+  stageOf,
+  stageRefusal,
+  talentOn,
+  tonight,
+} from '../sim/systems/talent';
+import {
+  nearestPlace,
+  questionNow,
+  questionSteps,
+  quizOf,
+  quizOn,
+  quizRefusal,
+  readOf,
+  type Choice,
+  type Question,
+} from '../sim/systems/quiz';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
@@ -35,7 +57,16 @@ const guardLabel = (sim: Sim, k: number) => t('guard.title', { name: sim.prison.
 const itemName = (id: string) => t(`item.${id}` as Key);
 
 /** The last act's verdict and the last quiz's end, held a moment for the cards (ms of play time: a pause doesn't eat them); the last judgement's flash; notes in a row. Not state. */
-let stageResult: { at: number; mark: number; place: number; prize: number; crowd: number; heat: number; song: number; inst: number } | null = null;
+let stageResult: {
+  at: number;
+  mark: number;
+  place: number;
+  prize: number;
+  crowd: number;
+  heat: number;
+  song: number;
+  inst: number;
+} | null = null;
 let quizResult: { at: number; what: 'won' | 'tie' | 'lost'; pts: number[]; prize: number; int: number; names: string[] } | null = null;
 let judged = { grade: 0, at: 0 };
 const RESULT_MS = 6000;
@@ -62,7 +93,27 @@ function refusalText(sim: Sim, why: string): string {
 
 // ------------------------------------------------------------------ talent night's card
 
-const stageView: StageView = { phase: 'offer', acts: [], why: '', played: false, turnAt: '', hasGuitar: false, prizes: [], song: 0, inst: 0, t: 0, hits: [], mark: 0, judged: 0, judgedAt: 0, place: 0, of: 0, prize: 0, crowd: 0, heat: 0 };
+const stageView: StageView = {
+  phase: 'offer',
+  acts: [],
+  why: '',
+  played: false,
+  turnAt: '',
+  hasGuitar: false,
+  prizes: [],
+  song: 0,
+  inst: 0,
+  t: 0,
+  hits: [],
+  mark: 0,
+  judged: 0,
+  judgedAt: 0,
+  place: 0,
+  of: 0,
+  prize: 0,
+  crowd: 0,
+  heat: 0,
+};
 
 /** Close enough to the stage for its card: on the ground floor, within a tile of its boards. */
 function byStage(sim: Sim): boolean {
@@ -86,7 +137,14 @@ export function stageNow(sim: Sim, a: number): StageView | null {
   const m = dayMinute(s.step);
   const on = actNow(sim);
   // (A no-show: no mark, -2, and out of the running.)
-  v.acts = acts.map((x, k) => ({ name: inmateName(sim, x.who), inst: x.inst, song: x.song, mark: noShow(sim, k) ? -2 : m >= x.until ? x.mark : -1, on: k === on, at: formatTime(x.at + 480) }));
+  v.acts = acts.map((x, k) => ({
+    name: inmateName(sim, x.who),
+    inst: x.inst,
+    song: x.song,
+    mark: noShow(sim, k) ? -2 : m >= x.until ? x.mark : -1,
+    on: k === on,
+    at: formatTime(x.at + 480),
+  }));
   v.of = acts.filter((_, k) => !noShow(sim, k)).length + 1;
   if (o) {
     v.phase = 'play';
@@ -102,7 +160,15 @@ export function stageNow(sim: Sim, a: number): StageView | null {
   }
   if (held) {
     v.phase = 'result';
-    Object.assign(v, { mark: held.mark, place: held.place, prize: held.prize, crowd: held.crowd, heat: held.heat, song: held.song, inst: held.inst });
+    Object.assign(v, {
+      mark: held.mark,
+      place: held.place,
+      prize: held.prize,
+      crowd: held.crowd,
+      heat: held.heat,
+      song: held.song,
+      inst: held.inst,
+    });
     return v;
   }
   v.phase = 'offer';
@@ -117,7 +183,24 @@ export function stageNow(sim: Sim, a: number): StageView | null {
 
 // ------------------------------------------------------------------ quiz night's card
 
-const quizView: QuizView = { phase: 'offer', why: '', names: [], pts: [], said: [], got: -1, q: 0, question: '', choices: [], answer: 0, left: 1, secs: 0, reading: 0, end: '', prize: 0, int: 0 };
+const quizView: QuizView = {
+  phase: 'offer',
+  why: '',
+  names: [],
+  pts: [],
+  said: [],
+  got: -1,
+  q: 0,
+  question: '',
+  choices: [],
+  answer: 0,
+  left: 1,
+  secs: 0,
+  reading: 0,
+  end: '',
+  prize: 0,
+  int: 0,
+};
 
 /** A question's words and its four answers', in this language (from the running game's own names). */
 export function questionText(sim: Sim, q: Question): { text: string; choices: string[] } {
@@ -143,10 +226,14 @@ export function questionText(sim: Sim, q: Question): { text: string; choices: st
     const n = ids.filter((x) => x === id).length;
     return n > 1 ? `${n} × ${itemName(id)}` : itemName(id);
   });
-  const text = q.id === 'key' ? t('quiz.key', { name: guardLabel(sim, q.guard ?? 0) }) : q.id === 'recipe' ? t('quiz.recipe', { items: listOf(items) }) : t(`quiz.${q.id}` as Key);
+  const text =
+    q.id === 'key'
+      ? t('quiz.key', { name: guardLabel(sim, q.guard ?? 0) })
+      : q.id === 'recipe'
+        ? t('quiz.recipe', { items: listOf(items) })
+        : t(`quiz.${q.id}` as Key);
   return { text, choices: q.choices.map(choice) };
 }
-
 
 /** Quiz night's card now (null: none). */
 export function quizNow(sim: Sim): QuizView | null {
@@ -212,7 +299,14 @@ export function nightsKey(code: string): boolean {
   if (!g || g.paused || g.replay) return false;
   const s = g.rec.sim.state;
   if (s.show) {
-    const lane = code === 'KeyA' || code === 'ArrowLeft' ? 0 : code === 'KeyS' || code === 'ArrowDown' || code === 'KeyW' || code === 'ArrowUp' ? 1 : code === 'KeyD' || code === 'ArrowRight' ? 2 : -1;
+    const lane =
+      code === 'KeyA' || code === 'ArrowLeft'
+        ? 0
+        : code === 'KeyS' || code === 'ArrowDown' || code === 'KeyW' || code === 'ArrowUp'
+          ? 1
+          : code === 'KeyD' || code === 'ArrowRight'
+            ? 2
+            : -1;
     if (lane >= 0) lanePress(lane);
     return lane >= 0 || KEPT.test(code);
   }
@@ -251,7 +345,16 @@ export function announceNights(sim: Sim, e: SimEvent) {
         judged = { grade: 1, at: performance.now() };
         sound.dud();
       } else if (e.what === 'done') {
-        stageResult = { at: playNow(), mark: e.mark ?? 0, place: e.place ?? 0, prize: e.prize ?? 0, crowd: e.crowd ?? 0, heat: e.heat ?? 0, song: e.song ?? 0, inst: e.inst ?? 0 };
+        stageResult = {
+          at: playNow(),
+          mark: e.mark ?? 0,
+          place: e.place ?? 0,
+          prize: e.prize ?? 0,
+          crowd: e.crowd ?? 0,
+          heat: e.heat ?? 0,
+          song: e.song ?? 0,
+          inst: e.inst ?? 0,
+        };
         window.setTimeout(() => {
           if (play.game !== g) return;
           if ((e.mark ?? 0) >= 50) sound.cheer();
@@ -384,7 +487,8 @@ export function nightsFrameOf(sim: Sim): NightsFrame {
   const st = frame.stage;
   if (st) {
     const [fx, fz] = [st.face === 1 ? 1 : st.face === 9 ? -1 : 0, st.face === 5 ? 1 : st.face === 13 ? -1 : 0];
-    const wall = (x: number, z: number) => sim.world.inside(x, z) && sim.world.blocked(x, z) && sim.world.ground.base[z * MAP_W + x] !== TILE.DOOR;
+    const wall = (x: number, z: number) =>
+      sim.world.inside(x, z) && sim.world.blocked(x, z) && sim.world.ground.base[z * MAP_W + x] !== TILE.DOOR;
     frame.backed = [-1, 0, 1].every((k) => wall(st.x - fx - fz * k, st.z - fz + fx * k));
   } else frame.backed = false;
   const ev = sim.world.def.rules?.relaxed ? 'none' : today(sim).event;

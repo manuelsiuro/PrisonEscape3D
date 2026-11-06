@@ -17,10 +17,49 @@ import type { HolidayDay } from '../content/holidays';
 import type { LayerMove } from './state';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing', 'skipping', 'snooping', 'stranger'] as const;
+export const SPOT = [
+  'none',
+  'night',
+  'restricted',
+  'contraband',
+  'recognized',
+  'wanted',
+  'bedCheck',
+  'damage',
+  'tampering',
+  'fight',
+  'keyMissing',
+  'brawl',
+  'detector',
+  'camera',
+  'searchlight',
+  'sniper',
+  'sniffed',
+  'dogFound',
+  'gambling',
+  'tipsy',
+  'tattooing',
+  'skipping',
+  'snooping',
+  'stranger',
+] as const;
 type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork', 'parole'] as const;
+export const ESCAPES = [
+  'none',
+  'fence',
+  'tunnel',
+  'roof',
+  'takeover',
+  'gate',
+  'raft',
+  'helicopter',
+  'stowaway',
+  'bluff',
+  'glider',
+  'paperwork',
+  'parole',
+] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
 /** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper, a mine, the sea flooding a tunnel. */
 export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3, FLOOD: -4 } as const;
@@ -60,7 +99,12 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean; awake?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent' | 'gate' | 'storm' | 'runUp'; action: ToolAction }
+  | {
+      type: 'cantStrike';
+      why:
+        'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent' | 'gate' | 'storm' | 'runUp';
+      action: ToolAction;
+    }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -117,7 +161,32 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' | 'phone' | 'mail' | 'kiosk' | 'oddjob' }
+  | {
+      type: 'cash';
+      n: number;
+      why:
+        | 'loot'
+        | 'wage'
+        | 'favor'
+        | 'buy'
+        | 'gift'
+        | 'bribe'
+        | 'commend'
+        | 'order'
+        | 'visit'
+        | 'dice'
+        | 'prize'
+        | 'sale'
+        | 'bet'
+        | 'purse'
+        | 'tattoo'
+        | 'stage'
+        | 'quiz'
+        | 'phone'
+        | 'mail'
+        | 'kiosk'
+        | 'oddjob';
+    }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -132,7 +201,14 @@ export type SimEvent =
   | { type: 'wash'; on: boolean }
   | { type: 'count'; what: 'called' | 'you' | 'answered' | 'missed'; who: number; heat?: number }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
-  | { type: 'meal'; feast?: boolean; fresh?: boolean; /** 2.33: what the tray gave (energy, health), and its dish. */ n?: number; hp?: number; dish?: string }
+  | {
+      type: 'meal';
+      feast?: boolean;
+      fresh?: boolean;
+      /** 2.33: what the tray gave (energy, health), and its dish. */ n?: number;
+      hp?: number;
+      dish?: string;
+    }
   /** 2.25: a tray taken from the serving counter or given back, dropped, left behind on leaving the canteen, gone with the meal's end; `heat`: what not bringing it back cost. */
   | { type: 'tray'; what: 'take' | 'return' | 'dropped' | 'left' | 'over'; heat?: number }
   /** P31: a lap of the running track run. */
@@ -193,7 +269,12 @@ export type SimEvent =
    * muster taken or missed, the inspection's commendation.
    */
   | { type: 'day'; day: number }
-  | { type: 'today'; event: DayEvent; phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' | 'signOff' | 'search' | 'waved' | 'prize'; thorough?: boolean }
+  | {
+      type: 'today';
+      event: DayEvent;
+      phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' | 'signOff' | 'search' | 'waved' | 'prize';
+      thorough?: boolean;
+    }
   /**
    * Delivery day (P18): into the vehicle and out of it (`found`: pulled out by a thorough
    * search). (The day's delivery itself: 'today' events, its sign-off at 14:29, the search at
@@ -221,7 +302,20 @@ export type SimEvent =
    * people scared; `wild` a caught one thrown), its panic over, a thrown one gone. A guard who
    * woke without his key (`keyless`).
    */
-  | { type: 'rat'; what: RatNews; item?: number; cash?: number; who?: number; container?: number; n?: number; at?: number; why?: RatRefusal; wild?: boolean; heist?: boolean; floor?: boolean }
+  | {
+      type: 'rat';
+      what: RatNews;
+      item?: number;
+      cash?: number;
+      who?: number;
+      container?: number;
+      n?: number;
+      at?: number;
+      why?: RatRefusal;
+      wild?: boolean;
+      heist?: boolean;
+      floor?: boolean;
+    }
   | { type: 'keyless'; guard: number }
   /**
    * Smuggling (P21, smuggling.ts): an order placed on the phone (`item`, `way`); the drone turned
@@ -250,7 +344,17 @@ export type SimEvent =
    * rubble taken off the player's hands (`item`); the night's company over at 06:00, called off
    * before it, and staying on as Lights Out begins.
    */
-  | { type: 'crew'; what: CrewNews; who: number; order?: number; guard?: number; other?: number; guards?: number[]; item?: number; why?: 'gone' | 'far' }
+  | {
+      type: 'crew';
+      what: CrewNews;
+      who: number;
+      order?: number;
+      guard?: number;
+      other?: number;
+      guards?: number[];
+      item?: number;
+      why?: 'gone' | 'far';
+    }
   /**
    * P27 (cards.ts, hoops.ts, checkers.ts): a game of Cheat (a round dealt, cards laid (`by` 0 the
    * player, 1 the inmate; `n` how many, `tell` its tell showing), a call (`by` the caller, `lie`,
@@ -260,9 +364,32 @@ export type SimEvent =
    * the baskets each); the old-timer's board: sat at, got up from, a move (`by`, its `path`; `more`
    * when the jump goes on), the game won, lost or drawn (`int` the point it taught).
    */
-  | { type: 'cheat'; what: CheatNews; who: number; round?: number; by?: number; n?: number; tell?: boolean; lie?: boolean; cards?: number[]; loser?: number; stake?: number; late?: boolean }
+  | {
+      type: 'cheat';
+      what: CheatNews;
+      who: number;
+      round?: number;
+      by?: number;
+      n?: number;
+      tell?: boolean;
+      lie?: boolean;
+      cards?: number[];
+      loser?: number;
+      stake?: number;
+      late?: boolean;
+    }
   | { type: 'hoopShot'; by: number; spot: number; result: ShotResult; power: number; need: number }
-  | { type: 'hoops'; what: 'start' | 'won' | 'lost' | 'draw' | 'off' | 'practice'; who: number; crowd?: number; wins?: number; spd?: number; gain?: number; mine?: number; theirs?: number }
+  | {
+      type: 'hoops';
+      what: 'start' | 'won' | 'lost' | 'draw' | 'off' | 'practice';
+      who: number;
+      crowd?: number;
+      wins?: number;
+      spd?: number;
+      gain?: number;
+      mine?: number;
+      theirs?: number;
+    }
   | { type: 'checkers'; what: CheckersNews; who: number; by?: number; path?: number[]; more?: boolean; int?: number; gain?: number }
   /**
    * P28 (pruno.ts, garden.ts, races.ts): pruno ripe at 08:00 (in which `container`, `mine` the
@@ -285,8 +412,31 @@ export type SimEvent =
    * player's own goals); a tattoo begun, traced (its `quality`, the `pay`, the opinion `gain`),
    * given up or off, or inked on the player's arm (`mine`).
    */
-  | { type: 'football'; what: FootballNews; who?: number; team?: number[]; mine?: boolean; by?: number; score?: number[]; power?: number; crowd?: number; spd?: number; wins?: number; guards?: number[]; scored?: number }
-  | { type: 'tattoo'; what: 'start' | 'done' | 'quit' | 'off' | 'inked'; who: number; design: number; mine: boolean; quality?: number; pay?: number; gain?: number }
+  | {
+      type: 'football';
+      what: FootballNews;
+      who?: number;
+      team?: number[];
+      mine?: boolean;
+      by?: number;
+      score?: number[];
+      power?: number;
+      crowd?: number;
+      spd?: number;
+      wins?: number;
+      guards?: number[];
+      scored?: number;
+    }
+  | {
+      type: 'tattoo';
+      what: 'start' | 'done' | 'quit' | 'off' | 'inked';
+      who: number;
+      design: number;
+      mine: boolean;
+      quality?: number;
+      pay?: number;
+      gain?: number;
+    }
   /**
    * P30 (talent.ts, quiz.ts): the player's act begun (the `song`, the `inst`rument), a note played
    * (its place, `lane`, `grade` 2 good or 3 perfect, its `pitch`), one missed, a stray press; the
@@ -295,15 +445,53 @@ export type SimEvent =
    * an answer right or wrong (`by` 0 the player, 1–3 a contestant; the `choice`), time up, and its
    * end: won, a tie, lost (the `pts`, the `prize`, the `int`ellect gained), given up or off.
    */
-  | { type: 'stage'; what: 'start' | 'hit' | 'miss' | 'stray' | 'done' | 'off'; song?: number; inst?: number; note?: number; lane?: number; grade?: number; pitch?: number; mark?: number; place?: number; prize?: number; crowd?: number; heat?: number }
+  | {
+      type: 'stage';
+      what: 'start' | 'hit' | 'miss' | 'stray' | 'done' | 'off';
+      song?: number;
+      inst?: number;
+      note?: number;
+      lane?: number;
+      grade?: number;
+      pitch?: number;
+      mark?: number;
+      place?: number;
+      prize?: number;
+      crowd?: number;
+      heat?: number;
+    }
   /**
    * The pay phone (P34, phone.ts): the queue (joined, left, the player's turn come and gone, a place
    * bought, cut in, the one pushed back swinging), an inmate's call begun (`who`), the player's call
    * (begun, hung up, done: what it did), the mail, Lou (a line said, silence, the job understood or
    * not, blown or not), his jobs coming off, a tip's search, a secret overheard (`who`).
    */
-  | { type: 'phone'; what: PhoneNews; who?: number; to?: number; sub?: number; arg?: number; n?: number; tier?: number; ok?: boolean; blown?: boolean; tile?: number; cell?: number; learned?: number }
-  | { type: 'quiz'; what: 'start' | 'question' | 'right' | 'wrong' | 'timeUp' | 'won' | 'tie' | 'lost' | 'quit' | 'off'; who?: number[]; q?: number; by?: number; choice?: number; pts?: number[]; prize?: number; int?: number }
+  | {
+      type: 'phone';
+      what: PhoneNews;
+      who?: number;
+      to?: number;
+      sub?: number;
+      arg?: number;
+      n?: number;
+      tier?: number;
+      ok?: boolean;
+      blown?: boolean;
+      tile?: number;
+      cell?: number;
+      learned?: number;
+    }
+  | {
+      type: 'quiz';
+      what: 'start' | 'question' | 'right' | 'wrong' | 'timeUp' | 'won' | 'tie' | 'lost' | 'quit' | 'off';
+      who?: number[];
+      q?: number;
+      by?: number;
+      choice?: number;
+      pts?: number[];
+      prize?: number;
+      int?: number;
+    }
   /**
    * The internet kiosk (P35, kiosk.ts): logged in, a block paid, logged out (`why`); a letter, an
    * order (`item`); at mail call, the goods (or waiting: the desk full) and a photo (`n`: the
@@ -311,7 +499,17 @@ export type SimEvent =
    * (passed with `n` right and `int` gained, or failed; given up); something hidden in a hollow book
    * or taken out of it (`item`).
    */
-  | { type: 'kiosk'; what: KioskNews; why?: 'asked' | 'left' | 'closed' | 'broke'; item?: number; n?: number; q?: number; choice?: number; right?: boolean; int?: number }
+  | {
+      type: 'kiosk';
+      what: KioskNews;
+      why?: 'asked' | 'left' | 'closed' | 'broke';
+      item?: number;
+      n?: number;
+      q?: number;
+      choice?: number;
+      right?: boolean;
+      int?: number;
+    }
   /**
    * The paperwork escape (P36, paperwork.ts): a forged form slipped into the release desk's tray
    * (`n` the prison day the name is listed for); the records checked at 22:00, the forgery passing
@@ -326,7 +524,20 @@ export type SimEvent =
    * verdict (`score`, the two `lines` that weighed most, `n` the release's day or the day to apply
    * again); put off by a lockdown (`n` the new day), missed, walked out of; voided by plotting (`why`).
    */
-  | { type: 'parole'; what: ParoleNews; n?: number; lawyer?: boolean; q?: number; topic?: number; choice?: number; worth?: number; lie?: boolean; score?: number; lines?: number[]; why?: VoidWhy }
+  | {
+      type: 'parole';
+      what: ParoleNews;
+      n?: number;
+      lawyer?: boolean;
+      q?: number;
+      topic?: number;
+      choice?: number;
+      worth?: number;
+      lie?: boolean;
+      score?: number;
+      lines?: number[];
+      why?: VoidWhy;
+    }
   /**
    * The odd jobs board (P40, oddjobs.ts): a job taken (`kind`, from `who`, off pin `from`, for `n`
    * days); its work done; handed in (`n` the pay, `item` and `perk` what came with it); failed
@@ -335,7 +546,19 @@ export type SimEvent =
    * lookout's dig begun, a guard coming (`guard`), the whistle, a false alarm; a debt called in
    * (`item`); someone joining the crew on a debt; a story's step told (`n`; `more` steps to come).
    */
-  | { type: 'oddjob'; what: OddJobNews; kind?: number; who?: number; from?: number; n?: number; item?: number; perk?: number; why?: OddJobFail; guard?: number; more?: boolean }
+  | {
+      type: 'oddjob';
+      what: OddJobNews;
+      kind?: number;
+      who?: number;
+      from?: number;
+      n?: number;
+      item?: number;
+      perk?: number;
+      why?: OddJobFail;
+      guard?: number;
+      more?: boolean;
+    }
   /**
    * v2.21 (P42, holiday.ts): a holiday day begun and over (`day`); the egg hunt's eggs hidden (`n`
    * of them), one found (in the player's pockets); in the water fight; a treat taken from the open
@@ -345,7 +568,22 @@ export type SimEvent =
   | ItemEvent;
 
 /** What the odd jobs board did (P40, the 'oddjob' event). */
-type OddJobNews = 'taken' | 'done' | 'paid' | 'failed' | 'planted' | 'tipped' | 'cake' | 'cakeKept' | 'digging' | 'coming' | 'whistled' | 'falseAlarm' | 'calledIn' | 'owedJoin' | 'chain';
+type OddJobNews =
+  | 'taken'
+  | 'done'
+  | 'paid'
+  | 'failed'
+  | 'planted'
+  | 'tipped'
+  | 'cake'
+  | 'cakeKept'
+  | 'digging'
+  | 'coming'
+  | 'whistled'
+  | 'falseAlarm'
+  | 'calledIn'
+  | 'owedJoin'
+  | 'chain';
 /** Why an odd job failed: its time up, given up, seen dropping it, caught planting the stash, the game's result the wrong way, the dig found. */
 export type OddJobFail = 'time' | 'quit' | 'seen' | 'caught' | 'fixed' | 'found';
 
@@ -353,13 +591,60 @@ export type OddJobFail = 'time' | 'quit' | 'seen' | 'caught' | 'fixed' | 'found'
 type HolidayNews = 'start' | 'end' | 'hidden' | 'egg' | 'splash' | 'took' | 'carved' | 'laugh';
 
 /** What the pay phone did (P34, the 'phone' event). */
-type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
+type PhoneNews =
+  | 'joined'
+  | 'left'
+  | 'turn'
+  | 'lostTurn'
+  | 'swapped'
+  | 'cut'
+  | 'swing'
+  | 'inmateCall'
+  | 'call'
+  | 'hungUp'
+  | 'home'
+  | 'moneyOrder'
+  | 'mail'
+  | 'appeal'
+  | 'retainer'
+  | 'tip'
+  | 'tipFound'
+  | 'tipEmpty'
+  | 'snitch'
+  | 'said'
+  | 'silence'
+  | 'lou'
+  | 'diversion'
+  | 'ignored'
+  | 'cake'
+  | 'cakeKept'
+  | 'cakeSeized'
+  | 'wheels'
+  | 'overheard';
 /** What the parole board did (P39, the 'parole' event). */
-type ParoleNews = 'applied' | 'called' | 'sat' | 'question' | 'answer' | 'silent' | 'granted' | 'denied' | 'postponed' | 'missed' | 'walkedOut' | 'voided';
+type ParoleNews =
+  'applied' | 'called' | 'sat' | 'question' | 'answer' | 'silent' | 'granted' | 'denied' | 'postponed' | 'missed' | 'walkedOut' | 'voided';
 /** What the paperwork did (P36, the 'paper' event). */
 type PaperNews = 'filed' | 'passed' | 'found' | 'called' | 'turnedAway' | 'cleared' | 'missed' | 'shut';
 /** What the internet kiosk did (P35, the 'kiosk' event). */
-type KioskNews = 'login' | 'paid' | 'logout' | 'wrote' | 'ordered' | 'goods' | 'goodsWait' | 'photo' | 'course' | 'question' | 'answer' | 'timeUp' | 'passed' | 'failed' | 'quit' | 'hidden' | 'unhidden';
+type KioskNews =
+  | 'login'
+  | 'paid'
+  | 'logout'
+  | 'wrote'
+  | 'ordered'
+  | 'goods'
+  | 'goodsWait'
+  | 'photo'
+  | 'course'
+  | 'question'
+  | 'answer'
+  | 'timeUp'
+  | 'passed'
+  | 'failed'
+  | 'quit'
+  | 'hidden'
+  | 'unhidden';
 /** What pruno did (P28, the 'pruno' event). */
 type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
 /** What a garden bed did (P28, the 'garden' event). */
@@ -368,7 +653,20 @@ type GardenNews = 'planted' | 'watered' | 'grew' | 'ripe' | 'wilted' | 'died' | 
 type RaceNews = 'bet' | 'entered' | 'scratched' | 'start' | 'result' | 'off';
 
 /** What the crew did (P23, the 'crew' event). */
-type CrewNews = 'order' | 'whistle' | 'recalled' | 'brawl' | 'brawlOver' | 'fetched' | 'handed' | 'fetchFailed' | 'stopped' | 'dirt' | 'nightOver' | 'nightOff' | 'nightOut';
+type CrewNews =
+  | 'order'
+  | 'whistle'
+  | 'recalled'
+  | 'brawl'
+  | 'brawlOver'
+  | 'fetched'
+  | 'handed'
+  | 'fetchFailed'
+  | 'stopped'
+  | 'dirt'
+  | 'nightOver'
+  | 'nightOff'
+  | 'nightOut';
 
 /** A dice game (P22, the 'dice' event). */
 type DiceNews = 'rolled' | 'rerolled' | 'won' | 'lost' | 'push';
@@ -378,10 +676,28 @@ type BoutNews = 'start' | 'won' | 'lost' | 'draw' | 'gaveUp' | 'off';
 type PickNews = 'start' | 'set' | 'slip' | 'open' | 'stop';
 
 /** What smuggling did (P21, the 'smuggle' event). */
-type SmuggleNews = 'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'collected' | 'visit' | 'noRoom' | 'parcel' | 'parcelSeized' | 'deskFull';
+type SmuggleNews =
+  'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'collected' | 'visit' | 'noRoom' | 'parcel' | 'parcelSeized' | 'deskFull';
 
 /** What a rat did (P20, the 'rat' event). */
-type RatNews = 'caught' | 'fed' | 'tamed' | 'hungry' | 'haveOne' | 'sent' | 'took' | 'left' | 'empty' | 'full' | 'woke' | 'home' | 'chased' | 'loose' | 'calm' | 'gone' | 'refused';
+type RatNews =
+  | 'caught'
+  | 'fed'
+  | 'tamed'
+  | 'hungry'
+  | 'haveOne'
+  | 'sent'
+  | 'took'
+  | 'left'
+  | 'empty'
+  | 'full'
+  | 'woke'
+  | 'home'
+  | 'chased'
+  | 'loose'
+  | 'calm'
+  | 'gone'
+  | 'refused';
 
 /** What a dog did (P19, the 'dog' event). */
 type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew';
@@ -391,7 +707,30 @@ type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
 /** What happened at the vending machine (2.32). */
-export type VendNews = 'open' | 'closed' | 'paid' | 'got' | 'floor' | 'jam' | 'thump' | 'freed' | 'toldOff' | 'waiting' | 'turn' | 'lostTurn' | 'left' | 'cut' | 'swing' | 'inmatePaid' | 'inmateGot' | 'inmateJam' | 'inmateThump' | 'gaveUp' | 'empty' | 'refilled' | 'shut';
+export type VendNews =
+  | 'open'
+  | 'closed'
+  | 'paid'
+  | 'got'
+  | 'floor'
+  | 'jam'
+  | 'thump'
+  | 'freed'
+  | 'toldOff'
+  | 'waiting'
+  | 'turn'
+  | 'lostTurn'
+  | 'left'
+  | 'cut'
+  | 'swing'
+  | 'inmatePaid'
+  | 'inmateGot'
+  | 'inmateJam'
+  | 'inmateThump'
+  | 'gaveUp'
+  | 'empty'
+  | 'refilled'
+  | 'shut';
 /** What happened at the menu board (2.33). */
 export type MenuNews = 'open' | 'closed' | 'left' | 'scribbling' | 'stopped' | 'scribbled' | 'caught' | 'laugh' | 'wiped';
 /** What happened at the water cooler (2.33). */
@@ -404,4 +743,151 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'menuFar' | 'menuScribbled' | 'notThirsty' | 'coolerTray' | 'vendTray' | 'vendShut' | 'vendDark' | 'vendSoldOut' | 'vendStuck' | 'vendBusy' | 'vendPockets' | 'vendFar' | 'vendNoJam' | 'vendFirst' | 'headTaken' | 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate' | 'noParole' | 'paroleOn' | 'atHearing' | 'paroleEarly' | 'paroleWait' | 'notAtDesk' | 'noBoard' | 'notAtBoard' | 'haveJob' | 'noJob' | 'pinTaken' | 'noDeal' | 'fixerToday' | 'notOwed' | 'notHisJob' | 'notLookout' | 'liftFull';
+export type Refusal =
+  | 'menuFar'
+  | 'menuScribbled'
+  | 'notThirsty'
+  | 'coolerTray'
+  | 'vendTray'
+  | 'vendShut'
+  | 'vendDark'
+  | 'vendSoldOut'
+  | 'vendStuck'
+  | 'vendBusy'
+  | 'vendPockets'
+  | 'vendFar'
+  | 'vendNoJam'
+  | 'vendFirst'
+  | 'headTaken'
+  | 'closed'
+  | 'cash'
+  | 'room'
+  | 'grudge'
+  | 'opinion'
+  | 'followers'
+  | 'int'
+  | 'taken'
+  | 'favors'
+  | 'missing'
+  | 'worthless'
+  | 'notDone'
+  | 'seatTaken'
+  | 'tipOpinion'
+  | 'tipToday'
+  | 'noTips'
+  | 'noHelicopter'
+  | 'helipadGuards'
+  | 'notUniform'
+  | 'honest'
+  | 'reported'
+  | 'tooHot'
+  | 'lookingAway'
+  | 'clean'
+  | 'paperToday'
+  | 'watched'
+  | 'hunted'
+  | 'ordered'
+  | 'havePhone'
+  | 'noWay'
+  | 'gamesClosed'
+  | 'gameOpinion'
+  | 'played'
+  | 'tired'
+  | 'gamesLockdown'
+  | 'seated'
+  | 'notHisLine'
+  | 'brawlToday'
+  | 'noBrawl'
+  | 'noDrop'
+  | 'nightOpinion'
+  | 'crewLockdown'
+  | 'crewBusy'
+  | 'badPost'
+  | 'crewNight'
+  | 'notShift'
+  | 'notGuard'
+  | 'papersHot'
+  | 'loneWolf'
+  | 'noCourt'
+  | 'elderOpinion'
+  | 'notMeal'
+  | 'takenToday'
+  | 'notWanted'
+  | 'raceClosed'
+  | 'raceFar'
+  | 'betPlaced'
+  | 'noRat'
+  | 'enterFirst'
+  | 'soldEnough'
+  | 'noPitch'
+  | 'fewPlayers'
+  | 'inkOpinion'
+  | 'inkFriend'
+  | 'noGun'
+  | 'noInk'
+  | 'armsFull'
+  | 'haveIt'
+  | 'inkedToday'
+  | 'inkedEnough'
+  | 'stageClosed'
+  | 'performed'
+  | 'actsOn'
+  | 'offStage'
+  | 'noGuitar'
+  | 'quizClosed'
+  | 'quizzed'
+  | 'notAtQuiz'
+  | 'fewQuiz'
+  | 'quizLate'
+  | 'noPhone'
+  | 'phoneClosed'
+  | 'notAtPhone'
+  | 'phoneBusy'
+  | 'phoneLine'
+  | 'onPhone'
+  | 'calledHome'
+  | 'appealed'
+  | 'retained'
+  | 'tipped'
+  | 'badCell'
+  | 'divertBooked'
+  | 'badHour'
+  | 'cakeComing'
+  | 'carBooked'
+  | 'inLine'
+  | 'notInLine'
+  | 'notAhead'
+  | 'lineFirst'
+  | 'phoneDay'
+  | 'noKiosk'
+  | 'kioskClosed'
+  | 'notAtKiosk'
+  | 'loggedOut'
+  | 'loggedIn'
+  | 'wrote'
+  | 'shopToday'
+  | 'orderComing'
+  | 'coursed'
+  | 'inCourse'
+  | 'kioskDark'
+  | 'courseLate'
+  | 'bookFull'
+  | 'onList'
+  | 'trayLate'
+  | 'noParole'
+  | 'paroleOn'
+  | 'atHearing'
+  | 'paroleEarly'
+  | 'paroleWait'
+  | 'notAtDesk'
+  | 'noBoard'
+  | 'notAtBoard'
+  | 'haveJob'
+  | 'noJob'
+  | 'pinTaken'
+  | 'noDeal'
+  | 'fixerToday'
+  | 'notOwed'
+  | 'notHisJob'
+  | 'notLookout'
+  | 'liftFull';

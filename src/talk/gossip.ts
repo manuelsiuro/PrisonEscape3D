@@ -31,7 +31,25 @@ import { SPECIALITIES } from '../content/crew';
 import { specialityOf } from '../sim/systems/crew';
 import type { GuardDef } from '../content/prisons/types';
 import { grateAt, underSea } from '../sim/systems/structure';
-import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO } from '../sim/tuning';
+import {
+  BED_CHECK_MINUTES,
+  CAMERA_BLIND_STEPS,
+  KO_STEPS,
+  NAP_FROM,
+  OPINION_LOW,
+  POTATO_STEPS,
+  POWER_OFF_STEPS,
+  SOLITARY_STEPS,
+  STEPS_PER_MINUTE,
+  STEPS_PER_SECOND,
+  TAKEOVER_SHARE,
+  TOILET_LOADS,
+  UNBRACED_RUN,
+  DOG_DAY_FROM,
+  DOG_DAY_TO,
+  DOG_NIGHT_FROM,
+  DOG_NIGHT_TO,
+} from '../sim/tuning';
 
 const PILLS = itemNumber('sleeping_pills');
 /** P42: the egg hunt's eggs (still hidden: their uses bit). */
@@ -51,11 +69,139 @@ import { inmateInCell } from '../sim/systems/inmates';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard', 'boardJob', 'eggDesk'] as const;
+export const GOSSIP = [
+  'bedChecks',
+  'dummy',
+  'fenceOff',
+  'brace',
+  'takeover',
+  'keyColor',
+  'grate',
+  'toilets',
+  'camera',
+  'pouch',
+  'shell',
+  'craters',
+  'flood',
+  'heli',
+  'solitary',
+  'koTime',
+  'stock',
+  'job',
+  'favor',
+  'grudge',
+  'heat',
+  'takeoverAll',
+  'steady',
+  'lazy',
+  'strict',
+  'corrupt',
+  'shakedown',
+  'shakedownYou',
+  'nextInspection',
+  'nextDrill',
+  'nextFoodFight',
+  'stormCut',
+  'nextDelivery',
+  'searchClose',
+  'searchQuick',
+  'dogShift',
+  'dogNight',
+  'dogTreat',
+  'dogWash',
+  'dogPepper',
+  'pills',
+  'ratTrap',
+  'ratTunnel',
+  'ratKey',
+  'ratDogs',
+  'fixer',
+  'droneDrop',
+  'visitArches',
+  'nextVisiting',
+  'champ',
+  'gambling',
+  'lockpick',
+  'nextSports',
+  'lookout',
+  'digger',
+  'muscle',
+  'smuggler',
+  'shiftChange',
+  'fakeId',
+  'glideDay',
+  'oldTimer',
+  'pruno',
+  'gardenHole',
+  'raceNight',
+  'ratFed',
+  'ratHungry',
+  'nextTalent',
+  'nextQuiz',
+  'phoneCall',
+  'guardNick',
+  'guardHome',
+  'guardTeam',
+  'releaseForms',
+  'recordsCheck',
+  'paroleBoard',
+  'boardJob',
+  'eggDesk',
+] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'pruno', 'gardenHole', 'raceNight', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard']);
+export const LASTING: ReadonlySet<GossipKind> = new Set([
+  'bedChecks',
+  'dummy',
+  'fenceOff',
+  'brace',
+  'takeover',
+  'takeoverAll',
+  'keyColor',
+  'grate',
+  'toilets',
+  'camera',
+  'pouch',
+  'shell',
+  'craters',
+  'flood',
+  'heli',
+  'solitary',
+  'koTime',
+  'steady',
+  'lazy',
+  'strict',
+  'corrupt',
+  'dogShift',
+  'dogNight',
+  'dogTreat',
+  'dogWash',
+  'dogPepper',
+  'ratTrap',
+  'ratTunnel',
+  'ratKey',
+  'ratDogs',
+  'droneDrop',
+  'visitArches',
+  'gambling',
+  'lockpick',
+  'lookout',
+  'digger',
+  'muscle',
+  'smuggler',
+  'shiftChange',
+  'fakeId',
+  'pruno',
+  'gardenHole',
+  'raceNight',
+  'guardNick',
+  'guardHome',
+  'guardTeam',
+  'releaseForms',
+  'recordsCheck',
+  'paroleBoard',
+]);
 
 /** A gossip fact the player heard, and when (the step): the prisoner's file lists them. */
 export interface Rumor {
@@ -117,7 +263,8 @@ function lastingFacts(sim: Sim): Fact[] {
     add({ kind: 'dummy' });
   }
   // One generator powering an electric fence (Irongate's two split it: no simple rule to tell).
-  if (!def.grid && generatorsOf(sim.world).length === 1 && hasTile(sim, TILE.ELECTRIC)) add({ kind: 'fenceOff', n: POWER_OFF_STEPS / STEPS_PER_SECOND });
+  if (!def.grid && generatorsOf(sim.world).length === 1 && hasTile(sim, TILE.ELECTRIC))
+    add({ kind: 'fenceOff', n: POWER_OFF_STEPS / STEPS_PER_SECOND });
   add({ kind: 'brace', n: UNBRACED_RUN });
   const routes = def.escapes ?? ['fence', 'tunnel', 'roof', 'takeover'];
   if (routes.includes('takeover') && def.guards.length > 1) {
@@ -141,7 +288,8 @@ function lastingFacts(sim: Sim): Fact[] {
   const w = sim.world;
   const grated = new Set<ZoneId>();
   for (let i = 0; i < MAP_W * MAP_H; i++) if (grateAt(w, i)) grated.add(w.zoneAt(i % MAP_W, Math.floor(i / MAP_W)));
-  for (const z of grated) if (z !== 'none' && z !== 'outside' && z !== 'perimeter' && z !== 'inmateCell') add({ kind: 'grate', key: `grate:${z}`, place: z });
+  for (const z of grated)
+    if (z !== 'none' && z !== 'outside' && z !== 'perimeter' && z !== 'inmateCell') add({ kind: 'grate', key: `grate:${z}`, place: z });
   add({ kind: 'toilets', n: TOILET_LOADS });
   if (def.cameras?.length) add({ kind: 'camera', n: CAMERA_BLIND_STEPS / STEPS_PER_SECOND });
   if (hasTile(sim, TILE.DETECTOR)) add({ kind: 'pouch' });
@@ -200,7 +348,8 @@ function lastingFacts(sim: Sim): Fact[] {
     add({ kind: 'recordsCheck', t1: (RECORDS_MINUTE + ROUTINE[0].start) % 1440, n: RECORDS_HEAT });
   }
   // The parole board (P39): when it sits (a week after applying), and at what hour.
-  if (HEARINGS[def.id] && def.comms && !relaxed) add({ kind: 'paroleBoard', t1: (HEARING_FROM + ROUTINE[0].start) % 1440, n: HEARING_AFTER });
+  if (HEARINGS[def.id] && def.comms && !relaxed)
+    add({ kind: 'paroleBoard', t1: (HEARING_FROM + ROUTINE[0].start) % 1440, n: HEARING_AFTER });
   lasting.set(id, out);
   return out;
 }
@@ -213,19 +362,23 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   const out = lastingFacts(sim).filter((f) => dogsOut || !DOG_FACTS.has(f.kind));
   // A merchant's stock (items people know how to say), if the merchant would sell to the player.
   // (P26: none on a Closed Shop Daily.)
-  if (!twist(s, 'closedShop')) sim.prison.merchants.forEach((cell, k) => {
-    const who = inmateInCell(s, cell);
-    if (who < 0 || who === speaker || s.inmates[who].opinion <= OPINION_LOW) return;
-    for (const v of s.shops[k] ?? []) {
-      const id = v ? itemDef(itemOf(v)).id : '';
-      if (id && (CHAT_ITEMS.includes(id) || STOCK_WORDS.has(id))) out.push({ kind: 'stock', key: `stock:${who}:${id}`, inmate: who, item: id });
-    }
-  });
+  if (!twist(s, 'closedShop'))
+    sim.prison.merchants.forEach((cell, k) => {
+      const who = inmateInCell(s, cell);
+      if (who < 0 || who === speaker || s.inmates[who].opinion <= OPINION_LOW) return;
+      for (const v of s.shops[k] ?? []) {
+        const id = v ? itemDef(itemOf(v)).id : '';
+        if (id && (CHAT_ITEMS.includes(id) || STOCK_WORDS.has(id)))
+          out.push({ kind: 'stock', key: `stock:${who}:${id}`, inmate: who, item: id });
+      }
+    });
   // Open jobs, by their room.
   jobRooms(sim.world).forEach((room, j) => {
-    if (s.jobs[j] === HOLDER.NOBODY && PUBLIC_PLACES.includes(room.def.zone)) out.push({ kind: 'job', key: `job:${room.def.zone}`, place: room.def.zone });
+    if (s.jobs[j] === HOLDER.NOBODY && PUBLIC_PLACES.includes(room.def.zone))
+      out.push({ kind: 'job', key: `job:${room.def.zone}`, place: room.def.zone });
   });
-  for (const f of s.favors) if (f.state === FAVOR_STATE.OFFERED && f.by !== speaker) out.push({ kind: 'favor', key: `favor:${f.by}`, inmate: f.by });
+  for (const f of s.favors)
+    if (f.state === FAVOR_STATE.OFFERED && f.by !== speaker) out.push({ kind: 'favor', key: `favor:${f.by}`, inmate: f.by });
   s.inmates.forEach((m, k) => {
     if (k !== speaker && m.opinion <= OPINION_LOW) out.push({ kind: 'grudge', key: `grudge:${k}`, inmate: k });
   });
@@ -260,7 +413,24 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // The day (P17): tomorrow's inspection, drill or food fight (the plan is drawn ahead: true), and tonight's storm's first power cut still to come.
   const plan = today(sim);
   const next = planOf(sim, plan.day + 1);
-  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : next.event === 'visiting' ? 'nextVisiting' : next.event === 'sports' ? 'nextSports' : next.event === 'talent' ? 'nextTalent' : next.event === 'quiz' ? 'nextQuiz' : null;
+  const ahead =
+    next.event === 'inspection'
+      ? 'nextInspection'
+      : next.event === 'drill'
+        ? 'nextDrill'
+        : next.event === 'foodFight'
+          ? 'nextFoodFight'
+          : next.event === 'delivery'
+            ? 'nextDelivery'
+            : next.event === 'visiting'
+              ? 'nextVisiting'
+              : next.event === 'sports'
+                ? 'nextSports'
+                : next.event === 'talent'
+                  ? 'nextTalent'
+                  : next.event === 'quiz'
+                    ? 'nextQuiz'
+                    : null;
   if (ahead && !sim.prison.rules?.relaxed) out.push({ kind: ahead, key: `${ahead}:${next.day}`, n: next.day });
   const m = dayMinute(s.step);
   // The pay phone (P34): who rings home in a free time still to come today, and when (drawn ahead with roll(): true; once the player has used it, inmates queue).
@@ -273,7 +443,8 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
       }
     });
   const cut = plan.outages.find((o) => o > m);
-  if (cut !== undefined && !sim.prison.rules?.relaxed) out.push({ kind: 'stormCut', key: `stormCut:${plan.day}:${cut}`, t1: (cut + ROUTINE[0].start) % 1440 });
+  if (cut !== undefined && !sim.prison.rules?.relaxed)
+    out.push({ kind: 'stormCut', key: `stormCut:${plan.day}:${cut}`, t1: (cut + ROUTINE[0].start) % 1440 });
   // The egg hunt (P42): whose desk still hides an egg (the inmates know their neighbours' drawers).
   if (holidayNow(sim, 'eggHunt'))
     containersOf(sim.world).forEach((c, k) => {
@@ -296,16 +467,34 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   }
   // A race night (P28), before the off: whose rat ate today and whose didn't (true: the card is drawn for the day). Not the speaker's own.
   if (sim.prison.leisure?.race && raceNight(plan.day) && m < RACE_MINUTE - ROUTINE[0].start)
-    for (const e of rivals(s, plan.day)) if (e.owner !== speaker) out.push({ kind: e.fed ? 'ratFed' : 'ratHungry', key: `ratFed:${plan.day}:${e.owner}`, inmate: e.owner });
+    for (const e of rivals(s, plan.day))
+      if (e.owner !== speaker) out.push({ kind: e.fed ? 'ratFed' : 'ratHungry', key: `ratFed:${plan.day}:${e.owner}`, inmate: e.owner });
   // The odd jobs board (P40): who pinned a job up today that's still there (the deals are the day's own: true). Not the speaker's own.
-  for (const d of boardNow(sim as never).pins) if (d && d.giver !== speaker) out.push({ kind: 'boardJob', key: `boardJob:${plan.day}:${d.giver}`, inmate: d.giver });
+  for (const d of boardNow(sim as never).pins)
+    if (d && d.giver !== speaker) out.push({ kind: 'boardJob', key: `boardJob:${plan.day}:${d.giver}`, inmate: d.giver });
   // A glider's day (P24): today's wind would carry one off the roof clear out to the road.
-  if ((sim.prison.escapes ?? []).includes('glider') && !sim.prison.rules?.relaxed && glideOutToday(sim)) out.push({ kind: 'glideDay', key: `glideDay:${plan.day}` });
+  if ((sim.prison.escapes ?? []).includes('glider') && !sim.prison.rules?.relaxed && glideOutToday(sim))
+    out.push({ kind: 'glideDay', key: `glideDay:${plan.day}` });
   return out;
 }
 
 /** The merchants' wares the banks can name (grammar.ts has their words). */
-const STOCK_WORDS: ReadonlySet<string> = new Set(['lighter', 'glue', 'duct_tape', 'metal_file', 'timber', 'sheet_metal', 'crowbar', 'wire', 'razor_blade', 'foil', 'rope', 'trowel', 'nail_file', 'screwdriver']);
+const STOCK_WORDS: ReadonlySet<string> = new Set([
+  'lighter',
+  'glue',
+  'duct_tape',
+  'metal_file',
+  'timber',
+  'sheet_metal',
+  'crowbar',
+  'wire',
+  'razor_blade',
+  'foil',
+  'rope',
+  'trowel',
+  'nail_file',
+  'screwdriver',
+]);
 
 /** The fields each kind of fact needs (numbers, a guard, an inmate, an item, a place). */
 const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {

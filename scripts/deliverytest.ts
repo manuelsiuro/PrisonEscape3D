@@ -28,7 +28,7 @@ import { ESCAPES, Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { dayPlan, planOf, today } from '../src/sim/systems/calendar';
 import { dayMinute } from '../src/sim/systems/clock';
 import { atTail, searchMinute, thorough, vehicleIn } from '../src/sim/systems/delivery';
-import { GUARD, sendToLook } from '../src/sim/systems/guards';
+import { sendToLook } from '../src/sim/systems/guards';
 import { FEAT } from '../src/sim/systems/ledger';
 import { CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { LAYER, MAP_W } from '../src/sim/world/World';
@@ -51,7 +51,10 @@ const WITH_VEHICLE = [CENTER_PERKS, STALAG_FLUCHT, SAN_PANCHO, IRONGATE];
     let weeks = 0;
     for (const salt of salts) {
       for (let wk = 0; wk < 8; wk++) {
-        const n = Array.from({ length: book?.deck.length ?? 7 }, (_, k) => dayPlan(p.id, salt, 2 + wk * (book?.deck.length ?? 7) + k).event).filter((e) => e === 'delivery').length;
+        const n = Array.from(
+          { length: book?.deck.length ?? 7 },
+          (_, k) => dayPlan(p.id, salt, 2 + wk * (book?.deck.length ?? 7) + k).event,
+        ).filter((e) => e === 'delivery').length;
         deliveries += n;
         weeks++;
       }
@@ -62,10 +65,16 @@ const WITH_VEHICLE = [CENTER_PERKS, STALAG_FLUCHT, SAN_PANCHO, IRONGATE];
     const forced = dayPlan(p.id, salts[0], 3, [[3, E('delivery'), -1]]).event;
     if (!p.delivery) check(forced !== 'delivery', `${p.id}: a delivery forced where no vehicle comes is not one`);
     const plan = dayPlan(p.id, salts[0], 1, [[1, E('delivery'), CLEAR]]);
-    if (p.delivery) check(plan.event === 'delivery' && plan.at === 270 && plan.until === 391 && searchMinute(plan) === 390, `${p.id}: a delivery 12:30–14:31, searched at 14:30`);
+    if (p.delivery)
+      check(
+        plan.event === 'delivery' && plan.at === 270 && plan.until === 391 && searchMinute(plan) === 390,
+        `${p.id}: a delivery 12:30–14:31, searched at 14:30`,
+      );
   }
   check(dayPlan(TRAINING.id, 1, 2, [[2, E('delivery'), -1]]).event === 'none', 'the Training Block: never a delivery');
-  console.log('plans: a delivery once a week where a vehicle comes (Center Perks, Stalag Flucht, San Pancho, Irongate); none at Shankton or in training');
+  console.log(
+    'plans: a delivery once a week where a vehicle comes (Center Perks, Stalag Flucht, San Pancho, Irongate); none at Shankton or in training',
+  );
 }
 
 // ------------------------------------------------------------------ helpers
@@ -73,7 +82,10 @@ const WITH_VEHICLE = [CENTER_PERKS, STALAG_FLUCHT, SAN_PANCHO, IRONGATE];
 /** A new game with a delivery on day `day` (every day quiet otherwise), stepped to a minute of that prison day. */
 function game(def: PrisonDef, seed = 3, day = 1) {
   const sim = new Sim(def, seed);
-  sim.state.calendar = [[0, 0, CLEAR], [day, E('delivery'), CLEAR]];
+  sim.state.calendar = [
+    [0, 0, CLEAR],
+    [day, E('delivery'), CLEAR],
+  ];
   const seen: SimEvent[] = [];
   const to = (dayMin: number) => {
     const target = (day - 1) * 1440 * STEPS_PER_MINUTE + dayMin * STEPS_PER_MINUTE;
@@ -127,7 +139,8 @@ for (const def of WITH_VEHICLE) {
   to(271);
   check(vehicleIn(sim) && w.delivering, `${def.id}: at 12:30 the ${d.vehicle} is in`);
   let solid = true;
-  for (let z = bz0; z <= bz1; z++) for (let x = bx0; x <= bx1; x++) solid &&= !!(w.block[tileOf(x, z)] && w.guardBlock[tileOf(x, z)] && w.npcBlock[tileOf(x, z)]);
+  for (let z = bz0; z <= bz1; z++)
+    for (let x = bx0; x <= bx1; x++) solid &&= !!(w.block[tileOf(x, z)] && w.guardBlock[tileOf(x, z)] && w.npcBlock[tileOf(x, z)]);
   check(solid, `${def.id}: its bay is solid for the player, the inmates and the guards`);
   const under = (b: { x: number; z: number }) => w.parked[Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT)] === 1;
   check(!under(sim.state.player) && !under(inmate.body), `${def.id}: whoever stood where it parks stepped aside`);
@@ -135,8 +148,12 @@ for (const def of WITH_VEHICLE) {
   const near = { x: (bx0 - 1) * UNIT + UNIT / 2, z: ((bz0 + bz1) / 2) * UNIT + UNIT / 2, facing: 1, moving: false };
   const far = { x: (bx1 + 1) * UNIT + UNIT / 2, z: near.z };
   if (bx1 - bx0 >= 1) check(!canSee(w, near, far, 12 * UNIT), `${def.id}: nobody sees through it`);
-  for (const q of d.open ?? []) check(!w.block[tileOf(q.x, q.z)] && !w.doorShut[tileOf(q.x, q.z)], `${def.id}: the door at ${q.x},${q.z} stands open`);
-  check(seen.some((e) => e.type === 'today' && e.event === 'delivery' && e.phase === 'start'), `${def.id}: the delivery's start is told`);
+  for (const q of d.open ?? [])
+    check(!w.block[tileOf(q.x, q.z)] && !w.doorShut[tileOf(q.x, q.z)], `${def.id}: the door at ${q.x},${q.z} stands open`);
+  check(
+    seen.some((e) => e.type === 'today' && e.event === 'delivery' && e.phase === 'start'),
+    `${def.id}: the delivery's start is told`,
+  );
   // The supervisor walks its round, then stands at the tail to sign it off.
   const g = sim.state.guards[d.supervisor];
   const stops = new Set<number>();
@@ -149,15 +166,23 @@ for (const def of WITH_VEHICLE) {
   check(stops.size === visit.size, `${def.id}: the supervisor walks the whole round (${stops.size} of ${visit.size} stops)`);
   to(searchMinute(today(sim)) - 1);
   const tail = tileOf(d.tail.x, d.tail.z);
-  check(Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT) === tail, `${def.id}: by 14:29 the supervisor stands at the tail`);
+  check(
+    Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT) === tail,
+    `${def.id}: by 14:29 the supervisor stands at the tail`,
+  );
   to(392);
   check(!vehicleIn(sim) && !w.parked[mid] && (pad || !w.block[mid]), `${def.id}: at 14:31 it's gone`);
   // (Its doors shut again once the player isn't out past them: stepped aside out there as it came in, back in.)
   put(sim, def.spawn.x, def.spawn.z);
   to(393);
   for (const q of d.open ?? []) check(!!w.doorShut[tileOf(q.x, q.z)], `${def.id}: its door shut again`);
-  check(seen.some((e) => e.type === 'today' && e.phase === 'search'), `${def.id}: searched at 14:30 (nobody aboard)`);
-  console.log(`${def.id}: the ${d.vehicle} in 12:30–14:31, solid and opaque, ${def.guards[d.supervisor].name} round its ${d.round.length} stops and at the tail by 14:29`);
+  check(
+    seen.some((e) => e.type === 'today' && e.phase === 'search'),
+    `${def.id}: searched at 14:30 (nobody aboard)`,
+  );
+  console.log(
+    `${def.id}: the ${d.vehicle} in 12:30–14:31, solid and opaque, ${def.guards[d.supervisor].name} round its ${d.round.length} stops and at the tail by 14:29`,
+  );
 }
 
 // ------------------------------------------------------------------ climbing in
@@ -211,7 +236,9 @@ for (const def of WITH_VEHICLE) {
   unseenAtTail(late.sim);
   late.step(command(0, OP.INTERACT));
   check(!late.sim.state.stowed && !atTail(late.sim), 'after 14:30: the tailgate is shut (nothing to climb into)');
-  console.log('climbing in: at the tail, unseen, not wanted, before 14:30; hidden, nowhere on foot and seen by nobody; Interact climbs out');
+  console.log(
+    'climbing in: at the tail, unseen, not wanted, before 14:30; hidden, nowhere on foot and seen by nobody; Interact climbs out',
+  );
 }
 
 // ------------------------------------------------------------------ the search
@@ -230,15 +257,28 @@ for (const def of WITH_VEHICLE) {
   // A quick look: away at 14:31.
   const quick = hideAndWait(def, seedFor(def, false));
   const st = quick.sim.state;
-  check(st.escaped > 0 && ESCAPES[st.via] === 'stowaway' && dayMinute(st.escaped) === 391, `${def.id}: a quick look, away with the ${def.delivery!.vehicle} at 14:31`);
-  check(quick.seen.some((e) => e.type === 'today' && e.phase === 'search' && !e.thorough), `${def.id}: the search was a quick look`);
+  check(
+    st.escaped > 0 && ESCAPES[st.via] === 'stowaway' && dayMinute(st.escaped) === 391,
+    `${def.id}: a quick look, away with the ${def.delivery!.vehicle} at 14:31`,
+  );
+  check(
+    quick.seen.some((e) => e.type === 'today' && e.phase === 'search' && !e.thorough),
+    `${def.id}: the search was a quick look`,
+  );
   // Thorough: found, solitary.
   const seed = seedFor(def, true);
   const close = hideAndWait(def, seed);
   const cs = close.sim.state;
-  check(!cs.escaped && !cs.stowed && close.seen.some((e) => e.type === 'stow' && e.found) && close.seen.some((e) => e.type === 'caught' && e.solitary), `${def.id}: a thorough search finds the stowaway (solitary)`);
+  check(
+    !cs.escaped &&
+      !cs.stowed &&
+      close.seen.some((e) => e.type === 'stow' && e.found) &&
+      close.seen.some((e) => e.type === 'caught' && e.solitary),
+    `${def.id}: a thorough search finds the stowaway (solitary)`,
+  );
   check(cs.stowCaught === 1 && cs.feats[FEAT.stowFound] === 1, `${def.id}: the catch remembered`);
-  for (let day = 2; day <= 1 + WARY_DAYS; day++) check(thorough(close.sim, day), `${def.id}: day ${day}, every search thorough after the catch`);
+  for (let day = 2; day <= 1 + WARY_DAYS; day++)
+    check(thorough(close.sim, day), `${def.id}: day ${day}, every search thorough after the catch`);
   check(thorough(close.sim, 2 + WARY_DAYS) === thorough(new Sim(def, seed), 2 + WARY_DAYS), `${def.id}: then back to the day's odds`);
 }
 {
@@ -246,7 +286,10 @@ for (const def of WITH_VEHICLE) {
   const def = CENTER_PERKS;
   const k = def.delivery!.supervisor;
   const ko = hideAndWait(def, seedFor(def, true), (sim) => (sim.state.guards[k].ko = 200 * STEPS_PER_MINUTE));
-  check(ko.sim.state.escaped > 0 && ko.seen.some((e) => e.type === 'today' && e.phase === 'waved' && e.thorough), 'a thorough day, the supervisor out cold: waved through, away');
+  check(
+    ko.sim.state.escaped > 0 && ko.seen.some((e) => e.type === 'today' && e.phase === 'waved' && e.thorough),
+    'a thorough day, the supervisor out cold: waved through, away',
+  );
   check(ko.sim.state.feats[FEAT.slipped] === 1, 'counted: slipped through on a thorough day');
   // Drawn off by a noise at 14:29: still looking at 14:30.
   const lured = game(def, seedFor(def, true));
@@ -287,7 +330,9 @@ for (const def of WITH_VEHICLE) {
   g.wait = 30;
   far.to(400);
   check(far.sim.state.escaped > 0, `the supervisor more than ${SEARCH_REACH} tiles from the tail at 14:30: no search`);
-  console.log('the search: a quick look lets the stowaway away at 14:31, a thorough one finds them; nobody there to search (out cold, drawn off, bribed, too far): waved through; strict always thorough; a lockdown searches');
+  console.log(
+    'the search: a quick look lets the stowaway away at 14:31, a thorough one finds them; nobody there to search (out cold, drawn off, bribed, too far): waved through; strict always thorough; a lockdown searches',
+  );
 }
 
 // ------------------------------------------------------------------ the odds
@@ -331,7 +376,10 @@ for (const def of WITH_VEHICLE) {
   delete (snap.state as Partial<typeof snap.state>).stowCaught;
   const old = new Sim(CENTER_PERKS, 5);
   old.restore(snap);
-  check(today(old).event === (DAY_BOOKS[CENTER_PERKS.id].before ?? 'none') && today(sim).event === 'delivery', `an old save on day ${day} keeps its old card (${today(old).event})`);
+  check(
+    today(old).event === (DAY_BOOKS[CENTER_PERKS.id].before ?? 'none') && today(sim).event === 'delivery',
+    `an old save on day ${day} keeps its old card (${today(old).event})`,
+  );
   check(planOf(old, day + 7).event === planOf(sim, day + 7).event, 'and the days after are as drawn');
   console.log('saves: loaded hidden plays on the same; a save from before delivery day keeps that day’s card');
 }
@@ -344,10 +392,24 @@ for (const def of WITH_VEHICLE) {
     for (const [k, v] of Object.entries(feats)) f[FEAT[k as keyof typeof FEAT]] = v;
     return { prison, feats: f, days: [], str: 0, spd: 0, int: 0, via, day: 3, medal: null };
   };
-  check(ach('specialDelivery').escape!(view('center-perks', 'stowaway')) && !ach('specialDelivery').escape!(view('center-perks', 'tunnel')), 'Special Delivery: away as a stowaway');
-  check(ach('airMail').escape!(view('irongate', 'stowaway')) && !ach('airMail').escape!(view('center-perks', 'stowaway')) && !ach('airMail').escape!(view('irongate', 'helicopter')), 'Air Mail: away in the helicopter by day, hidden');
-  check(ach('offTheBooks').run!(view('x', '', { slipped: 1 })) && !ach('offTheBooks').run!(view('x', '')), 'Off the Books: waved through on a day the search would have found you');
-  check(ach('returnToSender').hidden === true && ach('returnToSender').run!(view('x', '', { stowFound: 1 })), 'Return to Sender (a mishap): found in the vehicle');
+  check(
+    ach('specialDelivery').escape!(view('center-perks', 'stowaway')) && !ach('specialDelivery').escape!(view('center-perks', 'tunnel')),
+    'Special Delivery: away as a stowaway',
+  );
+  check(
+    ach('airMail').escape!(view('irongate', 'stowaway')) &&
+      !ach('airMail').escape!(view('center-perks', 'stowaway')) &&
+      !ach('airMail').escape!(view('irongate', 'helicopter')),
+    'Air Mail: away in the helicopter by day, hidden',
+  );
+  check(
+    ach('offTheBooks').run!(view('x', '', { slipped: 1 })) && !ach('offTheBooks').run!(view('x', '')),
+    'Off the Books: waved through on a day the search would have found you',
+  );
+  check(
+    ach('returnToSender').hidden === true && ach('returnToSender').run!(view('x', '', { stowFound: 1 })),
+    'Return to Sender (a mishap): found in the vehicle',
+  );
   console.log('achievements: Special Delivery, Air Mail, Off the Books, Return to Sender');
 }
 void SHANKTON;
@@ -369,7 +431,10 @@ void SHANKTON;
   g.body.z = 50.5 * UNIT;
   g.body.facing = 1;
   dmg.step();
-  check(dmg.sim.state.lockdown && dmg.seen.some((e) => e.type === 'spotted' && e.reason === 'damage'), 'damage found while hidden: the alarm, a lockdown');
+  check(
+    dmg.sim.state.lockdown && dmg.seen.some((e) => e.type === 'spotted' && e.reason === 'damage'),
+    'damage found while hidden: the alarm, a lockdown',
+  );
   dmg.to(400);
   check(!dmg.sim.state.escaped && dmg.seen.some((e) => e.type === 'stow' && e.found), 'and the lockdown searches the truck: found');
   // Out of the truck after a quick look: the gate stays open behind it until the player is back inside.
@@ -382,7 +447,10 @@ void SHANKTON;
   check(!out.sim.state.stowed, 'climbed out after the search');
   out.to(395);
   const gate = tileOf(30, 45);
-  check(!out.sim.state.escaped && !out.sim.world.delivering && !out.sim.world.block[gate], 'the truck gone, its gate still open for the player out there');
+  check(
+    !out.sim.state.escaped && !out.sim.world.delivering && !out.sim.world.block[gate],
+    'the truck gone, its gate still open for the player out there',
+  );
   // (A game loaded out there: the same.)
   const twin = new Sim(def, 99);
   twin.restore(JSON.parse(JSON.stringify(out.sim.snapshot())) as Snapshot);
@@ -413,6 +481,11 @@ void SHANKTON;
   delete (snap.state as Partial<typeof snap.state>).stowCaught;
   const old = new Sim(def, 5);
   old.restore(snap);
-  check(planOf(old, day).event === (DAY_BOOKS[def.id].before ?? 'none'), 'an old save from the evening before: tomorrow keeps its old card');
-  console.log('review: damage found while hidden raises the alarm; out of the truck, its gate waits for the player; climbing out at 14:31 stays behind; the search kept in the state; an old save keeps tomorrow');
+  check(
+    planOf(old, day).event === (DAY_BOOKS[def.id].before ?? 'none'),
+    'an old save from the evening before: tomorrow keeps its old card',
+  );
+  console.log(
+    'review: damage found while hidden raises the alarm; out of the truck, its gate waits for the player; climbing out at 14:31 stays behind; the search kept in the state; an old save keeps tomorrow',
+  );
 }

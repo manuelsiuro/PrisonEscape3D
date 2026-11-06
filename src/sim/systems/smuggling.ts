@@ -22,7 +22,20 @@ import { birthdayAtVisit } from './oddjobs';
 import { sightFor } from './football';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Rect, SmugglingDef } from '../../content/prisons/types';
-import { CATALOGUE, DRONE_GUARDS, DRONE_HOURS, DRONE_NOISE, FEES, GIFT_MAX, GIFT_MIN, LOOKAHEAD, ORDER_LEAD, PARCEL_MINUTE, VISIT_STEPS, WAY } from '../../content/smuggling';
+import {
+  CATALOGUE,
+  DRONE_GUARDS,
+  DRONE_HOURS,
+  DRONE_NOISE,
+  FEES,
+  GIFT_MAX,
+  GIFT_MIN,
+  LOOKAHEAD,
+  ORDER_LEAD,
+  PARCEL_MINUTE,
+  VISIT_STEPS,
+  WAY,
+} from '../../content/smuggling';
 import { canSee } from '../ai/sight';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
@@ -47,7 +60,8 @@ import { landable, pileRoom } from './throwing';
 export const PHONE = itemNumber('burner_phone');
 
 /** The prison's smuggling (none in a relaxed prison: the Training Block has none anyway). */
-export const smugglingOf = (sim: Pick<SimContext, 'world'>): SmugglingDef | undefined => (sim.world.def.rules?.relaxed ? undefined : sim.world.def.smuggling);
+export const smugglingOf = (sim: Pick<SimContext, 'world'>): SmugglingDef | undefined =>
+  sim.world.def.rules?.relaxed ? undefined : sim.world.def.smuggling;
 
 /** The fixer (Cast id), -1 where there's none. */
 export function fixerOf(sim: Pick<SimContext, 'world' | 'state'>): number {
@@ -92,7 +106,10 @@ export function firstDay(sim: Pick<SimContext, 'world' | 'state'>, way: number):
  * the Red Cross parcel and 14:45. Null with no order, or none in sight. A drone the sirens turn
  * back comes a night later (the order says so then).
  */
-export function arrival(sim: Pick<SimContext, 'world' | 'prison' | 'state'>, order: readonly number[] = sim.state.order): { day: number; minute: number } | null {
+export function arrival(
+  sim: Pick<SimContext, 'world' | 'prison' | 'state'>,
+  order: readonly number[] = sim.state.order,
+): { day: number; minute: number } | null {
   const d = smugglingOf(sim);
   if (!d || order.length < 3) return null;
   const s = sim.state;
@@ -108,7 +125,8 @@ export function arrival(sim: Pick<SimContext, 'world' | 'prison' | 'state'>, ord
     }
     const p = planOf(sim, day);
     // (Today only while there's still time to sit the visit out.)
-    if (d.parcel ? p.event === 'delivery' : p.event === 'visiting' && (day > now || minute + VISIT_STEPS / STEPS_PER_MINUTE < p.until)) return { day, minute: d.parcel ? PARCEL_MINUTE : p.at };
+    if (d.parcel ? p.event === 'delivery' : p.event === 'visiting' && (day > now || minute + VISIT_STEPS / STEPS_PER_MINUTE < p.until))
+      return { day, minute: d.parcel ? PARCEL_MINUTE : p.at };
   }
   return null;
 }
@@ -208,7 +226,8 @@ export function visitExits(w: World): ReadonlySet<number> {
 export const archesUp = (sim: Pick<SimContext, 'world' | 'prison' | 'state'>) => !!smugglingOf(sim)?.visits && eventOn(sim, 'visiting');
 
 /** A ground tile is one of the visiting room's arches now. */
-export const visitArch = (sim: Pick<SimContext, 'world' | 'prison' | 'state'>, tile: number) => archesUp(sim) && visitExits(sim.world).has(tile);
+export const visitArch = (sim: Pick<SimContext, 'world' | 'prison' | 'state'>, tile: number) =>
+  archesUp(sim) && visitExits(sim.world).has(tile);
 
 /** Whether a prop of some kinds covers a ground tile. */
 function propAt(w: World, x: number, z: number, kinds: ReadonlySet<string>): boolean {
@@ -275,7 +294,16 @@ export function visitPairs(w: World): readonly VisitPair[] {
  */
 export function awaitingVisit(sim: SimContext): boolean {
   const s = sim.state;
-  return archesUp(sim) && s.layer === LAYER.GROUND && !s.lockdown && !sim.away && !(s.eventFlags & TODAY.VISITED) && !s.hearing && !hearingDue(s) && guestSpot(sim) >= 0;
+  return (
+    archesUp(sim) &&
+    s.layer === LAYER.GROUND &&
+    !s.lockdown &&
+    !sim.away &&
+    !(s.eventFlags & TODAY.VISITED) &&
+    !s.hearing &&
+    !hearingDue(s) &&
+    guestSpot(sim) >= 0
+  );
 }
 
 // ------------------------------------------------------------------ the phone
@@ -334,7 +362,11 @@ function minute(sim: SimContext, d: SmugglingDef) {
       const watcher = s.lockdown ? -1 : watching(sim, landingTile(sim, day));
       if (s.lockdown || watcher >= 0) {
         s.order = [o[0], o[1], day + 1];
-        sim.events.push(watcher >= 0 ? { type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]), guard: watcher } : { type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]) });
+        sim.events.push(
+          watcher >= 0
+            ? { type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]), guard: watcher }
+            : { type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]) },
+        );
       } else drop(sim, day);
     }
     if (o[1] === WAY.VISITOR && d.parcel && m >= PARCEL_MINUTE && today(sim).event === 'delivery') parcel(sim, m);
@@ -413,7 +445,9 @@ function watching(sim: SimContext, tile: number): number {
   const point = sim.scratch.point;
   point.x = centerX(tile);
   point.z = centerZ(tile);
-  return s.guards.findIndex((g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightFor(sim, g, point.x, point.z)));
+  return s.guards.findIndex(
+    (g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightFor(sim, g, point.x, point.z)),
+  );
 }
 
 /** The visitor sits down across from the player: the gift, and the order slipped across (no room in the hotbar: kept for next time). */

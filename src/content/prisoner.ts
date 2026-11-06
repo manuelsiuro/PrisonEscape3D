@@ -17,7 +17,13 @@ export interface Cosmetic {
   locked?: boolean;
 }
 
-const c = (id: string, part: LookPart, color: number, shape = 0, locked = false): Cosmetic => ({ id, part, color, shape, ...(locked ? { locked } : {}) });
+const c = (id: string, part: LookPart, color: number, shape = 0, locked = false): Cosmetic => ({
+  id,
+  part,
+  color,
+  shape,
+  ...(locked ? { locked } : {}),
+});
 
 export const COSMETICS: readonly Cosmetic[] = [
   // Skin tones (the inmates' own).
@@ -121,7 +127,17 @@ export const NAME_MAX = 16;
 /** The prisoner before the player makes one (the jumpsuit as it always was). */
 export const DEFAULT_PRISONER: Prisoner = {
   name: '',
-  look: { skin: 'skin2', hair: 'brown', style: 'short', beard: 'shaven', build: 'regular', hat: 'noHat', glasses: 'noGlasses', tattoo: 'noTattoo', trim: 'noTrim' },
+  look: {
+    skin: 'skin2',
+    hair: 'brown',
+    style: 'short',
+    beard: 'shaven',
+    build: 'regular',
+    hat: 'noHat',
+    glasses: 'noGlasses',
+    tattoo: 'noTattoo',
+    trim: 'noTrim',
+  },
 };
 
 /** A stored prisoner made safe: a cleaned-up name, a known cosmetic of the right part for each (the default otherwise). */
@@ -137,7 +153,10 @@ export function fitPrisoner(p: unknown): Prisoner {
 
 /** A name as typed, tidied: no control characters or markup, spaces collapsed, at most NAME_MAX characters. */
 export function cleanName(s: string): string {
-  // eslint-disable-next-line no-control-regex
-  const flat = s.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trimStart();
+  const flat = s
+    // eslint-disable-next-line no-control-regex -- control characters are what it strips
+    .replace(/[\u0000-\u001f\u007f<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trimStart();
   return [...flat].slice(0, NAME_MAX).join('').trimEnd();
 }

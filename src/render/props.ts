@@ -21,7 +21,8 @@ export const LAMP_BULB_Y = 2.2;
 /** A street lamp's pole and its arms: one reaching south, or a second reaching north too (2.34.1: `heads`). */
 export function lampParts(heads: number): Part[] {
   const parts = [cyl(0.14, 0.12, DARK, 0, 0, 0, 8), cyl(0.05, 2.3, 0x59606b, 0, 0.1, 0, 8)];
-  for (const s of heads === 2 ? [1, -1] : [1]) parts.push(box(0.06, 0.06, 0.5, 0x59606b, 0, 2.3, s * 0.22), box(0.26, 0.1, 0.3, 0x2b3038, 0, 2.22, s * LAMP_ARM));
+  for (const s of heads === 2 ? [1, -1] : [1])
+    parts.push(box(0.06, 0.06, 0.5, 0x59606b, 0, 2.3, s * 0.22), box(0.26, 0.1, 0.3, 0x2b3038, 0, 2.22, s * LAMP_ARM));
   return parts;
 }
 
@@ -118,8 +119,16 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(0.16, 0.12, 0.12, METAL, w / 2 - 0.2, 0.65, d / 2 - 0.2),
     box(0.3, 0.04, 0.12, 0xd9b77e, -0.2, 0.65, 0),
   ],
-  oven: () => [box(0.86, 0.85, 0.8, 0xb8bec6, 0, 0, -0.05), box(0.6, 0.3, 0.02, 0x25292f, 0, 0.3, 0.36), box(0.6, 0.06, 0.04, METAL, 0, 0.66, 0.36)],
-  freezer: (w, d) => [box(w - 0.1, 1.5, d - 0.3, WHITE, 0, 0, -0.1), box(0.04, 0.5, 0.04, METAL, -w / 2 + 0.2, 0.7, d / 2 - 0.22), box(w - 0.12, 0.02, 0.02, 0xc7ccd3, 0, 0.75, d / 2 - 0.24)],
+  oven: () => [
+    box(0.86, 0.85, 0.8, 0xb8bec6, 0, 0, -0.05),
+    box(0.6, 0.3, 0.02, 0x25292f, 0, 0.3, 0.36),
+    box(0.6, 0.06, 0.04, METAL, 0, 0.66, 0.36),
+  ],
+  freezer: (w, d) => [
+    box(w - 0.1, 1.5, d - 0.3, WHITE, 0, 0, -0.1),
+    box(0.04, 0.5, 0.04, METAL, -w / 2 + 0.2, 0.7, d / 2 - 0.22),
+    box(w - 0.12, 0.02, 0.02, 0xc7ccd3, 0, 0.75, d / 2 - 0.24),
+  ],
   generator: (w, d) => [
     box(w - 0.2, 0.25, d - 0.2, DARK),
     box(w - 0.5, 0.9, d - 0.6, 0xd6a72c, 0, 0.25),
@@ -128,7 +137,11 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(0.3, 0.2, 0.04, 0x1d2026, 0.3, 0.6, d / 2 - 0.3),
   ],
   sortingDesk: (w, d) => {
-    const parts = [...legs(w - 0.1, d - 0.2, 0.5, WOOD_DARK), box(w - 0.06, 0.06, d - 0.16, WOOD, 0, 0.5), box(w - 0.1, 0.5, 0.2, WOOD_DARK, 0, 0.56, -d / 2 + 0.2)];
+    const parts = [
+      ...legs(w - 0.1, d - 0.2, 0.5, WOOD_DARK),
+      box(w - 0.06, 0.06, d - 0.16, WOOD, 0, 0.5),
+      box(w - 0.1, 0.5, 0.2, WOOD_DARK, 0, 0.56, -d / 2 + 0.2),
+    ];
     for (let k = 0; k < Math.round(w * 3); k++) parts.push(box(0.2, 0.12, 0.02, WHITE, -w / 2 + 0.25 + k * 0.32, 0.72, -d / 2 + 0.31));
     return parts;
   },
@@ -155,7 +168,11 @@ const BUILDERS: Record<PropKind, Builder> = {
   /** 2.31: a library's added chairs, the librarian's at the desk: the same chair. */
   readChair: (w, d) => BUILDERS.chair(w, d),
   // (Its cabinet only: the lit front, the goods and the moving parts are render/Vending.ts.)
-  vending: () => [box(0.86, 1.62, 0.66, 0xb8352f, 0, 0, -0.05), box(0.9, 0.06, 0.7, 0x6d1f1c, 0, 0, -0.05), box(0.9, 0.06, 0.7, 0x6d1f1c, 0, 1.6, -0.05)],
+  vending: () => [
+    box(0.86, 1.62, 0.66, 0xb8352f, 0, 0, -0.05),
+    box(0.9, 0.06, 0.7, 0x6d1f1c, 0, 0, -0.05),
+    box(0.9, 0.06, 0.7, 0x6d1f1c, 0, 1.6, -0.05),
+  ],
   deskChair: (w, d) => BUILDERS.chair(w, d),
   /**
    * 2.33: the water cooler (decor before, the same look): its white stand, the blue and red taps on the front, the drip
@@ -192,7 +209,11 @@ const BUILDERS: Record<PropKind, Builder> = {
   },
   controlDesk: (w, d) => {
     const parts = [box(w - 0.06, 0.55, d - 0.3, 0x4a5260, 0, 0, -0.1), box(w - 0.04, 0.05, d - 0.2, 0x2b3038, 0, 0.55)];
-    for (let k = 0; k < Math.round(w); k++) parts.push(box(0.7, 0.42, 0.06, 0x1d2026, -w / 2 + 0.5 + k, 0.6, -d / 2 + 0.25), box(0.62, 0.34, 0.01, 0x5fd4ff, -w / 2 + 0.5 + k, 0.64, -d / 2 + 0.285));
+    for (let k = 0; k < Math.round(w); k++)
+      parts.push(
+        box(0.7, 0.42, 0.06, 0x1d2026, -w / 2 + 0.5 + k, 0.6, -d / 2 + 0.25),
+        box(0.62, 0.34, 0.01, 0x5fd4ff, -w / 2 + 0.5 + k, 0.64, -d / 2 + 0.285),
+      );
     return parts;
   },
   /** Irongate's helipad (P12): a painted pad, its yellow ring, the white H, a lamp at each corner. */
@@ -203,14 +224,29 @@ const BUILDERS: Record<PropKind, Builder> = {
     const parts: Part[] = [box(w - 0.1, 0.008, d - 0.1, 0x3b4048), paintPart(ring, 0xe8b828), paintPart(inner, 0x4a5058)];
     // The H.
     parts.push(box(0.22, 0.03, 1.5, WHITE, -0.5, 0.015), box(0.22, 0.03, 1.5, WHITE, 0.5, 0.015), box(0.8, 0.03, 0.22, WHITE, 0, 0.015));
-    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) parts.push(cyl(0.06, 0.08, 0x2b3038, sx * (w / 2 - 0.18), 0, sz * (d / 2 - 0.18), 8), cyl(0.045, 0.04, 0x8fe08a, sx * (w / 2 - 0.18), 0.08, sz * (d / 2 - 0.18), 8));
+    for (const [sx, sz] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ])
+      parts.push(
+        cyl(0.06, 0.08, 0x2b3038, sx * (w / 2 - 0.18), 0, sz * (d / 2 - 0.18), 8),
+        cyl(0.045, 0.04, 0x8fe08a, sx * (w / 2 - 0.18), 0.08, sz * (d / 2 - 0.18), 8),
+      );
     return parts;
   },
   // P31 (sports grounds & gardens).
   /** A pull-up bar: two posts and a bar overhead, w tiles across. */
   pullup: (w) => {
     const x = w / 2 - 0.12;
-    return [cyl(0.06, 1.95, 0x3d4652, -x, 0, 0, 8), cyl(0.06, 1.95, 0x3d4652, x, 0, 0, 8), rod(0.03, w - 0.16, METAL, 0, 1.9, 0), box(0.2, 0.04, 0.2, DARK, -x, 0, 0), box(0.2, 0.04, 0.2, DARK, x, 0, 0)];
+    return [
+      cyl(0.06, 1.95, 0x3d4652, -x, 0, 0, 8),
+      cyl(0.06, 1.95, 0x3d4652, x, 0, 0, 8),
+      rod(0.03, w - 0.16, METAL, 0, 1.9, 0),
+      box(0.2, 0.04, 0.2, DARK, -x, 0, 0),
+      box(0.2, 0.04, 0.2, DARK, x, 0, 0),
+    ];
   },
   /**
    * Bleachers: a footboard, the seat plank across the tile's middle (where people sit, at a
@@ -225,7 +261,8 @@ const BUILDERS: Record<PropKind, Builder> = {
       [Math.max(back + 0.12, -0.3), 0.56],
     ];
     for (const [z, y] of tiers) parts.push(box(w - 0.08, 0.05, 0.22, 0xc9d0d8, 0, y, z), box(w - 0.08, y, 0.03, 0x8a929c, 0, 0, z - 0.1));
-    for (let x = -w / 2 + 0.2; x <= w / 2 - 0.19; x += Math.max(1, (w - 0.4) / Math.max(1, Math.round(w / 2)))) parts.push(box(0.05, 0.61, 0.05, DARK, x, 0, tiers[2][0] - 0.08));
+    for (let x = -w / 2 + 0.2; x <= w / 2 - 0.19; x += Math.max(1, (w - 0.4) / Math.max(1, Math.round(w / 2))))
+      parts.push(box(0.05, 0.61, 0.05, DARK, x, 0, tiers[2][0] - 0.08));
     return parts;
   },
   /** A raised planter: a timber frame of soil (the crops in it drawn with the job's state). */
@@ -243,8 +280,12 @@ const BUILDERS: Record<PropKind, Builder> = {
     return [
       box(iw, 1.75, id, 0x8a6a48, 0, 0, 0),
       box(iw + 0.02, 0.06, id + 0.02, WOOD_DARK, 0, 1.75, 0),
-      box(iw + 0.24, 0.08, id / 2 + 0.2, roof, 0, -0.04, 0).rotateX(-0.32).translate(0, 2.02, -id / 4),
-      box(iw + 0.24, 0.08, id / 2 + 0.2, roof, 0, -0.04, 0).rotateX(0.32).translate(0, 2.02, id / 4),
+      box(iw + 0.24, 0.08, id / 2 + 0.2, roof, 0, -0.04, 0)
+        .rotateX(-0.32)
+        .translate(0, 2.02, -id / 4),
+      box(iw + 0.24, 0.08, id / 2 + 0.2, roof, 0, -0.04, 0)
+        .rotateX(0.32)
+        .translate(0, 2.02, id / 4),
       box(0.7, 1.4, 0.04, WOOD_DARK, -iw / 4, 0, id / 2),
       box(0.05, 0.05, 0.05, METAL, -iw / 4 + 0.25, 0.75, id / 2 + 0.03),
       box(0.04, 0.9, 0.04, WOOD, iw / 4 - 0.1, 0.1, id / 2 + 0.06),

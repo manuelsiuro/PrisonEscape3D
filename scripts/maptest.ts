@@ -42,14 +42,34 @@ for (const def of [...PRISONS, TRAINING]) {
     const z = ZONES[g.zone[i]];
     zones.set(z, (zones.get(z) ?? 0) + 1);
   }
-  console.log('tiles:', [...kinds].sort().map(([k, n]) => `${k} ${n}`).join(', '));
-  console.log('zones:', [...zones].sort().map(([k, n]) => `${k} ${n}`).join(', '));
+  console.log(
+    'tiles:',
+    [...kinds]
+      .sort()
+      .map(([k, n]) => `${k} ${n}`)
+      .join(', '),
+  );
+  console.log(
+    'zones:',
+    [...zones]
+      .sort()
+      .map(([k, n]) => `${k} ${n}`)
+      .join(', '),
+  );
 
   // The edge of the map is road (escapes end there), or the sea round an island (Irongate's ways out cross it).
   for (let i = 0; i < MAP_W; i++) {
-    for (const [x, z] of [[i, 0], [i, MAP_H - 1], [0, i], [MAP_W - 1, i]]) {
+    for (const [x, z] of [
+      [i, 0],
+      [i, MAP_H - 1],
+      [0, i],
+      [MAP_W - 1, i],
+    ]) {
       const k = g.kind[z * MAP_W + x];
-      check(k === TILE.ROAD || (def.theme === 'island' && k === TILE.WATER), `${def.id}: edge tile ${x},${z} is road${def.theme === 'island' ? ' or sea' : ''}`);
+      check(
+        k === TILE.ROAD || (def.theme === 'island' && k === TILE.WATER),
+        `${def.id}: edge tile ${x},${z} is road${def.theme === 'island' ? ' or sea' : ''}`,
+      );
     }
   }
 
@@ -58,7 +78,10 @@ for (const def of [...PRISONS, TRAINING]) {
     for (let z = p.z; z < p.z + p.d; z++) {
       for (let x = p.x; x < p.x + p.w; x++) {
         const k = w.inside(x, z) ? g.kind[z * MAP_W + x] : TILE.EMPTY;
-        check(!TILE_INFO[k].solid && k !== TILE.DOOR && k !== TILE.DETECTOR, `${def.id}: ${p.kind} at ${x},${z} stands on ${TILE_INFO[k].name}`);
+        check(
+          !TILE_INFO[k].solid && k !== TILE.DOOR && k !== TILE.DETECTOR,
+          `${def.id}: ${p.kind} at ${x},${z} stands on ${TILE_INFO[k].name}`,
+        );
       }
     }
   }
@@ -99,7 +122,10 @@ for (const def of [...PRISONS, TRAINING]) {
         const j = (z + dz) * MAP_W + x + dx;
         return (!TILE_INFO[g.kind[j]].solid || w.bridge[j] === 1) && !w.propSolid[j];
       };
-      check((free(1, 0) && free(-1, 0)) || (free(0, 1) && free(0, -1)), `${def.id}: door at ${x},${z} opens onto floor on two opposite sides`);
+      check(
+        (free(1, 0) && free(-1, 0)) || (free(0, 1) && free(0, -1)),
+        `${def.id}: door at ${x},${z} opens onto floor on two opposite sides`,
+      );
     }
   }
 
@@ -112,10 +138,16 @@ for (const def of [...PRISONS, TRAINING]) {
 
   // Cells: the player's first, then one per named inmate, each with a bed, a desk and a toilet.
   check(def.cells.length < 256, `${def.id}: cells fit in a byte (${def.cells.length})`);
-  check(def.cells.length >= 1 && def.names.length === def.cells.length - 1, `${def.id}: a cell for the player and one per inmate (${def.cells.length})`);
+  check(
+    def.cells.length >= 1 && def.names.length === def.cells.length - 1,
+    `${def.id}: a cell for the player and one per inmate (${def.cells.length})`,
+  );
   def.cells.forEach(([x0, z0, x1, z1], k) => {
     for (const kind of ['bed', 'desk', 'toilet'] as const) {
-      check(w.props.some((p) => p.kind === kind && p.x >= x0 && p.x <= x1 && p.z >= z0 && p.z <= z1), `${def.id}: cell ${k + 1} has a ${kind}`);
+      check(
+        w.props.some((p) => p.kind === kind && p.x >= x0 && p.x <= x1 && p.z >= z0 && p.z <= z1),
+        `${def.id}: cell ${k + 1} has a ${kind}`,
+      );
     }
   });
 
@@ -127,7 +159,10 @@ for (const def of [...PRISONS, TRAINING]) {
       const near = [i - 1, i + 1, i - MAP_W, i + MAP_W].map((j) => w.cellOf[j]).filter((c) => c);
       if (near.includes(k + 1)) {
         doors++;
-        check(near.every((c) => c === k + 1), `${def.id}: the door of cell ${k + 1} leads into no other cell`);
+        check(
+          near.every((c) => c === k + 1),
+          `${def.id}: the door of cell ${k + 1} leads into no other cell`,
+        );
       }
     }
     check(doors === 1, `${def.id}: cell ${k + 1} has one door (${doors})`);
@@ -135,7 +170,8 @@ for (const def of [...PRISONS, TRAINING]) {
 
   // Roll call: a free spot in the yard for every inmate.
   check(def.rollCall.length >= def.cells.length, `${def.id}: a roll call spot per cell`);
-  for (const r of def.rollCall) check(w.zoneAt(r.x, r.z) === 'rollCall' && !w.blocked(r.x, r.z), `${def.id}: roll call spot ${r.x},${r.z} is free yard`);
+  for (const r of def.rollCall)
+    check(w.zoneAt(r.x, r.z) === 'rollCall' && !w.blocked(r.x, r.z), `${def.id}: roll call spot ${r.x},${r.z} is free yard`);
 
   // Reachability from the spawn, as the rules are at the start of day 1.
   const { x: sx, z: sz } = def.spawn;
@@ -155,7 +191,8 @@ for (const def of [...PRISONS, TRAINING]) {
   for (const z of def.reachable) check(reached.has(z), `${def.id}: ${z} can be walked to from the cell`);
   for (const z of ['outside', 'perimeter'] as const) check(!reached.has(z), `${def.id}: ${z} can't be reached without keys or tools`);
   // Every place open by the hour has a gate (a door that opens by the hour), and only the gates it should.
-  for (const z of Object.keys(OPEN_HOURS)) if (reached.has(z)) check(w.doorRoom.includes(zoneIndex(z as ZoneId)), `${def.id}: ${z} has a gate`);
+  for (const z of Object.keys(OPEN_HOURS))
+    if (reached.has(z)) check(w.doorRoom.includes(zoneIndex(z as ZoneId)), `${def.id}: ${z} has a gate`);
   console.log('walkable from the cell:', [...reached].sort().join(', '));
 
   // Guards: every stop and post is free floor, all of them reachable from each other with a
@@ -165,14 +202,30 @@ for (const def of [...PRISONS, TRAINING]) {
   const first = stops[0];
   for (const p of stops) {
     check(isFloor(w, p.x, p.z), `${def.id}: guard stop ${p.x},${p.z} is free floor`);
-    check(findPath(w, first.z * MAP_W + first.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !== null, `${def.id}: guard stop ${p.x},${p.z} can be reached`);
+    check(
+      findPath(w, first.z * MAP_W + first.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !==
+        null,
+      `${def.id}: guard stop ${p.x},${p.z} can be reached`,
+    );
   }
   // A post stands where it watches (a shower watch in the showers, a meal watch in the canteen).
-  const WATCHES: Record<string, readonly string[]> = { showers: ['showers'], breakfast: ['canteen'], lunch: ['canteen'], dinner: ['canteen'], exercise: ['yard', 'gym', 'sports'], rollCall: ['rollCall', 'yard'], eveningRollCall: ['rollCall', 'yard'] };
+  const WATCHES: Record<string, readonly string[]> = {
+    showers: ['showers'],
+    breakfast: ['canteen'],
+    lunch: ['canteen'],
+    dinner: ['canteen'],
+    exercise: ['yard', 'gym', 'sports'],
+    rollCall: ['rollCall', 'yard'],
+    eveningRollCall: ['rollCall', 'yard'],
+  };
   for (const d of def.guards) {
     for (const [block, p] of Object.entries(d.posts ?? {})) {
       const want = WATCHES[block];
-      if (want) check(want.includes(w.zoneAt(p.x, p.z)), `${def.id}: the ${block} post ${p.x},${p.z} stands in the ${want.join(' or ')} (${w.zoneAt(p.x, p.z)})`);
+      if (want)
+        check(
+          want.includes(w.zoneAt(p.x, p.z)),
+          `${def.id}: the ${block} post ${p.x},${p.z} stands in the ${want.join(' or ')} (${w.zoneAt(p.x, p.z)})`,
+        );
     }
   }
   const sleepers = def.guards.filter((d) => !d.night).length;
@@ -180,13 +233,22 @@ for (const def of [...PRISONS, TRAINING]) {
   // A prison proper has its bed checks, its shakedown, solitary and an infirmary; the
   // tutorial's relaxed rules have none of them.
   if (!def.rules?.relaxed) {
-    check(def.guards.filter((d) => d.duties?.includes('bedCheck') && d.night).length === 1, `${def.id}: one night guard does the bed checks`);
+    check(
+      def.guards.filter((d) => d.duties?.includes('bedCheck') && d.night).length === 1,
+      `${def.id}: one night guard does the bed checks`,
+    );
     check(def.guards.filter((d) => d.duties?.includes('shakedown')).length === 1, `${def.id}: one guard does the shakedown`);
     check(places.solitary >= 0 && places.infirmary >= 0, `${def.id}: a solitary cell and an infirmary bed`);
   }
-  check(places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0), `${def.id}: every cell can be looked into and its desk searched`);
+  check(
+    places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0),
+    `${def.id}: every cell can be looked into and its desk searched`,
+  );
   // Names (P13: the speech bubbles call people by them): every guard has one, nobody shares one.
-  check(def.guards.every((d) => !!d.name), `${def.id}: every guard has a name`);
+  check(
+    def.guards.every((d) => !!d.name),
+    `${def.id}: every guard has a name`,
+  );
   const people = [...def.names, ...def.guards.map((d) => d.name ?? '')];
   check(new Set(people).size === people.length, `${def.id}: names are unique (${people.join(', ')})`);
   console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
@@ -206,18 +268,29 @@ for (const def of [...PRISONS, TRAINING]) {
         bay++;
       }
     const { x: tx, z: tz } = dv.tail;
-    const beside = (tx >= bx0 && tx <= bx1 && (tz === bz0 - 1 || tz === bz1 + 1)) || (tz >= bz0 && tz <= bz1 && (tx === bx0 - 1 || tx === bx1 + 1));
+    const beside =
+      (tx >= bx0 && tx <= bx1 && (tz === bz0 - 1 || tz === bz1 + 1)) || (tz >= bz0 && tz <= bz1 && (tx === bx0 - 1 || tx === bx1 + 1));
     check(isFloor(w, tx, tz) && beside, `${def.id}: the delivery's tail ${tx},${tz} is floor beside the bay`);
-    for (const q of dv.open ?? []) check(w.ground.kind[q.z * MAP_W + q.x] === TILE.DOOR, `${def.id}: the delivery props open a door at ${q.x},${q.z}`);
+    for (const q of dv.open ?? [])
+      check(w.ground.kind[q.z * MAP_W + q.x] === TILE.DOOR, `${def.id}: the delivery props open a door at ${q.x},${q.z}`);
     check(!!def.guards[dv.supervisor], `${def.id}: the delivery's supervisor is a guard`);
     w.setDelivery(true);
     const from = def.guards[dv.supervisor].beat[0];
     for (const p of [...dv.round, dv.tail]) {
-      check(isFloor(w, p.x, p.z) && !w.parked[p.z * MAP_W + p.x], `${def.id}: the delivery round's stop ${p.x},${p.z} is free floor beside the vehicle`);
-      check(findPath(w, from.z * MAP_W + from.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !== null, `${def.id}: the supervisor reaches ${p.x},${p.z} with the vehicle in`);
+      check(
+        isFloor(w, p.x, p.z) && !w.parked[p.z * MAP_W + p.x],
+        `${def.id}: the delivery round's stop ${p.x},${p.z} is free floor beside the vehicle`,
+      );
+      check(
+        findPath(w, from.z * MAP_W + from.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !==
+          null,
+        `${def.id}: the supervisor reaches ${p.x},${p.z} with the vehicle in`,
+      );
     }
     w.setDelivery(false);
-    console.log(`delivery: ${dv.vehicle}, ${bay} tiles, tail ${tx},${tz}, supervised by ${def.guards[dv.supervisor].name} (${dv.round.length} stops), thorough ${dv.thorough}%`);
+    console.log(
+      `delivery: ${dv.vehicle}, ${bay} tiles, tail ${tx},${tz}, supervised by ${def.guards[dv.supervisor].name} (${dv.round.length} stops), thorough ${dv.thorough}%`,
+    );
   }
 
   // A roof over the perimeter is a grapnel's landing (structure.ts): only a gatehouse
@@ -250,7 +323,10 @@ for (const def of [...PRISONS, TRAINING]) {
           }
         }
       }
-      check(fence, `${def.id}: the roof over the perimeter at ${i % MAP_W},${Math.floor(i / MAP_W)} stands on the fence line (a grapnel lands there)`);
+      check(
+        fence,
+        `${def.id}: the roof over the perimeter at ${i % MAP_W},${Math.floor(i / MAP_W)} stands on the fence line (a grapnel lands there)`,
+      );
     }
     if (perimeterRoofs) console.log(`perimeter roofs (grapnel landings): ${perimeterRoofs} tiles`);
   }
@@ -269,7 +345,10 @@ for (const def of [...PRISONS, TRAINING]) {
     if (k === TILE.GRATE) check(isFloor(w, x, z), `${def.id}: grate ${x},${z} is over free floor`);
     if (k === TILE.LADDER) {
       ladders++;
-      check(w.props.some((p) => p.kind === 'ladder' && p.x === x && p.z === z), `${def.id}: the ladder at ${x},${z} stands on the ground floor`);
+      check(
+        w.props.some((p) => p.kind === 'ladder' && p.x === x && p.z === z),
+        `${def.id}: the ladder at ${x},${z} stands on the ground floor`,
+      );
       check(w.layers[LAYER.ROOF].kind[i] === TILE.LADDER, `${def.id}: the ladder at ${x},${z} reaches a roof hatch`);
     }
   }
@@ -278,12 +357,22 @@ for (const def of [...PRISONS, TRAINING]) {
     const queue = [ducts[0]];
     while (queue.length) {
       const i = queue.pop()!;
-      for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !vents.block[j] && !seen.has(j)) (seen.add(j), queue.push(j));
+      for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W])
+        if (j >= 0 && j < MAP_W * MAP_H && !vents.block[j] && !seen.has(j)) {
+          seen.add(j);
+          queue.push(j);
+        }
     }
     check(seen.size === ducts.length, `${def.id}: the ducts are one network`);
     check(ladders >= 1 && ladderFootOf(w) >= 0, `${def.id}: a ladder, with a free foot`);
     // Vents with grates are a way out of the cell (Stalag Flucht's log cabins have none: its ladder stands in the generator hut).
-    if (ducts.some((i) => vents.kind[i] === TILE.GRATE)) check(ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1), `${def.id}: a grate in the player's cell`);
+    if (ducts.some((i) => vents.kind[i] === TILE.GRATE))
+      check(
+        ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1),
+        `${def.id}: a grate in the player's cell`,
+      );
   }
-  console.log(`vents: ${ducts.length} duct tiles, ${ducts.filter((i) => vents.kind[i] === TILE.GRATE).length} grates, ${ladders} ladder; roof tiles ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length}`);
+  console.log(
+    `vents: ${ducts.length} duct tiles, ${ducts.filter((i) => vents.kind[i] === TILE.GRATE).length} grates, ${ladders} ladder; roof tiles ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length}`,
+  );
 }

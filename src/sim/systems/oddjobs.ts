@@ -19,7 +19,41 @@
  * Nothing changes for anyone until the player takes a job (the escape bots never do): the deals
  * are pure, and only a lookout's digger walks anywhere he wouldn't. Never the state's RNG.
  */
-import { BOARD, CAUGHT_TILES, J, JOB_LEN, R, STAGE, CHAIN_DAY, CHAIN_PIN, CHAINS, DEBT_ODDS, DEBT_TOOLS, DIG_STEPS, FAIL_OPINION, FALSE_STEPS, FIXER_JOB_OPINION, FIXER_PAY, FRAME_HEAT, FRAME_MINUTE, FROM, HIDE_STEPS, KIND, KIND_DEFS, KINDS, LATE_MINUTE, LIFT, LIFTS, PAID_OPINION, PERK, PERK_ODDS, PINS, RARE_ITEMS, WARN_TILES, WATCH_TILES } from '../../content/oddjobs';
+import {
+  BOARD,
+  CAUGHT_TILES,
+  J,
+  JOB_LEN,
+  R,
+  STAGE,
+  CHAIN_DAY,
+  CHAIN_PIN,
+  CHAINS,
+  DEBT_ODDS,
+  DEBT_TOOLS,
+  DIG_STEPS,
+  FAIL_OPINION,
+  FALSE_STEPS,
+  FIXER_JOB_OPINION,
+  FIXER_PAY,
+  FRAME_HEAT,
+  FRAME_MINUTE,
+  FROM,
+  HIDE_STEPS,
+  KIND,
+  KIND_DEFS,
+  KINDS,
+  LATE_MINUTE,
+  LIFT,
+  LIFTS,
+  PAID_OPINION,
+  PERK,
+  PERK_ODDS,
+  PINS,
+  RARE_ITEMS,
+  WARN_TILES,
+  WATCH_TILES,
+} from '../../content/oddjobs';
 import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
 import { LOOT } from '../../content/loot';
@@ -70,7 +104,7 @@ export interface Deal {
 }
 
 /** The prison's board (none at the Training Block, whose rules are relaxed). */
-export const boardOf = (sim: Pick<SimContext, 'world'>) => (sim.world.def.rules?.relaxed ? null : sim.world.def.board ?? null);
+export const boardOf = (sim: Pick<SimContext, 'world'>) => (sim.world.def.rules?.relaxed ? null : (sim.world.def.board ?? null));
 
 /** At the board: on its tile or one beside it, in its room, up and about on the ground floor. */
 export function atBoard(sim: SimContext): boolean {
@@ -173,7 +207,14 @@ function targetsFor(sim: SimContext, kind: number, giver: number): number[] {
 }
 
 /** A deal's target and variant for a kind (drawn under `salt` with the number `n` for its draws); null when it can't be dealt. */
-function shape(sim: SimContext, salt: number, day: number, n: number, kind: number, giver: number): { variant: number; target: number } | null {
+function shape(
+  sim: SimContext,
+  salt: number,
+  day: number,
+  n: number,
+  kind: number,
+  giver: number,
+): { variant: number; target: number } | null {
   const s = sim.state;
   if (kind === KIND.LIFT) {
     // (A whistle off a guard, or the cook's mug from the freezer: whichever the prison has, else by roll().)
@@ -226,7 +267,14 @@ export function dealsOf(sim: SimContext, day = prisonDay(sim.state.step)): Deal[
       const sh = shape(sim, SALT.ODDJOBS, day, n, kind, giver);
       if (!sh) continue;
       const def = KIND_DEFS[KINDS[kind]];
-      deal = { kind, ...sh, giver, days: def.days, pay: def.pay + rollInt(s.salt, SALT.ODDJOBS, day, n + 4, def.span), ...perkOf(s, SALT.ODDJOBS, day, n) };
+      deal = {
+        kind,
+        ...sh,
+        giver,
+        days: def.days,
+        pay: def.pay + rollInt(s.salt, SALT.ODDJOBS, day, n + 4, def.span),
+        ...perkOf(s, SALT.ODDJOBS, day, n),
+      };
     }
     if (!deal) continue;
     usedGiver.add(giver);
@@ -250,7 +298,15 @@ export function fixerDeal(sim: SimContext, day = prisonDay(sim.state.step)): Dea
     if (!sh) continue;
     const def = KIND_DEFS[KINDS[kinds[ki]]];
     const pay = Math.round(((def.pay + rollInt(s.salt, SALT.FIXER_JOB, day, n + 4, def.span)) * FIXER_PAY) / 100);
-    return { kind: kinds[ki], ...sh, giver, days: def.days, pay, perk: PERK.ITEM, item: itemNumber(RARE_ITEMS[rollInt(s.salt, SALT.FIXER_JOB, day, n + 7, RARE_ITEMS.length)]) };
+    return {
+      kind: kinds[ki],
+      ...sh,
+      giver,
+      days: def.days,
+      pay,
+      perk: PERK.ITEM,
+      item: itemNumber(RARE_ITEMS[rollInt(s.salt, SALT.FIXER_JOB, day, n + 7, RARE_ITEMS.length)]),
+    };
   }
   return null;
 }
@@ -273,11 +329,21 @@ export function chainDeal(sim: SimContext, day = prisonDay(sim.state.step)): Dea
     target = pool.length ? pool[rollInt(s.salt, SALT.ODDJOBS, day, 900 + k, pool.length)] : -1;
   }
   if ((st.target && target < 0) || (st.kind === KIND.CAKE && !cakeComes(sim, day, KIND_DEFS.cake.days))) return null;
-  return { kind: st.kind, variant: st.variant, giver, target, days: KIND_DEFS[KINDS[st.kind]].days, pay: st.pay, perk: st.perk, item: st.item ? itemNumber(st.item) : 0 };
+  return {
+    kind: st.kind,
+    variant: st.variant,
+    giver,
+    target,
+    days: KIND_DEFS[KINDS[st.kind]].days,
+    pay: st.pay,
+    perk: st.perk,
+    item: st.item ? itemNumber(st.item) : 0,
+  };
 }
 
 /** Pin k taken today (or the story's card: CHAIN_PIN). */
-export const pinTaken = (s: Pick<SimState, 'oddjobs' | 'step'>, pin: number) => s.oddjobs[R.DAY] === prisonDay(s.step) && !!(s.oddjobs[R.PINS] & (1 << pin));
+export const pinTaken = (s: Pick<SimState, 'oddjobs' | 'step'>, pin: number) =>
+  s.oddjobs[R.DAY] === prisonDay(s.step) && !!(s.oddjobs[R.PINS] & (1 << pin));
 
 /** What's on the board now: its pins (null: taken today) and the story's card. */
 export function boardNow(sim: SimContext): { pins: Array<Deal | null>; chain: Deal | null } {
@@ -370,7 +436,11 @@ const LIFTED = LIFTS.map((id) => itemNumber(id));
  * earlier job left there, else over the container's own stock (the freezer's food; never what the
  * player hid there, nor a guard's key and baton).
  */
-function liftSpot(sim: Pick<SimContext, 'world' | 'state'>, variant: number, target: number): { box: number; k: number; item: number } | null {
+function liftSpot(
+  sim: Pick<SimContext, 'world' | 'state'>,
+  variant: number,
+  target: number,
+): { box: number; k: number; item: number } | null {
   const { box, item } = liftBox(sim, variant, target);
   const slots = box >= 0 ? sim.state.items.containers[box] : null;
   if (!slots) return null;
@@ -427,9 +497,11 @@ function takeBack(sim: SimContext, job: readonly number[]) {
 }
 
 /** How many of an item a container holds (from slot `from` on). */
-const countIn = (sim: Pick<SimContext, 'state'>, box: number, item: number, from = 0) => (box >= 0 ? sim.state.items.containers[box]?.slice(from).filter((v) => itemOf(v) === item).length ?? 0 : 0);
+const countIn = (sim: Pick<SimContext, 'state'>, box: number, item: number, from = 0) =>
+  box >= 0 ? (sim.state.items.containers[box]?.slice(from).filter((v) => itemOf(v) === item).length ?? 0) : 0;
 /** A frame-up's stash in a desk where a search finds it: its standard drawers (the hidden compartment is never searched). */
-const stashIn = (sim: Pick<SimContext, 'state' | 'world'>, desk: number) => (desk >= 0 ? countIn(sim, desk, STASH, containersOf(sim.world)[desk].hidden) : 0);
+const stashIn = (sim: Pick<SimContext, 'state' | 'world'>, desk: number) =>
+  desk >= 0 ? countIn(sim, desk, STASH, containersOf(sim.world)[desk].hidden) : 0;
 /** What a drop or a frame-up counts in the target's desk now. */
 const deskCount = (sim: Pick<SimContext, 'state' | 'world'>, job: readonly number[]) => {
   const desk = deskOf(sim, job[J.TARGET]);
@@ -533,7 +605,8 @@ const paysItem = (job: readonly number[]) => job[J.PERK] === PERK.ITEM && !!job[
 /** A debt from one who owes the player one already: he hands over a tool there and then (one owed at a time). */
 const owedAgain = (s: SimState, job: readonly number[]) => job[J.PERK] === PERK.DEBT && owes(s, job[J.GIVER]);
 /** The tool an inmate hands over for a debt (called in, or a second one paid at once): drawn by roll() (`n`: his number, past 32 for a second). */
-const debtTool = (s: SimState, n: number) => itemNumber(DEBT_TOOLS[rollInt(s.salt, SALT.ODDJOB_PERK, prisonDay(s.step), n, DEBT_TOOLS.length)]);
+const debtTool = (s: SimState, n: number) =>
+  itemNumber(DEBT_TOOLS[rollInt(s.salt, SALT.ODDJOB_PERK, prisonDay(s.step), n, DEBT_TOOLS.length)]);
 
 /** The job handed in to the one who asked: what's brought taken, the pay, the perk; the story told on. */
 function handIn(sim: SimContext, who: number) {
@@ -585,7 +658,8 @@ function fail(sim: SimContext, why: OddJobFail) {
 }
 
 /** An item the pet rat left in a container this step. */
-const byRat = (sim: SimContext, box: number, item: number) => sim.events.some((e) => e.type === 'rat' && e.what === 'left' && e.item === item && e.container === box);
+const byRat = (sim: SimContext, box: number, item: number) =>
+  sim.events.some((e) => e.type === 'rat' && e.what === 'left' && e.item === item && e.container === box);
 
 /** The job's work done: back to the one who asked. */
 function done(sim: SimContext, job: number[]) {
@@ -607,7 +681,6 @@ export function digOf(sim: Pick<SimContext, 'world' | 'state'>): { who: number; 
   const door = pl.doorstep[m.cell] ?? -1;
   return tile >= 0 && door >= 0 ? { who: job[J.GIVER], tile, door } : null;
 }
-
 
 /** Tiles from a tile to a body (the larger way). */
 const offTile = (tile: number, b: { x: number; z: number }) => tilesFrom(tileX(tile), tileZ(tile), b.x, b.z);
@@ -689,7 +762,13 @@ function lookout(sim: SimContext, job: number[]) {
   const there = offTile(d.tile, m.body) <= 0;
   if (there) {
     for (const g of s.guards) {
-      if (!awake(g) || lookingAway(g, s.step) || offTile(d.tile, g.body) > CAUGHT_TILES || !lineOfSight(sim.world, g.body.x, g.body.z, cx, cz)) continue;
+      if (
+        !awake(g) ||
+        lookingAway(g, s.step) ||
+        offTile(d.tile, g.body) > CAUGHT_TILES ||
+        !lineOfSight(sim.world, g.body.x, g.body.z, cx, cz)
+      )
+        continue;
       return fail(sim, 'found');
     }
   }
@@ -718,7 +797,12 @@ export function digFace(w: SimContext['world'], tile: number): number {
   const z = Math.floor(tile / MAP_W);
   let best = 1;
   let most = -1;
-  for (const [face, dx, dz] of [[1, 1, 0], [5, 0, 1], [9, -1, 0], [13, 0, -1]] as const) {
+  for (const [face, dx, dz] of [
+    [1, 1, 0],
+    [5, 0, 1],
+    [9, -1, 0],
+    [13, 0, -1],
+  ] as const) {
     let open = 0;
     while (open < 2 && isFloor(w, x + dx * (open + 1), z + dz * (open + 1))) open++;
     if (open > most) {

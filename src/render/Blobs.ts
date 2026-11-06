@@ -31,7 +31,16 @@ export class Blobs {
   private readonly s = new THREE.Vector3();
 
   constructor() {
-    const material = new THREE.MeshBasicMaterial({ map: blobTexture(), color: 0x0b1018, transparent: true, opacity: 0.34, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+    const material = new THREE.MeshBasicMaterial({
+      map: blobTexture(),
+      color: 0x0b1018,
+      transparent: true,
+      opacity: 0.34,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+      polygonOffsetUnits: -3,
+    });
     this.mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), material, MAX);
     this.mesh.count = 0;
     // Under the fog veil (P17: 0.5), over the floor's decals.

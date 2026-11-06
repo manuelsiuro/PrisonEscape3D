@@ -40,7 +40,8 @@ function atShowers(seed = 3, prison = CENTER_PERKS, minute = BLOCK + 2) {
 }
 const offer = (bot: Bot) => showerOffer(bot.sim, interactTarget(bot.sim.world, bot.st.items, bot.st.player, bot.sim.bedtime, bot.st.layer));
 const heads = (bot: Bot) => placesOf(bot.sim.world).showers;
-const freeHead = (bot: Bot) => heads(bot).find((h) => !bot.st.inmates.some((m) => m.goal === h.tile || tileAt(m.body.x, m.body.z) === h.tile))!;
+const freeHead = (bot: Bot) =>
+  heads(bot).find((h) => !bot.st.inmates.some((m) => m.goal === h.tile || tileAt(m.body.x, m.body.z) === h.tile))!;
 
 // ------------------------------------------------------------------ every head in every prison
 for (const def of PRISONS) {
@@ -59,7 +60,13 @@ for (const def of PRISONS) {
     check(offer(bot) === h.tile, `${def.id}: the button offers the head at ${h.tile}`);
     bot.act();
     const p = bot.st.player;
-    if (bot.st.washing && p.x === (h.tile % MAP_W) * UNIT + UNIT / 2 && p.z === Math.floor(h.tile / MAP_W) * UNIT + UNIT / 2 && p.facing === h.wall) lined++;
+    if (
+      bot.st.washing &&
+      p.x === (h.tile % MAP_W) * UNIT + UNIT / 2 &&
+      p.z === Math.floor(h.tile / MAP_W) * UNIT + UNIT / 2 &&
+      p.facing === h.wall
+    )
+      lined++;
     bot.st.energy = 50;
     bot.until(() => false, 40);
     if (bot.st.energy >= 54) energy++;
@@ -77,13 +84,22 @@ for (const def of PRISONS) {
     } else fromFront++;
   }
   const n = heads(bot).length;
-  check(lined === n && energy === n && fromFront === n, `${def.id}: every head works: ${lined} lined up, ${energy} gave energy, ${fromFront} from in front, of ${n}`);
+  check(
+    lined === n && energy === n && fromFront === n,
+    `${def.id}: every head works: ${lined} lined up, ${energy} gave energy, ${fromFront} from in front, of ${n}`,
+  );
   console.log(`${def.id}: ${n} heads, each turned on from under it and from in front, lined up facing its pipe, energy back`);
 }
 {
   const bot = atShowers(3, SAN_PANCHO);
   const side = heads(bot).find((h) => h.tile === 38 * MAP_W + 44)!;
-  check(side.wall === 1 && heads(bot).filter((h) => h.tile !== side.tile).every((h) => h.wall === 5), "San Pancho's side head faces east, the rest south");
+  check(
+    side.wall === 1 &&
+      heads(bot)
+        .filter((h) => h.tile !== side.tile)
+        .every((h) => h.wall === 5),
+    "San Pancho's side head faces east, the rest south",
+  );
 }
 
 // ------------------------------------------------------------------ what it gives, and only if it's on
@@ -103,7 +119,10 @@ for (const def of PRISONS) {
   bot.until(() => false, 100);
   const gain = bot.st.energy - 30;
   const washedOff = 20 - bot.st.heat;
-  check(gain >= 11 && gain <= 14 && washedOff >= 2 && washedOff > idle, `5 s under it: +${gain} energy, heat down ${washedOff} (${idle} standing dry)`);
+  check(
+    gain >= 11 && gain <= 14 && washedOff >= 2 && washedOff > idle,
+    `5 s under it: +${gain} energy, heat down ${washedOff} (${idle} standing dry)`,
+  );
   console.log(`washing, 5 s: +${gain} energy, heat down ${washedOff} where standing dry it falls ${idle}`);
   // Minor heat only: from there up, it falls no faster than it does anyway.
   bot.st.heat = 60;
@@ -153,7 +172,10 @@ for (const def of PRISONS) {
   full.st.energy = 50;
   full.act();
   check(!full.st.washing && [full.st.player.x, full.st.player.z].join() === was, 'a head in use: the player stays put');
-  check(full.sim.events.some((e) => e.type === 'refused' && e.why === 'headTaken'), 'and is told so');
+  check(
+    full.sim.events.some((e) => e.type === 'refused' && e.why === 'headTaken'),
+    'and is told so',
+  );
 
   // What ends it: a punch or tool, the block's end, a lockdown, a knockout.
   const end = (name: string, how: (b: Bot) => void) => {
@@ -167,8 +189,12 @@ for (const def of PRISONS) {
     check(!b.st.washing && !b.sim.showering, `${name} turns it off`);
   };
   end('a press of the tool button', (b) => b.op(OP.USE, 1));
-  end('a lockdown', (b) => { b.st.lockdown = true; });
-  end('a knockout', (b) => { b.st.ko = 400; });
+  end('a lockdown', (b) => {
+    b.st.lockdown = true;
+  });
+  end('a knockout', (b) => {
+    b.st.ko = 400;
+  });
   end("the block's end", (b) => b.until(() => ROUTINE[b.st.routine].id !== 'showers', 60 * STEPS_PER_MINUTE));
   // Under a lockdown nothing's on offer.
   const shut = atShowers(9);
@@ -176,7 +202,9 @@ for (const def of PRISONS) {
   put(shut, s.tile, s.wall);
   shut.st.lockdown = true;
   check(offer(shut) === -1, 'no water in a lockdown');
-  console.log('traps: come for the soap, the next press searches; a head in use refused; off by a step, a blow, a lockdown, a knockout or the bell; standing still is nothing');
+  console.log(
+    'traps: come for the soap, the next press searches; a head in use refused; off by a step, a blow, a lockdown, a knockout or the bell; standing still is nothing',
+  );
 }
 
 // ------------------------------------------------------------------ the crowd takes turns, in every prison
@@ -211,11 +239,16 @@ for (const def of PRISONS) {
     check(shared <= 35, `${def.id} #${seed}: two under one head for ${shared} steps`);
     check(firstFree >= 0, `${def.id} #${seed}: a head comes free for a latecomer`);
     const stuck = bot.st.inmates.filter((m) => m.doing === DOING.SHOWER_WAIT).length;
-    console.log(`${def.id} #${seed}: ${washed.size}/${n} washed, ${dry} dry, ${shared} steps shared, a head free by minute ${Math.round(firstFree / STEPS_PER_MINUTE)}, still waiting at the end ${stuck}`);
+    console.log(
+      `${def.id} #${seed}: ${washed.size}/${n} washed, ${dry} dry, ${shared} steps shared, a head free by minute ${Math.round(firstFree / STEPS_PER_MINUTE)}, still waiting at the end ${stuck}`,
+    );
     // On to dinner with the bell: none left behind.
     bot.until(() => ROUTINE[bot.st.routine].id === 'dinner', 2 * STEPS_PER_MINUTE);
     bot.until(() => false, 2 * STEPS_PER_MINUTE);
-    check(bot.st.inmates.every((m) => m.doing !== DOING.SHOWER && m.doing !== DOING.TOWEL && m.doing !== DOING.SHOWER_WAIT), `${def.id} #${seed}: everyone off to dinner`);
+    check(
+      bot.st.inmates.every((m) => m.doing !== DOING.SHOWER && m.doing !== DOING.TOWEL && m.doing !== DOING.SHOWER_WAIT),
+      `${def.id} #${seed}: everyone off to dinner`,
+    );
   }
 }
 
@@ -241,7 +274,9 @@ for (const def of PRISONS) {
     }
     check(reached || bot.st.washing, `${def.id}: walked to a head`);
     check(bot.st.washing, `${def.id}, ${late} minutes late: washing after ${(bot.st.step - start) / 20} s`);
-    console.log(`${def.id}, ${late} minutes in: washing after ${((bot.st.step - start) / 20).toFixed(1)} s of a 60 s block, ${tries} heads taken`);
+    console.log(
+      `${def.id}, ${late} minutes in: washing after ${((bot.st.step - start) / 20).toFixed(1)} s of a 60 s block, ${tries} heads taken`,
+    );
   }
 }
 
@@ -277,17 +312,23 @@ for (const def of PRISONS) {
 {
   const ways: Array<[string, (b: Bot) => void]> = [
     ['stands there', (b) => b.step(0)],
-    ['hits back', (b) => {
-      // (Locked on to the one after them, not whoever's nearest.)
-      const foe = b.st.inmates.findIndex((m) => m.angry > 0);
-      if (foe >= 0 && b.st.lock !== foe) b.op(OP.LOCK);
-      else if (foe >= 0) b.op(OP.USE, 1);
-      else b.step(0);
-    }],
-    ['leaves the room when warned', (b) => {
-      if (b.st.inmates.some((m) => m.angry > 0)) b.walkTo(floorOf(b.sim.world, ['canteen'])[0], 15 * STEPS_PER_MINUTE);
-      else b.step(0);
-    }],
+    [
+      'hits back',
+      (b) => {
+        // (Locked on to the one after them, not whoever's nearest.)
+        const foe = b.st.inmates.findIndex((m) => m.angry > 0);
+        if (foe >= 0 && b.st.lock !== foe) b.op(OP.LOCK);
+        else if (foe >= 0) b.op(OP.USE, 1);
+        else b.step(0);
+      },
+    ],
+    [
+      'leaves the room when warned',
+      (b) => {
+        if (b.st.inmates.some((m) => m.angry > 0)) b.walkTo(floorOf(b.sim.world, ['canteen'])[0], 15 * STEPS_PER_MINUTE);
+        else b.step(0);
+      },
+    ],
   ];
   for (const [name, way] of ways) {
     let kos = 0;
@@ -329,7 +370,10 @@ for (const def of PRISONS) {
   const then = new Bot(CENTER_PERKS, 22);
   then.sim.rules225 = true;
   check(then.routineUntil(1, BLOCK + 40), 'an older run at shower time');
-  check(then.st.inmates.every((m) => m.doing === DOING.SHOWER || m.body.moving), 'older runs: at a head or on the floor for the block');
+  check(
+    then.st.inmates.every((m) => m.doing === DOING.SHOWER || m.body.moving),
+    'older runs: at a head or on the floor for the block',
+  );
   const q = heads(then)[0];
   put(then, q.tile, q.face);
   then.step(0);
@@ -364,7 +408,7 @@ for (const def of PRISONS) {
   const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.34.0' });
   for (let k = 0; k < 40; k++) now.step(0);
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.34.1' }).toLog().seed === 25, 'a log from today is');
-  check(replayLog(now.toLog(), CENTER_PERKS)?.sim.rules225 === false, 'and replays under today\'s');
+  check(replayLog(now.toLog(), CENTER_PERKS)?.sim.rules225 === false, "and replays under today's");
 
   // Training has no showers: its crowd's day isn't troubled, through the block.
   const t = new Bot(TRAINING, 1);
@@ -382,11 +426,16 @@ for (const def of PRISONS) {
   put(g, gh.tile, gh.wall);
   g.act();
   check(g.st.washing, 'a guard out cold on a head is no bar to it');
-  console.log('saves and older runs: the water kept; a save from before loads with none; a 2.25 log replays as it was and is not carried on; Training has none');
+  console.log(
+    'saves and older runs: the water kept; a save from before loads with none; a 2.25 log replays as it was and is not carried on; Training has none',
+  );
 }
 
 // ------------------------------------------------------------------ text
-for (const [name, k] of [['en', en], ['fr', fr]] as const) {
+for (const [name, k] of [
+  ['en', en],
+  ['fr', fr],
+] as const) {
   for (const key of ['act.shower', 'refused.headTaken', 'hint.shower', 'hint.showerHostile'] as const) check(!!k[key], `${name}: ${key}`);
-  check(!/stand still|immobile/i.test(k['hint.shower']), `${name}: the hint no longer says to stand still`);
+  check(!/stand still|immobile/i.test(k['hint.shower'] ?? ''), `${name}: the hint no longer says to stand still`);
 }

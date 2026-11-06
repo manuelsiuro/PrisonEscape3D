@@ -47,7 +47,24 @@ export const replayBestKey = (prison: string) => `${PREFIX}.replay.best.${prison
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS] | ReturnType<typeof replayBestKey>;
 
 /** The keys "Reset progress" wipes (and every prison's best replay: resetProgress). */
-export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons, KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log1, KEYS.log2, KEYS.log3, KEYS.replayLast, KEYS.daily, KEYS.saveDaily, KEYS.logDaily];
+export const PROGRESS_KEYS: StorageKey[] = [
+  KEYS.escapes,
+  KEYS.saveAuto,
+  KEYS.save1,
+  KEYS.save2,
+  KEYS.save3,
+  KEYS.lessons,
+  KEYS.stats,
+  KEYS.trophies,
+  KEYS.logAuto,
+  KEYS.log1,
+  KEYS.log2,
+  KEYS.log3,
+  KEYS.replayLast,
+  KEYS.daily,
+  KEYS.saveDaily,
+  KEYS.logDaily,
+];
 
 function readText(key: StorageKey): string | null {
   try {
@@ -105,11 +122,17 @@ const MIGRATIONS: Array<() => boolean> = [
   // 1 → 2 (P16): escape records keep each way out's quickest (and its medal). A prison escaped
   // one way only: that way's quickest is the prison's. Several ways: which was quickest isn't known.
   () => {
-    const all = readJSON<Record<string, { routes?: unknown; bestDay?: unknown; bestMinute?: unknown; byRoute?: unknown }>>(KEYS.escapes, {});
+    const all = readJSON<Record<string, { routes?: unknown; bestDay?: unknown; bestMinute?: unknown; byRoute?: unknown }>>(
+      KEYS.escapes,
+      {},
+    );
     for (const r of Object.values(all)) {
       if (!r || typeof r !== 'object' || r.byRoute) continue;
       const routes = Array.isArray(r.routes) ? r.routes.filter((x): x is string => typeof x === 'string') : [];
-      r.byRoute = routes.length === 1 && typeof r.bestDay === 'number' && r.bestDay > 0 ? { [routes[0]]: { day: r.bestDay, minute: r.bestMinute } } : {};
+      r.byRoute =
+        routes.length === 1 && typeof r.bestDay === 'number' && r.bestDay > 0
+          ? { [routes[0]]: { day: r.bestDay, minute: r.bestMinute } }
+          : {};
     }
     return writeJSON(KEYS.escapes, all);
   },

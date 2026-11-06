@@ -13,9 +13,33 @@ import { lineOfSight } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { WAKE } from '../events';
-import { ANGRY_STEPS, CHASE_HEAT, GRUDGE_SETTLED, GUARD_SWING_STEPS, HIT_OPINION, INMATE_SWING_STEPS, KO_OPINION, KO_STEPS, LOCK_KEEP, MELEE_REACH, THROW_RANGE } from '../tuning';
+import {
+  ANGRY_STEPS,
+  CHASE_HEAT,
+  GRUDGE_SETTLED,
+  GUARD_SWING_STEPS,
+  HIT_OPINION,
+  INMATE_SWING_STEPS,
+  KO_OPINION,
+  KO_STEPS,
+  LOCK_KEEP,
+  MELEE_REACH,
+  THROW_RANGE,
+} from '../tuning';
 import { LAYER } from '../world/World';
-import { BATON_ATTACK, damage, dist2, type Fighter, guardDefense, INMATE_DEFENSE, isGuard, maxHealth, personOf, reachOf, swingSteps } from './combat';
+import {
+  BATON_ATTACK,
+  damage,
+  dist2,
+  type Fighter,
+  guardDefense,
+  INMATE_DEFENSE,
+  isGuard,
+  maxHealth,
+  personOf,
+  reachOf,
+  swingSteps,
+} from './combat';
 import { FAVOR, FAVOR_STATE } from './economy';
 import { awake, backToDuty, type Guard, GUARD, rouse } from './guards';
 import { DOING, type Inmate } from './inmates';
@@ -119,10 +143,15 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     dismiss(sim, who);
     if (s.talk === who) endTalk(sim);
   }
-  sim.events.push(!guard && s.selfDefense && inFoodFight(sim) ? { type: 'hit', who, dmg, ko, weapon: item, free: true } : { type: 'hit', who, dmg, ko, weapon: item });
+  sim.events.push(
+    !guard && s.selfDefense && inFoodFight(sim)
+      ? { type: 'hit', who, dmg, ko, weapon: item, free: true }
+      : { type: 'hit', who, dmg, ko, weapon: item },
+  );
   // A scene at roll call (GDD §10.4: the distraction favor).
   const block = ROUTINE[s.routine].id;
-  if (block === 'rollCall' || block === 'eveningRollCall') for (const fv of s.favors) if (fv.kind === FAVOR.DISTRACTION && fv.state === FAVOR_STATE.TAKEN) favorDone(sim, fv);
+  if (block === 'rollCall' || block === 'eveningRollCall')
+    for (const fv of s.favors) if (fv.kind === FAVOR.DISTRACTION && fv.state === FAVOR_STATE.TAKEN) favorDone(sim, fv);
   if (ko) knockOut(sim, who);
   return true;
 }
@@ -229,7 +258,8 @@ export function fight(sim: SimContext) {
   // (Nobody lands a blow on a player hidden in the delivery's vehicle, P18.)
   if (sim.away || s.layer !== LAYER.GROUND || s.stowed) return;
   const defense = itemDef(itemOf(s.items.inv[SLOT.OUTFIT]))?.defense ?? 0;
-  for (let id = 0; id < s.inmates.length && !sim.away; id++) if (s.inmates[id].angry > 0) blow(sim, s.inmates[id], id, INMATE_SWING_STEPS, 0, defense);
+  for (let id = 0; id < s.inmates.length && !sim.away; id++)
+    if (s.inmates[id].angry > 0) blow(sim, s.inmates[id], id, INMATE_SWING_STEPS, 0, defense);
   for (let k = 0; k < s.guards.length && !sim.away; k++) {
     const g = s.guards[k];
     if (g.mode === GUARD.CHASE && awake(g)) blow(sim, g, s.inmates.length + k, GUARD_SWING_STEPS, BATON_ATTACK, defense);
@@ -239,7 +269,8 @@ export function fight(sim: SimContext) {
     const m = s.inmates[id];
     const foe = sim.scratch.allyFoe[id] ?? -1;
     const f = foe >= 0 ? personOf(s, foe) : undefined;
-    if (!m || !f || m.ko > 0 || f.ko > 0 || s.step - m.swing < INMATE_SWING_STEPS || dist2(m.body, f.body) > MELEE_REACH * MELEE_REACH) continue;
+    if (!m || !f || m.ko > 0 || f.ko > 0 || s.step - m.swing < INMATE_SWING_STEPS || dist2(m.body, f.body) > MELEE_REACH * MELEE_REACH)
+      continue;
     if (!lineOfSight(sim.world, m.body.x, m.body.z, f.body.x, f.body.z)) continue;
     m.swing = s.step;
     if (m.body.x !== f.body.x || m.body.z !== f.body.z) m.body.facing = nearestDir(f.body.x - m.body.x, f.body.z - m.body.z);

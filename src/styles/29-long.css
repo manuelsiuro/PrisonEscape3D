@@ -259,7 +259,9 @@ body.reduced-motion .race-card {
 .tool-btn.armed .tool-round {
   color: #1b1206;
   background: radial-gradient(circle at 40% 30%, #ffd27a, #f29a1a);
-  box-shadow: 0 0 0 3px rgba(255, 194, 61, 0.55), 0 10px 22px -8px rgba(90, 50, 10, 0.9);
+  box-shadow:
+    0 0 0 3px rgba(255, 194, 61, 0.55),
+    0 10px 22px -8px rgba(90, 50, 10, 0.9);
   animation: drink-armed 0.8s ease-in-out infinite alternate;
 }
 

@@ -40,9 +40,15 @@
 }
 
 @keyframes daily-shake {
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-2px); }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -298,10 +304,18 @@
   background: #d9dee6;
 }
 
-.daily-strip i.s-spotted { background: #f5c842; }
-.daily-strip i.s-hot { background: #ff9440; }
-.daily-strip i.s-caught { background: #e5484d; }
-.daily-strip i.s-out { background: #43d18e; }
+.daily-strip i.s-spotted {
+  background: #f5c842;
+}
+.daily-strip i.s-hot {
+  background: #ff9440;
+}
+.daily-strip i.s-caught {
+  background: #e5484d;
+}
+.daily-strip i.s-out {
+  background: #43d18e;
+}
 
 .daily-share-row {
   display: flex;

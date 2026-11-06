@@ -23,7 +23,28 @@ import { TRAINING } from '../src/content/prisons/training';
 import { DECOR } from '../src/content/decor';
 import { itemDef, itemNumber } from '../src/content/items';
 import { DAY_EVENTS } from '../src/content/days';
-import { BOARD, CAUGHT_TILES, CHAIN_PIN, CHAINS, DIG_STEPS, FAIL_OPINION, FIXER_JOB_OPINION, FRAME_HEAT, FROM, J, KIND, KIND_DEFS, KINDS, LIFT, LIFTS, PERK, PINS, R, STAGE, WARN_TILES } from '../src/content/oddjobs';
+import {
+  BOARD,
+  CAUGHT_TILES,
+  CHAIN_PIN,
+  CHAINS,
+  DIG_STEPS,
+  FAIL_OPINION,
+  FIXER_JOB_OPINION,
+  FRAME_HEAT,
+  FROM,
+  J,
+  KIND,
+  KIND_DEFS,
+  KINDS,
+  LIFT,
+  LIFTS,
+  PERK,
+  PINS,
+  R,
+  STAGE,
+  WARN_TILES,
+} from '../src/content/oddjobs';
 import { CALL_STEPS, CALLEE } from '../src/content/phone';
 import { STAPLES } from '../src/content/long';
 import { ROUTINE } from '../src/content/routine';
@@ -36,7 +57,27 @@ import { planOf, prisonDay, TODAY } from '../src/sim/systems/calendar';
 import { endCheat } from '../src/sim/systems/cards';
 import { elderOf } from '../src/sim/systems/checkers';
 import { HOTBAR, itemOf, pocketOf, slot } from '../src/sim/systems/items';
-import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, gameGate, handInRefusal, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
+import {
+  boardOf,
+  boardNow,
+  boardRefusal,
+  bringsOf,
+  canWhistle,
+  chainDeal,
+  dealsOf,
+  deskOf,
+  type Deal,
+  digFace,
+  digOf,
+  endsFor,
+  fixerDeal,
+  freezerOf,
+  gameGate,
+  jobOf,
+  oddjobs,
+  owes,
+  whistleNow,
+} from '../src/sim/systems/oddjobs';
 import { FEAT } from '../src/sim/systems/ledger';
 import { stapleSlot } from '../src/sim/systems/pantry';
 import { fixerOf, smugglingOf, visitPairs } from '../src/sim/systems/smuggling';
@@ -57,7 +98,8 @@ const putTile = (b: { x: number; z: number }, t: number) => {
   b.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
 };
 const put = (b: { x: number; z: number }, x: number, z: number) => putTile(b, z * MAP_W + x);
-const jobNews = (seen: SimEvent[], what: string) => seen.filter((e) => e.type === 'oddjob' && e.what === what) as Array<Extract<SimEvent, { type: 'oddjob' }>>;
+const jobNews = (seen: SimEvent[], what: string) =>
+  seen.filter((e) => e.type === 'oddjob' && e.what === what) as Array<Extract<SimEvent, { type: 'oddjob' }>>;
 const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), quiet days but those forced. */
@@ -102,12 +144,14 @@ function game(prison: PrisonDef, seed = 5, calendar: Array<[number, number, numb
     const [a, b] = canteenPair(sim);
     if (sim.state.talk >= 0 && sim.state.talk !== who) step(command(0, OP.CLOSE));
     // (Whoever stood there or is passing close by steps aside: to where this one was. The button takes the nearest.)
-    const near = (o: { body: { x: number; z: number } }, t: number) => Math.max(Math.abs(o.body.x - ((t % MAP_W) + 0.5) * UNIT), Math.abs(o.body.z - (Math.floor(t / MAP_W) + 0.5) * UNIT)) < 2 * UNIT;
-    for (const o of sim.state.inmates) if (o !== m && (near(o, a) || near(o, b))) {
-      o.body.x = m.body.x;
-      o.body.z = m.body.z;
-      o.path = [];
-    }
+    const near = (o: { body: { x: number; z: number } }, t: number) =>
+      Math.max(Math.abs(o.body.x - ((t % MAP_W) + 0.5) * UNIT), Math.abs(o.body.z - (Math.floor(t / MAP_W) + 0.5) * UNIT)) < 2 * UNIT;
+    for (const o of sim.state.inmates)
+      if (o !== m && (near(o, a) || near(o, b))) {
+        o.body.x = m.body.x;
+        o.body.z = m.body.z;
+        o.path = [];
+      }
     putTile(m.body, b);
     putTile(sim.state.player, a);
     sim.state.player.facing = 1;
@@ -128,7 +172,18 @@ function canteenPair(sim: Sim): [number, number] {
   const floor = placesOf(w).floor[w.ground.zone[sim.prison.board!.z * MAP_W + sim.prison.board!.x]];
   const mid = floor[floor.length >> 1];
   const order = [...floor].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid));
-  for (const t of order) if (floor.includes(t + 1) && !w.props.some((p) => p.kind === 'seat' && [t, t + 1].some((u) => u % MAP_W >= p.x && u % MAP_W < p.x + p.w && Math.floor(u / MAP_W) >= p.z && Math.floor(u / MAP_W) < p.z + p.d))) return [t, t + 1];
+  for (const t of order)
+    if (
+      floor.includes(t + 1) &&
+      !w.props.some(
+        (p) =>
+          p.kind === 'seat' &&
+          [t, t + 1].some(
+            (u) => u % MAP_W >= p.x && u % MAP_W < p.x + p.w && Math.floor(u / MAP_W) >= p.z && Math.floor(u / MAP_W) < p.z + p.d,
+          ),
+      )
+    )
+      return [t, t + 1];
   return [order[0], order[0] + 1];
 }
 
@@ -141,12 +196,22 @@ function canteenPair(sim: Sim): [number, number] {
     const b = p.board;
     check(!!b && !!boardOf(sim), `${p.id}: a board`);
     if (!b) continue;
-    const onFloor = (x: number, z: number) => w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) || (p.decor ?? []).some((d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
+    const onFloor = (x: number, z: number) =>
+      w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) ||
+      (p.decor ?? []).some((d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
     const zone = w.zoneAt(b.x, b.z);
-    check(!w.blocked(b.x, b.z) && !onFloor(b.x, b.z) && zone === 'canteen', `${p.id}: the board's tile is open floor in the canteen (${zone})`);
+    check(
+      !w.blocked(b.x, b.z) && !onFloor(b.x, b.z) && zone === 'canteen',
+      `${p.id}: the board's tile is open floor in the canteen (${zone})`,
+    );
     const behind = w.ground.kind[(b.z - 1) * MAP_W + b.x];
-    check(b.face === 13 && (behind === TILE.BRICK || behind === TILE.REINFORCED), `${p.id}: it hangs on the north wall, a real wall behind it (not a door; the camera sees it)`);
-    const wallDecor = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && d.x <= b.x && d.x + (d.w ?? 1) > b.x && d.z <= b.z && d.z + (d.d ?? 1) > b.z);
+    check(
+      b.face === 13 && (behind === TILE.BRICK || behind === TILE.REINFORCED),
+      `${p.id}: it hangs on the north wall, a real wall behind it (not a door; the camera sees it)`,
+    );
+    const wallDecor = (p.decor ?? []).filter(
+      (d) => DECOR[d.kind].wall && d.x <= b.x && d.x + (d.w ?? 1) > b.x && d.z <= b.z && d.z + (d.d ?? 1) > b.z,
+    );
     check(wallDecor.length === 0, `${p.id}: nothing else hangs on its bit of wall (${wallDecor.map((d) => d.kind).join(' ')})`);
     check(!w.blocked(b.x, b.z + 1) && !w.blocked(b.x, b.z + 2), `${p.id}: no wall in the two rows in front of it`);
     // (Not the phone's, the kiosk's, the release desk's or the stage's tiles.)
@@ -169,7 +234,10 @@ function canteenPair(sim: Sim): [number, number] {
     const chain = CHAINS[p.id];
     check(!!chain && chain.steps.length >= 3 && chain.steps.length <= 4, `${p.id}: a story of 3–4 jobs`);
     const cells = p.cells.length;
-    check(chain.who >= 2 && chain.who <= cells && chain.who !== p.smuggling?.fixer, `${p.id}: the story's teller is an inmate, not the fixer`);
+    check(
+      chain.who >= 2 && chain.who <= cells && chain.who !== p.smuggling?.fixer,
+      `${p.id}: the story's teller is an inmate, not the fixer`,
+    );
     for (const s of chain.steps) {
       check(s.target === 0 || (s.target >= 2 && s.target <= cells), `${p.id}: a story step about a real cell`);
       if (s.kind === KIND.CHECKERS) check(s.target === p.leisure?.oldTimer, `${p.id}: checkers with the old-timer`);
@@ -180,7 +248,10 @@ function canteenPair(sim: Sim): [number, number] {
     lines.push(`${p.id}: board ${b.x},${b.z}; story for cell ${chain.who}: ${chain.steps.map((s) => KINDS[s.kind]).join(', ')}`);
   }
   check(!TRAINING.board && !dealsOf(new Sim(TRAINING, 1)).length, 'the Training Block has none');
-  check(KINDS.every((k) => KIND_DEFS[k].days >= 1 && KIND_DEFS[k].days <= 3), 'every kind runs 1–3 prison days');
+  check(
+    KINDS.every((k) => KIND_DEFS[k].days >= 1 && KIND_DEFS[k].days <= 3),
+    'every kind runs 1–3 prison days',
+  );
   check(KINDS.length >= 11 && KINDS.length <= 13, `about a dozen kinds (${KINDS.length})`);
   console.log(lines.join('\n'));
 }
@@ -195,7 +266,12 @@ function dealOk(sim: Sim, d: Deal, day: number): string | null {
   if (d.days < 1 || d.days > 3 || d.pay <= 0) return 'days or pay';
   switch (d.kind) {
     case KIND.LIFT:
-      if (d.variant === LIFT.WHISTLE) return d.target >= 0 && d.target < s.guards.length && (!p.guards[d.target].duties?.includes('shakedown') || p.guards.every((x) => x.duties?.includes('shakedown'))) ? null : 'no such guard, or one whose pockets are full';
+      if (d.variant === LIFT.WHISTLE)
+        return d.target >= 0 &&
+          d.target < s.guards.length &&
+          (!p.guards[d.target].duties?.includes('shakedown') || p.guards.every((x) => x.duties?.includes('shakedown')))
+          ? null
+          : 'no such guard, or one whose pockets are full';
       return freezerOf(sim) >= 0 ? null : 'no freezer';
     case KIND.DROP:
     case KIND.FRAME:
@@ -234,7 +310,10 @@ function dealOk(sim: Sim, d: Deal, day: number): string | null {
       for (let day = 1; day <= 40; day++) {
         const deals = dealsOf(sim, day);
         check(deals.length === PINS, `${p.id} seed ${seed} day ${day}: ${PINS} pins`);
-        check(new Set(deals.map((d) => d.giver)).size === deals.length && new Set(deals.map((d) => d.kind)).size === deals.length, `${p.id} day ${day}: three askers, three kinds`);
+        check(
+          new Set(deals.map((d) => d.giver)).size === deals.length && new Set(deals.map((d) => d.kind)).size === deals.length,
+          `${p.id} day ${day}: three askers, three kinds`,
+        );
         for (const d of deals) {
           const why = dealOk(sim, d, day);
           check(!why, `${p.id} seed ${seed} day ${day}: a ${KINDS[d.kind]} deal the prison can do (${why})`);
@@ -242,7 +321,10 @@ function dealOk(sim: Sim, d: Deal, day: number): string | null {
           counts[d.kind]++;
         }
         const f = fixerDeal(sim, day);
-        check(!!f && f.giver === fixerOf(sim) && KIND_DEFS[KINDS[f.kind]].fixer === true && !dealOk(sim, f, day) && f.perk === PERK.ITEM, `${p.id} day ${day}: the fixer's own job, one of his kinds`);
+        check(
+          !!f && f.giver === fixerOf(sim) && KIND_DEFS[KINDS[f.kind]].fixer === true && !dealOk(sim, f, day) && f.perk === PERK.ITEM,
+          `${p.id} day ${day}: the fixer's own job, one of his kinds`,
+        );
         if (f) fixer++;
         check(JSON.stringify(dealsOf(sim, day)) === JSON.stringify(deals), 'the same deals asked again');
       }
@@ -334,14 +416,20 @@ function work(g: Game, deal: Deal): boolean {
   const { sim } = g;
   const s = sim.state;
   const job = jobOf(s)!;
-  for (const m of [deal.giver, deal.target]) if (m >= 0 && s.inmates[m] && deal.kind !== KIND.LIFT) s.inmates[m].opinion = Math.max(s.inmates[m].opinion, 60);
+  for (const m of [deal.giver, deal.target])
+    if (m >= 0 && s.inmates[m] && deal.kind !== KIND.LIFT) s.inmates[m].opinion = Math.max(s.inmates[m].opinion, 60);
   s.inmates[deal.giver].opinion = Math.max(s.inmates[deal.giver].opinion, 60);
   s.energy = 100;
   switch (deal.kind) {
     case KIND.LIFT: {
       const item = bringsOf(job);
       if (deal.variant === LIFT.MUG) {
-        putTile(s.player, placesOf(sim.world).floor[sim.world.ground.zone[containersOf(sim.world)[freezerOf(sim)].prop.z * MAP_W + containersOf(sim.world)[freezerOf(sim)].prop.x]][0]);
+        putTile(
+          s.player,
+          placesOf(sim.world).floor[
+            sim.world.ground.zone[containersOf(sim.world)[freezerOf(sim)].prop.z * MAP_W + containersOf(sim.world)[freezerOf(sim)].prop.x]
+          ][0],
+        );
         outOfBox(g, freezerOf(sim), item);
       } else {
         // A guard knocked out, his pockets gone through.
@@ -412,13 +500,22 @@ function work(g: Game, deal: Deal): boolean {
         const pair = visitPairs(sim.world)[0];
         putTile(s.player, pair.seat);
         s.player.facing = pair.facing;
-        s.seat = sim.world.props.findIndex((q) => (pair.seat % MAP_W) >= q.x && (pair.seat % MAP_W) < q.x + q.w && Math.floor(pair.seat / MAP_W) >= q.z && Math.floor(pair.seat / MAP_W) < q.z + q.d);
+        s.seat = sim.world.props.findIndex(
+          (q) =>
+            pair.seat % MAP_W >= q.x &&
+            pair.seat % MAP_W < q.x + q.w &&
+            Math.floor(pair.seat / MAP_W) >= q.z &&
+            Math.floor(pair.seat / MAP_W) < q.z + q.d,
+        );
         for (let k = 0; k < 200 && !job[J.PROG]; k++) g.step();
         s.seat = -1;
       } else {
         g.to(day, 14, 50);
         const desk = containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
-        check(s.items.containers[desk].some((v) => itemOf(v) === n('birthday_cake')), `${sim.prison.id}: the cake in the Red Cross parcel, in the desk`);
+        check(
+          s.items.containers[desk].some((v) => itemOf(v) === n('birthday_cake')),
+          `${sim.prison.id}: the cake in the Red Cross parcel, in the desk`,
+        );
         outOfBox(g, desk, n('birthday_cake'));
       }
       check(jobNews(g.seen, 'cake').length === 1, `${sim.prison.id}: the birthday cake came in`);
@@ -431,7 +528,8 @@ function work(g: Game, deal: Deal): boolean {
       let whistles = 0;
       for (let k = 0; k < 2 * DAY_STEPS && jobOf(s) && job[J.STAGE] !== STAGE.DONE; k++) {
         // The bot: on watch at the door, a whistle as soon as a guard is coming.
-        if (Math.floor(s.player.x / UNIT) !== d.door % MAP_W || Math.floor(s.player.z / UNIT) !== Math.floor(d.door / MAP_W)) putTile(s.player, d.door);
+        if (Math.floor(s.player.x / UNIT) !== d.door % MAP_W || Math.floor(s.player.z / UNIT) !== Math.floor(d.door / MAP_W))
+          putTile(s.player, d.door);
         const coming = sim.events.some((e) => e.type === 'oddjob' && e.what === 'coming');
         if (coming) {
           whistles++;
@@ -479,20 +577,32 @@ function handIn(g: Game, deal: Deal) {
       for (const v of variants) {
         const found = dealt(p, kind, v);
         if (!found) {
-          check(kind === KIND.LIFT && v === LIFT.MUG ? freezerOf(new Sim(p, 1)) < 0 : false, `${p.id}: ${KINDS[kind]}/${v} dealt in 60 days`);
+          check(
+            kind === KIND.LIFT && v === LIFT.MUG ? freezerOf(new Sim(p, 1)) < 0 : false,
+            `${p.id}: ${KINDS[kind]}/${v} dealt in 60 days`,
+          );
           continue;
         }
         const { g, pin, deal } = found;
         const s = g.sim.state;
         const job = takeAt(g, pin);
-        check(!!job && job[J.KIND] === kind && jobNews(g.seen, 'taken').length === 1, `${p.id}: ${KINDS[kind]} taken off pin ${pin} (${refusals(g.seen)})`);
+        check(
+          !!job && job[J.KIND] === kind && jobNews(g.seen, 'taken').length === 1,
+          `${p.id}: ${KINDS[kind]} taken off pin ${pin} (${refusals(g.seen)})`,
+        );
         if (!job) continue;
         const ok = work(g, deal);
-        check(ok, `${p.id}: ${KINDS[kind]}/${v} done by the bot (${refusals(g.seen).slice(-3)}; ${jobNews(g.seen, 'failed').map((e) => e.why)})`);
+        check(
+          ok,
+          `${p.id}: ${KINDS[kind]}/${v} done by the bot (${refusals(g.seen).slice(-3)}; ${jobNews(g.seen, 'failed').map((e) => e.why)})`,
+        );
         if (!ok) continue;
         const cash = s.cash;
         const paid = handIn(g, deal);
-        check(!!paid && s.cash === cash + deal.pay && !jobOf(s) && !!(s.eventFlags & TODAY.ODD_JOB), `${p.id}: ${KINDS[kind]} handed in: $${deal.pay} (${refusals(g.seen).slice(-2)})`);
+        check(
+          !!paid && s.cash === cash + deal.pay && !jobOf(s) && !!(s.eventFlags & TODAY.ODD_JOB),
+          `${p.id}: ${KINDS[kind]} handed in: $${deal.pay} (${refusals(g.seen).slice(-2)})`,
+        );
         if (deal.perk === PERK.ITEM) check(inHand(g.sim, deal.item) >= 0, `${p.id}: and the ${itemDef(deal.item).id}`);
         if (deal.perk === PERK.DEBT) check(owes(s, deal.giver), `${p.id}: and he owes the player one`);
         row.push(`${KINDS[kind]}${variants.length > 1 ? '/' + v : ''}`);
@@ -511,7 +621,8 @@ function handIn(g: Game, deal: Deal) {
     const sm = p.smuggling;
     // (A visit, or the Red Cross parcel, every day from 2: the story's cake comes in.)
     const cal: Array<[number, number, number]> = [[0, 0, 0]];
-    for (let d = 2; d < 30; d++) if (chain.steps.some((st) => st.kind === KIND.CAKE) && sm) cal.push([d, sm.visits ? VISITING : DELIVERY, -1]);
+    for (let d = 2; d < 30; d++)
+      if (chain.steps.some((st) => st.kind === KIND.CAKE) && sm) cal.push([d, sm.visits ? VISITING : DELIVERY, -1]);
     const g = game(p, 5, cal);
     const s = g.sim.state;
     g.jump(1, 10, 5);
@@ -521,16 +632,25 @@ function handIn(g: Game, deal: Deal) {
     for (let k = 0; k < chain.steps.length; k++) {
       g.jump(day, 10, 5);
       const deal = chainDeal(g.sim);
-      check(!!deal && deal.giver === s.inmates.findIndex((m) => m.cell === chain.who) && deal.kind === chain.steps[k].kind, `${p.id}: the story's step ${k + 1} on the board`);
+      check(
+        !!deal && deal.giver === s.inmates.findIndex((m) => m.cell === chain.who) && deal.kind === chain.steps[k].kind,
+        `${p.id}: the story's step ${k + 1} on the board`,
+      );
       if (!deal) break;
       const job = takeAt(g, CHAIN_PIN);
       check(!!job && job[J.FROM] === FROM.CHAIN, `${p.id}: step ${k + 1} taken (${refusals(g.seen).slice(-2)})`);
       check(!boardNow(g.sim).chain, `${p.id}: its card off the board for the day`);
       const ok = work(g, deal);
-      check(ok, `${p.id}: step ${k + 1} (${KINDS[deal.kind]}) done (${refusals(g.seen).slice(-3)}; ${jobNews(g.seen, 'failed').map((e) => e.why)})`);
+      check(
+        ok,
+        `${p.id}: step ${k + 1} (${KINDS[deal.kind]}) done (${refusals(g.seen).slice(-3)}; ${jobNews(g.seen, 'failed').map((e) => e.why)})`,
+      );
       const paid = handIn(g, deal);
       const ch = jobNews(g.seen, 'chain').at(-1);
-      check(!!paid && !!ch && ch.n === k && ch.more === k + 1 < chain.steps.length && s.oddjobs[R.CHAIN] === k + 1, `${p.id}: step ${k + 1} told`);
+      check(
+        !!paid && !!ch && ch.n === k && ch.more === k + 1 < chain.steps.length && s.oddjobs[R.CHAIN] === k + 1,
+        `${p.id}: step ${k + 1} told`,
+      );
       told.push(`${KINDS[deal.kind]} $${deal.pay}`);
       // (The next step from the next prison day.)
       check(!chainDeal(g.sim), `${p.id}: one step a day`);
@@ -538,7 +658,14 @@ function handIn(g: Game, deal: Deal) {
     }
     check(s.oddjobs[R.CHAIN] === chain.steps.length && !chainDeal(g.sim, day + 1), `${p.id}: the story told to its end`);
     const last = chain.steps.at(-1)!;
-    if (last.perk === PERK.DEBT) check(owes(s, s.inmates.findIndex((m) => m.cell === chain.who)), `${p.id}: and he owes the player one`);
+    if (last.perk === PERK.DEBT)
+      check(
+        owes(
+          s,
+          s.inmates.findIndex((m) => m.cell === chain.who),
+        ),
+        `${p.id}: and he owes the player one`,
+      );
     if (last.perk === PERK.ITEM) check(inHand(g.sim, n(last.item!)) >= 0, `${p.id}: and the ${last.item}`);
     lines.push(`${p.id} story: ${told.join(', ')}; ended day ${day - 1}`);
   }
@@ -562,7 +689,10 @@ function handIn(g: Game, deal: Deal) {
     check(ends === prisonDay(s.step) * DAY_STEPS, 'a one-day job runs to 08:00');
     g.to(prisonDay(s.step) + 1, 8, 1);
     const f = jobNews(g.seen, 'failed').at(-1);
-    check(!jobOf(s) && f?.why === 'time' && s.inmates[deal.giver].opinion <= Math.max(0, was + FAIL_OPINION) + 5, `the time up: failed, opinion ${was} → ${s.inmates[deal.giver].opinion}`);
+    check(
+      !jobOf(s) && f?.why === 'time' && s.inmates[deal.giver].opinion <= Math.max(0, was + FAIL_OPINION) + 5,
+      `the time up: failed, opinion ${was} → ${s.inmates[deal.giver].opinion}`,
+    );
     g.toBoard();
     g.ext(EXT.BOARD, BOARD.QUIT);
     check(refusals(g.seen).at(-1) === 'noJob', 'nothing to give up');
@@ -580,7 +710,10 @@ function handIn(g: Game, deal: Deal) {
     takeAt(g, pin);
     check(refusals(g.seen).at(-1) === 'pinTaken' && boardNow(g.sim).pins[pin] === null, 'a pin taken stays taken for the day');
     g.to(prisonDay(s.step) + 1, 10, 5);
-    check(boardNow(g.sim).pins.every((d) => !!d), 'the next morning: three new pins');
+    check(
+      boardNow(g.sim).pins.every((d) => !!d),
+      'the next morning: three new pins',
+    );
   }
   // A drop seen: off.
   {
@@ -597,7 +730,7 @@ function handIn(g: Game, deal: Deal) {
     g.sim.events = [];
     oddjobs(g.sim as never);
     g.seen.push(...g.sim.events);
-    check(!jobOf(s) && jobNews(g.seen, 'failed').at(-1)?.why === 'seen', 'the parcel dropped in a guard\'s sight: failed');
+    check(!jobOf(s) && jobNews(g.seen, 'failed').at(-1)?.why === 'seen', "the parcel dropped in a guard's sight: failed");
   }
   // A parcel left in the desk by an earlier job: only one more counts.
   {
@@ -628,7 +761,10 @@ function handIn(g: Game, deal: Deal) {
     s.heat = 0;
     g.step();
     intoBox(g, deskOf(g.sim, deal.target), inHand(g.sim, n('stash')));
-    check(!jobOf(s) && jobNews(g.seen, 'failed').at(-1)?.why === 'caught' && s.heat >= FRAME_HEAT, `a frame caught out: failed, heat ${s.heat}`);
+    check(
+      !jobOf(s) && jobNews(g.seen, 'failed').at(-1)?.why === 'caught' && s.heat >= FRAME_HEAT,
+      `a frame caught out: failed, heat ${s.heat}`,
+    );
   }
   // A fixed game the wrong way.
   {
@@ -663,7 +799,10 @@ function handIn(g: Game, deal: Deal) {
     const prog = jobOf(s)![J.PROG];
     away();
     g.ext(EXT.WHISTLE);
-    check(jobNews(g.seen, 'falseAlarm').length === 1 && jobOf(s)![J.PROG] < prog, `a false alarm: the dig set back (${prog} → ${jobOf(s)?.[J.PROG]})`);
+    check(
+      jobNews(g.seen, 'falseAlarm').length === 1 && jobOf(s)![J.PROG] < prog,
+      `a false alarm: the dig set back (${prog} → ${jobOf(s)?.[J.PROG]})`,
+    );
     for (let k = 0; k < 60; k++) {
       away();
       g.step();
@@ -671,7 +810,9 @@ function handIn(g: Game, deal: Deal) {
     // (A guard a tile or two from the digger, on the open floor of his cell, in sight of him.)
     const gd = s.guards[0];
     const w = g.sim.world;
-    const near = [1, -1, MAP_W, -MAP_W, 2, -2, 2 * MAP_W, -2 * MAP_W].map((o) => d.tile + o).find((t) => !w.blocked(t % MAP_W, Math.floor(t / MAP_W)) && !w.propSolid[t])!;
+    const near = [1, -1, MAP_W, -MAP_W, 2, -2, 2 * MAP_W, -2 * MAP_W]
+      .map((o) => d.tile + o)
+      .find((t) => !w.blocked(t % MAP_W, Math.floor(t / MAP_W)) && !w.propSolid[t])!;
     putTile(gd.body, near);
     gd.path = [];
     g.step();
@@ -696,7 +837,10 @@ function handIn(g: Game, deal: Deal) {
     s.inmates[fx].opinion = 70;
     g.talk(TALK.ODD_JOB);
     const job = jobOf(s);
-    check(!!job && job[J.FROM] === FROM.FIXER && !!(s.eventFlags & TODAY.FIXER_JOB), `the fixer's job taken: ${job ? KINDS[job[J.KIND]] : '-'}`);
+    check(
+      !!job && job[J.FROM] === FROM.FIXER && !!(s.eventFlags & TODAY.FIXER_JOB),
+      `the fixer's job taken: ${job ? KINDS[job[J.KIND]] : '-'}`,
+    );
     g.ext(EXT.BOARD, BOARD.QUIT);
     g.talkTo(fx);
     g.talk(TALK.ODD_JOB);
@@ -707,14 +851,20 @@ function handIn(g: Game, deal: Deal) {
     s.inmates[who].opinion = 30;
     g.talkTo(who);
     g.talk(TALK.RECRUIT);
-    check(s.followers.includes(who) && !owes(s, who) && jobNews(g.seen, 'owedJoin').length === 1, 'one who owes the player joins the crew on it');
+    check(
+      s.followers.includes(who) && !owes(s, who) && jobNews(g.seen, 'owedJoin').length === 1,
+      'one who owes the player joins the crew on it',
+    );
     check(s.feats[FEAT.debtsCalled] === 1, 'a debt that recruits is a debt called in (Called In)');
     const other = (fx + 2) % s.inmates.length;
     s.oddjobs[R.OWED] |= 1 << other;
     g.talkTo(other);
     g.talk(TALK.CALL_IN);
     const call = jobNews(g.seen, 'calledIn').at(-1);
-    check(!!call && !!call.item && inHand(g.sim, call.item) >= 0 && !owes(s, other), `a debt called in: ${call?.item ? itemDef(call.item).id : '-'}`);
+    check(
+      !!call && !!call.item && inHand(g.sim, call.item) >= 0 && !owes(s, other),
+      `a debt called in: ${call?.item ? itemDef(call.item).id : '-'}`,
+    );
     g.talk(TALK.CALL_IN);
     check(refusals(g.seen).at(-1) === 'notOwed', 'not twice');
     lines.push(`fixer's job: ${job ? KINDS[job[J.KIND]] : '-'}; tool: ${call?.item ? itemDef(call.item).id : '-'}`);
@@ -727,7 +877,10 @@ function handIn(g: Game, deal: Deal) {
     const saved = JSON.parse(JSON.stringify(s));
     const back = new Sim(p, 5);
     back.state = loadState(back.world, p, saved);
-    check(JSON.stringify(back.state.oddjob) === JSON.stringify(s.oddjob) && JSON.stringify(back.state.oddjobs) === JSON.stringify(s.oddjobs), 'a save mid-job loads with it');
+    check(
+      JSON.stringify(back.state.oddjob) === JSON.stringify(s.oddjob) && JSON.stringify(back.state.oddjobs) === JSON.stringify(s.oddjobs),
+      'a save mid-job loads with it',
+    );
     const old = JSON.parse(JSON.stringify(s));
     delete old.oddjob;
     delete old.oddjobs;
@@ -741,7 +894,12 @@ function handIn(g: Game, deal: Deal) {
     b.state = loadState(b.world, p, bad);
     check(b.state.oddjob.length === 0 && b.state.oddjobs.join() === '0,0,0,0,0', 'damaged numbers: dropped');
     // (Full review: a stage, a pin or a perk that can't be.)
-    for (const [k, v] of [[J.STAGE, 2], [J.FROM, 5], [J.FROM, -1], [J.PERK, 3]] as const) {
+    for (const [k, v] of [
+      [J.STAGE, 2],
+      [J.FROM, 5],
+      [J.FROM, -1],
+      [J.PERK, 3],
+    ] as const) {
       const odd = JSON.parse(JSON.stringify(s));
       odd.oddjob[k] = v;
       const q = new Sim(p, 5);
@@ -791,7 +949,10 @@ function handIn(g: Game, deal: Deal) {
       sawPlayer ||= s.seen;
       stare();
     }
-    check(sawPlayer && jobNews(g.seen, 'planted').length === 1 && !jobNews(g.seen, 'failed').length && s.heat < FRAME_HEAT, `the rat's plant while a guard watches the player: planted, not caught (seen ${sawPlayer}, heat ${s.heat})`);
+    check(
+      sawPlayer && jobNews(g.seen, 'planted').length === 1 && !jobNews(g.seen, 'failed').length && s.heat < FRAME_HEAT,
+      `the rat's plant while a guard watches the player: planted, not caught (seen ${sawPlayer}, heat ${s.heat})`,
+    );
   }
   // 2. A lift job given up takes its item back; a leftover is planted over; no room at all: not offered.
   {
@@ -800,9 +961,12 @@ function handIn(g: Game, deal: Deal) {
     g.jump(3, 10, 5);
     s.oddjobs[R.CHAIN] = 1;
     const cd = chainDeal(g.sim)!;
-    check(cd.kind === KIND.LIFT && cd.variant === LIFT.KEEPSAKE, 'Center Perks: the story\'s second step is the keepsake');
+    check(cd.kind === KIND.LIFT && cd.variant === LIFT.KEEPSAKE, "Center Perks: the story's second step is the keepsake");
     takeAt(g, CHAIN_PIN);
-    check(pockets(g, cd.target).some((v) => itemOf(v) === n('pocket_watch')), 'the keepsake planted in his pockets');
+    check(
+      pockets(g, cd.target).some((v) => itemOf(v) === n('pocket_watch')),
+      'the keepsake planted in his pockets',
+    );
     g.ext(EXT.BOARD, BOARD.QUIT);
     check(!pockets(g, cd.target).some((v) => itemOf(v) === n('pocket_watch')), 'given up: the keepsake out of his pockets again');
   }
@@ -812,14 +976,22 @@ function handIn(g: Game, deal: Deal) {
     const free = pk.indexOf(0);
     pk[free] = slot(n('pocket_watch'));
     takeAt(g, pin);
-    check(!!jobOf(g.sim.state) && itemOf(pk[free]) === n('whistle'), 'a keepsake left in his pockets (an old save): the whistle planted over it');
+    check(
+      !!jobOf(g.sim.state) && itemOf(pk[free]) === n('whistle'),
+      'a keepsake left in his pockets (an old save): the whistle planted over it',
+    );
     g.ext(EXT.BOARD, BOARD.QUIT);
     check(!pk.some((v) => itemOf(v) === n('whistle')), 'the whistle job given up: the whistle gone from his pockets');
     const again = dealt(p, KIND.LIFT, LIFT.WHISTLE)!;
     const pk2 = pockets(again.g, again.deal.target);
     pk2[pk2.indexOf(0)] = slot(n('soap'));
     takeAt(again.g, again.pin);
-    check(!jobOf(again.g.sim.state) && refusals(again.g.seen).at(-1) === 'liftFull' && boardRefusal(again.g.sim as never, again.pin) === 'liftFull', 'his pockets full of something else: the whistle job not offered');
+    check(
+      !jobOf(again.g.sim.state) &&
+        refusals(again.g.seen).at(-1) === 'liftFull' &&
+        boardRefusal(again.g.sim as never, again.pin) === 'liftFull',
+      'his pockets full of something else: the whistle job not offered',
+    );
   }
   // 3 + 6. A frame-up's stash: in the hidden compartment it isn't planted; an old stash searched out doesn't make it impossible.
   {
@@ -832,7 +1004,10 @@ function handIn(g: Game, deal: Deal) {
     openBox(g, desk);
     g.step(command(0, OP.MOVE, inHand(g.sim, n('stash')), SLOT.CONTAINER + 0));
     g.step(command(0, OP.CLOSE));
-    check(itemOf(s.items.containers[desk][0]) === n('stash') && !jobNews(g.seen, 'planted').length && jobOf(s)?.[J.PROG] === 0, 'the stash in the hidden compartment (never searched): not planted');
+    check(
+      itemOf(s.items.containers[desk][0]) === n('stash') && !jobNews(g.seen, 'planted').length && jobOf(s)?.[J.PROG] === 0,
+      'the stash in the hidden compartment (never searched): not planted',
+    );
   }
   {
     const { g, pin, deal } = dealt(p, KIND.FRAME)!;
@@ -842,7 +1017,7 @@ function handIn(g: Game, deal: Deal) {
     const hid = containersOf(g.sim.world)[desk].hidden;
     box[box.indexOf(0, hid)] = slot(n('stash'));
     takeAt(g, pin);
-    check(jobOf(s)?.[J.WARN] === 1, 'an old stash in the drawers as it\'s taken: counted');
+    check(jobOf(s)?.[J.WARN] === 1, "an old stash in the drawers as it's taken: counted");
     // (A search takes the old one.)
     for (let k = hid; k < box.length; k++) if (itemOf(box[k]) === n('stash')) box[k] = 0;
     g.step();
@@ -853,8 +1028,14 @@ function handIn(g: Game, deal: Deal) {
   }
   // 4. A job taken from 18:00 counts its days from the next prison day.
   {
-    check(endsFor(at(4, 10, 5), 1) === 4 * DAY_STEPS && endsFor(at(4, 17, 59), 1) === 4 * DAY_STEPS, 'a one-day job taken before 18:00: until 08:00 the next morning');
-    check(endsFor(at(4, 18, 0), 1) === 5 * DAY_STEPS && endsFor(at(4, 21, 30), 2) === 6 * DAY_STEPS, 'taken from 18:00: counted from tomorrow');
+    check(
+      endsFor(at(4, 10, 5), 1) === 4 * DAY_STEPS && endsFor(at(4, 17, 59), 1) === 4 * DAY_STEPS,
+      'a one-day job taken before 18:00: until 08:00 the next morning',
+    );
+    check(
+      endsFor(at(4, 18, 0), 1) === 5 * DAY_STEPS && endsFor(at(4, 21, 30), 2) === 6 * DAY_STEPS,
+      'taken from 18:00: counted from tomorrow',
+    );
     const { g, pin, deal } = dealt(p, KIND.DELIVER)!;
     const s = g.sim.state;
     const day = prisonDay(s.step);
@@ -870,7 +1051,7 @@ function handIn(g: Game, deal: Deal) {
     const s = g.sim.state;
     takeAt(g, pin);
     s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(n('whistle'));
-    check(tryHandIn(g, deal.giver) === 'notDone', 'a whistle kept from an earlier job: not this job\'s');
+    check(tryHandIn(g, deal.giver) === 'notDone', "a whistle kept from an earlier job: not this job's");
     s.guards[deal.target].ko = 400;
     outOfBox(g, pocketOf(g.sim.world, s.inmates.length + deal.target), n('whistle'));
     check(tryHandIn(g, deal.giver) === 'paid', 'lifted off the guard: handed in');
@@ -896,13 +1077,16 @@ function handIn(g: Game, deal: Deal) {
     const s = g.sim.state;
     takeAt(g, pin);
     s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(n('birthday_cake'));
-    check(tryHandIn(g, deal.giver) === 'notDone', 'a cake kept from an earlier job: not this job\'s');
+    check(tryHandIn(g, deal.giver) === 'notDone', "a cake kept from an earlier job: not this job's");
   }
   {
     const { g, pin } = dealt(p, KIND.LIFT, LIFT.MUG)!;
     const f = freezerOf(g.sim);
     takeAt(g, pin);
-    check(g.sim.state.items.containers[f].some((v) => itemOf(v) === n('mug')), 'the mug in the freezer');
+    check(
+      g.sim.state.items.containers[f].some((v) => itemOf(v) === n('mug')),
+      'the mug in the freezer',
+    );
     g.ext(EXT.BOARD, BOARD.QUIT);
     check(!g.sim.state.items.containers[f].some((v) => itemOf(v) === n('mug')), 'given up: the mug gone from the freezer');
   }
@@ -916,14 +1100,20 @@ function handIn(g: Game, deal: Deal) {
     box[2] = slot(n('sock'));
     box[3] = slot(n('soap'));
     takeAt(g, pin);
-    check(!!jobOf(g.sim.state) && box.map((v) => itemDef(itemOf(v)).id).join() === 'mug,soap,sock,soap', `a full freezer: the mug over its food (${box.map((v) => itemDef(itemOf(v)).id)})`);
+    check(
+      !!jobOf(g.sim.state) && box.map((v) => itemDef(itemOf(v)).id).join() === 'mug,soap,sock,soap',
+      `a full freezer: the mug over its food (${box.map((v) => itemDef(itemOf(v)).id)})`,
+    );
   }
   {
     const { g, pin } = dealt(p, KIND.LIFT, LIFT.MUG)!;
     const box = g.sim.state.items.containers[freezerOf(g.sim)];
     box.fill(slot(n('soap')));
     takeAt(g, pin);
-    check(!jobOf(g.sim.state) && refusals(g.seen).at(-1) === 'liftFull' && box.every((v) => itemOf(v) === n('soap')), 'the freezer full of the player\'s things: not offered, nothing overwritten');
+    check(
+      !jobOf(g.sim.state) && refusals(g.seen).at(-1) === 'liftFull' && box.every((v) => itemOf(v) === n('soap')),
+      "the freezer full of the player's things: not offered, nothing overwritten",
+    );
   }
   // 8. The time up with what's to be brought in hand: done, it waits to be handed in.
   {
@@ -956,11 +1146,20 @@ function handIn(g: Game, deal: Deal) {
     const pair = visitPairs(g.sim.world)[0];
     putTile(s.player, pair.seat);
     s.player.facing = pair.facing;
-    s.seat = g.sim.world.props.findIndex((q) => pair.seat % MAP_W >= q.x && pair.seat % MAP_W < q.x + q.w && Math.floor(pair.seat / MAP_W) >= q.z && Math.floor(pair.seat / MAP_W) < q.z + q.d);
+    s.seat = g.sim.world.props.findIndex(
+      (q) =>
+        pair.seat % MAP_W >= q.x &&
+        pair.seat % MAP_W < q.x + q.w &&
+        Math.floor(pair.seat / MAP_W) >= q.z &&
+        Math.floor(pair.seat / MAP_W) < q.z + q.d,
+    );
     for (let k = 0; k < 200 && !jobOf(s)![J.PROG]; k++) g.step();
     s.seat = -1;
     const mine = containersOf(g.sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
-    check(jobNews(g.seen, 'cake').at(-1)?.n === 2 && s.items.containers[mine].some((v) => itemOf(v) === n('birthday_cake')), 'the hotbar full at the visit: the cake in the desk');
+    check(
+      jobNews(g.seen, 'cake').at(-1)?.n === 2 && s.items.containers[mine].some((v) => itemOf(v) === n('birthday_cake')),
+      'the hotbar full at the visit: the cake in the desk',
+    );
     s.items.inv[0] = 0;
     outOfBox(g, mine, n('birthday_cake'));
     check(tryHandIn(g, deal.giver) === 'paid', 'and handed in');
@@ -973,16 +1172,23 @@ function handIn(g: Game, deal: Deal) {
     const box = s.items.containers[mine];
     for (let k = containersOf(g.sim.world)[mine].hidden; k < box.length; k++) if (!box[k]) box[k] = slot(n('soap'));
     const free = [];
-    for (let k = 0; k < HOTBAR; k++) if (!s.items.inv[k]) {
-      s.items.inv[k] = slot(n('sock'));
-      free.push(k);
-    }
+    for (let k = 0; k < HOTBAR; k++)
+      if (!s.items.inv[k]) {
+        s.items.inv[k] = slot(n('sock'));
+        free.push(k);
+      }
     const day = prisonDay(s.step) + 1;
     g.to(day, 14, 50);
-    check(jobNews(g.seen, 'cakeKept').length === 1 && jobNews(g.seen, 'cakeKept')[0].n === 1 && !jobOf(s)![J.PROG], 'the desk and the hotbar full on the parcel\'s day: told once, the cake waits');
+    check(
+      jobNews(g.seen, 'cakeKept').length === 1 && jobNews(g.seen, 'cakeKept')[0].n === 1 && !jobOf(s)![J.PROG],
+      "the desk and the hotbar full on the parcel's day: told once, the cake waits",
+    );
     s.items.inv[free[0]] = 0;
     g.to(day, 14, 52);
-    check(jobNews(g.seen, 'cake').at(-1)?.n === 3 && inHand(g.sim, n('birthday_cake')) >= 0, 'room made in the hotbar: the cake comes in there');
+    check(
+      jobNews(g.seen, 'cake').at(-1)?.n === 3 && inHand(g.sim, n('birthday_cake')) >= 0,
+      'room made in the hotbar: the cake comes in there',
+    );
   }
   // 10. A guard bribed to look away doesn't find the dig.
   {
@@ -999,7 +1205,9 @@ function handIn(g: Game, deal: Deal) {
       g.step();
     }
     const w = g.sim.world;
-    const near = [1, -1, MAP_W, -MAP_W, 2, -2, 2 * MAP_W, -2 * MAP_W].map((o) => d.tile + o).find((t) => !w.blocked(t % MAP_W, Math.floor(t / MAP_W)) && !w.propSolid[t])!;
+    const near = [1, -1, MAP_W, -MAP_W, 2, -2, 2 * MAP_W, -2 * MAP_W]
+      .map((o) => d.tile + o)
+      .find((t) => !w.blocked(t % MAP_W, Math.floor(t / MAP_W)) && !w.propSolid[t])!;
     away();
     const gd = s.guards[0];
     gd.bribed = s.step + 1e6;
@@ -1013,7 +1221,9 @@ function handIn(g: Game, deal: Deal) {
     check(!!jobOf(s) && !jobNews(g.seen, 'failed').length && jobOf(s)![J.PROG] > prog, 'a bribed guard by the dig: it goes on');
   }
   // 11. A rat's job says it needs a pet rat (the card: play/oddjobs.ts metaOf, `oddjob.needsRat`).
-  lines.push('rules review: the rat\'s plant, leftovers, the hidden compartment, late jobs, the freezer, the deadline, the cake, a bribed guard: checked');
+  lines.push(
+    "rules review: the rat's plant, leftovers, the hidden compartment, late jobs, the freezer, the deadline, the cake, a bribed guard: checked",
+  );
   console.log(lines.join('\n'));
 }
 
@@ -1038,7 +1248,7 @@ function handIn(g: Game, deal: Deal) {
     const c = dealt(CENTER_PERKS, KIND.CHECKERS)!;
     c.g.toBoard();
     c.g.sim.state.inmates[c.deal.target].opinion = 10;
-    check(boardRefusal(c.g.sim as never, c.pin) === 'elderOpinion', 'checkers with an old-timer who won\'t sit down: refused');
+    check(boardRefusal(c.g.sim as never, c.pin) === 'elderOpinion', "checkers with an old-timer who won't sit down: refused");
     // (San Pancho's hostile cells start under the games' opinion: their pins wait, never an impossible job.)
     let waited = 0;
     for (let day = 2; day < 40; day++) {
@@ -1059,7 +1269,7 @@ function handIn(g: Game, deal: Deal) {
     const s = g.sim.state;
     g.jump(2, 10, 5);
     takeAt(g, CHAIN_PIN);
-    check(jobOf(s)?.[J.FROM] === FROM.CHAIN, 'the story\'s step taken');
+    check(jobOf(s)?.[J.FROM] === FROM.CHAIN, "the story's step taken");
     g.jump(3, 10, 5);
     check(!!jobOf(s) && boardNow(g.sim).chain === null, 'held into the next day: its card not pinned up again');
     g.ext(EXT.BOARD, BOARD.QUIT);
@@ -1071,7 +1281,6 @@ function handIn(g: Game, deal: Deal) {
   // 3. A job given up takes back what it handed over: from the hotbar, or the player's own desk.
   for (const kind of [KIND.DROP, KIND.FRAME, KIND.RAT, KIND.DELIVER]) {
     const { g, pin } = dealt(CENTER_PERKS, kind)!;
-    const s = g.sim.state;
     const gives = n(KIND_DEFS[KINDS[kind]].gives!);
     takeAt(g, pin);
     check(inHand(g.sim, gives) >= 0, `${KINDS[kind]}: handed over`);
@@ -1088,13 +1297,17 @@ function handIn(g: Game, deal: Deal) {
     box[box.indexOf(0, containersOf(g.sim.world)[own].hidden)] = s.items.inv[k];
     s.items.inv[k] = 0;
     g.ext(EXT.BOARD, BOARD.QUIT);
-    check(!box.some((v) => itemOf(v) === n('stash')), 'a stash put away in the player\'s desk, then given up: taken back');
+    check(!box.some((v) => itemOf(v) === n('stash')), "a stash put away in the player's desk, then given up: taken back");
   }
   // 4. Stalag Flucht's cake, taken on a delivery day after the parcel came in: with the next delivery, not today's.
   {
     let checked = false;
     for (let day = 2; day < 60 && !checked; day++) {
-      const cal: Array<[number, number, number]> = [[0, 0, 0], [day, DELIVERY, -1], [day + 1, DELIVERY, -1]];
+      const cal: Array<[number, number, number]> = [
+        [0, 0, 0],
+        [day, DELIVERY, -1],
+        [day + 1, DELIVERY, -1],
+      ];
       const probe = new Sim(STALAG_FLUCHT, 5);
       probe.state.calendar = cal;
       const pin = dealsOf(probe, day).findIndex((d) => d.kind === KIND.CAKE);
@@ -1103,9 +1316,9 @@ function handIn(g: Game, deal: Deal) {
       g.jump(day, 16, 0);
       takeAt(g, pin);
       g.to(day + 1, 10, 0);
-      check(!jobNews(g.seen, 'cake').length, 'taken after today\'s parcel: no cake today');
+      check(!jobNews(g.seen, 'cake').length, "taken after today's parcel: no cake today");
       g.to(day + 1, 16, 0);
-      check(jobNews(g.seen, 'cake').length === 1, 'it comes with the next day\'s parcel');
+      check(jobNews(g.seen, 'cake').length === 1, "it comes with the next day's parcel");
       checked = true;
     }
     check(checked, 'a cake dealt on a delivery day');
@@ -1122,7 +1335,10 @@ function handIn(g: Game, deal: Deal) {
     const k = inHand(g.sim, n('parcel'));
     s.items.inv[k] = 0;
     const paid = handIn(g, deal);
-    check(!!paid && paid.perk === PERK.ITEM && !!paid.item && inHand(g.sim, paid.item) >= 0 && owes(s, deal.giver), `a second debt: paid at once (${paid?.item ? itemDef(paid.item).id : '-'}), the first still owed`);
+    check(
+      !!paid && paid.perk === PERK.ITEM && !!paid.item && inHand(g.sim, paid.item) >= 0 && owes(s, deal.giver),
+      `a second debt: paid at once (${paid?.item ? itemDef(paid.item).id : '-'}), the first still owed`,
+    );
   }
   lines.push('full review: a held story step, items taken back, the cake after the parcel, a second debt: checked');
   console.log(lines.join('\n'));
@@ -1144,7 +1360,10 @@ function handIn(g: Game, deal: Deal) {
     const prog = jobOf(s)![J.PROG];
     check(!canWhistle(g.sim as never) && !whistleNow(g.sim as never), 'at work, by the door: no whistle (B opens the card)');
     g.ext(EXT.WHISTLE);
-    check(refusals(g.seen).at(-1) === 'notLookout' && !jobNews(g.seen, 'falseAlarm').length && jobOf(s)![J.PROG] === prog, 'a whistle outside the dig\'s hours: refused, the dig untouched');
+    check(
+      refusals(g.seen).at(-1) === 'notLookout' && !jobNews(g.seen, 'falseAlarm').length && jobOf(s)![J.PROG] === prog,
+      "a whistle outside the dig's hours: refused, the dig untouched",
+    );
     g.jump(day, 18, 5);
     const away = () => {
       for (const gd of s.guards) put(gd.body, 2, 2);
@@ -1156,7 +1375,7 @@ function handIn(g: Game, deal: Deal) {
     }
     away();
     g.step();
-    check(canWhistle(g.sim as never) && !whistleNow(g.sim as never), 'digging, nobody coming: the card\'s whistle there, B opens the card');
+    check(canWhistle(g.sim as never) && !whistleNow(g.sim as never), "digging, nobody coming: the card's whistle there, B opens the card");
     // (A guard coming: within WARN_TILES, not yet close enough to see in.)
     const gd = s.guards[0];
     putTile(gd.body, d.tile + 4);
@@ -1180,7 +1399,10 @@ function handIn(g: Game, deal: Deal) {
       gd.path = [];
       g.step();
     }
-    check(!g.seen.slice(seen).some((e) => e.type === 'oddjob' && e.what === 'coming') && jobOf(s)![J.WARN] === 0 && !whistleNow(g.sim as never), 'off watch, a guard near the dig: no "coming" toast');
+    check(
+      !g.seen.slice(seen).some((e) => e.type === 'oddjob' && e.what === 'coming') && jobOf(s)![J.WARN] === 0 && !whistleNow(g.sim as never),
+      'off watch, a guard near the dig: no "coming" toast',
+    );
   }
   // A delivery's parcel handed over isn't a gift: what he thinks of the player stays.
   {
@@ -1191,7 +1413,10 @@ function handIn(g: Game, deal: Deal) {
     g.talkTo(deal.target);
     const was = s.inmates[deal.target].opinion;
     g.talk(TALK.GIFT, inHand(g.sim, n('parcel')));
-    check(jobOf(s)?.[J.STAGE] === STAGE.DONE && s.inmates[deal.target].opinion === was, `the parcel delivered: done, his opinion unchanged (${was} → ${s.inmates[deal.target].opinion})`);
+    check(
+      jobOf(s)?.[J.STAGE] === STAGE.DONE && s.inmates[deal.target].opinion === was,
+      `the parcel delivered: done, his opinion unchanged (${was} → ${s.inmates[deal.target].opinion})`,
+    );
   }
   // The digger faces open floor at his bed, in every prison, whoever digs.
   for (const p of PRISONS) {
@@ -1203,7 +1428,10 @@ function handIn(g: Game, deal: Deal) {
       if (tile < 0) continue;
       const f = digFace(sim.world, tile);
       const step = f === 1 ? 1 : f === 5 ? MAP_W : f === 9 ? -1 : -MAP_W;
-      check(isFloor(sim.world, (tile + step) % MAP_W, Math.floor((tile + step) / MAP_W)), `${p.id}: cell ${m.cell}'s digger faces open floor`);
+      check(
+        isFloor(sim.world, (tile + step) % MAP_W, Math.floor((tile + step) / MAP_W)),
+        `${p.id}: cell ${m.cell}'s digger faces open floor`,
+      );
       n++;
     }
     lines.push(`${p.id}: ${n} dig spots face open floor`);

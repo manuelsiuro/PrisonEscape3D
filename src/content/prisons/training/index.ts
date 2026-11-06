@@ -79,7 +79,14 @@ export const TRAINING: PrisonDef = {
   // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
   // last, so that no other prop's number moves). Nobody else drinks at it here: the lessons ask for things by name.
   menu: { x: 26, z: 26, w: 3 },
-  cooler: { x: 30, z: 26, spots: [{ x: 29, z: 26 }, { x: 30, z: 27 }] },
+  cooler: {
+    x: 30,
+    z: 26,
+    spots: [
+      { x: 29, z: 26 },
+      { x: 30, z: 27 },
+    ],
+  },
   decor: TRAINING_DECOR,
   rollCall: [
     { x: 22, z: 40 },

@@ -204,7 +204,9 @@ body.touch .oddjobs-card .oddjobs-close {
     linear-gradient(90deg, transparent 8%, rgba(232, 199, 122, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
     radial-gradient(120% 70% at 50% 0%, rgba(232, 199, 122, 0.14), transparent 65%),
     linear-gradient(180deg, rgba(40, 34, 30, 0.97), rgba(22, 24, 32, 0.97));
-  box-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), inset 0 0 0 1.5px rgba(232, 199, 122, 0.5);
+  box-shadow:
+    0 20px 50px -14px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1.5px rgba(232, 199, 122, 0.5);
   animation: sheet-in 0.3s var(--spring);
 }
 .story-head {

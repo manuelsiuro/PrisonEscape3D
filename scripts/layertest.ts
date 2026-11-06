@@ -131,7 +131,9 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
     if (vents[i] === TILE.LADDER) ladder = i;
   }
   const foot = ladderFootOf(w);
-  console.log(`vents: grates at ${grates.join(' ')}; ladder ${ladder % MAP_W},${Math.floor(ladder / MAP_W)}, foot ${foot % MAP_W},${Math.floor(foot / MAP_W)}`);
+  console.log(
+    `vents: grates at ${grates.join(' ')}; ladder ${ladder % MAP_W},${Math.floor(ladder / MAP_W)}, foot ${foot % MAP_W},${Math.floor(foot / MAP_W)}`,
+  );
   check(ladder >= 0 && foot >= 0, 'the ladder has a free foot');
   check(w.layers[LAYER.ROOF].kind[ladder] === TILE.LADDER, 'the ladder reaches a roof hatch');
   // Every duct tile joins up.
@@ -139,11 +141,17 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   const queue = [9 * MAP_W + 9];
   while (queue.length) {
     const i = queue.pop()!;
-    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (!w.layers[LAYER.VENTS].block[j] && !seen.has(j)) (seen.add(j), queue.push(j));
+    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W])
+      if (!w.layers[LAYER.VENTS].block[j] && !seen.has(j)) {
+        seen.add(j);
+        queue.push(j);
+      }
   }
   const ducts = Array.from(vents).filter((k) => k !== TILE.EMPTY).length;
   check(seen.size === ducts && seen.has(ladder), 'one duct network, from the cell grate to the ladder');
-  console.log(`vents: ${ducts} duct tiles, all joined; roofs: ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length} tiles`);
+  console.log(
+    `vents: ${ducts} duct tiles, all joined; roofs: ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length} tiles`,
+  );
 }
 
 // ------------------------------------------------------------------ chipping, covers, cutting, escape
@@ -155,9 +163,21 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   carry(sim, 'plastic_fork', 'plastic_fork', 'plastic_fork');
   const chip = strikeUntil(sim, 'plastic_fork', () => kindAt(sim, LAYER.GROUND, 8, 6) === TILE.HOLE);
   check(chip.ok, 'three forks get through a brick wall');
-  console.log(`chip: ${chip.strikes} strikes, ${chip.broke} forks worn out, ${chip.rests} rests → ${name(kindAt(sim, LAYER.GROUND, 8, 6))}, carrying ${st.items.inv.slice(0, 6).filter(Boolean).map((v) => ITEMS[itemOf(v) - 1].id).join(', ')}; energy ${st.energy}`);
-  check(st.items.inv.some((v) => itemOf(v) === n('wall_chunk')), 'the chunk of wall is in hand');
-  check(sim.world.npcBlock[6 * MAP_W + 8] === 1 && sim.world.guardBlock[6 * MAP_W + 8] === 1 && sim.world.block[6 * MAP_W + 8] === 0, 'the hole is the player’s way, not the inmates’ or guards’');
+  console.log(
+    `chip: ${chip.strikes} strikes, ${chip.broke} forks worn out, ${chip.rests} rests → ${name(kindAt(sim, LAYER.GROUND, 8, 6))}, carrying ${st.items.inv
+      .slice(0, 6)
+      .filter(Boolean)
+      .map((v) => ITEMS[itemOf(v) - 1].id)
+      .join(', ')}; energy ${st.energy}`,
+  );
+  check(
+    st.items.inv.some((v) => itemOf(v) === n('wall_chunk')),
+    'the chunk of wall is in hand',
+  );
+  check(
+    sim.world.npcBlock[6 * MAP_W + 8] === 1 && sim.world.guardBlock[6 * MAP_W + 8] === 1 && sim.world.block[6 * MAP_W + 8] === 0,
+    'the hole is the player’s way, not the inmates’ or guards’',
+  );
   // Covers: a poster here (the player's cell), then a fake block; each comes off again.
   carry(sim, 'poster');
   stand(sim, 8, 7, NORTH);
@@ -184,7 +204,10 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   use(sim);
   check(kindAt(sim, LAYER.GROUND, 8, 2) === TILE.FENCE_FAKE, 'a fake fence cover patches the cut');
   interact(sim);
-  check(kindAt(sim, LAYER.GROUND, 8, 2) === TILE.FENCE_CUT && itemOf(st.items.inv[0]) === n('fake_fence'), 'the fake fence cover comes off into the hand');
+  check(
+    kindAt(sim, LAYER.GROUND, 8, 2) === TILE.FENCE_CUT && itemOf(st.items.inv[0]) === n('fake_fence'),
+    'the fake fence cover comes off into the hand',
+  );
   walkFor(sim, NORTH, 40);
   check(st.escaped > 0, 'out on the road: escaped');
   console.log(`escape through the fence: ${st.escaped ? `escaped ${at(sim)}` : 'still inside'}`);
@@ -202,7 +225,9 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   sim.step(command(0, OP.USE, 1));
   check(sim.events.some((e) => e.type === 'shocked') && sim.state.ko > 0, 'a live fence knocks the player out');
   for (let k = 0; k < 700 && sim.state.ko > 0; k++) sim.step(command(0));
-  console.log(`electric fence: shocked, woke up in the ${sim.playerZone}; the plastic knife (legal) ${sim.state.items.inv[0] ? 'kept' : 'confiscated'}`);
+  console.log(
+    `electric fence: shocked, woke up in the ${sim.playerZone}; the plastic knife (legal) ${sim.state.items.inv[0] ? 'kept' : 'confiscated'}`,
+  );
   check(sim.playerZone === 'infirmary' && !!sim.state.items.inv[0], 'woken in the infirmary, the legal knife kept');
 }
 
@@ -216,7 +241,9 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   check(unscrew.ok, 'a nail file unscrews the grate');
   const climbed = interact(sim).find((e) => e.type === 'layer');
   check(st.layer === LAYER.VENTS && sim.playerZone === 'vents', 'up through the grate into the vents');
-  console.log(`vents: ${unscrew.strikes} turns of the file; climbed in (${climbed?.type === 'layer' ? climbed.how : '-'}), zone ${sim.playerZone}`);
+  console.log(
+    `vents: ${unscrew.strikes} turns of the file; climbed in (${climbed?.type === 'layer' ? climbed.how : '-'}), zone ${sim.playerZone}`,
+  );
   const ladder = 39 * MAP_W + 13;
   const t0 = st.step;
   check(goTo(sim, ladder), 'crawled through the ducts to the ladder');
@@ -228,7 +255,9 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   const onRoof = sim.playerZone;
   check(goTo(sim, ladder), 'back to the hatch');
   interact(sim);
-  console.log(`roof: walked east (${onRoof}), climbed down to the ${sim.playerZone} at ${Math.floor(st.player.x / UNIT)},${Math.floor(st.player.z / UNIT)}`);
+  console.log(
+    `roof: walked east (${onRoof}), climbed down to the ${sim.playerZone} at ${Math.floor(st.player.x / UNIT)},${Math.floor(st.player.z / UNIT)}`,
+  );
   check(st.layer === LAYER.GROUND && sim.playerZone === 'generator', 'down the ladder into the generator room');
   // Back up and through the ducts to the cell, down, and the grate covered from above.
   stand(sim, 13, 40, NORTH);
@@ -257,7 +286,10 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   carry(sim, 'sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace');
   const shaft = strikeUntil(sim, 'sturdy_shovel', () => kindAt(sim, LAYER.GROUND, 10, 7) === TILE.SHAFT);
   check(shaft.ok && kindAt(sim, LAYER.UNDER, 10, 7) === TILE.TUNNEL, 'a shovel digs a tunnel entrance under the desk');
-  check(st.items.inv.some((v) => itemOf(v) === n('dirt')), 'the dirt is in hand');
+  check(
+    st.items.inv.some((v) => itemOf(v) === n('dirt')),
+    'the dirt is in hand',
+  );
   // Flush it: the toilet takes three loads an hour.
   const toilet = containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'toilet');
   const flushes: string[] = [];
@@ -283,7 +315,12 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   const dug: string[] = [];
   let caveIns = 0;
   for (const z of [6, 5, 4]) {
-    const r = strikeUntil(sim, 'sturdy_shovel', () => kindAt(sim, LAYER.UNDER, 10, z) !== TILE.SOIL || sim.events.some((e) => e.type === 'caveIn'), 200);
+    const r = strikeUntil(
+      sim,
+      'sturdy_shovel',
+      () => kindAt(sim, LAYER.UNDER, 10, z) !== TILE.SOIL || sim.events.some((e) => e.type === 'caveIn'),
+      200,
+    );
     const cave = r.events.some((e) => e.type === 'caveIn');
     if (cave) caveIns++;
     dug.push(`${z}:${cave ? 'CAVE-IN' : name(kindAt(sim, LAYER.UNDER, 10, z))}`);
@@ -306,7 +343,12 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   st.energy = 100;
   for (const z of [4, 3, 2, 1]) {
     if (z === 2) braceHere();
-    const r = strikeUntil(sim, 'sturdy_shovel', () => kindAt(sim, LAYER.UNDER, 10, z) !== TILE.SOIL || sim.events.some((e) => e.type === 'caveIn'), 200);
+    const r = strikeUntil(
+      sim,
+      'sturdy_shovel',
+      () => kindAt(sim, LAYER.UNDER, 10, z) !== TILE.SOIL || sim.events.some((e) => e.type === 'caveIn'),
+      200,
+    );
     check(!r.events.some((e) => e.type === 'caveIn'), `braced, tile ${z} holds`);
     goTo(sim, z * MAP_W + 10);
     st.player.facing = NORTH;
@@ -346,14 +388,20 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   sim.restore(midTunnel!);
   const st = sim.state;
   // Along the tunnel, where the floor overhead could be dug through (never under the desk).
-  const over = [7, 6, 5, 4, 3].map((z) => `${z}:${digUpTarget(sim.world, LAYER.UNDER, { ...st.player, x: 10 * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2 }, n('sturdy_shovel'), []) ? 'up' : '-'}`);
+  const over = [7, 6, 5, 4, 3].map(
+    (z) =>
+      `${z}:${digUpTarget(sim.world, LAYER.UNDER, { ...st.player, x: 10 * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2 }, n('sturdy_shovel'), []) ? 'up' : '-'}`,
+  );
   console.log(`dig up along the tunnel: ${over.join(' ')}`);
   check(over[0] === '7:-', 'no digging up under the desk');
   // Facing the earth ahead (Space would dig on north): Dig up still goes up.
   check(st.player.facing === NORTH && kindAt(sim, LAYER.UNDER, 10, 2) === TILE.SOIL, 'at the dig face, facing the earth');
   sim.step(command(0, OP.SELECT, 3));
   sim.step(command(0, OP.EXT, EXT.DIG_UP));
-  check(sim.events.some((e) => e.type === 'cantStrike' && e.why === 'tool'), 'no digging tool in hand: it says so');
+  check(
+    sim.events.some((e) => e.type === 'cantStrike' && e.why === 'tool'),
+    'no digging tool in hand: it says so',
+  );
   sim.step(command(0, OP.SELECT, 0));
   let strikes = 0;
   let steps = 0;
@@ -361,10 +409,12 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
     sim.step(command(0, OP.EXT, EXT.DIG_UP));
     strikes += sim.events.filter((e) => e.type === 'strike').length;
   }
-  console.log(`dig up at the face: ${strikes} strikes in ${steps} steps, ${st.layer === LAYER.GROUND ? 'up' : 'still under'} at ${Math.floor(st.player.x / UNIT)},${Math.floor(st.player.z / UNIT)}`);
+  console.log(
+    `dig up at the face: ${strikes} strikes in ${steps} steps, ${st.layer === LAYER.GROUND ? 'up' : 'still under'} at ${Math.floor(st.player.x / UNIT)},${Math.floor(st.player.z / UNIT)}`,
+  );
   check(st.layer === LAYER.GROUND && kindAt(sim, LAYER.GROUND, 10, 3) === TILE.SHAFT, 'dug up through the floor overhead');
   check(kindAt(sim, LAYER.UNDER, 10, 2) === TILE.SOIL, 'the earth ahead untouched');
-  check(strikes <= Math.ceil(steps / STRIKE_STEPS) + 1, 'strikes at the tool\'s own pace');
+  check(strikes <= Math.ceil(steps / STRIKE_STEPS) + 1, "strikes at the tool's own pace");
 }
 
 // ------------------------------------------------------------------ discovery
@@ -435,7 +485,9 @@ function quiet(sim: Sim) {
   st.items.ground.push([22 * MAP_W + 13, slot(n('dirt'))]);
   for (let k = 0; k < 3; k++) sim.step(command(0));
   check(st.lockdown && !st.items.ground.some(([, v]) => itemOf(v) === n('dirt')), 'dirt on the floor is found (and taken away)');
-  console.log(`discovery: covered hole → ${st.found.length ? 'found' : 'unnoticed'}; dirt on the floor → ${st.lockdown ? 'LOCKDOWN' : 'nothing'}`);
+  console.log(
+    `discovery: covered hole → ${st.found.length ? 'found' : 'unnoticed'}; dirt on the floor → ${st.lockdown ? 'LOCKDOWN' : 'nothing'}`,
+  );
 }
 {
   // Seen at work.
@@ -476,7 +528,10 @@ function quiet(sim: Sim) {
   carry(sim, 'sturdy_pickaxe', 'sock', 'sock', 'sock', 'sock', 'sock');
   st.wear[6 * MAP_W + 8] = 90;
   const ev = use(sim);
-  check(ev.some((e) => e.type === 'cantStrike' && e.why === 'full') && st.wear[6 * MAP_W + 8] === 90, 'full pockets: the last blow waits for room');
+  check(
+    ev.some((e) => e.type === 'cantStrike' && e.why === 'full') && st.wear[6 * MAP_W + 8] === 90,
+    'full pockets: the last blow waits for room',
+  );
   // Nobody digs where people must stand: beside beds and desks, at cell doors, at the ladder's foot.
   const places = placesOf(sim.world);
   carry(sim, 'sturdy_shovel');
@@ -494,8 +549,13 @@ function quiet(sim: Sim) {
   const flush = interact(sim);
   stand(sim, 9, 9, EAST);
   const climb = interact(sim);
-  console.log(`beside the toilet: ${flush.some((e) => e.type === 'flushed') ? 'flushed' : '-'}; on the grate: ${climb.some((e) => e.type === 'layer') ? 'climbed' : '-'}`);
-  check(flush.some((e) => e.type === 'flushed') && climb.some((e) => e.type === 'layer'), 'the toilet faced flushes, the grate overhead climbs');
+  console.log(
+    `beside the toilet: ${flush.some((e) => e.type === 'flushed') ? 'flushed' : '-'}; on the grate: ${climb.some((e) => e.type === 'layer') ? 'climbed' : '-'}`,
+  );
+  check(
+    flush.some((e) => e.type === 'flushed') && climb.some((e) => e.type === 'layer'),
+    'the toilet faced flushes, the grate overhead climbs',
+  );
 }
 
 // ------------------------------------------------------------------ second review: tapping at the dig face, hiding out a lockdown, chokepoints
@@ -510,7 +570,10 @@ function quiet(sim: Sim) {
   interact(sim, 1);
   st.player.facing = NORTH;
   for (let k = 0; k < 80; k++) sim.step(command(0, OP.USE, 1));
-  check(st.layer === LAYER.UNDER && kindAt(sim, LAYER.UNDER, 10, 6) === TILE.TUNNEL && !Object.keys(st.wear).length, 'tapping on after breaking through never digs up');
+  check(
+    st.layer === LAYER.UNDER && kindAt(sim, LAYER.UNDER, 10, 6) === TILE.TUNNEL && !Object.keys(st.wear).length,
+    'tapping on after breaking through never digs up',
+  );
   console.log(`tapping at the face: ${st.layer === LAYER.UNDER ? 'still below' : 'SURFACED'}`);
 }
 {

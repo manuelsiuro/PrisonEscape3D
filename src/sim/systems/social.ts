@@ -19,7 +19,26 @@ import { ORDER, TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../events';
-import { AMBUSH_ODDS, AMBUSH_RANGE, AMBUSH_WINDUP_STEPS, ANGRY_STEPS, LAWLESS_FROM, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
+import {
+  AMBUSH_ODDS,
+  AMBUSH_RANGE,
+  AMBUSH_WINDUP_STEPS,
+  ANGRY_STEPS,
+  LAWLESS_FROM,
+  BUY_OPINION,
+  CHASE_HEAT,
+  FAVOR_OFFERS,
+  FAVOR_OPINION,
+  FAVORS_TAKEN,
+  FOLLOW_GAP,
+  GUARD_RANGE,
+  MAX_FOLLOWERS,
+  OPINION_HIGH,
+  OPINION_LOW,
+  TALK_REACH,
+  TIP_OPINION,
+  UNIT,
+} from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { dist2, type Fighter, personOf } from './combat';
 import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
@@ -119,7 +138,8 @@ export function endTalk(sim: SimContext) {
 }
 
 /** Talking to a guard (P15): the guard's index, -1 when it's an inmate or nobody. */
-export const guardTalking = (s: { talk: number; inmates: readonly unknown[] }) => (s.talk >= s.inmates.length ? s.talk - s.inmates.length : -1);
+export const guardTalking = (s: { talk: number; inmates: readonly unknown[] }) =>
+  s.talk >= s.inmates.length ? s.talk - s.inmates.length : -1;
 
 /** Opinion of the player goes up or down (0–100). */
 export function changeOpinion(sim: SimContext, who: number, by: number) {
@@ -393,7 +413,8 @@ export function grudges(sim: SimContext) {
     for (const m of s.inmates) if (m.angry > 1) m.angry = 1;
     return;
   }
-  if (!(hostile(sim) ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown || s.stowed) return;
+  if (!(hostile(sim) ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown || s.stowed)
+    return;
   const p = s.player;
   const zone = sim.playerZone;
   // At a block with its own rooms, in them; in free time, wherever the two meet.

@@ -79,7 +79,9 @@ function onLayerFor(layer: number, steps: number) {
   };
 }
 /** A slow push in: the zoom from `a` to `b` over the shot. */
-const push = (a: number, b: number, more: Cam = {}) => (u: number): Cam => ({ zoom: lerp(a, b, ease(u)), ...more });
+const push =
+  (a: number, b: number, more: Cam = {}) =>
+  (u: number): Cam => ({ zoom: lerp(a, b, ease(u)), ...more });
 
 /** The fence tile a prison's cutout route cuts through. */
 function wireOf(prison: string) {
@@ -106,15 +108,39 @@ export const CUTS: Cut[] = [
   { id: 'talent', beats: 2, tempo: 1, shot: { ...SHOTS.talent }, cam: push(2.2, 2.5, { dx: -1 }) },
   { id: 'race', beats: 2, tempo: 1, shot: { ...SHOTS.race, when: (_s, k, n) => k >= n - 90 }, cam: push(3.0, 3.4, { dx: 3, dz: 1 }) },
   // 3. The turn: night in the cell, and down through the desk into the tunnel.
-  { id: 'turn', beats: 4, tempo: 1, shot: { prison: 'center-perks', route: 'tunnel', when: (s) => s.state.layer === LAYER.UNDER, after: -50 }, cam: push(2.2, 2.6) },
+  {
+    id: 'turn',
+    beats: 4,
+    tempo: 1,
+    shot: { prison: 'center-perks', route: 'tunnel', when: (s) => s.state.layer === LAYER.UNDER, after: -50 },
+    cam: push(2.2, 2.6),
+  },
   // 4. The plan.
-  { id: 'vents', beats: 4, tempo: 2, shot: { prison: 'center-perks', route: 'rooftop', when: onLayerFor(LAYER.VENTS, 10), light: 700 }, cam: push(1.8, 2.1) },
-  { id: 'dig', beats: 2, tempo: 2, shot: { prison: 'center-perks', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100) }, cam: push(2.4, 2.7, { dz: -1.5 }) },
+  {
+    id: 'vents',
+    beats: 4,
+    tempo: 2,
+    shot: { prison: 'center-perks', route: 'rooftop', when: onLayerFor(LAYER.VENTS, 10), light: 700 },
+    cam: push(1.8, 2.1),
+  },
+  {
+    id: 'dig',
+    beats: 2,
+    tempo: 2,
+    shot: { prison: 'center-perks', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100) },
+    cam: push(2.4, 2.7, { dz: -1.5 }),
+  },
   {
     id: 'cut',
     beats: 2,
     tempo: 2,
-    shot: { prison: 'center-perks', route: 'cutout', when: (s) => s.world.ground.kind[wireOf('center-perks')] === TILE.FENCE_CUT, after: -22, light: 600 },
+    shot: {
+      prison: 'center-perks',
+      route: 'cutout',
+      when: (s) => s.world.ground.kind[wireOf('center-perks')] === TILE.FENCE_CUT,
+      after: -22,
+      light: 600,
+    },
     cam: push(2.2, 2.5),
   },
   { id: 'bribe', beats: 2, tempo: 2, shot: { ...SHOTS.guards }, cam: push(1.9, 2.2, { dx: 2 }) },
@@ -129,7 +155,13 @@ export const CUTS: Cut[] = [
     shot: { prison: 'center-perks', route: 'cutout', when: minute(15 * 60 + 20), light: 1110 },
     cam: (u) => ({ zoom: 0.62, turn: lerp(0.25, -0.05, u), tilt: 0.1 }),
   },
-  { id: 'stalag-flucht', beats: 4, tempo: 2, shot: { ...SHOTS.weather, when: minute(15 * 60 + 20) }, cam: (u) => ({ zoom: 0.7, turn: lerp(-0.25, 0.05, u), tilt: 0.1 }) },
+  {
+    id: 'stalag-flucht',
+    beats: 4,
+    tempo: 2,
+    shot: { ...SHOTS.weather, when: minute(15 * 60 + 20) },
+    cam: (u) => ({ zoom: 0.7, turn: lerp(-0.25, 0.05, u), tilt: 0.1 }),
+  },
   {
     id: 'shankton',
     beats: 4,
@@ -137,8 +169,20 @@ export const CUTS: Cut[] = [
     shot: { prison: 'shankton', route: 'rooftop', when: minute(15 * 60 + 20), light: 1110 },
     cam: (u) => ({ zoom: 0.7, turn: lerp(0.25, -0.05, u), tilt: 0.1 }),
   },
-  { id: 'san-pancho', beats: 4, tempo: 2, shot: { ...SHOTS.mines, when: (_s, k, n) => k >= n - 80 }, cam: (u) => ({ zoom: lerp(1.0, 0.75, u), turn: lerp(-0.2, 0.05, u), tilt: 0.06 }) },
-  { id: 'irongate', beats: 4, tempo: 2, shot: { ...SHOTS.island, when: (_s, k, n) => k >= n - 60 }, cam: (u) => ({ zoom: lerp(1.5, 1.1, u), dx: -2, turn: lerp(0.15, -0.1, u) }) },
+  {
+    id: 'san-pancho',
+    beats: 4,
+    tempo: 2,
+    shot: { ...SHOTS.mines, when: (_s, k, n) => k >= n - 80 },
+    cam: (u) => ({ zoom: lerp(1.0, 0.75, u), turn: lerp(-0.2, 0.05, u), tilt: 0.06 }),
+  },
+  {
+    id: 'irongate',
+    beats: 4,
+    tempo: 2,
+    shot: { ...SHOTS.island, when: (_s, k, n) => k >= n - 60 },
+    cam: (u) => ({ zoom: lerp(1.5, 1.1, u), dx: -2, turn: lerp(0.15, -0.1, u) }),
+  },
   // 6. The escape: off the roof with the glider, over the wall in slow motion, the escape camera after.
   {
     id: 'escape',
@@ -149,7 +193,14 @@ export const CUTS: Cut[] = [
     speed: (u) => (u < 0.175 ? 1 : u < 0.756 ? 0.45 : 1),
   },
   // 7. The end card's picture: the prison left behind, at dusk.
-  { id: 'end', beats: 12, tempo: 2, shot: { ...SHOTS.goal, after: 40, light: 1150 }, pre: 1.5, cam: (u) => ({ zoom: lerp(0.9, 0.75, u), turn: lerp(0.1, -0.1, u) }) },
+  {
+    id: 'end',
+    beats: 12,
+    tempo: 2,
+    shot: { ...SHOTS.goal, after: 40, light: 1150 },
+    pre: 1.5,
+    cam: (u) => ({ zoom: lerp(0.9, 0.75, u), turn: lerp(0.1, -0.1, u) }),
+  },
 ];
 
 /** Shots tried for a place in the cut (peek and sheet find them too). */
@@ -200,7 +251,8 @@ function rig(on: boolean) {
   const draw = (ownDraw = view().draw);
   view().draw = (f, dt, time) => draw.call(view(), { ...f, guide: null, tap: null, focus: null }, dt, time);
   const to = new THREE.Vector3();
-  const aim = (x: number, y: number, z: number) => (cam.at ? to.set(cam.at[0] + 0.5 + cam.dx, 0, cam.at[1] + 0.5 + cam.dz) : to.set(x + cam.dx, y, z + cam.dz));
+  const aim = (x: number, y: number, z: number) =>
+    cam.at ? to.set(cam.at[0] + 0.5 + cam.dx, 0, cam.at[1] + 0.5 + cam.dz) : to.set(x + cam.dx, y, z + cam.dz);
   target.lerp = (p, a) => THREE.Vector3.prototype.lerp.call(target, aim(p.x, p.y, p.z), cam.at ? 1 : a);
   target.set = (x, y, z = 0) => THREE.Vector3.prototype.copy.call(target, aim(x, y, z));
   off.copy = (p) => {

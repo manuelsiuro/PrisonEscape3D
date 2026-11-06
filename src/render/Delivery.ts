@@ -126,7 +126,14 @@ export class Delivery {
   private addRing(d: DeliveryDef) {
     // The ring at the tail: where to climb in.
     // (Drawn over everything, like the floor's arrows: the vehicle's body would hide it.)
-    this.ringMat = new THREE.MeshBasicMaterial({ color: 0x4fe0a6, transparent: true, opacity: 0, depthWrite: false, depthTest: false, toneMapped: false });
+    this.ringMat = new THREE.MeshBasicMaterial({
+      color: 0x4fe0a6,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false,
+      toneMapped: false,
+    });
     const ring = new THREE.RingGeometry(0.34, 0.44, 32);
     ring.rotateX(-Math.PI / 2);
     const arrow = new THREE.ShapeGeometry(arrowShape());
@@ -267,7 +274,8 @@ export class Delivery {
     if (this.moving > 0 && this.wasMoving <= 0) this.onSound('engine', pos.x, pos.y);
     this.wasMoving = this.moving;
     // The doors on its way stand open while it's on the road near them (paused too: never shut through it).
-    if (s < this.roadLen - 1e-3) for (const g of this.gates) if (Math.hypot(g.x - pos.x, g.z - pos.y) <= GATE_REACH + 2.5) this.opening.add(g.tile);
+    if (s < this.roadLen - 1e-3)
+      for (const g of this.gates) if (Math.hypot(g.x - pos.x, g.z - pos.y) <= GATE_REACH + 2.5) this.opening.add(g.tile);
     return true;
   }
 
@@ -407,7 +415,10 @@ function crates(z0: number, w: number, y: number, colors: readonly number[]): Pa
   for (let k = 0; k < n; k++) {
     const x = -w / 2 + (k + 0.5) * (w / n);
     const c = colors[k % colors.length];
-    out.push(box(w / n - 0.08, 0.42, 0.5, c, x, y, z0 + 0.32), box(w / n - 0.2, 0.36, 0.44, colors[(k + 1) % colors.length], x + 0.03, y + 0.42, z0 + 0.36));
+    out.push(
+      box(w / n - 0.08, 0.42, 0.5, c, x, y, z0 + 0.32),
+      box(w / n - 0.2, 0.36, 0.44, colors[(k + 1) % colors.length], x + 0.03, y + 0.42, z0 + 0.36),
+    );
   }
   return out;
 }
@@ -451,8 +462,18 @@ const MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model>
       paint(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 18).translate(0, 2.33, -0.8), 0xf08a24),
       paint(new THREE.CylinderGeometry(0.26, 0.26, 0.03, 18).translate(0, 2.345, -0.8), 0xffd36b),
     ];
-    const tailgate = [box(W - 0.16, 1.62, 0.05, 0xd9dcd8, 0, 0.58, -2.33), ...[0.85, 1.25, 1.65].map((y) => box(W - 0.18, 0.025, 0.06, 0xb7bab6, 0, y, -2.34))];
-    const lamps = [box(0.16, 0.12, 0.04, 0xff3a2a, W / 2 - 0.14, 0.44, -2.42), box(0.16, 0.12, 0.04, 0xff3a2a, -W / 2 + 0.14, 0.44, -2.42), box(0.07, 0.07, 0.04, 0xf4f6ff, W / 2 - 0.3, 0.44, -2.42), box(0.07, 0.07, 0.04, 0xf4f6ff, -W / 2 + 0.3, 0.44, -2.42), box(0.2, 0.12, 0.04, 0xfff2c4, W / 2 - 0.2, 0.68, 2.2), box(0.2, 0.12, 0.04, 0xfff2c4, -W / 2 + 0.2, 0.68, 2.2)];
+    const tailgate = [
+      box(W - 0.16, 1.62, 0.05, 0xd9dcd8, 0, 0.58, -2.33),
+      ...[0.85, 1.25, 1.65].map((y) => box(W - 0.18, 0.025, 0.06, 0xb7bab6, 0, y, -2.34)),
+    ];
+    const lamps = [
+      box(0.16, 0.12, 0.04, 0xff3a2a, W / 2 - 0.14, 0.44, -2.42),
+      box(0.16, 0.12, 0.04, 0xff3a2a, -W / 2 + 0.14, 0.44, -2.42),
+      box(0.07, 0.07, 0.04, 0xf4f6ff, W / 2 - 0.3, 0.44, -2.42),
+      box(0.07, 0.07, 0.04, 0xf4f6ff, -W / 2 + 0.3, 0.44, -2.42),
+      box(0.2, 0.12, 0.04, 0xfff2c4, W / 2 - 0.2, 0.68, 2.2),
+      box(0.2, 0.12, 0.04, 0xfff2c4, -W / 2 + 0.2, 0.68, 2.2),
+    ];
     return { body, tailgate, lamps, wheels: wheels(W, [1.55, -1.0, -1.62], 0.34), wheelR: 0.34, gate: 'roller' };
   },
   // Stalag Flucht: the Red Cross's truck, canvas over hoops, the cross on its sides and its roof.
@@ -474,7 +495,13 @@ const MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model>
       // The canvas: sides, the roof bowed over its hoops, the front.
       box(0.06, 1.3, 3.2, canvas, W / 2 - 0.03, 0.58, -0.75),
       box(0.06, 1.3, 3.2, canvas, -W / 2 + 0.03, 0.58, -0.75),
-      paint(new THREE.CylinderGeometry(W / 2, W / 2, 3.2, 14, 1, false, -Math.PI / 2, Math.PI).rotateX(-Math.PI / 2).scale(1, BOW, 1).translate(0, 1.88, -0.75), canvas),
+      paint(
+        new THREE.CylinderGeometry(W / 2, W / 2, 3.2, 14, 1, false, -Math.PI / 2, Math.PI)
+          .rotateX(-Math.PI / 2)
+          .scale(1, BOW, 1)
+          .translate(0, 1.88, -0.75),
+        canvas,
+      ),
       box(W, 1.3, 0.06, canvas, 0, 0.58, 0.83),
       box(W, 0.08, 3.2, 0x6b5a44, 0, 0.52, -0.75),
       box(W - 0.12, 1.2, 0.04, 0x2a2620, 0, 0.62, 0.78),
@@ -487,7 +514,14 @@ const MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model>
       ...crates(-2.2, W - 0.24, 0.56, [0xe8e2d0, 0xb8874e, 0xd9d0b8]),
     ];
     const tailgate = [box(W - 0.06, 1.3, 0.05, 0xdcd5c0, 0, 0.58, -2.36), box(0.04, 1.3, 0.06, 0xb9b19a, 0, 0.58, -2.37)];
-    const lamps = [box(0.15, 0.12, 0.04, 0xff3a2a, W / 2 - 0.14, 0.42, -2.42), box(0.15, 0.12, 0.04, 0xff3a2a, -W / 2 + 0.14, 0.42, -2.42), box(0.07, 0.07, 0.04, 0xf4f6ff, W / 2 - 0.3, 0.42, -2.42), box(0.07, 0.07, 0.04, 0xf4f6ff, -W / 2 + 0.3, 0.42, -2.42), cylLamp(W / 2 - 0.22, 0.72, 2.42), cylLamp(-W / 2 + 0.22, 0.72, 2.42)];
+    const lamps = [
+      box(0.15, 0.12, 0.04, 0xff3a2a, W / 2 - 0.14, 0.42, -2.42),
+      box(0.15, 0.12, 0.04, 0xff3a2a, -W / 2 + 0.14, 0.42, -2.42),
+      box(0.07, 0.07, 0.04, 0xf4f6ff, W / 2 - 0.3, 0.42, -2.42),
+      box(0.07, 0.07, 0.04, 0xf4f6ff, -W / 2 + 0.3, 0.42, -2.42),
+      cylLamp(W / 2 - 0.22, 0.72, 2.42),
+      cylLamp(-W / 2 + 0.22, 0.72, 2.42),
+    ];
     return { body, tailgate, lamps, wheels: wheels(W, [1.6, -1.05, -1.65], 0.36), wheelR: 0.36, gate: 'flaps' };
   },
   // San Pancho: a sun-faded pickup, its bed piled with crates of fruit and veg, a tailgate that drops.
@@ -515,12 +549,20 @@ const MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model>
         const z = 0.05 - r * 0.62;
         body.push(box(0.44, 0.34, 0.5, 0xb8874e, x, 0.66, z));
         const c = fruit[(r * 3 + k) % fruit.length];
-        for (let j = 0; j < 4; j++) body.push(paint(new THREE.IcosahedronGeometry(0.1, 0).translate(x - 0.1 + (j % 2) * 0.2, 1.06, z - 0.1 + Math.floor(j / 2) * 0.2), c));
+        for (let j = 0; j < 4; j++)
+          body.push(
+            paint(new THREE.IcosahedronGeometry(0.1, 0).translate(x - 0.1 + (j % 2) * 0.2, 1.06, z - 0.1 + Math.floor(j / 2) * 0.2), c),
+          );
       }
     // A green tarp over the back row: where a stowaway hides.
     body.push(box(W - 0.2, 0.08, 0.66, 0x3f6b3a, 0, 1.12, -0.95), box(W - 0.26, 0.5, 0.06, 0x3f6b3a, 0, 0.66, -1.26));
     const tailgate = [box(W - 0.06, 0.4, 0.06, 0x9a7448, 0, 0.62, -1.42), box(W - 0.3, 0.06, 0.07, 0x7a5a3a, 0, 0.82, -1.43)];
-    const lamps = [box(0.14, 0.1, 0.04, 0xff3a2a, W / 2 - 0.12, 0.5, -1.48), box(0.14, 0.1, 0.04, 0xff3a2a, -W / 2 + 0.12, 0.5, -1.48), box(0.18, 0.1, 0.04, 0xfff2c4, W / 2 - 0.18, 0.66, 1.66), box(0.18, 0.1, 0.04, 0xfff2c4, -W / 2 + 0.18, 0.66, 1.66)];
+    const lamps = [
+      box(0.14, 0.1, 0.04, 0xff3a2a, W / 2 - 0.12, 0.5, -1.48),
+      box(0.14, 0.1, 0.04, 0xff3a2a, -W / 2 + 0.12, 0.5, -1.48),
+      box(0.18, 0.1, 0.04, 0xfff2c4, W / 2 - 0.18, 0.66, 1.66),
+      box(0.18, 0.1, 0.04, 0xfff2c4, -W / 2 + 0.18, 0.66, 1.66),
+    ];
     return { body, tailgate, lamps, wheels: wheels(W, [0.9, -0.85], 0.3), wheelR: 0.3, gate: 'drop' };
   },
 };

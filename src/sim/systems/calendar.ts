@@ -12,7 +12,27 @@
  * how far a guard sees (`sightOf`), how far a noise carries (`muffled`), the inmates' plan
  * (`crowdPlan`), the snipers in the weather, the heat of the sun.
  */
-import { COMMENDATION, DAY_BOOKS, DAY_EVENTS, DRILL_HEAT, EVENT_TIMES, FOG_FROM, FOG_UNTIL, HEAT_FROM, HEAT_UNTIL, INSPECTION_SIGHT, MOVIE_NOISE, MUSTER_MINUTES, OUTAGE_FROM, OUTAGE_TO, WEATHER_NOISE, WEATHER_SIGHT, WEATHERS, type DayEvent, type Weather } from '../../content/days';
+import {
+  COMMENDATION,
+  DAY_BOOKS,
+  DAY_EVENTS,
+  DRILL_HEAT,
+  EVENT_TIMES,
+  FOG_FROM,
+  FOG_UNTIL,
+  HEAT_FROM,
+  HEAT_UNTIL,
+  INSPECTION_SIGHT,
+  MOVIE_NOISE,
+  MUSTER_MINUTES,
+  OUTAGE_FROM,
+  OUTAGE_TO,
+  WEATHER_NOISE,
+  WEATHER_SIGHT,
+  WEATHERS,
+  type DayEvent,
+  type Weather,
+} from '../../content/days';
 import { HEARING_FROM, HEARING_TO } from '../../content/parole';
 import { ROUTINE } from '../../content/routine';
 import { floorOf } from '../ai/places';
@@ -116,7 +136,14 @@ const MOD_WEATHER: Record<string, Weather> = { fogDays: 'fog', storm: 'storm' };
  * the inmates' talk, the tests). A prison without a day book (the Training Block) is always
  * quiet; day 1 is always quiet and clear (the escape bots' day, untouched).
  */
-export function dayPlan(prison: string, salt: number, day: number, calendar: readonly ForcedDay[] = [], mods: readonly string[] = [], holiday = 0): DayPlan {
+export function dayPlan(
+  prison: string,
+  salt: number,
+  day: number,
+  calendar: readonly ForcedDay[] = [],
+  mods: readonly string[] = [],
+  holiday = 0,
+): DayPlan {
   let event = drawnEvent(prison, salt, day);
   let weather = drawnWeather(prison, salt, day, holiday);
   // Forced days: an exact day wins over every day (0). (Never a delivery where no vehicle comes, nor visiting day where nobody visits: a deck without the card.)
@@ -142,7 +169,8 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
   // The wind: the prevailing one most days, else from anywhere; calm in fog, strong in a storm.
   const prevailing = book?.climate.wind ?? 0;
   const turn = rollInt(salt, SALT.WIND, day, 0, 10);
-  const wind = turn < 6 ? prevailing : turn < 8 ? (prevailing + 1) % 8 : turn < 9 ? (prevailing + 7) % 8 : rollInt(salt, SALT.WIND, day, 1, 8);
+  const wind =
+    turn < 6 ? prevailing : turn < 8 ? (prevailing + 1) % 8 : turn < 9 ? (prevailing + 7) % 8 : rollInt(salt, SALT.WIND, day, 1, 8);
   const drawnForce = w === 'fog' ? 0 : w === 'storm' ? 2 + rollInt(salt, SALT.WIND, day, 2, 2) : rollInt(salt, SALT.WIND, day, 2, 3);
   // (Forced, P24: still calm in fog.)
   const windForce = forcedForce >= 0 && w !== 'fog' ? forcedForce : drawnForce;
@@ -175,7 +203,12 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
  * kept instead, so the run goes on as it was played. `plan` deals a day as the caller does
  * (it reads the calendar afresh, the cards kept so far included).
  */
-export function keepOldCards(s: Pick<SimState, 'calendar'>, days: Iterable<number>, plan: (day: number) => DayEvent, was: Partial<Record<DayEvent, DayEvent>>) {
+export function keepOldCards(
+  s: Pick<SimState, 'calendar'>,
+  days: Iterable<number>,
+  plan: (day: number) => DayEvent,
+  was: Partial<Record<DayEvent, DayEvent>>,
+) {
   for (const day of days) {
     const old = was[plan(day)];
     if (old !== undefined) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(old), -1]];
@@ -189,7 +222,10 @@ export function planOf(sim: Pick<SimContext, 'prison' | 'state'>, day = prisonDa
 }
 
 /** Today's plan, kept while the day and the forced days stay the same (it's asked every step, by every guard). */
-const cached = new WeakMap<SimState, { day: number; calendar: readonly ForcedDay[]; length: number; mods: readonly string[]; plan: DayPlan }>();
+const cached = new WeakMap<
+  SimState,
+  { day: number; calendar: readonly ForcedDay[]; length: number; mods: readonly string[]; plan: DayPlan }
+>();
 export function today(sim: Pick<SimContext, 'prison' | 'state'>): DayPlan {
   const s = sim.state;
   const day = prisonDay(s.step);
@@ -268,17 +304,21 @@ export function muffled(sim: SimContext, layer: number, tile: number, reach: num
   const z = Math.floor(tile / MAP_W);
   let share = 10;
   // (A wall being chipped from the yard is out in the open too: its noise is the yard's.)
-  const open = layer === LAYER.ROOF || (layer === LAYER.GROUND && (outdoors(sim, x, z) || (TILE_INFO[sim.world.ground.kind[tile]].solid && openBeside(sim, x, z))));
+  const open =
+    layer === LAYER.ROOF ||
+    (layer === LAYER.GROUND && (outdoors(sim, x, z) || (TILE_INFO[sim.world.ground.kind[tile]].solid && openBeside(sim, x, z))));
   if (open) share = WEATHER_NOISE[weatherNow(sim)] ?? 10;
   // (P30: talent night's music while it plays, as loud.)
-  if (layer === LAYER.GROUND && (eventOn(sim, 'movie') || (eventOn(sim, 'talent') && musicOn(sim))) && sim.world.zoneAt(x, z) === 'canteen') share = Math.min(share, MOVIE_NOISE);
+  if (layer === LAYER.GROUND && (eventOn(sim, 'movie') || (eventOn(sim, 'talent') && musicOn(sim))) && sim.world.zoneAt(x, z) === 'canteen')
+    share = Math.min(share, MOVIE_NOISE);
   // (P42: New Year's fireworks drown everything, everywhere.)
   if (sim.state.holiday && fireworksOn(sim)) share = Math.min(share, FIREWORK_NOISE);
   return share === 10 ? reach : Math.max(1, Math.floor((reach * share) / 10));
 }
 
 /** A tile beside open ground (a wall facing the yard). */
-const openBeside = (sim: SimContext, x: number, z: number) => outdoorFloor(sim, x + 1, z) || outdoorFloor(sim, x - 1, z) || outdoorFloor(sim, x, z + 1) || outdoorFloor(sim, x, z - 1);
+const openBeside = (sim: SimContext, x: number, z: number) =>
+  outdoorFloor(sim, x + 1, z) || outdoorFloor(sim, x - 1, z) || outdoorFloor(sim, x, z + 1) || outdoorFloor(sim, x, z - 1);
 function outdoorFloor(sim: SimContext, x: number, z: number): boolean {
   if (!sim.world.inside(x, z)) return false;
   const info = TILE_INFO[sim.world.ground.kind[z * MAP_W + x]];
@@ -405,7 +445,9 @@ function commend(sim: SimContext) {
 }
 
 /** P39: before the parole board, or called to it (its day, 10:00–10:30, parole.ts hearingDue): the drill's muster excuses the player (the routine sends them to the board). */
-const atHearing = (s: SimContext['state']) => !!s.hearing || (s.parole[0] > 0 && s.parole[0] === prisonDay(s.step) && dayMinute(s.step) >= HEARING_FROM && dayMinute(s.step) < HEARING_TO);
+const atHearing = (s: SimContext['state']) =>
+  !!s.hearing ||
+  (s.parole[0] > 0 && s.parole[0] === prisonDay(s.step) && dayMinute(s.step) >= HEARING_FROM && dayMinute(s.step) < HEARING_TO);
 
 /** The player stands at roll call (where the drill musters). */
 const musterHere = (sim: SimContext) => sim.state.layer === LAYER.GROUND && sim.playerZone === 'rollCall';
@@ -433,7 +475,13 @@ export function dayWatch(sim: SimContext) {
     const into = s.step % DAY_STEPS;
     if (into > p.at * STEPS_PER_MINUTE && into <= p.until * STEPS_PER_MINUTE && !(s.eventFlags & TODAY.BLOT)) {
       // Seen at anything (whatever began before 10:00 and still goes on), in a lockdown, caught, a block missed.
-      if (s.spotted !== 0 || s.lockdown || s.solitary > 0 || sim.events.some((e) => e.type === 'spotted' || e.type === 'caught' || e.type === 'missed' || e.type === 'lockdown')) s.eventFlags |= TODAY.BLOT;
+      if (
+        s.spotted !== 0 ||
+        s.lockdown ||
+        s.solitary > 0 ||
+        sim.events.some((e) => e.type === 'spotted' || e.type === 'caught' || e.type === 'missed' || e.type === 'lockdown')
+      )
+        s.eventFlags |= TODAY.BLOT;
     }
     if (into === p.until * STEPS_PER_MINUTE) commend(sim);
   }
@@ -449,7 +497,13 @@ export function inFoodFight(sim: SimContext): boolean {
 /** In the canteen or at its edge (a doorway, the corridor tile it opens onto): where a food fight is fought. */
 export function byCanteen(sim: SimContext, x: number, z: number): boolean {
   const w = sim.world;
-  return w.zoneAt(x, z) === 'canteen' || w.zoneAt(x + 1, z) === 'canteen' || w.zoneAt(x - 1, z) === 'canteen' || w.zoneAt(x, z + 1) === 'canteen' || w.zoneAt(x, z - 1) === 'canteen';
+  return (
+    w.zoneAt(x, z) === 'canteen' ||
+    w.zoneAt(x + 1, z) === 'canteen' ||
+    w.zoneAt(x - 1, z) === 'canteen' ||
+    w.zoneAt(x, z + 1) === 'canteen' ||
+    w.zoneAt(x, z - 1) === 'canteen'
+  );
 }
 
 /** A feast's tray (dinner on a feast day). */

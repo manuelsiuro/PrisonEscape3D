@@ -18,7 +18,31 @@
 import { itemDef, itemNumber } from '../../content/items';
 import { CUT_OPINION, CUT_SWING, HOSTILE_SWING } from '../../content/phone';
 import { ROUTINE } from '../../content/routine';
-import { COIL_STEPS, DELIVERY_EXTRA, FANCIED, GIVE_UP_ODDS, GOODS, HEAD_STALL_STEPS, INMATE_COIL_STEPS, INMATE_JAM_ODDS, INMATE_THUMP_STEPS, JAM_ODDS, LINE_MAX, RUSH_MINUTES, RUSH_SPREAD, SNACK_STEPS, THERE_FIRST, THUMP_HEAT, THUMP_NOISE, THUMP_STEPS, THUMPS_MAX, VEND, VEND_LINE_REACH, VEND_TURN_STEPS, WANT_ODDS } from '../../content/vending';
+import {
+  COIL_STEPS,
+  DELIVERY_EXTRA,
+  FANCIED,
+  GIVE_UP_ODDS,
+  GOODS,
+  HEAD_STALL_STEPS,
+  INMATE_COIL_STEPS,
+  INMATE_JAM_ODDS,
+  INMATE_THUMP_STEPS,
+  JAM_ODDS,
+  LINE_MAX,
+  RUSH_MINUTES,
+  RUSH_SPREAD,
+  SNACK_STEPS,
+  THERE_FIRST,
+  THUMP_HEAT,
+  THUMP_NOISE,
+  THUMP_STEPS,
+  THUMPS_MAX,
+  VEND,
+  VEND_LINE_REACH,
+  VEND_TURN_STEPS,
+  WANT_ODDS,
+} from '../../content/vending';
 import { canSee } from '../ai/sight';
 import { DOING } from '../ai/doing';
 import { DIR_X, DIR_Z } from '../command';
@@ -64,7 +88,14 @@ export function atVending(sim: VendSim & Pick<SimContext, 'away'>): boolean {
   const p = vendProp(sim);
   const s = sim.state;
   // (In its own room: not from behind the wall it stands against, nor round the back of it where it stands clear of one. It fronts south.)
-  return !!p && s.layer === LAYER.GROUND && playerUp(sim) && s.player.z >= p.z * UNIT && propReach(p, s.player.x, s.player.z) <= REACH && sim.world.zoneAt(Math.floor(s.player.x / UNIT), Math.floor(s.player.z / UNIT)) === sim.world.zoneAt(p.x, p.z);
+  return (
+    !!p &&
+    s.layer === LAYER.GROUND &&
+    playerUp(sim) &&
+    s.player.z >= p.z * UNIT &&
+    propReach(p, s.player.x, s.player.z) <= REACH &&
+    sim.world.zoneAt(Math.floor(s.player.x / UNIT), Math.floor(s.player.z / UNIT)) === sim.world.zoneAt(p.x, p.z)
+  );
 }
 
 /**
@@ -209,7 +240,7 @@ function cutIn(sim: SimContext) {
   for (const k of passed) changeOpinion(sim, k, CUT_OPINION);
   sim.events.push({ type: 'vend', what: 'cut', n: passed.length, who: pushed });
   const odds = hostile(sim) ? HOSTILE_SWING : CUT_SWING;
-  if (rollInt(s.salt, SALT.VEND, prisonDay(s.step), 7000 + s.step % 997, 100) < odds) {
+  if (rollInt(s.salt, SALT.VEND, prisonDay(s.step), 7000 + (s.step % 997), 100) < odds) {
     const m = s.inmates[pushed];
     m.angry = ANGRY_STEPS;
     m.doing = DOING.NOTHING;
@@ -283,7 +314,9 @@ export function wantsSnack(salt: number, day: number, b: number, k: number): num
   const at = ROUTINE.findIndex((r) => r.id === id);
   const from = ROUTINE[at].start - 8 * 60;
   const to = ROUTINE[at + 1].start - 8 * 60;
-  const rush = RUSH_MINUTES[rollInt(salt, SALT.VEND, day * 2 + b, 1000 + k, RUSH_MINUTES.length)] + rollInt(salt, SALT.VEND, day * 2 + b, 2000 + k, RUSH_SPREAD);
+  const rush =
+    RUSH_MINUTES[rollInt(salt, SALT.VEND, day * 2 + b, 1000 + k, RUSH_MINUTES.length)] +
+    rollInt(salt, SALT.VEND, day * 2 + b, 2000 + k, RUSH_SPREAD);
   return from + Math.min(rush, to - from - 15);
 }
 
@@ -296,7 +329,16 @@ export function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
   if (s.line.includes(k) || s.booth[0] === k) return false;
   // (2.33: having a drink at the water cooler: done with that first.)
   if (!waiting && s.cooler.who.includes(k)) return false;
-  if (s.match?.team.includes(k) || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k || s.quiz?.who.includes(k)) return false;
+  if (
+    s.match?.team.includes(k) ||
+    s.ink?.who === k ||
+    s.cheat?.who === k ||
+    s.shootout?.who === k ||
+    s.dice[0] === k ||
+    s.bout[0] === k ||
+    s.quiz?.who.includes(k)
+  )
+    return false;
   return true;
 }
 
@@ -467,7 +509,9 @@ function nextUp(sim: SimContext) {
   if (!v.head) v.head = s.step;
   const inmate = s.inmates[first];
   const front = m.line[0];
-  const on = !inmate.body.moving && Math.max(Math.abs(inmate.body.x - (front.x * UNIT + UNIT / 2)), Math.abs(inmate.body.z - (front.z * UNIT + UNIT / 2))) <= UNIT / 2;
+  const on =
+    !inmate.body.moving &&
+    Math.max(Math.abs(inmate.body.x - (front.x * UNIT + UNIT / 2)), Math.abs(inmate.body.z - (front.z * UNIT + UNIT / 2))) <= UNIT / 2;
   if (!on) {
     // (Someone standing in its place, a wedged way there: not for ever.)
     if (s.step - v.head > HEAD_STALL_STEPS) {

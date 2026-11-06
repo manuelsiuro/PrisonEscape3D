@@ -99,12 +99,17 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   const ev = run(sim, 60, command(0, OP.USE, 1));
   check(!ev.some((e) => e.type === 'shocked') && kind(sim, 27, 61) === TILE.FENCE_CUT, 'the dead electric fence cuts like any other');
   const back = run(sim, POWER_OFF_STEPS - 200);
-  check(g.mode === GUARD.INVESTIGATE && Math.floor(g.body.x / UNIT) + Math.floor(g.body.z / UNIT) * MAP_W === target, 'the maintenance guard waits at the generator while the power is out');
+  check(
+    g.mode === GUARD.INVESTIGATE && Math.floor(g.body.x / UNIT) + Math.floor(g.body.z / UNIT) * MAP_W === target,
+    'the maintenance guard waits at the generator while the power is out',
+  );
   back.push(...run(sim, 200));
   check(g.mode !== GUARD.INVESTIGATE, 'and goes back to duty when it’s back on');
   const on = back.find((e) => e.type === 'power');
   check(sim.power && on?.type === 'power' && on.by === 'guard', 'back on 45 s later (the maintenance guard)');
-  console.log(`generator: off for ${POWER_OFF_STEPS / 20} s; the east guard sent to ${target % MAP_W},${Math.floor(target / MAP_W)}, there at ${Math.floor(g.body.x / UNIT)},${Math.floor(g.body.z / UNIT)}; the fence ${TILE.FENCE_CUT === kind(sim, 27, 61) ? 'cut' : 'whole'}`);
+  console.log(
+    `generator: off for ${POWER_OFF_STEPS / 20} s; the east guard sent to ${target % MAP_W},${Math.floor(target / MAP_W)}, there at ${Math.floor(g.body.x / UNIT)},${Math.floor(g.body.z / UNIT)}; the fence ${TILE.FENCE_CUT === kind(sim, 27, 61) ? 'cut' : 'whole'}`,
+  );
   // Off and back on by hand.
   stand(sim, 8, 41, SOUTH);
   sim.step(command(0, OP.INTERACT));
@@ -115,7 +120,10 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   stand(sim, 26, 60, SOUTH);
   carry(sim, 'sturdy_cutters');
   sim.step(command(0, OP.USE, 1));
-  check(sim.events.some((e) => e.type === 'shocked'), 'a live electric fence still shocks');
+  check(
+    sim.events.some((e) => e.type === 'shocked'),
+    'a live electric fence still shocks',
+  );
 }
 
 // ------------------------------------------------------------------ detectors
@@ -132,9 +140,18 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   };
   const dirty = pass((s) => carry(s, 'nail_file'));
   const tripped = dirty.ev.filter((e) => e.type === 'scanned');
-  check(tripped.length === 1 && tripped[0].type === 'scanned' && tripped[0].tripped && dirty.sim.state.heat >= DETECTOR_HEAT, 'contraband through the arch trips it (+50%)');
-  check(dirty.ev.some((e) => e.type === 'spotted' && e.reason === 'detector'), 'and is announced');
-  check(dirty.sim.state.guards.some((g) => g.mode === GUARD.INVESTIGATE), 'guards sent to look');
+  check(
+    tripped.length === 1 && tripped[0].type === 'scanned' && tripped[0].tripped && dirty.sim.state.heat >= DETECTOR_HEAT,
+    'contraband through the arch trips it (+50%)',
+  );
+  check(
+    dirty.ev.some((e) => e.type === 'spotted' && e.reason === 'detector'),
+    'and is announced',
+  );
+  check(
+    dirty.sim.state.guards.some((g) => g.mode === GUARD.INVESTIGATE),
+    'guards sent to look',
+  );
   const shielded = pass((s) => carry(s, 'nail_file', 'pouch'));
   const sh = shielded.ev.find((e) => e.type === 'scanned');
   check(sh?.type === 'scanned' && !sh.tripped && sh.pouch === 19 && shielded.sim.state.heat === 0, 'a pouch shields it (19 passes left)');
@@ -154,7 +171,9 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
     s.state.items.inv[1] = slot(n('pouch'), 1);
   });
   check(!worn.sim.state.items.inv[1] && worn.ev.some((e) => e.type === 'broke'), 'the pouch wears out on its last pass');
-  console.log(`detectors: a nail file → +${dirty.sim.state.heat}% and guards sent; with a pouch → shielded (${sh?.type === 'scanned' ? sh.pouch : '?'} left); clean or no power → nothing`);
+  console.log(
+    `detectors: a nail file → +${dirty.sim.state.heat}% and guards sent; with a pouch → shielded (${sh?.type === 'scanned' ? sh.pouch : '?'} left); clean or no power → nothing`,
+  );
 }
 
 // ------------------------------------------------------------------ cameras
@@ -165,7 +184,6 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   const st = sim.state;
   quiet(sim);
   // Chipping the woodshop's back wall in its eye.
-  const watch = (cmd: number, steps: number) => run(sim, steps, cmd);
   // Wait until it looks this way: its heading points at 42, 28 (south-east).
   stand(sim, 41, 29, SOUTH);
   carry(sim, 'sturdy_pickaxe');
@@ -207,8 +225,13 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
     run(s3, 400);
     return s3.state.lockdown;
   };
-  check(!room('guard_outfit') && room('inmate_outfit') && !room('inmate_outfit', false), 'uniform passes, an inmate is seen, no power no camera');
-  console.log(`control room camera: uniform ${room('guard_outfit') ? 'seen' : 'passes'}, inmate ${room('inmate_outfit') ? 'LOCKDOWN' : 'unseen'}, power off ${room('inmate_outfit', false) ? 'seen' : 'unseen'}`);
+  check(
+    !room('guard_outfit') && room('inmate_outfit') && !room('inmate_outfit', false),
+    'uniform passes, an inmate is seen, no power no camera',
+  );
+  console.log(
+    `control room camera: uniform ${room('guard_outfit') ? 'seen' : 'passes'}, inmate ${room('inmate_outfit') ? 'LOCKDOWN' : 'unseen'}, power off ${room('inmate_outfit', false) ? 'seen' : 'unseen'}`,
+  );
 }
 
 // ------------------------------------------------------------------ searchlights
@@ -235,7 +258,10 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
     return { heat: st.heat, ev, sent: st.guards.filter((g) => g.mode === GUARD.INVESTIGATE).length };
   };
   const night = lit({});
-  check(night.heat >= 30 && night.heat <= 40 && night.ev.some((e) => e.type === 'spotted' && e.reason === 'searchlight'), 'a second in the beam at night: about +35%');
+  check(
+    night.heat >= 30 && night.heat <= 40 && night.ev.some((e) => e.type === 'spotted' && e.reason === 'searchlight'),
+    'a second in the beam at night: about +35%',
+  );
   check(night.sent >= 1, 'and a guard is sent');
   check(lit({ outfit: 'guard_outfit' }).heat === 0, 'not in a uniform');
   check(lit({ night: false }).heat === 0, 'not by day');
@@ -269,10 +295,22 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   const ev = run(sim, 40 * 20);
   const shots = ev.filter((e) => e.type === 'shot');
   const hits = shots.filter((e) => e.type === 'shot' && e.hit);
-  check(ev.some((e) => e.type === 'aim') && shots.length > 0 && shots[0].type === 'shot' && !shots[0].hit, 'it takes aim, then a warning shot');
+  check(
+    ev.some((e) => e.type === 'aim') && shots.length > 0 && shots[0].type === 'shot' && !shots[0].hit,
+    'it takes aim, then a warning shot',
+  );
   check(hits.length >= 3 && ev.some((e) => e.type === 'hurt' && e.by === HURT_BY.SNIPER), 'then hits');
-  check(ev.some((e) => e.type === 'caught' && e.solitary), 'until the player drops: solitary');
-  console.log(`sniper: ${shots.length} shots (${hits.length} hits, ${hits[0]?.type === 'shot' ? hits[0].dmg : 0} each) → ${ev.some((e) => e.type === 'caught') ? 'down, solitary' : 'still up'}; towers at ${towers(sim.world).map((t) => `${(t.x / UNIT).toFixed(1)},${(t.z / UNIT).toFixed(1)}`).join(' ')}`);
+  check(
+    ev.some((e) => e.type === 'caught' && e.solitary),
+    'until the player drops: solitary',
+  );
+  console.log(
+    `sniper: ${shots.length} shots (${hits.length} hits, ${hits[0]?.type === 'shot' ? hits[0].dmg : 0} each) → ${ev.some((e) => e.type === 'caught') ? 'down, solitary' : 'still up'}; towers at ${towers(
+      sim.world,
+    )
+      .map((t) => `${(t.x / UNIT).toFixed(1)},${(t.z / UNIT).toFixed(1)}`)
+      .join(' ')}`,
+  );
   // Off duty at night.
   const night = new Sim(CENTER_PERKS, 26);
   quiet(night);
@@ -287,7 +325,10 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   stand(cut, 12, 60, SOUTH);
   carry(cut, 'sturdy_cutters');
   cut.step(command(0, OP.USE, 1));
-  check(cut.events.some((e) => e.type === 'spotted' && e.reason === 'sniper') && cut.state.lockdown, 'cutting the fence by day in a tower’s reach is seen');
+  check(
+    cut.events.some((e) => e.type === 'spotted' && e.reason === 'sniper') && cut.state.lockdown,
+    'cutting the fence by day in a tower’s reach is seen',
+  );
   // Out of reach (the north fence): nothing.
   const far = new Sim(CENTER_PERKS, 27);
   quiet(far);
@@ -327,10 +368,16 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   stand(sim, 6, 20, WEST, LAYER.ROOF);
   carry(sim, 'grapnel');
   sim.step(command(0, OP.USE, 1));
-  check(sim.events.some((e) => e.type === 'cantStrike' && e.why === 'noRope') && !!st.items.inv[0], 'no sheet rope: refused, the grapnel kept');
+  check(
+    sim.events.some((e) => e.type === 'cantStrike' && e.why === 'noRope') && !!st.items.inv[0],
+    'no sheet rope: refused, the grapnel kept',
+  );
   carry(sim, 'grapnel', 'sheet_rope');
   sim.step(command(0, OP.USE, 1));
-  check(st.escaped > 0 && ESCAPES[st.via] === 'roof' && !st.items.inv[0] && !st.items.inv[1], 'over the fence and down the rope: out (both left behind)');
+  check(
+    st.escaped > 0 && ESCAPES[st.via] === 'roof' && !st.items.inv[0] && !st.items.inv[1],
+    'over the fence and down the rope: out (both left behind)',
+  );
   // Not from the middle of a roof.
   const mid = new Sim(CENTER_PERKS, 29);
   quiet(mid);
@@ -347,7 +394,8 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   run(sim, 100);
   const snap = sim.snapshot();
   const old = structuredClone(snap) as Snapshot;
-  for (const k of ['powerOff', 'scanned', 'cams', 'sniperAt', 'shots', 'lit', 'takeover', 'tally', 'via']) delete (old.state as unknown as Record<string, unknown>)[k];
+  for (const k of ['powerOff', 'scanned', 'cams', 'sniperAt', 'shots', 'lit', 'takeover', 'tally', 'via'])
+    delete (old.state as unknown as Record<string, unknown>)[k];
   const b = new Sim(CENTER_PERKS, 1);
   b.restore(old);
   check(b.hash() === sim.hash(), 'a save from before P7 loads as the same state');

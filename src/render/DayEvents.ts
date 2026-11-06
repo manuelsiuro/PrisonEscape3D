@@ -45,7 +45,17 @@ export class DayEvents {
   /** The canteen's floor box (tiles), for the food. */
   private canteen: { x0: number; z0: number; x1: number; z1: number } | null = null;
   private readonly blobs: THREE.InstancedMesh;
-  private readonly flying: Array<{ on: boolean; t: number; dur: number; x0: number; z0: number; x1: number; z1: number; color: number; spin: number }> = [];
+  private readonly flying: Array<{
+    on: boolean;
+    t: number;
+    dur: number;
+    x0: number;
+    z0: number;
+    x1: number;
+    z1: number;
+    color: number;
+    spin: number;
+  }> = [];
   private throwClock = 0;
   private inspectors: Character[] = [];
   private readonly trail = new Float32Array(TRAIL_SAMPLES * 2);
@@ -56,7 +66,10 @@ export class DayEvents {
   private trailAt = 0;
   private trailLen = 0;
   private trailGuard = -1;
-  private readonly spot = [{ x: 0, z: 0, set: false }, { x: 0, z: 0, set: false }];
+  private readonly spot = [
+    { x: 0, z: 0, set: false },
+    { x: 0, z: 0, set: false },
+  ];
   private world: World | null = null;
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
@@ -108,7 +121,8 @@ export class DayEvents {
     // The room's north edge over the tables (not a notch elsewhere in the canteen).
     let top = MAP_H;
     for (let z = z0; z <= z1 && top === MAP_H; z++)
-      for (let x = Math.floor(sx0); x < Math.ceil(sx1); x++) if (world.zoneAt(x, z) === 'canteen' && !TILE_INFO[world.ground.kind[z * MAP_W + x]].solid) top = z;
+      for (let x = Math.floor(sx0); x < Math.ceil(sx1); x++)
+        if (world.zoneAt(x, z) === 'canteen' && !TILE_INFO[world.ground.kind[z * MAP_W + x]].solid) top = z;
     if (top === MAP_H) top = z0;
     const canvas = document.createElement('canvas');
     canvas.width = 192;
@@ -117,11 +131,17 @@ export class DayEvents {
     const tex = canvasTexture(canvas, 'live');
     this.film = { canvas, tex, t: 0, frame: -1 };
     // (Drawn after the fog too, like the film: the veil never cuts across the frame.)
-    const frame = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.16, height + 0.16), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.8, transparent: true }));
+    const frame = new THREE.Mesh(
+      new THREE.PlaneGeometry(width + 0.16, height + 0.16),
+      new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.8, transparent: true }),
+    );
     frame.position.z = -0.01;
     frame.renderOrder = 0.59;
     // (Transparent so it draws after the fog veil, over it: no seam where the veil cuts across the film.)
-    this.screen = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, transparent: true }));
+    this.screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, height),
+      new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, transparent: true }),
+    );
     this.screen.renderOrder = 0.6;
     this.screen.add(frame);
     this.screen.position.set(cx, WALL_H + 0.08 + height / 2, top - 0.45);
@@ -130,8 +150,62 @@ export class DayEvents {
     const back = new THREE.Vector3(cx, WALL_H + 0.25, z1 + 0.6);
     const g = new THREE.BufferGeometry();
     const sx = this.screen.position;
-    g.setAttribute('position', new THREE.Float32BufferAttribute([back.x, back.y, back.z, sx.x - width / 2, sx.y - height / 2, sx.z + 0.02, sx.x + width / 2, sx.y - height / 2, sx.z + 0.02, back.x, back.y, back.z, sx.x + width / 2, sx.y - height / 2, sx.z + 0.02, sx.x + width / 2, sx.y + height / 2, sx.z + 0.02, back.x, back.y, back.z, sx.x + width / 2, sx.y + height / 2, sx.z + 0.02, sx.x - width / 2, sx.y + height / 2, sx.z + 0.02, back.x, back.y, back.z, sx.x - width / 2, sx.y + height / 2, sx.z + 0.02, sx.x - width / 2, sx.y - height / 2, sx.z + 0.02], 3));
-    this.beam = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: 0.03, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true }));
+    g.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [
+          back.x,
+          back.y,
+          back.z,
+          sx.x - width / 2,
+          sx.y - height / 2,
+          sx.z + 0.02,
+          sx.x + width / 2,
+          sx.y - height / 2,
+          sx.z + 0.02,
+          back.x,
+          back.y,
+          back.z,
+          sx.x + width / 2,
+          sx.y - height / 2,
+          sx.z + 0.02,
+          sx.x + width / 2,
+          sx.y + height / 2,
+          sx.z + 0.02,
+          back.x,
+          back.y,
+          back.z,
+          sx.x + width / 2,
+          sx.y + height / 2,
+          sx.z + 0.02,
+          sx.x - width / 2,
+          sx.y + height / 2,
+          sx.z + 0.02,
+          back.x,
+          back.y,
+          back.z,
+          sx.x - width / 2,
+          sx.y + height / 2,
+          sx.z + 0.02,
+          sx.x - width / 2,
+          sx.y - height / 2,
+          sx.z + 0.02,
+        ],
+        3,
+      ),
+    );
+    this.beam = new THREE.Mesh(
+      g,
+      new THREE.MeshBasicMaterial({
+        color: 0xfff1c8,
+        transparent: true,
+        opacity: 0.03,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        forceSinglePass: true,
+      }),
+    );
     this.beam.visible = false;
     this.beam.renderOrder = 7;
     this.group.add(this.screen, this.beam);
@@ -158,7 +232,19 @@ export class DayEvents {
    * `ground`: the player is on the ground floor (at px, pz); `about`: anywhere above the tunnels
    * (the ground floor's people are drawn from the vents and the roofs too); `power`: the lights' level (a cut dims the film).
    */
-  update(f: EventsFrame, dt: number, time: number, guards: ReadonlyArray<{ x: number; z: number; awake: boolean }>, inmates: ReadonlyArray<{ x: number; z: number }>, ground: boolean, motion: boolean, px = 0, pz = 0, about = ground, power = 1): Character[] {
+  update(
+    f: EventsFrame,
+    dt: number,
+    time: number,
+    guards: ReadonlyArray<{ x: number; z: number; awake: boolean }>,
+    inmates: ReadonlyArray<{ x: number; z: number }>,
+    ground: boolean,
+    motion: boolean,
+    px = 0,
+    pz = 0,
+    about = ground,
+    power = 1,
+  ): Character[] {
     // Movie night: the screen stands over the wall only while the player is in or by the canteen (elsewhere it would hide the rooms north of it).
     const box = this.canteen;
     const near = !!box && px >= box.x0 - 3 && px <= box.x1 + 4 && pz >= box.z0 - 2 && pz <= box.z1 + 4;
@@ -170,7 +256,9 @@ export class DayEvents {
     }
     if (this.beam) {
       this.beam.visible = movie && power > 0.2;
-      if (movie) (this.beam.material as THREE.MeshBasicMaterial).opacity = (motion ? 0.03 + 0.012 * Math.sin(time * 23) * Math.sin(time * 7.3) : 0.03) * power;
+      if (movie)
+        (this.beam.material as THREE.MeshBasicMaterial).opacity =
+          (motion ? 0.03 + 0.012 * Math.sin(time * 23) * Math.sin(time * 7.3) : 0.03) * power;
     }
     if (movie) this.roll(dt, motion);
     // The food fight.

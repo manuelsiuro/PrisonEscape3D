@@ -209,7 +209,9 @@
 /* Fighting: the tool button turns red. */
 .tool-btn.attack .tool-round {
   background: radial-gradient(circle at 40% 30%, #f2676b, #b42a33);
-  box-shadow: 0 10px 22px -8px rgba(90, 10, 20, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 10px 22px -8px rgba(90, 10, 20, 0.9),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
 }
 
 .tool-prompt.attack {
@@ -229,7 +231,6 @@
   .target-card {
     top: calc(max(12px, env(safe-area-inset-top)) + 100px);
   }
-
 }
 
 /* Landscape phones: above the tool button. */

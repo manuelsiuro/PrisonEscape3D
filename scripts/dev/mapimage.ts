@@ -25,7 +25,18 @@ import pkg from '../../package.json';
 import { outsideOf } from '../../src/content/outside';
 import { DECO, outsideWorld, type OutsideWorld } from '../../src/sim/hunt/world';
 import { SOLITARY_HEAT } from '../../src/sim/tuning';
-import { cellLine, grapnelSpots, inSights, launchTiles, layersOf, rectTiles, reachableRoof, routineOf, sheetOf, SNIPER_TILES } from './mapdata';
+import {
+  cellLine,
+  grapnelSpots,
+  inSights,
+  launchTiles,
+  layersOf,
+  rectTiles,
+  reachableRoof,
+  routineOf,
+  sheetOf,
+  SNIPER_TILES,
+} from './mapdata';
 
 const S = 40; // pixels a tile
 const M = 34; // margin for the rulers
@@ -64,7 +75,20 @@ const TILE_FILL: Record<number, string> = {
 };
 const KEY_FILL = ['#ffffff', '#f4c20d', '#14b8c8', '#8e44ad', '#e2372b', '#27a249'];
 const KEY_NAME = ['', 'yellow', 'cyan', 'purple', 'red', 'green'];
-const GUARD_COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#008080', '#f032e6', '#9a6324', '#800000', '#000075', '#808000', '#e6a800'];
+const GUARD_COLORS = [
+  '#e6194b',
+  '#3cb44b',
+  '#4363d8',
+  '#f58231',
+  '#911eb4',
+  '#008080',
+  '#f032e6',
+  '#9a6324',
+  '#800000',
+  '#000075',
+  '#808000',
+  '#e6a800',
+];
 
 function face(f: number | undefined): [number, number] {
   const a = (((f ?? 5) - 1) * 22.5 * Math.PI) / 180;
@@ -115,7 +139,12 @@ function drawTiles(g: Svg, w: World, faded: boolean) {
         const gate = w.gate[i] === 1;
         g.rect(px(x) + 2, pz(z) + 2, S - 4, S - 4, `fill="none" stroke="${gate ? '#000' : '#333'}" stroke-width="${gate ? 4 : 1.5}"`);
         const cell = w.doorCell[i];
-        g.text(cx(x), cz(z) + 4, gate ? 'GATE' : cell ? `c${cell}` : KEY_NAME[L.key[i]][0].toUpperCase(), `font-size="${gate ? 9 : 12}" font-weight="700" fill="#000" text-anchor="middle"`);
+        g.text(
+          cx(x),
+          cz(z) + 4,
+          gate ? 'GATE' : cell ? `c${cell}` : KEY_NAME[L.key[i]][0].toUpperCase(),
+          `font-size="${gate ? 9 : 12}" font-weight="700" fill="#000" text-anchor="middle"`,
+        );
       }
       if (k === TILE.DETECTOR) g.text(cx(x), cz(z) + 4, 'DET', 'font-size="10" font-weight="700" fill="#fff" text-anchor="middle"');
       if (k === TILE.TOWER) g.text(cx(x), cz(z) + 4, 'T', 'font-size="14" font-weight="700" fill="#fff" text-anchor="middle"');
@@ -151,8 +180,14 @@ function drawZones(g: Svg, w: World, labels: boolean) {
     for (let x = 0; x < MAP_W; x++) {
       const i = z * MAP_W + x;
       if (!named(i)) continue;
-      if (x + 1 < MAP_W && named(i + 1) && Z[i + 1] !== Z[i]) g.add(`<line x1="${px(x + 1)}" y1="${pz(z)}" x2="${px(x + 1)}" y2="${pz(z + 1)}" stroke="#d40000" stroke-width="3" stroke-dasharray="6 3"/>`);
-      if (z + 1 < MAP_H && named(i + MAP_W) && Z[i + MAP_W] !== Z[i]) g.add(`<line x1="${px(x)}" y1="${pz(z + 1)}" x2="${px(x + 1)}" y2="${pz(z + 1)}" stroke="#d40000" stroke-width="3" stroke-dasharray="6 3"/>`);
+      if (x + 1 < MAP_W && named(i + 1) && Z[i + 1] !== Z[i])
+        g.add(
+          `<line x1="${px(x + 1)}" y1="${pz(z)}" x2="${px(x + 1)}" y2="${pz(z + 1)}" stroke="#d40000" stroke-width="3" stroke-dasharray="6 3"/>`,
+        );
+      if (z + 1 < MAP_H && named(i + MAP_W) && Z[i + MAP_W] !== Z[i])
+        g.add(
+          `<line x1="${px(x)}" y1="${pz(z + 1)}" x2="${px(x + 1)}" y2="${pz(z + 1)}" stroke="#d40000" stroke-width="3" stroke-dasharray="6 3"/>`,
+        );
     }
   }
   if (!labels) return;
@@ -179,7 +214,7 @@ function drawZones(g: Svg, w: World, labels: boolean) {
     const mx = patch.reduce((s, j) => s + (j % MAP_W), 0) / patch.length;
     const mz = patch.reduce((s, j) => s + Math.floor(j / MAP_W), 0) / patch.length;
     const best = patch.reduce((a, b) => {
-      const d = (j: number) => (j % MAP_W - mx) ** 2 + (Math.floor(j / MAP_W) - mz) ** 2;
+      const d = (j: number) => ((j % MAP_W) - mx) ** 2 + (Math.floor(j / MAP_W) - mz) ** 2;
       return d(b) < d(a) ? b : a;
     });
     const label = tr(`zone.${id}`, id).toUpperCase();
@@ -191,7 +226,13 @@ function drawZones(g: Svg, w: World, labels: boolean) {
 function drawCells(g: Svg, def: PrisonDef) {
   def.cells.forEach(([x0, z0, x1, z1], k) => {
     const mine = k === 0;
-    g.rect(px(x0) + 1, pz(z0) + 1, (x1 - x0 + 1) * S - 2, (z1 - z0 + 1) * S - 2, `fill="none" stroke="${mine ? '#e0a100' : '#1f4e9c'}" stroke-width="${mine ? 4 : 2}"`);
+    g.rect(
+      px(x0) + 1,
+      pz(z0) + 1,
+      (x1 - x0 + 1) * S - 2,
+      (z1 - z0 + 1) * S - 2,
+      `fill="none" stroke="${mine ? '#e0a100' : '#1f4e9c'}" stroke-width="${mine ? 4 : 2}"`,
+    );
     const name = mine ? 'YOU' : (def.names[k - 1] ?? '?');
     g.pill((px(x0) + px(x1 + 1)) / 2, pz(z0) + (z1 - z0 + 1) * S - 12, `Cell ${k + 1} · ${name}`, 10, mine ? '#8a5a00' : '#1f4e9c');
   });
@@ -204,7 +245,13 @@ function drawProps(g: Svg, def: PrisonDef) {
     const w = p.w ?? 1;
     const d = p.d ?? 1;
     const walk = walked.has(p.kind);
-    g.rect(px(p.x) + 3, pz(p.z) + 3, w * S - 6, d * S - 6, `rx="3" fill="${walk ? 'rgba(255,255,255,0.7)' : 'rgba(40,30,20,0.78)'}" stroke="#000" stroke-width="1"${walk ? ' stroke-dasharray="3 2"' : ''}`);
+    g.rect(
+      px(p.x) + 3,
+      pz(p.z) + 3,
+      w * S - 6,
+      d * S - 6,
+      `rx="3" fill="${walk ? 'rgba(255,255,255,0.7)' : 'rgba(40,30,20,0.78)'}" stroke="#000" stroke-width="1"${walk ? ' stroke-dasharray="3 2"' : ''}`,
+    );
     // The way it faces (rot: 0 south, 1 east, 2 north, 3 west): a notch on that side.
     const r = p.rot ?? 0;
     const [fx, fz] = [
@@ -219,9 +266,14 @@ function drawProps(g: Svg, def: PrisonDef) {
       // (A lamp: a notch under each head, its arm's way in eighths, 2.34.1.)
       for (const a of p.heads === 2 ? [p.aim ?? r * 2, (p.aim ?? r * 2) + 4] : [p.aim ?? r * 2]) {
         const t = (a * Math.PI) / 4;
-        g.add(`<circle cx="${(mx + Math.sin(t) * (S / 2 - 5)).toFixed(1)}" cy="${(mz + Math.cos(t) * (S / 2 - 5)).toFixed(1)}" r="2.5" fill="#ffd54a"/>`);
+        g.add(
+          `<circle cx="${(mx + Math.sin(t) * (S / 2 - 5)).toFixed(1)}" cy="${(mz + Math.cos(t) * (S / 2 - 5)).toFixed(1)}" r="2.5" fill="#ffd54a"/>`,
+        );
       }
-    } else g.add(`<circle cx="${mx + (fx * (w * S - 10)) / 2}" cy="${mz + (fz * (d * S - 10)) / 2}" r="2.5" fill="${walk ? '#000' : '#ffd54a'}"/>`);
+    } else
+      g.add(
+        `<circle cx="${mx + (fx * (w * S - 10)) / 2}" cy="${mz + (fz * (d * S - 10)) / 2}" r="2.5" fill="${walk ? '#000' : '#ffd54a'}"/>`,
+      );
     const size = Math.max(6, Math.min(11, ((w * S - 6) * 1.7) / p.kind.length));
     g.text(mx, mz + size * 0.35, p.kind, `font-size="${size.toFixed(1)}" fill="${walk ? '#000' : '#fff'}" text-anchor="middle"`);
   }
@@ -248,7 +300,12 @@ function drawDecor(g: Svg, def: PrisonDef) {
       g.rect(px(p.x) + 6, pz(p.z) + 6, w * S - 12, d * S - 12, 'rx="6" fill="none" stroke="#c026d3" stroke-width="1.5"');
     }
     const size = Math.max(5.5, Math.min(8.5, ((w * S - 2) * 1.8) / p.kind.length));
-    g.text(px(p.x) + (w * S) / 2, pz(p.z) + d * S - 4, p.kind, `font-size="${size.toFixed(1)}" font-style="italic" fill="#86198f" text-anchor="middle"`);
+    g.text(
+      px(p.x) + (w * S) / 2,
+      pz(p.z) + d * S - 4,
+      p.kind,
+      `font-size="${size.toFixed(1)}" font-style="italic" fill="#86198f" text-anchor="middle"`,
+    );
   }
 }
 
@@ -257,7 +314,9 @@ function drawVending(g: Svg, def: PrisonDef) {
   const m = def.vending;
   if (!m) return;
   const red = '#b8352f';
-  g.add(`<polyline points="${[m, ...m.line].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="${red}" stroke-width="2" stroke-dasharray="3 3"/>`);
+  g.add(
+    `<polyline points="${[m, ...m.line].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="${red}" stroke-width="2" stroke-dasharray="3 3"/>`,
+  );
   m.line.forEach((q, k) => {
     g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="8" fill="#fff" stroke="${red}" stroke-width="2"/>`);
     g.text(cx(q.x), cz(q.z) + 3.5, `${k + 1}`, `font-size="9" font-weight="700" fill="${red}" text-anchor="middle"`);
@@ -297,7 +356,9 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   g.rect(px(c.phone.x) + 7, pz(c.phone.z) + 7, S - 14, S - 14, `rx="5" fill="${teal}"`);
   g.text(cx(c.phone.x), cz(c.phone.z) + 3.5, 'tel', 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
   const line = [c.phone, ...c.line];
-  g.add(`<polyline points="${line.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="${teal}" stroke-width="2" stroke-dasharray="3 3"/>`);
+  g.add(
+    `<polyline points="${line.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="${teal}" stroke-width="2" stroke-dasharray="3 3"/>`,
+  );
   c.line.forEach((q, k) => {
     g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="8" fill="#fff" stroke="${teal}" stroke-width="2"/>`);
     g.text(cx(q.x), cz(q.z) + 3.5, `${k + 1}`, `font-size="9" font-weight="700" fill="${teal}" text-anchor="middle"`);
@@ -308,7 +369,8 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   const [kx, kz] = face(c.kiosk.face);
   const bx = cx(c.kiosk.x) + (kx * S) / 2;
   const bz = cz(c.kiosk.z) + (kz * S) / 2;
-  if (Math.round(kx) !== 0) g.add(`<line x1="${bx}" y1="${bz - S / 2 + 4}" x2="${bx}" y2="${bz + S / 2 - 4}" stroke="${blue}" stroke-width="7"/>`);
+  if (Math.round(kx) !== 0)
+    g.add(`<line x1="${bx}" y1="${bz - S / 2 + 4}" x2="${bx}" y2="${bz + S / 2 - 4}" stroke="${blue}" stroke-width="7"/>`);
   else g.add(`<line x1="${bx - S / 2 + 4}" y1="${bz}" x2="${bx + S / 2 - 4}" y2="${bz}" stroke="${blue}" stroke-width="7"/>`);
   g.rect(px(c.kiosk.x) + 7, pz(c.kiosk.z) + 7, S - 14, S - 14, `rx="5" fill="${blue}"`);
   g.text(cx(c.kiosk.x), cz(c.kiosk.z) + 3.5, 'net', 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
@@ -339,7 +401,9 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   }
   if (!lou) return;
   const red = '#be123c';
-  g.add(`<circle cx="${cx(c.gate.x)}" cy="${cz(c.gate.z)}" r="11" fill="rgba(190,18,60,0.2)" stroke="${red}" stroke-width="2.5" stroke-dasharray="4 3"/>`);
+  g.add(
+    `<circle cx="${cx(c.gate.x)}" cy="${cz(c.gate.z)}" r="11" fill="rgba(190,18,60,0.2)" stroke="${red}" stroke-width="2.5" stroke-dasharray="4 3"/>`,
+  );
   g.pill(cx(c.gate.x), cz(c.gate.z) - 18, 'CAR ALARM', 9, red);
   const [ax] = face(c.car.face);
   const long = Math.round(ax) !== 0;
@@ -358,7 +422,8 @@ function drawBoard(g: Svg, def: PrisonDef) {
   const [fx, fz] = face(b.face);
   const ex = cx(b.x) + (fx * S) / 2;
   const ez = cz(b.z) + (fz * S) / 2;
-  if (Math.round(fx) !== 0) g.add(`<line x1="${ex}" y1="${ez - S / 2 + 4}" x2="${ex}" y2="${ez + S / 2 - 4}" stroke="${brown}" stroke-width="7"/>`);
+  if (Math.round(fx) !== 0)
+    g.add(`<line x1="${ex}" y1="${ez - S / 2 + 4}" x2="${ex}" y2="${ez + S / 2 - 4}" stroke="${brown}" stroke-width="7"/>`);
   else g.add(`<line x1="${ex - S / 2 + 4}" y1="${ez}" x2="${ex + S / 2 - 4}" y2="${ez}" stroke="${brown}" stroke-width="7"/>`);
   g.rect(px(b.x) + 7, pz(b.z) + 7, S - 14, S - 14, `rx="5" fill="${brown}"`);
   g.text(cx(b.x), cz(b.z) + 3.5, 'job', 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
@@ -366,7 +431,9 @@ function drawBoard(g: Svg, def: PrisonDef) {
 }
 
 function drawMarks(g: Svg, def: PrisonDef) {
-  def.rollCall.forEach((q, k) => g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="6" fill="${k === 0 ? '#ff8a1e' : '#fff'}" stroke="#c2410c" stroke-width="2.5"/>`));
+  def.rollCall.forEach((q, k) =>
+    g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="6" fill="${k === 0 ? '#ff8a1e' : '#fff'}" stroke="#c2410c" stroke-width="2.5"/>`),
+  );
   const s = def.spawn;
   const star = Array.from({ length: 10 }, (_, k) => {
     const a = (k * Math.PI) / 5 - Math.PI / 2;
@@ -380,32 +447,55 @@ function arrow(g: Svg, x: number, z: number, f: number | undefined, color: strin
   const [dx, dz] = face(f);
   const x1 = cx(x) + dx * len;
   const y1 = cz(z) + dz * len;
-  g.add(`<line x1="${cx(x)}" y1="${cz(z)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${color}" stroke-width="2.5" marker-end="url(#tip)"/>`);
+  g.add(
+    `<line x1="${cx(x)}" y1="${cz(z)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${color}" stroke-width="2.5" marker-end="url(#tip)"/>`,
+  );
 }
 
 function route(g: Svg, pts: readonly Waypoint[], color: string, dashed: boolean, tag: string) {
   if (!pts.length) return;
   const poly = [...pts, pts[0]].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ');
-  g.add(`<polyline points="${poly}" fill="none" stroke="${color}" stroke-width="${dashed ? 2.5 : 3.5}" stroke-opacity="0.85"${dashed ? ' stroke-dasharray="8 5"' : ''}/>`);
+  g.add(
+    `<polyline points="${poly}" fill="none" stroke="${color}" stroke-width="${dashed ? 2.5 : 3.5}" stroke-opacity="0.85"${dashed ? ' stroke-dasharray="8 5"' : ''}/>`,
+  );
   pts.forEach((q, k) => {
     g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="9" fill="${dashed ? '#fff' : color}" stroke="${color}" stroke-width="2"/>`);
     if (q.face) arrow(g, q.x, q.z, q.face, color, 18);
-    g.text(cx(q.x), cz(q.z) + 3.5, `${tag}${k + 1}`, `font-size="9" font-weight="700" fill="${dashed ? color : '#fff'}" text-anchor="middle"`);
-    if (q.wait || q.nap) g.text(cx(q.x) + 11, cz(q.z) - 9, `${q.wait ? `${q.wait}s` : ''}${q.nap ? ' nap' : ''}`, `font-size="9" fill="${color}" font-weight="700"`);
+    g.text(
+      cx(q.x),
+      cz(q.z) + 3.5,
+      `${tag}${k + 1}`,
+      `font-size="9" font-weight="700" fill="${dashed ? color : '#fff'}" text-anchor="middle"`,
+    );
+    if (q.wait || q.nap)
+      g.text(
+        cx(q.x) + 11,
+        cz(q.z) - 9,
+        `${q.wait ? `${q.wait}s` : ''}${q.nap ? ' nap' : ''}`,
+        `font-size="9" fill="${color}" font-weight="700"`,
+      );
   });
 }
 
 /** The roofs a grapnel swings across onto from another roof. */
 function drawLandings(g: Svg, def: PrisonDef) {
   for (const r of def.landings ?? []) {
-    g.rect(px(r[0]), pz(r[1]), (r[2] - r[0] + 1) * S, (r[3] - r[1] + 1) * S, 'fill="none" stroke="#0f172a" stroke-width="3" stroke-dasharray="2 3"');
+    g.rect(
+      px(r[0]),
+      pz(r[1]),
+      (r[2] - r[0] + 1) * S,
+      (r[3] - r[1] + 1) * S,
+      'fill="none" stroke="#0f172a" stroke-width="3" stroke-dasharray="2 3"',
+    );
     g.pill((px(r[0]) + px(r[2] + 1)) / 2, pz(r[1]) + 12, 'ROOF LANDING', 9, '#0f172a');
   }
 }
 
 /** Guards' rounds, posts, night rounds and dogs; cameras, searchlights; free time; smuggling; delivery; checkpoint. */
 function drawPeople(g: Svg, def: PrisonDef) {
-  g.add('<defs><marker id="tip" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>');
+  g.add(
+    '<defs><marker id="tip" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>',
+  );
   const ls = def.leisure;
   if (ls) {
     const pi = ls.pitch;
@@ -413,7 +503,13 @@ function drawPeople(g: Svg, def: PrisonDef) {
     g.pill(px(pi.x) + (pi.w * S) / 2, pz(pi.z) + 14, 'PITCH', 11, '#14532d');
     if (ls.track) {
       const t = ls.track;
-      g.rect(px(t.x) + S / 2, pz(t.z) + S / 2, (t.w - 1) * S, (t.d - 1) * S, 'fill="none" stroke="#b45309" stroke-width="7" stroke-opacity="0.6"');
+      g.rect(
+        px(t.x) + S / 2,
+        pz(t.z) + S / 2,
+        (t.w - 1) * S,
+        (t.d - 1) * S,
+        'fill="none" stroke="#b45309" stroke-width="7" stroke-opacity="0.6"',
+      );
       g.pill(px(t.x) + S * 1.5, pz(t.z) + S / 2, 'TRACK', 10, '#b45309');
     }
     const gd = ls.garden;
@@ -428,18 +524,21 @@ function drawPeople(g: Svg, def: PrisonDef) {
     });
     const ra = ls.race;
     const [rx, rz] = face(ra.dir);
-    g.add(`<line x1="${cx(ra.x)}" y1="${cz(ra.z)}" x2="${cx(ra.x) + rx * ra.len * S}" y2="${cz(ra.z) + rz * ra.len * S}" stroke="#7c3aed" stroke-width="6" stroke-opacity="0.7" marker-end="url(#tip)"/>`);
+    g.add(
+      `<line x1="${cx(ra.x)}" y1="${cz(ra.z)}" x2="${cx(ra.x) + rx * ra.len * S}" y2="${cz(ra.z) + rz * ra.len * S}" stroke="#7c3aed" stroke-width="6" stroke-opacity="0.7" marker-end="url(#tip)"/>`,
+    );
     g.pill(cx(ra.x), cz(ra.z) - 14, 'RAT RACE', 9, '#7c3aed');
     if (ls.stage) {
       const st = ls.stage;
       const [fx, fz] = face(st.face);
       const ax = -Math.round(fz);
       const az = Math.round(fx);
-      for (const front of [0, 1]) for (const side of [-1, 0, 1]) {
-        const bx = st.x + Math.round(fx) * front + ax * side;
-        const bz = st.z + Math.round(fz) * front + az * side;
-        g.rect(px(bx) + 2, pz(bz) + 2, S - 4, S - 4, 'fill="rgba(219,39,119,0.35)" stroke="#db2777" stroke-width="1.5"');
-      }
+      for (const front of [0, 1])
+        for (const side of [-1, 0, 1]) {
+          const bx = st.x + Math.round(fx) * front + ax * side;
+          const bz = st.z + Math.round(fz) * front + az * side;
+          g.rect(px(bx) + 2, pz(bz) + 2, S - 4, S - 4, 'fill="rgba(219,39,119,0.35)" stroke="#db2777" stroke-width="1.5"');
+        }
       arrow(g, st.x, st.z, st.face, '#db2777', 20);
       g.pill(cx(st.x), cz(st.z), 'STAGE', 9, '#db2777');
     }
@@ -448,20 +547,33 @@ function drawPeople(g: Svg, def: PrisonDef) {
       arrow(g, ls.librarian.x, ls.librarian.z, ls.librarian.face, '#5e74c9', 16);
       g.pill(cx(ls.librarian.x), cz(ls.librarian.z), 'LIB', 9, '#5e74c9');
     }
-    if (ls.quiz) ls.quiz.spots.forEach((q, k) => {
-      g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="10" fill="#0891b2"/>`);
-      arrow(g, q.x, q.z, ls.quiz!.face, '#0891b2', 16);
-      g.text(cx(q.x), cz(q.z) + 3.5, `Q${k + 1}`, 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
-    });
+    if (ls.quiz)
+      ls.quiz.spots.forEach((q, k) => {
+        g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="10" fill="#0891b2"/>`);
+        arrow(g, q.x, q.z, ls.quiz!.face, '#0891b2', 16);
+        g.text(cx(q.x), cz(q.z) + 3.5, `Q${k + 1}`, 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
+      });
   }
   const sm = def.smuggling;
   if (sm) {
     const [a, b, c, d] = sm.drop;
-    g.rect(px(a), pz(b), (c - a + 1) * S, (d - b + 1) * S, 'fill="rgba(217,70,239,0.12)" stroke="#d946ef" stroke-width="3" stroke-dasharray="10 6"');
+    g.rect(
+      px(a),
+      pz(b),
+      (c - a + 1) * S,
+      (d - b + 1) * S,
+      'fill="rgba(217,70,239,0.12)" stroke="#d946ef" stroke-width="3" stroke-dasharray="10 6"',
+    );
     g.pill(px(a) + 50, pz(b) + 12, 'DRONE DROP', 10, '#a21caf');
     if (sm.visits) {
       const [e, f, h2, i2] = sm.visits;
-      g.rect(px(e) + 4, pz(f) + 4, (h2 - e + 1) * S - 8, (i2 - f + 1) * S - 8, 'fill="none" stroke="#0e7490" stroke-width="3" stroke-dasharray="4 4"');
+      g.rect(
+        px(e) + 4,
+        pz(f) + 4,
+        (h2 - e + 1) * S - 8,
+        (i2 - f + 1) * S - 8,
+        'fill="none" stroke="#0e7490" stroke-width="3" stroke-dasharray="4 4"',
+      );
       g.pill(px(e) + 40, pz(f) + 16, 'VISITS', 10, '#0e7490');
     }
   }
@@ -472,14 +584,19 @@ function drawPeople(g: Svg, def: PrisonDef) {
     g.pill((px(a) + px(c + 1)) / 2, (pz(b) + pz(d + 1)) / 2, `DELIVERY (${dl.vehicle})`, 10, '#713f12');
     g.rect(px(dl.tail.x) + 6, pz(dl.tail.z) + 6, S - 12, S - 12, 'fill="#a16207"');
     g.text(cx(dl.tail.x), cz(dl.tail.z) + 3.5, 'tail', 'font-size="9" fill="#fff" text-anchor="middle"');
-    g.add(`<polyline points="${dl.road.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#a16207" stroke-width="2" stroke-dasharray="3 4"/>`);
+    g.add(
+      `<polyline points="${dl.road.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#a16207" stroke-width="2" stroke-dasharray="3 4"/>`,
+    );
     for (const q of dl.open ?? []) g.rect(px(q.x) + 3, pz(q.z) + 3, S - 6, S - 6, 'fill="none" stroke="#a16207" stroke-width="3"');
     route(g, dl.round, '#a16207', true, 'd');
   }
   const ck = def.checkpoint;
   if (ck) {
-    for (const q of ck.window) g.rect(px(q.x) + 4, pz(q.z) + 4, S - 8, S - 8, 'fill="rgba(5,150,105,0.4)" stroke="#047857" stroke-width="2"');
-    ck.gates.forEach((q, k) => g.text(cx(q.x), cz(q.z) - 8, `g${k + 1}`, 'font-size="10" font-weight="700" fill="#047857" text-anchor="middle"'));
+    for (const q of ck.window)
+      g.rect(px(q.x) + 4, pz(q.z) + 4, S - 8, S - 8, 'fill="rgba(5,150,105,0.4)" stroke="#047857" stroke-width="2"');
+    ck.gates.forEach((q, k) =>
+      g.text(cx(q.x), cz(q.z) - 8, `g${k + 1}`, 'font-size="10" font-weight="700" fill="#047857" text-anchor="middle"'),
+    );
     g.rect(px(ck.booth.x) + 4, pz(ck.booth.z) + 4, S - 8, S - 8, 'fill="#047857"');
     g.pill(cx(ck.booth.x), cz(ck.booth.z) - 18, 'CHECKPOINT BOOTH', 9, '#047857');
     g.pill(cx(ck.window[0].x), cz(ck.window[0].z) + 18, 'ID WINDOW', 9, '#047857');
@@ -491,13 +608,17 @@ function drawPeople(g: Svg, def: PrisonDef) {
     g.pill(cx(r[0]), cz(r[1]) - 16, 'DRAWBRIDGE', 9, '#000');
   }
   for (const line of def.searchlights ?? []) {
-    g.add(`<polyline points="${line.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#facc15" stroke-width="8" stroke-opacity="0.7" stroke-linecap="round"/>`);
+    g.add(
+      `<polyline points="${line.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#facc15" stroke-width="8" stroke-opacity="0.7" stroke-linecap="round"/>`,
+    );
   }
   for (const cam of def.cameras ?? []) {
     const r = 3 * S;
     const [a0x, a0z] = face(cam.face - 2);
     const [a1x, a1z] = face(cam.face + 2);
-    g.add(`<path d="M${cx(cam.x)} ${cz(cam.z)} L${cx(cam.x) + a0x * r} ${cz(cam.z) + a0z * r} A${r} ${r} 0 0 1 ${cx(cam.x) + a1x * r} ${cz(cam.z) + a1z * r} Z" fill="rgba(220,38,38,0.15)" stroke="#dc2626" stroke-width="1.5"/>`);
+    g.add(
+      `<path d="M${cx(cam.x)} ${cz(cam.z)} L${cx(cam.x) + a0x * r} ${cz(cam.z) + a0z * r} A${r} ${r} 0 0 1 ${cx(cam.x) + a1x * r} ${cz(cam.z) + a1z * r} Z" fill="rgba(220,38,38,0.15)" stroke="#dc2626" stroke-width="1.5"/>`,
+    );
     g.rect(px(cam.x) + 12, pz(cam.z) + 12, S - 24, S - 24, 'fill="#dc2626"');
   }
   def.guards.forEach((gu, k) => {
@@ -512,7 +633,9 @@ function drawPeople(g: Svg, def: PrisonDef) {
     }
     if (gu.dog) {
       const kq = gu.dog.kennel;
-      g.add(`<polygon points="${cx(kq.x)},${pz(kq.z) + 4} ${px(kq.x) + S - 4},${pz(kq.z) + S - 4} ${px(kq.x) + 4},${pz(kq.z) + S - 4}" fill="${color}" stroke="#000"/>`);
+      g.add(
+        `<polygon points="${cx(kq.x)},${pz(kq.z) + 4} ${px(kq.x) + S - 4},${pz(kq.z) + S - 4} ${px(kq.x) + 4},${pz(kq.z) + S - 4}" fill="${color}" stroke="#000"/>`,
+      );
       g.pill(cx(kq.x), pz(kq.z) - 6, `kennel ${gu.dog.name}`, 9, color);
     }
   });
@@ -525,7 +648,8 @@ function drawVents(g: Svg, w: World) {
   for (let i = 0; i < V.length; i++) {
     const x = i % MAP_W;
     const z = Math.floor(i / MAP_W);
-    if (U[i] === TILE.BOULDER) g.add(`<circle cx="${cx(x)}" cy="${cz(z)}" r="${S * 0.42}" fill="#4b5563" stroke="#111" stroke-width="1.5"/>`);
+    if (U[i] === TILE.BOULDER)
+      g.add(`<circle cx="${cx(x)}" cy="${cz(z)}" r="${S * 0.42}" fill="#4b5563" stroke="#111" stroke-width="1.5"/>`);
     const k = V[i];
     if (k === TILE.DUCT) g.rect(px(x) + 6, pz(z) + 6, S - 12, S - 12, 'fill="#64748b" stroke="#1e293b" stroke-width="1.5"');
     if (k === TILE.GRATE) {
@@ -558,7 +682,8 @@ function drawRoofs(g: Svg, def: PrisonDef, w: World) {
     g.rect(px(x), pz(z), S, S, `fill="${inSights(w, i, LAYER.ROOF) ? ROOF_EXPOSED : ROOF_COLOR}" fill-opacity="0.85"`);
   }
   // Where a grapnel flies from: a ring on the tile (the card says where it lands).
-  for (const t of grapnelSpots(w).keys()) g.add(`<circle cx="${cx(t % MAP_W)}" cy="${cz(Math.floor(t / MAP_W))}" r="7" fill="#fff" stroke="#be123c" stroke-width="2.5"/>`);
+  for (const t of grapnelSpots(w).keys())
+    g.add(`<circle cx="${cx(t % MAP_W)}" cy="${cz(Math.floor(t / MAP_W))}" r="7" fill="#fff" stroke="#be123c" stroke-width="2.5"/>`);
   for (const [t, faces] of launchTiles(w)) for (const f of faces) arrow(g, t % MAP_W, Math.floor(t / MAP_W), f, '#0369a1', 15);
   for (let i = 0; i < roof.length; i++) {
     if (roof[i] !== TILE.LADDER) continue;
@@ -584,14 +709,36 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
   const items: Array<[string, string]> = [];
   if (kind === 'layout') {
     items.push(
-      ['#8fbf5a', 'grass (.)'], ['#c29361', 'dirt (d)'], ['#868990', 'asphalt (a)'], ['#5f6166', 'road (,)'],
-      ['#d6d1c4', 'concrete (_)'], ['#bcd6df', 'tiled (:)'], ['#cf9f66', 'wood (w)'], ['#8a3b2e', 'brick wall (#)'],
-      ['#3a3d45', 'reinforced (@)'], ['url(#fence)', 'fence (=)'], ['url(#electric)', 'electric fence (%)'], ['#b07cc6', 'detector (D)'],
-      ['#262626', 'tower (T)'], ['#3b7dd8', 'water (~)'], ['#e2c48c', 'mine (*)'], ['#8b6a3e', 'pier (P)'],
-      [KEY_FILL[1], 'yellow door (y)'], [KEY_FILL[2], 'cyan door (c)'], [KEY_FILL[3], 'purple door (p)'], [KEY_FILL[4], 'red door (r)'], [KEY_FILL[5], 'green door (g)'],
+      ['#8fbf5a', 'grass (.)'],
+      ['#c29361', 'dirt (d)'],
+      ['#868990', 'asphalt (a)'],
+      ['#5f6166', 'road (,)'],
+      ['#d6d1c4', 'concrete (_)'],
+      ['#bcd6df', 'tiled (:)'],
+      ['#cf9f66', 'wood (w)'],
+      ['#8a3b2e', 'brick wall (#)'],
+      ['#3a3d45', 'reinforced (@)'],
+      ['url(#fence)', 'fence (=)'],
+      ['url(#electric)', 'electric fence (%)'],
+      ['#b07cc6', 'detector (D)'],
+      ['#262626', 'tower (T)'],
+      ['#3b7dd8', 'water (~)'],
+      ['#e2c48c', 'mine (*)'],
+      ['#8b6a3e', 'pier (P)'],
+      [KEY_FILL[1], 'yellow door (y)'],
+      [KEY_FILL[2], 'cyan door (c)'],
+      [KEY_FILL[3], 'purple door (p)'],
+      [KEY_FILL[4], 'red door (r)'],
+      [KEY_FILL[5], 'green door (g)'],
     );
   }
-  if (kind === 'roof') items.push([ROOF_COLOR, 'roof, ladder reaches'], [ROOF_EXPOSED, 'in a sniper\'s sights'], [ROOF_OUT_OF_REACH, 'no ladder to it'], ['#16a34a', 'ladder (L)']);
+  if (kind === 'roof')
+    items.push(
+      [ROOF_COLOR, 'roof, ladder reaches'],
+      [ROOF_EXPOSED, "in a sniper's sights"],
+      [ROOF_OUT_OF_REACH, 'no ladder to it'],
+      ['#16a34a', 'ladder (L)'],
+    );
   items.forEach(([f, l], k) => {
     swatch(g, x + (k % 7) * col, y + Math.floor(k / 7) * 30, f, l);
   });
@@ -601,9 +748,9 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
       ? [
           'Red dashed lines: zone borders (between two named zones; walls are "none"). Red pills: zone names, once per patch.',
           'Dark boxes: solid props (named; yellow dot = the side it faces). Light dashed boxes: props walked over (benches, seats, chairs, showers, bleachers).',
-          'Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n\'s door, GATE = perimeter gate (no key opens it).',
-          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net).',
-          'Gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player\'s seat before it (you); brown: the odd jobs board (bar = its wall, job = the reader\'s tile).',
+          "Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n's door, GATE = perimeter gate (no key opens it).",
+          "Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player's cell 1). Teal: the pay phone (bar = its wall, tel = the caller's tile) and its queue 1…; blue: the internet kiosk (net).",
+          "Gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player's seat before it (you); brown: the odd jobs board (bar = its wall, job = the reader's tile).",
         ]
       : kind === 'people'
         ? [
@@ -611,23 +758,27 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
-            ...(def.vending ? ['The vending machine (red, VENDING): where it\'s used from and its queue, 1…'] : []),
-            ...(def.menu ? ['The menu board (green, MENU) along its wall, read from the tiles in front; the water cooler (cooler) and where inmates stand at it to drink, d1 and d2 (blue).'] : []),
+            ...(def.vending ? ["The vending machine (red, VENDING): where it's used from and its queue, 1…"] : []),
+            ...(def.menu
+              ? [
+                  'The menu board (green, MENU) along its wall, read from the tiles in front; the water cooler (cooler) and where inmates stand at it to drink, d1 and d2 (blue).',
+                ]
+              : []),
             'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order.',
-            'The parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
+            "The parole board (purple, b1–b3, its hearing at 10:00) and the player's seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).",
             ...(def.landings ? ['Black dotted boxes: roof landings, the roofs a grapnel swings across onto from another roof.'] : []),
             ...(def.drawbridge ? ['Brown box: the drawbridge, down in a takeover or for a player waved through.'] : []),
           ]
         : kind === 'roof'
           ? [
               `Roofs over the faded ground floor. A sniper covers a roof from a tower ${SNIPER_TILES} tiles away or less, and fires at ${SOLITARY_HEAT}% heat or more. The roof is a restricted zone: seen up here without a guard's uniform, instant 100% heat.`,
-              'White rings with a red edge: a grapnel can be thrown from here (click the tile: where it lands). Blue arrows: a glider can run off here that way, given 2 tiles of run-up and no storm; where it lands depends on the day\'s wind.',
+              "White rings with a red edge: a grapnel can be thrown from here (click the tile: where it lands). Blue arrows: a glider can run off here that way, given 2 tiles of run-up and no storm; where it lands depends on the day's wind.",
               ...(def.landings ? ['Black dotted boxes: roof landings, the roofs a grapnel swings across onto.'] : []),
             ]
           : [
-            'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
-            'Grey discs: granite boulders under the ground (layer -1) that no tunnel can dig through. Without them, the earth is soft all through.',
-          ];
+              'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
+              'Grey discs: granite boulders under the ground (layer -1) that no tunnel can dig through. Without them, the earth is soft all through.',
+            ];
   notes.forEach((n, k) => g.text(M, y + 10 + k * 22, n, 'font-size="14" fill="#222"'));
   if (kind === 'people') {
     let gx = M;
@@ -660,22 +811,50 @@ const DECO_FILL: Record<number, string> = {
   [DECO.GRAVEL]: '#a39b8b',
   [DECO.FORD]: '#8cc4e8',
 };
-const DECO_NAME = ['', 'tree', 'cactus', 'rock', 'crates', 'hedge (cover)', 'culvert (cover)', 'railway (loud)', 'gravel (loud)', 'ford (washes the trail)', 'woods (past the map)'];
+const DECO_NAME = [
+  '',
+  'tree',
+  'cactus',
+  'rock',
+  'crates',
+  'hedge (cover)',
+  'culvert (cover)',
+  'railway (loud)',
+  'gravel (loud)',
+  'ford (washes the trail)',
+  'woods (past the map)',
+];
 
 function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   const w = o.world;
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
-  g.text(M, 30, `${tr(`prison.${def.id}`, def.id)} — the outside (P41, the manhunt): starts, the safe point, cover, searchers, roadblocks, the helicopter`, 'font-size="24" font-weight="700" fill="#111"');
+  g.text(
+    M,
+    30,
+    `${tr(`prison.${def.id}`, def.id)} — the outside (P41, the manhunt): starts, the safe point, cover, searchers, roadblocks, the helicopter`,
+    'font-size="24" font-weight="700" fill="#111"',
+  );
   // (No version in a drawn picture's title since 2.34.1: it changes only when the map does, not at every release.)
-  g.text(W - M, 30, `${def.theme ?? 'suburban'} · picture ${o.w}×${o.h} at ${o.ox},${o.oz}`, 'font-size="15" fill="#555" text-anchor="end"');
+  g.text(
+    W - M,
+    30,
+    `${def.theme ?? 'suburban'} · picture ${o.w}×${o.h} at ${o.ox},${o.oz}`,
+    'font-size="15" fill="#555" text-anchor="end"',
+  );
   drawTiles(g, w, false);
   for (let i = 0; i < MAP_W * MAP_H; i++) {
     const x = i % MAP_W;
     const z = Math.floor(i / MAP_W);
     const d = o.deco[i];
     if (!o.inside[i]) {
-      g.rect(px(x), pz(z), S, S, `fill="${d === DECO.WOODS ? '#3f6f45' : w.ground.kind[i] === TILE.WATER ? '#1f5e8c' : '#3a3d45'}" fill-opacity="0.55"`);
+      g.rect(
+        px(x),
+        pz(z),
+        S,
+        S,
+        `fill="${d === DECO.WOODS ? '#3f6f45' : w.ground.kind[i] === TILE.WATER ? '#1f5e8c' : '#3a3d45'}" fill-opacity="0.55"`,
+      );
       continue;
     }
     if (!d) continue;
@@ -683,25 +862,42 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
     if (d === DECO.TREE || d === DECO.CACTUS || d === DECO.ROCK) g.add(`<circle cx="${cx(x)}" cy="${cz(z)}" r="${S * 0.42}" fill="${f}"/>`);
     else if (d === DECO.HEDGE) g.rect(px(x) + 3, pz(z) + 3, S - 6, S - 6, `rx="10" fill="${f}" stroke="#2f6b35" stroke-width="2"`);
     else if (d === DECO.CULVERT) g.add(`<circle cx="${cx(x)}" cy="${cz(z)}" r="${S * 0.3}" fill="${f}" stroke="#bbb" stroke-width="3"/>`);
-    else if (d === DECO.RAIL) g.add(`<line x1="${px(x)}" y1="${cz(z) - 7}" x2="${px(x) + S}" y2="${cz(z) - 7}" stroke="${f}" stroke-width="3"/><line x1="${px(x)}" y1="${cz(z) + 7}" x2="${px(x) + S}" y2="${cz(z) + 7}" stroke="${f}" stroke-width="3"/>`);
-    else if (d === DECO.GRAVEL) g.add(`<circle cx="${cx(x) - 8}" cy="${cz(z) - 6}" r="3" fill="${f}"/><circle cx="${cx(x) + 7}" cy="${cz(z) + 5}" r="3" fill="${f}"/><circle cx="${cx(x) + 2}" cy="${cz(z) - 9}" r="2" fill="${f}"/>`);
+    else if (d === DECO.RAIL)
+      g.add(
+        `<line x1="${px(x)}" y1="${cz(z) - 7}" x2="${px(x) + S}" y2="${cz(z) - 7}" stroke="${f}" stroke-width="3"/><line x1="${px(x)}" y1="${cz(z) + 7}" x2="${px(x) + S}" y2="${cz(z) + 7}" stroke="${f}" stroke-width="3"/>`,
+      );
+    else if (d === DECO.GRAVEL)
+      g.add(
+        `<circle cx="${cx(x) - 8}" cy="${cz(z) - 6}" r="3" fill="${f}"/><circle cx="${cx(x) + 7}" cy="${cz(z) + 5}" r="3" fill="${f}"/><circle cx="${cx(x) + 2}" cy="${cz(z) - 9}" r="2" fill="${f}"/>`,
+      );
     else g.rect(px(x) + 2, pz(z) + 2, S - 4, S - 4, `fill="${f}"`);
   }
   // Wire a pair of cutters goes through.
-  for (let i = 0; i < MAP_W * MAP_H; i++) if (o.wire[i]) g.text(cx(i % MAP_W), cz(Math.floor(i / MAP_W)) + 4, '✂', 'font-size="12" fill="#333" text-anchor="middle"');
+  for (let i = 0; i < MAP_W * MAP_H; i++)
+    if (o.wire[i]) g.text(cx(i % MAP_W), cz(Math.floor(i / MAP_W)) + 4, '✂', 'font-size="12" fill="#333" text-anchor="middle"');
   drawGrid(g);
-  g.add('<defs><marker id="tip" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>');
+  g.add(
+    '<defs><marker id="tip" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>',
+  );
   const at = (q: { x: number; z: number }) => ({ x: q.x + o.ox, z: q.z + o.oz });
   const od = o.def;
   // The searchers' beats (patrols out before any alarm drawn dashed), their dogs.
   od.searchers.forEach((sr, k) => {
     const color = GUARD_COLORS[k % GUARD_COLORS.length];
-    route(g, sr.beat.map((q) => ({ ...at(q), face: q.face })), color, sr.at < 0, '');
+    route(
+      g,
+      sr.beat.map((q) => ({ ...at(q), face: q.face })),
+      color,
+      sr.at < 0,
+      '',
+    );
     const s0 = at(sr.beat[0]);
     // (Where it comes on, when that isn't its first stop: a dotted line in to the beat.)
     if (sr.from) {
       const f = at(sr.from);
-      g.add(`<line x1="${cx(f.x)}" y1="${cz(f.z)}" x2="${cx(s0.x)}" y2="${cz(s0.z)}" stroke="${color}" stroke-width="3" stroke-dasharray="2 5" marker-end="url(#tip)"/>`);
+      g.add(
+        `<line x1="${cx(f.x)}" y1="${cz(f.z)}" x2="${cx(s0.x)}" y2="${cz(s0.z)}" stroke="${color}" stroke-width="3" stroke-dasharray="2 5" marker-end="url(#tip)"/>`,
+      );
       g.add(`<circle cx="${cx(f.x)}" cy="${cz(f.z)}" r="9" fill="#fff" stroke="${color}" stroke-width="3"/>`);
       g.text(cx(f.x), cz(f.z) + 4, 'in', `font-size="9" font-weight="700" fill="${color}" text-anchor="middle"`);
     }
@@ -709,15 +905,25 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   });
   // The helicopter's sweep.
   const hr = od.heli.route.map(at);
-  g.add(`<polyline points="${[...hr, hr[0]].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#7b2cbf" stroke-width="3" stroke-dasharray="12 6" stroke-opacity="0.8"/>`);
+  g.add(
+    `<polyline points="${[...hr, hr[0]].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#7b2cbf" stroke-width="3" stroke-dasharray="12 6" stroke-opacity="0.8"/>`,
+  );
   g.pill(cx(hr[0].x), cz(hr[0].z) + 22, `helicopter +${od.heli.at}s`, 12, '#7b2cbf');
   // Roadblocks.
   od.roadblocks.forEach((r, k) => {
     const [x0, z0, x1, z1] = r.area;
     const a0 = at({ x: x0, z: z0 });
-    g.rect(px(a0.x), pz(a0.z), (x1 - x0 + 1) * S, (z1 - z0 + 1) * S, 'fill="none" stroke="#d40000" stroke-width="4" stroke-dasharray="6 4"');
+    g.rect(
+      px(a0.x),
+      pz(a0.z),
+      (x1 - x0 + 1) * S,
+      (z1 - z0 + 1) * S,
+      'fill="none" stroke="#d40000" stroke-width="4" stroke-dasharray="6 4"',
+    );
     const post = at(r.post);
-    g.add(`<rect x="${px(post.x) + 8}" y="${pz(post.z) + 8}" width="${S - 16}" height="${S - 16}" fill="#fff" stroke="#d40000" stroke-width="3"/>`);
+    g.add(
+      `<rect x="${px(post.x) + 8}" y="${pz(post.z) + 8}" width="${S - 16}" height="${S - 16}" fill="#fff" stroke="#d40000" stroke-width="3"/>`,
+    );
     arrow(g, post.x, post.z, r.post.face, '#d40000');
     g.pill(cx(a0.x), pz(a0.z) - 10, `roadblock ${k + 1} +${r.at}s`, 11, '#d40000');
   });
@@ -728,7 +934,9 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
     g.text(cx(q.x), cz(q.z) + 4, `W${k + 1}`, 'font-size="10" font-weight="700" fill="#fff" text-anchor="middle"');
   });
   const lou = at(od.lou);
-  g.add(`<rect x="${px(lou.x) + 4}" y="${pz(lou.z) + 8}" width="${S - 8}" height="${S - 16}" rx="5" fill="#a63746" stroke="#000" stroke-width="1.5"/>`);
+  g.add(
+    `<rect x="${px(lou.x) + 4}" y="${pz(lou.z) + 8}" width="${S - 8}" height="${S - 16}" rx="5" fill="#a63746" stroke="#000" stroke-width="1.5"/>`,
+  );
   g.pill(cx(lou.x), pz(lou.z) - 8, "Lou's car", 11, '#a63746');
   const lk = at(od.lookout);
   g.add(`<circle cx="${cx(lk.x)}" cy="${cz(lk.z)}" r="11" fill="#ff9f1c" stroke="#000" stroke-width="1.5"/>`);
@@ -754,16 +962,26 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   const y0 = TITLE_H + MAP_H * S + 2 * M + 10;
   g.rect(0, y0 - 10, W, LEGEND_H + 10, 'fill="#f5f3ee"');
   const items: Array<[string, string]> = [
-    ['#2f6b35', 'tree (T): solid, hides'], ['#5fae4a', 'hedge (h): cover'], ['#2b2f36', 'culvert (u): cover'], ['#7d7a74', 'rock (o): solid, hides'], ['#6b8f3a', 'cactus (k): solid, hides'], ['#9c5a2e', 'crates (c): solid, hides'],
-    ['#a39b8b', 'gravel (g): loud'], ['#6a5240', 'railway (r): loud'], ['#8cc4e8', 'ford (f): no trail'], ['#3b7dd8', 'water (~)'], ['url(#fence)', 'wire (F): cutters'], ['#3a3d45', 'prison wall (@)'],
+    ['#2f6b35', 'tree (T): solid, hides'],
+    ['#5fae4a', 'hedge (h): cover'],
+    ['#2b2f36', 'culvert (u): cover'],
+    ['#7d7a74', 'rock (o): solid, hides'],
+    ['#6b8f3a', 'cactus (k): solid, hides'],
+    ['#9c5a2e', 'crates (c): solid, hides'],
+    ['#a39b8b', 'gravel (g): loud'],
+    ['#6a5240', 'railway (r): loud'],
+    ['#8cc4e8', 'ford (f): no trail'],
+    ['#3b7dd8', 'water (~)'],
+    ['url(#fence)', 'wire (F): cutters'],
+    ['#3a3d45', 'prison wall (@)'],
   ];
   items.forEach(([f, l], k) => swatch(g, M + (k % 6) * 230, y0 + Math.floor(k / 6) * 30, f, l));
   [
-    'Yellow stars: where each kind of way out leaves the player (wall: fence, tunnel, roof; gate: takeover, gate, bluff; glider; van: stowaway; sea: raft; air: helicopter, Irongate\'s stowaway).',
-    'Green box: the safe point (a clean getaway). Red car: Lou\'s, when a call set it up. Blue W: washing lines (other clothes). Orange L: where a crew member out too keeps watch (a whistle for a searcher near the player that they can see, within 16 tiles).',
+    "Yellow stars: where each kind of way out leaves the player (wall: fence, tunnel, roof; gate: takeover, gate, bluff; glider; van: stowaway; sea: raft; air: helicopter, Irongate's stowaway).",
+    "Green box: the safe point (a clean getaway). Red car: Lou's, when a call set it up. Blue W: washing lines (other clothes). Orange L: where a crew member out too keeps watch (a whistle for a searcher near the player that they can see, within 16 tiles).",
     'Coloured loops: searchers\' beats, out the seconds after the alarm shown (dashed: patrols out before any alarm, starting at a stop of their own each run), stop numbers in order; "in" and a dotted arrow: where one comes on, when not at its first stop.',
-    'Each run shuffles the times among those out after the alarm and moves them (roadblocks, the helicopter too) up to 4 s either way; nobody comes on within 5 tiles of the player or in their sight. Red dashed boxes: roadblocks, their officer\'s post beside (white square).',
-    'Purple dashed loop: the helicopter\'s sweep and its searchlight. From the alarm those out after it (not the patrols, nor the roadblocks\' officers) sweep the cover where the player is reckoned to be; once all are out the search widens every few seconds: eyes see further, the helicopter over that cover.',
+    "Each run shuffles the times among those out after the alarm and moves them (roadblocks, the helicopter too) up to 4 s either way; nobody comes on within 5 tiles of the player or in their sight. Red dashed boxes: roadblocks, their officer's post beside (white square).",
+    "Purple dashed loop: the helicopter's sweep and its searchlight. From the alarm those out after it (not the patrols, nor the roadblocks' officers) sweep the cover where the player is reckoned to be; once all are out the search widens every few seconds: eyes see further, the helicopter over that cover.",
     'Past the map: woods (green) or the sea (blue), solid. In 3D the prison itself stands past the wall (bottom), turned so its front gate meets the opening (Irongate: its island across the water); the # blocks are houses, sheds and barns. Every number in seconds after the alarm.',
   ].forEach((n, k) => g.text(M, y0 + 82 + k * 22, n, 'font-size="14" fill="#222"'));
   return g.done();
@@ -774,9 +992,21 @@ function picture(def: PrisonDef, kind: PictureKind): string {
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
-  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'roof' ? 'roofs: the ladder, sniper range, grapnel throws, glider launches, landings' : 'vents (layer +1) and boulders under the ground (layer -1)';
+  const what =
+    kind === 'layout'
+      ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board, odd jobs board'
+      : kind === 'people'
+        ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board, odd jobs board'
+        : kind === 'roof'
+          ? 'roofs: the ladder, sniper range, grapnel throws, glider launches, landings'
+          : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
-  g.text(W - M, 30, `map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
+  g.text(
+    W - M,
+    30,
+    `map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`,
+    'font-size="15" fill="#555" text-anchor="end"',
+  );
   drawTiles(g, w, kind !== 'layout');
   drawGrid(g);
   if (kind === 'layout') {
@@ -818,7 +1048,11 @@ function kindsOf(def: PrisonDef): PictureKind[] {
 const all = [TRAINING, ...PRISONS];
 
 /** A picture's words without the version in its title: unchanged from one release to the next. */
-const hashOf = (svg: string) => createHash('sha1').update(svg.split(`v${pkg.version}`).join('')).digest('hex').slice(0, 16);
+const hashOf = (svg: string) =>
+  createHash('sha1')
+    .update(svg.split(`v${pkg.version}`).join(''))
+    .digest('hex')
+    .slice(0, 16);
 
 /** What the viewer shows under the cursor: each tile's kind and zone, and what stands or stops on it. */
 function tileData(def: PrisonDef, n: number) {
@@ -840,15 +1074,25 @@ function tileData(def: PrisonDef, n: number) {
   def.guards.forEach((gu, k) => {
     const who = gu.name ?? `guard ${k + 1}`;
     gu.beat.forEach((q, j) => mark(q.x, q.z, `${who}: day stop ${j + 1}${q.wait ? `, waits ${q.wait}s` : ''}`));
-    (gu.night ?? []).forEach((q, j) => mark(q.x, q.z, `${who}: night stop n${j + 1}${q.wait ? `, waits ${q.wait}s` : ''}${q.nap ? ', naps' : ''}`));
+    (gu.night ?? []).forEach((q, j) =>
+      mark(q.x, q.z, `${who}: night stop n${j + 1}${q.wait ? `, waits ${q.wait}s` : ''}${q.nap ? ', naps' : ''}`),
+    );
     for (const [id, q] of Object.entries(gu.posts ?? {})) if (q) mark(q.x, q.z, `${who}: post at ${id}`);
     if (gu.dog) mark(gu.dog.kennel.x, gu.dog.kennel.z, `kennel of ${gu.dog.name} (${who}'s dog)`);
   });
   for (const c of def.cameras ?? []) mark(c.x, c.z, `camera, facing ${c.face}`);
   // (2.34.1: the way each lamp leans, over what it lights.)
   const WAYS = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
-  for (const p of def.props) if (p.kind === 'lamp') mark(p.x, p.z, p.heads === 2 ? `lamp, two heads: ${WAYS[p.aim ?? (p.rot ?? 0) * 2]} and ${WAYS[((p.aim ?? (p.rot ?? 0) * 2) + 4) % 8]}` : `lamp, its head to the ${WAYS[p.aim ?? (p.rot ?? 0) * 2]}`);
-  def.rollCall.forEach((q, k) => mark(q.x, q.z, k === 0 ? 'roll-call spot 1, the player\'s own' : `roll-call spot ${k + 1}`));
+  for (const p of def.props)
+    if (p.kind === 'lamp')
+      mark(
+        p.x,
+        p.z,
+        p.heads === 2
+          ? `lamp, two heads: ${WAYS[p.aim ?? (p.rot ?? 0) * 2]} and ${WAYS[((p.aim ?? (p.rot ?? 0) * 2) + 4) % 8]}`
+          : `lamp, its head to the ${WAYS[p.aim ?? (p.rot ?? 0) * 2]}`,
+      );
+  def.rollCall.forEach((q, k) => mark(q.x, q.z, k === 0 ? "roll-call spot 1, the player's own" : `roll-call spot ${k + 1}`));
   mark(def.spawn.x, def.spawn.z, 'player start');
   const ls = def.leisure;
   if (ls) {
@@ -856,7 +1100,10 @@ function tileData(def: PrisonDef, n: number) {
     ls.hoop.spots.forEach((q, k) => mark(q.x, q.z, `hoop shooting spot S${k + 1}`));
     ls.quiz?.spots.forEach((q, k) => mark(q.x, q.z, `quiz seat Q${k + 1}`));
     if (ls.librarian) mark(ls.librarian.x, ls.librarian.z, 'the librarian, in free time');
-    if (def.vending) def.vending.line.forEach((q, k) => mark(q.x, q.z, k ? `the vending machine's queue, place ${k + 1}` : 'in front of the vending machine'));
+    if (def.vending)
+      def.vending.line.forEach((q, k) =>
+        mark(q.x, q.z, k ? `the vending machine's queue, place ${k + 1}` : 'in front of the vending machine'),
+      );
     if (ls.stage) mark(ls.stage.x, ls.stage.z, 'talent stage (performer)');
     mark(ls.race.x, ls.race.z, 'rat race start');
   }
@@ -891,7 +1138,9 @@ function tileData(def: PrisonDef, n: number) {
     area(box(ls.garden), 'garden bed (grows over days; a hole under a planted bed does not show)');
     if (ls.track) {
       const t = ls.track;
-      rectTiles(box(t)).filter(([x, z]) => x === t.x || z === t.z || x === t.x + t.w - 1 || z === t.z + t.d - 1).forEach(([x, z]) => mark(x, z, 'running track (laps)'));
+      rectTiles(box(t))
+        .filter(([x, z]) => x === t.x || z === t.z || x === t.x + t.w - 1 || z === t.z + t.d - 1)
+        .forEach(([x, z]) => mark(x, z, 'running track (laps)'));
     }
     const [rx, rz] = face(ls.race.dir);
     for (let k = 1; k < ls.race.len; k++) mark(ls.race.x + Math.round(rx) * k, ls.race.z + Math.round(rz) * k, 'rat race track');
@@ -921,7 +1170,7 @@ function tileData(def: PrisonDef, n: number) {
     if (roofLayer[i] === TILE.EMPTY) return [];
     if (roofLayer[i] === TILE.LADDER) return ['ladder up to the roof'];
     if (!reach.has(i)) return ['roof (the ladder does not reach it)'];
-    const out = [inSights(w, i, LAYER.ROOF) ? 'roof, in a sniper\'s sights' : 'roof'];
+    const out = [inSights(w, i, LAYER.ROOF) ? "roof, in a sniper's sights" : 'roof'];
     out.push(...(grapnels.get(i) ?? []));
     if (launches.has(i)) out.push('glider launch');
     return out;
@@ -930,7 +1179,16 @@ function tileData(def: PrisonDef, n: number) {
   // (Apart from `above`: every indoor tile has a roof, of interest on the Roof view alone.)
   const roofs: Array<[number, number, string]> = [];
   for (let i = 0; i < V.length; i++) {
-    const what = V[i] === TILE.DUCT ? 'duct' : V[i] === TILE.GRATE ? 'vent grate' : V[i] === TILE.LADDER ? 'roof ladder' : U[i] === TILE.BOULDER ? 'boulder underground' : '';
+    const what =
+      V[i] === TILE.DUCT
+        ? 'duct'
+        : V[i] === TILE.GRATE
+          ? 'vent grate'
+          : V[i] === TILE.LADDER
+            ? 'roof ladder'
+            : U[i] === TILE.BOULDER
+              ? 'boulder underground'
+              : '';
     if (what) above.push([i % MAP_W, Math.floor(i / MAP_W), what]);
     for (const s of roofWords(i)) roofs.push([i % MAP_W, Math.floor(i / MAP_W), s]);
   }
@@ -947,25 +1205,44 @@ function tileData(def: PrisonDef, n: number) {
     od.lines.forEach((q, k) => omark(q, `washing line W${k + 1}`));
     omark(od.lookout, 'the lookout (a crew member out too)');
     od.roadblocks.forEach((r, k) => omark(r.post, `roadblock ${k + 1}'s officer, up ${r.at}s after the alarm`));
-    od.searchers.forEach((sr) => sr.beat.forEach((q, k) => omark(q, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''}: stop ${k + 1} (${sr.at < 0 ? 'patrol' : `out ${sr.at}s after the alarm`})`)));
+    od.searchers.forEach((sr) =>
+      sr.beat.forEach((q, k) =>
+        omark(
+          q,
+          `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''}: stop ${k + 1} (${sr.at < 0 ? 'patrol' : `out ${sr.at}s after the alarm`})`,
+        ),
+      ),
+    );
     od.searchers.forEach((sr) => sr.from && omark(sr.from, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''} comes on here`));
     od.heli.route.forEach((q, k) => omark(q, `helicopter sweep, stop ${k + 1}`));
-    od.roadblocks.forEach((r, k) => rectTiles(r.area).forEach(([x, z]) => omark({ x, z }, `roadblock ${k + 1}: closed ${r.at}s after the alarm`)));
+    od.roadblocks.forEach((r, k) =>
+      rectTiles(r.area).forEach(([x, z]) => omark({ x, z }, `roadblock ${k + 1}: closed ${r.at}s after the alarm`)),
+    );
     for (let i = 0; i < MAP_W * MAP_H; i++) if (o.safe[i]) om.push([i % MAP_W, Math.floor(i / MAP_W), 'safe point']);
-    outside = { tiles: Array.from(o.world.ground.kind), deco: Array.from(o.deco).map((d) => DECO_NAME[d] ?? ''), inside: Array.from(o.inside), marks: om };
+    outside = {
+      tiles: Array.from(o.world.ground.kind),
+      deco: Array.from(o.deco).map((d) => DECO_NAME[d] ?? ''),
+      inside: Array.from(o.inside),
+      marks: om,
+    };
     views.push('outside');
   }
   const doors: Array<[number, number, string, number, number]> = [];
-  for (let i = 0; i < L.kind.length; i++) if (L.kind[i] === TILE.DOOR) doors.push([i % MAP_W, Math.floor(i / MAP_W), KEY_NAME[L.key[i]], w.doorCell[i], w.gate[i]]);
+  for (let i = 0; i < L.kind.length; i++)
+    if (L.kind[i] === TILE.DOOR) doors.push([i % MAP_W, Math.floor(i / MAP_W), KEY_NAME[L.key[i]], w.doorCell[i], w.gate[i]]);
   return {
     id: def.id,
     n,
     name: def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id),
-    info: def.id === 'training' ? 'The tutorial\'s prison: lessons, a forgiving routine.' : tr(`prisonInfo.${def.id}`, ''),
+    info: def.id === 'training' ? "The tutorial's prison: lessons, a forgiving routine." : tr(`prisonInfo.${def.id}`, ''),
     difficulty: def.difficulty,
     theme: def.theme ?? 'suburban',
     map: def.map ?? 0,
-    views: [...(game ? [{ kind: 'game', ...game }] : []), ...views.map((v) => ({ kind: v, file: `${n}-${def.id}-${v}.png` })), ...(outsideGame && outside ? [{ kind: 'outsideGame', ...outsideGame }] : [])],
+    views: [
+      ...(game ? [{ kind: 'game', ...game }] : []),
+      ...views.map((v) => ({ kind: v, file: `${n}-${def.id}-${v}.png` })),
+      ...(outsideGame && outside ? [{ kind: 'outsideGame', ...outsideGame }] : []),
+    ],
     tiles: Array.from(L.kind),
     zones: Array.from(L.zone),
     cells: def.cells.map((c, k) => [...c, cellLine(def, k + 1)]),
@@ -1031,7 +1308,10 @@ function main() {
     }
   });
   rmSync(tmp, { recursive: true, force: true });
-  writeFileSync(join(OUT, 'data.js'), `// Written by scripts/dev/mapimage.ts (npm run maps): what the viewer shows under the cursor.\nwindow.MAP_DATA = ${JSON.stringify(viewerData())};\n`);
+  writeFileSync(
+    join(OUT, 'data.js'),
+    `// Written by scripts/dev/mapimage.ts (npm run maps): what the viewer shows under the cursor.\nwindow.MAP_DATA = ${JSON.stringify(viewerData())};\n`,
+  );
   console.log(join(OUT, 'data.js'));
 }
 

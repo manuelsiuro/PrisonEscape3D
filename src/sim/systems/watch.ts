@@ -11,7 +11,21 @@ import { canSee } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { SPOT } from '../events';
-import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, LIGHTS_OUT_GRACE_227, RECOGNIZE_RANGE, RECOGNIZE_STEPS, SEARCHLIGHT_HEAT, SELF_DEFENSE_HEAT, SKIP_EVERY, SKIP_GRACE, STEPS_PER_MINUTE, STRIKE_SEEN_STEPS, UNIT } from '../tuning';
+import {
+  CHASE_HEAT,
+  CONTRABAND_HEAT,
+  LIGHTS_OUT_GRACE,
+  LIGHTS_OUT_GRACE_227,
+  RECOGNIZE_RANGE,
+  RECOGNIZE_STEPS,
+  SEARCHLIGHT_HEAT,
+  SELF_DEFENSE_HEAT,
+  SKIP_EVERY,
+  SKIP_GRACE,
+  STEPS_PER_MINUTE,
+  STRIKE_SEEN_STEPS,
+  UNIT,
+} from '../tuning';
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../world/World';
 import { clockAt } from './clock';
@@ -89,7 +103,8 @@ export function watch(sim: SimContext) {
   const swung = seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS;
   const tampered = seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS;
   // (A run logged before 1.11 replays as it was played: a scuffle came first then.)
-  if (sim.legacy && swung) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
+  if (sim.legacy && swung)
+    [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
   else if (swung && !s.selfDefense) [reason, heat] = [SPOT.indexOf('fight'), 100];
   else if (tampered) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
@@ -101,11 +116,18 @@ export function watch(sim: SimContext) {
   if (!reason && filmed) {
     const fighting = s.step - s.swingAt <= STRIKE_SEEN_STEPS && !s.selfDefense;
     const working = s.step - s.struckAt <= STRIKE_SEEN_STEPS;
-    if (fighting || working || (!cleared && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone)))) [reason, heat] = [SPOT.indexOf('camera'), 100];
+    if (fighting || working || (!cleared && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone))))
+      [reason, heat] = [SPOT.indexOf('camera'), 100];
   }
   // A searchlight's beam at night (GDD §5.2): +35% a second in it, the alarm (guards sent) as it finds the player.
   // (2.28: not on the walk home the bell has just asked for.)
-  const lit = !cleared && powered(sim.world, s, 'searchlights') && ROUTINE[s.routine].id === 'lightsOut' && (sim.rules227 || late) && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
+  const lit =
+    !cleared &&
+    powered(sim.world, s, 'searchlights') &&
+    ROUTINE[s.routine].id === 'lightsOut' &&
+    (sim.rules227 || late) &&
+    s.layer === LAYER.GROUND &&
+    inBeam(sim.world, p, s.step) >= 0;
   if (lit && !s.lit) summon(sim, here, 2);
   s.lit = lit;
   if (!reason && lit) [reason, heat] = [SPOT.indexOf('searchlight'), s.step % 4 === 0 ? SEARCHLIGHT_HEAT : 0];
@@ -113,7 +135,13 @@ export function watch(sim: SimContext) {
   const held = itemOf(it.inv[it.hand]);
   const def = held ? itemDef(held) : null;
   // (P17: the inspectors in, twice that.)
-  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon' || def.obvious)) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT * (eventOn(sim, 'inspection') ? INSPECTION_CONTRABAND : 1) : 0];
+  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon' || def.obvious))
+    [reason, heat] = [
+      SPOT.indexOf('contraband'),
+      s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0
+        ? CONTRABAND_HEAT * (eventOn(sim, 'inspection') ? INSPECTION_CONTRABAND : 1)
+        : 0,
+    ];
   // Tipsy (P28): a guard who catches sight of it, TIPSY_HEAT (once a sighting: not again while seen in the last few seconds).
   if (!reason && eyes && tipsyNow(s)) {
     const fresh = s.step - (s.tipsy[1] ?? 0) > TIPSY_SEEN_GAP;
@@ -129,7 +157,9 @@ export function watch(sim: SimContext) {
   // 2.23: away from a block's zones before checking in, past the walk there: +2% a second.
   if (!reason && eyes && !cleared && skipping(sim, zone)) [reason, heat] = [SPOT.indexOf('skipping'), s.step % SKIP_EVERY === 0 ? 1 : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
-  const close = disguised && s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
+  const close =
+    disguised &&
+    s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;
   if (!reason && s.near > RECOGNIZE_STEPS) [reason, heat] = [SPOT.indexOf('recognized'), s.step % 2 === 0 ? 5 : 0];
   // Wanted (80%+): any guard who sees the player gives chase.
@@ -167,7 +197,9 @@ function skipping(sim: SimContext, zone: string): boolean {
 export function afterHours(sim: Pick<SimContext, 'state' | 'rules227'>): boolean {
   const s = sim.state;
   const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
-  return ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= (sim.rules227 ? LIGHTS_OUT_GRACE_227 : LIGHTS_OUT_GRACE);
+  return (
+    ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= (sim.rules227 ? LIGHTS_OUT_GRACE_227 : LIGHTS_OUT_GRACE)
+  );
 }
 
 /**
@@ -240,7 +272,11 @@ export function damageShows(sim: SimContext, key: number): boolean {
   const layer = layerOfKey(key);
   if (layer === LAYER.VENTS) return kind === TILE.GRATE_OPEN;
   // (P28: nor a shaft dug through a planted garden bed: out of sight under the plant.)
-  return layer === LAYER.GROUND && DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && ((underMyDesk(sim.world, tileOfKey(key)) && !s.deskAside) || underPlant(sim, tileOfKey(key))));
+  return (
+    layer === LAYER.GROUND &&
+    DAMAGE_SHOWS.has(kind) &&
+    !(kind === TILE.SHAFT && ((underMyDesk(sim.world, tileOfKey(key)) && !s.deskAside) || underPlant(sim, tileOfKey(key))))
+  );
 }
 
 /** Damage the guards found is put right (concreted over, the grate screwed back): after a capture. */

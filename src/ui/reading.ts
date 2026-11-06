@@ -31,7 +31,13 @@ export function shelfBooks(sim: Sim): ShelfBooks {
   return {
     subjects: SUBJECTS.map((id, k) => {
       const n = toLearn(sim, k);
-      return { id: k, name: t(`book.${id}` as Key), icon: SUBJECT_ICON[k], learn: n ? t('box.readToLearn', { n }) : t('box.readNothing'), some: n > 0 };
+      return {
+        id: k,
+        name: t(`book.${id}` as Key),
+        icon: SUBJECT_ICON[k],
+        learn: n ? t('box.readToLearn', { n }) : t('box.readNothing'),
+        some: n > 0,
+      };
     }),
     note: t('box.readNote', { n: sim.setCost('int'), d: sim.state.readToday, max: READ_SETS_A_DAY }),
     next: nextLine(sim),
@@ -43,7 +49,10 @@ export function shelfBooks(sim: Sim): ShelfBooks {
 export function nextLine(sim: Sim): string {
   const n = nextUnlock(sim);
   if (!n) return t('read.nextNone');
-  const parts = [...n.jobs.map((id) => t('read.job', { job: t(`job.${id}` as Key), wage: n.wage })), ...(n.recipes ? [t(n.recipes === 1 ? 'read.recipe' : 'read.recipes', { n: n.recipes })] : [])];
+  const parts = [
+    ...n.jobs.map((id) => t('read.job', { job: t(`job.${id}` as Key), wage: n.wage })),
+    ...(n.recipes ? [t(n.recipes === 1 ? 'read.recipe' : 'read.recipes', { n: n.recipes })] : []),
+  ];
   return t('read.next', { at: n.at, what: parts.join(', ') });
 }
 
@@ -198,7 +207,10 @@ export class ReadCard {
       this.seen = shown;
       this.title.textContent = t(`book.${subject}.title` as Key);
       this.value.textContent = `${t('attr.int')} ${s.items.int}`;
-      setText(this.note, `${TOUCH ? t('read.touch') : t('read.keys')} · ${t('train.cost', { n: sim.setCost('int') })} · ${t('read.today', { n: s.readToday, max: READ_SETS_A_DAY })}`);
+      setText(
+        this.note,
+        `${TOUCH ? t('read.touch') : t('read.keys')} · ${t('train.cost', { n: sim.setCost('int') })} · ${t('read.today', { n: s.readToday, max: READ_SETS_A_DAY })}`,
+      );
       this.next.textContent = nextLine(sim);
       this.el.querySelector('.train-stop')!.setAttribute('aria-label', t('read.stop'));
       this.el.querySelector('.read-btn')!.textContent = t('read.underline');

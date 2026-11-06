@@ -16,7 +16,12 @@ import { glideSecs } from '../render/Getaway';
 
 const SHOW_ID = { verb: '', what: '', no: false };
 /** Why not, as the button's second line (the sim's own refusal). */
-const WHY: Record<string, Key> = { notShift: 'thing.shiftAt', notGuard: 'thing.needUniform', papersHot: 'thing.papersHot', hunted: 'thing.hunted' };
+const WHY: Record<string, Key> = {
+  notShift: 'thing.shiftAt',
+  notGuard: 'thing.needUniform',
+  papersHot: 'thing.papersHot',
+  hunted: 'thing.hunted',
+};
 
 /**
  * At the checkpoint's window with a fake ID in the hotbar: the action button shows it (greyed,

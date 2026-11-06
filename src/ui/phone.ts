@@ -39,7 +39,6 @@ export interface PhoneView {
   cash: number;
 }
 
-
 /**
  * The burner phone's panel (P21): the order on its way (a polite live region, written in
  * place), then the ways an order can come (each with its fee and when it would come) and the
@@ -122,7 +121,10 @@ export class PhonePanel {
     this.el.querySelector('[data-phone="close"]')!.setAttribute('aria-label', t('box.close'));
     const chosen = v.ways.find((w) => w.way === this.way) ?? v.ways[0];
     const ways = v.ways
-      .map((w) => `<button class="phone-way${w.way === this.way ? ' on' : ''}" data-phone="way" data-way="${w.way}" role="radio" aria-checked="${w.way === this.way}"><i>${icon(w.icon, 18)}</i><span><b>${esc(w.label)} <em>${esc(t('phone.fee', { n: w.fee }))}</em></b><small>${esc(w.when)}</small></span></button>`)
+      .map(
+        (w) =>
+          `<button class="phone-way${w.way === this.way ? ' on' : ''}" data-phone="way" data-way="${w.way}" role="radio" aria-checked="${w.way === this.way}"><i>${icon(w.icon, 18)}</i><span><b>${esc(w.label)} <em>${esc(t('phone.fee', { n: w.fee }))}</em></b><small>${esc(w.when)}</small></span></button>`,
+      )
       .join('');
     const rows = v.rows
       .map((r) => {
@@ -131,18 +133,28 @@ export class PhonePanel {
         return `<div class="board-row phone-row"><span class="phone-img"><img src="${itemIcons()[r.item]}" alt="" draggable="false">${r.contraband ? '<i class="slot-cb"></i>' : ''}</span><span class="board-text"><b>${esc(r.name)}</b><small>${t('phone.priceNote', { n: r.price, fee: chosen?.fee ?? 0 })}</small></span><button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-phone="order" data-k="${r.k}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirm', { n: price }))}" aria-describedby="phone-note" aria-label="${esc(t('phone.orderAria', { item: r.name, n: price, way: chosen?.label ?? '' }))}">${icon('cart', 16)}<span>$${price}</span></button></div>`;
       })
       .join('');
-    const note = v.note ? `<p class="phone-note" id="phone-note">${icon(v.ready ? 'coin' : 'phone', 14)}<span>${esc(v.note)}</span></p>` : '';
+    const note = v.note
+      ? `<p class="phone-note" id="phone-note">${icon(v.ready ? 'coin' : 'phone', 14)}<span>${esc(v.note)}</span></p>`
+      : '';
     const had = this.body.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
     const was = had ? `${had.dataset.phone}|${had.dataset.way ?? had.dataset.k ?? ''}` : '';
     this.body.innerHTML = `<div class="phone-ways" role="radiogroup" aria-label="${esc(t('phone.ways'))}">${ways}</div>${note}<div class="board-list">${rows}</div>${TOUCH ? '' : `<p class="rat-keys">${t('phone.keys')}</p>`}`;
     if (was) {
       const [what, arg] = was.split('|');
-      const sel = what === 'way' ? `button[data-phone="way"][data-way="${arg}"]` : `button[data-phone="${what}"][data-k="${arg}"]:not([disabled])`;
-      (this.body.querySelector<HTMLButtonElement>(sel) ?? this.body.querySelector<HTMLButtonElement>('button:not([disabled])') ?? this.el.querySelector<HTMLButtonElement>('[data-phone="close"]'))?.focus();
+      const sel =
+        what === 'way' ? `button[data-phone="way"][data-way="${arg}"]` : `button[data-phone="${what}"][data-k="${arg}"]:not([disabled])`;
+      (
+        this.body.querySelector<HTMLButtonElement>(sel) ??
+        this.body.querySelector<HTMLButtonElement>('button:not([disabled])') ??
+        this.el.querySelector<HTMLButtonElement>('[data-phone="close"]')
+      )?.focus();
     }
     if (this.focusNext) {
       this.focusNext = false;
-      (this.body.querySelector<HTMLButtonElement>('button[data-phone="way"].on') ?? this.el.querySelector<HTMLButtonElement>('[data-phone="close"]'))?.focus();
+      (
+        this.body.querySelector<HTMLButtonElement>('button[data-phone="way"].on') ??
+        this.el.querySelector<HTMLButtonElement>('[data-phone="close"]')
+      )?.focus();
     }
   }
 }

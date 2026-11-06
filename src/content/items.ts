@@ -11,7 +11,41 @@ type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' |
 type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
 /** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop; P36's 'release': handed back at the gate on the morning out; P40's 'oddjob': handed over for an odd job, or planted for one; P42's 'holiday': a holiday's eggs and treats, only in a run that has the holiday). */
-export type Source = 'vending' | 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release' | 'oddjob' | 'holiday';
+export type Source =
+  | 'vending'
+  | 'desk'
+  | 'bed'
+  | 'toilet'
+  | 'shelf'
+  | 'canteen'
+  | 'shower'
+  | 'woodshop'
+  | 'laundry'
+  | 'janitor'
+  | 'kitchen'
+  | 'metalshop'
+  | 'merchant'
+  | 'guard'
+  | 'sharpen'
+  | 'dig'
+  | 'chip'
+  | 'solitary'
+  | 'start'
+  | 'job'
+  | 'treats'
+  | 'trap'
+  | 'fixer'
+  | 'phone'
+  | 'meal'
+  | 'freezer'
+  | 'library'
+  | 'staple'
+  | 'garden'
+  | 'brew'
+  | 'kiosk'
+  | 'release'
+  | 'oddjob'
+  | 'holiday';
 
 export interface ItemDef {
   id: string;
@@ -57,7 +91,19 @@ const m = (id: string, contraband: boolean, value: number, shape: string, color:
   from,
 });
 
-const tool = (id: string, kind: ToolKind, tier: number, uses: number, damage: number, energy: number, contraband: boolean, shape: string, color: number, accent: number, from: Source[] = []): ItemDef => ({
+const tool = (
+  id: string,
+  kind: ToolKind,
+  tier: number,
+  uses: number,
+  damage: number,
+  energy: number,
+  contraband: boolean,
+  shape: string,
+  color: number,
+  accent: number,
+  from: Source[] = [],
+): ItemDef => ({
   id,
   cat: 'tool',
   contraband,
@@ -70,7 +116,15 @@ const tool = (id: string, kind: ToolKind, tier: number, uses: number, damage: nu
   from,
 });
 
-const weapon = (id: string, attack: number, shape: string, color: number, accent: number, from: Source[] = [], extra: Partial<ItemDef> = {}): ItemDef => ({
+const weapon = (
+  id: string,
+  attack: number,
+  shape: string,
+  color: number,
+  accent: number,
+  from: Source[] = [],
+  extra: Partial<ItemDef> = {},
+): ItemDef => ({
   id,
   cat: 'weapon',
   contraband: true,
@@ -107,7 +161,16 @@ const gear = (id: string, value: number, shape: string, color: number, accent?: 
   from: [],
 });
 
-const work = (id: string, shape: string, color: number, accent: number): ItemDef => ({ id, cat: 'material', contraband: false, value: 0, shape, color, accent, from: ['job'] });
+const work = (id: string, shape: string, color: number, accent: number): ItemDef => ({
+  id,
+  cat: 'material',
+  contraband: false,
+  value: 0,
+  shape,
+  color,
+  accent,
+  from: ['job'],
+});
 
 /** Key colors in KEY order (1–5), with the color each is painted. */
 export const KEY_ITEM_COLORS: ReadonlyArray<[string, number, number]> = [
@@ -192,9 +255,40 @@ export const ITEMS: readonly ItemDef[] = [
   outfit('plated_outfit', 30, true, 0xf2701c, 0xa8b0ba),
   outfit('guard_outfit', 15, true, 0x1e3a5f, 0xe8b828, ['guard', 'laundry']),
   // ---------------------------------------------------------------- keys, molds, plastic keys (one per door color)
-  ...KEY_ITEM_COLORS.map(([c, key, color]): ItemDef => ({ id: `key_${c}`, cat: 'key', contraband: true, value: 50, key, shape: 'key', color, accent: 0x8d949e, from: ['guard'] })),
-  ...KEY_ITEM_COLORS.map(([c, key, color]): ItemDef => ({ id: `mold_${c}`, cat: 'mold', contraband: true, value: 30, key, shape: 'mold', color: 0xd9c7a0, accent: color, from: [] })),
-  ...KEY_ITEM_COLORS.map(([c, key, color]): ItemDef => ({ id: `plastic_key_${c}`, cat: 'key', contraband: true, value: 40, key, uses: 15, shape: 'key', color, accent: 0xf4f4ef, from: [] })),
+  ...KEY_ITEM_COLORS.map(([c, key, color]): ItemDef => ({
+    id: `key_${c}`,
+    cat: 'key',
+    contraband: true,
+    value: 50,
+    key,
+    shape: 'key',
+    color,
+    accent: 0x8d949e,
+    from: ['guard'],
+  })),
+  ...KEY_ITEM_COLORS.map(([c, key, color]): ItemDef => ({
+    id: `mold_${c}`,
+    cat: 'mold',
+    contraband: true,
+    value: 30,
+    key,
+    shape: 'mold',
+    color: 0xd9c7a0,
+    accent: color,
+    from: [],
+  })),
+  ...KEY_ITEM_COLORS.map(([c, key, color]): ItemDef => ({
+    id: `plastic_key_${c}`,
+    cat: 'key',
+    contraband: true,
+    value: 40,
+    key,
+    uses: 15,
+    shape: 'key',
+    color,
+    accent: 0xf4f4ef,
+    from: [],
+  })),
   // ---------------------------------------------------------------- stealth, concealment and escape gear
   gear('pouch', 30, 'pouch', 0xd8dde3, 0x9aa2ad, 20),
   gear('bed_dummy', 20, 'dummy', 0xf2f2ee, 0x9fb7d0),
@@ -287,16 +381,105 @@ export const ITEMS: readonly ItemDef[] = [
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
-const HARD = ['guitar', 'glider_frame', 'glider', 'lockpick', 'timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
-const METAL = ['crowbar', 'sheet_metal', 'metal_file', 'trowel', 'flimsy_shovel', 'light_shovel', 'sturdy_shovel', 'flimsy_pickaxe', 'light_pickaxe', 'sturdy_pickaxe', 'flimsy_cutters', 'light_cutters', 'sturdy_cutters', 'screwdriver', 'powered_screwdriver', 'multitool', 'grappling_hook', 'grapnel', 'plated_outfit', 'meal_tray', 'license_plate', 'alarm_clock'];
+const HARD = [
+  'guitar',
+  'glider_frame',
+  'glider',
+  'lockpick',
+  'timber',
+  'balsa',
+  'wall_chunk',
+  'potato',
+  'plastic_cup',
+  'lighter',
+  'battery',
+  'duct_tape',
+  'bleach',
+  'broom',
+  'mop',
+  'tool_handle',
+  'timber_brace',
+  'fake_wall',
+  'raft',
+  'bat',
+  'spiked_bat',
+  'baton',
+  'nunchucks',
+  'furniture',
+  ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`),
+];
+const METAL = [
+  'crowbar',
+  'sheet_metal',
+  'metal_file',
+  'trowel',
+  'flimsy_shovel',
+  'light_shovel',
+  'sturdy_shovel',
+  'flimsy_pickaxe',
+  'light_pickaxe',
+  'sturdy_pickaxe',
+  'flimsy_cutters',
+  'light_cutters',
+  'sturdy_cutters',
+  'screwdriver',
+  'powered_screwdriver',
+  'multitool',
+  'grappling_hook',
+  'grapnel',
+  'plated_outfit',
+  'meal_tray',
+  'license_plate',
+  'alarm_clock',
+];
 for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud = METAL.includes(d.id) ? 2 : 1;
 
 /** What a rat can carry in its teeth (P20): keys, molds and odds and ends; nothing long, heavy or bulky. */
 const SMALL = [
-  'choc_egg', 'ice_lolly',
-  'plastic_comb', 'toothbrush', 'lighter', 'toilet_paper', 'glue', 'duct_tape', 'metal_file', 'sock', 'soap', 'battery', 'wire', 'razor_blade', 'ink', 'foil', 'talcum', 'toothpaste', 'putty', 'molten_plastic',
-  'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky', 'burner_phone', 'lockpick', 'blank_id', 'fake_id', 'release_form', 'forged_release',
-  'stash', 'note', 'whistle', 'pocket_watch',
+  'choc_egg',
+  'ice_lolly',
+  'plastic_comb',
+  'toothbrush',
+  'lighter',
+  'toilet_paper',
+  'glue',
+  'duct_tape',
+  'metal_file',
+  'sock',
+  'soap',
+  'battery',
+  'wire',
+  'razor_blade',
+  'ink',
+  'foil',
+  'talcum',
+  'toothpaste',
+  'putty',
+  'molten_plastic',
+  'chocolate',
+  'plastic_spoon',
+  'plastic_fork',
+  'plastic_knife',
+  'nail_file',
+  'comb_shiv',
+  'toothbrush_shiv',
+  'comb_blade',
+  'pouch',
+  'firecracker',
+  'jerky',
+  'pepper',
+  'sleeping_pills',
+  'sleepy_jerky',
+  'burner_phone',
+  'lockpick',
+  'blank_id',
+  'fake_id',
+  'release_form',
+  'forged_release',
+  'stash',
+  'note',
+  'whistle',
+  'pocket_watch',
   ...KEY_ITEM_COLORS.flatMap(([c]) => [`key_${c}`, `mold_${c}`, `plastic_key_${c}`]),
 ];
 for (const d of ITEMS) if (SMALL.includes(d.id)) d.small = true;

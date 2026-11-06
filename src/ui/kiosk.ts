@@ -4,7 +4,6 @@ import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-
 /**
  * The internet kiosk (P35) on screen: its card at the terminal. Logged out, what it costs and Log
  * in; logged in, the time left on the block paid for and the bill, and four apps in tabs: Mail
@@ -13,7 +12,6 @@ import { icon } from './icons';
  * headlines) and Courses (five questions: 1–4 answer). Drawn from a view the play layer fills
  * from the sim (play/kiosk.ts): the sim's own functions decide everything shown.
  */
-
 
 export type App = (typeof APPS)[number];
 
@@ -153,7 +151,32 @@ export class KioskCard {
     // (A course under way, or just over: its tab, and nothing else.)
     const inCourse = v.phase === 'on' && v.course !== 'offer';
     if (inCourse) this.app = 'course';
-    const key = [v.phase, v.closed, v.loginWhy, v.cash, v.spent, v.mailWhy, v.mailNote, v.coming.join(), v.photos.join(), v.shop.map((r) => r.name + r.price + r.why).join(), v.ordered, v.days.map((d) => d.name + d.event + d.weather + d.wind).join(), v.next.join(), v.headlines.join(), v.course, v.courseWhy, v.q, v.right, v.question, v.said, v.result, this.app, currentLang(), TOUCH].join('|');
+    const key = [
+      v.phase,
+      v.closed,
+      v.loginWhy,
+      v.cash,
+      v.spent,
+      v.mailWhy,
+      v.mailNote,
+      v.coming.join(),
+      v.photos.join(),
+      v.shop.map((r) => r.name + r.price + r.why).join(),
+      v.ordered,
+      v.days.map((d) => d.name + d.event + d.weather + d.wind).join(),
+      v.next.join(),
+      v.headlines.join(),
+      v.course,
+      v.courseWhy,
+      v.q,
+      v.right,
+      v.question,
+      v.said,
+      v.result,
+      this.app,
+      currentLang(),
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;
@@ -163,10 +186,24 @@ export class KioskCard {
       setText(this.bill, v.phase === 'on' ? t('kiosk.bill', { n: v.spent }) : '');
       this.tabs.innerHTML =
         v.phase === 'on' && !inCourse
-          ? APPS.map((a) => `<button role="tab" aria-selected="${a === this.app}" class="kiosk-tab${a === this.app ? ' on' : ''}" data-app="${a}">${icon(APP_ICON[a], 15)}<span>${esc(t(`kiosk.app.${a}`))}</span></button>`).join('')
+          ? APPS.map(
+              (a) =>
+                `<button role="tab" aria-selected="${a === this.app}" class="kiosk-tab${a === this.app ? ' on' : ''}" data-app="${a}">${icon(APP_ICON[a], 15)}<span>${esc(t(`kiosk.app.${a}`))}</span></button>`,
+            ).join('')
           : '';
       this.body.innerHTML = v.phase === 'on' ? this.appHtml(v) : v.closed ? '' : `<p class="kiosk-intro">${esc(t('kiosk.intro'))}</p>`;
-      setText(this.note, v.phase === 'off' ? v.closed || v.loginWhy : this.app !== 'course' ? '' : v.course === 'ask' ? t(TOUCH ? 'kiosk.course.askTouch' : 'kiosk.course.askKeys') : v.course === 'reveal' && v.said === -2 ? t('kiosk.course.tooSlow') : '');
+      setText(
+        this.note,
+        v.phase === 'off'
+          ? v.closed || v.loginWhy
+          : this.app !== 'course'
+            ? ''
+            : v.course === 'ask'
+              ? t(TOUCH ? 'kiosk.course.askTouch' : 'kiosk.course.askKeys')
+              : v.course === 'reveal' && v.said === -2
+                ? t('kiosk.course.tooSlow')
+                : '',
+      );
       this.actions.innerHTML =
         v.phase === 'off'
           ? v.closed
@@ -185,20 +222,30 @@ export class KioskCard {
       case 'mail': {
         const write = `<button class="phone-row" data-op="${KIOSK.WRITE}" ${v.mailWhy ? 'disabled' : ''}><span><b>${esc(t('kiosk.write'))}</b><small>${esc(v.mailWhy || v.mailNote)}</small></span><em>${icon('letter', 14)}</em></button>`;
         const coming = v.coming.map((c) => `<li>${esc(c)}</li>`).join('');
-        const wall = v.photos.length ? `<p class="kiosk-sub">${esc(t('kiosk.wall'))}</p><ul class="kiosk-list">${v.photos.map((p) => `<li>${icon('picture', 13)}<span>${esc(p)}</span></li>`).join('')}</ul>` : '';
+        const wall = v.photos.length
+          ? `<p class="kiosk-sub">${esc(t('kiosk.wall'))}</p><ul class="kiosk-list">${v.photos.map((p) => `<li>${icon('picture', 13)}<span>${esc(p)}</span></li>`).join('')}</ul>`
+          : '';
         return `${write}${coming ? `<ul class="kiosk-list">${coming}</ul>` : ''}${wall}`;
       }
       case 'shop': {
-        const rows = v.shop.map((r) => `<button class="phone-row kiosk-item" data-op="${KIOSK.ORDER}" data-arg="${r.k}" ${r.why ? 'disabled' : ''}><span><b>${esc(r.name)}</b>${r.why ? `<small>${esc(r.why)}</small>` : ''}</span><em>${esc(r.price)}</em></button>`).join('');
+        const rows = v.shop
+          .map(
+            (r) =>
+              `<button class="phone-row kiosk-item" data-op="${KIOSK.ORDER}" data-arg="${r.k}" ${r.why ? 'disabled' : ''}><span><b>${esc(r.name)}</b>${r.why ? `<small>${esc(r.why)}</small>` : ''}</span><em>${esc(r.price)}</em></button>`,
+          )
+          .join('');
         return `<p class="kiosk-sub">${esc(v.ordered || t('kiosk.shop.note'))}</p><div class="kiosk-shop">${rows}</div>`;
       }
       case 'news': {
-        const days = v.days.map((d) => `<li><b>${esc(d.name)}</b><span>${esc(d.event)}</span><small>${esc(`${d.weather} · ${d.wind}`)}</small></li>`).join('');
+        const days = v.days
+          .map((d) => `<li><b>${esc(d.name)}</b><span>${esc(d.event)}</span><small>${esc(`${d.weather} · ${d.wind}`)}</small></li>`)
+          .join('');
         const lines = v.headlines.map((l) => `<li>${icon('news', 13)}<span>${esc(l)}</span></li>`).join('');
         return `<ul class="kiosk-days">${days}</ul>${v.next.map((n) => `<p class="kiosk-sub">${esc(n)}</p>`).join('')}${lines ? `<ul class="kiosk-list kiosk-heads">${lines}</ul>` : ''}`;
       }
       case 'course': {
-        if (v.course === 'offer') return `<button class="phone-row" data-op="${KIOSK.COURSE}" ${v.courseWhy ? 'disabled' : ''}><span><b>${esc(t('kiosk.course.take'))}</b><small>${esc(v.courseWhy || t('kiosk.course.d'))}</small></span><em>${icon('brain', 14)}</em></button>`;
+        if (v.course === 'offer')
+          return `<button class="phone-row" data-op="${KIOSK.COURSE}" ${v.courseWhy ? 'disabled' : ''}><span><b>${esc(t('kiosk.course.take'))}</b><small>${esc(v.courseWhy || t('kiosk.course.d'))}</small></span><em>${icon('brain', 14)}</em></button>`;
         if (v.course === 'result') return `<p class="phone-result ${v.good ? 'good' : 'bad'}">${esc(v.result)}</p>`;
         const head = `<p class="phone-step"><b>${esc(t('kiosk.course.of', { n: v.q + 1, of: COURSE_QUESTIONS }))}</b> · ${esc(t('kiosk.course.right', { n: v.right }))}</p>`;
         const choices = v.choices

@@ -60,7 +60,14 @@ export const TWISTS: readonly Twist[] = [
   // (Never with a twist that only changes the delivery: three days are over before it would matter.)
   { id: 'threeDays', icon: 'calendar', cost: 2, breaks: ['stowaway'], not: ['customs', 'truckStrike'] },
   // (No merchant: no grapnel, no raft.)
-  { id: 'closedShop', icon: 'cart', cost: 1, at: (p) => p.merchants.length > 0, closes: ['merchant'], breaks: ['roof', 'raft', 'helicopter'] },
+  {
+    id: 'closedShop',
+    icon: 'cart',
+    cost: 1,
+    at: (p) => p.merchants.length > 0,
+    closes: ['merchant'],
+    breaks: ['roof', 'raft', 'helicopter'],
+  },
   { id: 'crackdown', icon: 'clipboard', cost: 1 },
   { id: 'nightOwl', icon: 'moon', cost: 1 },
   { id: 'unpaidLabour', icon: 'briefcase', cost: 1, at: (p) => p.jobs.length > 0 },

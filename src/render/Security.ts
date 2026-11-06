@@ -156,17 +156,40 @@ export class Security {
     this.towersAt.push(...ts);
     const r = BEAM_RADIUS / UNIT;
     for (const path of world.def.searchlights ?? []) {
-      const from = ts.length ? ts.reduce((a, b) => (a.distanceToSquared(new THREE.Vector3(path[0].x, 5.1, path[0].z)) <= b.distanceToSquared(new THREE.Vector3(path[0].x, 5.1, path[0].z)) ? a : b)) : new THREE.Vector3(path[0].x, 5.1, path[0].z);
+      const from = ts.length
+        ? ts.reduce((a, b) =>
+            a.distanceToSquared(new THREE.Vector3(path[0].x, 5.1, path[0].z)) <=
+            b.distanceToSquared(new THREE.Vector3(path[0].x, 5.1, path[0].z))
+              ? a
+              : b,
+          )
+        : new THREE.Vector3(path[0].x, 5.1, path[0].z);
       const poolMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(r * 2.3, r * 2.3).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ map: pool(), color: 0xfff6d8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+        new THREE.MeshBasicMaterial({
+          map: pool(),
+          color: 0xfff6d8,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          toneMapped: false,
+        }),
       );
       poolMesh.renderOrder = 3;
       poolMesh.frustumCulled = false;
       // A shaft of light: a cone from the lamp, opening onto the pool.
       const shaft = new THREE.Mesh(
         new THREE.ConeGeometry(r * 0.95, 1, 20, 1, true).translate(0, -0.5, 0),
-        new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+        new THREE.MeshBasicMaterial({
+          color: 0xfff1c4,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        }),
       );
       shaft.frustumCulled = false;
       shaft.renderOrder = 4;
@@ -179,21 +202,41 @@ export class Security {
     this.laser.frustumCulled = false;
     this.laser.renderOrder = 6;
     this.group.add(this.laser);
-    this.dot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, depthTest: false, toneMapped: false }));
+    this.dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, depthTest: false, toneMapped: false }),
+    );
     this.dot.renderOrder = 9;
     this.group.add(this.dot);
     // The grapnel's arc and landing ring.
-    this.arcMat = new THREE.LineDashedMaterial({ color: 0xffd27a, dashSize: 0.22, gapSize: 0.14, transparent: true, opacity: 0, depthTest: false });
+    this.arcMat = new THREE.LineDashedMaterial({
+      color: 0xffd27a,
+      dashSize: 0.22,
+      gapSize: 0.14,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+    });
     this.arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 25 }, () => new THREE.Vector3())), this.arcMat);
     this.arc.frustumCulled = false;
     this.arc.renderOrder = 9;
-    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.4, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0, depthWrite: false }));
+    this.ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.28, 0.4, 28).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0, depthWrite: false }),
+    );
     this.ring.renderOrder = 9;
     this.group.add(this.arc, this.ring);
     // Sparks on the live fence: a few small flashes at a time.
     const k = world.ground.kind;
     for (let i = 0; i < k.length; i++) if (k[i] === TILE.ELECTRIC) this.fence.push([i % MAP_W, Math.floor(i / MAP_W)]);
-    this.sparkMat = new THREE.MeshBasicMaterial({ color: 0xbfe8ff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    this.sparkMat = new THREE.MeshBasicMaterial({
+      color: 0xbfe8ff,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    });
     this.sparks = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.06, 0), this.sparkMat, 10);
     this.sparks.frustumCulled = false;
     this.sparks.count = 0;
@@ -216,7 +259,10 @@ export class Security {
     const mat = new THREE.LineBasicMaterial({ color: 0xfff1a8, transparent: true, opacity: 1, depthWrite: false });
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([from.clone(), to]), mat);
     line.frustumCulled = false;
-    const flash = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 1, toneMapped: false }));
+    const flash = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 8, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 1, toneMapped: false }),
+    );
     flash.position.copy(from);
     this.group.add(line, flash);
     this.shots.push({ line, flash, life: 1 });
@@ -280,7 +326,12 @@ export class Security {
       const y0 = WALL_H + 0.55 + 0.9;
       for (let i = 0; i <= 24; i++) {
         const u = i / 24;
-        pos.setXYZ(i, f.px + (f.hook.x - f.px) * u, y0 * (1 - u) + (f.hook.y + 0.05) * u + Math.sin(u * Math.PI) * 1.6, f.pz + (f.hook.z - f.pz) * u);
+        pos.setXYZ(
+          i,
+          f.px + (f.hook.x - f.px) * u,
+          y0 * (1 - u) + (f.hook.y + 0.05) * u + Math.sin(u * Math.PI) * 1.6,
+          f.pz + (f.hook.z - f.pz) * u,
+        );
       }
       pos.needsUpdate = true;
       this.arc.computeLineDistances();
@@ -315,13 +366,13 @@ export class Security {
         if (h > 0.45) continue;
         const [x, z] = this.fence[Math.floor(h * 2.2 * this.fence.length) % this.fence.length];
         const along = Math.abs(Math.sin((slot + k) * 78.233) * 9.7) % 1;
-        this.m.makeScale(1, 1.6, 1).setPosition(x + along, 0.3 + (h * 2.4) % 0.9, z + 0.5);
+        this.m.makeScale(1, 1.6, 1).setPosition(x + along, 0.3 + ((h * 2.4) % 0.9), z + 0.5);
         this.sparks.setMatrixAt(n++, this.m);
       }
     }
     this.sparks.count = n;
     if (n) this.sparks.instanceMatrix.needsUpdate = true;
-    this.genLamps.forEach((m, k) => m.color.setHex(f.gens[k] ?? f.power ? 0x3fdc5a : Math.sin(time * 6) > 0 ? 0xff2a1a : 0x4a0a06));
+    this.genLamps.forEach((m, k) => m.color.setHex((f.gens[k] ?? f.power) ? 0x3fdc5a : Math.sin(time * 6) > 0 ? 0xff2a1a : 0x4a0a06));
     this.arches += ((f.arches ? 1 : 0) - this.arches) * Math.min(1, dt * 4);
   }
 

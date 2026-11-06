@@ -9,9 +9,21 @@ for (const p of [...PRISONS, TRAINING]) {
   const w = sim.world;
   const res = reserved(w);
   const want = process.argv[2] ?? 'yard';
-  let x0 = MAP_W, x1 = 0, z0 = MAP_H, z1 = 0;
-  for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (w.zoneAt(x, z) === want) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
-  console.log(`== ${p.id} ${want} x ${x0}-${x1} z ${z0}-${z1} hoop ${JSON.stringify(p.leisure?.hoop && { x: p.leisure.hoop.x, z: p.leisure.hoop.z })}`);
+  let x0 = MAP_W,
+    x1 = 0,
+    z0 = MAP_H,
+    z1 = 0;
+  for (let z = 0; z < MAP_H; z++)
+    for (let x = 0; x < MAP_W; x++)
+      if (w.zoneAt(x, z) === want) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        z0 = Math.min(z0, z);
+        z1 = Math.max(z1, z);
+      }
+  console.log(
+    `== ${p.id} ${want} x ${x0}-${x1} z ${z0}-${z1} hoop ${JSON.stringify(p.leisure?.hoop && { x: p.leisure.hoop.x, z: p.leisure.hoop.z })}`,
+  );
   const spots = new Set((p.leisure?.hoop.spots ?? []).map((s) => s.z * MAP_W + s.x));
   for (let z = Math.max(0, z0 - 1); z <= Math.min(MAP_H - 1, z1 + 1); z++) {
     let row = String(z).padStart(3) + ' ';

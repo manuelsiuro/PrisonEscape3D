@@ -216,7 +216,11 @@ export class PaBoard {
   private next() {
     const line = this.queue.shift()!;
     const { from, text } = line;
-    const el = h('div', 'pa-strip', `<span class="pa-mic">${icon('megaphone', 16)}</span><span class="pa-body"><small class="pa-from"></small><span class="pa-line" aria-hidden="true"><span class="pa-typed"></span><span class="pa-rest"></span></span></span>`);
+    const el = h(
+      'div',
+      'pa-strip',
+      `<span class="pa-mic">${icon('megaphone', 16)}</span><span class="pa-body"><small class="pa-from"></small><span class="pa-line" aria-hidden="true"><span class="pa-typed"></span><span class="pa-rest"></span></span></span>`,
+    );
     el.querySelector('.pa-from')!.textContent = from;
     document.body.append(el);
     const read = Math.max(3800, 1400 + (text.length / TYPE_RATE) * 1000 + text.length * 45);
@@ -289,4 +293,3 @@ export class PaBoard {
     return this.up || this.queue.length > 0 || this.pending.length > 0;
   }
 }
-

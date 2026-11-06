@@ -42,7 +42,20 @@ import { itemOf, slot } from '../src/sim/systems/items';
 import { DOG, dogDef, dogWarning, handlersOf, noseFor, onShift, outOfBounds, pillsDesk, smellsOfContraband } from '../src/sim/systems/k9';
 import { FEAT } from '../src/sim/systems/ledger';
 import { tossArgs } from '../src/sim/command';
-import { DAZE_STEPS, DOG_SLEEP_STEPS, SCENT_STEPS, SCENT_TILES, SNIFF_AGAIN, SNIFF_HEAT, SNIFF_RANGE, STEPS_PER_MINUTE, TREAT_TRUST, TRUST_FRIEND, TRUST_IGNORE, UNIT } from '../src/sim/tuning';
+import {
+  DAZE_STEPS,
+  DOG_SLEEP_STEPS,
+  SCENT_STEPS,
+  SCENT_TILES,
+  SNIFF_AGAIN,
+  SNIFF_HEAT,
+  SNIFF_RANGE,
+  STEPS_PER_MINUTE,
+  TREAT_TRUST,
+  TRUST_FRIEND,
+  TRUST_IGNORE,
+  UNIT,
+} from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
@@ -50,7 +63,12 @@ import { setTile } from '../src/sim/systems/watch';
 import { ROUTINE } from '../src/content/routine';
 import { check } from './assert';
 
-const DOGS: Record<string, string[]> = { shankton: ['Brutus'], 'san-pancho': ['Canela', 'Bandido'], irongate: ['Admiral'], training: ['Biscuit'] };
+const DOGS: Record<string, string[]> = {
+  shankton: ['Brutus'],
+  'san-pancho': ['Canela', 'Bandido'],
+  irongate: ['Admiral'],
+  training: ['Biscuit'],
+};
 const n = (id: string) => itemNumber(id);
 const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 const put = (b: { x: number; z: number }, x: number, z: number) => {
@@ -102,13 +120,32 @@ for (const p of [...PRISONS, TRAINING]) {
     const def = dogDef(w, k);
     const kennel = def.kennel.z * MAP_W + def.kennel.x;
     check(!w.guardBlock[kennel] && w.ground.kind[kennel] !== TILE.DOOR, `${p.id}: ${def.name}'s kennel on open floor`);
-    check(!w.props.some((q) => def.kennel.x >= q.x && def.kennel.x < q.x + q.w && def.kennel.z >= q.z && def.kennel.z < q.z + q.d), `${p.id}: nothing stands on ${def.name}'s kennel`);
-    check(!(p.decor ?? []).some((q) => !q.y && def.kennel.x >= Math.floor(q.x) && def.kennel.x < Math.floor(q.x) + (q.w ?? 1) && def.kennel.z >= Math.floor(q.z) && def.kennel.z < Math.floor(q.z) + (q.d ?? 1)), `${p.id}: no decor on ${def.name}'s kennel either`);
+    check(
+      !w.props.some((q) => def.kennel.x >= q.x && def.kennel.x < q.x + q.w && def.kennel.z >= q.z && def.kennel.z < q.z + q.d),
+      `${p.id}: nothing stands on ${def.name}'s kennel`,
+    );
+    check(
+      !(p.decor ?? []).some(
+        (q) =>
+          !q.y &&
+          def.kennel.x >= Math.floor(q.x) &&
+          def.kennel.x < Math.floor(q.x) + (q.w ?? 1) &&
+          def.kennel.z >= Math.floor(q.z) &&
+          def.kennel.z < Math.floor(q.z) + (q.d ?? 1),
+      ),
+      `${p.id}: no decor on ${def.name}'s kennel either`,
+    );
     // In front of its door: open floor, where it lies.
     const front = (def.kennel.z + DIR_Z[def.kennel.face ?? 5] / 1024) * MAP_W + def.kennel.x + DIR_X[def.kennel.face ?? 5] / 1024;
-    check(DIR_X[def.kennel.face ?? 5] % 1024 === 0 && DIR_Z[def.kennel.face ?? 5] % 1024 === 0 && !w.block[front], `${p.id}: open floor in front of ${def.name}'s kennel`);
+    check(
+      DIR_X[def.kennel.face ?? 5] % 1024 === 0 && DIR_Z[def.kennel.face ?? 5] % 1024 === 0 && !w.block[front],
+      `${p.id}: open floor in front of ${def.name}'s kennel`,
+    );
     const beat = p.guards[h].beat[0];
-    check(pathTo(w, beat.z * MAP_W + beat.x, kennel, undefined, w.guardBlock) !== null, `${p.id}: ${def.name}'s kennel is a walk from its handler's round`);
+    check(
+      pathTo(w, beat.z * MAP_W + beat.x, kennel, undefined, w.guardBlock) !== null,
+      `${p.id}: ${def.name}'s kennel is a walk from its handler's round`,
+    );
     if (def.night) check(!!p.guards[h].night, `${p.id}: ${def.name} works nights, so its handler does`);
     check(!people.includes(def.name) && names.filter((x) => x === def.name).length === 1, `${p.id}: ${def.name} is a name of its own`);
     check(tileOf(sim.state.dogs[k].body) === kennel, `${p.id}: ${def.name} starts by its kennel`);
@@ -140,7 +177,10 @@ console.log('data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open flo
   }
   check(still, 'day 1: every dog in its kennel, all day and night');
   to(2, 10, 30);
-  check(sim.state.dogs.every((d) => d.mode === DOG.HEEL), 'day 2 10:30: both dogs on shift');
+  check(
+    sim.state.dogs.every((d) => d.mode === DOG.HEEL),
+    'day 2 10:30: both dogs on shift',
+  );
   let heel = 0;
   let samples = 0;
   for (let m = 0; m < 300; m++) {
@@ -161,7 +201,10 @@ console.log('data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open flo
   sim.state.lockdown = true;
   sim.state.heat = 100;
   sim.step(0);
-  check(sim.state.dogs.every((d) => d.mode !== DOG.KENNEL), 'a lockdown at 05:30: every dog out');
+  check(
+    sim.state.dogs.every((d) => d.mode !== DOG.KENNEL),
+    'a lockdown at 05:30: every dog out',
+  );
   // A run logged before the dogs came: they stay in.
   const old = new Sim(SAN_PANCHO, 5);
   old.noDogs = true;
@@ -170,7 +213,10 @@ console.log('data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open flo
     old.step(0);
     old.state.heat = 0;
   }
-  check(old.state.dogs.every((d, k) => tileOf(d.body) === kennel(k)) && !onShift(old, dogDef(old.world, 0)), 'a run logged before the dogs: they never leave the kennel');
+  check(
+    old.state.dogs.every((d, k) => tileOf(d.body) === kennel(k)) && !onShift(old, dogDef(old.world, 0)),
+    'a run logged before the dogs: they never leave the kennel',
+  );
   console.log('shifts: kennel on day 1; at the heel 10:00–22:00 from day 2, nights 01:00–05:00 for night dogs, every lockdown');
 }
 
@@ -217,10 +263,19 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     stand();
     check(noseFor(sim, 0) && smellsOfContraband(sim), 'the paw: Brutus could smell the screwdriver');
     step(0, false);
-    check(dogEvents(seen, 'sniff') === 1 && seen.some((e) => e.type === 'spotted' && e.reason === 'sniffed'), 'a screwdriver in the hotbar: Brutus smells it (and the player is spotted)');
+    check(
+      dogEvents(seen, 'sniff') === 1 && seen.some((e) => e.type === 'spotted' && e.reason === 'sniffed'),
+      'a screwdriver in the hotbar: Brutus smells it (and the player is spotted)',
+    );
     check(sim.state.heat === SNIFF_HEAT, `+${SNIFF_HEAT} heat (${sim.state.heat})`);
-    check(seen.some((e) => e.type === 'noise' && e.kind === 'bark'), 'he barks: a noise');
-    check(sim.state.dogs[0].mode === DOG.POINT && handler.mode === GUARD.INVESTIGATE && handler.target === tileOf(sim.state.player), 'he points; Duffy comes to look where the player stands');
+    check(
+      seen.some((e) => e.type === 'noise' && e.kind === 'bark'),
+      'he barks: a noise',
+    );
+    check(
+      sim.state.dogs[0].mode === DOG.POINT && handler.mode === GUARD.INVESTIGATE && handler.target === tileOf(sim.state.player),
+      'he points; Duffy comes to look where the player stands',
+    );
     seen.length = 0;
     for (let k = 0; k < SNIFF_AGAIN - 5; k++) {
       stand();
@@ -250,7 +305,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
     stand();
     step();
-    check(dogEvents(seen, 'sniff') === 1, 'in a guard\'s uniform: smelled all the same');
+    check(dogEvents(seen, 'sniff') === 1, "in a guard's uniform: smelled all the same");
   }
   {
     const { seen, step, stand } = byDog(SHANKTON, [
@@ -318,7 +373,9 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     }
     check(sniffs >= 1 && warned, `at 10:00 by the kennel: the paw lit before the sniff (${sniffs})`);
   }
-  console.log(`nose: contraband in the hotbar within ${SNIFF_RANGE / UNIT} tiles → a bark, +${SNIFF_HEAT}%, the handler looks; a pouch stops it, a uniform doesn't; trust ${TRUST_IGNORE}+ lets it go`);
+  console.log(
+    `nose: contraband in the hotbar within ${SNIFF_RANGE / UNIT} tiles → a bark, +${SNIFF_HEAT}%, the handler looks; a pouch stops it, a uniform doesn't; trust ${TRUST_IGNORE}+ lets it go`,
+  );
 }
 
 // ------------------------------------------------------------------ the trail
@@ -345,11 +402,17 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     step();
   }
   const laid = sim.state.scent.length;
-  check(laid === SCENT_TILES && sim.state.scent.every((e, k, a) => k === 0 || (e[1] > a[k - 1][1] && e[0] !== a[k - 1][0])), `out late in the corridor: one entry a tile, ${laid} at most`);
+  check(
+    laid === SCENT_TILES && sim.state.scent.every((e, k, a) => k === 0 || (e[1] > a[k - 1][1] && e[0] !== a[k - 1][0])),
+    `out late in the corridor: one entry a tile, ${laid} at most`,
+  );
   const where = tileOf(sim.state.player);
   for (let k = 0; k < SCENT_STEPS + 5; k++) step();
   // (Standing still out there, only the tile underfoot stays fresh: laid again as the old scent fades.)
-  check(sim.state.scent.length === 1 && sim.state.scent[0][0] === where && sim.state.step - sim.state.scent[0][1] < 10, `the trail fades after ${SCENT_STEPS / 20} s (but for the tile underfoot)`);
+  check(
+    sim.state.scent.length === 1 && sim.state.scent[0][0] === where && sim.state.step - sim.state.scent[0][1] < 10,
+    `the trail fades after ${SCENT_STEPS / 20} s (but for the tile underfoot)`,
+  );
   // Soap washes it off and is used up; with nothing to wash it keeps.
   putTile(sim.state.player, 30 + 25 * MAP_W);
   step();
@@ -363,14 +426,24 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   const before = sim.state.scent.length;
   step(command(0, OP.USE, 1));
   // (Still out late, the tile underfoot is laid again at once.)
-  check(before >= 2 && sim.state.scent.length === 1 && sim.state.scent[0][1] === sim.state.step && it.inv[0] === 0 && seen.some((e) => e.type === 'washed'), 'soap: the trail washed off, the soap used up');
+  check(
+    before >= 2 &&
+      sim.state.scent.length === 1 &&
+      sim.state.scent[0][1] === sim.state.step &&
+      it.inv[0] === 0 &&
+      seen.some((e) => e.type === 'washed'),
+    'soap: the trail washed off, the soap used up',
+  );
   it.inv[0] = slot(n('soap'));
   seen.length = 0;
   sim.state.layer = LAYER.GROUND;
   putTile(sim.state.player, 31 + 25 * MAP_W);
   sim.state.scent = [];
   step(command(0, OP.USE, 1));
-  check(itemOf(it.inv[0]) === n('soap') && seen.some((e) => e.type === 'cantStrike' && e.why === 'noScent'), 'nothing to wash off: the soap keeps');
+  check(
+    itemOf(it.inv[0]) === n('soap') && seen.some((e) => e.type === 'cantStrike' && e.why === 'noScent'),
+    'nothing to wash off: the soap keeps',
+  );
   check(sim.state.feats[FEAT.washed] === 1, 'washing counted');
   // A shower in the showers block washes it off too.
   {
@@ -386,7 +459,9 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     g.step();
     check(g.sim.state.scent.length === 0 && g.seen.some((e) => e.type === 'washed'), 'a shower: the trail washed off');
   }
-  console.log(`trail: out of bounds only, a tile at a time, ${SCENT_TILES} tiles at most, ${SCENT_STEPS / 20} s fresh; soap and showers wash it off`);
+  console.log(
+    `trail: out of bounds only, a tile at a time, ${SCENT_TILES} tiles at most, ${SCENT_STEPS / 20} s fresh; soap and showers wash it off`,
+  );
 }
 
 /** Shankton at 02:00 in prison day 2's night (Brutus on his night shift at Duffy's heel), the trail laid by hand along `tiles` (fresh). */
@@ -416,8 +491,14 @@ function tracking(tiles: number[], seed = 5) {
     let k = 0;
     for (; k < 2000 && !dogEvents(seen, 'dug'); k++) step(0, false);
     check(dogEvents(seen, 'track') === 1, 'Brutus picks up the trail beside him');
-    check(dogEvents(seen, 'dug') === 1 && sim.state.found.includes(placeKey(LAYER.GROUND, hole)), `he follows it to the hole behind the poster: found (${(k / 20).toFixed(1)} s)`);
-    check(sim.state.lockdown && sim.state.guards.every((g) => g.lastSeen === 33 + 24 * MAP_W), 'the alarm goes, and every guard knows where');
+    check(
+      dogEvents(seen, 'dug') === 1 && sim.state.found.includes(placeKey(LAYER.GROUND, hole)),
+      `he follows it to the hole behind the poster: found (${(k / 20).toFixed(1)} s)`,
+    );
+    check(
+      sim.state.lockdown && sim.state.guards.every((g) => g.lastSeen === 33 + 24 * MAP_W),
+      'the alarm goes, and every guard knows where',
+    );
     check(d.mode === DOG.POINT, 'he stands barking at it');
   }
   // Up through a grate behind a fake vent at the trail's end (the trail marks where the player left the floor): found too, covers fool no dog.
@@ -428,7 +509,7 @@ function tracking(tiles: number[], seed = 5) {
     sim.world.setKind(LAYER.VENTS, end, TILE.GRATE_FAKE);
     sim.state.tiles[placeKey(LAYER.VENTS, end)] = TILE.GRATE_FAKE;
     for (let k = 0; k < 2000 && !dogEvents(seen, 'dug'); k++) step(0, false);
-    check(sim.state.found.includes(placeKey(LAYER.VENTS, end)), 'a fake vent over the trail\'s end, where the player left the floor: found');
+    check(sim.state.found.includes(placeKey(LAYER.VENTS, end)), "a fake vent over the trail's end, where the player left the floor: found");
   }
   // The same grate beside a trail that ends with the player simply back in bounds: nothing found.
   {
@@ -437,7 +518,7 @@ function tracking(tiles: number[], seed = 5) {
     sim.world.setKind(LAYER.VENTS, end + 1 + MAP_W, TILE.GRATE_FAKE);
     sim.state.tiles[placeKey(LAYER.VENTS, end + 1 + MAP_W)] = TILE.GRATE_FAKE;
     for (let k = 0; k < 2000 && !dogEvents(seen, 'lost'); k++) step();
-    check(sim.state.found.length === 0 && dogEvents(seen, 'lost') === 1, 'a grate by a trail that just ends: not the dog\'s business');
+    check(sim.state.found.length === 0 && dogEvents(seen, 'lost') === 1, "a grate by a trail that just ends: not the dog's business");
   }
   // The player out of it (solitary): a dog's find is left be, as the guards leave damage then.
   {
@@ -445,7 +526,10 @@ function tracking(tiles: number[], seed = 5) {
     setTile(sim, LAYER.GROUND, hole, TILE.HOLE_POSTER);
     sim.state.solitary = 100000;
     for (let k = 0; k < 2000; k++) step(0, false);
-    check(dogEvents(seen, 'dug') === 0 && !sim.state.found.includes(placeKey(LAYER.GROUND, hole)) && !seen.some((e) => e.type === 'spotted'), 'the player in solitary: no find, no alarm');
+    check(
+      dogEvents(seen, 'dug') === 0 && !sim.state.found.includes(placeKey(LAYER.GROUND, hole)) && !seen.some((e) => e.type === 'spotted'),
+      'the player in solitary: no find, no alarm',
+    );
   }
   // The handler knocked out while his dog is on the trail: it gives up and stays by him.
   {
@@ -471,7 +555,7 @@ function tracking(tiles: number[], seed = 5) {
       putTile(sim.state.player, row[row.length - 1]);
       step();
     }
-    check(dogEvents(seen, 'point') === 1, 'the player at the trail\'s end: Brutus points at them');
+    check(dogEvents(seen, 'point') === 1, "the player at the trail's end: Brutus points at them");
   }
   // Washed off on the way: lost. A friend never follows it.
   {
@@ -485,7 +569,7 @@ function tracking(tiles: number[], seed = 5) {
     const { sim, seen, step, d } = tracking(row);
     d.trust = TRUST_FRIEND;
     for (let k = 0; k < 400; k++) step();
-    check(dogEvents(seen, 'track') === 0 && sim.state.found.length === 0, 'a friend never follows the player\'s trail');
+    check(dogEvents(seen, 'track') === 0 && sim.state.found.length === 0, "a friend never follows the player's trail");
   }
   // Saved and loaded on the trail: the game plays on the same.
   {
@@ -509,7 +593,9 @@ function tracking(tiles: number[], seed = 5) {
     for (let k = 0; k < 5; k++) step(0, false);
     check(dogEvents(seen, 'track') === 1, 'a lockdown: Brutus sets off along the trail from across the prison');
   }
-  console.log('tracking: beside the trail a dog follows it to its end: the way the player went (cover or no cover: found, the alarm), the player, or lost');
+  console.log(
+    'tracking: beside the trail a dog follows it to its end: the way the player went (cover or no cover: found, the alarm), the player, or lost',
+  );
 }
 
 // ------------------------------------------------------------------ treats
@@ -547,11 +633,17 @@ function tracking(tiles: number[], seed = 5) {
   blind();
   const d = sim.state.dogs[0];
   step(throwTo(sim, n('jerky')));
-  check(dogEvents(seen, 'fed') === 1 && d.trust === TREAT_TRUST && sim.state.items.inv[0] === 0, `jerky for Canela: eaten, trust ${d.trust}`);
+  check(
+    dogEvents(seen, 'fed') === 1 && d.trust === TREAT_TRUST && sim.state.items.inv[0] === 0,
+    `jerky for Canela: eaten, trust ${d.trust}`,
+  );
   const grounded = sim.state.items.ground.length;
   seen.length = 0;
   step(throwTo(sim, n('jerky')));
-  check(dogEvents(seen, 'full') === 1 && d.trust === TREAT_TRUST && sim.state.items.ground.length === grounded + 1, 'a second the same day: she\'s had hers, it stays on the floor');
+  check(
+    dogEvents(seen, 'full') === 1 && d.trust === TREAT_TRUST && sim.state.items.ground.length === grounded + 1,
+    "a second the same day: she's had hers, it stays on the floor",
+  );
   to(3, 11, 0);
   // (Thrown to her where she stands at one of her handler's stops, not on her way between two, and
   // with room round her to throw from.)
@@ -574,7 +666,10 @@ function tracking(tiles: number[], seed = 5) {
   blind();
   seen.length = 0;
   step(throwTo(sim, n('jerky')));
-  check(d.trust === TRUST_FRIEND && dogEvents(seen, 'friend') === 1 && sim.state.feats[FEAT.dogFriends] === 1, 'trust at its most: a friend');
+  check(
+    d.trust === TRUST_FRIEND && dogEvents(seen, 'friend') === 1 && sim.state.feats[FEAT.dogFriends] === 1,
+    'trust at its most: a friend',
+  );
   // Pepper: sneezing on the spot, the trail gone.
   const stamp = sim.state.step - 3;
   sim.state.scent = [[tileOf(d.body), stamp]];
@@ -583,7 +678,10 @@ function tracking(tiles: number[], seed = 5) {
   const gone = !sim.state.scent.some((e) => e[1] === stamp);
   const pos = [d.body.x, d.body.z];
   for (let k = 0; k < DAZE_STEPS - 10; k++) step();
-  check(dogEvents(seen, 'dazed') === 1 && gone && d.body.x === pos[0] && d.body.z === pos[1], `pepper: Canela sneezes ${DAZE_STEPS / 20} s on the spot, the trail gone`);
+  check(
+    dogEvents(seen, 'dazed') === 1 && gone && d.body.x === pos[0] && d.body.z === pos[1],
+    `pepper: Canela sneezes ${DAZE_STEPS / 20} s on the spot, the trail gone`,
+  );
   // Sleepy jerky: asleep, smelling nothing.
   const other = new Sim(SAN_PANCHO, 5);
   const g2 = game(SAN_PANCHO);
@@ -600,9 +698,14 @@ function tracking(tiles: number[], seed = 5) {
   }
   sniffed = g2.seen.filter((e) => e.type === 'dog' && e.what === 'sniff' && e.dog === 0).length;
   for (let k = 0; k < 40; k++) g2.step();
-  check(sniffed === 0 && dogEvents(g2.seen, 'woke') === 1, `${DOG_SLEEP_STEPS / STEPS_PER_MINUTE / 60} game hours asleep, smelling nothing; then awake`);
+  check(
+    sniffed === 0 && dogEvents(g2.seen, 'woke') === 1,
+    `${DOG_SLEEP_STEPS / STEPS_PER_MINUTE / 60} game hours asleep, smelling nothing; then awake`,
+  );
   void other;
-  console.log(`treats: jerky +${TREAT_TRUST} trust once a day (a friend at ${TRUST_FRIEND}), pepper ${DAZE_STEPS / 20} s of sneezing, sleepy jerky ${DOG_SLEEP_STEPS / STEPS_PER_MINUTE / 60} h asleep`);
+  console.log(
+    `treats: jerky +${TREAT_TRUST} trust once a day (a friend at ${TRUST_FRIEND}), pepper ${DAZE_STEPS / 20} s of sneezing, sleepy jerky ${DOG_SLEEP_STEPS / STEPS_PER_MINUTE / 60} h asleep`,
+  );
 }
 
 // ------------------------------------------------------------------ where they come from
@@ -617,7 +720,10 @@ function tracking(tiles: number[], seed = 5) {
     to(2, 9, 0);
     const desk = pillsDesk(sim);
     if (DOGS[p.id]) {
-      check(!day1 && counters.length > 0 && counters.every(([, i]) => has(i, 'jerky') && has(i, 'pepper')), `${p.id}: jerky and pepper on every canteen counter from day 2 (not before)`);
+      check(
+        !day1 && counters.length > 0 && counters.every(([, i]) => has(i, 'jerky') && has(i, 'pepper')),
+        `${p.id}: jerky and pepper on every canteen counter from day 2 (not before)`,
+      );
       check(desk >= 0 && has(desk, 'sleeping_pills'), `${p.id}: sleeping pills in the desk pillsDesk() names`);
     } else check(desk < 0 && !counters.some(([, i]) => has(i, 'jerky')), `${p.id}: no dogs, no treats`);
   }
@@ -629,7 +735,10 @@ function tracking(tiles: number[], seed = 5) {
     old.step(0);
     old.state.heat = 0;
   }
-  check(!old.state.items.containers.some((c) => c.some((v) => [n('jerky'), n('pepper'), n('sleeping_pills')].includes(itemOf(v)))), 'a run logged before the dogs: no treats stocked');
+  check(
+    !old.state.items.containers.some((c) => c.some((v) => [n('jerky'), n('pepper'), n('sleeping_pills')].includes(itemOf(v)))),
+    'a run logged before the dogs: no treats stocked',
+  );
   console.log('treats: on the canteen counters at 08:00 from day 2 where there are dogs, and the pills in one desk');
 }
 
@@ -642,7 +751,13 @@ function tracking(tiles: number[], seed = 5) {
   delete st.scent;
   const b = new Sim(IRONGATE, 9);
   reload(b, snap);
-  check(b.state.dogs.length === 1 && b.state.dogs[0].mode === DOG.KENNEL && tileOf(b.state.dogs[0].body) === 51 + 45 * MAP_W && b.state.scent.length === 0, 'a save from before the dogs: Admiral in his kennel, no trail');
+  check(
+    b.state.dogs.length === 1 &&
+      b.state.dogs[0].mode === DOG.KENNEL &&
+      tileOf(b.state.dogs[0].body) === 51 + 45 * MAP_W &&
+      b.state.scent.length === 0,
+    'a save from before the dogs: Admiral in his kennel, no trail',
+  );
   console.log('saves: an old one loads the dogs in their kennels');
 }
 

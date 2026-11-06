@@ -107,7 +107,8 @@ export class AimUI {
       const hh = this.labelH;
       const x = Math.min(innerWidth - 10 - half, Math.max(10 + half, spot.x));
       const hb = this.hintBox;
-      const fits = (y: number) => y >= 8 && y + hh <= this.barTop - 6 && !(x + half > hb.l && x - half < hb.r && y + hh > hb.t - 4 && y < hb.b + 4);
+      const fits = (y: number) =>
+        y >= 8 && y + hh <= this.barTop - 6 && !(x + half > hb.l && x - half < hb.r && y + hh > hb.t - 4 && y < hb.b + 4);
       let y = spot.y + 18;
       if (!fits(y)) y = fits(spot.y - 18 - hh) ? spot.y - 18 - hh : Math.max(8, Math.min(y, this.barTop - 6 - hh));
       this.label.style.transform = `translate3d(${Math.round(x - half)}px, ${Math.round(y)}px, 0)`;

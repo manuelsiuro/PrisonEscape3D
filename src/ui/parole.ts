@@ -4,7 +4,6 @@ import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-
 /**
  * The parole board's card (P39): at the release desk, how the application stands, the record's
  * lines for and against and Apply; before the board, the member asking, the question, what the
@@ -12,7 +11,6 @@ import { icon } from './icons';
  * the two lines that weighed most. Drawn from a view the play layer fills from the sim
  * (play/parole.ts).
  */
-
 
 export interface ParoleView {
   /** 'desk' at the release desk, 'sat' sitting down before the board, 'ask' a question put, 'weigh' its answer weighed, 'verdict' the board's word a moment. */
@@ -140,7 +138,25 @@ export class ParoleCard {
       return false;
     }
     if (v.phase !== 'ask') this.picked = -1;
-    const key = [v.phase, v.status, v.lines.map((l) => l.text + l.pts).join(), v.score, v.canApply, v.why, v.q, v.question, v.file, v.said, v.react, v.verdict, v.weighed.join(), v.faces.length, this.picked, currentLang(), TOUCH].join('|');
+    const key = [
+      v.phase,
+      v.status,
+      v.lines.map((l) => l.text + l.pts).join(),
+      v.score,
+      v.canApply,
+      v.why,
+      v.q,
+      v.question,
+      v.file,
+      v.said,
+      v.react,
+      v.verdict,
+      v.weighed.join(),
+      v.faces.length,
+      this.picked,
+      currentLang(),
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;
@@ -169,7 +185,9 @@ export class ParoleCard {
         : v.phase === 'weigh'
           ? v.react
           : v.phase === 'verdict'
-            ? [v.verdict, v.status, ...v.weighed].filter(Boolean).reduce((all, x) => (!all ? x : /:\s*$/.test(all) ? `${all} ${x}` : `${all}. ${x}`), '')
+            ? [v.verdict, v.status, ...v.weighed]
+                .filter(Boolean)
+                .reduce((all, x) => (!all ? x : /:\s*$/.test(all) ? `${all} ${x}` : `${all}. ${x}`), '')
             : v.phase === 'sat'
               ? v.note
               : '';
@@ -180,10 +198,13 @@ export class ParoleCard {
 
   private bodyHtml(v: ParoleView): string {
     const status = v.status ? `<p class="parole-status ${v.statusTone}">${esc(v.status)}</p>` : '';
-    const lines = v.lines.length ? `<ul class="parole-lines">${v.lines.map((l) => `<li class="${l.tone}"><span>${esc(l.text)}</span>${l.pts ? `<b>${esc(l.pts)}</b>` : ''}</li>`).join('')}</ul>` : '';
+    const lines = v.lines.length
+      ? `<ul class="parole-lines">${v.lines.map((l) => `<li class="${l.tone}"><span>${esc(l.text)}</span>${l.pts ? `<b>${esc(l.pts)}</b>` : ''}</li>`).join('')}</ul>`
+      : '';
     const weighed = v.weighed.length ? `<ul class="parole-weighed">${v.weighed.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '';
     if (v.phase === 'desk') return `${status}${weighed}${lines}`;
-    if (v.phase === 'verdict') return `<p class="parole-verdict ${v.verdictGood ? 'good' : 'bad'}">${icon(v.verdictGood ? 'check' : 'close', 18)}<span>${esc(v.verdict)}</span></p>${status}${weighed}`;
+    if (v.phase === 'verdict')
+      return `<p class="parole-verdict ${v.verdictGood ? 'good' : 'bad'}">${icon(v.verdictGood ? 'check' : 'close', 18)}<span>${esc(v.verdict)}</span></p>${status}${weighed}`;
     // (Each face named for a screen reader, the one asking marked; the name beside them is the eye's.)
     const board = `<ol class="parole-board" aria-label="${esc(t('parole.board'))}">${[0, 1, 2]
       .map((k) => {
@@ -197,7 +218,11 @@ export class ParoleCard {
     const said = v.said >= 0 ? v.said : this.picked;
     const answers = v.answers
       .map((a, k) => {
-        const cls = ['parole-answer', said === k ? 'mine' : '', v.phase === 'weigh' && said === k ? (v.reactGood ? 'good' : 'bad') : ''].join(' ');
+        const cls = [
+          'parole-answer',
+          said === k ? 'mine' : '',
+          v.phase === 'weigh' && said === k ? (v.reactGood ? 'good' : 'bad') : '',
+        ].join(' ');
         const off = v.phase === 'weigh' || said >= 0;
         return `<button class="${cls}" data-answer="${k}" ${off ? 'disabled' : ''}><kbd>${k + 1}</kbd><span>${esc(a)}</span></button>`;
       })

@@ -16,7 +16,9 @@
     linear-gradient(90deg, transparent 6%, rgba(255, 194, 61, 0.95) 50%, transparent 94%) top / 100% 2px no-repeat,
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 1.5px) 0 0 / 7px 7px,
     linear-gradient(180deg, rgba(30, 40, 60, 0.97), rgba(16, 21, 32, 0.97));
-  box-shadow: 0 22px 46px -14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 22px 46px -14px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   cursor: pointer;
   animation: pa-in 0.5s var(--spring) both;
 }
@@ -25,7 +27,9 @@
 .pa-strip.leaving {
   opacity: 0;
   transform: translateY(-10px) scale(0.97);
-  transition: opacity 0.3s, transform 0.3s;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
 }
 
 @keyframes pa-in {

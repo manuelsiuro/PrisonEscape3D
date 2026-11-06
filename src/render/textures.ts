@@ -144,7 +144,13 @@ const BASE = {
       c.fillRect(0, n / 2, n, 1);
       c.fillRect(0, 0, 1, n);
       c.fillStyle = '#474c53';
-      for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
+      for (const [x, y] of [
+        [4, 4],
+        [12, 4],
+        [4, 12],
+        [12, 12],
+      ])
+        c.fillRect(x, y, 1, 1);
       c.fillStyle = 'rgba(70,60,50,0.18)';
       for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), 1 + Math.floor(r() * (n - 2)), 1, 3);
     }),
@@ -437,7 +443,13 @@ const DESERT: Partial<typeof BASE> = {
       c.fillRect(0, n / 2, n, 1);
       c.fillRect(0, 0, 1, n);
       c.fillStyle = '#6f675a';
-      for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
+      for (const [x, y] of [
+        [4, 4],
+        [12, 4],
+        [4, 12],
+        [12, 12],
+      ])
+        c.fillRect(x, y, 1, 1);
     }),
   wallTop: () =>
     texture('adobeTop', 16, (c, n, r) => {
@@ -509,10 +521,20 @@ const ISLAND: Partial<typeof BASE> = {
       c.fillRect(0, n / 2, n, 1);
       c.fillRect(0, 0, 1, n);
       c.fillStyle = '#434951';
-      for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
+      for (const [x, y] of [
+        [4, 4],
+        [12, 4],
+        [4, 12],
+        [12, 12],
+      ])
+        c.fillRect(x, y, 1, 1);
       // Rust weeping from the tie holes, salt bloom.
       c.fillStyle = 'rgba(150,80,40,0.35)';
-      for (const [x, y] of [[4, 5], [12, 13]]) c.fillRect(x, y, 1, 3);
+      for (const [x, y] of [
+        [4, 5],
+        [12, 13],
+      ])
+        c.fillRect(x, y, 1, 3);
       c.fillStyle = 'rgba(230,236,240,0.25)';
       for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
     }),
@@ -537,7 +559,13 @@ const ISLAND: Partial<typeof BASE> = {
 };
 
 /** The textures, in the current theme's look. */
-const THEMES: Record<Theme, Partial<typeof BASE>> = { suburban: {}, alpine: ALPINE, industrial: INDUSTRIAL, desert: DESERT, island: ISLAND };
+const THEMES: Record<Theme, Partial<typeof BASE>> = {
+  suburban: {},
+  alpine: ALPINE,
+  industrial: INDUSTRIAL,
+  desert: DESERT,
+  island: ISLAND,
+};
 export const TEX = Object.fromEntries(
   (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => (THEMES[theme][k] || BASE[k])(...(a as [string]))]),
 ) as unknown as typeof BASE;

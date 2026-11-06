@@ -65,7 +65,10 @@ for (const def of [TRAINING, ...PRISONS.filter((d) => d !== TRAINING)]) {
   for (const prop of props) {
     const p = bot.sim.world.props[prop];
     zones.add(bot.sim.world.zoneAt(p.x, p.z));
-    check(bot.sim.prison.props.findIndex((q) => q.x === p.x && q.z === p.z && q.kind === p.kind) === prop, `${def.id}: its number is its place`);
+    check(
+      bot.sim.prison.props.findIndex((q) => q.x === p.x && q.z === p.z && q.kind === p.kind) === prop,
+      `${def.id}: its number is its place`,
+    );
     const spot = spotOf(bot, prop);
     check(!!spot, `${def.id}: the ${p.kind} at ${p.x},${p.z} has a tile to use it from`);
     check(!bot.sim.world.npcBlock[spot.tile], `${def.id}: that tile is open`);
@@ -73,7 +76,10 @@ for (const def of [TRAINING, ...PRISONS.filter((d) => d !== TRAINING)]) {
     put(bot, spot.tile, p.kind === 'mat' ? 5 : spot.face);
     bot.st.energy = 100;
     const target = interactTarget(bot.sim.world, bot.st.items, bot.st.player, false, bot.st.layer);
-    check(target?.kind === 'fixture' && target.index === prop, `${def.id}: the button at the ${p.kind} at ${p.x},${p.z} offers it (${JSON.stringify(target)})`);
+    check(
+      target?.kind === 'fixture' && target.index === prop,
+      `${def.id}: the button at the ${p.kind} at ${p.x},${p.z} offers it (${JSON.stringify(target)})`,
+    );
     bot.act();
     if (bot.st.train === prop) onIt++;
     const was = attrs(bot);
@@ -134,7 +140,7 @@ for (const def of [TRAINING, ...PRISONS.filter((d) => d !== TRAINING)]) {
   idle.op(OP.TRAIN, 1);
   const bar = idle.st.reps;
   for (let k = 0; k < 400; k++) idle.step(0);
-  check(bar > 0 && idle.st.reps === bar, 'the bar doesn\'t drain');
+  check(bar > 0 && idle.st.reps === bar, "the bar doesn't drain");
   // A press on the beat is worth what's written; off it, what's written.
   const set = SET_BEATS.weights;
   const on = atWeights();
@@ -161,7 +167,9 @@ for (const def of [TRAINING, ...PRISONS.filter((d) => d !== TRAINING)]) {
   check(same.st.reps === first, 'nor does the same side');
   same.op(OP.TRAIN, 2);
   check(same.st.reps === first + set.hit, 'and the beat is still there for the other');
-  console.log(`a set: on the beat ${timed / 20} s, tapping every step ${mash / 20} s, three times a second ${quick / 20} s, every 1.5 s ${slow / 20} s, every 5 s ${slower / 20} s`);
+  console.log(
+    `a set: on the beat ${timed / 20} s, tapping every step ${mash / 20} s, three times a second ${quick / 20} s, every 1.5 s ${slow / 20} s, every 5 s ${slower / 20} s`,
+  );
   for (const [kind, q] of Object.entries(SET_BEATS)) {
     const presses = Math.ceil(100 / q.hit);
     const secs = (presses * q.beat) / 20;
@@ -174,7 +182,10 @@ for (const def of [TRAINING, ...PRISONS.filter((d) => d !== TRAINING)]) {
   const before = setCost(cold.sim, 'str');
   cold.st.frozen = true;
   const after = setCost(cold.sim, 'str');
-  check(before === GYM_ENERGY && after === GYM_ENERGY * 2 && cold.sim.setCost('str') === after, `the card's cost: ${before}, chilled ${after}`);
+  check(
+    before === GYM_ENERGY && after === GYM_ENERGY * 2 && cold.sim.setCost('str') === after,
+    `the card's cost: ${before}, chilled ${after}`,
+  );
 }
 
 // ------------------------------------------------------------------ inmates on the machines
@@ -201,10 +212,25 @@ for (const def of PRISONS) {
         used.add(q!.prop);
       }
       // (Half an hour in, anyone bound for a machine has got there: trace any who haven't.)
-      if (k >= 30 * STEPS_PER_MINUTE) late += bot.st.inmates.filter((m) => m.then !== DOING.NOTHING && ON_MACHINE.includes(m.then) && !ON_MACHINE.includes(m.doing) && m.path.length === 0 && tileAt(m.body.x, m.body.z) !== m.goal && m.ko === 0 && m.angry <= 0).length;
+      if (k >= 30 * STEPS_PER_MINUTE)
+        late += bot.st.inmates.filter(
+          (m) =>
+            m.then !== DOING.NOTHING &&
+            ON_MACHINE.includes(m.then) &&
+            !ON_MACHINE.includes(m.doing) &&
+            m.path.length === 0 &&
+            tileAt(m.body.x, m.body.z) !== m.goal &&
+            m.ko === 0 &&
+            m.angry <= 0,
+        ).length;
     }
-    const left = bot.st.inmates.filter((m) => ON_MACHINE.includes(m.then) && tileAt(m.body.x, m.body.z) !== m.goal && m.ko === 0 && m.angry <= 0);
-    check(left.length === 0, `${def.id} #${seed}: ${left.length} never reached their machine: ${left.map((m) => `${m.body.x / UNIT | 0},${m.body.z / UNIT | 0}->${m.goal % MAP_W},${(m.goal / MAP_W) | 0}`).join(' ')}`);
+    const left = bot.st.inmates.filter(
+      (m) => ON_MACHINE.includes(m.then) && tileAt(m.body.x, m.body.z) !== m.goal && m.ko === 0 && m.angry <= 0,
+    );
+    check(
+      left.length === 0,
+      `${def.id} #${seed}: ${left.length} never reached their machine: ${left.map((m) => `${(m.body.x / UNIT) | 0},${(m.body.z / UNIT) | 0}->${m.goal % MAP_W},${(m.goal / MAP_W) | 0}`).join(' ')}`,
+    );
   }
   check(on > 0 && shared === 0 && late === 0, `${def.id}: inmates on the machines, ${shared} shared, ${late} left without a way`);
   console.log(`${def.id}: on the machines in the hour: up to ${most} at once, ${used.size} machines used over 6 seeds, none shared`);
@@ -239,7 +265,7 @@ for (const def of PRISONS) {
     tb.step(0);
     if (tb.st.inmates.some((m) => ON_MACHINE.includes(m.doing))) any++;
   }
-  check(any === 0, 'nobody on the Training Block\'s machines');
+  check(any === 0, "nobody on the Training Block's machines");
   // Nothing about the hour's check-in moved: it's still the zone, whoever is on what.
   const count = hour(3, CENTER_PERKS, HOUR);
   check(count.counted(), 'the hour still counts the player');
@@ -248,7 +274,13 @@ for (const def of PRISONS) {
 // ------------------------------------------------------------------ giving way
 function someoneOn(def = CENTER_PERKS, seed = 41) {
   const bot = hour(seed, def, HOUR);
-  check(bot.until(() => bot.sim.world.props.some((_, i) => GEAR.includes(bot.sim.world.props[i].kind) && onMachine(bot.sim, i) >= 0), 45 * STEPS_PER_MINUTE), `${def.id}: someone on a machine`);
+  check(
+    bot.until(
+      () => bot.sim.world.props.some((_, i) => GEAR.includes(bot.sim.world.props[i].kind) && onMachine(bot.sim, i) >= 0),
+      45 * STEPS_PER_MINUTE,
+    ),
+    `${def.id}: someone on a machine`,
+  );
   // (Beside it, not on its tile: someone's on that. Some stand in a corner with no room but that: another then.)
   const roomBeside = (prop: number) => {
     const spot = spotOf(bot, prop);
@@ -261,7 +293,10 @@ function someoneOn(def = CENTER_PERKS, seed = 41) {
       })
       .find((q) => q.t !== spot.tile && !bot.sim.world.npcBlock[q.t]);
   };
-  check(bot.until(() => gearOf(bot).some((i) => onMachine(bot.sim, i) >= 0 && !!roomBeside(i)), 45 * STEPS_PER_MINUTE), `${def.id}: room beside it`);
+  check(
+    bot.until(() => gearOf(bot).some((i) => onMachine(bot.sim, i) >= 0 && !!roomBeside(i)), 45 * STEPS_PER_MINUTE),
+    `${def.id}: room beside it`,
+  );
   const prop = gearOf(bot).find((i) => onMachine(bot.sim, i) >= 0 && !!roomBeside(i))!;
   const who = onMachine(bot.sim, prop);
   const open = roomBeside(prop);
@@ -271,14 +306,31 @@ function someoneOn(def = CENTER_PERKS, seed = 41) {
 for (const def of PRISONS) {
   const { bot, prop, who } = someoneOn(def);
   bot.st.energy = 100;
-  const target = interactTarget(bot.sim.world, bot.st.items, bot.st.player, false, bot.st.layer, [...bot.st.inmates, ...bot.st.guards], bot.st.inmates.length);
-  check(target?.kind === 'fixture' && target.index === prop, `${def.id}: the button at a taken machine is for the machine, not the one on it (${JSON.stringify(target)})`);
+  const target = interactTarget(
+    bot.sim.world,
+    bot.st.items,
+    bot.st.player,
+    false,
+    bot.st.layer,
+    [...bot.st.inmates, ...bot.st.guards],
+    bot.st.inmates.length,
+  );
+  check(
+    target?.kind === 'fixture' && target.index === prop,
+    `${def.id}: the button at a taken machine is for the machine, not the one on it (${JSON.stringify(target)})`,
+  );
   bot.events.length = 0;
   bot.act();
   check(bot.st.askTurn[0] === prop && bot.st.train < 0, `${def.id}: asked`);
-  check(bot.events.some((e) => e.type === 'askTurn' && e.who === who), `${def.id}: they say something`);
+  check(
+    bot.events.some((e) => e.type === 'askTurn' && e.who === who),
+    `${def.id}: they say something`,
+  );
   const asked = bot.st.step;
-  check(bot.until(() => bot.st.train === prop, GIVE_WAY_STEPS + 5), `${def.id}: on it in time`);
+  check(
+    bot.until(() => bot.st.train === prop, GIVE_WAY_STEPS + 5),
+    `${def.id}: on it in time`,
+  );
   const waited = bot.st.step - asked;
   check(waited >= GIVE_WAY_STEPS - 2, `${def.id}: after they've finished up (${waited} steps)`);
   // They leave, for good, and don't come back to it while the player's there.
@@ -304,7 +356,12 @@ for (const def of PRISONS) {
     if (prop >= 0) {
       const on = onMachine(b.sim, prop);
       const t = spotOf(b, prop).tile;
-      const near = b.st.inmates.some((o, k) => k !== on && Math.max(Math.abs(o.body.x - ((t % MAP_W) * UNIT + UNIT / 2)), Math.abs(o.body.z - (Math.floor(t / MAP_W) * UNIT + UNIT / 2))) < 3 * UNIT);
+      const near = b.st.inmates.some(
+        (o, k) =>
+          k !== on &&
+          Math.max(Math.abs(o.body.x - ((t % MAP_W) * UNIT + UNIT / 2)), Math.abs(o.body.z - (Math.floor(t / MAP_W) * UNIT + UNIT / 2))) <
+            3 * UNIT,
+      );
       if (near) continue;
       bot = b;
       break;
@@ -347,7 +404,7 @@ console.log('giving way: asked in all five, on the machine in 2 s, they keep off
   const left = again.bot.st.askTurn[1];
   again.bot.step(0);
   again.bot.act();
-  check(again.bot.st.askTurn[1] < left, 'pressing again doesn\'t start the wait over');
+  check(again.bot.st.askTurn[1] < left, "pressing again doesn't start the wait over");
   /** Beside the one on it, with the machine the button's target. */
   const besideThem = (t: ReturnType<typeof someoneOn>) => {
     const b = t.bot;
@@ -358,7 +415,15 @@ console.log('giving way: asked in all five, on the machine in 2 s, they keep off
         if (tile === home || b.sim.world.npcBlock[tile]) continue;
         for (const f of [1, 5, 9, 13]) {
           put(b, tile, f);
-          const target = interactTarget(b.sim.world, b.st.items, b.st.player, false, b.st.layer, [...b.st.inmates, ...b.st.guards], b.st.inmates.length);
+          const target = interactTarget(
+            b.sim.world,
+            b.st.items,
+            b.st.player,
+            false,
+            b.st.layer,
+            [...b.st.inmates, ...b.st.guards],
+            b.st.inmates.length,
+          );
           if (target?.kind === 'fixture' && target.index === t.prop) return;
         }
       }
@@ -370,13 +435,29 @@ console.log('giving way: asked in all five, on the machine in 2 s, they keep off
   tired.bot.st.energy = TIRED - 1;
   tired.bot.events.length = 0;
   tired.bot.act();
-  check(!tired.bot.st.askTurn.length && tired.bot.st.talk === tired.who, 'too tired: nobody\'s moved for nothing, and the button talks to them instead');
+  check(
+    !tired.bot.st.askTurn.length && tired.bot.st.talk === tired.who,
+    "too tired: nobody's moved for nothing, and the button talks to them instead",
+  );
   check(machineOffer(tired.bot.sim, tired.prop) === 'talk', 'as labels.ts says');
   // (Across the machine, out of a talk's reach: told why not.)
   const far = someoneOn();
   far.bot.st.energy = TIRED - 1;
   const fp = far.bot.sim.world.props[far.prop];
-  const away = [[fp.x, fp.z - 1], [fp.x - 1, fp.z], [fp.x + fp.w, fp.z]].map(([x, z]) => z * MAP_W + x).find((t) => t !== spotOf(far.bot, far.prop).tile && !far.bot.sim.world.npcBlock[t] && Math.abs(t % MAP_W - spotOf(far.bot, far.prop).tile % MAP_W) + Math.abs(Math.floor(t / MAP_W) - Math.floor(spotOf(far.bot, far.prop).tile / MAP_W)) >= 2);
+  const away = [
+    [fp.x, fp.z - 1],
+    [fp.x - 1, fp.z],
+    [fp.x + fp.w, fp.z],
+  ]
+    .map(([x, z]) => z * MAP_W + x)
+    .find(
+      (t) =>
+        t !== spotOf(far.bot, far.prop).tile &&
+        !far.bot.sim.world.npcBlock[t] &&
+        Math.abs((t % MAP_W) - (spotOf(far.bot, far.prop).tile % MAP_W)) +
+          Math.abs(Math.floor(t / MAP_W) - Math.floor(spotOf(far.bot, far.prop).tile / MAP_W)) >=
+          2,
+    );
   if (away !== undefined) {
     put(far.bot, away, 5);
     const offered = machineOffer(far.bot.sim, far.prop);
@@ -408,8 +489,23 @@ console.log('giving way: asked in all five, on the machine in 2 s, they keep off
   const m = talk.bot.st.inmates[talk.who];
   put(talk.bot, tileAt(m.body.x, m.body.z), 5);
   // (From the tile before it, looking straight at them: the south of it, or wherever's open.)
-  const from = [13, 5, 1, 9].map((f) => ({ f, x: m.body.x - (DIR_X[f] * UNIT) / 1024, z: m.body.z - (DIR_Z[f] * UNIT) / 1024 })).find((q) => !talk.bot.sim.world.npcBlock[tileAt(q.x, q.z)] && !GEAR.some((g) => talk.bot.sim.world.props.some((p) => p.kind === g && tileAt(q.x, q.z) === p.z * MAP_W + p.x)))!;
-  const look = () => interactTarget(talk.bot.sim.world, talk.bot.st.items, { ...talk.bot.st.player, x: from.x, z: from.z, facing: from.f }, false, talk.bot.st.layer, [...talk.bot.st.inmates], talk.bot.st.inmates.length);
+  const from = [13, 5, 1, 9]
+    .map((f) => ({ f, x: m.body.x - (DIR_X[f] * UNIT) / 1024, z: m.body.z - (DIR_Z[f] * UNIT) / 1024 }))
+    .find(
+      (q) =>
+        !talk.bot.sim.world.npcBlock[tileAt(q.x, q.z)] &&
+        !GEAR.some((g) => talk.bot.sim.world.props.some((p) => p.kind === g && tileAt(q.x, q.z) === p.z * MAP_W + p.x)),
+    )!;
+  const look = () =>
+    interactTarget(
+      talk.bot.sim.world,
+      talk.bot.st.items,
+      { ...talk.bot.st.player, x: from.x, z: from.z, facing: from.f },
+      false,
+      talk.bot.st.layer,
+      [...talk.bot.st.inmates],
+      talk.bot.st.inmates.length,
+    );
   const near = look();
   check(near?.kind !== 'person', `not to be talked to on it (${JSON.stringify(near)})`);
   const was = m.doing;
@@ -418,14 +514,25 @@ console.log('giving way: asked in all five, on the machine in 2 s, they keep off
   m.doing = was;
   check(after?.kind === 'person' && after.who === talk.who, `off it, as ever (${JSON.stringify(after)})`);
   // Nor is someone only standing on a mat kept from a talk by the mat.
-  const mats = new Bot(PRISONS.find((d) => d.id === 'irongate')!, 3);
+  const mats = new Bot(
+    PRISONS.find((d) => d.id === 'irongate')!,
+    3,
+  );
   check(mats.routineUntil(1, 10 * 60), 'irongate');
   const mat = mats.sim.world.props.find((p) => p.kind === 'mat')!;
   const stands = mats.st.inmates[0];
   stands.body.x = (mat.x + 1) * UNIT + UNIT / 2;
   stands.body.z = mat.z * UNIT + UNIT / 2;
   stands.doing = DOING.NOTHING;
-  const faced = interactTarget(mats.sim.world, mats.st.items, { ...mats.st.player, x: mat.x * UNIT + UNIT / 2, z: mat.z * UNIT + UNIT / 2, facing: 1 }, false, mats.st.layer, [...mats.st.inmates], mats.st.inmates.length);
+  const faced = interactTarget(
+    mats.sim.world,
+    mats.st.items,
+    { ...mats.st.player, x: mat.x * UNIT + UNIT / 2, z: mat.z * UNIT + UNIT / 2, facing: 1 },
+    false,
+    mats.st.layer,
+    [...mats.st.inmates],
+    mats.st.inmates.length,
+  );
   check(faced?.kind === 'person' && faced.who === 0, `someone on a mat, faced, is talked to (${JSON.stringify(faced)})`);
   // The player on a machine: anyone bound for it goes elsewhere.
   const bound = hour(41, CENTER_PERKS, HOUR);
@@ -459,7 +566,11 @@ for (const def of PRISONS) {
   check(!bot.sim.world.npcBlock[bt] && !bot.sim.world.npcBlock[mt], `${def.id}: neither is in the way`);
   // (Older runs dug through those tiles, and went on doing so.)
   const before = new Sim({ ...def, props: def.props.filter((p) => p.kind !== 'mat' && p.kind !== 'punchingBag') }, 3).world;
-  check(canDigFloor(bot.sim.world, bt, []) === canDigFloor(before, bt, []) && canDigFloor(bot.sim.world, mt, []) === canDigFloor(before, mt, []), `${def.id}: the floor under them digs as it did`);
+  check(
+    canDigFloor(bot.sim.world, bt, []) === canDigFloor(before, bt, []) &&
+      canDigFloor(bot.sim.world, mt, []) === canDigFloor(before, mt, []),
+    `${def.id}: the floor under them digs as it did`,
+  );
 }
 {
   const bot = hour();
@@ -478,8 +589,11 @@ for (const def of PRISONS) {
     put(bot, z * MAP_W + x);
     bot.step(0);
   }
-  check(bot.events.some((e) => e.type === 'lap') && !bot.events.some((e) => e.type === 'cantTrain'), 'as fast as it gets, a lap says nothing');
-  console.log('the bag and the mat in every gym, in nobody\'s way; a lap at 100 Speed says nothing');
+  check(
+    bot.events.some((e) => e.type === 'lap') && !bot.events.some((e) => e.type === 'cantTrain'),
+    'as fast as it gets, a lap says nothing',
+  );
+  console.log("the bag and the mat in every gym, in nobody's way; a lap at 100 Speed says nothing");
 }
 
 // ------------------------------------------------------------------ what the bag and the mat take over
@@ -491,7 +605,11 @@ for (const def of PRISONS) {
   for (let z = 0; z < 80; z++) {
     for (let x = 0; x < MAP_W; x++) {
       const t = z * MAP_W + x;
-      if (w.npcBlock[t] || !w.props.some((p) => (p.kind === 'mat' || p.kind === 'punchingBag') && Math.abs(p.x - x) <= 2 && Math.abs(p.z - z) <= 2)) continue;
+      if (
+        w.npcBlock[t] ||
+        !w.props.some((p) => (p.kind === 'mat' || p.kind === 'punchingBag') && Math.abs(p.x - x) <= 2 && Math.abs(p.z - z) <= 2)
+      )
+        continue;
       for (const facing of [1, 5, 9, 13]) {
         const b = { ...bot.st.player, x: x * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2, facing };
         const now = interactTarget(w, bot.st.items, b, false, bot.st.layer);
@@ -515,7 +633,23 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ text
 for (const lang of [en, fr] as Array<Record<string, string>>) {
-  for (const k of ['act.askTurn', 'act.mat', 'act.punchingBag', 'thing.mat', 'thing.punchingBag', 'train.mat', 'train.punchingBag', 'train.gives.str', 'train.gives.spd', 'train.gives.int', 'hint.trainBeatKeys', 'hint.trainBeatTouch', 'help.train.steps', 'help.train.more']) check(!!lang[k], `${k} is there`);
+  for (const k of [
+    'act.askTurn',
+    'act.mat',
+    'act.punchingBag',
+    'thing.mat',
+    'thing.punchingBag',
+    'train.mat',
+    'train.punchingBag',
+    'train.gives.str',
+    'train.gives.spd',
+    'train.gives.int',
+    'hint.trainBeatKeys',
+    'hint.trainBeatTouch',
+    'help.train.steps',
+    'help.train.more',
+  ])
+    check(!!lang[k], `${k} is there`);
   check(!('hint.trainKeys' in lang), 'the old hint is gone: its advice was to press fast');
   check(!/vite|quickly/i.test(lang['lesson.gym.lift'].replace('aller plus vite', '')), 'the lesson no longer says to hurry');
 }
@@ -587,5 +721,7 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   put(o, (bp.z + 1) * MAP_W + bp.x, 13);
   const t = interactTarget(o.sim.world, o.st.items, o.st.player, false, o.st.layer);
   check(!(t?.kind === 'fixture' && t.index === bag), 'the bag, only for show');
-  console.log('saves: a turn asked for kept; from before, none. Logs: a 2.28 log replays by the old rules and is not carried on; today\'s is');
+  console.log(
+    "saves: a turn asked for kept; from before, none. Logs: a 2.28 log replays by the old rules and is not carried on; today's is",
+  );
 }

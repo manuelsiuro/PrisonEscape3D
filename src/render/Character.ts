@@ -268,7 +268,9 @@ export class Character {
 
   constructor(look: Look) {
     this.material =
-      look.silhouette !== undefined ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK }) : bodyMaterial;
+      look.silhouette !== undefined
+        ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK })
+        : bodyMaterial;
     const outfit = look.outfit;
     const outfitDark = new THREE.Color(outfit).multiplyScalar(0.78).getHex();
     const trousers = look.trousers ?? outfit;
@@ -291,8 +293,22 @@ export class Character {
       [this.legR, 0.11],
     ] as const) {
       pivot.position.set(x, 0.4, 0);
-      mesh([part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03), ...(trim !== undefined ? [part(0.196, 0.035, 0.206, trim, 0, -0.29, 0)] : [])], pivot);
-      bare.push([[part(0.19, 0.17, 0.2, SHORTS, 0, -0.085, 0), part(0.17, 0.17, 0.18, skin, 0, -0.255, 0), part(0.19, 0.06, 0.25, skin, 0, -0.37, 0.03)], pivot]);
+      mesh(
+        [
+          part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0),
+          part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03),
+          ...(trim !== undefined ? [part(0.196, 0.035, 0.206, trim, 0, -0.29, 0)] : []),
+        ],
+        pivot,
+      );
+      bare.push([
+        [
+          part(0.19, 0.17, 0.2, SHORTS, 0, -0.085, 0),
+          part(0.17, 0.17, 0.18, skin, 0, -0.255, 0),
+          part(0.19, 0.06, 0.25, skin, 0, -0.37, 0.03),
+        ],
+        pivot,
+      ]);
     }
 
     // Torso: the jumpsuit, a white collar, the number patch (a guard: a belt, a tie, a badge).
@@ -354,12 +370,25 @@ export class Character {
         ],
         pivot,
       );
-      bare.push([[part(0.15, 0.2, 0.16, skin, 0, -0.1, 0), part(0.13, 0.15, 0.14, skin, 0, -0.27, 0), part(0.14, 0.09, 0.15, skin, 0, -0.38, 0), ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f, skin) : []), ...inkedParts(look.inked ?? [], x < 0, skin)], pivot]);
+      bare.push([
+        [
+          part(0.15, 0.2, 0.16, skin, 0, -0.1, 0),
+          part(0.13, 0.15, 0.14, skin, 0, -0.27, 0),
+          part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
+          ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f, skin) : []),
+          ...inkedParts(look.inked ?? [], x < 0, skin),
+        ],
+        pivot,
+      ]);
     }
 
     // Head: a big block with brows, a nose, a mouth and a haircut; the eyes blink on their own.
     this.head.position.y = 0.8;
-    const face: Part[] = [part(0.46, 0.44, 0.44, skin, 0, 0.22, 0), part(0.06, 0.07, 0.04, skin, 0, 0.18, 0.235), part(0.11, 0.025, 0.02, 0x8a4b3a, 0, 0.1, 0.222)];
+    const face: Part[] = [
+      part(0.46, 0.44, 0.44, skin, 0, 0.22, 0),
+      part(0.06, 0.07, 0.04, skin, 0, 0.18, 0.235),
+      part(0.11, 0.025, 0.02, 0x8a4b3a, 0, 0.1, 0.222),
+    ];
     for (const s of [-1, 1]) face.push(part(0.11, 0.035, 0.02, hair, s * 0.1, 0.32, 0.222));
     // Under a hat, hair that would stand up through it lies flat (P16).
     const hatted = !!look.hat && look.cap === undefined && !look.riot;
@@ -382,10 +411,19 @@ export class Character {
       face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215));
     } else if (style === 4) {
       // A mohawk: shaved sides, a crest front to back.
-      face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215), part(0.1, 0.2, 0.46, hair, 0, 0.55, -0.01));
+      face.push(
+        part(0.47, 0.03, 0.45, hair, 0, 0.45, 0),
+        part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215),
+        part(0.1, 0.2, 0.46, hair, 0, 0.55, -0.01),
+      );
     } else if (style === 5) {
       // Curls: a round mop over the top (a short top under a hat), down the sides and the back.
-      face.push(covered ? part(0.48, 0.1, 0.47, hair, 0, 0.47, -0.005) : part(0.56, 0.2, 0.54, hair, 0, 0.5, -0.02), part(0.08, 0.2, 0.42, hair, -0.27, 0.36, -0.04), part(0.08, 0.2, 0.42, hair, 0.27, 0.36, -0.04), part(0.54, 0.3, 0.1, hair, 0, 0.32, -0.25));
+      face.push(
+        covered ? part(0.48, 0.1, 0.47, hair, 0, 0.47, -0.005) : part(0.56, 0.2, 0.54, hair, 0, 0.5, -0.02),
+        part(0.08, 0.2, 0.42, hair, -0.27, 0.36, -0.04),
+        part(0.08, 0.2, 0.42, hair, 0.27, 0.36, -0.04),
+        part(0.54, 0.3, 0.1, hair, 0, 0.32, -0.25),
+      );
     }
     if (look.beard) face.push(...beardParts(look.beard, hair, skin));
     if (look.glasses) face.push(...glassesParts(look.glasses, look.glassesColor ?? 0x2a2a30));
@@ -420,7 +458,14 @@ export class Character {
     // A guard's key: a ring and a key in its color, hanging from the belt.
     if (look.key !== undefined) {
       this.keyTag = new THREE.Bone();
-      mesh([part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0), part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0), part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0)], this.keyTag);
+      mesh(
+        [
+          part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0),
+          part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0),
+          part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0),
+        ],
+        this.keyTag,
+      );
       this.keyTag.position.set(-0.2, 0.02, 0.16);
       this.body.add(this.keyTag);
     }
@@ -428,7 +473,8 @@ export class Character {
     this.root.add(this.body);
     // (Before the first skinned(): merging a list spends the geometry it's given only as far as the GPU, and nothing's been drawn.)
     const washes = !guard || look.silhouette !== undefined;
-    if (washes) bare.push([face, this.head], [[part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], this.eyes]);
+    if (washes)
+      bare.push([face, this.head], [[part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], this.eyes]);
     const whole = skinned(limbs, this.root, this.material);
     this.skeleton = whole.skeleton;
     this.dressed = whole;
@@ -479,7 +525,10 @@ export class Character {
     this.root.add(this.badgeSprite);
     // A meal's tray (2.25): carried in both hands, or on the table in front; its food goes bite by bite.
     // (Of the body's own material: the player's silhouette mustn't read it as a wall in front of them.)
-    const trayBoard = new THREE.Mesh(merge([part(0.38, 0.03, 0.28, 0x9aa3ad, 0, 0, 0), part(0.2, 0.012, 0.17, 0xe6e8ea, -0.06, 0.02, 0.01)], false), this.material);
+    const trayBoard = new THREE.Mesh(
+      merge([part(0.38, 0.03, 0.28, 0x9aa3ad, 0, 0, 0), part(0.2, 0.012, 0.17, 0xe6e8ea, -0.06, 0.02, 0.01)], false),
+      this.material,
+    );
     trayBoard.castShadow = true;
     this.tray.add(trayBoard);
     for (const [w, h, d, color, x, y, z] of TRAY_FOOD) {
@@ -491,7 +540,10 @@ export class Character {
     this.tray.visible = false;
     this.root.add(this.tray);
     // A spoon in the right fist over the tray.
-    this.spoon = new THREE.Mesh(merge([part(0.022, 0.018, 0.2, 0xc9ced4, 0, 0, 0.08), part(0.05, 0.022, 0.06, 0xc9ced4, 0, 0, 0.2)], false), this.material);
+    this.spoon = new THREE.Mesh(
+      merge([part(0.022, 0.018, 0.2, 0xc9ced4, 0, 0, 0.08), part(0.05, 0.022, 0.06, 0xc9ced4, 0, 0, 0.2)], false),
+      this.material,
+    );
     this.spoon.position.set(0, -0.44, 0.04);
     this.spoon.visible = false;
     this.armR.add(this.spoon);
@@ -515,15 +567,48 @@ export class Character {
     this.handset.visible = false;
     this.armL.add(this.handset);
     // A towel (2.26), in the body's own material like the tray: round the neck with its ends down the front, or over the hair.
-    this.towelNeck = new THREE.Mesh(merge([part(0.56, 0.07, 0.34, TOWEL, 0, 0.82, 0), part(0.11, 0.3, 0.03, TOWEL, -0.14, 0.66, 0.165), part(0.11, 0.3, 0.03, TOWEL, 0.14, 0.66, 0.165), part(0.11, 0.03, 0.035, TOWEL_EDGE, -0.14, 0.53, 0.165), part(0.11, 0.03, 0.035, TOWEL_EDGE, 0.14, 0.53, 0.165)], false), this.material);
+    this.towelNeck = new THREE.Mesh(
+      merge(
+        [
+          part(0.56, 0.07, 0.34, TOWEL, 0, 0.82, 0),
+          part(0.11, 0.3, 0.03, TOWEL, -0.14, 0.66, 0.165),
+          part(0.11, 0.3, 0.03, TOWEL, 0.14, 0.66, 0.165),
+          part(0.11, 0.03, 0.035, TOWEL_EDGE, -0.14, 0.53, 0.165),
+          part(0.11, 0.03, 0.035, TOWEL_EDGE, 0.14, 0.53, 0.165),
+        ],
+        false,
+      ),
+      this.material,
+    );
     this.towelNeck.castShadow = true;
     this.towelNeck.visible = false;
     this.body.add(this.towelNeck);
-    this.towelHead = new THREE.Mesh(merge([part(0.56, 0.13, 0.54, TOWEL, 0, 0.5, -0.01), part(0.56, 0.24, 0.1, TOWEL, 0, 0.32, -0.25), part(0.07, 0.24, 0.4, TOWEL, -0.27, 0.34, -0.03), part(0.07, 0.24, 0.4, TOWEL, 0.27, 0.34, -0.03)], false), this.material);
+    this.towelHead = new THREE.Mesh(
+      merge(
+        [
+          part(0.56, 0.13, 0.54, TOWEL, 0, 0.5, -0.01),
+          part(0.56, 0.24, 0.1, TOWEL, 0, 0.32, -0.25),
+          part(0.07, 0.24, 0.4, TOWEL, -0.27, 0.34, -0.03),
+          part(0.07, 0.24, 0.4, TOWEL, 0.27, 0.34, -0.03),
+        ],
+        false,
+      ),
+      this.material,
+    );
     this.towelHead.castShadow = true;
     // A guard's clipboard, for the count (2.27).
     if (guard) {
-      this.clipboard = new THREE.Mesh(merge([part(0.24, 0.3, 0.025, 0x8a5a2b, 0, 0, 0), part(0.2, 0.25, 0.012, 0xf2f2ee, 0, -0.01, 0.018), part(0.08, 0.03, 0.03, 0x3a3f47, 0, 0.14, 0.018)], false), this.material);
+      this.clipboard = new THREE.Mesh(
+        merge(
+          [
+            part(0.24, 0.3, 0.025, 0x8a5a2b, 0, 0, 0),
+            part(0.2, 0.25, 0.012, 0xf2f2ee, 0, -0.01, 0.018),
+            part(0.08, 0.03, 0.03, 0x3a3f47, 0, 0.14, 0.018),
+          ],
+          false,
+        ),
+        this.material,
+      );
       this.clipboard.position.set(-0.08, 0.66, 0.26);
       this.clipboard.rotation.x = -0.5;
       this.clipboard.castShadow = true;
@@ -684,7 +769,17 @@ export class Character {
    * limbs; `doing` (DOING) poses it at a routine spot, `bed` is where it lies to sleep.
    * Returns true on the frame a foot lands (for footstep sounds and dust).
    */
-  pose(x: number, z: number, facing: number, moving: boolean, dt: number, time: number, motion = true, doing: number = DOING.NOTHING, bed?: BedPose): boolean {
+  pose(
+    x: number,
+    z: number,
+    facing: number,
+    moving: boolean,
+    dt: number,
+    time: number,
+    motion = true,
+    doing: number = DOING.NOTHING,
+    bed?: BedPose,
+  ): boolean {
     const k = (rate: number) => Math.min(1, dt * rate);
     // Into bed and out of it: a short ease between standing beside it and lying in it.
     // Knocked out: down on the floor where they stand, quicker.
@@ -745,7 +840,9 @@ export class Character {
     let armLz = 0;
     let armRz = 0;
     let legZ = 0;
-    let bob = Math.abs(Math.cos(this.phase)) * (0.045 + 0.04 * running) * this.swing + (motion ? Math.sin(time * 2.2 + this.offset) * 0.006 * (1 - this.swing) : 0);
+    let bob =
+      Math.abs(Math.cos(this.phase)) * (0.045 + 0.04 * running) * this.swing +
+      (motion ? Math.sin(time * 2.2 + this.offset) * 0.006 * (1 - this.swing) : 0);
 
     // Activities fade in once the character has stopped at its spot.
     if (doing !== this.actKind) {
@@ -1231,7 +1328,8 @@ export class Character {
       }
     }
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
-    this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
+    this.body.position.y =
+      bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
     // (In line for the phone, P34: a slow shift of the weight from foot to foot.)
     const shift = doing === DOING.QUEUE && motion ? Math.sin(t * 0.55) * 0.04 * this.act : 0;
     this.body.rotation.z = (motion ? Math.sin(t * 0.7) * 0.06 * dz : 0) + shift;
@@ -1326,8 +1424,16 @@ export class Character {
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
     // (In line for the phone, P34, they look about as they wait.)
-    const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || (doing >= DOING.WORK && doing !== DOING.QUEUE) || ko;
-    if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * (this.perched ? PERCHED_GLANCE * 2 : 1.1);
+    const still =
+      doing === DOING.CRAWL ||
+      doing === DOING.LINE_UP ||
+      doing === DOING.SLEEP ||
+      doing === DOING.EXERCISE ||
+      doing === DOING.SEARCH ||
+      (doing >= DOING.WORK && doing !== DOING.QUEUE) ||
+      ko;
+    if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6)
+      this.glanceGoal = (Math.random() - 0.5) * (this.perched ? PERCHED_GLANCE * 2 : 1.1);
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
@@ -1338,7 +1444,15 @@ export class Character {
     const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
     const nod = motion ? 0.3 + 0.35 * sink * sink * (3 - 2 * sink) : 0.55;
     this.head.rotation.x =
-      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : doing === DOING.SHOWER || doing === DOING.LINE_UP ? -0.4 * this.headBack : doing === DOING.TOWEL ? 0.25 * this.act : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
+      this.recoil > 0
+        ? -0.35 * Math.sin(this.recoil * Math.PI)
+        : doing === DOING.READ
+          ? 0.3 * this.act
+          : doing === DOING.SHOWER || doing === DOING.LINE_UP
+            ? -0.4 * this.headBack
+            : doing === DOING.TOWEL
+              ? 0.25 * this.act
+              : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
     return stepped;
   }
 

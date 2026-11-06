@@ -11,7 +11,17 @@
  * A run from before 2.33 (Sim.rules232) has none of it, the cooler walked through as decoration. The Training Block's
  * is the player's alone: its lessons ask for inmates by name.
  */
-import { COOLER, COOLER_FROM_DAY, CUP_ENERGY, DRINK_ODDS, DRINK_RUSH, DRINK_SPREAD, DRINK_STALL_STEPS, INMATE_DRINK_STEPS, THIRST_STEPS } from '../../content/cooler';
+import {
+  COOLER,
+  COOLER_FROM_DAY,
+  CUP_ENERGY,
+  DRINK_ODDS,
+  DRINK_RUSH,
+  DRINK_SPREAD,
+  DRINK_STALL_STEPS,
+  INMATE_DRINK_STEPS,
+  THIRST_STEPS,
+} from '../../content/cooler';
 import { ROUTINE } from '../../content/routine';
 import { DOING } from '../ai/doing';
 import { DIR_X, DIR_Z } from '../command';
@@ -43,7 +53,13 @@ export function coolerProp(sim: Pick<SimContext, 'world' | 'rules232'>): Prop | 
 export function atCooler(sim: CoolerSim & Pick<SimContext, 'away'>): boolean {
   const p = coolerProp(sim);
   const s = sim.state;
-  return !!p && s.layer === LAYER.GROUND && playerUp(sim) && propReach(p, s.player.x, s.player.z) <= REACH && sim.world.zoneAt(Math.floor(s.player.x / UNIT), Math.floor(s.player.z / UNIT)) === sim.world.zoneAt(p.x, p.z);
+  return (
+    !!p &&
+    s.layer === LAYER.GROUND &&
+    playerUp(sim) &&
+    propReach(p, s.player.x, s.player.z) <= REACH &&
+    sim.world.zoneAt(Math.floor(s.player.x / UNIT), Math.floor(s.player.z / UNIT)) === sim.world.zoneAt(p.x, p.z)
+  );
 }
 
 /** The cooler as the action button's target: faced (within 60°), in reach, on their feet with nothing else on. It comes ahead of whoever's drinking beside it. */
@@ -91,7 +107,9 @@ export function wantsDrink(salt: number, day: number, b: number, k: number): num
   const at = ROUTINE.findIndex((r) => r.id === id);
   const from = ROUTINE[at].start - 8 * 60;
   const to = ROUTINE[at + 1].start - 8 * 60;
-  const rush = DRINK_RUSH[rollInt(salt, SALT.COOLER, day * 2 + b, 1000 + k, DRINK_RUSH.length)] + rollInt(salt, SALT.COOLER, day * 2 + b, 2000 + k, DRINK_SPREAD);
+  const rush =
+    DRINK_RUSH[rollInt(salt, SALT.COOLER, day * 2 + b, 1000 + k, DRINK_RUSH.length)] +
+    rollInt(salt, SALT.COOLER, day * 2 + b, 2000 + k, DRINK_SPREAD);
   return from + Math.min(rush, to - from - 10);
 }
 
@@ -140,7 +158,9 @@ export function cooler(sim: SimContext) {
     const m = s.inmates[k];
     const spot = c.spots[i];
     if (!q.there[i]) {
-      const on = !m.body.moving && Math.max(Math.abs(m.body.x - (spot.x * UNIT + UNIT / 2)), Math.abs(m.body.z - (spot.z * UNIT + UNIT / 2))) <= UNIT / 2;
+      const on =
+        !m.body.moving &&
+        Math.max(Math.abs(m.body.x - (spot.x * UNIT + UNIT / 2)), Math.abs(m.body.z - (spot.z * UNIT + UNIT / 2))) <= UNIT / 2;
       if (on) q.there[i] = s.step;
       // (A way there wedged, someone standing in its place: not for ever.)
       else if (s.step - q.sent[i] > DRINK_STALL_STEPS) leave(sim, i);
@@ -162,7 +182,8 @@ function leave(sim: SimContext, i: number) {
 }
 
 /** Two inmates at it, both there (the director's moment for a word overheard). */
-export const twoAtCooler = (sim: Pick<SimContext, 'state'>) => sim.state.cooler.there.every((t) => t > 0) && sim.state.cooler.who.every((k) => k >= 0);
+export const twoAtCooler = (sim: Pick<SimContext, 'state'>) =>
+  sim.state.cooler.there.every((t) => t > 0) && sim.state.cooler.who.every((k) => k >= 0);
 
 const marks: Body[] = [0, 1].map(() => bodyAt(0, 0));
 

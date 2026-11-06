@@ -97,7 +97,11 @@ export const hasOutside = (prison: string) => !!outsideOf(prison);
  * and the controls the hunt's. Resolves once it's over (safe, caught) and its last moment has
  * played, or 'quit' if left from the pause card.
  */
-export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: { name: string; cell: number } | null; lesson?: boolean } = {}): Promise<HuntResult> {
+export function runHunt(
+  g: Game,
+  carry: Carry,
+  opts: HuntOptions & { lookout?: { name: string; cell: number } | null; lesson?: boolean } = {},
+): Promise<HuntResult> {
   const def = outsideOf(carry.prison)!;
   const hunt = new Hunt(def, prisonOf(carry.prison), carry, opts);
   const s = hunt.state;
@@ -126,7 +130,10 @@ export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: {
     view.snapTo(s.player.x / UNIT, s.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
     view.zoomTo(1.1);
     view.setCast(run.lookout ? [{ cell: run.lookout.cell, gait: 1 }] : 0);
-    view.setGuards(s.searchers.map(() => undefined), []);
+    view.setGuards(
+      s.searchers.map(() => undefined),
+      [],
+    );
     huntView.set(hunt.out, carry.lou, carry.kind);
     // The inside's HUD and buttons down, the hunt's up (a lesson's card stays: it lives in the HUD, whose rows the stylesheet hides).
     if (!run.lesson) hud.show(false);
@@ -151,15 +158,35 @@ export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: {
     sound.setScene(hunt.night ? 'outdoorNight' : 'outdoorDay');
     if (!run.lesson) {
       const goal = t(`manhunt.goal.${def.safeKind}` as Key);
-      banner.show(t('manhunt.title'), s.alarmAt > 0 ? t('manhunt.intro', { goal }) : t('manhunt.introSeen', { goal }), s.alarmAt > 0 ? 'routine' : 'alarm', 4800);
+      banner.show(
+        t('manhunt.title'),
+        s.alarmAt > 0 ? t('manhunt.intro', { goal }) : t('manhunt.introSeen', { goal }),
+        s.alarmAt > 0 ? 'routine' : 'alarm',
+        4800,
+      );
       if (carry.lou) playLater(5200, () => g.hunt === run && banner.toast(t('manhunt.louWaits'), 'good', 4000));
     }
   });
 }
 
 /** A lesson played in the manhunt (P41): straight outside, as the lesson sets it (a run in the jumpsuit, nothing in the pockets). */
-export function lessonHunt(g: Game, spec: { kind: Carry['kind']; searchers: readonly number[]; headStart: number; minute: number; lou: boolean }) {
-  const carry: Carry = { prison: CENTER_PERKS.id, via: 'fence', kind: spec.kind, spd: 40, outfit: INMATE_OUTFIT, kit: [], crew: 0, lou: spec.lou, headStart: spec.headStart, minute: spec.minute, salt: 41 };
+export function lessonHunt(
+  g: Game,
+  spec: { kind: Carry['kind']; searchers: readonly number[]; headStart: number; minute: number; lou: boolean },
+) {
+  const carry: Carry = {
+    prison: CENTER_PERKS.id,
+    via: 'fence',
+    kind: spec.kind,
+    spd: 40,
+    outfit: INMATE_OUTFIT,
+    kit: [],
+    crew: 0,
+    lou: spec.lou,
+    headStart: spec.headStart,
+    minute: spec.minute,
+    salt: 41,
+  };
   void runHunt(g, carry, { searchers: spec.searchers, heli: false, roadblocks: false, ramp: false, lesson: true });
 }
 
@@ -313,7 +340,13 @@ function huntGuide(g: Game, run: HuntRun, dt: number) {
   guideFrom = from;
   const goal = run.ended ? null : lessonHuntGoal(g);
   const path = goal && findPath(h.world, from, goal, -1, 4000, undefined, h.grid);
-  huntPath = path && path.length ? smooth(h.world, path, h.state.player.x, h.state.player.z, undefined, h.grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
+  huntPath =
+    path && path.length
+      ? smooth(h.world, path, h.state.player.x, h.state.player.z, undefined, h.grid).map((i) => ({
+          x: (i % MAP_W) + 0.5,
+          z: Math.floor(i / MAP_W) + 0.5,
+        }))
+      : null;
 }
 
 // ------------------------------------------------------------------ what happened
@@ -433,13 +466,24 @@ function endHunt(g: Game, run: HuntRun) {
   if (safe) {
     sound.engine();
     sound.music('title');
-    banner.show(t(s.over === OVER.LOU ? 'manhunt.awayLou' : 'manhunt.away'), t(`manhunt.awaySub.${s.over === OVER.LOU ? 'lou' : h.def.safeKind}` as Key), 'routine', 3000);
+    banner.show(
+      t(s.over === OVER.LOU ? 'manhunt.awayLou' : 'manhunt.away'),
+      t(`manhunt.awaySub.${s.over === OVER.LOU ? 'lou' : h.def.safeKind}` as Key),
+      'routine',
+      3000,
+    );
   } else {
     sound.siren(false);
     sound.music('title');
     banner.show(t('manhunt.caught'), t('manhunt.caughtSub', { n: Math.round(h.progress * 100) }), 'alarm', 3000);
   }
-  const result: HuntResult = { over: s.over, progress: h.progress, secs: Math.round(s.step / STEPS_PER_SECOND), feats: [...s.feats], goal: s.over === OVER.LOU ? 'lou' : h.def.safeKind };
+  const result: HuntResult = {
+    over: s.over,
+    progress: h.progress,
+    secs: Math.round(s.step / STEPS_PER_SECOND),
+    feats: [...s.feats],
+    goal: s.over === OVER.LOU ? 'lou' : h.def.safeKind,
+  };
   // (A lesson ends as its steps say: the hunt stays on screen under its card.)
   if (run.lesson) return run.resolve(result);
   run.result = result;

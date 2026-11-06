@@ -75,11 +75,21 @@
   animation: card-in 0.4s var(--spring) both;
 }
 
-.v-stat:nth-child(2) { animation-delay: 0.05s; }
-.v-stat:nth-child(3) { animation-delay: 0.1s; }
-.v-stat:nth-child(4) { animation-delay: 0.15s; }
-.v-stat:nth-child(5) { animation-delay: 0.2s; }
-.v-stat:nth-child(6) { animation-delay: 0.25s; }
+.v-stat:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.v-stat:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.v-stat:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.v-stat:nth-child(5) {
+  animation-delay: 0.2s;
+}
+.v-stat:nth-child(6) {
+  animation-delay: 0.25s;
+}
 
 .v-stat .ic {
   color: var(--steel-2);

@@ -1,7 +1,7 @@
 # Backlog: what's open
 
 Everything not done yet, in one place (2026-11-06): the gameplay areas no polish pass has looked at,
-the checks only a person can do, the ideas the user parked, and upkeep. Each item says where its
+the checks only a person can do, the ideas the user parked, the improvement queue and upkeep. Each item says where its
 detail lives; nothing here is planned until the user picks it. When something is done, take it off
 (and a check done by hand: its date).
 
@@ -57,7 +57,33 @@ measured and re-tuned, as the sports grounds were).
 - **Photo mode and postcards**, **a custom escape** (a twist sandbox and Hard time), **the escape
   planner corkboard**, **a story through the prisons** (2026-10-23, offered with parole, not picked).
 
-## 4. Upkeep
+## 4. The improvement queue
+
+The user picked all sixteen from a survey of the code, the UI, the 3D and the gameplay (2026-11-06),
+one development session each. The order puts safety nets before refactors, measurements before
+fixes, and polished systems before the feature built on them; the user may reorder. Each session
+starts by asking the user's choices, and ends with its history entry; take it off here when done
+(the numbers stay: 1, lint and types, was done in v2.34.2).
+
+| # | Session | Why now, what it found |
+|---|---|---|
+| 2 | Tests for the play/UI layer | Label, highlight and action agreeing (`labels.ts`, `focusOf`, `actions.ts`): a net for 3 |
+| 3 | Split the giant modules | `View.ts` 2,098 lines, `Character.ts` 1,478, `director.ts` 1,376, `Hunt.ts` 1,262; snapshots unchanged |
+| 4 | Faster first load | One 3 MB bundle, no dynamic import: the tutorial, manhunt, minigames and French loaded on demand |
+| 5 | Phone performance pass | `budgettest` counts the static world headless (30–37 calls); nothing measures the browser: frame time, the whole scene's calls (166–254 at roll call, v2.5.0), day and night |
+| 6 | Hitches and memory | `budgettest` proves a world frees what it made; not measured: shader-compile stalls, garbage collection, memory over a long game in a browser |
+| 7 | Design-token cleanup | ~720 colours written into the CSS outside `01-base.css`, 79 inline styles; 380 KB of CSS |
+| 8 | Screen-size sweep | Every screen at desktop, 412×915, 915×412, 360×640 and a tablet, then the fixes |
+| 9 | Accessibility options | No text size, colour-blind palette or key remapping (built on 7's tokens) |
+| 10 | Gamepad support | No controller input (`getGamepads` nowhere); shares 9's remapping |
+| 11 | Fights, stealth and heat | §1; the core of an escape, never reviewed |
+| 12 | Tools, digging, items, looting | §1: tools, digging, vents and roofs; items and crafting; searching and looting |
+| 13 | Talk, merchants, crew | §1: talking, favours and opinion; merchants and money; the crew |
+| 14 | Picture review of every prison | Day and night, materials, shadows, light: a report first, then the fixes picked (as the lamps) |
+| 15 | Character animation polish | Blends between poses, idle and walk variety, hands and what they hold |
+| 16 | Gangs and turf | §3; built on 11 and 13 (fights, opinion, merchants, the crew) once they're polished |
+
+## 5. Upkeep
 
 - **The repository's size:** 705 MB, nearly all of it old versions of the map viewer's pictures.
   Since 2.34.1 they no longer change at every release, and the 3D photos are WebP (a fifth of the

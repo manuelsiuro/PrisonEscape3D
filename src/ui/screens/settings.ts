@@ -54,9 +54,17 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
   let done = '';
   const toggle = (k: Toggle, label: Key, ic: string) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><button class="switch ${settings[k] ? 'on' : ''}" role="switch" aria-checked="${settings[k]}" data-toggle="${k}" aria-label="${t(label)}"><i></i></button></div>`;
-  const choice = <K extends 'quality' | 'lang' | 'chatter' | 'pa' | 'holidays' | 'holidayPick'>(k: K, label: Key, ic: string, options: Choice<K>) =>
+  const choice = <K extends 'quality' | 'lang' | 'chatter' | 'pa' | 'holidays' | 'holidayPick'>(
+    k: K,
+    label: Key,
+    ic: string,
+    options: Choice<K>,
+  ) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="seg" role="radiogroup" aria-label="${t(label)}">${options
-      .map(([v, l]) => `<button role="radio" aria-checked="${settings[k] === v}" class="${settings[k] === v ? 'on' : ''}" data-choice="${k}" data-value="${v}">${t(l)}</button>`)
+      .map(
+        ([v, l]) =>
+          `<button role="radio" aria-checked="${settings[k] === v}" class="${settings[k] === v ? 'on' : ''}" data-choice="${k}" data-value="${v}">${t(l)}</button>`,
+      )
       .join('')}</div></div>`;
   const slider = (k: 'sfx' | 'music', label: Key, value: number, ic: string) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="volume"><input type="range" min="0" max="100" step="5" value="${Math.round(value * 100)}" data-volume="${k}" aria-label="${t(label)}"></div></div>`;
@@ -116,7 +124,10 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
       } else {
         settings.sfxVolume = v;
         settings.muted = v === 0;
-        el.querySelector('[data-volume="sfx"]')!.closest('.set-row')!.querySelector('.set-name .ic')!.outerHTML = icon(settings.muted ? 'mute' : 'sound', 17);
+        el.querySelector('[data-volume="sfx"]')!.closest('.set-row')!.querySelector('.set-name .ic')!.outerHTML = icon(
+          settings.muted ? 'mute' : 'sound',
+          17,
+        );
       }
       apply();
     });

@@ -10,7 +10,10 @@ import { STEPS_PER_SECOND } from '../sim/tuning';
 /** A stage at (x, z), the performer facing `face` (1 east, 5 south, 9 west, 13 north). */
 export const stage = (x: number, z: number, face: 1 | 5 | 9 | 13): Stage => ({ x, z, face });
 /** Quiz night's four places, in a row. */
-export const quizAt = (face: 1 | 5 | 9 | 13, ...spots: Array<[number, number]>): QuizPlace => ({ face, spots: spots.map(([x, z]) => ({ x, z })) });
+export const quizAt = (face: 1 | 5 | 9 | 13, ...spots: Array<[number, number]>): QuizPlace => ({
+  face,
+  spots: spots.map(([x, z]) => ({ x, z })),
+});
 
 // ------------------------------------------------------------------ talent night
 
@@ -42,7 +45,10 @@ export const SONGS: readonly Song[] = [
     level: 1,
     steps: 6,
     minor: false,
-    bars: run({ a: '0.1.2.1.', b: '0.1.2...', c: '2.1.0.1.', d: '0...2...', e: '0.2.1.0.', z: '0.......' }, 'a a b d a a c d c b c d a e c z'),
+    bars: run(
+      { a: '0.1.2.1.', b: '0.1.2...', c: '2.1.0.1.', d: '0...2...', e: '0.2.1.0.', z: '0.......' },
+      'a a b d a a c d c b c d a e c z',
+    ),
     chords: [0, 0, 0, 0, 5, 5, 0, 0, 7, 5, 0, 7, 0, 5, 7, 0],
   },
   // A minor blues with quavers in it: 120 a minute.
@@ -51,7 +57,10 @@ export const SONGS: readonly Song[] = [
     level: 2,
     steps: 5,
     minor: true,
-    bars: run({ a: '0.12.1..', b: '2.1.0.1.', c: '0.1.21.0', d: '0..1.2..', e: '21.0.12.', f: '0.0.1.2.', g: '2...0...', z: '0.......' }, 'a b a d c b a g e c a d a f c b e e c z'),
+    bars: run(
+      { a: '0.12.1..', b: '2.1.0.1.', c: '0.1.21.0', d: '0..1.2..', e: '21.0.12.', f: '0.0.1.2.', g: '2...0...', z: '0.......' },
+      'a b a d c b a g e c a d a f c b e e c z',
+    ),
     chords: [7, 7, 7, 7, 12, 12, 7, 7, 14, 12, 7, 14, 7, 7, 12, 12, 14, 14, 7, 7],
   },
   // Rock and roll, runs of quavers: 150 a minute.
@@ -60,7 +69,20 @@ export const SONGS: readonly Song[] = [
     level: 3,
     steps: 4,
     minor: false,
-    bars: run({ a: '01.21.0.', b: '0.12.10.', c: '2.10.12.', d: '0121.0..', e: '01210121', f: '2.1.0.1.', g: '0.2.1.2.', h: '0...0.2.', z: '0.......' }, 'f g f h a b a h c d c b e a e h b c d a e e d z'),
+    bars: run(
+      {
+        a: '01.21.0.',
+        b: '0.12.10.',
+        c: '2.10.12.',
+        d: '0121.0..',
+        e: '01210121',
+        f: '2.1.0.1.',
+        g: '0.2.1.2.',
+        h: '0...0.2.',
+        z: '0.......',
+      },
+      'f g f h a b a h c d c b e a e h b c d a e e d z',
+    ),
     chords: [5, 5, 10, 12, 5, 5, 10, 12, 5, 5, 10, 12, 5, 5, 10, 12, 5, 5, 10, 12, 5, 5, 10, 12],
   },
 ];

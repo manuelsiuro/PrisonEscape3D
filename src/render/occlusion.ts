@@ -89,6 +89,7 @@ export function seeThrough<M extends THREE.Material>(material: M, minY = 0.06, z
   if (patched.has(material)) return material;
   patched.add(material);
   material.defines = { ...material.defines, OCC_MIN_Y: minY.toFixed(3), OCC_Z_MARGIN: zMargin.toFixed(3) };
+  // oxlint-disable-next-line typescript/unbound-method -- called on the material below
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);

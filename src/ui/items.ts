@@ -38,7 +38,6 @@ export interface ItemsView {
   take: ReadonlyArray<{ what: number; label: string; why: string }>;
 }
 
-
 /** A library shelf's books (2.31): a subject's name and how much it can tell the player now; the note; what's next; the day's reading done. */
 export interface ShelfBooks {
   subjects: ReadonlyArray<{ id: number; name: string; icon: string; learn: string; some: boolean }>;
@@ -49,7 +48,10 @@ export interface ShelfBooks {
 
 const booksHtml = (b: ShelfBooks) =>
   `<div class="books-head"><b>${t('box.read')}</b><small>${esc(b.note)}</small></div><div class="books-list">${b.subjects
-    .map((s) => `<button class="big-btn small book-btn${s.some ? ' primary' : ' ghost'}" data-book="${s.id}"${b.full ? ' disabled' : ''}>${icon(s.icon, 16)}<span>${esc(s.name)}<small>${esc(s.learn)}</small></span></button>`)
+    .map(
+      (s) =>
+        `<button class="big-btn small book-btn${s.some ? ' primary' : ' ghost'}" data-book="${s.id}"${b.full ? ' disabled' : ''}>${icon(s.icon, 16)}<span>${esc(s.name)}<small>${esc(s.learn)}</small></span></button>`,
+    )
     .join('')}</div><p class="books-next">${esc(b.full || b.next)}</p>`;
 
 /** P42: take buttons past this `what` are a holiday's treats (play/holidays.ts TREAT_OFFSET), each with its icon. */
@@ -70,7 +72,8 @@ function slotInner(v: number): string {
 /** What a wound alarm clock shows (P14): its seconds to go, 'ring' while it rings, '' stopped or not a clock. */
 const clockFace = (v: number) => (itemOf(v) === ALARM_CLOCK && usesOf(v) > 0 ? (clockRinging(v) ? 'ring' : String(clockSecs(v))) : '');
 /** What the item card says of an alarm clock. */
-const clockText = (v: number) => (clockRinging(v) ? t('items.ringing') : clockSecs(v) ? t('items.clockIn', { n: clockSecs(v) }) : t('items.clockOff'));
+const clockText = (v: number) =>
+  clockRinging(v) ? t('items.ringing') : clockSecs(v) ? t('items.clockIn', { n: clockSecs(v) }) : t('items.clockOff');
 
 /**
  * The item UI (GDD §6, §8, §13): the hotbar of 6 slots plus weapon and outfit, the action
@@ -318,7 +321,8 @@ export class ItemsUI {
           // Someone else's desk: its drawers first (their hidden compartment is no place for the player's things).
           const from = v.boxMine ? 0 : v.boxHidden;
           const inBox = box.findIndex((x, k) => k >= from && !x);
-          const free = addr >= SLOT.CONTAINER ? it.inv.slice(0, HOTBAR).findIndex((x) => !x) : inBox >= 0 ? inBox : box.findIndex((x) => !x);
+          const free =
+            addr >= SLOT.CONTAINER ? it.inv.slice(0, HOTBAR).findIndex((x) => !x) : inBox >= 0 ? inBox : box.findIndex((x) => !x);
           to = free < 0 ? addr : addr >= SLOT.CONTAINER ? free : SLOT.CONTAINER + free;
           if (free < 0) this.toast(t(addr >= SLOT.CONTAINER ? 'items.full' : 'items.boxFull'));
         }
@@ -423,9 +427,19 @@ export class ItemsUI {
     if (this.lang !== currentLang()) this.relabel();
     const it = v.items;
     // Bench entries that emptied (crafted, dropped) fall off; picks of a closed box go.
-    for (let k = this.bench.length - 1; k >= 0; k--) if (!it.inv[this.bench[k]]) (this.bench.splice(k, 1), this.uiRev++);
-    if (this.picked !== null && it.open < 0) (this.picked = null), this.uiRev++;
-    if (this.menu !== null && !it.inv[this.menu]) (this.menu = null), this.uiRev++;
+    for (let k = this.bench.length - 1; k >= 0; k--)
+      if (!it.inv[this.bench[k]]) {
+        this.bench.splice(k, 1);
+        this.uiRev++;
+      }
+    if (this.picked !== null && it.open < 0) {
+      this.picked = null;
+      this.uiRev++;
+    }
+    if (this.menu !== null && !it.inv[this.menu]) {
+      this.menu = null;
+      this.uiRev++;
+    }
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
@@ -452,7 +466,15 @@ export class ItemsUI {
       s.classList.toggle('on-bench', this.bench.includes(k));
       // (P35: a hollow book says what it hides.)
       const inside = itemOf(it.inv[k]) === HOLLOW_BOOK ? itemOf(usesOf(it.inv[k])) : 0;
-      s.title = it.inv[k] ? (inside ? t('items.inside', { item: itemName(itemOf(it.inv[k])), inside: itemName(inside) }) : itemName(itemOf(it.inv[k]))) : k === SLOT.WEAPON ? t('items.weapon') : k === SLOT.OUTFIT ? t('items.outfit') : '';
+      s.title = it.inv[k]
+        ? inside
+          ? t('items.inside', { item: itemName(itemOf(it.inv[k])), inside: itemName(inside) })
+          : itemName(itemOf(it.inv[k]))
+        : k === SLOT.WEAPON
+          ? t('items.weapon')
+          : k === SLOT.OUTFIT
+            ? t('items.outfit')
+            : '';
     });
 
     this.lastInv = it.inv.slice();
@@ -464,7 +486,8 @@ export class ItemsUI {
     this.box.classList.toggle('hidden', !box);
     if (box) {
       setText(this.boxTitle, v.boxTitle);
-      const cell = (k: number) => `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? itemName(itemOf(box[k])) : ''}">${slotInner(box[k])}</button>`;
+      const cell = (k: number) =>
+        `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? itemName(itemOf(box[k])) : ''}">${slotInner(box[k])}</button>`;
       this.box.querySelector('.box-hidden-wrap')!.classList.toggle('hidden', v.boxHidden === 0);
       this.box.classList.toggle('plain', v.boxHidden === 0);
       this.box.querySelector('.box-tunnel:not(.box-study)')!.classList.toggle('hidden', !v.deskTunnel);
@@ -477,7 +500,12 @@ export class ItemsUI {
       // (P28: fruit, sugar, a seed packet, taken on request.)
       const take = this.box.querySelector<HTMLElement>('.box-take')!;
       take.classList.toggle('hidden', !v.take.length);
-      take.innerHTML = v.take.map((x) => `<button class="big-btn small${x.why ? '' : ' primary'}" data-take="${x.what}"${x.why ? ' aria-disabled="true"' : ''}>${icon(x.what >= HOLIDAY_TAKE ? (HOLIDAY_TAKE_ICON[x.what - HOLIDAY_TAKE] ?? 'gift') : x.what === 0 ? 'fruit' : x.what === 1 ? 'box' : 'sprout', 18)}<span><b>${x.label}</b>${x.why ? `<small>${x.why}</small>` : ''}</span></button>`).join('');
+      take.innerHTML = v.take
+        .map(
+          (x) =>
+            `<button class="big-btn small${x.why ? '' : ' primary'}" data-take="${x.what}"${x.why ? ' aria-disabled="true"' : ''}>${icon(x.what >= HOLIDAY_TAKE ? (HOLIDAY_TAKE_ICON[x.what - HOLIDAY_TAKE] ?? 'gift') : x.what === 0 ? 'fruit' : x.what === 1 ? 'box' : 'sprout', 18)}<span><b>${x.label}</b>${x.why ? `<small>${x.why}</small>` : ''}</span></button>`,
+        )
+        .join('');
       this.boxHidden.innerHTML = Array.from({ length: v.boxHidden }, (_, k) => cell(k)).join('');
       this.boxDrawers.innerHTML = Array.from({ length: box.length - v.boxHidden }, (_, k) => cell(v.boxHidden + k)).join('');
     }
@@ -524,7 +552,11 @@ export class ItemsUI {
     if (this.bench.length && r < 0) msg = t('craft.nothing');
     if (r >= 0) msg = can ? t('craft.make', { item: itemName(resultN) }) : t('craft.needInt', { n: RECIPES[r].int, have: it.int });
     const bench = [0, 1, 2]
-      .map((k) => (this.bench[k] !== undefined ? `<button class="slot filled" data-bench="${k}">${slotInner(it.inv[this.bench[k]])}</button>` : `<i class="slot empty"></i>`))
+      .map((k) =>
+        this.bench[k] !== undefined
+          ? `<button class="slot filled" data-bench="${k}">${slotInner(it.inv[this.bench[k]])}</button>`
+          : `<i class="slot empty"></i>`,
+      )
       .join(`<i class="bench-plus">+</i>`);
     const book = this.drawBook(it);
     // The handbook looked at: the new recipe's dot goes.
@@ -567,16 +599,22 @@ export class ItemsUI {
       .map(({ rec, k, n }) => {
         const all = n === rec.ingredients.length;
         const have = all && !!ingredientSlots(it, k);
-        const ings = rec.ingredients.map((_, j) => (seen(k, j) ? `<img src="${icons[seen(k, j)]}" alt="">` : `<i class="book-q">?</i>`)).join('');
+        const ings = rec.ingredients
+          .map((_, j) => (seen(k, j) ? `<img src="${icons[seen(k, j)]}" alt="">` : `<i class="book-q">?</i>`))
+          .join('');
         return `<button class="book-row mystery${all && !have ? ' missing' : ''}" ${all ? `data-recipe="${k}"` : 'data-mystery'} aria-label="${t('craft.unknown')}"><i class="book-unknown">?</i><span><b>${t('craft.unknown')}</b><em>${ings}</em></span><small>${t('craft.int', { n: rec.int })}</small></button>`;
       });
     const locked = RECIPES.filter((rec, k) => rec.int > it.int && !it.known.includes(k) && !tips.includes(k) && v.usable(k)).length;
     return [
       ...it.known.map((k) => row(k, false)),
       ...tips.map((k) => row(k, true)),
-      mysteries.length ? `<div class="box-label book-head">${icon('help', 14)}<span>${t('craft.mysteries')}</span><em>${t('craft.mysteriesNote')}</em></div>` : '',
+      mysteries.length
+        ? `<div class="box-label book-head">${icon('help', 14)}<span>${t('craft.mysteries')}</span><em>${t('craft.mysteriesNote')}</em></div>`
+        : '',
       ...mysteries,
-      locked ? `<p class="book-more">${icon('lock', 14)}${(locked === 1 ? t('craft.moreIntOne') : t('craft.moreInt', { n: locked }))}</p>` : '',
+      locked
+        ? `<p class="book-more">${icon('lock', 14)}${locked === 1 ? t('craft.moreIntOne') : t('craft.moreInt', { n: locked })}</p>`
+        : '',
     ].join('');
   }
 
@@ -618,11 +656,17 @@ export class ItemsUI {
     const d = itemDef(n);
     // An alarm clock says when it rings (P14), not how it wears.
     const clock = n === ALARM_CLOCK ? `<em class="clock">${clockText(value)}</em>` : '';
-    const tags = [d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '', d.uses ? `<em>${d.id === 'pruno_bag' ? t('items.brewDays', { n: usesOf(value) }) : t('items.uses', { n: usesOf(value) })}</em>` : '', clock].join('');
+    const tags = [
+      d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '',
+      d.uses ? `<em>${d.id === 'pruno_bag' ? t('items.brewDays', { n: usesOf(value) }) : t('items.uses', { n: usesOf(value) })}</em>` : '',
+      clock,
+    ].join('');
     const buttons: string[] = [];
     if (this.menu !== null) {
-      if (addr < HOTBAR && (d.cat === 'weapon' || d.cat === 'outfit')) buttons.push(`<button data-do="equip" data-addr="${addr}">${d.cat === 'weapon' ? t('items.wield') : t('items.equip')}</button>`);
-      if (addr === SLOT.WEAPON || addr === SLOT.OUTFIT) buttons.push(`<button data-do="unequip" data-addr="${addr}">${t('items.take')}</button>`);
+      if (addr < HOTBAR && (d.cat === 'weapon' || d.cat === 'outfit'))
+        buttons.push(`<button data-do="equip" data-addr="${addr}">${d.cat === 'weapon' ? t('items.wield') : t('items.equip')}</button>`);
+      if (addr === SLOT.WEAPON || addr === SLOT.OUTFIT)
+        buttons.push(`<button data-do="unequip" data-addr="${addr}">${t('items.take')}</button>`);
       // The item in hand can be thrown (P14), on the ground floor only (the sim says why not elsewhere).
       if (addr === it.hand) buttons.push(`<button data-do="throw" data-addr="${addr}">${icon('toss', 14)}${t('items.throw')}</button>`);
       buttons.push(`<button data-do="drop" data-addr="${addr}">${t('items.drop')}</button>`);

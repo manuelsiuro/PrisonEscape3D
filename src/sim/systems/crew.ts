@@ -21,7 +21,25 @@
  * did: the escape bots' followers are the same, step for step.
  */
 import { ROUTINE } from '../../content/routine';
-import { BACK_HELP, BACK_REACH, BRAWL_GAP, BRAWL_GUARDS, BRAWL_RANGE, BRAWL_STEPS, CREW_ESCAPE_REACH, DIG_HELP, DIG_REACH, FETCH_REACH, FETCH_STEPS, NIGHT_OPINION, NIGHT_UNTIL, SHAFT_HELP, SHAFT_REACH, WATCH_RANGE, type Speciality } from '../../content/crew';
+import {
+  BACK_HELP,
+  BACK_REACH,
+  BRAWL_GAP,
+  BRAWL_GUARDS,
+  BRAWL_RANGE,
+  BRAWL_STEPS,
+  CREW_ESCAPE_REACH,
+  DIG_HELP,
+  DIG_REACH,
+  FETCH_REACH,
+  FETCH_STEPS,
+  NIGHT_OPINION,
+  NIGHT_UNTIL,
+  SHAFT_HELP,
+  SHAFT_REACH,
+  WATCH_RANGE,
+  type Speciality,
+} from '../../content/crew';
 import { lineOfSight } from '../ai/sight';
 import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
@@ -259,7 +277,11 @@ export function brawlWith(sim: SimContext, who: number): number {
   s.inmates.forEach((o, k) => {
     if (k === who || s.followers.includes(k) || o.ko > 0 || o.angry > 0 || o.doing === DOING.SLEEP || s.talk === k) return;
     if (s.dice[0] === k || s.bout[0] === k) return;
-    if (!sim.rules250 && (acts.includes(k) || s.quiz?.who.includes(k) || s.match?.team.includes(k) || s.ink?.who === k || hoopsPartner(s) === k)) return;
+    if (
+      !sim.rules250 &&
+      (acts.includes(k) || s.quiz?.who.includes(k) || s.match?.team.includes(k) || s.ink?.who === k || hoopsPartner(s) === k)
+    )
+      return;
     const d = (o.body.x - m.body.x) ** 2 + (o.body.z - m.body.z) ** 2;
     if (d >= bestD || !lineOfSight(sim.world, m.body.x, m.body.z, o.body.x, o.body.z)) return;
     bestD = d;
@@ -339,7 +361,8 @@ export function crewTargets(sim: SimContext, so: { follow: Array<Body | null>; g
       }
     }
     // Staying the night with the player off the ground floor (the vents, a tunnel): he holds where he is, never back to bed.
-    if (!to && e[NIGHT] && ROUTINE[s.routine].id === 'lightsOut' && (s.layer !== LAYER.GROUND || sim.away)) to = mark(k, tileAt(m.body.x, m.body.z));
+    if (!to && e[NIGHT] && ROUTINE[s.routine].id === 'lightsOut' && (s.layer !== LAYER.GROUND || sim.away))
+      to = mark(k, tileAt(m.body.x, m.body.z));
     // (Only the crew with orders: a plain follower does as followers always did, old run logs and all.)
     if (e && locked && doorstep >= 0 && (to ? w.cellOf[tileAt(to.x, to.z)] === 1 || tileAt(to.x, to.z) === w.cellDoor[1] : inMine)) {
       to = mark(k, doorstep);
@@ -497,11 +520,22 @@ export function digHelp(sim: SimContext, action: string, layer: number, out: num
     if (e[ORD] !== ORDER.DIG) continue;
     const m = s.inmates[e[WHO]];
     if (!m || m.ko > 0) continue;
-    if (ground && e[ARG] < 0 && cheb(m.body, s.player) <= DIG_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) && (sim.rules250 || onFoot(sim.world, m.body, s.player, DIG_REACH + 1))) {
+    if (
+      ground &&
+      e[ARG] < 0 &&
+      cheb(m.body, s.player) <= DIG_REACH * UNIT &&
+      lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) &&
+      (sim.rules250 || onFoot(sim.world, m.body, s.player, DIG_REACH + 1))
+    ) {
       out[0] = e[WHO];
       return DIG_HELP;
     }
-    if (under && e[ARG] >= 0 && sim.world.ground.kind[e[ARG]] === TILE.SHAFT && cheb(m.body, { x: centerX(e[ARG]), z: centerZ(e[ARG]) }) <= SHAFT_REACH * UNIT) {
+    if (
+      under &&
+      e[ARG] >= 0 &&
+      sim.world.ground.kind[e[ARG]] === TILE.SHAFT &&
+      cheb(m.body, { x: centerX(e[ARG]), z: centerZ(e[ARG]) }) <= SHAFT_REACH * UNIT
+    ) {
       out[0] = e[WHO];
       return SHAFT_HELP;
     }
@@ -541,7 +575,8 @@ export function backedBy(sim: SimContext): number {
 }
 
 /** A follower's blow, with a muscle watching the player's back half as hard again. */
-export const allyDamage = (s: { crew: number[][] }, who: number, dmg: number) => (orderOf(s, who) === ORDER.BACK ? Math.floor((dmg * BACK_HELP) / 2) : dmg);
+export const allyDamage = (s: { crew: number[][] }, who: number, dmg: number) =>
+  orderOf(s, who) === ORDER.BACK ? Math.floor((dmg * BACK_HELP) / 2) : dmg;
 
 /** The ways out the crew can come along on (never through a hole, down a rope, or hidden in a vehicle). */
 const CREW_ROUTES: ReadonlySet<EscapeRoute> = new Set(['fence', 'gate', 'takeover', 'raft', 'helicopter']);
@@ -552,7 +587,13 @@ export function crewEscape(sim: SimContext, via: EscapeRoute): number[] {
   if (!CREW_ROUTES.has(via)) return [];
   return s.followers.filter((who) => {
     const m = s.inmates[who];
-    return !!m && m.ko <= 0 && cheb(m.body, s.player) <= CREW_ESCAPE_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) && (sim.rules250 || onFoot(sim.world, m.body, s.player, CREW_ESCAPE_REACH + 2));
+    return (
+      !!m &&
+      m.ko <= 0 &&
+      cheb(m.body, s.player) <= CREW_ESCAPE_REACH * UNIT &&
+      lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) &&
+      (sim.rules250 || onFoot(sim.world, m.body, s.player, CREW_ESCAPE_REACH + 2))
+    );
   });
 }
 
@@ -573,7 +614,8 @@ function onFoot(w: World, from: { x: number; z: number }, to: { x: number; z: nu
   const goal = tileAt(to.x, to.z);
   if (start === goal) return true;
   const kind = w.ground.kind;
-  const open = (x: number, z: number) => x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && (kind[z * MAP_W + x] === TILE.DOOR || !TILE_INFO[kind[z * MAP_W + x]].solid);
+  const open = (x: number, z: number) =>
+    x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && (kind[z * MAP_W + x] === TILE.DOOR || !TILE_INFO[kind[z * MAP_W + x]].solid);
   search++;
   queue.length = depth.length = 0;
   queue.push(start);

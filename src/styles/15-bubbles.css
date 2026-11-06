@@ -24,7 +24,10 @@
   font: 600 14px/1.28 var(--font-ui);
   letter-spacing: 0.005em;
   /* The speaker's colour down the left edge, a faint rim (dark floors at night), a soft drop. */
-  box-shadow: inset 3px 0 0 var(--edge), 0 0 0 1px rgba(255, 255, 255, 0.07), 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    inset 3px 0 0 var(--edge),
+    0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 8px 20px -8px rgba(0, 0, 0, 0.6);
   opacity: 0;
   transition: opacity 0.18s var(--ease);
   white-space: normal;
@@ -103,7 +106,9 @@
 }
 
 .bubble.shout.pop .bubble-in {
-  animation: bubble-pop 0.22s var(--spring), bubble-shake 0.32s 0.1s linear;
+  animation:
+    bubble-pop 0.22s var(--spring),
+    bubble-shake 0.32s 0.1s linear;
 }
 
 @keyframes bubble-shake {

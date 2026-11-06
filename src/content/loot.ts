@@ -51,7 +51,14 @@ export const LOOT: Record<string, LootTable> = {
   playerDesk: { rolls: [0, 0], max: 0, items: [] },
   bed: { rolls: [0, 0], max: 2, items: [], fixed: ['pillow', 'bed_sheet'] },
   toilet: { rolls: [0, 1], max: 1, items: [['toilet_paper', 1]] },
-  libraryShelf: { rolls: [1, 2], max: 3, items: [['ink', 3], ['magazine', 4]] },
+  libraryShelf: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['ink', 3],
+      ['magazine', 4],
+    ],
+  },
   canteenCounter: {
     rolls: [2, 4],
     max: 6,
@@ -64,11 +71,50 @@ export const LOOT: Record<string, LootTable> = {
     ],
   },
   shower: { rolls: [0, 1], max: 1, items: [['soap', 1]] },
-  woodshopBin: { rolls: [0, 2], max: 3, items: [['timber', 3], ['balsa', 1]] },
-  laundryBin: { rolls: [1, 2], max: 3, items: [['sock', 4], ['bleach', 2], ['inmate_outfit', 2], ['guard_outfit', 1]] },
-  janitorBin: { rolls: [1, 2], max: 3, items: [['broom', 2], ['mop', 2], ['bleach', 2]] },
-  kitchenFreezer: { rolls: [1, 2], max: 3, items: [['foil', 2], ['potato', 3]] },
-  metalshopBin: { rolls: [1, 2], max: 3, items: [['sheet_metal', 3], ['wire', 2], ['metal_file', 1]] },
+  woodshopBin: {
+    rolls: [0, 2],
+    max: 3,
+    items: [
+      ['timber', 3],
+      ['balsa', 1],
+    ],
+  },
+  laundryBin: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['sock', 4],
+      ['bleach', 2],
+      ['inmate_outfit', 2],
+      ['guard_outfit', 1],
+    ],
+  },
+  janitorBin: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['broom', 2],
+      ['mop', 2],
+      ['bleach', 2],
+    ],
+  },
+  kitchenFreezer: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['foil', 2],
+      ['potato', 3],
+    ],
+  },
+  metalshopBin: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['sheet_metal', 3],
+      ['wire', 2],
+      ['metal_file', 1],
+    ],
+  },
   /** What an inmate carries (looted when it's knocked out, GDD §10.2); topped up at 08:00. */
   pockets: {
     rolls: [1, 2],
@@ -149,7 +195,15 @@ export function lootTableFor(kind: PropKind, zone: ZoneId, playerCell: boolean):
     case 'shower':
       return 'shower';
     case 'bin':
-      return zone === 'woodshop' ? 'woodshopBin' : zone === 'laundry' ? 'laundryBin' : zone === 'janitor' ? 'janitorBin' : zone === 'metalshop' ? 'metalshopBin' : null;
+      return zone === 'woodshop'
+        ? 'woodshopBin'
+        : zone === 'laundry'
+          ? 'laundryBin'
+          : zone === 'janitor'
+            ? 'janitorBin'
+            : zone === 'metalshop'
+              ? 'metalshopBin'
+              : null;
     case 'freezer':
       return zone === 'kitchen' ? 'kitchenFreezer' : null;
     default:

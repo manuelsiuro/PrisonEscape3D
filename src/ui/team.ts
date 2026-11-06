@@ -5,14 +5,12 @@ import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { pad2 } from '../sim/systems/clock';
 
-
 /**
  * Team & ink (P29) on screen: the match's card (the score, the clock, what to do, the Kick pad
  * and its power) and the tattoo's (the design, the pen to follow, the needle and the line it has
  * inked; or a friend's work on the player's arm). Drawn from views the play layer fills from the
  * sim (play/team.ts): the sim's own functions decide everything shown.
  */
-
 
 /** A match as its card shows it. */
 export interface MatchView {
@@ -103,7 +101,20 @@ export class MatchCard {
       this.drawn = '';
       return;
     }
-    const key = [v.name, v.phase, v.left, v.score.join(), v.ours, v.by, v.own, v.atFeet, v.mates.join(), v.rivals.join(), currentLang(), TOUCH].join('|');
+    const key = [
+      v.name,
+      v.phase,
+      v.left,
+      v.score.join(),
+      v.ours,
+      v.by,
+      v.own,
+      v.atFeet,
+      v.mates.join(),
+      v.rivals.join(),
+      currentLang(),
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       setText(this.title, t('football.title', { name: v.name }));
@@ -166,7 +177,8 @@ export interface InkView {
 }
 
 /** The design's path as an SVG polyline's points, in a 0–100 box. */
-const pointsOf = (path: ReadonlyArray<readonly [number, number]>) => path.map(([x, y]) => `${(x / 10).toFixed(1)},${(y / 10).toFixed(1)}`).join(' ');
+const pointsOf = (path: ReadonlyArray<readonly [number, number]>) =>
+  path.map(([x, y]) => `${(x / 10).toFixed(1)},${(y / 10).toFixed(1)}`).join(' ');
 /** The line inked as an SVG path, its strokes broken where the needle was set down. */
 const strokesOf = (trail: ReadonlyArray<readonly [number, number, boolean]>, n: number) =>
   trail
@@ -199,7 +211,10 @@ export class InkCard {
   /** The finger or the mouse on the design (box units) while it's down; `fresh` until its first point is sent (the needle set down there). */
   readonly touch = { down: false, fresh: false, x: 0, y: 0, id: -1 };
 
-  constructor(private readonly send: Send, private readonly click: () => void) {
+  constructor(
+    private readonly send: Send,
+    private readonly click: () => void,
+  ) {
     this.el = h(
       'div',
       'train-card ink-card hidden',
@@ -285,7 +300,10 @@ export class InkCard {
       this.el.style.setProperty('--ink', `#${d.color.toString(16).padStart(6, '0')}`);
       const seen = v.seen ? ` · ${t('ink.seen')}` : '';
       const left = v.left ? ` · ${t('ink.left', { n: v.left })}` : '';
-      setText(this.note, v.mine ? `${t('ink.mineNote', { name: v.name })}${seen}` : `${t(TOUCH ? 'ink.traceTouch' : 'ink.traceDraw')}${left}${seen}`);
+      setText(
+        this.note,
+        v.mine ? `${t('ink.mineNote', { name: v.name })}${seen}` : `${t(TOUCH ? 'ink.traceTouch' : 'ink.traceDraw')}${left}${seen}`,
+      );
       this.note.classList.toggle('ink-hurry', !!v.left);
       setText(this.quit.querySelector('span')!, t('ink.quit'));
       this.quit.classList.toggle('hidden', v.mine);

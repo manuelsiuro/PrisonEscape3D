@@ -25,8 +25,19 @@ import { inmateName } from '../ui/names';
  * what the rat would do.
  */
 
-const ICONS: Record<string, string> = { desk: 'box', bed: 'home', toilet: 'drop', shelf: 'book', counter: 'utensils', bin: 'trash', freezer: 'snow', shower: 'drop' };
-const KEY_CSS: Record<string, string> = Object.fromEntries(KEY_ITEM_COLORS.map(([c, , color]) => [c, `#${color.toString(16).padStart(6, '0')}`]));
+const ICONS: Record<string, string> = {
+  desk: 'box',
+  bed: 'home',
+  toilet: 'drop',
+  shelf: 'book',
+  counter: 'utensils',
+  bin: 'trash',
+  freezer: 'snow',
+  shower: 'drop',
+};
+const KEY_CSS: Record<string, string> = Object.fromEntries(
+  KEY_ITEM_COLORS.map(([c, , color]) => [c, `#${color.toString(16).padStart(6, '0')}`]),
+);
 
 /** A place's name for the panel, capitalised: a guard by his title, an inmate by name, furniture by what it is and whose cell. */
 function placeName(sim: Sim, x: RatTarget): string {
@@ -43,7 +54,10 @@ function furnitureName(sim: Sim, container: number): string {
   const c = containersOf(sim.world)[container];
   const cell = sim.world.cellOf[c.prop.z * MAP_W + c.prop.x];
   const owner = cell > 1 ? inmateInCell(sim.state, cell) : -1;
-  const base = owner >= 0 ? t('rat.whose', { thing: cap, name: inmateName(sim, owner) }) : t('rat.where', { thing: cap, place: t(`zone.${sim.world.zoneAt(c.prop.x, c.prop.z)}` as Key) });
+  const base =
+    owner >= 0
+      ? t('rat.whose', { thing: cap, name: inmateName(sim, owner) })
+      : t('rat.where', { thing: cap, place: t(`zone.${sim.world.zoneAt(c.prop.x, c.prop.z)}` as Key) });
   // (Several of a kind in one room, a row of showers: numbered once and for all, by their order in the prison.)
   const twins = twinsOf(sim, container);
   return twins.length > 1 ? `${base} ${twins.indexOf(container) + 1}` : base;
@@ -71,7 +85,18 @@ function twinsOf(sim: Sim, container: number): number[] {
 }
 
 const targets: RatTarget[] = [];
-const view: RatView = { name: '', status: '', say: '', ready: false, rows: [], more: 0, leave: '', leaveNo: '', loose: false, looseNote: '' };
+const view: RatView = {
+  name: '',
+  status: '',
+  say: '',
+  ready: false,
+  rows: [],
+  more: 0,
+  leave: '',
+  leaveNo: '',
+  loose: false,
+  looseNote: '',
+};
 /** The most places the panel lists (the sleepers first: a heist's guard never falls off the end). */
 const ROWS = 12;
 /** Compass points from the player, by eighths of a turn from east (z grows south). */
@@ -113,9 +138,17 @@ export function ratView(sim: Sim): RatView | null {
         container: x.container,
         icon: x.who >= 0 ? (out ? 'star' : 'moon') : (ICONS[c?.prop.kind ?? ''] ?? 'box'),
         name: placeName(sim, x),
-        meta: [x.who >= 0 ? t(out ? 'rat.out' : 'rat.asleep') : '', x.dist <= 1 ? t('rat.metaNear') : t('rat.meta', { n: x.dist, dir: pointTo(sim, x.tile) })].filter(Boolean).join(' · '),
+        meta: [
+          x.who >= 0 ? t(out ? 'rat.out' : 'rat.asleep') : '',
+          x.dist <= 1 ? t('rat.metaNear') : t('rat.meta', { n: x.dist, dir: pointTo(sim, x.tile) }),
+        ]
+          .filter(Boolean)
+          .join(' · '),
         // (His key's chip only while it's on him.)
-        key: guard && s.items.containers[x.container]?.some((v) => itemOf(v) === itemNumber(`key_${guard.key}`)) ? (KEY_CSS[guard.key] ?? '') : '',
+        key:
+          guard && s.items.containers[x.container]?.some((v) => itemOf(v) === itemNumber(`key_${guard.key}`))
+            ? (KEY_CSS[guard.key] ?? '')
+            : '',
       };
       view.rows.push(row);
     }
@@ -125,7 +158,12 @@ export function ratView(sim: Sim): RatView | null {
   view.leaveNo = held && !small ? t('rat.tooBig', { item: itemName(held) }) : '';
   const lc = looseCheck(sim);
   view.loose = view.ready && !lc.why;
-  view.looseNote = lc.why === 'tired' ? t('rat.looseTired') : lc.why === 'few' ? t('rat.looseFew', { n: lc.n, of: PANIC_PEOPLE }) : t('rat.looseOk', { n: lc.n });
+  view.looseNote =
+    lc.why === 'tired'
+      ? t('rat.looseTired')
+      : lc.why === 'few'
+        ? t('rat.looseFew', { n: lc.n, of: PANIC_PEOPLE })
+        : t('rat.looseOk', { n: lc.n });
   return view;
 }
 
@@ -135,7 +173,10 @@ function ratStatus(sim: Sim): string {
   const pet = petOf(s)!;
   switch (pet.mode) {
     case RAT.OUT:
-      return t(pet.leave ? 'rat.statusLeave' : 'rat.statusOut', { item: pet.carry ? itemName(itemOf(pet.carry)) : '', where: targetName(sim, pet.target) });
+      return t(pet.leave ? 'rat.statusLeave' : 'rat.statusOut', {
+        item: pet.carry ? itemName(itemOf(pet.carry)) : '',
+        where: targetName(sim, pet.target),
+      });
     case RAT.BACK:
       return pet.carry ? t('rat.statusBackWith', { item: itemName(itemOf(pet.carry)) }) : t('rat.statusBack');
     case RAT.LOOSE:
@@ -157,14 +198,30 @@ function targetName(sim: Sim, container: number): string {
 }
 
 /** The HUD's rat pill (null: no rat): its name and what it's doing; a bar while it runs loose. */
-const hudRat: NonNullable<HudState['rat']> = { name: '', status: '', busy: false, left: null, of: PANIC_STEPS / STEPS_PER_SECOND, usable: true };
+const hudRat: NonNullable<HudState['rat']> = {
+  name: '',
+  status: '',
+  busy: false,
+  left: null,
+  of: PANIC_STEPS / STEPS_PER_SECOND,
+  usable: true,
+};
 export function ratHud(sim: Sim): HudState['rat'] {
   const s = sim.state;
   const pet = petOf(s);
   if (!pet) return null;
   hudRat.name = ratName(sim);
   hudRat.busy = pet.mode !== RAT.SHOULDER;
-  hudRat.status = pet.mode === RAT.OUT ? t('rat.pillOut') : pet.mode === RAT.BACK ? t('rat.pillBack') : pet.mode === RAT.LOOSE ? t('rat.pillLoose') : pet.mode === RAT.WAIT ? t('rat.pillWait') : '';
+  hudRat.status =
+    pet.mode === RAT.OUT
+      ? t('rat.pillOut')
+      : pet.mode === RAT.BACK
+        ? t('rat.pillBack')
+        : pet.mode === RAT.LOOSE
+          ? t('rat.pillLoose')
+          : pet.mode === RAT.WAIT
+            ? t('rat.pillWait')
+            : '';
   hudRat.left = pet.mode === RAT.LOOSE ? Math.max(0, (pet.until - s.step) / STEPS_PER_SECOND) : null;
   // (Its panel can't open asleep, out cold, in solitary or a vehicle: the pill says so by going quiet.)
   hudRat.usable = !s.sleeping && !s.stowed && !sim.away;

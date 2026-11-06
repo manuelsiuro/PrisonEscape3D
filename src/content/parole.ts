@@ -112,12 +112,57 @@ export interface HearingPlace {
 }
 export const HEARINGS: Record<string, HearingPlace> = {
   // The visiting room's east booths: the board on the visitors' side of the counter.
-  'center-perks': { zone: 'visitation', board: [{ x: 33, z: 40 }, { x: 34, z: 40 }, { x: 35, z: 40 }], face: 5, seat: { x: 34, z: 42 } },
+  'center-perks': {
+    zone: 'visitation',
+    board: [
+      { x: 33, z: 40 },
+      { x: 34, z: 40 },
+      { x: 35, z: 40 },
+    ],
+    face: 5,
+    seat: { x: 34, z: 42 },
+  },
   // The mess hut's west table, its north bench.
-  'stalag-flucht': { zone: 'canteen', board: [{ x: 6, z: 30 }, { x: 7, z: 30 }, { x: 8, z: 30 }], face: 5, seat: { x: 7, z: 32 } },
+  'stalag-flucht': {
+    zone: 'canteen',
+    board: [
+      { x: 6, z: 30 },
+      { x: 7, z: 30 },
+      { x: 8, z: 30 },
+    ],
+    face: 5,
+    seat: { x: 7, z: 32 },
+  },
   // The canteen (where visitors sit): the north-west table.
-  shankton: { zone: 'canteen', board: [{ x: 26, z: 15 }, { x: 27, z: 15 }, { x: 28, z: 15 }], face: 5, seat: { x: 27, z: 17 } },
+  shankton: {
+    zone: 'canteen',
+    board: [
+      { x: 26, z: 15 },
+      { x: 27, z: 15 },
+      { x: 28, z: 15 },
+    ],
+    face: 5,
+    seat: { x: 27, z: 17 },
+  },
   // The canteen's two north tables.
-  'san-pancho': { zone: 'canteen', board: [{ x: 19, z: 32 }, { x: 20, z: 32 }, { x: 22, z: 32 }], face: 5, seat: { x: 20, z: 34 } },
-  irongate: { zone: 'canteen', board: [{ x: 30, z: 29 }, { x: 31, z: 29 }, { x: 33, z: 29 }], face: 5, seat: { x: 31, z: 31 } },
+  'san-pancho': {
+    zone: 'canteen',
+    board: [
+      { x: 19, z: 32 },
+      { x: 20, z: 32 },
+      { x: 22, z: 32 },
+    ],
+    face: 5,
+    seat: { x: 20, z: 34 },
+  },
+  irongate: {
+    zone: 'canteen',
+    board: [
+      { x: 30, z: 29 },
+      { x: 31, z: 29 },
+      { x: 33, z: 29 },
+    ],
+    face: 5,
+    seat: { x: 31, z: 31 },
+  },
 };

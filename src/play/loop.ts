@@ -84,7 +84,9 @@ function stepSim(g: Game, dt: number) {
     // A press waiting for the last strike's swing to finish (things that aren't strikes go at once).
     // (A blow waits for the fighter's own pace, a strike for the tool's.)
     const toolNow = press.toolNow;
-    const ready = toolNow?.attack ? sim.state.step + 1 - sim.state.swingAt >= press.attackPace : sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS;
+    const ready = toolNow?.attack
+      ? sim.state.step + 1 - sim.state.swingAt >= press.attackPace
+      : sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS;
     // (The old dig up, at a tunnel's end facing back along it, is U's alone now: Space there does nothing, so it never surfaces a player by surprise. The rule stays in the sim for old replays.)
     const upBehind = targets.tool?.action === 'digUp';
     if (upBehind) press.pressQueued = false;
@@ -123,9 +125,9 @@ function stepSim(g: Game, dt: number) {
       if (!g.lesson) chatterEvent(e, sim);
       lessonEvent(g, e);
       // Out on the road: the escape screen.
-      if (e.type === 'escaped') escaped();
+      if (e.type === 'escaped') void escaped();
       // (P26: a Three Days Daily, the fourth day dawned with the player still inside.)
-      if (e.type === 'timeUp') dailyTimeUp(g);
+      if (e.type === 'timeUp') void dailyTimeUp(g);
       // Carried somewhere (solitary, the infirmary, into bed): no slide from the old spot.
       if (e.type === 'solitary' || e.type === 'infirmary' || (e.type === 'sleep' && e.on)) {
         g.prev.x = p.x;

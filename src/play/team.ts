@@ -1,12 +1,34 @@
 import { buzz } from '../app/haptics';
-import { DESIGNS, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, INK_TIME, KICK_HOLD, KICK_REACH, LEAD_IN, RING_AHEAD, TEAM_CROWD_OPINION } from '../content/team';
+import {
+  DESIGNS,
+  GOAL_PAUSE,
+  INK_HEAT,
+  INK_ME_STEPS,
+  INK_TIME,
+  KICK_HOLD,
+  KICK_REACH,
+  LEAD_IN,
+  RING_AHEAD,
+  TEAM_CROWD_OPINION,
+} from '../content/team';
 import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
 import { EXT, needleArgs, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { eyesOn } from '../sim/systems/games';
 import { kickPower, matchRefusal, matchSteps, pitchOf, sideOf, TEAM } from '../sim/systems/football';
-import { inkRefusal, lineQuality, payOf, penAt, pointAt, qualityOf, ringAt, TATTOO_GUN, tracedShare, traceSteps } from '../sim/systems/tattoo';
+import {
+  inkRefusal,
+  lineQuality,
+  payOf,
+  penAt,
+  pointAt,
+  qualityOf,
+  ringAt,
+  TATTOO_GUN,
+  tracedShare,
+  traceSteps,
+} from '../sim/systems/tattoo';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { routineEnd } from '../content/routine';
@@ -26,7 +48,6 @@ import { inmateName } from '../ui/names';
  * panel's rows for them; Space (or the Kick pad) for a kick; the sounds and toasts of their
  * events; what the picture shows of the ball. The sim's own functions decide everything shown.
  */
-
 
 /** The line the needle has inked (its points, each inked on from the last or the needle set down there; the sitting's step and inked steps it was taken at): the card draws it. Not state. */
 const trail: Array<[number, number, boolean]> = [];
@@ -60,13 +81,26 @@ export function footballOffer(sim: Sim, who: number): { open: boolean; why: stri
 }
 
 /** The tattoo rows with the inmate talked to (null without a gun in the hotbar): the designs for him (their prices), one from him on the player's arm. */
-export function inkOffer(sim: Sim, who: number): { why: string; designs: Array<{ k: number; price: number }>; mineWhy: string; inked: number[] } | null {
+export function inkOffer(
+  sim: Sim,
+  who: number,
+): { why: string; designs: Array<{ k: number; price: number }>; mineWhy: string; inked: number[] } | null {
   const s = sim.state;
   if (!s.items.inv.slice(0, HOTBAR).some((v) => itemOf(v) === TATTOO_GUN)) return null;
   const why = inkRefusal(sim, who, false);
   // (The player's own: the first design they haven't got decides the note; each button checks its own.)
-  const mineWhy = inkRefusal(sim, who, true, DESIGNS.findIndex((_, k) => !s.inked.includes(k)));
-  return { why: why ? refusalText(sim, why) : '', designs: DESIGNS.map((d, k) => ({ k, price: d.price })), mineWhy: mineWhy ? refusalText(sim, mineWhy) : '', inked: s.inked };
+  const mineWhy = inkRefusal(
+    sim,
+    who,
+    true,
+    DESIGNS.findIndex((_, k) => !s.inked.includes(k)),
+  );
+  return {
+    why: why ? refusalText(sim, why) : '',
+    designs: DESIGNS.map((d, k) => ({ k, price: d.price })),
+    mineWhy: mineWhy ? refusalText(sim, mineWhy) : '',
+    inked: s.inked,
+  };
 }
 
 /** Why not, in words (the talk panel's notes). */
@@ -89,7 +123,21 @@ function refusalText(sim: Sim, why: string): string {
 
 // ------------------------------------------------------------------ the match's card
 
-const matchView: MatchView = { name: '', phase: 'gather', left: 0, of: 0, score: [0, 0], ours: false, by: '', own: false, holding: false, power: 0, atFeet: false, mates: [], rivals: [] };
+const matchView: MatchView = {
+  name: '',
+  phase: 'gather',
+  left: 0,
+  of: 0,
+  score: [0, 0],
+  ours: false,
+  by: '',
+  own: false,
+  holding: false,
+  power: 0,
+  atFeet: false,
+  mates: [],
+  rivals: [],
+};
 
 /** The match under way (null: none), between steps (`a`). */
 export function matchNow(sim: Sim, a: number): MatchView | null {
@@ -122,7 +170,21 @@ export function matchNow(sim: Sim, a: number): MatchView | null {
 
 // ------------------------------------------------------------------ the tattoo's card
 
-const inkView: InkView = { name: '', design: 0, mine: false, pen: [0, 0], needle: [0, 0], next: [], trail, progress: 0, lead: true, left: 0, quality: 100, pays: 0, seen: false };
+const inkView: InkView = {
+  name: '',
+  design: 0,
+  mine: false,
+  pen: [0, 0],
+  needle: [0, 0],
+  next: [],
+  trail,
+  progress: 0,
+  lead: true,
+  left: 0,
+  quality: 100,
+  pays: 0,
+  seen: false,
+};
 /** The design's stretch ahead of what's traced, as far as NEXT_SPAN (box units): the card draws it bold. */
 const NEXT_SPAN = 260;
 const nextPoints: Array<[number, number]> = [];
@@ -263,12 +325,18 @@ export function announceTeam(sim: Sim, e: SimEvent) {
           sound.levelUp();
           if ((e.crowd ?? 0) > 0) sound.cheer();
           if (e.spd) floatUp(`+1 ${t('attr.spdShort')}`, 'gain');
-          const parts = [e.spd ? t('toast.partSpd') : t('toast.partSpdTop'), e.crowd ? t('toast.partCrowd', { m: TEAM_CROWD_OPINION }) : ''].filter(Boolean);
+          const parts = [
+            e.spd ? t('toast.partSpd') : t('toast.partSpdTop'),
+            e.crowd ? t('toast.partCrowd', { m: TEAM_CROWD_OPINION }) : '',
+          ].filter(Boolean);
           banner.toast(`${t('toast.matchWon', { m: sc[0], n: sc[1] })} ${parts.join(', ')}`, 'good', 4200);
         }, 500);
       } else if (e.what === 'lost') {
         sound.whistle();
-        window.setTimeout(() => play.game === g && (sound.sting(), banner.toast(t('toast.matchLost', { name, m: sc[1], n: sc[0] }), 'bad', 3600)), 500);
+        window.setTimeout(
+          () => play.game === g && (sound.sting(), banner.toast(t('toast.matchLost', { name, m: sc[1], n: sc[0] }), 'bad', 3600)),
+          500,
+        );
       } else if (e.what === 'draw') {
         sound.whistle();
         window.setTimeout(() => play.game === g && banner.toast(t('toast.matchDraw', { m: sc[0], n: sc[1] }), undefined, 3600), 500);
@@ -293,7 +361,11 @@ export function announceTeam(sim: Sim, e: SimEvent) {
         sound.coin((e.pay ?? 0) >= 30);
         if ((e.quality ?? 0) >= 90) sound.levelUp();
         floatUp(`+$${e.pay ?? 0}`, 'cash');
-        banner.toast(t('toast.tattooDone', { name, design, q: e.quality ?? 0, n: e.pay ?? 0, g: e.gain ?? 0 }), (e.quality ?? 0) >= 50 ? 'good' : undefined, 4200);
+        banner.toast(
+          t('toast.tattooDone', { name, design, q: e.quality ?? 0, n: e.pay ?? 0, g: e.gain ?? 0 }),
+          (e.quality ?? 0) >= 50 ? 'good' : undefined,
+          4200,
+        );
       } else if (e.what === 'inked') {
         sound.levelUp();
         banner.toast(t('toast.inked', { name, design: designA }), 'good', 4200);
@@ -359,4 +431,3 @@ export function teamFrameOf(sim: Sim, a: number): TeamFrame {
 
 /** The heat a sitting under a guard's eye would cost (for the talk panel's warning): INK_HEAT if seen now, else 0. */
 export const inkHeatNow = (sim: Sim) => (eyesOn(sim.state, sim.state.step) ? INK_HEAT : 0);
-

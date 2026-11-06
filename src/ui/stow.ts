@@ -92,7 +92,14 @@ export class StowPanel {
     }
     setText(this.title, t('stow.where', { vehicle: v.vehicle }));
     setText(this.time, t('stow.leaves', { time: v.leaves }));
-    setText(this.search, v.searched === 'quick' ? t('stow.searched') : v.searched === 'waved' ? t('stow.waved') : t('stow.search', { guard: v.guard, time: v.search }));
+    setText(
+      this.search,
+      v.searched === 'quick'
+        ? t('stow.searched')
+        : v.searched === 'waved'
+          ? t('stow.waved')
+          : t('stow.search', { guard: v.guard, time: v.search }),
+    );
     this.search.classList.toggle('good', v.searched !== 'ahead');
     setText(this.hint, TOUCH ? t('stow.hintTouch') : t(v.canWait ? 'stow.hintKeys' : 'stow.hintKeysLate'));
     this.bar.style.transform = `scaleX(${Math.max(0, Math.min(1, v.done)).toFixed(4)})`;

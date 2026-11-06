@@ -49,7 +49,8 @@ export async function at(prison: string, day: number, minute: number, seed = 3) 
 export function put(x: number, z: number, facing = 5) {
   const sim = game().rec.sim;
   const i = z * MAP_W + x;
-  if (sim.world.npcBlock[i] || sim.world.zoneAt(x, z) === 'outside') throw new Error(`${x},${z} (${sim.world.zoneAt(x, z)}) isn't floor to stand on`);
+  if (sim.world.npcBlock[i] || sim.world.zoneAt(x, z) === 'outside')
+    throw new Error(`${x},${z} (${sim.world.zoneAt(x, z)}) isn't floor to stand on`);
   const p = sim.state.player;
   p.x = x * UNIT + UNIT / 2;
   p.z = z * UNIT + UNIT / 2;
@@ -84,7 +85,10 @@ export function freeze(on = true) {
 
 /** The canvas enlarged on the player (1: back to normal): take the screenshot at a high device scale for detail. */
 export function zoom(k: number) {
-  const view = (window as unknown as { __view: View }).__view as unknown as { player: { root: { position: { clone(): { y: number; project(c: unknown): { x: number; y: number } } } } }; camera: unknown };
+  const view = (window as unknown as { __view: View }).__view as unknown as {
+    player: { root: { position: { clone(): { y: number; project(c: unknown): { x: number; y: number } } } } };
+    camera: unknown;
+  };
   const canvas = document.querySelector('canvas')!;
   const v = view.player.root.position.clone();
   v.y += 0.6;

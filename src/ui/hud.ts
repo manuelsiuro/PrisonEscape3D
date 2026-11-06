@@ -175,7 +175,8 @@ export class Hud {
     this.heatText = q('.hud-heat b');
     this.paw = q('.hud-paw');
     this.pawSr = q('.hud-paw-sr');
-    for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill]) el.addEventListener('animationend', () => el.classList.remove('pulse', 'pop', 'bump'));
+    for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill])
+      el.addEventListener('animationend', () => el.classList.remove('pulse', 'pop', 'bump'));
     q('.hud-pause').addEventListener('click', onPause);
     this.lessonBtn = q('.hud-lesson');
     this.lessonBtn.addEventListener('click', () => this.onLesson());
@@ -309,8 +310,26 @@ export class Hud {
       this.coldIcon = ic;
       el.querySelector('.hud-cold-ic')!.innerHTML = icon(ic, 15);
     }
-    setText(el.querySelector('span')!, t(c.hot ? (c.bit ? 'hud.baked' : c.warming ? 'hud.cooling' : 'hud.hot') : c.bit ? 'hud.frozen' : c.warming ? 'hud.warming' : 'hud.cold'));
-    setText(el.querySelector('b')!, c.bit ? '×2' : c.warming ? '' : `0:${String(Math.min(59, Math.max(0, Math.ceil(c.left)))).padStart(2, '0')}`);
+    setText(
+      el.querySelector('span')!,
+      t(
+        c.hot
+          ? c.bit
+            ? 'hud.baked'
+            : c.warming
+              ? 'hud.cooling'
+              : 'hud.hot'
+          : c.bit
+            ? 'hud.frozen'
+            : c.warming
+              ? 'hud.warming'
+              : 'hud.cold',
+      ),
+    );
+    setText(
+      el.querySelector('b')!,
+      c.bit ? '×2' : c.warming ? '' : `0:${String(Math.min(59, Math.max(0, Math.ceil(c.left)))).padStart(2, '0')}`,
+    );
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, c.built)) * 100}%`;
   }
 
@@ -442,7 +461,10 @@ export class Hud {
   }
 
   private label() {
-    this.cashPill.setAttribute('aria-label', `${t('hud.cashIs', { n: Math.max(0, this.shownCash) })}. ${t('hud.profile')}${this.news ? `. ${t('hud.fileNew')}` : ''}`);
+    this.cashPill.setAttribute(
+      'aria-label',
+      `${t('hud.cashIs', { n: Math.max(0, this.shownCash) })}. ${t('hud.profile')}${this.news ? `. ${t('hud.fileNew')}` : ''}`,
+    );
   }
 
   update(clock: Clock, zone: ZoneId, s: HudState) {
@@ -588,7 +610,11 @@ export class Hud {
       setText(this.routinePlace, t('zone.rollCall'));
       setText(this.routineUntil, '');
       this.badge.className = `hud-badge${s.drill.mustered ? ' done' : s.drill.missed ? ' missed' : ''}`;
-      this.badge.innerHTML = s.drill.mustered ? `${icon('check', 12)}${t('routine.mustered')}` : s.drill.missed ? t('routine.drillMissed') : t('routine.pending');
+      this.badge.innerHTML = s.drill.mustered
+        ? `${icon('check', 12)}${t('routine.mustered')}`
+        : s.drill.missed
+          ? t('routine.drillMissed')
+          : t('routine.pending');
       const wasDrill = was.split('|')[6] ?? '';
       if (was && wasDrill === '') this.routinePill.classList.add('pulse');
       else if (wasDrill === 'false' && s.drill.mustered) this.badge.classList.add('pop');
@@ -606,18 +632,40 @@ export class Hud {
     // (2.23: being counted there, narrow: the time alone, the badge's minutes beside it.)
     const counting = !w && !s.attended && !!s.presence && s.presence[0] > 0;
     // (2.27: what roll call has to say shows on a phone too, in place of the time it would give while counting.)
-    setText(this.routinePlace, quiet || (counting && NARROW.matches && !s.square) ? (NARROW.matches ? until : '') : NARROW.matches && mandatory && pending && !s.square ? `${place} · ${until}` : place);
+    setText(
+      this.routinePlace,
+      quiet || (counting && NARROW.matches && !s.square)
+        ? NARROW.matches
+          ? until
+          : ''
+        : NARROW.matches && mandatory && pending && !s.square
+          ? `${place} · ${until}`
+          : place,
+    );
     setText(this.routineUntil, until);
     // At work the badge counts the quota (GDD §11), and says PAID once it's done.
     const done = w ? w.paid : s.attended;
     // (2.23: being counted, the minutes there so far, the badge filling up as they add up.)
     this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}${w?.late ? ' late' : ''}${counting ? ' counting' : ''}`;
     this.badge.style.setProperty('--fill', counting ? `${Math.round((100 * s.presence![0]) / s.presence![1])}%` : '0%');
-    this.badge.innerHTML = w ? (w.paid ? `${icon('check', 12)}${t('routine.paid')}` : `${w.quota}/${w.of}`) : s.attended ? `${icon('check', 12)}${t('routine.attended')}` : counting ? t('routine.present', { n: s.presence![0], of: s.presence![1] }) : t('routine.pending');
+    this.badge.innerHTML = w
+      ? w.paid
+        ? `${icon('check', 12)}${t('routine.paid')}`
+        : `${w.quota}/${w.of}`
+      : s.attended
+        ? `${icon('check', 12)}${t('routine.attended')}`
+        : counting
+          ? t('routine.present', { n: s.presence![0], of: s.presence![1] })
+          : t('routine.pending');
     // Checked in (or a load done): the badge pops. A new block: the whole pill does.
     const [wasRoutine, wasAttended] = was.split('|');
     const wasWork = was.split('|')[5] ?? '';
-    if (was && wasRoutine === String(s.routine) && ((wasAttended === 'false' && s.attended && !w) || (w && wasWork && wasWork !== key.split('|')[5]))) this.badge.classList.add('pop');
+    if (
+      was &&
+      wasRoutine === String(s.routine) &&
+      ((wasAttended === 'false' && s.attended && !w) || (w && wasWork && wasWork !== key.split('|')[5]))
+    )
+      this.badge.classList.add('pop');
     else if (was && wasRoutine !== String(s.routine)) this.routinePill.classList.add('pulse');
   }
 

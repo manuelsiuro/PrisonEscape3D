@@ -50,7 +50,9 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
     game,
     snap: sim.snapshot(),
     ...(sim.prison.map ? { map: sim.prison.map } : {}),
-    ...(rumors.length ? { rumors: rumors.map((r) => ({ fact: { ...r.fact }, step: r.step, ...(r.by !== undefined ? { by: r.by } : {}) })) } : {}),
+    ...(rumors.length
+      ? { rumors: rumors.map((r) => ({ fact: { ...r.fact }, step: r.step, ...(r.by !== undefined ? { by: r.by } : {}) })) }
+      : {}),
   };
 }
 
@@ -58,7 +60,14 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
  * Writes a game to a slot, and its run log next to it (P16; a log that doesn't fit in storage
  * is dropped, the save comes first); false when storage is full or blocked.
  */
-export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = [], log: RunLog | null = null, daily?: number): boolean {
+export function writeSave(
+  slot: SlotId,
+  sim: Sim,
+  game = __APP_VERSION__,
+  rumors: readonly Rumor[] = [],
+  log: RunLog | null = null,
+  daily?: number,
+): boolean {
   const file = daily === undefined ? saveFileOf(sim, Date.now(), game, rumors) : { ...saveFileOf(sim, Date.now(), game, rumors), daily };
   let ok = writeJSON(KEY_OF[slot], file);
   // Storage full: the logs make room for the save (this slot's first, then every log and replay).
@@ -93,7 +102,14 @@ export function readSave(slot: SlotId): SaveFile | null {
     !!prisonById(f.prison);
   if (!ok) return null;
   // Rumors from an older or damaged save: dropped, not trusted.
-  if (f.rumors !== undefined && !(Array.isArray(f.rumors) && f.rumors.every((r) => r && typeof r.step === 'number' && typeof r.fact?.kind === 'string' && typeof r.fact.key === 'string'))) delete f.rumors;
+  if (
+    f.rumors !== undefined &&
+    !(
+      Array.isArray(f.rumors) &&
+      f.rumors.every((r) => r && typeof r.step === 'number' && typeof r.fact?.kind === 'string' && typeof r.fact.key === 'string')
+    )
+  )
+    delete f.rumors;
   // (The Daily's slot holds only a Daily's run, and a Daily's run only that slot.)
   if ((slot === 'daily') !== Number.isInteger(f.daily)) return null;
   return f as SaveFile;

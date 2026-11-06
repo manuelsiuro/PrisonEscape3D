@@ -21,15 +21,22 @@ for (const p of [...PRISONS, TRAINING]) {
       for (const along of [true, false])
         for (let z = 0; z < MAP_H; z++)
           for (let x = 0; x < MAP_W; x++) {
-            const ww = along ? len : wid, dd = along ? wid : len;
-            let ok = true, onSpots = 0, onHoop = 0;
+            const ww = along ? len : wid,
+              dd = along ? wid : len;
+            let ok = true,
+              onSpots = 0,
+              onHoop = 0;
             for (let a = 0; a < ww && ok; a++)
               for (let b = 0; b < dd && ok; b++) {
-                const tx = x + a, tz = z + b, i = tz * MAP_W + tx;
+                const tx = x + a,
+                  tz = z + b,
+                  i = tz * MAP_W + tx;
                 const g = L.garden;
                 if (tx >= g.x && tx < g.x + g.w && tz >= g.z && tz < g.z + g.d) ok = false;
                 const end = along ? a === 0 || a === ww - 1 : b === 0 || b === dd - 1;
-                const mid = along ? b === Math.floor(dd / 2) || b === Math.floor(dd / 2) - 1 : a === Math.floor(ww / 2) || a === Math.floor(ww / 2) - 1;
+                const mid = along
+                  ? b === Math.floor(dd / 2) || b === Math.floor(dd / 2) - 1
+                  : a === Math.floor(ww / 2) || a === Math.floor(ww / 2) - 1;
                 if ((!end || mid) && bad(tx, tz)) ok = false;
                 if (end && mid && (spots.has(i) || hoop.has(i))) ok = false;
                 if (spots.has(i)) onSpots++;
@@ -39,5 +46,10 @@ for (const p of [...PRISONS, TRAINING]) {
           }
   found.sort((a, b) => b[0] - a[0]);
   const now = L.pitch;
-  console.log(`== ${p.id} (now ${now.x},${now.z},${now.w},${now.d}): ${found.slice(0, 6).map((f) => f[1]).join(' | ')}`);
+  console.log(
+    `== ${p.id} (now ${now.x},${now.z},${now.w},${now.d}): ${found
+      .slice(0, 6)
+      .map((f) => f[1])
+      .join(' | ')}`,
+  );
 }

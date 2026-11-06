@@ -6,7 +6,14 @@ import { GAME_URL } from './share';
 
 /** A browser button named in a step, drawn as it looks there. */
 const chip = (name: string) => `<span class="ins-chip">${icon(name, 14)}</span>`;
-const CHIPS = { share: chip('iosShare'), add: chip('addSquare'), more: chip('dots'), moreH: chip('dotsH'), install: chip('install'), dock: chip('dock') };
+const CHIPS = {
+  share: chip('iosShare'),
+  add: chip('addSquare'),
+  more: chip('dots'),
+  moreH: chip('dotsH'),
+  install: chip('install'),
+  dock: chip('dock'),
+};
 
 /**
  * Install the game: the browser's own install dialog where there is one (Chrome, Edge),
@@ -20,7 +27,7 @@ export async function showInstall(click: () => void): Promise<void> {
   if (!way) return;
   if (way === 'prompt' && (await promptInstall()) !== null) return;
   // (The dialog failed to open: the menu steps for this browser instead.)
-  const steps = way === 'prompt' ? installWay() ?? 'desktop' : way;
+  const steps = way === 'prompt' ? (installWay() ?? 'desktop') : way;
   if (steps === 'prompt') return;
   const copy = steps === 'inApp' || steps === 'firefox';
   const el = h(

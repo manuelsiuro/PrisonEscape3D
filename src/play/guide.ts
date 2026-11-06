@@ -84,7 +84,8 @@ export function onTap(cx: number, cy: number) {
   }
   if (best < 0) {
     // A tap out in the minefield: say why nothing happens.
-    if (sim.state.layer === LAYER.GROUND && w.inside(tx, tz) && w.ground.kind[tz * MAP_W + tx] === TILE.MINE) banner.toast(t('toast.minefield'), 'bad', 3500);
+    if (sim.state.layer === LAYER.GROUND && w.inside(tx, tz) && w.ground.kind[tz * MAP_W + tx] === TILE.MINE)
+      banner.toast(t('toast.minefield'), 'bad', 3500);
     return;
   }
   game.pilot.goTo(best);
@@ -122,7 +123,14 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   if (s.hearing) return null;
   const r = ROUTINE[s.routine];
   // (2.28: counted at the evening's roll call, and the warning's gone: home.)
-  if (r.id === 'eveningRollCall' && s.attended && !sim.rules227 && clockAt(s.step).minuteOfDay >= NIGHT_WARNING && sim.playerZone !== 'playerCell') return (i) => i === home;
+  if (
+    r.id === 'eveningRollCall' &&
+    s.attended &&
+    !sim.rules227 &&
+    clockAt(s.step).minuteOfDay >= NIGHT_WARNING &&
+    sim.playerZone !== 'playerCell'
+  )
+    return (i) => i === home;
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
   // The Work Period with a job: the janitor's next puddle (mop in the hotbar), the addressee of
@@ -147,7 +155,15 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
       const touching = (i: number) => {
         const x = i % MAP_W;
         const z = Math.floor(i / MAP_W);
-        return x >= p.x - 1 && x <= p.x + p.w && z >= p.z - 1 && z <= p.z + p.d && !(x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d) && (x >= p.x && x < p.x + p.w || (z >= p.z && z < p.z + p.d)) && isFloor(w, x, z);
+        return (
+          x >= p.x - 1 &&
+          x <= p.x + p.w &&
+          z >= p.z - 1 &&
+          z <= p.z + p.d &&
+          !(x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d) &&
+          ((x >= p.x && x < p.x + p.w) || (z >= p.z && z < p.z + p.d)) &&
+          isFloor(w, x, z)
+        );
       };
       return touching;
     }
@@ -213,7 +229,15 @@ export function updateGuide(g: Game, dt: number) {
   const goal = riot ? (i: number) => sim.world.ground.kind[i] === TILE.ROAD : guideTarget(sim);
   // On the prison as built: the arrows never lead through the player's own holes (in a takeover,
   // every door is open to them; in a lesson, the doors their keys open and the holes it had them make). Never across mines.
-  const grid = sim.state.layer !== LAYER.GROUND ? sim.world.routeGrid(sim.state.layer) : riot || lessonGoal(g) !== null ? sim.world.routeBlock : sim.world.npcBlock;
+  const grid =
+    sim.state.layer !== LAYER.GROUND
+      ? sim.world.routeGrid(sim.state.layer)
+      : riot || lessonGoal(g) !== null
+        ? sim.world.routeBlock
+        : sim.world.npcBlock;
   const path = goal && findPath(sim.world, from, goal, -1, 4000, undefined, grid);
-  g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z, undefined, grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
+  g.guide =
+    path && path.length
+      ? smooth(sim.world, path, p.x, p.z, undefined, grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 }))
+      : null;
 }

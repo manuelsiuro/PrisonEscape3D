@@ -5,8 +5,12 @@ const TABLE = 0.52;
 const COUNTER = 0.56;
 
 /** Cabin cells: a poster or a shelf over the bunk's end, by turns (top row on the north wall, bottom row on the south). */
-const cells: DecorPlacement[] = [5, 10, 15, 24, 29, 34].flatMap((x0, k) => [{ kind: k % 2 ? 'wallShelf' : 'posterB', x: x0 + 1, z: 7 } as const]);
-const lower: DecorPlacement[] = [5, 10, 24, 29].map((x0, k) => ({ kind: k % 2 ? 'posterC' : 'wallShelf', x: x0 + 1, z: 19, rot: 2 }) as const);
+const cells: DecorPlacement[] = [5, 10, 15, 24, 29, 34].flatMap((x0, k) => [
+  { kind: k % 2 ? 'wallShelf' : 'posterB', x: x0 + 1, z: 7 } as const,
+]);
+const lower: DecorPlacement[] = [5, 10, 24, 29].map(
+  (x0, k) => ({ kind: k % 2 ? 'posterC' : 'wallShelf', x: x0 + 1, z: 19, rot: 2 }) as const,
+);
 
 /**
  * Stalag Flucht dressed (P9): log cabins with a stove corner, a mess hall, a gym with its

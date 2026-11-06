@@ -21,8 +21,20 @@ import { inmateName } from '../ui/names';
  * floats). Nothing here touches the simulation: the holiday came into the run when it began.
  */
 
-const HOLIDAY_ICON: Record<HolidayDay, string> = { eggHunt: 'egg', waterFight: 'splash', costumeNight: 'pumpkin', christmasDay: 'tree', newYearsEve: 'sparkle' };
-const HOLIDAY_COLOR: Record<HolidayDay, string> = { eggHunt: '#f7a8c8', waterFight: '#5fc8ff', costumeNight: '#ff8a2a', christmasDay: '#4fbf6a', newYearsEve: '#ffd23f' };
+const HOLIDAY_ICON: Record<HolidayDay, string> = {
+  eggHunt: 'egg',
+  waterFight: 'splash',
+  costumeNight: 'pumpkin',
+  christmasDay: 'tree',
+  newYearsEve: 'sparkle',
+};
+const HOLIDAY_COLOR: Record<HolidayDay, string> = {
+  eggHunt: '#f7a8c8',
+  waterFight: '#5fc8ff',
+  costumeNight: '#ff8a2a',
+  christmasDay: '#4fbf6a',
+  newYearsEve: '#ffd23f',
+};
 
 /** The holiday a new run in this prison begins under: Settings and the date (none in the Training Block). */
 export const newRunHoliday = (prison: PrisonDef): number => (DAY_BOOKS[prison.id] ? runHoliday(settings) : 0);
@@ -79,7 +91,11 @@ export function treatOffers(sim: Sim, table: string): ReadonlyArray<{ what: numb
     if (tr.table !== table) return;
     const why = treatCheck(sim, what);
     if (why === 'notHere') return;
-    offers.push({ what: TREAT_OFFSET + what, label: t(TREAT_LABEL[what]), why: why === 'takenToday' ? t('holiday.take.today') : why === 'room' ? t('refused.room') : '' });
+    offers.push({
+      what: TREAT_OFFSET + what,
+      label: t(TREAT_LABEL[what]),
+      why: why === 'takenToday' ? t('holiday.take.today') : why === 'room' ? t('refused.room') : '',
+    });
   });
   return offers;
 }

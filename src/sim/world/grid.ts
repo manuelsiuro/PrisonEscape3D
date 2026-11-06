@@ -18,9 +18,11 @@ export const tileAt = (ux: number, uz: number) => Math.floor(uz / UNIT) * MAP_W 
 /** Tiles between two tiles, the larger way. */
 export const chebTiles = (a: number, b: number) => Math.max(Math.abs(tileX(a) - tileX(b)), Math.abs(tileZ(a) - tileZ(b)));
 /** Tiles from a tile (column, row) to the one under a point (units), the larger way. */
-export const tilesFrom = (tx: number, tz: number, ux: number, uz: number) => Math.max(Math.abs(Math.floor(ux / UNIT) - tx), Math.abs(Math.floor(uz / UNIT) - tz));
+export const tilesFrom = (tx: number, tz: number, ux: number, uz: number) =>
+  Math.max(Math.abs(Math.floor(ux / UNIT) - tx), Math.abs(Math.floor(uz / UNIT) - tz));
 /** A grid's test of a tile (column, row): off the map, or a 1 in it (World.block, guardBlock, a hunt's grid). */
-export const blockedIn = (grid: Uint8Array) => (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || grid[z * MAP_W + x] === 1;
+export const blockedIn = (grid: Uint8Array) => (x: number, z: number) =>
+  x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || grid[z * MAP_W + x] === 1;
 /** A tile's four neighbours, west, east, north, south (that order: floods and searches depend on it), each with whether it's on the map. */
 export const neighbours4 = (t: number) =>
   [

@@ -8,7 +8,19 @@ import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { turnDir } from '../command';
 import { rollInt, SALT } from '../rng';
-import { COUNT_STOP_STEPS, GUARD_STR, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, RIOT_STR, STEPS_PER_SECOND, STIR_RANGE, STIR_STEPS, UNIT } from '../tuning';
+import {
+  COUNT_STOP_STEPS,
+  GUARD_STR,
+  NAP_FROM,
+  NAP_MAX,
+  NAP_MIN,
+  NAP_TO,
+  RIOT_STR,
+  STEPS_PER_SECOND,
+  STIR_RANGE,
+  STIR_STEPS,
+  UNIT,
+} from '../tuning';
 import { clockAt } from './clock';
 import { MAP_W, type World } from '../world/World';
 import type { Fighter } from './combat';
@@ -147,7 +159,8 @@ export function rouse(g: Guard): boolean {
  * (2 steps' worth one step in three), a strict one keeps at it half as long again (nothing
  * one step in three). Worked out from the step, so nothing more is stored.
  */
-const lookDrain = (trait: GuardTrait, step: number) => (trait === 'lazy' ? (step % 3 === 0 ? 2 : 1) : trait === 'strict' ? (step % 3 === 0 ? 0 : 1) : 1);
+const lookDrain = (trait: GuardTrait, step: number) =>
+  trait === 'lazy' ? (step % 3 === 0 ? 2 : 1) : trait === 'strict' ? (step % 3 === 0 ? 0 : 1) : 1;
 
 /** Which guards sleep at night (those without a night round), and the bed each takes. */
 function bedOf(w: World, k: number): number {
@@ -181,7 +194,6 @@ function head(c: Crowd, g: Guard, tile: number) {
   route(c, g);
 }
 
-
 /** Standing somewhere: glance left, ahead, right, ahead… */
 function glance(g: Guard, step: number, wide: number) {
   const k = Math.floor(step / GLANCE) % 4;
@@ -192,7 +204,11 @@ function glance(g: Guard, step: number, wide: number) {
 const there = (g: Guard) => g.goal >= 0 && !g.path.length && tileAt(g.body.x, g.body.z) === g.goal;
 
 /** What a guard reports from a stop on its bed check or shakedown, and dozing off or waking up (Sim applies it). */
-export type GuardReport = { kind: 'count'; index: number; guard: number } | { kind: 'bedCheck'; cell: number } | { kind: 'search'; cell: number } | { kind: 'nap'; guard: number; on: boolean };
+export type GuardReport =
+  | { kind: 'count'; index: number; guard: number }
+  | { kind: 'bedCheck'; cell: number }
+  | { kind: 'search'; cell: number }
+  | { kind: 'nap'; guard: number; on: boolean };
 
 /**
  * One step of guard life. Each guard follows its duty for the routine block (a round of
@@ -294,7 +310,8 @@ export function stepGuards(
         if (!g.path.length || (goal !== g.goal && (step + k) % 10 === 0)) head(chasers, g, goal);
         walkPath(chasers, g, k, CHASE_SPEED);
         // Running a path round a corner, it keeps its eyes on the player while it can see them.
-        if (playerHere && Math.abs(dx) + Math.abs(dz) < SIGHT_RANGE && lineOfSight(w, b.x, b.z, player.x, player.z)) b.facing = nearestDir(dx, dz);
+        if (playerHere && Math.abs(dx) + Math.abs(dz) < SIGHT_RANGE && lineOfSight(w, b.x, b.z, player.x, player.z))
+          b.facing = nearestDir(dx, dz);
         break;
       }
       case GUARD.INVESTIGATE:
@@ -462,14 +479,29 @@ export function assign(g: Guard, mode: number, cells: number[]) {
 }
 
 /** Whether a guard's duty changes with this block (a new round, a post, bed): a talk with it ends (P15). */
-export const dutyDue = (def: GuardDef, g: Guard, routine: number, k: number, delivery: DeliveryDuty | null, mods: readonly string[] = []) => g.plan !== PLAN_NONE && dutyOf(def, routine, k, delivery, mods) !== g.plan;
+export const dutyDue = (def: GuardDef, g: Guard, routine: number, k: number, delivery: DeliveryDuty | null, mods: readonly string[] = []) =>
+  g.plan !== PLAN_NONE && dutyOf(def, routine, k, delivery, mods) !== g.plan;
 
 /**
  * Rounds, posts and bed. A lazy guard on its night round dozes off at its nap stop between
  * 01:00 and 05:00, once a night (P15): blind until the nap is over (05:00 at the latest), a
  * noise wakes it (noise.ts), or the player stands at its elbow a moment.
  */
-function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World, player: Body, playerHere: boolean, report: (r: GuardReport) => void, salt: number, delivery: DeliveryDuty | null, mods: readonly string[]) {
+function duty(
+  c: Crowd,
+  g: Guard,
+  k: number,
+  def: GuardDef,
+  routine: number,
+  step: number,
+  w: World,
+  player: Body,
+  playerHere: boolean,
+  report: (r: GuardReport) => void,
+  salt: number,
+  delivery: DeliveryDuty | null,
+  mods: readonly string[],
+) {
   const plan = dutyOf(def, routine, k, delivery, mods);
   if (plan !== g.plan) {
     if (rouse(g)) report({ kind: 'nap', guard: k, on: false });
@@ -534,7 +566,8 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     const stir = stirSteps({ mods });
     if (--g.doze <= 0 || late || g.stir >= stir) {
       // Someone right there: it comes to with a start, facing them.
-      if (g.stir >= stir && (player.x !== g.body.x || player.z !== g.body.z)) g.body.facing = nearestDir(player.x - g.body.x, player.z - g.body.z);
+      if (g.stir >= stir && (player.x !== g.body.x || player.z !== g.body.z))
+        g.body.facing = nearestDir(player.x - g.body.x, player.z - g.body.z);
       rouse(g);
       report({ kind: 'nap', guard: k, on: false });
     }

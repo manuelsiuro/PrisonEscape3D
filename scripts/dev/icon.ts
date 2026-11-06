@@ -46,9 +46,15 @@ const svg = (inner: string, defs = '') => `<svg xmlns="http://www.w3.org/2000/sv
 `;
 const [cx, cy] = CENTRE;
 writeFileSync('public/icon.svg', svg(`${BACKGROUND}\n  ${ART}`));
-writeFileSync('public/icon-maskable.svg', svg(`${BACKGROUND}\n  <g transform="translate(256 256) scale(0.8) translate(${-cx} ${-cy})">${ART}</g>`));
+writeFileSync(
+  'public/icon-maskable.svg',
+  svg(`${BACKGROUND}\n  <g transform="translate(256 256) scale(0.8) translate(${-cx} ${-cy})">${ART}</g>`),
+);
 writeFileSync(
   'public/favicon.svg',
-  svg(`<g clip-path="url(#r)"><g transform="translate(256 256) scale(${CLOSE.zoom}) translate(${-CLOSE.at[0]} ${-CLOSE.at[1]})">${BACKGROUND}${ART}</g></g>`, '<clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>'),
+  svg(
+    `<g clip-path="url(#r)"><g transform="translate(256 256) scale(${CLOSE.zoom}) translate(${-CLOSE.at[0]} ${-CLOSE.at[1]})">${BACKGROUND}${ART}</g></g>`,
+    '<clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>',
+  ),
 );
 console.log('wrote public/icon.svg, public/icon-maskable.svg, public/favicon.svg');

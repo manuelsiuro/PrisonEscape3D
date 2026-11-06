@@ -12,7 +12,19 @@ import type { HuntResult } from './hunt';
 export function huntOver(sim: Sim, via: string, r: Exclude<HuntResult, 'quit'>): Achievement[] {
   const safe = r.over !== OVER.CAUGHT;
   if (safe) recordGetaway(sim.prison.id, via);
-  return huntRun({ prison: sim.prison.id, via, safe, lou: r.over === OVER.LOU, progress: r.progress, spotted: r.feats[HFEAT.spotted], swapped: r.feats[HFEAT.swaps] > 0, lit: r.feats[HFEAT.lit] }, sim.state.salt);
+  return huntRun(
+    {
+      prison: sim.prison.id,
+      via,
+      safe,
+      lou: r.over === OVER.LOU,
+      progress: r.progress,
+      spotted: r.feats[HFEAT.spotted],
+      swapped: r.feats[HFEAT.swaps] > 0,
+      lit: r.feats[HFEAT.lit],
+    },
+    sim.state.salt,
+  );
 }
 
 /** A manhunt left under way (the pause card's quit): a recapture in the stats, nothing earned. */

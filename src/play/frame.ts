@@ -249,7 +249,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.deskAside = st.deskAside;
   f.wear = st.wear;
   // Footsteps: earth in the tunnels, steel in the vents, the floor's own sound elsewhere.
-  f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
+  f.surface =
+    st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
   f.inmates.length = st.inmates.length;
   // (Sat in the canteen on dinner's plan with no meal on: a film, the acts. No tray, no spoon.)
   const watching = traysHere(sim) && !mealOn(sim);
@@ -261,7 +262,25 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   grow.clear();
   const atWork = !sim.rules229 && !sim.world.def.rules?.relaxed && !st.lockdown && ROUTINE[st.routine].id === 'work';
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, held: 0, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
+    const o = (f.inmates[k] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      doing: 0,
+      cell: 0,
+      angry: false,
+      badge: '',
+      trayAt: 0,
+      trayLeft: 1,
+      held: 0,
+      bare: false,
+      towel: 0,
+      attention: false,
+      prop: -1,
+      at: { x: 0, z: 0, facing: 0, y: 0 },
+      bench: { x: 0, z: 0, angle: 0 },
+    });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -313,7 +332,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     }
     // A turn at the showers (2.26), the walks between its steps included: a towel round the neck while waiting and on the way to a head,
     // in shorts under the water, still in them walking off to dry, the towel over the hair; dressed again after.
-    const washTurn = !o.moving ? 0 : m.then === DOING.TOWEL ? 1 : m.then === DOING.SHOWER && sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'showers' ? 2 : 0;
+    const washTurn = !o.moving
+      ? 0
+      : m.then === DOING.TOWEL
+        ? 1
+        : m.then === DOING.SHOWER && sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'showers'
+          ? 2
+          : 0;
     o.bare = o.doing === DOING.SHOWER || o.doing === DOING.TOWEL || washTurn === 1;
     o.towel = o.doing === DOING.TOWEL ? 2 : o.doing === DOING.SHOWER_WAIT || washTurn > 0 ? 1 : 0;
     // The warden's come to its square (2.27): it stands straight.
@@ -340,7 +365,21 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   }
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
-    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0, range: 7 });
+    const o = (f.guards[k] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      doing: 0,
+      alert: 0,
+      pace: 1,
+      held: 0,
+      hasKey: true,
+      away: false,
+      awayLeft: 0,
+      stir: 0,
+      range: 7,
+    });
     const q = g.prevGuards[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -360,7 +399,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.held = chasing ? BATON : 0;
     // Its key on its belt while it's in its pockets (taken from a guard out cold, it's gone).
     const pocket = st.items.containers[st.items.containers.length - st.guards.length + k];
-    o.hasKey = !!pocket && (itemOf(pocket[0]) === g.guardKeys[k] || itemOf(pocket[1]) === g.guardKeys[k] || itemOf(pocket[2]) === g.guardKeys[k] || itemOf(pocket[3]) === g.guardKeys[k]);
+    o.hasKey =
+      !!pocket &&
+      (itemOf(pocket[0]) === g.guardKeys[k] ||
+        itemOf(pocket[1]) === g.guardKeys[k] ||
+        itemOf(pocket[2]) === g.guardKeys[k] ||
+        itemOf(pocket[3]) === g.guardKeys[k]);
   });
   // The dogs (P19): where they are, what they're up to; the player's trail, fresher the brighter.
   f.dogs.length = st.dogs.length;
@@ -371,7 +415,17 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.z = lerp(q?.z ?? d.body.z, d.body.z);
     o.facing = headingAngle(d.body.facing);
     o.moving = d.body.moving && !g.paused;
-    o.pose = dogAsleep(d, st.step) ? 'asleep' : dogDazed(d, st.step) ? 'dazed' : d.mode === DOG.POINT ? 'point' : d.mode === DOG.TRACK || d.mode === DOG.RAT ? 'track' : d.mode === DOG.KENNEL ? 'kennel' : 'heel';
+    o.pose = dogAsleep(d, st.step)
+      ? 'asleep'
+      : dogDazed(d, st.step)
+        ? 'dazed'
+        : d.mode === DOG.POINT
+          ? 'point'
+          : d.mode === DOG.TRACK || d.mode === DOG.RAT
+            ? 'track'
+            : d.mode === DOG.KENNEL
+              ? 'kennel'
+              : 'heel';
     o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / WALK_SPEED_GUARD : 1;
     o.friend = d.trust >= TRUST_IGNORE;
   });
@@ -385,7 +439,14 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.z = lerp(glide ? q!.z : r.z, r.z);
     o.facing = headingAngle(r.facing);
     const t = tileAt(r.x, r.z);
-    o.mode = r.mode === RAT.SHOULDER ? 'shoulder' : r.mode === RAT.WAIT || inDuct(sim.world, t) ? 'hidden' : r.mode === RAT.LOOSE ? 'loose' : 'run';
+    o.mode =
+      r.mode === RAT.SHOULDER
+        ? 'shoulder'
+        : r.mode === RAT.WAIT || inDuct(sim.world, t)
+          ? 'hidden'
+          : r.mode === RAT.LOOSE
+            ? 'loose'
+            : 'run';
     // (P28: the pet away on the track, racing or running its laps: drawn there, not on the shoulder.)
     if (!r.wild && r.mode === RAT.SHOULDER && petOnTrack(sim)) o.mode = 'hidden';
     o.carry = itemOf(r.carry);
@@ -398,7 +459,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   }
   f.lock = st.lock;
   // The ring reads the fight: red while they're after the player, dim out of reach.
-  f.lockHostile = st.lock >= 0 && (st.lock < st.inmates.length ? st.inmates[st.lock].angry > 0 : st.guards[st.lock - st.inmates.length].mode === GUARD.CHASE);
+  f.lockHostile =
+    st.lock >= 0 &&
+    (st.lock < st.inmates.length ? st.inmates[st.lock].angry > 0 : st.guards[st.lock - st.inmates.length].mode === GUARD.CHASE);
   // (The tool button as the last frame left it: it's worked out after the draw.)
   f.lockFar = !!press.toolNow?.attack && !press.toolNow.fits;
   f.knockedOut = st.ko > 0;
@@ -445,13 +508,31 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
             ? null
             : !target && !climb && !memo.station && serving < 0 && menuOffer(sim)
               ? menuFocus(sim)
-              : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : showerHead(sim, target) ?? target, climb, memo.station);
+              : focusOf(
+                  sim,
+                  serving >= 0 ? { kind: 'container', index: serving } : (showerHead(sim, target) ?? target),
+                  climb,
+                  memo.station,
+                );
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
   // The tray: in both hands, unless it's set down on a table (below).
   f.trayAt = st.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
   f.trayLeft = st.tray === TRAY.EMPTY ? 0 : 1 - Math.min(1, st.eaten / mealSteps(sim));
-  f.doing = trainKind === 'weights' ? DOING.BENCH : trainKind === 'pullup' ? DOING.PULLUP : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : trainKind === 'mat' ? DOING.PUSHUP : trainKind === 'punchingBag' ? DOING.BAG : DOING.NOTHING;
+  f.doing =
+    trainKind === 'weights'
+      ? DOING.BENCH
+      : trainKind === 'pullup'
+        ? DOING.PULLUP
+        : trainKind === 'treadmill'
+          ? DOING.RUN
+          : trainKind === 'shelf'
+            ? DOING.READ
+            : trainKind === 'mat'
+              ? DOING.PUSHUP
+              : trainKind === 'punchingBag'
+                ? DOING.BAG
+                : DOING.NOTHING;
   f.trainProp = st.train;
   f.restBed = null;
   if (trainKind === 'weights') {
@@ -598,8 +679,17 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     else if (here === 'garden') coachOnce('gardenPlace', 'hint.gardenPlace');
   }
   // Walking up to a live detector arch with contraband and no pouch (GDD §5.4): a warning, once.
-  if (memo.step === st.step && sim.powered('detectors') && st.layer === LAYER.GROUND && !busy && !seenTip('detectorAhead') && carriesUnshielded(it)) {
-    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');
+  if (
+    memo.step === st.step &&
+    sim.powered('detectors') &&
+    st.layer === LAYER.GROUND &&
+    !busy &&
+    !seenTip('detectorAhead') &&
+    carriesUnshielded(it)
+  ) {
+    for (let dz = -2; dz <= 2; dz++)
+      for (let dx = -2; dx <= 2; dx++)
+        if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');
   }
   const lights = sim.prison.searchlights;
   if (lights && sim.powered('searchlights') && ROUTINE[st.routine].id === 'lightsOut') {
@@ -629,7 +719,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // Smuggling (P21): the drone, the drops, visiting day.
   f.smuggle = smuggleFrame(sim, a);
   // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
-  f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? f.inmates[rival] ?? null : null);
+  f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? (f.inmates[rival] ?? null) : null);
   // Card sharks (P27): the court, the ball, the cards between the two, the board.
   f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner);
   // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
@@ -648,7 +738,10 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.vending.left = st.vend.left;
   f.vending.jam = st.vend.jam - 1;
   f.vending.coil = st.vend.who !== VEND_NOBODY && !st.vend.thumping ? st.vend.row : -1;
-  f.vending.turn = f.vending.coil >= 0 ? Math.min(1, Math.max(0, 1 - (st.vend.until - st.step) / (st.vend.who === VEND_PLAYER ? COIL_STEPS : INMATE_COIL_STEPS))) : 0;
+  f.vending.turn =
+    f.vending.coil >= 0
+      ? Math.min(1, Math.max(0, 1 - (st.vend.until - st.step) / (st.vend.who === VEND_PLAYER ? COIL_STEPS : INMATE_COIL_STEPS)))
+      : 0;
   f.vending.thumps = st.vend.hit;
   f.kiosk.photos = st.photos;
   // The menu board and the water cooler (2.33): today's dishes on it, a scribble; a cup being drunk at the cooler.
@@ -738,7 +831,10 @@ function dayFrame(sim: Sim, f: Frame) {
   // Delivery day (P18): the vehicle's day, in fractional minutes (it drives in before 12:30 and out after 14:31).
   const d = f.delivery;
   const st = sim.state;
-  d.t = plan.event === 'delivery' && sim.prison.delivery && !sim.prison.rules?.relaxed ? (st.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE + frameA / STEPS_PER_MINUTE : -1;
+  d.t =
+    plan.event === 'delivery' && sim.prison.delivery && !sim.prison.rules?.relaxed
+      ? (st.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE + frameA / STEPS_PER_MINUTE
+      : -1;
   d.at = plan.at;
   d.until = plan.until;
   d.search = searchMinute(plan);

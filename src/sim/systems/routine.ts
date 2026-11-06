@@ -33,7 +33,11 @@ export function nextBlock(sim: SimContext, clock: Clock) {
     const heat = past.miss === 'lockdown' && !early ? 100 : MISSED_ROUTINE_HEAT;
     // (2.27: stood in the yard all along, never on their square: they're told that, not that they left.)
     const offSquare = s.yardSeen && s.present === 0;
-    sim.events.push(early ? { type: 'missed', routine: s.routine, heat, early, ...(offSquare ? { offSquare } : {}) } : { type: 'missed', routine: s.routine, heat });
+    sim.events.push(
+      early
+        ? { type: 'missed', routine: s.routine, heat, early, ...(offSquare ? { offSquare } : {}) }
+        : { type: 'missed', routine: s.routine, heat },
+    );
     addHeat(sim, heat);
     s.blocks[s.routine] = early ? BLOCK.LEFT : BLOCK.MISSED;
   } else if (past.miss && !s.attended && s.excused) s.blocks[s.routine] = BLOCK.EXCUSED;

@@ -13,7 +13,11 @@ import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { check } from './assert';
 
 /** Compass directions (command.ts): 1 east, 5 south, 9 west, 13 north. */
-const E = 1, SE = 3, S = 5, W = 9, N = 13;
+const E = 1,
+  SE = 3,
+  S = 5,
+  W = 9,
+  N = 13;
 /** A walk out of the cell, down the hall and into the roll call yard, then wandering. */
 const PLAN: Array<[number, number]> = [
   [W, 8],

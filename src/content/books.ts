@@ -7,20 +7,68 @@ export const SUBJECTS = ['tools', 'locks', 'weapons', 'everyday'] as const;
 export type Subject = (typeof SUBJECTS)[number];
 
 const TOOLS = [
-  'tool_handle', 'flimsy_shovel', 'light_shovel', 'sturdy_shovel', 'flimsy_pickaxe', 'light_pickaxe', 'sturdy_pickaxe',
-  'flimsy_cutters', 'light_cutters', 'sturdy_cutters', 'multitool', 'powered_screwdriver', 'grappling_hook', 'grapnel',
-  'raft', 'glider_frame', 'glider', 'sheet_rope', 'timber_brace',
+  'tool_handle',
+  'flimsy_shovel',
+  'light_shovel',
+  'sturdy_shovel',
+  'flimsy_pickaxe',
+  'light_pickaxe',
+  'sturdy_pickaxe',
+  'flimsy_cutters',
+  'light_cutters',
+  'sturdy_cutters',
+  'multitool',
+  'powered_screwdriver',
+  'grappling_hook',
+  'grapnel',
+  'raft',
+  'glider_frame',
+  'glider',
+  'sheet_rope',
+  'timber_brace',
 ];
 const LOCKS = [
-  'molten_plastic', 'putty', 'papier_mache', 'bed_dummy', 'poster', 'fake_vent', 'fake_wall', 'fake_fence', 'pouch', 'lockpick',
-  'fake_id', 'hollow_book', 'forged_release',
+  'molten_plastic',
+  'putty',
+  'papier_mache',
+  'bed_dummy',
+  'poster',
+  'fake_vent',
+  'fake_wall',
+  'fake_fence',
+  'pouch',
+  'lockpick',
+  'fake_id',
+  'hollow_book',
+  'forged_release',
 ];
-const WEAPONS = ['sock_mace', 'super_sock_mace', 'comb_blade', 'bat', 'spiked_bat', 'nunchucks', 'razor_whip', 'cushioned_outfit', 'plated_outfit'];
-const EVERYDAY = ['molten_chocolate', 'firecracker', 'alarm_clock', 'sleepy_jerky', 'rat_trap', 'pruno_bag', 'rat_track', 'tattoo_gun', 'guitar'];
+const WEAPONS = [
+  'sock_mace',
+  'super_sock_mace',
+  'comb_blade',
+  'bat',
+  'spiked_bat',
+  'nunchucks',
+  'razor_whip',
+  'cushioned_outfit',
+  'plated_outfit',
+];
+const EVERYDAY = [
+  'molten_chocolate',
+  'firecracker',
+  'alarm_clock',
+  'sleepy_jerky',
+  'rat_trap',
+  'pruno_bag',
+  'rat_track',
+  'tattoo_gun',
+  'guitar',
+];
 const OF: Record<string, number> = Object.fromEntries([TOOLS, LOCKS, WEAPONS, EVERYDAY].flatMap((list, k) => list.map((id) => [id, k])));
 
 /** The subject a recipe's result is taught under (an index in SUBJECTS). The molds and keys cast from them: locks. */
-export const subjectOf = (result: string): number => OF[result] ?? (result.startsWith('mold_') || result.startsWith('plastic_key_') ? 1 : -1);
+export const subjectOf = (result: string): number =>
+  OF[result] ?? (result.startsWith('mold_') || result.startsWith('plastic_key_') ? 1 : -1);
 
 /** The pages of a book, cycled through: the steps from one key word to the next, each page the same length. */
 export const READ_GAPS: readonly (readonly number[])[] = [
@@ -65,7 +113,7 @@ export interface Token {
 /** A page's words, each language's text marking READ_KEYS key words. */
 export function pageTokens(text: string): Token[] {
   const out: Token[] = [];
-  for (const part of text.split(/(\[[^\]]*\][^\s\[]*)/)) {
+  for (const part of text.split(/(\[[^\]]*\][^\s[]*)/)) {
     if (part.startsWith('[')) out.push({ text: part.replace(/[[\]]/g, ''), key: true });
     else for (const w of part.split(/\s+/)) if (w) out.push({ text: w, key: false });
   }

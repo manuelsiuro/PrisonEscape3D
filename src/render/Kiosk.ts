@@ -226,7 +226,8 @@ function photoWall(world: World): PhotoWall | null {
   const bed = world.cellBed[1];
   if (!bed) return null;
   const base = world.ground.base;
-  const wall = (x: number, z: number) => x >= 0 && x < MAP_W && z >= 0 && z < MAP_H && TILE_INFO[base[z * MAP_W + x]].solid && TILE_INFO[base[z * MAP_W + x]].opaque;
+  const wall = (x: number, z: number) =>
+    x >= 0 && x < MAP_W && z >= 0 && z < MAP_H && TILE_INFO[base[z * MAP_W + x]].solid && TILE_INFO[base[z * MAP_W + x]].opaque;
   const cx = bed.x + bed.w / 2;
   const cz = bed.z + bed.d / 2;
   // (The pillow at the bed's -z end, turned by its rot: 0 north, 1 west, 2 south, 3 east.)
@@ -264,8 +265,26 @@ export class KioskView {
   /** What the screen shows (redrawn only when this changes). */
   private shownKey = -1;
   /** A soft glow on the wall round the screen and a pool on the floor before it, after dark. */
-  private readonly haloMat = seeThrough(new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x8fe8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }), 0.6, -0.4);
-  private readonly poolMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x8fe8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  private readonly haloMat = seeThrough(
+    new THREE.MeshBasicMaterial({
+      map: glowTexture(),
+      color: 0x8fe8ff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    0.6,
+    -0.4,
+  );
+  private readonly poolMat = new THREE.MeshBasicMaterial({
+    map: glowTexture(),
+    color: 0x8fe8ff,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
   /** The drawings over the bed: a sheet each (its picture swapped in), a pin or tape, the row on its wall. */
   private readonly photos = new THREE.Group();
   private readonly sheets: THREE.Mesh[] = [];
@@ -292,7 +311,12 @@ export class KioskView {
       sheet.receiveShadow = true;
       // (Tape across the top on the middle one, a pin in the others.)
       const fix = new THREE.Mesh(
-        merge(k === 1 ? [box(0.1, 0.035, 0.004, TAPE, 0, PAPER_H / 2 - 0.022, 0.002)] : [disc(0.016, 0.012, PIN[k], 0, PAPER_H / 2 - 0.022, 0.008, 10)], false),
+        merge(
+          k === 1
+            ? [box(0.1, 0.035, 0.004, TAPE, 0, PAPER_H / 2 - 0.022, 0.002)]
+            : [disc(0.016, 0.012, PIN[k], 0, PAPER_H / 2 - 0.022, 0.008, 10)],
+          false,
+        ),
         pinMat,
       );
       sheet.add(fix);
@@ -325,7 +349,8 @@ export class KioskView {
       this.photos.position.set(at.x, 0, at.z);
       this.photos.rotation.y = at.angle;
       // The wall tiles behind the row (a hole dug there, or the poster over one, takes them down).
-      if (at.angle === 0) for (let x = Math.floor(at.x - 0.5); x <= Math.floor(at.x + 0.49); x++) this.photoTiles.push((at.z - 1) * MAP_W + x);
+      if (at.angle === 0)
+        for (let x = Math.floor(at.x - 0.5); x <= Math.floor(at.x + 0.49); x++) this.photoTiles.push((at.z - 1) * MAP_W + x);
       else this.photoTiles.push(Math.floor(at.z) * MAP_W + (at.angle > 0 ? Math.round(at.x) - 1 : Math.round(at.x)));
     }
     if (!k) return;
@@ -355,7 +380,10 @@ export class KioskView {
     tilt.add(head);
     swing.add(tilt);
     // (The gap the tip opens under the head, between it and the wall: a steel block behind its lower half, up into it.)
-    const backing = new THREE.Mesh(merge([box(HEAD_W - 0.04, (HEAD_Y1 - HEAD_Y0) / 2, 0.06, STEEL_DARK, 0, HEAD_Y0 + 0.01, 0.03)]), this.kioskMat);
+    const backing = new THREE.Mesh(
+      merge([box(HEAD_W - 0.04, (HEAD_Y1 - HEAD_Y0) / 2, 0.06, STEEL_DARK, 0, HEAD_Y0 + 0.01, 0.03)]),
+      this.kioskMat,
+    );
     const pool = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.1).rotateX(-Math.PI / 2).translate(0, 0.012, 0.6), this.poolMat);
     pool.renderOrder = 0.33;
     g.add(body, backing, swing, pool);

@@ -112,7 +112,9 @@ export class QuizCard {
       this.drawn = '';
       return false;
     }
-    const key = [v.phase, v.why, v.names.join(), v.pts.join(), v.said.join(), v.got, v.q, v.question, v.end, currentLang(), TOUCH].join('|');
+    const key = [v.phase, v.why, v.names.join(), v.pts.join(), v.said.join(), v.got, v.q, v.question, v.end, currentLang(), TOUCH].join(
+      '|',
+    );
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;
@@ -135,7 +137,13 @@ export class QuizCard {
               const right = v.phase === 'reveal' && k === v.answer;
               const mine = v.said[0] === k;
               const theirs = v.said.slice(1).some((x, j) => x === k && v.got !== j + 1);
-              const cls = ['quiz-choice', right ? 'right' : '', mine && !right ? 'wrong' : '', mine ? 'mine' : '', theirs && !right ? 'struck' : ''].join(' ');
+              const cls = [
+                'quiz-choice',
+                right ? 'right' : '',
+                mine && !right ? 'wrong' : '',
+                mine ? 'mine' : '',
+                theirs && !right ? 'struck' : '',
+              ].join(' ');
               const off = v.phase === 'reveal' || v.said[0] >= 0;
               return `<button class="${cls}" data-choice="${k}" ${off ? 'disabled' : ''}><kbd>${k + 1}</kbd><span>${esc(c)}</span></button>`;
             })

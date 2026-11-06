@@ -13,7 +13,8 @@ import { seeded } from './rand';
 import { isOutside } from '../sim/hunt/world';
 
 /** A cone standing on y (a pine's tier): radius, height, color. */
-const cone = (r: number, h: number, color: number, x: number, y: number) => paint(new THREE.ConeGeometry(r, h, 8).translate(x, y + h / 2, 0), color);
+const cone = (r: number, h: number, color: number, x: number, y: number) =>
+  paint(new THREE.ConeGeometry(r, h, 8).translate(x, y + h / 2, 0), color);
 
 /** Wall height in tiles. Walls in front of the player are seen through (occlusion.ts). */
 export const WALL_H = 1.4;
@@ -166,13 +167,26 @@ export class WorldView {
   /** The floor a tile shows: its own kind's, but a gate in a fence stands on the ground either side of it (P31's sports ground gates: grass, not a slab of concrete). */
   private floorOf(x: number, z: number): keyof typeof TEX | undefined {
     const k = this.kindAt(x, z);
-    const nextTo = (x: number, z: number, f: (k: number) => boolean) => [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(f);
+    const nextTo = (x: number, z: number, f: (k: number) => boolean) =>
+      [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(f);
     // (A gate's second leaf touches only the first, the fence beyond it: P32 review, Stalag's garden gate.)
-    const inFence = (x: number, z: number) => nextTo(x, z, isFence) || [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dz]) => this.kindAt(x + dx, z + dz) === TILE.DOOR && nextTo(x + dx, z + dz, isFence));
+    const inFence = (x: number, z: number) =>
+      nextTo(x, z, isFence) ||
+      [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ].some(([dx, dz]) => this.kindAt(x + dx, z + dz) === TILE.DOOR && nextTo(x + dx, z + dz, isFence));
     if (k === TILE.DOOR && inFence(x, z)) {
       // (Grass first where either side has it: a gate from the roll-call asphalt into the garden stands on the garden's grass.)
       let found: keyof typeof TEX | undefined;
-      for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      for (const [dx, dz] of [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ]) {
         const n = this.kindAt(x + dx, z + dz);
         if (n !== TILE.DOOR && !isFence(n) && TILE_INFO[n]?.outdoor && !TILE_INFO[n].solid && FLOOR_OF[n]) {
           if (n === TILE.GRASS) return FLOOR_OF[n];
@@ -205,7 +219,7 @@ export class WorldView {
         this.matrix.makeTranslation(x + 0.5, 0, z + 0.5);
         mesh.setMatrixAt(i, this.matrix);
         // A faint per-tile shade so big floors don't look printed.
-        const v = 0.95 + ((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000 * 0.07;
+        const v = 0.95 + (((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000) * 0.07;
         mesh.setColorAt(i, color.setScalar(v));
       }
       mesh.receiveShadow = true;
@@ -298,7 +312,15 @@ export class WorldView {
       const tex = TEX.fence().clone();
       tex.needsUpdate = true;
       this.ownMaps.add(tex);
-      const mat = new THREE.MeshStandardMaterial({ map: tex, color: tint, emissive, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 });
+      const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        color: tint,
+        emissive,
+        alphaTest: 0.5,
+        side: THREE.DoubleSide,
+        roughness: 0.5,
+        metalness: 0.5,
+      });
       const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, h), mat, cells.length);
       const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, h + 0.15, 0.09), postMat, cells.length / 2);
       let panels = 0;
@@ -316,7 +338,8 @@ export class WorldView {
         const so = fenceLike(this.kindAt(x, z + 1));
         if ((w || e) && (n || so) && (w !== e || n !== so)) {
           const throughX = w && e;
-          const half = (dx: number, dz: number) => this.place(mesh, panels, x + 0.5 + dx * 0.25, h / 2, z + 0.5 + dz * 0.25, dx ? 0 : Math.PI / 2, 0.5);
+          const half = (dx: number, dz: number) =>
+            this.place(mesh, panels, x + 0.5 + dx * 0.25, h / 2, z + 0.5 + dz * 0.25, dx ? 0 : Math.PI / 2, 0.5);
           if (throughX) this.place(mesh, panels, x + 0.5, h / 2, z + 0.5, 0);
           else if (n && so) this.place(mesh, panels, x + 0.5, h / 2, z + 0.5, Math.PI / 2);
           else half(w ? -1 : 1, 0);
@@ -339,7 +362,11 @@ export class WorldView {
     }
     // Razor wire coiled along the top of every fence: rings across the line, tilted so they read as a spiral.
     const fences = this.cells(isFence);
-    const wire = new THREE.InstancedMesh(new THREE.TorusGeometry(0.17, 0.014, 3, 9), new THREE.MeshStandardMaterial({ color: 0xb8c0ca, metalness: 0.8, roughness: 0.3 }), Math.max(1, fences.length));
+    const wire = new THREE.InstancedMesh(
+      new THREE.TorusGeometry(0.17, 0.014, 3, 9),
+      new THREE.MeshStandardMaterial({ color: 0xb8c0ca, metalness: 0.8, roughness: 0.3 }),
+      Math.max(1, fences.length),
+    );
     const tilt = new THREE.Euler();
     let n = 0;
     for (let i = 0; i < fences.length / 2; i++) {
@@ -363,7 +390,16 @@ export class WorldView {
    */
   private buildDoors() {
     const wallLike = (k: number) => isWall(k) || k === TILE.DOOR || isFence(k);
-    interface Spec { x: number; z: number; i: number; key: number; ax: boolean; h: number; leafH: number; bars: boolean }
+    interface Spec {
+      x: number;
+      z: number;
+      i: number;
+      key: number;
+      ax: boolean;
+      h: number;
+      leafH: number;
+      bars: boolean;
+    }
     const specs: Spec[] = [];
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
@@ -379,7 +415,9 @@ export class WorldView {
     if (!specs.length) return;
     const frameMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.55, metalness: 0.4 }));
     const steel = seeThrough(new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 }));
-    const glassMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 }));
+    const glassMat = seeThrough(
+      new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 }),
+    );
     this.windows.push(glassMat);
     // (White, tinted per door in its key's color.)
     const barsMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.5 }));
@@ -397,16 +435,27 @@ export class WorldView {
     // Bars, one mesh per leaf height (walls', fences').
     const barsOf = new Map<number, { mesh: THREE.InstancedMesh; n: number }>();
     for (const leafH of new Set(specs.filter((d) => d.bars).map((d) => d.leafH))) {
-      const parts = [box(0.96, 0.07, 0.07, 0xffffff, 0, 0, 0), box(0.96, 0.07, 0.07, 0xffffff, 0, leafH - 0.07, 0), box(0.96, 0.05, 0.05, 0xffffff, 0, leafH * 0.45, 0)];
+      const parts = [
+        box(0.96, 0.07, 0.07, 0xffffff, 0, 0, 0),
+        box(0.96, 0.07, 0.07, 0xffffff, 0, leafH - 0.07, 0),
+        box(0.96, 0.05, 0.05, 0xffffff, 0, leafH * 0.45, 0),
+      ];
       for (let b = 0; b < 6; b++) parts.push(cyl(0.025, leafH, 0xffffff, -0.4 + b * 0.16, 0, 0, 6));
-      barsOf.set(leafH, { mesh: instanced(merge(parts), barsMat, specs.filter((d) => d.bars && d.leafH === leafH).length, true, true), n: 0 });
+      barsOf.set(leafH, {
+        mesh: instanced(merge(parts), barsMat, specs.filter((d) => d.bars && d.leafH === leafH).length, true, true),
+        n: 0,
+      });
     }
     // Slabs (only in walls: one height).
     const slabs = specs.filter((d) => !d.bars).length;
     const slabH = WALL_H * 0.86;
     const slab = slabs ? instanced(new THREE.BoxGeometry(0.96, slabH, 0.1).translate(0, slabH / 2, 0), steel, slabs, true, true) : null;
-    const band = slabs ? instanced(new THREE.BoxGeometry(0.97, 0.16, 0.12).translate(0, slabH * 0.32, 0), bandMat, slabs, false, true) : null;
-    const glass = slabs ? instanced(new THREE.BoxGeometry(0.3, 0.22, 0.12).translate(0, slabH * 0.72, 0), glassMat, slabs, false, true) : null;
+    const band = slabs
+      ? instanced(new THREE.BoxGeometry(0.97, 0.16, 0.12).translate(0, slabH * 0.32, 0), bandMat, slabs, false, true)
+      : null;
+    const glass = slabs
+      ? instanced(new THREE.BoxGeometry(0.3, 0.22, 0.12).translate(0, slabH * 0.72, 0), glassMat, slabs, false, true)
+      : null;
     // Lintels over the gaps: a unit-high block, scaled to the gap over the leaf.
     const lintels = instanced(new THREE.BoxGeometry(1, 1, 0.34), frameMat, specs.length, true, false);
     let s = 0;
@@ -423,7 +472,15 @@ export class WorldView {
       }
       const angle = d.ax ? 0 : Math.PI / 2;
       this.place(lintels, k, d.x + 0.5, d.leafH + (d.h - d.leafH) / 2, d.z + 0.5, angle, 1, d.h - d.leafH, 1);
-      this.doors.push({ index: d.i, parts, home: new THREE.Vector3(d.x + 0.5, 0, d.z + 0.5), slide: new THREE.Vector3(d.ax ? 0.92 : 0, 0, d.ax ? 0 : 0.92), angle, open: this.world.doorShut[d.i] ? 0 : 1, drawn: NaN });
+      this.doors.push({
+        index: d.i,
+        parts,
+        home: new THREE.Vector3(d.x + 0.5, 0, d.z + 0.5),
+        slide: new THREE.Vector3(d.ax ? 0.92 : 0, 0, d.ax ? 0 : 0.92),
+        angle,
+        open: this.world.doorShut[d.i] ? 0 : 1,
+        drawn: NaN,
+      });
     });
     this.moveDoors(0, undefined, false);
   }
@@ -447,7 +504,10 @@ export class WorldView {
       }
     }
     if (!frames.length) return;
-    const arch = new THREE.Mesh(merge(frames, false), seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 })));
+    const arch = new THREE.Mesh(
+      merge(frames, false),
+      seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 })),
+    );
     arch.castShadow = true;
     this.group.add(arch, new THREE.Mesh(merge(lamps, false), this.archLight));
   }
@@ -482,7 +542,13 @@ export class WorldView {
       }
     }
     if (!legs.length) return;
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.1, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 });
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x223040,
+      roughness: 0.1,
+      metalness: 0.6,
+      emissive: 0xffc27a,
+      emissiveIntensity: 0,
+    });
     this.windows.push(glassMat);
     const parts: Array<[THREE.BufferGeometry[], THREE.Material, boolean]> = [
       [legs, new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 }), true],
@@ -541,7 +607,19 @@ export class WorldView {
     const outside = isOutside(this.world.def);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2),
-      new THREE.MeshStandardMaterial({ map: tex, color: outside ? new THREE.Color().setScalar(0.985) : alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : theme === 'desert' ? 0xe8d2ae : 0xa9bd98, roughness: outside ? 0.95 : 1 }),
+      new THREE.MeshStandardMaterial({
+        map: tex,
+        color: outside
+          ? new THREE.Color().setScalar(0.985)
+          : alpine
+            ? 0xe6edf5
+            : theme === 'industrial'
+              ? 0xa7a298
+              : theme === 'desert'
+                ? 0xe8d2ae
+                : 0xa9bd98,
+        roughness: outside ? 0.95 : 1,
+      }),
     );
     ground.position.set(MAP_W / 2, -0.02, MAP_H / 2);
     ground.receiveShadow = true;
@@ -638,16 +716,25 @@ export function sceneryTree(theme: string): THREE.BufferGeometry {
         cyl(0.09, 0.42, 0x5f7f3d, -0.28, 0.9, 0, 7),
       ])
     : theme === 'industrial'
-    ? merge([cyl(0.07, 0.35, 0x5e5243, 0, 0, 0, 5), cyl(0.42, 0.45, 0x6b6e4c, 0, 0.3, 0, 6), cyl(0.3, 0.35, 0x7a7d58, 0.12, 0.62, 0.05, 6)])
-    : alpine
-    ? merge([
-        cyl(0.1, 0.5, 0x5a3c24, 0, 0, 0, 6),
-        cone(0.62, 0.9, 0x24503a, 0, 0.4),
-        cone(0.5, 0.18, 0xf2f6fb, 0, 0.98),
-        cone(0.48, 0.8, 0x2b5c43, 0, 1.0),
-        cone(0.38, 0.16, 0xf2f6fb, 0, 1.52),
-        cone(0.34, 0.7, 0x316a4c, 0, 1.55),
-        cone(0.22, 0.32, 0xf7fafd, 0, 2.0),
-      ])
-    : merge([cyl(0.12, 0.7, 0x6b4a2f, 0, 0, 0, 6), cyl(0.55, 0.9, 0x3f7a3a, 0, 0.6, 0, 7), cyl(0.4, 0.7, 0x4c8c44, 0, 1.3, 0, 7), cyl(0.22, 0.5, 0x5a9c4f, 0, 1.85, 0, 6)]);
+      ? merge([
+          cyl(0.07, 0.35, 0x5e5243, 0, 0, 0, 5),
+          cyl(0.42, 0.45, 0x6b6e4c, 0, 0.3, 0, 6),
+          cyl(0.3, 0.35, 0x7a7d58, 0.12, 0.62, 0.05, 6),
+        ])
+      : alpine
+        ? merge([
+            cyl(0.1, 0.5, 0x5a3c24, 0, 0, 0, 6),
+            cone(0.62, 0.9, 0x24503a, 0, 0.4),
+            cone(0.5, 0.18, 0xf2f6fb, 0, 0.98),
+            cone(0.48, 0.8, 0x2b5c43, 0, 1.0),
+            cone(0.38, 0.16, 0xf2f6fb, 0, 1.52),
+            cone(0.34, 0.7, 0x316a4c, 0, 1.55),
+            cone(0.22, 0.32, 0xf7fafd, 0, 2.0),
+          ])
+        : merge([
+            cyl(0.12, 0.7, 0x6b4a2f, 0, 0, 0, 6),
+            cyl(0.55, 0.9, 0x3f7a3a, 0, 0.6, 0, 7),
+            cyl(0.4, 0.7, 0x4c8c44, 0, 1.3, 0, 7),
+            cyl(0.22, 0.5, 0x5a9c4f, 0, 1.85, 0, 6),
+          ]);
 }

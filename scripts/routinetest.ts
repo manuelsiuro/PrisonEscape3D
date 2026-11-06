@@ -53,10 +53,16 @@ const describe = (e: SimEvent) => {
 };
 
 // ------------------------------------------------------------------ the schedule itself
-check(ROUTINE.every((r, k) => k === 0 || r.start > ROUTINE[k - 1].start), 'routine blocks run in order');
+check(
+  ROUTINE.every((r, k) => k === 0 || r.start > ROUTINE[k - 1].start),
+  'routine blocks run in order',
+);
 check(ROUTINE[0].start === 8 * 60 && ROUTINE[ROUTINE.length - 1].id === 'lightsOut', 'the day runs 08:00 roll call to Lights Out');
 check(routineAt(3 * 60) === ROUTINE.length - 1, 'before 08:00 it is still Lights Out');
-check(ROUTINE.every((r) => (r.miss !== null) === (r.zones.length > 0 && r.id !== 'lightsOut')), 'every mandatory block but Lights Out has a penalty');
+check(
+  ROUTINE.every((r) => (r.miss !== null) === (r.zones.length > 0 && r.id !== 'lightsOut')),
+  'every mandatory block but Lights Out has a penalty',
+);
 {
   const sim = new Sim(CENTER_PERKS);
   // (The sports ground's gate open, as it is for the exercise hour: P31.)
@@ -72,8 +78,14 @@ check(ROUTINE.every((r) => (r.miss !== null) === (r.zones.length > 0 && r.id !==
   }
   const p = placesOf(sim.world);
   check(p.seats.length >= 8, `the canteen seats everyone (${p.seats.length} seats)`);
-  check(p.bedside.slice(1).every((t) => t >= 0), 'every cell has a free tile beside its bed');
-  check(sim.world.cellDoor.slice(1).every((t) => t >= 0), 'every cell has a door');
+  check(
+    p.bedside.slice(1).every((t) => t >= 0),
+    'every cell has a free tile beside its bed',
+  );
+  check(
+    sim.world.cellDoor.slice(1).every((t) => t >= 0),
+    'every cell has a door',
+  );
   console.log(`places: ${p.seats.length} seats, ${p.showers.length} shower heads, ${p.rollCall.length} roll call spots`);
 }
 
@@ -117,7 +129,7 @@ function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim)
 }
 
 // The model prisoner, 3 days, with the inmates watched block by block.
-const MANDATORY = ROUTINE.map((r, k) => k).filter((k) => ROUTINE[k].zones.length > 0);
+const MANDATORY = ROUTINE.map((_, k) => k).filter((k) => ROUTINE[k].zones.length > 0);
 let blocks = 0;
 const inmateMisses: string[] = [];
 let seen = new Set<number>();
@@ -169,10 +181,22 @@ check(run(modelPrisoner, DAY, 3).sim.hash() === run(modelPrisoner, DAY, 3).sim.h
 const truant = run(() => () => 0, DAY);
 console.log('== truant, 1 day');
 for (const l of truant.log) console.log(l);
-check(truant.log.some((l) => l === 'day 1 09:00 LOCKDOWN'), 'missing roll call starts a lockdown at 09:00');
-check(truant.log.some((l) => l.startsWith('day 1 09:') && l.endsWith('caught (solitary)')), 'the guards come into the cell for the truant');
-check(truant.log.some((l) => l.endsWith('out of solitary')), 'the truant serves its time');
-check(truant.log.some((l) => l.endsWith('missed showers +25% heat')), 'missing showers costs heat');
+check(
+  truant.log.some((l) => l === 'day 1 09:00 LOCKDOWN'),
+  'missing roll call starts a lockdown at 09:00',
+);
+check(
+  truant.log.some((l) => l.startsWith('day 1 09:') && l.endsWith('caught (solitary)')),
+  'the guards come into the cell for the truant',
+);
+check(
+  truant.log.some((l) => l.endsWith('out of solitary')),
+  'the truant serves its time',
+);
+check(
+  truant.log.some((l) => l.endsWith('missed showers +25% heat')),
+  'missing showers costs heat',
+);
 console.log(`truant heat at the end of day 1: ${truant.sim.state.heat}%`);
 
 // The day's blocks as they went (the day's card): kept through the night, cleared at 08:00.
@@ -188,8 +212,14 @@ console.log(`truant heat at the end of day 1: ${truant.sim.state.heat}%`);
   const bad = day(() => () => 0);
   const word = (b: number[]) => b.map((x) => '.oxe'[x]).join('');
   console.log(`blocks at 07:59 (o made, x missed or fired, e excused): model ${word(good.night)}, truant ${word(bad.night)}`);
-  check(ROUTINE.every((r, k) => !r.miss || good.night[k] === BLOCK.ATTENDED), 'the model prisoner made every block, on the card');
-  check(bad.night[0] === BLOCK.MISSED && bad.night[1] === BLOCK.EXCUSED, 'the truant missed roll call, and was excused breakfast in the lockdown');
+  check(
+    ROUTINE.every((r, k) => !r.miss || good.night[k] === BLOCK.ATTENDED),
+    'the model prisoner made every block, on the card',
+  );
+  check(
+    bad.night[0] === BLOCK.MISSED && bad.night[1] === BLOCK.EXCUSED,
+    'the truant missed roll call, and was excused breakfast in the lockdown',
+  );
   check(good.morning.every((x) => x === 0) && bad.morning.every((x) => x === 0), 'a new day starts with a clean card');
 }
 
@@ -237,35 +267,46 @@ check(!owl.log.some((l) => l.includes('LOCKDOWN')), 'home within the grace: no t
 // turns for home at once: roll call and breakfast are missed, but having shown up, roll call costs
 // the meals' heat and no lockdown. Before 2.23 (Sim.rules222), on arrival, the same walk made both.
 {
-  const dropIn = (old: boolean) => (sim: Sim): Bot => {
-    sim.rules222 = old;
-    const pilot = new Autopilot(sim.world);
-    const places = placesOf(sim.world);
-    const good = modelPrisoner(sim);
-    let left = -1;
-    return (s) => {
-      const st = s.state;
-      if (left !== st.routine && (st.present > 0 || st.attended)) {
-        left = st.routine;
-        pilot.goTo(places.bedside[1]);
-      }
-      return left === st.routine ? command(pilot.dir(st.player)) : good(s);
+  const dropIn =
+    (old: boolean) =>
+    (sim: Sim): Bot => {
+      sim.rules222 = old;
+      const pilot = new Autopilot(sim.world);
+      const places = placesOf(sim.world);
+      const good = modelPrisoner(sim);
+      let left = -1;
+      return (s) => {
+        const st = s.state;
+        if (left !== st.routine && (st.present > 0 || st.attended)) {
+          left = st.routine;
+          pilot.goTo(places.bedside[1]);
+        }
+        return left === st.routine ? command(pilot.dir(st.player)) : good(s);
+      };
     };
-  };
   const steps = 2 * 60 * STEPS_PER_MINUTE;
   const now = run(dropIn(false), steps);
   const then = run(dropIn(true), steps);
   console.log('== drop-in, 08:00–10:00');
   for (const l of now.log) console.log(l);
   console.log(`(before 2.23: ${then.log.filter((l) => l.includes('attended') || l.includes('missed')).join('; ')})`);
-  check(now.log.includes('day 1 09:00 missed rollCall +25% heat') && !now.log.some((l) => l.includes('LOCKDOWN')), 'roll call left before being counted: +25%, no lockdown');
+  check(
+    now.log.includes('day 1 09:00 missed rollCall +25% heat') && !now.log.some((l) => l.includes('LOCKDOWN')),
+    'roll call left before being counted: +25%, no lockdown',
+  );
   check(now.log.includes('day 1 10:00 missed breakfast +25% heat'), 'breakfast left at once: missed');
   check(now.sim.state.heat > 25, `the drop-in ends the morning hotter than one miss, cooling between (${now.sim.state.heat}%)`);
-  check(then.log.filter((l) => l.includes('attended')).length === 2 && !then.log.some((l) => l.includes('missed')) && then.sim.state.heat === 0, 'before 2.23 the same walk checked in to both');
+  check(
+    then.log.filter((l) => l.includes('attended')).length === 2 && !then.log.some((l) => l.includes('missed')) && then.sim.state.heat === 0,
+    'before 2.23 the same walk checked in to both',
+  );
   // The stay: the model prisoner checked in its minutes after it got there (they add up).
   const stays = ROUTINE.filter((r) => r.stay).map((r) => `${r.id} ${r.stay}`);
   console.log(`stays (minutes): ${stays.join(', ')}`);
-  check(ROUTINE.every((r) => !r.stay || (r.miss && r.stay < 60)), 'only blocks that cost something take a stay, each shorter than the hour');
+  check(
+    ROUTINE.every((r) => !r.stay || (r.miss && r.stay < 60)),
+    'only blocks that cost something take a stay, each shorter than the hour',
+  );
 }
 
 // A save from before 2.23 loads with no time at the block yet, and no search under way.

@@ -60,13 +60,22 @@ export class ShowerWater {
   private readonly c = new THREE.Color();
 
   constructor() {
-    const water = (color: number, opacity: number) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
+    const water = (color: number, opacity: number) =>
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
     const most = 16;
     this.drops = new THREE.InstancedMesh(new THREE.BoxGeometry(0.04, 0.3, 0.04), water(0xeefaff, 0.95), most * DROPS);
-    this.cones = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07, 0.36, HEAD_Y, 14, 1, true).translate(0, -HEAD_Y / 2, 0), water(0xcfeeff, 0.34), most);
+    this.cones = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.07, 0.36, HEAD_Y, 14, 1, true).translate(0, -HEAD_Y / 2, 0),
+      water(0xcfeeff, 0.34),
+      most,
+    );
     // (A soft edge: a wet floor has no rim.)
     const puff = softPuff();
-    this.wetFloor = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: puff, color: 0x1c2a36, transparent: true, opacity: 0.5, depthWrite: false }), most);
+    this.wetFloor = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({ map: puff, color: 0x1c2a36, transparent: true, opacity: 0.5, depthWrite: false }),
+      most,
+    );
     this.steam = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshBasicMaterial({ map: puff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
@@ -89,7 +98,14 @@ export class ShowerWater {
       .filter((p) => p.kind === 'shower')
       .map((p, k) => {
         const turn = ((p.rot ?? 0) * Math.PI) / 2;
-        return { tile: p.z * mapW + p.x, x: p.x + 0.5 + ROSE_Z * Math.sin(turn), z: p.z + 0.5 + ROSE_Z * Math.cos(turn), flow: 0, wet: 0, seed: (k * 0.37) % 1 };
+        return {
+          tile: p.z * mapW + p.x,
+          x: p.x + 0.5 + ROSE_Z * Math.sin(turn),
+          z: p.z + 0.5 + ROSE_Z * Math.cos(turn),
+          flow: 0,
+          wet: 0,
+          seed: (k * 0.37) % 1,
+        };
       })
       .slice(0, 16);
   }
@@ -116,7 +132,11 @@ export class ShowerWater {
         const a = (k * 2.399 + h.seed * 6.28) % 6.283;
         const spread = 0.2 + ((k * 0.618) % 1) * 0.2;
         const fall = motion ? (time * 2.4 + h.seed + k / DROPS) % 1 : (k + 0.5) / DROPS;
-        this.m.makeTranslation(h.x + Math.cos(a) * spread * (0.3 + fall), HEAD_Y - 0.12 - fall * (HEAD_Y - 0.2), h.z + Math.sin(a) * spread * (0.3 + fall));
+        this.m.makeTranslation(
+          h.x + Math.cos(a) * spread * (0.3 + fall),
+          HEAD_Y - 0.12 - fall * (HEAD_Y - 0.2),
+          h.z + Math.sin(a) * spread * (0.3 + fall),
+        );
         this.drops.setMatrixAt(drop++, this.m);
       }
       for (let k = 0; k < STEAM; k++) {
@@ -129,7 +149,12 @@ export class ShowerWater {
         this.steam.setColorAt(puff++, this.c.setScalar(0.07 * f * Math.sin(age * Math.PI)));
       }
     }
-    for (const [mesh, n] of [[this.drops, drop], [this.cones, shown], [this.wetFloor, wetShown], [this.steam, puff]] as const) {
+    for (const [mesh, n] of [
+      [this.drops, drop],
+      [this.cones, shown],
+      [this.wetFloor, wetShown],
+      [this.steam, puff],
+    ] as const) {
       mesh.count = n;
       mesh.instanceMatrix.needsUpdate = true;
     }

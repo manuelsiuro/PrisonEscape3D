@@ -19,8 +19,7 @@
 
 /* ------------------------------------------------------------ the backdrop: the prison, dimmed and soft */
 .modal {
-  background:
-    radial-gradient(120% 90% at 50% 40%, rgba(12, 20, 34, 0.45), rgba(5, 9, 16, 0.82));
+  background: radial-gradient(120% 90% at 50% 40%, rgba(12, 20, 34, 0.45), rgba(5, 9, 16, 0.82));
   -webkit-backdrop-filter: blur(7px) saturate(0.85);
   backdrop-filter: blur(7px) saturate(0.85);
 }
@@ -61,7 +60,9 @@
 .modal .card h2 {
   color: #fff;
   letter-spacing: 0.01em;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 0 24px rgba(255, 140, 50, 0.18);
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(255, 140, 50, 0.18);
 }
 
 .modal .card-note {
@@ -79,7 +80,10 @@
   color: #dbe5f2;
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
-  transition: background 0.2s, color 0.2s, transform 0.18s var(--spring);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.18s var(--spring);
 }
 
 .modal .card .icon-btn:hover {
@@ -95,7 +99,9 @@
 .modal .big-btn.ghost {
   color: var(--dlg-text);
   background: var(--dlg-surface-hi);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 20px -12px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 8px 20px -12px rgba(0, 0, 0, 0.8);
 }
 
 .modal .big-btn.ghost:hover {
@@ -110,7 +116,9 @@
   color: var(--dlg-soft);
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .modal .link-btn:hover {
@@ -158,7 +166,9 @@
 
 .modal .switch.on {
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
-  box-shadow: 0 0 14px -2px rgba(255, 119, 20, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 0 14px -2px rgba(255, 119, 20, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .modal .switch i {
@@ -172,7 +182,9 @@
 
 .modal .seg button {
   color: var(--dlg-soft);
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 
 .modal .seg button:hover:not(.on) {
@@ -182,7 +194,9 @@
 .modal .seg button.on {
   color: #fff;
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
-  box-shadow: 0 4px 12px -4px rgba(217, 83, 10, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 12px -4px rgba(217, 83, 10, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Range sliders: an orange fill on a dark track. */
@@ -207,7 +221,9 @@
 .modal .help-keys kbd {
   color: #fff;
   background: linear-gradient(180deg, #33435c, #243248);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 /* ------------------------------------------------------------ saved games */
@@ -215,7 +231,10 @@
 .modal .save-del {
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
-  transition: transform 0.18s var(--spring), background 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.18s var(--spring),
+    background 0.2s,
+    box-shadow 0.2s;
 }
 
 .modal .save-main:not(:disabled):hover,
@@ -262,7 +281,9 @@
 .modal .lesson-card {
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
-  transition: transform 0.18s var(--spring), background 0.2s;
+  transition:
+    transform 0.18s var(--spring),
+    background 0.2s;
 }
 
 .modal .lesson-card:hover {
@@ -271,7 +292,9 @@
 
 .modal .lesson-card.next {
   background: linear-gradient(90deg, rgba(255, 119, 20, 0.2), rgba(255, 119, 20, 0.06));
-  box-shadow: inset 0 0 0 2px var(--orange), 0 8px 22px -12px rgba(255, 119, 20, 0.7);
+  box-shadow:
+    inset 0 0 0 2px var(--orange),
+    0 8px 22px -12px rgba(255, 119, 20, 0.7);
 }
 
 .modal .lesson-num {
@@ -286,22 +309,31 @@
 /* ------------------------------------------------------------ the prison select */
 .modal .prison-card {
   background: var(--dlg-surface);
-  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 10px 24px -16px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 0 0 1px var(--dlg-line),
+    0 10px 24px -16px rgba(0, 0, 0, 0.8);
 }
 
 .modal .prison-card:not(.locked):hover,
 .modal .prison-card:focus-visible {
   background: var(--dlg-surface-hi);
-  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 18px 36px -16px rgba(0, 0, 0, 0.9), 0 0 28px -10px rgba(255, 119, 20, 0.45);
+  box-shadow:
+    inset 0 0 0 1px var(--dlg-line),
+    0 18px 36px -16px rgba(0, 0, 0, 0.9),
+    0 0 28px -10px rgba(255, 119, 20, 0.45);
 }
 
 .modal .prison-list:hover .prison-card:focus-visible:not(:hover) {
   background: var(--dlg-surface);
-  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 10px 24px -16px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 0 0 1px var(--dlg-line),
+    0 10px 24px -16px rgba(0, 0, 0, 0.8);
 }
 
 .modal .prison-card.locked:hover {
-  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 10px 24px -16px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 0 0 1px var(--dlg-line),
+    0 10px 24px -16px rgba(0, 0, 0, 0.8);
 }
 
 /* The scene meets the card with a soft shadow, not a seam. */
@@ -375,7 +407,9 @@
 
 .modal .v-method {
   background: linear-gradient(135deg, #2b4a73, #1d3352);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 12px 26px -12px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 12px 26px -12px rgba(0, 0, 0, 0.8);
 }
 
 .modal .v-stat {
@@ -415,7 +449,9 @@
 .modal .v-unlock.campaign {
   color: #ffe3a3;
   background: linear-gradient(120deg, rgba(255, 194, 61, 0.24), rgba(255, 194, 61, 0.08));
-  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.45), 0 0 24px -10px rgba(255, 194, 61, 0.6);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 194, 61, 0.45),
+    0 0 24px -10px rgba(255, 194, 61, 0.6);
 }
 
 .modal .v-unlock.campaign .ic {
@@ -442,12 +478,17 @@
 .modal .lesson-card:focus-visible,
 .modal .save-main:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 4px rgba(255, 194, 61, 0.16);
+  box-shadow:
+    inset 0 0 0 2px var(--gold),
+    0 0 0 4px rgba(255, 194, 61, 0.16);
 }
 
 .modal .lesson-card.next:focus-visible,
 .modal .save-row:first-child .save-main:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--orange), 0 0 0 4px rgba(255, 119, 20, 0.22), 0 8px 22px -12px rgba(255, 119, 20, 0.7);
+  box-shadow:
+    inset 0 0 0 2px var(--orange),
+    0 0 0 4px rgba(255, 119, 20, 0.22),
+    0 8px 22px -12px rgba(255, 119, 20, 0.7);
 }
 
 /* Ways out found keep their colors (the dark wells above are for the ones still to find). */
@@ -474,7 +515,9 @@
   border-radius: 18px;
   color: #fff;
   background: linear-gradient(150deg, var(--orange), var(--orange-2));
-  box-shadow: 0 12px 26px -10px rgba(217, 83, 10, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 12px 26px -10px rgba(217, 83, 10, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .modal .ask-card p {
@@ -494,7 +537,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  transition: transform 0.18s var(--spring), box-shadow 0.2s, filter 0.2s;
+  transition:
+    transform 0.18s var(--spring),
+    box-shadow 0.2s,
+    filter 0.2s;
 }
 
 .title-screen .menu-btn:hover {
@@ -519,7 +565,9 @@
 }
 
 .title-screen .menu-ic {
-  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .title-screen .title-foot {
@@ -553,11 +601,15 @@
 /* Out: the word in gold, glowing. */
 .modal.escaped h2 {
   color: var(--gold);
-  text-shadow: 0 3px 0 rgba(120, 70, 0, 0.55), 0 0 30px rgba(255, 194, 61, 0.45);
+  text-shadow:
+    0 3px 0 rgba(120, 70, 0, 0.55),
+    0 0 30px rgba(255, 194, 61, 0.45);
 }
 
 .modal.escaped .escaped-icon {
-  box-shadow: 0 0 0 6px rgba(255, 194, 61, 0.12), 0 12px 30px -6px rgba(224, 138, 18, 0.9);
+  box-shadow:
+    0 0 0 6px rgba(255, 194, 61, 0.12),
+    0 12px 30px -6px rgba(224, 138, 18, 0.9);
 }
 
 /* ------------------------------------------------------------ in-game panels (desk, workbench, talk, job board, file): the dialogs' finish */
@@ -627,7 +679,9 @@
   border-radius: 12px;
   color: white;
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
-  box-shadow: 0 6px 14px -6px rgba(217, 83, 10, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 6px 14px -6px rgba(217, 83, 10, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .update-card .uc-text {
@@ -658,7 +712,9 @@
   font: 700 14px var(--font-ui);
   white-space: nowrap;
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
-  box-shadow: 0 8px 18px -8px rgba(217, 83, 10, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 8px 18px -8px rgba(217, 83, 10, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.18s var(--spring);
 }
 
@@ -736,7 +792,9 @@ body:has(.title-screen:not(.hidden)) .update-card {
   padding: 6px;
   border-radius: 18px;
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 119, 20, 0.85), 0 14px 34px -10px rgba(255, 119, 20, 0.6);
+  box-shadow:
+    0 0 0 4px rgba(255, 119, 20, 0.85),
+    0 14px 34px -10px rgba(255, 119, 20, 0.6);
 }
 
 .share-qr img {

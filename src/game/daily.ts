@@ -34,9 +34,25 @@ type History = Record<string, DailyRecord>;
 
 function fitBest(v: unknown): DailyBest | undefined {
   const b = v as Partial<DailyBest> | null;
-  if (!b || typeof b !== 'object' || !Number.isInteger(b.day) || !Number.isInteger(b.minutes) || typeof b.via !== 'string' || typeof b.code !== 'string') return undefined;
+  if (
+    !b ||
+    typeof b !== 'object' ||
+    !Number.isInteger(b.day) ||
+    !Number.isInteger(b.minutes) ||
+    typeof b.via !== 'string' ||
+    typeof b.code !== 'string'
+  )
+    return undefined;
   const strip = Array.isArray(b.strip) ? b.strip.filter((x): x is number => Number.isInteger(x) && x >= 0 && x < STRIP.length) : [];
-  return { day: b.day!, minutes: b.minutes!, via: b.via, medal: b.medal && MEDALS.includes(b.medal) ? b.medal : null, strip, code: b.code, tries: Number.isInteger(b.tries) && b.tries! > 0 ? b.tries! : 1 };
+  return {
+    day: b.day!,
+    minutes: b.minutes!,
+    via: b.via,
+    medal: b.medal && MEDALS.includes(b.medal) ? b.medal : null,
+    strip,
+    code: b.code,
+    tries: Number.isInteger(b.tries) && b.tries! > 0 ? b.tries! : 1,
+  };
 }
 
 function readDailies(): History {
@@ -55,7 +71,9 @@ function readDailies(): History {
 export const dailyRecord = (n: number): DailyRecord => readDailies()[n] ?? { tries: 0 };
 
 function write(h: History) {
-  const keys = Object.keys(h).map(Number).sort((a, b) => b - a);
+  const keys = Object.keys(h)
+    .map(Number)
+    .sort((a, b) => b - a);
   for (const k of keys.slice(KEEP)) delete h[k];
   writeJSON(KEYS.daily, h);
 }
@@ -70,7 +88,10 @@ export function dailyTry(n: number): number {
 }
 
 /** An escape from Daily `n`: kept if it's the quickest yet. What it did to the record. */
-export function dailyEscape(n: number, e: Omit<DailyBest, 'tries' | 'medal'> & { prison: string }): { best: boolean; medal: Medal | null; record: DailyRecord } {
+export function dailyEscape(
+  n: number,
+  e: Omit<DailyBest, 'tries' | 'medal'> & { prison: string },
+): { best: boolean; medal: Medal | null; record: DailyRecord } {
   const h = readDailies();
   const r = h[n] ?? { tries: 1 };
   const tries = Math.max(1, r.tries);
@@ -100,7 +121,10 @@ export function streakOf(today: number, h: History = readDailies()): number {
 
 /** The longest streak ever (the shelf's Daily achievements). */
 export function bestStreak(h: History = readDailies()): number {
-  const won = Object.keys(h).filter((k) => h[k].best).map(Number).sort((a, b) => a - b);
+  const won = Object.keys(h)
+    .filter((k) => h[k].best)
+    .map(Number)
+    .sort((a, b) => a - b);
   let best = 0;
   let run = 0;
   won.forEach((n, k) => {
@@ -116,7 +140,9 @@ export const STRIP_EMOJI = ['⬜', '🟨', '🟧', '🟥', '🟩'];
 
 /** The run's days (the ledger's bits) as the strip shows them. */
 export function stripOf(days: readonly number[]): number[] {
-  return days.map((b) => (b & DAY.ESCAPED ? 4 : b & (DAY.CAUGHT | DAY.SOLITARY | DAY.LOCKDOWN) ? 3 : b & (DAY.WANTED | DAY.FIGHT) ? 2 : b & DAY.SPOTTED ? 1 : 0));
+  return days.map((b) =>
+    b & DAY.ESCAPED ? 4 : b & (DAY.CAUGHT | DAY.SOLITARY | DAY.LOCKDOWN) ? 3 : b & (DAY.WANTED | DAY.FIGHT) ? 2 : b & DAY.SPOTTED ? 1 : 0,
+  );
 }
 
 /** A short code for an escape (shared with the result): the Daily, how, when, on which try, and the run's final fingerprint. */

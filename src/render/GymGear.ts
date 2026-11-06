@@ -36,14 +36,20 @@ export class GymGear {
     this.clear();
     world.props.forEach((p, i) => {
       if (p.kind === 'weights') {
-        const bar = new THREE.Mesh(merge([rod(0.025, 0.9, METAL, 0, 0, 0), disc(0.12, 0.05, DARK, -0.4, 0, 0), disc(0.12, 0.05, DARK, 0.4, 0, 0)], false), kitMaterial);
+        const bar = new THREE.Mesh(
+          merge([rod(0.025, 0.9, METAL, 0, 0, 0), disc(0.12, 0.05, DARK, -0.4, 0, 0), disc(0.12, 0.05, DARK, 0.4, 0, 0)], false),
+          kitMaterial,
+        );
         bar.position.set(p.x + p.w / 2, BAR_REST, p.z + p.d / 2 + BAR_Z);
         bar.castShadow = true;
         this.group.add(bar);
         this.bars.set(i, bar);
         this.barZ.set(i, [bar.position.z, bar.position.z - benchBack(world, p)]);
       } else if (p.kind === 'punchingBag') {
-        const pivot = new THREE.Mesh(merge([cyl(0.2, 0.75, RED, 0, -0.75, 0, 12), cyl(0.21, 0.04, 0x3b4048, 0, -0.53, 0, 12)], false), kitMaterial);
+        const pivot = new THREE.Mesh(
+          merge([cyl(0.2, 0.75, RED, 0, -0.75, 0, 12), cyl(0.21, 0.04, 0x3b4048, 0, -0.53, 0, 12)], false),
+          kitMaterial,
+        );
         pivot.position.set(p.x + p.w / 2, BAG_TOP, p.z + p.d / 2);
         pivot.castShadow = true;
         this.group.add(pivot);

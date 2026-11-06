@@ -10,7 +10,18 @@
  * costume night (the inmates laugh, once a night each). The Training Block has none of it.
  */
 import { DAY_BOOKS } from '../../content/days';
-import { EGG_DESKS, EGG_YARD, HOLIDAY, HOLIDAY_DAY, holidayDaysOn, LAUGH_OPINION, LAUGH_REACH, TREATS, WET_SIGHT, type HolidayDay } from '../../content/holidays';
+import {
+  EGG_DESKS,
+  EGG_YARD,
+  HOLIDAY,
+  HOLIDAY_DAY,
+  holidayDaysOn,
+  LAUGH_OPINION,
+  LAUGH_REACH,
+  TREATS,
+  WET_SIGHT,
+  type HolidayDay,
+} from '../../content/holidays';
 import { itemNumber } from '../../content/items';
 import { floorOf } from '../ai/places';
 import { SLOT } from '../command';
@@ -36,7 +47,8 @@ const HIDDEN = 1;
 type HolidaySim = Pick<SimContext, 'prison' | 'state' | 'world'>;
 
 /** The run's holiday here (0 none): only in a prison with days (the campaign's five), never in a lesson's relaxed rules. */
-export const holidayOf = (sim: HolidaySim): number => (sim.state.holiday && DAY_BOOKS[sim.prison.id] && !sim.world.def.rules?.relaxed ? sim.state.holiday : 0);
+export const holidayOf = (sim: HolidaySim): number =>
+  sim.state.holiday && DAY_BOOKS[sim.prison.id] && !sim.world.def.rules?.relaxed ? sim.state.holiday : 0;
 
 /** The holiday's days on a prison day (today by default). */
 export const holidayDays = (sim: HolidaySim, day = prisonDay(sim.state.step)): HolidayDay[] => holidayDaysOn(holidayOf(sim), day);
@@ -85,7 +97,14 @@ export function holidays(sim: SimContext) {
   }
   if (s.holiday === HOLIDAY.EASTER) eggsFound(sim);
   if (s.holiday === HOLIDAY.HALLOWEEN && s.step % 10 === 0) laughs(sim);
-  if (s.holiday === HOLIDAY.SUMMER && holidayNow(sim, 'waterFight') && !sim.away && s.layer === LAYER.GROUND && WATER_ZONES.includes(sim.playerZone) && !(s.eventFlags & TODAY.SPLASHED)) {
+  if (
+    s.holiday === HOLIDAY.SUMMER &&
+    holidayNow(sim, 'waterFight') &&
+    !sim.away &&
+    s.layer === LAYER.GROUND &&
+    WATER_ZONES.includes(sim.playerZone) &&
+    !(s.eventFlags & TODAY.SPLASHED)
+  ) {
     s.eventFlags |= TODAY.SPLASHED;
     sim.events.push({ type: 'holiday', what: 'splash', day: 'waterFight' });
   }
@@ -129,7 +148,8 @@ function hideEggs(sim: SimContext) {
 function eggsGone(sim: SimContext) {
   const it = sim.state.items;
   const hidden = (v: number) => itemOf(v) === CHOC_EGG && usesOf(v) === HIDDEN;
-  const inYard = (key: number) => layerOfKey(key) === LAYER.GROUND && sim.world.zoneAt(tileOfKey(key) % MAP_W, Math.floor(tileOfKey(key) / MAP_W)) === 'yard';
+  const inYard = (key: number) =>
+    layerOfKey(key) === LAYER.GROUND && sim.world.zoneAt(tileOfKey(key) % MAP_W, Math.floor(tileOfKey(key) / MAP_W)) === 'yard';
   const before = it.ground.length;
   it.ground = it.ground.filter(([key, v]) => !(hidden(v) && inYard(key)));
   let gone = it.ground.length !== before;

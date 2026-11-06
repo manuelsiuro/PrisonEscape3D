@@ -43,21 +43,60 @@ export interface HelpGroup {
   topics: readonly HelpTopic[];
 }
 
-const T = (id: string, icon: string, tone: string, more: Omit<HelpTopic, 'id' | 'icon' | 'tone'> = {}): HelpTopic => ({ id, icon, tone, ...more });
+const T = (id: string, icon: string, tone: string, more: Omit<HelpTopic, 'id' | 'icon' | 'tone'> = {}): HelpTopic => ({
+  id,
+  icon,
+  tone,
+  ...more,
+});
 
 export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = {
   basics: [
     {
       id: 'start',
       topics: [
-        T('goal', 'route', '#ff7714', { pic: true, lessons: ['escape'], see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
-        T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['walk', 'routine'], see: ['rollcall', 'meals', 'showers', 'night'] }),
-        T('night', 'moon', '#5a6fd0', { pic: true, lessons: ['routine', 'night'], stepIcons: ['pin', 'moon', 'sun'], see: ['routine', 'energy', 'searches'] }),
-        T('rollcall', 'bell', '#ff8a1e', { pic: true, lessons: ['rollcall'], stepIcons: ['pin', 'hand', 'check'], see: ['routine', 'heat', 'items'] }),
-        T('meals', 'utensils', '#d9822b', { pic: true, lessons: ['meals'], stepIcons: ['hand', 'route', 'utensils', 'check'], see: ['menu', 'energy', 'routine'] }),
+        T('goal', 'route', '#ff7714', {
+          pic: true,
+          lessons: ['escape'],
+          see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork', 'parole'],
+        }),
+        T('routine', 'clock', '#3d7fd0', {
+          diagram: 'schedule',
+          lessons: ['walk', 'routine'],
+          see: ['rollcall', 'meals', 'showers', 'night'],
+        }),
+        T('night', 'moon', '#5a6fd0', {
+          pic: true,
+          lessons: ['routine', 'night'],
+          stepIcons: ['pin', 'moon', 'sun'],
+          see: ['routine', 'energy', 'searches'],
+        }),
+        T('rollcall', 'bell', '#ff8a1e', {
+          pic: true,
+          lessons: ['rollcall'],
+          stepIcons: ['pin', 'hand', 'check'],
+          see: ['routine', 'heat', 'items'],
+        }),
+        T('meals', 'utensils', '#d9822b', {
+          pic: true,
+          lessons: ['meals'],
+          stepIcons: ['hand', 'route', 'utensils', 'check'],
+          see: ['menu', 'energy', 'routine'],
+        }),
         // 2.33: the menu board's dishes, its scribble, the water cooler.
-        T('menu', 'chalk', '#2f7a5c', { pic: true, lessons: ['menu'], stepIcons: ['utensils', 'water', 'ear'], listIcons: ['utensils', 'bolt', 'heart', 'close', 'star'], see: ['meals', 'energy', 'chatter'] }),
-        T('showers', 'water', '#3f9bd6', { pic: true, lessons: ['showers'], stepIcons: ['hand', 'water', 'route'], see: ['energy', 'routine', 'heat'] }),
+        T('menu', 'chalk', '#2f7a5c', {
+          pic: true,
+          lessons: ['menu'],
+          stepIcons: ['utensils', 'water', 'ear'],
+          listIcons: ['utensils', 'bolt', 'heart', 'close', 'star'],
+          see: ['meals', 'energy', 'chatter'],
+        }),
+        T('showers', 'water', '#3f9bd6', {
+          pic: true,
+          lessons: ['showers'],
+          stepIcons: ['hand', 'water', 'route'],
+          see: ['energy', 'routine', 'heat'],
+        }),
         T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock', 'briefcase'] }),
         T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
       ],
@@ -66,7 +105,11 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       id: 'getting',
       topics: [
         T('craft', 'hammer', '#6f93b8', { recipes: ['sheet_rope', 'poster', 'flimsy_shovel'], lessons: ['craft'] }),
-        T('energy', 'heart', '#e0507a', { lessons: ['gym'], listIcons: ['pause', 'utensils', 'water', 'item:chocolate', 'moon'], see: ['meals', 'showers', 'night'] }),
+        T('energy', 'heart', '#e0507a', {
+          lessons: ['gym'],
+          listIcons: ['pause', 'utensils', 'water', 'item:chocolate', 'moon'],
+          see: ['meals', 'showers', 'night'],
+        }),
       ],
     },
     {
@@ -82,16 +125,31 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'guards',
       topics: [
-        T('guards', 'eye', '#1e3a5f', { pic: true, lessons: ['guards', 'disguise'], listIcons: ['dot:#f5c542', 'dot:#ff8c2a', 'dot:#e5484d'], see: ['guardWays', 'caught'] }),
+        T('guards', 'eye', '#1e3a5f', {
+          pic: true,
+          lessons: ['guards', 'disguise'],
+          listIcons: ['dot:#f5c542', 'dot:#ff8c2a', 'dot:#e5484d'],
+          see: ['guardWays', 'caught'],
+        }),
         T('guardWays', 'shield', '#5b6fa8', { lessons: ['guards'], listIcons: ['book', 'moon', 'eye', 'coin'] }),
         T('caught', 'siren', '#e5484d', { listIcons: ['hammer'], see: ['heat'] }),
-        T('searches', 'bell', '#d9930a', { recipes: ['bed_dummy'], lessons: ['stash', 'night'], listIcons: ['sun', 'moon'], see: ['items', 'night'] }),
+        T('searches', 'bell', '#d9930a', {
+          recipes: ['bed_dummy'],
+          lessons: ['stash', 'night'],
+          listIcons: ['sun', 'moon'],
+          see: ['items', 'night'],
+        }),
       ],
     },
     {
       id: 'people',
       topics: [
-        T('inmates', 'chat', '#3fb07a', { pic: true, lessons: ['talk', 'trade'], listIcons: ['coin', 'users', 'fist'], see: ['crew', 'games'] }),
+        T('inmates', 'chat', '#3fb07a', {
+          pic: true,
+          lessons: ['talk', 'trade'],
+          listIcons: ['coin', 'users', 'fist'],
+          see: ['crew', 'games'],
+        }),
         T('crew', 'users', '#ffa94d', { pic: true, lessons: ['crew'], listIcons: ['eye', 'pick', 'fist', 'drone'] }),
         T('chatter', 'ear', '#d9a21b', { listIcons: ['chat', 'star'] }),
         T('fight', 'fist', '#c0392b', { pic: true, lessons: ['fight'] }),
@@ -100,14 +158,40 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'days',
       topics: [
-        T('day', 'calendar', '#d9930a', { lessons: ['day'], listIcons: ['eye', 'bell', 'star'], list2Icons: ['fog', 'rain', 'storm', 'heat'], see: ['holidays'] }),
+        T('day', 'calendar', '#d9930a', {
+          lessons: ['day'],
+          listIcons: ['eye', 'bell', 'star'],
+          list2Icons: ['fog', 'rain', 'storm', 'heat'],
+          see: ['holidays'],
+        }),
         T('work', 'coin', '#c99a12', { pic: true, lessons: ['job', 'gardener'], listIcons: ['cart', 'gift'] }),
-        T('train', 'dumbbell', '#8e4fc4', { pic: true, lessons: ['gym', 'laps'], listIcons: ['dumbbell', 'run', 'book'], see: ['grounds'] }),
-        T('vending', 'cart', '#c0392b', { pic: true, lessons: ['vending'], listIcons: ['bolt', 'bolt', 'bolt', 'heart', 'wrench'], see: ['energy', 'kiosk', 'craft'] }),
-        T('library', 'book', '#5e74c9', { pic: true, lessons: ['library'], listIcons: ['book', 'monitor', 'checkers', 'brain'], see: ['train', 'craft', 'kiosk', 'checkers'] }),
+        T('train', 'dumbbell', '#8e4fc4', {
+          pic: true,
+          lessons: ['gym', 'laps'],
+          listIcons: ['dumbbell', 'run', 'book'],
+          see: ['grounds'],
+        }),
+        T('vending', 'cart', '#c0392b', {
+          pic: true,
+          lessons: ['vending'],
+          listIcons: ['bolt', 'bolt', 'bolt', 'heart', 'wrench'],
+          see: ['energy', 'kiosk', 'craft'],
+        }),
+        T('library', 'book', '#5e74c9', {
+          pic: true,
+          lessons: ['library'],
+          listIcons: ['book', 'monitor', 'checkers', 'brain'],
+          see: ['train', 'craft', 'kiosk', 'checkers'],
+        }),
         T('grounds', 'run', '#b0553f', { pic: true, lessons: ['laps', 'gardener'], see: ['garden', 'hoops', 'football'] }),
         // v2.21 (P42): the holidays (its picture: public/help/holidays.webp).
-        T('holidays', 'tree', '#4fbf6a', { pic: true, picAt: '50% 0%', listIcons: ['egg', 'splash', 'pumpkin', 'tree'], list2Icons: ['calendar', 'star', 'close'], see: ['day'] }),
+        T('holidays', 'tree', '#4fbf6a', {
+          pic: true,
+          picAt: '50% 0%',
+          listIcons: ['egg', 'splash', 'pumpkin', 'tree'],
+          list2Icons: ['calendar', 'star', 'close'],
+          see: ['day'],
+        }),
       ],
     },
     {
@@ -134,9 +218,24 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'outside',
       topics: [
-        T('payphone', 'phone', '#2f9e8f', { pic: true, lessons: ['payphone', 'cousin'], listIcons: ['home', 'briefcase', 'megaphone', 'person'] }),
-        T('kiosk', 'monitor', '#3a7bd5', { pic: true, recipes: ['hollow_book'], lessons: ['kiosk'], listIcons: ['letter', 'cart', 'news', 'brain'] }),
-        T('oddjobs', 'pin', '#b98a55', { pic: true, picAt: '50% 28%', lessons: ['oddjob'], listIcons: ['hand', 'box', 'search', 'cards', 'rat', 'eye'], see: ['games', 'payphone', 'rat'] }),
+        T('payphone', 'phone', '#2f9e8f', {
+          pic: true,
+          lessons: ['payphone', 'cousin'],
+          listIcons: ['home', 'briefcase', 'megaphone', 'person'],
+        }),
+        T('kiosk', 'monitor', '#3a7bd5', {
+          pic: true,
+          recipes: ['hollow_book'],
+          lessons: ['kiosk'],
+          listIcons: ['letter', 'cart', 'news', 'brain'],
+        }),
+        T('oddjobs', 'pin', '#b98a55', {
+          pic: true,
+          picAt: '50% 28%',
+          lessons: ['oddjob'],
+          listIcons: ['hand', 'box', 'search', 'cards', 'rat', 'eye'],
+          see: ['games', 'payphone', 'rat'],
+        }),
       ],
     },
   ],
@@ -144,11 +243,24 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'tricks',
       topics: [
-        T('tools', 'pick', '#6f93b8', { lessons: ['dig'], see: ['noise', 'layers', 'cover'], listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel'] }),
+        T('tools', 'pick', '#6f93b8', {
+          lessons: ['dig'],
+          see: ['noise', 'layers', 'cover'],
+          listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel'],
+        }),
         T('lockpick', 'lockpick', '#8d949e', { diagram: 'pins', recipes: ['lockpick'], lessons: ['lockpick'] }),
         T('noise', 'ear', '#e8963a', { diagram: 'bars', lessons: ['noise'], listIcons: ['lock', 'ear'] }),
-        T('layers', 'down', '#8e5a2b', { pic: true, picAt: '50% 70%', recipes: ['timber_brace'], lessons: ['tunnel', 'vents'], stepIcons: ['item:timber_brace', 'up', 'drop'] }),
-        T('cover', 'lock', '#5d6779', { recipes: ['poster', 'fake_wall', 'fake_vent', 'fake_fence'], listIcons: ['item:poster', 'item:fake_wall', 'item:fake_vent', 'item:fake_fence'] }),
+        T('layers', 'down', '#8e5a2b', {
+          pic: true,
+          picAt: '50% 70%',
+          recipes: ['timber_brace'],
+          lessons: ['tunnel', 'vents'],
+          stepIcons: ['item:timber_brace', 'up', 'drop'],
+        }),
+        T('cover', 'lock', '#5d6779', {
+          recipes: ['poster', 'fake_wall', 'fake_vent', 'fake_fence'],
+          listIcons: ['item:poster', 'item:fake_wall', 'item:fake_vent', 'item:fake_fence'],
+        }),
       ],
     },
     {
@@ -163,14 +275,40 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'ways',
       topics: [
-        T('ways', 'hook', '#ff7714', { pic: true, recipes: ['grapnel'], lessons: ['escape', 'tunnel'], listIcons: ['item:light_cutters', 'item:light_shovel', 'item:grapnel', 'fist'], see: ['delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
+        T('ways', 'hook', '#ff7714', {
+          pic: true,
+          recipes: ['grapnel'],
+          lessons: ['escape', 'tunnel'],
+          listIcons: ['item:light_cutters', 'item:light_shovel', 'item:grapnel', 'fist'],
+          see: ['delivery', 'bluff', 'glider', 'paperwork', 'parole'],
+        }),
         T('delivery', 'truck', '#3fc79a', { pic: true, picAt: '50% 70%', diagram: 'timeline', lessons: ['stowaway'] }),
         T('bluff', 'idCard', '#5b8fd8', { pic: true, diagram: 'timeline', recipes: ['fake_id'], lessons: ['bluff'] }),
         T('glider', 'glider', '#9fc8e8', { pic: true, recipes: ['glider_frame', 'glider'], lessons: ['glider'] }),
-        T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'], see: ['parole'] }),
-        T('parole', 'scale', '#8a6bd1', { pic: true, picAt: '50% 18%', diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
+        T('paperwork', 'clipboard', '#d8b04a', {
+          pic: true,
+          diagram: 'timeline',
+          recipes: ['forged_release'],
+          lessons: ['forgery', 'release'],
+          see: ['parole'],
+        }),
+        T('parole', 'scale', '#8a6bd1', {
+          pic: true,
+          picAt: '50% 18%',
+          diagram: 'timeline',
+          lessons: ['parole'],
+          see: ['paperwork', 'payphone'],
+          listIcons: ['check', 'chat', 'brain'],
+        }),
         // P41: the manhunt (its picture: public/help/manhunt.webp).
-        T('manhunt', 'run', '#e0603a', { pic: true, picAt: '50% 40%', diagram: 'timeline', lessons: ['manhunt'], listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'], see: ['dogs', 'ways'] }),
+        T('manhunt', 'run', '#e0603a', {
+          pic: true,
+          picAt: '50% 40%',
+          diagram: 'timeline',
+          lessons: ['manhunt'],
+          listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'],
+          see: ['dogs', 'ways'],
+        }),
       ],
     },
     {
@@ -186,16 +324,28 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('weather', 'snow', '#2f78be', { prison: 'stalag-flucht', pic: true, listIcons: ['snow', 'shirt', 'pick'] }),
         T('shell', 'shield', '#5d6b7a', { prison: 'shankton', pic: true, recipes: ['pouch'], listIcons: ['lock', 'eye', 'hook'] }),
         T('mines', 'mine', '#c8372d', { prison: 'san-pancho', pic: true, listIcons: ['item:light_shovel', 'item:key_red'] }),
-        T('island', 'boat', '#2b6f9a', { prison: 'irongate', pic: true, recipes: ['raft'], stepIcons: ['boat', 'heli', 'fist'], listIcons: ['camera', 'bolt'] }),
+        T('island', 'boat', '#2b6f9a', {
+          prison: 'irongate',
+          pic: true,
+          recipes: ['raft'],
+          stepIcons: ['boat', 'heli', 'fist'],
+          listIcons: ['camera', 'bolt'],
+        }),
       ],
     },
   ],
 };
 
 /** What the pockets diagram holds: six pockets (the contraband marked), the weapon, the outfit. */
-export const POCKET_SAMPLE = { pockets: ['plastic_comb', 'chocolate', 'light_cutters', '', '', ''], weapon: 'comb_shiv', outfit: 'guard_outfit' };
+export const POCKET_SAMPLE = {
+  pockets: ['plastic_comb', 'chocolate', 'light_cutters', '', '', ''],
+  weapon: 'comb_shiv',
+  outfit: 'guard_outfit',
+};
 
 /** Every topic, in tab and group order. */
-export const ALL_TOPICS: ReadonlyArray<HelpTopic & { tab: Exclude<HelpTab, 'controls'> }> = (Object.keys(HELP) as Array<Exclude<HelpTab, 'controls'>>).flatMap((tab) => HELP[tab].flatMap((g) => g.topics.map((tp) => ({ ...tp, tab }))));
+export const ALL_TOPICS: ReadonlyArray<HelpTopic & { tab: Exclude<HelpTab, 'controls'> }> = (
+  Object.keys(HELP) as Array<Exclude<HelpTab, 'controls'>>
+).flatMap((tab) => HELP[tab].flatMap((g) => g.topics.map((tp) => ({ ...tp, tab }))));
 
 export const topicById = (id: string) => ALL_TOPICS.find((tp) => tp.id === id);

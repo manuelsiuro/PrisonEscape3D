@@ -34,7 +34,20 @@ import { cavesIn } from '../src/sim/systems/structure';
 import { traitOf } from '../src/sim/systems/guards';
 import { bribe, lookAwayPrice } from '../src/sim/systems/ways';
 import { BRIBE } from '../src/sim/command';
-import { BRIBE_REPORT_HEAT, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, NAP_TO, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TOILET_LOADS, UNIT } from '../src/sim/tuning';
+import {
+  BRIBE_REPORT_HEAT,
+  CAMERA_BLIND_STEPS,
+  KO_STEPS,
+  NAP_FROM,
+  NAP_TO,
+  OPINION_LOW,
+  POTATO_STEPS,
+  SOLITARY_STEPS,
+  STEPS_PER_MINUTE,
+  STEPS_PER_SECOND,
+  TOILET_LOADS,
+  UNIT,
+} from '../src/sim/tuning';
 import { isGrate, isSea, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { fill, type FillContext } from '../src/talk/fill';
@@ -136,7 +149,22 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'nextSports':
     case 'nextTalent':
     case 'nextQuiz':
-      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery', nextVisiting: 'visiting', nextSports: 'sports', nextTalent: 'talent', nextQuiz: 'quiz' } as const)[f.kind];
+      return (
+        f.n === today(sim).day + 1 &&
+        planOf(sim, f.n!).event ===
+          (
+            {
+              nextInspection: 'inspection',
+              nextDrill: 'drill',
+              nextFoodFight: 'foodFight',
+              nextDelivery: 'delivery',
+              nextVisiting: 'visiting',
+              nextSports: 'sports',
+              nextTalent: 'talent',
+              nextQuiz: 'quiz',
+            } as const
+          )[f.kind]
+      );
     // Side games (P22): nobody's arm is stronger; the dice's heat is the rule's (gamestest proves it); the lockpick never opens a gate.
     case 'champ':
       return s.inmates.every((m) => m.str <= s.inmates[f.inmate!].str);
@@ -170,7 +198,12 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'searchClose':
     case 'searchQuick': {
       const p = today(sim);
-      return p.event === 'delivery' && dayMinute(s.step) < searchMinute(p) && f.guard === sim.prison.delivery?.supervisor && thorough(sim, p.day) === (f.kind === 'searchClose');
+      return (
+        p.event === 'delivery' &&
+        dayMinute(s.step) < searchMinute(p) &&
+        f.guard === sim.prison.delivery?.supervisor &&
+        thorough(sim, p.day) === (f.kind === 'searchClose')
+      );
     }
     case 'stormCut': {
       const p = today(sim);
@@ -181,7 +214,11 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'pills': {
       const desk = pillsDesk(sim);
       const prop = desk >= 0 ? containersOf(sim.world)[desk].prop : null;
-      return !!prop && sim.world.cellOf[prop.z * MAP_W + prop.x] === s.inmates[f.inmate!].cell && s.items.containers[desk].some((v) => itemOf(v) === n('sleeping_pills'));
+      return (
+        !!prop &&
+        sim.world.cellOf[prop.z * MAP_W + prop.x] === s.inmates[f.inmate!].cell &&
+        s.items.containers[desk].some((v) => itemOf(v) === n('sleeping_pills'))
+      );
     }
     // A dog's hours, by asking the rule itself at the minute either side of each end (on day 2, no lockdown).
     case 'dogShift':
@@ -208,7 +245,11 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       return s.dogs.length > 0;
     // The pet rat (P20): traps catch at 04:00 where rats come (kitchens, canteens, storerooms; tunnels nearly always), dogs go after rats (rattest proves the rules).
     case 'ratTrap':
-      return TRAP_MINUTE === 240 && TRAP_KITCHEN > 0 && floorOf(sim.world, RAT_ROOMS).some((t) => trapChance(sim.world, LAYER.GROUND, t) === TRAP_KITCHEN);
+      return (
+        TRAP_MINUTE === 240 &&
+        TRAP_KITCHEN > 0 &&
+        floorOf(sim.world, RAT_ROOMS).some((t) => trapChance(sim.world, LAYER.GROUND, t) === TRAP_KITCHEN)
+      );
     case 'ratTunnel':
       return TRAP_TUNNEL > TRAP_KITCHEN && TRAP_TUNNEL >= 80;
     case 'ratKey':
@@ -222,7 +263,13 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     }
     case 'fakeId': {
       const r = RECIPES.find((x) => x.result === 'fake_id');
-      return !!checkpointOf(sim) && !!sim.prison.smuggling && !!r && [...r.ingredients].sort().join() === 'blank_id,ink,magazine' && CATALOGUE.some((c) => c.item === 'blank_id');
+      return (
+        !!checkpointOf(sim) &&
+        !!sim.prison.smuggling &&
+        !!r &&
+        [...r.ingredients].sort().join() === 'blank_id,ink,magazine' &&
+        CATALOGUE.some((c) => c.item === 'blank_id')
+      );
     }
     case 'glideDay':
       return glidesOut(sim);
@@ -248,7 +295,10 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     }
     // The paperwork escape (P36): the blank forms in that guard's pockets; the records' hour and heat as the rule has them; a guard's words its own.
     case 'releaseForms':
-      return s.items.containers[pocketOf(sim.world, s.inmates.length + f.guard!)].some((v) => itemOf(v) === n('release_form')) && !!sim.prison.guards[f.guard!].duties?.includes('shakedown');
+      return (
+        s.items.containers[pocketOf(sim.world, s.inmates.length + f.guard!)].some((v) => itemOf(v) === n('release_form')) &&
+        !!sim.prison.guards[f.guard!].duties?.includes('shakedown')
+      );
     case 'recordsCheck':
       return f.t1 === (RECORDS_MINUTE + ROUTINE[0].start) % 1440 && f.n === RECORDS_HEAT && !!sim.prison.comms;
     // The parole board (P39): the hour it sits, a week after applying, as the rule has them.
@@ -269,10 +319,21 @@ function holdsNow(sim: Sim, f: Fact): boolean {
 /** Every phrasing of a fact, in both languages, fills and says the fact's numbers. */
 function phrasings(sim: Sim, f: Fact): boolean {
   const bank = `go.${f.kind}` as BankId;
-  for (const [lang, banks] of [['en', enBarks], ['fr', frBarks]] as const) {
+  for (const [lang, banks] of [
+    ['en', enBarks],
+    ['fr', frBarks],
+  ] as const) {
     for (const l of banks[bank]) {
       const text = typeof l === 'string' ? l : l.t;
-      const ctx: FillContext = { lang, sim, speaker: f.inmate === 0 ? 1 : 0, random: () => 0.5, recent: new Map(), fact: f, dayEvent: null };
+      const ctx: FillContext = {
+        lang,
+        sim,
+        speaker: f.inmate === 0 ? 1 : 0,
+        random: () => 0.5,
+        recent: new Map(),
+        fact: f,
+        dayEvent: null,
+      };
       const out = fill(text, ctx);
       if (out === null) return false;
       if (f.n !== undefined && text.includes('{n}') && !out.includes(String(f.n))) return false;
@@ -298,7 +359,10 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
       sim.step(0);
       steps++;
     }
-    check(steps === fence.n! * STEPS_PER_SECOND, `${prison.id}: the fence is dead ${fence.n} s after the generator (${steps / STEPS_PER_SECOND} s)`);
+    check(
+      steps === fence.n! * STEPS_PER_SECOND,
+      `${prison.id}: the fence is dead ${fence.n} s after the generator (${steps / STEPS_PER_SECOND} s)`,
+    );
     out.push(`fence dead ${steps / STEPS_PER_SECOND} s`);
   }
   // A tunnel: the bracing limit dug, then one more tile.
@@ -310,7 +374,8 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
     // A row of plain earth (no boulders, no shaft above), nearest the roll call yard.
     const yard = placesOf(w).rollCall[0].tile;
     const rowAt = (start: number) => Array.from({ length: brace.n! + 1 }, (_, k) => start + k);
-    const plain = (start: number) => start % MAP_W <= MAP_W - brace.n! - 2 && rowAt(start).every((i) => under[i] === TILE.SOIL && w.ground.kind[i] !== TILE.SHAFT);
+    const plain = (start: number) =>
+      start % MAP_W <= MAP_W - brace.n! - 2 && rowAt(start).every((i) => under[i] === TILE.SOIL && w.ground.kind[i] !== TILE.SHAFT);
     let best = -1;
     for (let i = 0; i < MAP_W * MAP_H; i++) if (plain(i) && (best < 0 || Math.abs(i - yard) < Math.abs(best - yard))) best = i;
     const row = rowAt(Math.max(0, best));
@@ -336,7 +401,10 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
       s.guards[down++].ko = 99999;
       takeoverCheck(bot.sim);
     }
-    check(s.takeover && down === take.n && all === s.guards.length, `${prison.id}: the takeover comes with ${take.n} of ${all} guards out (${down})`);
+    check(
+      s.takeover && down === take.n && all === s.guards.length,
+      `${prison.id}: the takeover comes with ${take.n} of ${all} guards out (${down})`,
+    );
     out.push(`takeover at ${down}/${s.guards.length}`);
   }
   // The bed check of an empty cell: passed with a dummy in the bed, failed without one.
@@ -356,7 +424,10 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
       const e = bot.sim.events.find((x) => x.type === 'bedCheck');
       results.push(e && e.type === 'bedCheck' ? e.result : 'none');
     }
-    check(results[0] === 'pass' && results[1] === 'fail', `${prison.id}: away from the cell, a dummy passes the bed check (${results.join(', ')})`);
+    check(
+      results[0] === 'pass' && results[1] === 'fail',
+      `${prison.id}: away from the cell, a dummy passes the bed check (${results.join(', ')})`,
+    );
     out.push(`dummy ${results.join('/')}`);
   }
   // A guard's ways (P15): a bribe offered to each, as the fact says it goes.
@@ -377,7 +448,7 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
     check(ok, `${prison.id}: ${prison.guards[f.guard!].name} takes a bribe as told (${f.kind})`);
     bribes++;
   }
-  if (bribes) out.push(`${bribes} bribe${bribes > 1 ? "s" : ""} as told`);
+  if (bribes) out.push(`${bribes} bribe${bribes > 1 ? 's' : ''} as told`);
   // The rest: the numbers are the rules' own constants, the places and things are there.
   const bot = new Bot(prison, 1);
   const w = bot.sim.world;
@@ -385,7 +456,8 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
     switch (f.kind) {
       case 'grate': {
         let ok = false;
-        for (let i = 0; i < MAP_W * MAP_H && !ok; i++) ok = isGrate(w.layers[LAYER.VENTS].kind[i]) && w.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === f.place;
+        for (let i = 0; i < MAP_W * MAP_H && !ok; i++)
+          ok = isGrate(w.layers[LAYER.VENTS].kind[i]) && w.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === f.place;
         check(ok, `${prison.id}: a grate over ${f.place}`);
         break;
       }
@@ -405,13 +477,24 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
         check(has(bot.sim, TILE.MINE) && f.t1 === ROUTINE[0].start, `${prison.id}: mines re-laid at ${hhmm(f.t1!)}`);
         break;
       case 'flood':
-        check(Array.from(w.ground.base).some((k) => isSea(k)), `${prison.id}: sea to flood a tunnel`);
+        check(
+          Array.from(w.ground.base).some((k) => isSea(k)),
+          `${prison.id}: sea to flood a tunnel`,
+        );
         break;
       case 'heli':
-        check(f.t1 === ROUTINE.find((r) => r.id === 'lightsOut')!.start && f.t2 === ROUTINE[0].start && !!prison.escapes?.includes('helicopter'), `${prison.id}: the helicopter's hours`);
+        check(
+          f.t1 === ROUTINE.find((r) => r.id === 'lightsOut')!.start &&
+            f.t2 === ROUTINE[0].start &&
+            !!prison.escapes?.includes('helicopter'),
+          `${prison.id}: the helicopter's hours`,
+        );
         break;
       case 'solitary':
-        check(f.n! * 60 * STEPS_PER_MINUTE === SOLITARY_STEPS && f.m! * STEPS_PER_MINUTE === POTATO_STEPS, `${prison.id}: solitary's hours and a potato's minutes`);
+        check(
+          f.n! * 60 * STEPS_PER_MINUTE === SOLITARY_STEPS && f.m! * STEPS_PER_MINUTE === POTATO_STEPS,
+          `${prison.id}: solitary's hours and a potato's minutes`,
+        );
         break;
       case 'koTime':
         check(f.n! * STEPS_PER_SECOND === KO_STEPS, `${prison.id}: a knockout's seconds`);
@@ -474,7 +557,8 @@ for (const prison of [...PRISONS, TRAINING]) {
           }
           if (!holdsNow(sim, f)) {
             wrong++;
-            if (wrong < 4) console.error(`FALSE: ${prison.id} seed ${seed} day ${sim.clock.day} ${hhmm(sim.clock.minuteOfDay)} ${JSON.stringify(f)}`);
+            if (wrong < 4)
+              console.error(`FALSE: ${prison.id} seed ${seed} day ${sim.clock.day} ${hhmm(sim.clock.minuteOfDay)} ${JSON.stringify(f)}`);
           }
           if (!worded.has(f.key)) {
             worded.add(f.key);
@@ -489,17 +573,30 @@ for (const prison of [...PRISONS, TRAINING]) {
     }, end + 10);
     const told = lasting.find((f) => f.kind === 'bedChecks');
     const seen = [...new Set(checks)].sort((a, b) => a - b);
-    check(told ? seen.join() === [told.t1, told.t2].join() : seen.length === 0, `${prison.id} seed ${seed}: bed checks as told (${seen.map(hhmm).join(', ') || 'none'})`);
+    check(
+      told ? seen.join() === [told.t1, told.t2].join() : seen.length === 0,
+      `${prison.id} seed ${seed}: bed checks as told (${seen.map(hhmm).join(', ') || 'none'})`,
+    );
   }
   check(wrong === 0, `${prison.id}: every fact holds when it could be told (${wrong} false)`);
   check(badWords === 0, `${prison.id}: every phrasing says its fact (${badWords} wrong)`);
   const ran = rules(prison, lasting);
   for (const [k, v] of counted) kinds.set(k, (kinds.get(k) ?? 0) + v);
-  console.log(`${prison.id}: ${lasting.length} lasting facts (${[...new Set(lasting.map((f) => f.kind))].join(', ')}); ${ran.join('; ') || 'no rules to run'}`);
-  console.log(`  checked: ${[...counted].sort().map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  console.log(
+    `${prison.id}: ${lasting.length} lasting facts (${[...new Set(lasting.map((f) => f.kind))].join(', ')}); ${ran.join('; ') || 'no rules to run'}`,
+  );
+  console.log(
+    `  checked: ${[...counted]
+      .sort()
+      .map(([k, v]) => `${k} ${v}`)
+      .join(', ')}`,
+  );
   console.log(`  naps as told: ${naps}; shakedowns as told: ${shakedowns}`);
   if (lasting.some((f) => f.kind === 'lazy')) check(naps > 0, `${prison.id}: the lazy guard naps as told`);
 }
 console.log(`a glider's day: flown out from a copy ${glidesFlown} times`);
 // (P42: the egg hunt's tip comes up only under Easter: holidaytest checks it.)
-check(GOSSIP.every((k) => kinds.has(k) || ['heat', 'eggDesk'].includes(k)), `every kind of gossip came up somewhere (${GOSSIP.filter((k) => !kinds.has(k) && k !== 'eggDesk').join(', ') || 'all'})`);
+check(
+  GOSSIP.every((k) => kinds.has(k) || ['heat', 'eggDesk'].includes(k)),
+  `every kind of gossip came up somewhere (${GOSSIP.filter((k) => !kinds.has(k) && k !== 'eggDesk').join(', ') || 'all'})`,
+);

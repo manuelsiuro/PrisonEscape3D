@@ -30,11 +30,18 @@ for (const p of [...PRISONS, TRAINING]) {
             for (let a = 0; a < ww && ok; a++)
               for (let b = 0; b < dd && ok; b++) {
                 const end = along ? a === 0 || a === ww - 1 : b === 0 || b === dd - 1;
-                const mid = along ? b === Math.floor(dd / 2) || b === Math.floor(dd / 2) - 1 : a === Math.floor(ww / 2) || a === Math.floor(ww / 2) - 1;
+                const mid = along
+                  ? b === Math.floor(dd / 2) || b === Math.floor(dd / 2) - 1
+                  : a === Math.floor(ww / 2) || a === Math.floor(ww / 2) - 1;
                 if ((!end || mid) && bad(x + a, z + b)) ok = false;
               }
             if (ok) found.push([len * wid, `{ x: ${x}, z: ${z}, w: ${ww}, d: ${dd} }`]);
           }
   found.sort((a, b) => b[0] - a[0]);
-  console.log(`== ${p.id}: ${found.length}; ${found.slice(0, 8).map((f) => f[1]).join(' | ')}`);
+  console.log(
+    `== ${p.id}: ${found.length}; ${found
+      .slice(0, 8)
+      .map((f) => f[1])
+      .join(' | ')}`,
+  );
 }

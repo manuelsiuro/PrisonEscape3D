@@ -52,8 +52,14 @@ const { Bot } = await import('./bots');
 const W = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // ------------------------------------------------------------------ the Daily of each day
-check(dailyNumber(new Date(2026, 9, 19, 0, 1)) === 0 && dailyNumber(new Date(2026, 9, 19, 23, 59)) === 0, 'Daily #1 is the whole of 19 October 2026, local time');
-check(dailyNumber(new Date(2026, 9, 20, 0, 0)) === 1 && dailyNumber(new Date(2027, 0, 1, 12)) === 74, 'one a day after (#2 the next morning, #75 on New Year’s Day)');
+check(
+  dailyNumber(new Date(2026, 9, 19, 0, 1)) === 0 && dailyNumber(new Date(2026, 9, 19, 23, 59)) === 0,
+  'Daily #1 is the whole of 19 October 2026, local time',
+);
+check(
+  dailyNumber(new Date(2026, 9, 20, 0, 0)) === 1 && dailyNumber(new Date(2027, 0, 1, 12)) === 74,
+  'one a day after (#2 the next morning, #75 on New Year’s Day)',
+);
 check(dailyNumber(new Date(2027, 2, 29, 12)) - dailyNumber(new Date(2027, 2, 27, 12)) === 2, 'a clock change is still one day');
 check(dailyDate(dailyNumber(new Date(2026, 11, 25, 9))).getUTCDate() === 25, 'a Daily’s date is its day');
 console.log('the first four weeks:');
@@ -97,12 +103,23 @@ for (let n = -7; n < YEARS; n++) {
     if (d.twists.length < r.twists) tally.set('short hand', (tally.get('short hand') ?? 0) + 1);
   }
 }
-check(problems === 0, 'every Daily is the same each time asked, keeps its weekday’s rhythm and budget, deals only twists that mean something there and never closes every way out');
+check(
+  problems === 0,
+  'every Daily is the same each time asked, keeps its weekday’s rhythm and budget, deals only twists that mean something there and never closes every way out',
+);
 check(sameTwice === 0, 'never the same prison two days running');
 console.log(`over three years: ${PRISONS.map((p) => `${p.id} ${tally.get(p.id) ?? 0}`).join(', ')}`);
-console.log(`  twists: ${TWIST_IDS.map((id) => `${id} ${tally.get(id) ?? 0}`).join(', ')}; days dealt fewer than their rhythm ${tally.get('short hand') ?? 0}`);
-check(PRISONS.every((p) => (tally.get(p.id) ?? 0) > 50), 'every prison comes up');
-check(TWIST_IDS.every((id) => (tally.get(id) ?? 0) > 20), 'every twist comes up');
+console.log(
+  `  twists: ${TWIST_IDS.map((id) => `${id} ${tally.get(id) ?? 0}`).join(', ')}; days dealt fewer than their rhythm ${tally.get('short hand') ?? 0}`,
+);
+check(
+  PRISONS.every((p) => (tally.get(p.id) ?? 0) > 50),
+  'every prison comes up',
+);
+check(
+  TWIST_IDS.every((id) => (tally.get(id) ?? 0) > 20),
+  'every twist comes up',
+);
 check(TWISTS.length === TWIST_IDS.length && TWIST_IDS.every((id) => twistOf(id)?.id === id), 'every twist has its data');
 
 // ------------------------------------------------------------------ each twist's rule
@@ -123,17 +140,32 @@ const run = (sim: InstanceType<typeof Sim>, steps: number, each?: () => void) =>
   const b = game(['eagleEyes']);
   const g = 0;
   // (Indoors, where no weather caps it.)
-  check(sightOf(b, b.state.guards[g]) - sightOf(a, a.state.guards[g]) === EAGLE_SIGHT * UNIT, `Eagle Eyes: guards see ${EAGLE_SIGHT} tiles further`);
+  check(
+    sightOf(b, b.state.guards[g]) - sightOf(a, a.state.guards[g]) === EAGLE_SIGHT * UNIT,
+    `Eagle Eyes: guards see ${EAGLE_SIGHT} tiles further`,
+  );
 }
-check(coolEvery({ mods: ['shortFuse'] }) === 2 * HEAT_DECAY_STEPS && coolEvery({ mods: [] }) === HEAT_DECAY_STEPS, 'Short Fuse: heat cools at half the pace');
-check(trickle({ mods: ['shortFuse'] }, 2) === 3 && trickle({ mods: ['shortFuse'] }, 5) === 8 && trickle({ mods: ['shortFuse'] }, 100) === 100 && trickle({ mods: [] }, 5) === 5, 'and what a guard’s eye adds trickles in half as fast again');
+check(
+  coolEvery({ mods: ['shortFuse'] }) === 2 * HEAT_DECAY_STEPS && coolEvery({ mods: [] }) === HEAT_DECAY_STEPS,
+  'Short Fuse: heat cools at half the pace',
+);
+check(
+  trickle({ mods: ['shortFuse'] }, 2) === 3 &&
+    trickle({ mods: ['shortFuse'] }, 5) === 8 &&
+    trickle({ mods: ['shortFuse'] }, 100) === 100 &&
+    trickle({ mods: [] }, 5) === 5,
+  'and what a guard’s eye adds trickles in half as fast again',
+);
 {
   const sim = game(['threeDays']);
   const events: string[] = [];
   run(sim, 3 * DAY_STEPS + 50, () => {
     for (const e of sim.events) if (e.type === 'timeUp') events.push(`step ${sim.state.step}`);
   });
-  check(events.length === 1 && events[0] === `step ${3 * DAY_STEPS}` && sim.timeUp && sim.state.step === 3 * DAY_STEPS, 'Three Days: the run is over as day 4 begins (once, and nothing more happens)');
+  check(
+    events.length === 1 && events[0] === `step ${3 * DAY_STEPS}` && sim.timeUp && sim.state.step === 3 * DAY_STEPS,
+    'Three Days: the run is over as day 4 begins (once, and nothing more happens)',
+  );
   check(!game([]).timeUp, '(no time limit in the campaign)');
 }
 {
@@ -171,21 +203,35 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
   const desk = sim.world.props.find((p) => p.kind === 'desk' && sim.world.cellOf[p.z * MAP_W + p.x] === 1)!;
   const under = desk.z * MAP_W + desk.x;
   setTile(sim, LAYER.GROUND, under, TILE.SHAFT);
-  const wall = sim.world.ground.kind.findIndex((k) => k === TILE.WALL);
+  const wall = sim.world.ground.kind.findIndex((k) => k === TILE.BRICK);
   sim.state.wear[placeKey(LAYER.GROUND, under)] = 3;
   sim.state.wear[placeKey(LAYER.UNDER, under + 1)] = 3;
   sim.state.wear[placeKey(LAYER.GROUND, wall)] = 3;
   run(sim, DAY_STEPS + 40);
   check(sim.world.ground.kind[under] === TILE.SHAFT, 'Quick Fix: the shaft under the desk stays (covered work)');
-  check(sim.state.wear[placeKey(LAYER.GROUND, under)] === 3 && sim.state.wear[placeKey(LAYER.UNDER, under + 1)] === 3 && !sim.state.wear[placeKey(LAYER.GROUND, wall)], '(the floor under the desk and the tunnels’ soil keep their wear; a wall chipped at heals)');
+  check(
+    sim.state.wear[placeKey(LAYER.GROUND, under)] === 3 &&
+      sim.state.wear[placeKey(LAYER.UNDER, under + 1)] === 3 &&
+      !sim.state.wear[placeKey(LAYER.GROUND, wall)],
+    '(the floor under the desk and the tunnels’ soil keep their wear; a wall chipped at heals)',
+  );
 }
 {
-  const hot = (mods: string[]) => PRISONS.reduce((n, p) => n + Array.from({ length: 60 }, (_, k) => dayPlan(p.id, 3, k + 1, [], mods).weather).filter((w) => w === 'heatwave' || w === 'rain').length, 0);
+  const hot = (mods: string[]) =>
+    PRISONS.reduce(
+      (n, p) =>
+        n +
+        Array.from({ length: 60 }, (_, k) => dayPlan(p.id, 3, k + 1, [], mods).weather).filter((w) => w === 'heatwave' || w === 'rain')
+          .length,
+      0,
+    );
   check(hot([]) > 0 && hot(['bigFreeze']) === 0, 'Big Freeze: no heatwave, no rain');
 }
 {
   const sim = game(['bigFreeze']);
-  const yard = sim.world.ground.kind.findIndex((k, i) => TILE_INFO[k].outdoor && TILE_INFO[k].walk !== false && sim.world.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'yard');
+  const yard = sim.world.ground.kind.findIndex(
+    (k, i) => TILE_INFO[k].outdoor && !TILE_INFO[k].solid && sim.world.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'yard',
+  );
   sim.state.player.x = (yard % MAP_W) * UNIT + UNIT / 2;
   sim.state.player.z = Math.floor(yard / MAP_W) * UNIT + UNIT / 2;
   const plain = game([]);
@@ -206,14 +252,31 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
   const box = sim.state.items.containers[desk];
   const kit = box.slice(-3).map((v) => ITEMS[itemOf(v) - 1]?.id ?? '?');
   console.log(`care package: ${kit.join(', ')}, $${sim.state.cash - plain.state.cash}`);
-  check(box.slice(-3).every((v) => v) && box.slice(0, 6).every((v) => !v) && sim.state.cash - plain.state.cash === CARE_CASH, 'Care Package: three things in the desk (not its hidden compartment) and some cash');
+  check(
+    box.slice(-3).every((v) => v) && box.slice(0, 6).every((v) => !v) && sim.state.cash - plain.state.cash === CARE_CASH,
+    'Care Package: three things in the desk (not its hidden compartment) and some cash',
+  );
   check(plain.state.rng === sim.state.rng, '(drawn without the RNG: everything else as it would be)');
 }
 {
   const plan = (mods: string[]) => Array.from({ length: 6 }, (_, k) => dayPlan(CENTER_PERKS.id, 5, k + 1, [], mods).weather).join(' ');
-  check(plan(['fogDays']).startsWith('clear') && plan(['fogDays']).split(' ').slice(1).every((w) => w === 'fog'), 'Fog Days: fog every day after the first');
-  check(plan(['storm']).split(' ').slice(1).every((w) => w === 'storm'), 'Storm: a storm every day after the first');
-  const deliveries = (mods: string[]) => Array.from({ length: 28 }, (_, k) => dayPlan(CENTER_PERKS.id, 5, k + 1, [], mods).event).filter((e) => e === 'delivery').length;
+  check(
+    plan(['fogDays']).startsWith('clear') &&
+      plan(['fogDays'])
+        .split(' ')
+        .slice(1)
+        .every((w) => w === 'fog'),
+    'Fog Days: fog every day after the first',
+  );
+  check(
+    plan(['storm'])
+      .split(' ')
+      .slice(1)
+      .every((w) => w === 'storm'),
+    'Storm: a storm every day after the first',
+  );
+  const deliveries = (mods: string[]) =>
+    Array.from({ length: 28 }, (_, k) => dayPlan(CENTER_PERKS.id, 5, k + 1, [], mods).event).filter((e) => e === 'delivery').length;
   check(deliveries([]) === 4 && deliveries(['truckStrike']) === 0, 'Truck Strike: no delivery all month (4 as a rule)');
 }
 {
@@ -221,16 +284,25 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
   check(dogsFrom({ mods: ['dogDay'] }) === 1 && dogsFrom({ mods: [] }) === 2, 'Dog Day: the dogs work from day 1');
   const sim = new Sim(SHANKTON, 3, ['dogDay']);
   const counters = containersOf(sim.world).flatMap((c, i) => (c.table === 'canteenCounter' ? [sim.state.items.containers[i]] : []));
-  check(counters.some((box) => box.some((v) => itemOf(v) === itemNumber('jerky'))), '(their treats on the counters from the first morning)');
+  check(
+    counters.some((box) => box.some((v) => itemOf(v) === itemNumber('jerky'))),
+    '(their treats on the counters from the first morning)',
+  );
 }
-check(stirSteps({ mods: ['lightSleepers'] }) * 2 === stirSteps({ mods: [] }), 'Light Sleepers: a dozing guard wakes to the player at its elbow in half the time');
+check(
+  stirSteps({ mods: ['lightSleepers'] }) * 2 === stirSteps({ mods: [] }),
+  'Light Sleepers: a dozing guard wakes to the player at its elbow in half the time',
+);
 {
   const sim = game(['straightLaced']);
   const k = CENTER_PERKS.guards.findIndex((g) => g.trait === 'corrupt');
   sim.state.heat = 30;
   sim.state.cash = 500;
   bribe(sim, k, BRIBE.PAPER);
-  check(sim.events.some((e) => e.type === 'refused' && e.why === 'honest') && sim.state.heat === 30, 'Straight-Laced: the corrupt guard turns a bribe down');
+  check(
+    sim.events.some((e) => e.type === 'refused' && e.why === 'honest') && sim.state.heat === 30,
+    'Straight-Laced: the corrupt guard turns a bribe down',
+  );
 }
 {
   const sim = game(['customs']);
@@ -245,7 +317,10 @@ check(stirSteps({ mods: ['lightSleepers'] }) * 2 === stirSteps({ mods: [] }), 'L
   sim.state.talk = 0;
   sim.events = [];
   talkOp(sim, TALK.RECRUIT, 0);
-  check(sim.events.some((e) => e.type === 'refused' && e.why === 'loneWolf') && !sim.state.followers.length, 'Lone Wolf: not even a friend signs up');
+  check(
+    sim.events.some((e) => e.type === 'refused' && e.why === 'loneWolf') && !sim.state.followers.length,
+    'Lone Wolf: not even a friend signs up',
+  );
 }
 {
   const asleep = (mods: string[]) => {
@@ -276,7 +351,10 @@ check(stirSteps({ mods: ['lightSleepers'] }) * 2 === stirSteps({ mods: [] }), 'L
 const NEEDS: Record<string, string[][]> = {
   fence: [['flimsy_cutters', 'light_cutters', 'sturdy_cutters']],
   tunnel: [['flimsy_shovel', 'light_shovel', 'sturdy_shovel']],
-  roof: [['grapnel', 'grappling_hook'], ['screwdriver', 'nail_file', 'powered_screwdriver', 'multitool']],
+  roof: [
+    ['grapnel', 'grappling_hook'],
+    ['screwdriver', 'nail_file', 'powered_screwdriver', 'multitool'],
+  ],
   takeover: [],
   gate: [['plastic_key_yellow'], ['plastic_key_red'], ['plastic_key_green']],
   raft: [['raft'], ['flimsy_cutters', 'light_cutters', 'sturdy_cutters']],
@@ -289,7 +367,7 @@ const NEEDS: Record<string, string[][]> = {
 const choices = (ing: string) => ing.split('|');
 function obtainable(closed: readonly string[]): Set<string> {
   const have = new Set(ITEMS.filter((d) => d.from.some((f) => !closed.includes(f))).map((d) => d.id));
-  for (let changed = true; changed; ) {
+  for (let changed = true; changed;) {
     changed = false;
     for (const r of RECIPES)
       if (!have.has(r.result) && r.ingredients.every((i) => choices(i).some((c) => have.has(c)))) {
@@ -303,10 +381,22 @@ for (const t of TWISTS) {
   const have = obtainable(t.closes ?? []);
   for (const [route, groups] of Object.entries(NEEDS)) {
     if (t.breaks?.includes(route as never)) continue;
-    check(groups.every((g) => g.some((id) => have.has(id))), `${t.id} leaves ${route} open: its tools can still be had`);
+    check(
+      groups.every((g) => g.some((id) => have.has(id))),
+      `${t.id} leaves ${route} open: its tools can still be had`,
+    );
   }
 }
-console.log(`kit check: ${TWISTS.filter((t) => t.closes).map((t) => `${t.id} closes ${t.closes!.join(', ')}: ${ITEMS.filter((d) => !obtainable(t.closes!).has(d.id)).map((d) => d.id).join(', ')} out of reach`).join('; ')}`);
+console.log(
+  `kit check: ${TWISTS.filter((t) => t.closes)
+    .map(
+      (t) =>
+        `${t.id} closes ${t.closes!.join(', ')}: ${ITEMS.filter((d) => !obtainable(t.closes!).has(d.id))
+          .map((d) => d.id)
+          .join(', ')} out of reach`,
+    )
+    .join('; ')}`,
+);
 
 // ------------------------------------------------------------------ the hardest Daily of each prison
 /** The bots' names for the routes. */
@@ -337,7 +427,14 @@ for (const p of PLANS) {
     console.log = log;
     console.error = err;
     const out = won();
-    console.log(`  ${p.def.id} ${via}: ${out ? `out ${bot!.time}` : 'STILL INSIDE'} under ${mods.length} twists${((left) => (left ? ` (all but ${left})` : ' (all there are)'))(TWISTS.filter((t) => (!t.at || t.at(p.def)) && !mods.includes(t.id)).map((t) => t.id).join(', '))}`);
+    console.log(
+      `  ${p.def.id} ${via}: ${out ? `out ${bot!.time}` : 'STILL INSIDE'} under ${mods.length} twists${((left) =>
+        left ? ` (all but ${left})` : ' (all there are)')(
+        TWISTS.filter((t) => (!t.at || t.at(p.def)) && !mods.includes(t.id))
+          .map((t) => t.id)
+          .join(', '),
+      )}`,
+    );
     check(out, `${p.def.id}: the ${via} still wins on its hardest Daily`);
   }
 }
@@ -352,12 +449,20 @@ const strip = stripOf([0, DAY.SPOTTED, DAY.WANTED | DAY.SPOTTED, DAY.CAUGHT, DAY
 check(strip.join() === '0,1,2,3,4', 'the day strip: quiet, spotted, hot, caught, out');
 console.log(`a day strip: ${strip.map((k) => STRIP_EMOJI[k]).join('')}`);
 const code = checkCode(3, 'tunnel', 1500, 2, 'abcd1234');
-check(/^[0-9A-F]{6}$/.test(code) && code === checkCode(3, 'tunnel', 1500, 2, 'abcd1234') && code !== checkCode(3, 'tunnel', 1501, 2, 'abcd1234'), `a check code (${code}): short, the same for the same escape, another for another`);
+check(
+  /^[0-9A-F]{6}$/.test(code) &&
+    code === checkCode(3, 'tunnel', 1500, 2, 'abcd1234') &&
+    code !== checkCode(3, 'tunnel', 1501, 2, 'abcd1234'),
+  `a check code (${code}): short, the same for the same escape, another for another`,
+);
 let e = dailyEscape(3, { prison: 'center-perks', day: 2, minutes: 1500, via: 'tunnel', strip, code });
 check(e.best && e.medal === 'gold' && e.record.best?.tries === 2, 'the first escape is the best (on the second try: gold)');
 e = dailyEscape(3, { prison: 'center-perks', day: 4, minutes: 4000, via: 'fence', strip, code });
 check(!e.best && dailyRecord(3).best?.minutes === 1500, 'a slower one keeps the best');
-check(streakOf(3) === 1 && streakOf(4) === 1 && streakOf(5) === 0, 'the streak: one, still one the day after (today’s still to play), gone the day after that');
+check(
+  streakOf(3) === 1 && streakOf(4) === 1 && streakOf(5) === 0,
+  'the streak: one, still one the day after (today’s still to play), gone the day after that',
+);
 dailyTry(4);
 dailyEscape(4, { prison: 'shankton', day: 5, minutes: 6500, via: 'fence', strip, code });
 dailyTry(6);

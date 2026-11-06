@@ -4,7 +4,6 @@ import { h } from '../dom';
 import { icon } from '../icons';
 import { hhmm } from '../../sim/systems/clock';
 
-
 /** "Stalag Flucht · Day 3 · 14:20 · Laundry": which prison, when and where a save was made. */
 export function saveWhen(f: SaveFile): string {
   // (P31: its prison rebuilt since, said before it's picked: the run starts over.)
@@ -41,7 +40,9 @@ export function showSaves(mode: 'load' | 'save', click: () => void): Promise<Slo
         const over = armed?.slot === slot && armed.what === 'over';
         const del = armed?.slot === slot && armed.what === 'del';
         const ic = slot === 'auto' ? 'replay' : f ? 'save' : 'folder';
-        const sub = f ? `<small>${saveWhen(f)}</small><small class="save-ago">${over ? t('saves.overwrite') : ago(f.at)}</small>` : `<small>${t('saves.empty')}</small>`;
+        const sub = f
+          ? `<small>${saveWhen(f)}</small><small class="save-ago">${over ? t('saves.overwrite') : ago(f.at)}</small>`
+          : `<small>${t('saves.empty')}</small>`;
         const usable = mode === 'save' || !!f;
         return `<div class="save-row${f ? '' : ' empty'}${over ? ' armed' : ''}">
           <button class="save-main" data-slot="${slot}" ${usable ? '' : 'disabled'}>

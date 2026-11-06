@@ -127,7 +127,10 @@ export class Island {
     // The ocean, far past the map's edges.
     this.waves = waveTexture();
     this.waves.repeat.set(16, 16);
-    const ocean = new THREE.Mesh(new THREE.PlaneGeometry(320, 320).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: this.waves, color: 0x9fc4d8, roughness: 0.32, metalness: 0.12 }));
+    const ocean = new THREE.Mesh(
+      new THREE.PlaneGeometry(320, 320).rotateX(-Math.PI / 2),
+      new THREE.MeshStandardMaterial({ map: this.waves, color: 0x9fc4d8, roughness: 0.32, metalness: 0.12 }),
+    );
     ocean.position.set(MAP_W / 2, SEA_Y, MAP_H / 2);
     ocean.receiveShadow = true;
     if (!backdrop) this.group.add(ocean);
@@ -147,11 +150,26 @@ export class Island {
           const shade = [0x5b6168, 0x666c73, 0x50565c][Math.floor(h * 3)];
           skirt.push(box(1.0, 0.88, 1.0, shade, x + 0.5, SEA_Y - 0.5, z + 0.5));
           // Rocks tumbled into the water at its foot.
-          if (h < 0.5) for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (sea(x + dx, z + dz) && g[i] !== TILE.PIER) {
-            const r = 0.28 + hash01(i, 2 + dx * 3 + dz) * 0.3;
-            skirt.push(paint(new THREE.DodecahedronGeometry(r, 0).scale(1, 0.7, 1).rotateY(h * 6).translate(x + 0.5 + dx * 0.62, SEA_Y + 0.05, z + 0.5 + dz * 0.62), 0x5f656c));
-            break;
-          }
+          if (h < 0.5)
+            for (const [dx, dz] of [
+              [-1, 0],
+              [1, 0],
+              [0, -1],
+              [0, 1],
+            ])
+              if (sea(x + dx, z + dz) && g[i] !== TILE.PIER) {
+                const r = 0.28 + hash01(i, 2 + dx * 3 + dz) * 0.3;
+                skirt.push(
+                  paint(
+                    new THREE.DodecahedronGeometry(r, 0)
+                      .scale(1, 0.7, 1)
+                      .rotateY(h * 6)
+                      .translate(x + 0.5 + dx * 0.62, SEA_Y + 0.05, z + 0.5 + dz * 0.62),
+                    0x5f656c,
+                  ),
+                );
+                break;
+              }
         }
         if (!land && world.bridge[i] === 0 && near) foam.push(x, z);
       }
@@ -171,17 +189,39 @@ export class Island {
       if (Math.abs(z - 28) < 6 && x > 58) continue;
       const r = 0.6 + rand() * 1.6;
       const tall = rand() < 0.3 ? 1.6 + rand() * 2 : 0.5 + rand() * 0.5;
-      skirt.push(paint(new THREE.DodecahedronGeometry(r, 0).scale(1, tall, 0.9).rotateY(rand() * 6).translate(x, SEA_Y + r * tall * 0.4, z), [0x585e65, 0x646a71, 0x4e545a][made % 3]));
-      if (tall > 1) skirt.push(paint(new THREE.DodecahedronGeometry(r * 0.6, 0).scale(1, 0.4, 1).translate(x, SEA_Y + r * tall * 0.95, z), 0xe8ecef));
+      skirt.push(
+        paint(
+          new THREE.DodecahedronGeometry(r, 0)
+            .scale(1, tall, 0.9)
+            .rotateY(rand() * 6)
+            .translate(x, SEA_Y + r * tall * 0.4, z),
+          [0x585e65, 0x646a71, 0x4e545a][made % 3],
+        ),
+      );
+      if (tall > 1)
+        skirt.push(paint(new THREE.DodecahedronGeometry(r * 0.6, 0).scale(1, 0.4, 1).translate(x, SEA_Y + r * tall * 0.95, z), 0xe8ecef));
       made++;
     }
     // The pier's posts down into the water, the drawbridge's piers.
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (g[z * MAP_W + x] !== TILE.PIER) continue;
-        for (const [dx, dz] of [[0.1, 0.1], [0.9, 0.1], [0.1, 0.9], [0.9, 0.9]]) skirt.push(cyl(0.07, 0.9, 0x4a3a2a, x + dx, SEA_Y - 0.6, z + dz, 6));
+        for (const [dx, dz] of [
+          [0.1, 0.1],
+          [0.9, 0.1],
+          [0.1, 0.9],
+          [0.9, 0.9],
+        ])
+          skirt.push(cyl(0.07, 0.9, 0x4a3a2a, x + dx, SEA_Y - 0.6, z + dz, 6));
         // Its edge where it meets the sea: a beam along the side.
-        for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (sea(x + dx, z + dz) && g[(z + dz) * MAP_W + x + dx] !== TILE.PIER) skirt.push(box(dx ? 0.1 : 1, 0.16, dz ? 0.1 : 1, 0x5b4632, x + 0.5 + dx * 0.47, -0.16, z + 0.5 + dz * 0.47));
+        for (const [dx, dz] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ])
+          if (sea(x + dx, z + dz) && g[(z + dz) * MAP_W + x + dx] !== TILE.PIER)
+            skirt.push(box(dx ? 0.1 : 1, 0.16, dz ? 0.1 : 1, 0x5b4632, x + 0.5 + dx * 0.47, -0.16, z + 0.5 + dz * 0.47));
       }
     }
     // The ferry at the landing, a patrol boat moored off the dock.
@@ -199,7 +239,10 @@ export class Island {
     };
     // (Not round the manhunt's outside, P41: they're moored at the prison, not the town.)
     if (!isOutside(world.def) && !backdrop) {
-      const boats = new THREE.Mesh(merge([boat(31, 62.7, 7, 2, 0x2b4a6b, 0xeef1f4, true), boat(62.2, 32.4, 3, 1.1, 0x3b4048, 0xc8ccd2, false)]), kitMaterial);
+      const boats = new THREE.Mesh(
+        merge([boat(31, 62.7, 7, 2, 0x2b4a6b, 0xeef1f4, true), boat(62.2, 32.4, 3, 1.1, 0x3b4048, 0xc8ccd2, false)]),
+        kitMaterial,
+      );
       boats.castShadow = true;
       this.group.add(boats);
     }
@@ -214,7 +257,8 @@ export class Island {
       for (let x = -M; x < MAP_W + M; x++) {
         if (!sea(x, z) || (world.inside(x, z) && world.bridge[z * MAP_W + x] !== 0)) continue;
         let d = 99;
-        for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dz)));
+        for (let dz = -3; dz <= 3; dz++)
+          for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dz)));
         if (d <= 3) shallow.push(x, z);
       }
     }
@@ -239,14 +283,22 @@ export class Island {
     sf.filter = 'blur(3px)';
     sf.drawImage(sc, 0, 0);
     const shallowTex = canvasTexture(soft);
-    const shallowMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W + M * 2, MAP_H + M * 2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }));
+    const shallowMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(MAP_W + M * 2, MAP_H + M * 2).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }),
+    );
     shallowMesh.position.set(MAP_W / 2, SEA_Y + 0.02, MAP_H / 2);
     shallowMesh.renderOrder = 0.12;
     this.group.add(shallowMesh);
     const m = new THREE.Matrix4();
     this.foamMat = new THREE.MeshBasicMaterial({ map: foamTexture(), transparent: true, opacity: 0.8, depthWrite: false });
-    const foamMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.15, 1.15).rotateX(-Math.PI / 2), this.foamMat, Math.max(1, foam.length / 2));
-    for (let k = 0; k < foam.length / 2; k++) foamMesh.setMatrixAt(k, m.makeRotationY(hash01(k, 4) * 6).setPosition(foam[k * 2] + 0.5, SEA_Y + 0.04, foam[k * 2 + 1] + 0.5));
+    const foamMesh = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(1.15, 1.15).rotateX(-Math.PI / 2),
+      this.foamMat,
+      Math.max(1, foam.length / 2),
+    );
+    for (let k = 0; k < foam.length / 2; k++)
+      foamMesh.setMatrixAt(k, m.makeRotationY(hash01(k, 4) * 6).setPosition(foam[k * 2] + 0.5, SEA_Y + 0.04, foam[k * 2 + 1] + 0.5));
     foamMesh.count = foam.length / 2;
     foamMesh.renderOrder = 0.22;
     this.group.add(foamMesh);
@@ -260,16 +312,29 @@ export class Island {
       const deckTex = TEX.pier().clone();
       deckTex.needsUpdate = true;
       deckTex.repeat.set(w, d);
-      const deck = new THREE.Mesh(new THREE.BoxGeometry(w, 0.16, d).translate(0, -0.08, d / 2), new THREE.MeshStandardMaterial({ map: deckTex, roughness: 0.9 }));
+      const deck = new THREE.Mesh(
+        new THREE.BoxGeometry(w, 0.16, d).translate(0, -0.08, d / 2),
+        new THREE.MeshStandardMaterial({ map: deckTex, roughness: 0.9 }),
+      );
       deck.castShadow = deck.receiveShadow = true;
-      const rails = new THREE.Mesh(merge([box(0.08, 0.3, d, 0x3b4048, -w / 2 + 0.04, 0, d / 2), box(0.08, 0.3, d, 0x3b4048, w / 2 - 0.04, 0, d / 2), box(w, 0.1, 0.1, 0x2b3038, 0, 0, d - 0.05)]), kitMaterial);
+      const rails = new THREE.Mesh(
+        merge([
+          box(0.08, 0.3, d, 0x3b4048, -w / 2 + 0.04, 0, d / 2),
+          box(0.08, 0.3, d, 0x3b4048, w / 2 - 0.04, 0, d / 2),
+          box(w, 0.1, 0.1, 0x2b3038, 0, 0, d - 0.05),
+        ]),
+        kitMaterial,
+      );
       rails.castShadow = true;
       this.bridge = new THREE.Group();
       this.bridge.add(deck, rails);
       this.bridge.position.set(x0 + w / 2, 0, z0);
       this.group.add(this.bridge);
       // Its stone piers either side, where the chains run up.
-      const piers = new THREE.Mesh(merge([box(0.4, 2.2, 0.4, 0x5d636b, x0 - 0.2, -0.4, z0 + 0.1), box(0.4, 2.2, 0.4, 0x5d636b, x1 + 1.2, -0.4, z0 + 0.1)]), kitMaterial);
+      const piers = new THREE.Mesh(
+        merge([box(0.4, 2.2, 0.4, 0x5d636b, x0 - 0.2, -0.4, z0 + 0.1), box(0.4, 2.2, 0.4, 0x5d636b, x1 + 1.2, -0.4, z0 + 0.1)]),
+        kitMaterial,
+      );
       piers.castShadow = true;
       this.group.add(piers);
     }
@@ -302,12 +367,19 @@ export class Island {
       const blade = merge([box(3.6, 0.03, 0.2, 0x1d2026, 0, 0, 0), box(0.2, 0.03, 3.6, 0x1d2026, 0, 0, 0)]);
       this.rotor.add(new THREE.Mesh(blade, kitMaterial));
       this.rotor.position.y = 1.36;
-      this.tailRotor.add(new THREE.Mesh(merge([box(0.03, 0.7, 0.08, 0x1d2026, 0, -0.35, 0), box(0.03, 0.08, 0.7, 0x1d2026, 0, 0, -0.35)]), kitMaterial));
+      this.tailRotor.add(
+        new THREE.Mesh(merge([box(0.03, 0.7, 0.08, 0x1d2026, 0, -0.35, 0), box(0.03, 0.08, 0.7, 0x1d2026, 0, 0, -0.35)]), kitMaterial),
+      );
       this.tailRotor.position.set(0.1, 1.0, -2.95);
       const light = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), this.beacon);
       light.position.set(0, 1.26, -0.6);
       // The cargo ramp under the tail boom (P18), hinged at the cabin's floor.
-      this.ramp.add(new THREE.Mesh(merge([box(0.9, 0.05, 0.8, 0x26392d, 0, -0.025, -0.4), box(0.84, 0.02, 0.06, 0xe0c23a, 0, 0.005, -0.76)], false), kitMaterial));
+      this.ramp.add(
+        new THREE.Mesh(
+          merge([box(0.9, 0.05, 0.8, 0x26392d, 0, -0.025, -0.4), box(0.84, 0.02, 0.06, 0xe0c23a, 0, 0.005, -0.76)], false),
+          kitMaterial,
+        ),
+      );
       this.ramp.position.set(0, 0.4, -1.0);
       heli.add(body, this.rotor, this.tailRotor, light, this.ramp);
       // Nose north, its tail (and ramp) over the court's south side.
@@ -401,7 +473,13 @@ export class Island {
     this.leaving = { kind, t: 0, x, z };
     if (kind === 'raft' && !this.raft) {
       const parts: Part[] = [];
-      for (let k = 0; k < 5; k++) parts.push(paint(new THREE.CylinderGeometry(0.1, 0.1, 1.3, 7).rotateX(Math.PI / 2).translate(-0.4 + k * 0.2, 0, 0), k % 2 ? 0xd8c08a : 0xe8d2a0));
+      for (let k = 0; k < 5; k++)
+        parts.push(
+          paint(
+            new THREE.CylinderGeometry(0.1, 0.1, 1.3, 7).rotateX(Math.PI / 2).translate(-0.4 + k * 0.2, 0, 0),
+            k % 2 ? 0xd8c08a : 0xe8d2a0,
+          ),
+        );
       parts.push(box(0.04, 1.1, 0.04, 0x6e4a2b, 0, 0, 0), paint(new THREE.PlaneGeometry(0.7, 0.8).translate(0.37, 0.65, 0), 0xeef1f4));
       this.raft = new THREE.Mesh(merge(parts), kitMaterial);
       this.raft.castShadow = true;

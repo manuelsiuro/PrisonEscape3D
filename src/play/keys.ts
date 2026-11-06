@@ -1,7 +1,20 @@
 import { t } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { targets, upPress, usePress } from './buttons';
-import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, tools, toggleProfile } from './context';
+import {
+  board,
+  click,
+  closeSocial,
+  itemsUI,
+  profile,
+  ratPanel,
+  phonePanel,
+  crewPanel,
+  socialOpen,
+  sound,
+  tools,
+  toggleProfile,
+} from './context';
 import { toggleRat } from './rat';
 import { togglePhone } from './smuggle';
 import { play, sendOp } from './game';
@@ -64,9 +77,9 @@ function onKeyDown(e: KeyboardEvent) {
     return;
   }
   if (game.hunt) {
-    if (e.code === 'Escape') pause();
-    else if (e.code === 'KeyH') openHelp();
-    else if (e.code === 'KeyO' && game.lesson) openObjectives();
+    if (e.code === 'Escape') void pause();
+    else if (e.code === 'KeyH') void openHelp();
+    else if (e.code === 'KeyO' && game.lesson) void openObjectives();
     return;
   }
   // Escape closes a panel first (or lets go of an aim), and pauses only when none is open.
@@ -86,18 +99,18 @@ function onKeyDown(e: KeyboardEvent) {
     else if (game.rec.sim.state.ink) sendOp(OP.EXT, EXT.INK, 0);
     // (P40: the board's card, or the job's own opened from its chip or B: closed, the focus back on the chip.)
     else if (jobCardShown()) closeOddJobsCard();
-    else pause();
+    else void pause();
     return;
   }
   const g = game;
   // O: a lesson's objectives (asleep, hidden in a vehicle or knocked out too: the card is down then).
   if (e.code === 'KeyO' && g.lesson) {
-    openObjectives();
+    void openObjectives();
     return;
   }
   // J: the day's card (asleep, knocked out or hidden in a vehicle too: when does the next block start?).
   if (e.code === 'KeyJ') {
-    openDay();
+    void openDay();
     return;
   }
   // Asleep: only waking up (E) and the file (I) mean anything; knocked out, only I (it says the file waits).
@@ -127,7 +140,7 @@ function onKeyDown(e: KeyboardEvent) {
       click();
       toggleProfile();
     }
-    if (e.code === 'KeyH') openHelp();
+    if (e.code === 'KeyH') void openHelp();
     return;
   }
   // Card sharks (P27): the hand of Cheat's keys (1–5, Enter, L) come before the hotbar's.
@@ -178,7 +191,7 @@ function onKeyDown(e: KeyboardEvent) {
     click();
     toggleProfile();
   }
-  if (e.code === 'KeyH') openHelp();
+  if (e.code === 'KeyH') void openHelp();
   // T: the pet rat's panel (P20).
   if (e.code === 'KeyT' && !itemsUI.panelOpen) {
     if (!ratPanel.isOpen) closeSocial();
@@ -193,7 +206,10 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Training (GDD §3.2): left and right in turn fill the bar (P22: and push in an arm-wrestle).
   // (2.29: waiting for a turn too: off to a start is no way to lose it. A press now counts for nothing.)
-  if ((g.rec.sim.state.train >= 0 || g.rec.sim.state.askTurn.length || g.rec.sim.state.bout.length) && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
+  if (
+    (g.rec.sim.state.train >= 0 || g.rec.sim.state.askTurn.length || g.rec.sim.state.bout.length) &&
+    (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')
+  ) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
     return;
   }
@@ -265,7 +281,7 @@ export function listenKeys() {
     if (play.game.replay) return pauseReplay();
     // Saved whatever is open (a help page, the pause card, a panel); paused if it wasn't.
     autosave(play.game);
-    if (!play.game.paused) pause();
+    if (!play.game.paused) void pause();
   });
   // The tab closing: one last save.
   addEventListener('pagehide', () => play.game && autosave(play.game));

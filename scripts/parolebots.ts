@@ -12,7 +12,8 @@ import { check } from './assert';
 import { Bot, tileOf } from './bots';
 import { PLANS } from './escapes';
 
-const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as Extract<SimEvent, { type: 'refused' }>).why);
+const refusals = (seen: SimEvent[]) =>
+  seen.filter((e) => e.type === 'refused').map((e) => (e as Extract<SimEvent, { type: 'refused' }>).why);
 const APPLY = command(0, OP.EXT, EXT.PAROLE, PAROLE.APPLY);
 const answer = (k: number) => command(0, OP.EXT, EXT.PAROLE, PAROLE.ANSWER, k);
 
@@ -33,7 +34,10 @@ export function modelPrisoner(prisonId: string, seed: number): string {
   const appliedAt = bot.time;
   check(st.parole[P.HEARING] === 10, `${prisonId}: applied, the hearing on day 10 (${refusals(bot.sim.events).join()})`);
   // The week: the routine kept; the hearing's morning, the routine sends the player to the room.
-  check(bot.keepRoutine(() => !!st.hearing, 8 * DAY_STEPS), `${prisonId}: sat before the board (${bot.time})`);
+  check(
+    bot.keepRoutine(() => !!st.hearing, 8 * DAY_STEPS),
+    `${prisonId}: sat before the board (${bot.time})`,
+  );
   const sat = bot.time;
   const counts = recordCounts(st);
   const said: number[] = [];
@@ -48,7 +52,9 @@ export function modelPrisoner(prisonId: string, seed: number): string {
   }
   bot.until(() => !st.hearing, 400);
   const pts = linePoints(counts);
-  const lines = RECORD.map((r, k) => (pts[k] ? `${r.id} ${pts[k] > 0 ? '+' : ''}${pts[k]}` : '')).filter(Boolean).join(', ');
+  const lines = RECORD.map((r, k) => (pts[k] ? `${r.id} ${pts[k] > 0 ? '+' : ''}${pts[k]}` : ''))
+    .filter(Boolean)
+    .join(', ');
   check(st.parole[P.OUTCOME] === OUTCOME.GRANTED, `${prisonId}: granted (${st.parole[P.SCORE]}: ${lines}; answers ${said.join(' ')})`);
   check(bot.routineUntil(11, 10 * 60), `${prisonId}: the last night kept`);
   check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 3000), `${prisonId}: at the release desk`);
@@ -59,4 +65,3 @@ export function modelPrisoner(prisonId: string, seed: number): string {
   const medal = MEDAL_DAYS[prisonId].parole;
   return `${prisonId}: applied ${appliedAt}, sat ${sat}; record ${recordScore(counts)} (${lines}), answers ${said.map((x) => (x > 0 ? `+${x}` : `${x}`)).join(' ')}: granted ${st.parole[P.SCORE]}; out ${bot.time} by ${ESCAPES[st.via]} (gold by day ${medal[0]})`;
 }
-

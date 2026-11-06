@@ -85,11 +85,12 @@ function run(sim: Sim, steps: number, cmd = 0): SimEvent[] {
   }
   return all;
 }
-const noiseOf = (ev: readonly SimEvent[], kind?: string) => ev.find((e): e is Extract<SimEvent, { type: 'noise' }> => e.type === 'noise' && (!kind || e.kind === kind));
+const noiseOf = (ev: readonly SimEvent[], kind?: string) =>
+  ev.find((e): e is Extract<SimEvent, { type: 'noise' }> => e.type === 'noise' && (!kind || e.kind === kind));
 const xz = (t: number) => `${t % MAP_W},${Math.floor(t / MAP_W)}`;
 const opaque = (sim: Sim, t: number) => TILE_INFO[sim.world.ground.kind[t]].opaque;
 /** The ground tiles within a square around a tile that pass a test. */
-function square(sim: Sim, tile: number, span: number, ok: (t: number) => boolean): number[] {
+function square(tile: number, span: number, ok: (t: number) => boolean): number[] {
   const out: number[] = [];
   for (let dz = -span; dz <= span; dz++)
     for (let dx = -span; dx <= span; dx++) {
@@ -100,7 +101,8 @@ function square(sim: Sim, tile: number, span: number, ok: (t: number) => boolean
     }
   return out;
 }
-const same = (a: readonly number[], b: readonly number[]) => a.length === b.length && [...a].sort((p, q) => p - q).join() === [...b].sort((p, q) => p - q).join();
+const same = (a: readonly number[], b: readonly number[]) =>
+  a.length === b.length && [...a].sort((p, q) => p - q).join() === [...b].sort((p, q) => p - q).join();
 
 // ------------------------------------------------------------------ how far a noise carries
 {
@@ -110,7 +112,10 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   const has = (list: number[], x: number, z: number) => list.includes(tileOf(x, z));
   check(has(chip, 36, 22) && !has(chip, 37, 22), 'six walking tiles along the corridor, not seven');
   check(has(chip, 30, 28) && !has(chip, 30, 29), 'and round into the yard through its opening');
-  check(chip.every((t) => !opaque(sim, t)), 'never into a wall');
+  check(
+    chip.every((t) => !opaque(sim, t)),
+    'never into a wall',
+  );
   // A shut door counts 4: from beside the laundry's door, 3 tiles reach past it open, not shut; 6 do.
   const door = tileOf(10, 24);
   const from = { layer: LAYER.GROUND, tile: tileOf(10, 23), reach: 3 };
@@ -127,30 +132,75 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   // Below, above, on a roof.
   const src = tileOf(30, 22);
   const under = earshot(sim, { layer: LAYER.UNDER, tile: src, reach: 3 });
-  check(same(under, square(sim, src, 1, (t) => !opaque(sim, t))), 'from a tunnel: only the 3×3 tiles above');
+  check(
+    same(
+      under,
+      square(src, 1, (t) => !opaque(sim, t)),
+    ),
+    'from a tunnel: only the 3×3 tiles above',
+  );
   const vents = earshot(sim, { layer: LAYER.VENTS, tile: src, reach: 2 });
-  check(same(vents, square(sim, src, 2, (t) => !opaque(sim, t))), 'from the vents: the floor within 2 tiles below');
+  check(
+    same(
+      vents,
+      square(src, 2, (t) => !opaque(sim, t)),
+    ),
+    'from the vents: the floor within 2 tiles below',
+  );
   const roofTile = tileOf(12, 13);
   const roof = earshot(sim, { layer: LAYER.ROOF, tile: roofTile, reach: 7 });
-  check(roof.length > 0 && same(roof, square(sim, roofTile, 7, (t) => !opaque(sim, t) && TILE_INFO[w.ground.kind[t]].outdoor)), 'from a roof: the open ground around, nothing indoors');
+  check(
+    roof.length > 0 &&
+      same(
+        roof,
+        square(roofTile, 7, (t) => !opaque(sim, t) && TILE_INFO[w.ground.kind[t]].outdoor),
+      ),
+    'from a roof: the open ground around, nothing indoors',
+  );
   const [g0, g1] = sim.state.guards;
   away(sim);
   post(g0, 31, 23);
   post(g1, 32, 22);
-  check(hearers(sim, { layer: LAYER.UNDER, tile: src, reach: 3 }).join() === '0', 'a guard standing over the dig hears it; two tiles off, not');
+  check(
+    hearers(sim, { layer: LAYER.UNDER, tile: src, reach: 3 }).join() === '0',
+    'a guard standing over the dig hears it; two tiles off, not',
+  );
   // Sent to a noise on a roof from the open ground diagonally off it: he walks towards it.
-  const outside = roof.filter((t) => !sim.world.guardBlock[t]).sort((a, b) => Math.abs((b % MAP_W) - 12) + Math.abs(Math.floor(b / MAP_W) - 13) - (Math.abs((a % MAP_W) - 12) + Math.abs(Math.floor(a / MAP_W) - 13)))[0];
+  const outside = roof
+    .filter((t) => !sim.world.guardBlock[t])
+    .sort(
+      (a, b) =>
+        Math.abs((b % MAP_W) - 12) +
+        Math.abs(Math.floor(b / MAP_W) - 13) -
+        (Math.abs((a % MAP_W) - 12) + Math.abs(Math.floor(a / MAP_W) - 13)),
+    )[0];
   away(sim);
   post(g0, outside % MAP_W, Math.floor(outside / MAP_W));
   sim.events = [];
   makeNoise(sim, 'ring', LAYER.ROOF, roofTile, 7);
   const md = (t: number) => Math.abs((t % MAP_W) - 12) + Math.abs(Math.floor(t / MAP_W) - 13);
-  check(g0.mode === GUARD.INVESTIGATE && md(g0.target) < md(outside), `sent to a roof noise, a guard walks towards it (from ${xz(outside)} to ${xz(g0.target)})`);
+  check(
+    g0.mode === GUARD.INVESTIGATE && md(g0.target) < md(outside),
+    `sent to a roof noise, a guard walks towards it (from ${xz(outside)} to ${xz(g0.target)})`,
+  );
   // Tools: chip 6, cut 5, dig 3, unscrew 2; plastic −1, sturdy, powered and multi +1.
-  const reachOf = (action: string, id: string, layer: number = LAYER.GROUND) => strikeNoise(layer, { action: action as 'chip', layer, tile: 0, fits: true, hp: 1 }, n(id))?.reach;
-  const tools = [reachOf('chip', 'plastic_fork'), reachOf('chip', 'flimsy_pickaxe'), reachOf('chip', 'sturdy_pickaxe'), reachOf('cut', 'light_cutters'), reachOf('dig', 'plastic_spoon', LAYER.UNDER), reachOf('dig', 'multitool', LAYER.UNDER), reachOf('unscrew', 'nail_file'), reachOf('unscrew', 'powered_screwdriver'), reachOf('sharpen', 'plastic_comb')];
+  const reachOf = (action: string, id: string, layer: number = LAYER.GROUND) =>
+    strikeNoise(layer, { action: action as 'chip', layer, tile: 0, fits: true, hp: 1 }, n(id))?.reach;
+  const tools = [
+    reachOf('chip', 'plastic_fork'),
+    reachOf('chip', 'flimsy_pickaxe'),
+    reachOf('chip', 'sturdy_pickaxe'),
+    reachOf('cut', 'light_cutters'),
+    reachOf('dig', 'plastic_spoon', LAYER.UNDER),
+    reachOf('dig', 'multitool', LAYER.UNDER),
+    reachOf('unscrew', 'nail_file'),
+    reachOf('unscrew', 'powered_screwdriver'),
+    reachOf('sharpen', 'plastic_comb'),
+  ];
   check(tools.join() === '5,6,7,5,2,4,2,3,2', `tool noise by tool and tier (${tools.join()})`);
-  console.log(`reach: a chip in the corridor reaches ${chip.length} tiles; a door shut ${shut.length} vs open ${open.length}; under ${under.length}, vents ${vents.length}, roof ${roof.length}; tools ${tools.join(' ')}`);
+  console.log(
+    `reach: a chip in the corridor reaches ${chip.length} tiles; a door shut ${shut.length} vs open ${open.length}; under ${under.length}, vents ${vents.length}, roof ${roof.length}; tools ${tools.join(' ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ who comes
@@ -169,7 +219,10 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   const e = noiseOf(sim.events)!;
   check(e.heard.join() === '0,3,1,2', `heard within six tiles, nearest first, ties to the lower index (${e.heard.join()})`);
   check(e.sent.join() === '0,3', 'the two nearest go and look');
-  check(g0.mode === GUARD.INVESTIGATE && g0.target === tileOf(30, 22) && g0.timer === NOISE_LOOK && g3.target === tileOf(30, 22), 'where it came from, for 8 s');
+  check(
+    g0.mode === GUARD.INVESTIGATE && g0.target === tileOf(30, 22) && g0.timer === NOISE_LOOK && g3.target === tileOf(30, 22),
+    'where it came from, for 8 s',
+  );
   check(g1.mode === GUARD.DUTY && g2.mode === GUARD.DUTY, 'the others keep to their duty');
   check(st.heat === 0, 'noise itself costs no heat');
   sim.events = [];
@@ -244,8 +297,15 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   sim.step(toss(sim, 3, 0));
   const tossed = sim.events.find((e) => e.type === 'tossed');
   const soft = noiseOf(sim.events, 'thud');
-  check(tossed?.type === 'tossed' && tossed.to === tileOf(33, 22) && st.items.inv[0] === 0 && st.items.ground.some(([k, v]) => k === tileOf(33, 22) && itemOf(v) === n('sock')), 'thrown: it lands at once, out of the hand');
-  const far = (list: number[], from: number) => Math.max(...list.map((t) => Math.abs((t % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(from / MAP_W))));
+  check(
+    tossed?.type === 'tossed' &&
+      tossed.to === tileOf(33, 22) &&
+      st.items.inv[0] === 0 &&
+      st.items.ground.some(([k, v]) => k === tileOf(33, 22) && itemOf(v) === n('sock')),
+    'thrown: it lands at once, out of the hand',
+  );
+  const far = (list: number[], from: number) =>
+    Math.max(...list.map((t) => Math.abs((t % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(from / MAP_W))));
   check(!!soft && far(soft.tiles, tileOf(33, 22)) === 2, 'a sock lands soft (2 tiles)');
   carry(sim, 'potato', 'crowbar');
   sim.step(toss(sim, 2, 0));
@@ -253,7 +313,10 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   st.items.hand = 1;
   sim.step(toss(sim, 2, 0));
   const metal = noiseOf(sim.events, 'thud');
-  check(!!hard && !!metal && far(hard.tiles, tileOf(32, 22)) === 4 && far(metal.tiles, tileOf(32, 22)) === 6, 'a potato lands hard (4), a crowbar metal (6)');
+  check(
+    !!hard && !!metal && far(hard.tiles, tileOf(32, 22)) === 4 && far(metal.tiles, tileOf(32, 22)) === 6,
+    'a potato lands hard (4), a crowbar metal (6)',
+  );
   // Sent while walking: it lands on the tile aimed at, not a tile further on.
   stand(sim, 30, 22);
   st.player.x = 31 * UNIT - 40;
@@ -262,7 +325,10 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   const [tb, tc] = tossArgs(aimedAt);
   sim.step(command(EAST, OP.EXT, EXT.THROW, tb, tc));
   const walked = sim.events.find((e) => e.type === 'tossed');
-  check(Math.floor(st.player.x / UNIT) === 31 && walked?.type === 'tossed' && walked.to === aimedAt, 'thrown on the move: it lands where it was aimed');
+  check(
+    Math.floor(st.player.x / UNIT) === 31 && walked?.type === 'tossed' && walked.to === aimedAt,
+    'thrown on the move: it lands where it was aimed',
+  );
   // On someone: they think less of the player.
   const m = st.inmates[0];
   put(m.body, 33, 22);
@@ -293,7 +359,10 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   sim.step(toss(sim, 3, 0));
   const thrownAt = st.step;
   const landed = noiseOf(sim.events, 'thud');
-  check(st.fuses.length === 1 && !st.items.ground.length && st.items.inv[0] === 0 && landed?.sent.length === 0, 'a firecracker lands lit: no item, a fuse burning');
+  check(
+    st.fuses.length === 1 && !st.items.ground.length && st.items.inv[0] === 0 && landed?.sent.length === 0,
+    'a firecracker lands lit: no item, a fuse burning',
+  );
   // Saved mid-fuse and loaded: it goes off just the same.
   run(sim, 10);
   const snap = sim.snapshot();
@@ -303,7 +372,10 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   delete (old.state as Partial<typeof old.state>).fuses;
   const older = new Sim(CENTER_PERKS, 7);
   older.restore(old);
-  check(copy.state.fuses.length === 1 && older.state.fuses.length === 0, 'a save holds the fuse; one from before P14 loads with nothing burning');
+  check(
+    copy.state.fuses.length === 1 && older.state.fuses.length === 0,
+    'a save holds the fuse; one from before P14 loads with nothing burning',
+  );
   let bangAt = -1;
   let boom: Extract<SimEvent, { type: 'noise' }> | undefined;
   let copyBang = -1;
@@ -320,9 +392,17 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   }
   check(bangAt === thrownAt + FUSE_STEPS, `it goes off 1.5 s after landing (${bangAt - thrownAt} steps)`);
   check(copyBang === bangAt && copy.hash() === sim.hash(), 'loaded mid-fuse, it goes off the same');
-  check(!!boom && boom.heard.join() === '0,2,1,3,4' && boom.sent.join() === '0,2,1', `the sleeper wakes; three of those who heard go (${boom?.sent.join()})`);
-  check(g0.mode === GUARD.INVESTIGATE && g0.target === tileOf(33, 22) && st.fuses.length === 0, 'to where it went off; nothing left burning');
-  console.log(`firecracker: off ${bangAt - thrownAt} steps after landing, heard by ${boom?.heard.length} guards, ${boom?.sent.length} sent, ${boom?.tiles.length} tiles`);
+  check(
+    !!boom && boom.heard.join() === '0,2,1,3,4' && boom.sent.join() === '0,2,1',
+    `the sleeper wakes; three of those who heard go (${boom?.sent.join()})`,
+  );
+  check(
+    g0.mode === GUARD.INVESTIGATE && g0.target === tileOf(33, 22) && st.fuses.length === 0,
+    'to where it went off; nothing left burning',
+  );
+  console.log(
+    `firecracker: off ${bangAt - thrownAt} steps after landing, heard by ${boom?.heard.length} guards, ${boom?.sent.length} sent, ${boom?.tiles.length} tiles`,
+  );
 }
 
 // ------------------------------------------------------------------ the alarm clock
@@ -350,8 +430,15 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
     if (r && !firstSent) firstSent = r.sent;
   }
   const first = rings[0];
-  check(!!first && first.step - woundAt > 59 * STEPS_PER_SECOND && first.step - woundAt <= 60 * STEPS_PER_SECOND, `it rings a minute later (${first ? (first.step - woundAt) / STEPS_PER_SECOND : '-'} s)`);
-  check(rings.length === 8 && rings.every((r, k) => r.left === 8 - k && r.step - first.step === k * STEPS_PER_SECOND && r.tile === tileOf(30, 22)), 'once a second for 8 s, where it is (in hand)');
+  check(
+    !!first && first.step - woundAt > 59 * STEPS_PER_SECOND && first.step - woundAt <= 60 * STEPS_PER_SECOND,
+    `it rings a minute later (${first ? (first.step - woundAt) / STEPS_PER_SECOND : '-'} s)`,
+  );
+  check(
+    rings.length === 8 &&
+      rings.every((r, k) => r.left === 8 - k && r.step - first.step === k * STEPS_PER_SECOND && r.tile === tileOf(30, 22)),
+    'once a second for 8 s, where it is (in hand)',
+  );
   check(usesOf(st.items.inv[0]) === 0 && itemOf(st.items.inv[0]) === ALARM_CLOCK, 'then it stops');
   check(firstSent?.join() === '1', 'the guard within earshot comes');
   // In a desk: it rings there. A press while it rings stops it.
@@ -362,14 +449,19 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   s2.state.items.containers[desk][0] = slot(ALARM_CLOCK, 1);
   const ev = run(s2, STEPS_PER_SECOND);
   const inDesk = ev.find((e) => e.type === 'ringing');
-  check(inDesk?.type === 'ringing' && inDesk.tile === prop.z * MAP_W + prop.x && inDesk.layer === LAYER.GROUND, 'wound in a desk, it rings at the desk');
+  check(
+    inDesk?.type === 'ringing' && inDesk.tile === prop.z * MAP_W + prop.x && inDesk.layer === LAYER.GROUND,
+    'wound in a desk, it rings at the desk',
+  );
   stand(s2, 30, 22);
   s2.state.items.inv[0] = slot(ALARM_CLOCK, WIND_MAX + 5);
   s2.state.items.hand = 0;
   s2.step(command(0, OP.USE, 1));
   const stop = s2.events.find((e) => e.type === 'wound');
   check(stop?.type === 'wound' && stop.secs === 0 && usesOf(s2.state.items.inv[0]) === 0, 'a press while it rings stops it');
-  console.log(`alarm clock: wound ${wound.join(' ')}; rang ${rings.length} times from ${first ? (first.step - woundAt) / STEPS_PER_SECOND : '-'} s; in a desk at ${xz(prop.z * MAP_W + prop.x)}`);
+  console.log(
+    `alarm clock: wound ${wound.join(' ')}; rang ${rings.length} times from ${first ? (first.step - woundAt) / STEPS_PER_SECOND : '-'} s; in a desk at ${xz(prop.z * MAP_W + prop.x)}`,
+  );
 }
 
 // ------------------------------------------------------------------ over the detector arch
@@ -380,12 +472,22 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   away(sim);
   stand(sim, 44, 22, NORTH);
   carry(sim, 'nail_file');
-  const over = [[0, -4], [0, -3], [-1, -4], [1, -4], [0, -5], [-1, -3]].find(([dx, dz]) => aimToss(sim, dx, dz).why === null);
+  const over = [
+    [0, -4],
+    [0, -3],
+    [-1, -4],
+    [1, -4],
+    [0, -5],
+    [-1, -3],
+  ].find(([dx, dz]) => aimToss(sim, dx, dz).why === null);
   check(!!over, 'somewhere to throw it beyond the arch');
   if (over) sim.step(toss(sim, over[0], over[1]));
   const ev = run(sim, 60, command(NORTH));
   const lies = st.items.ground.find(([, v]) => itemOf(v) === n('nail_file'));
-  check(!ev.some((e) => e.type === 'scanned' && e.tripped) && st.heat === 0 && Math.floor(st.player.z / UNIT) < 20, 'walked through clean: nothing tripped');
+  check(
+    !ev.some((e) => e.type === 'scanned' && e.tripped) && st.heat === 0 && Math.floor(st.player.z / UNIT) < 20,
+    'walked through clean: nothing tripped',
+  );
   check(!!lies && Math.floor(lies[0] / MAP_W) < 20, 'and the file lies beyond the arch');
   console.log(`arch: thrown over to ${lies ? xz(lies[0]) : '-'}, through clean`);
 }

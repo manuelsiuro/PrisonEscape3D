@@ -34,7 +34,16 @@ export class Snowfall {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(this.drawn, 3).setUsage(THREE.DynamicDrawUsage));
     // The camera is orthographic: point sizes are in screen pixels.
-    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 3.2 * Math.min(2, globalThis.devicePixelRatio || 1), sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false, map: flake(), alphaTest: 0.05 });
+    const mat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 3.2 * Math.min(2, globalThis.devicePixelRatio || 1),
+      sizeAttenuation: false,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      map: flake(),
+      alphaTest: 0.05,
+    });
     this.points = new THREE.Points(geo, mat);
     this.points.frustumCulled = false;
     this.points.visible = false;
@@ -47,7 +56,16 @@ export class Snowfall {
    * whether snow falls on a tile (open sky): over a building it would fall through the cut-away
    * roof onto the floor, so those flakes are drawn under the ground instead, out of sight.
    */
-  update(dt: number, time: number, cx: number, cz: number, on: boolean, open: (x: number, z: number) => boolean = () => true, wind = 0, windAngle = 0) {
+  update(
+    dt: number,
+    time: number,
+    cx: number,
+    cz: number,
+    on: boolean,
+    open: (x: number, z: number) => boolean = () => true,
+    wind = 0,
+    windAngle = 0,
+  ) {
     this.points.visible = on;
     if (!on) return;
     const x0 = cx - SPAN / 2;

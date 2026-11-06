@@ -38,7 +38,10 @@ for (const def of [TRAINING, ...PRISONS]) {
   for (const p of def.props) {
     if (p.kind !== 'lamp') continue;
     lamps++;
-    check(p.aim !== undefined && Number.isInteger(p.aim) && p.aim >= 0 && p.aim < 8, `${def.id}: the lamp at ${p.x},${p.z} has its own aim (0–7)`);
+    check(
+      p.aim !== undefined && Number.isInteger(p.aim) && p.aim >= 0 && p.aim < 8,
+      `${def.id}: the lamp at ${p.x},${p.z} has its own aim (0–7)`,
+    );
     const aim = p.aim ?? 0;
     const heads = p.heads ?? 1;
     if (heads === 2) twins++;
@@ -63,7 +66,9 @@ for (const def of [TRAINING, ...PRISONS]) {
           break;
         }
         if (t !== under && t !== TILE.EMPTY && !prop) {
-          met = `${Object.entries(TILE).find(([, v]) => v === t)?.[0].toLowerCase()} at ${k}`;
+          met = `${Object.entries(TILE)
+            .find(([, v]) => v === t)?.[0]
+            .toLowerCase()} at ${k}`;
           break;
         }
         if (prop && k <= 2) {
@@ -86,5 +91,10 @@ check(ne.dx > 0 && ne.dz < 0 && Math.abs(ne.dx + ne.dz) < 1e-9, 'a lamp aimed no
 const two = lampHeads(AIM.E, 2);
 check(two.length === 2 && Math.abs(two[0].dx + two[1].dx) < 1e-9, 'a lamp with two heads hangs them either side of its pole');
 
-console.log(`\n${lamps} lamps, ${twins} with two heads; aimed ${Object.entries(seen).sort().map(([k, v]) => `${k} ${v}`).join(', ')}`);
+console.log(
+  `\n${lamps} lamps, ${twins} with two heads; aimed ${Object.entries(seen)
+    .sort()
+    .map(([k, v]) => `${k} ${v}`)
+    .join(', ')}`,
+);
 check(Object.keys(seen).length >= 6, 'the lamps lean many ways, not all one');

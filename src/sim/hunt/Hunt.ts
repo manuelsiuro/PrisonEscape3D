@@ -11,7 +11,19 @@ import { bodyAt, walk, type Body } from '../systems/movement';
 import { STEPS_PER_SECOND, UNIT, walkSpeed } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
-import { HFEAT, HOUND, HUNT_FEATS, OVER, SEEK, type Carry, type HuntDog, type HuntEvent, type HuntOptions, type HuntState, type Searcher } from './state';
+import {
+  HFEAT,
+  HOUND,
+  HUNT_FEATS,
+  OVER,
+  SEEK,
+  type Carry,
+  type HuntDog,
+  type HuntEvent,
+  type HuntOptions,
+  type HuntState,
+  type Searcher,
+} from './state';
 import { fillArea, goalDistances, outsideWorld, spotTile, sweepPoints, type OutsideWorld } from './world';
 
 export * from './state';
@@ -138,10 +150,24 @@ export class Hunt {
       const body = bodyAt(b0.x + ox, b0.z + oz, b0.face ?? 5);
       const dog = d.dog ? dogs.length : -1;
       searchers.push(fresh(body, dog));
-      if (d.dog) dogs.push({ body: bodyAt(b0.x + ox, b0.z + oz, b0.face ?? 5), mode: HOUND.HEEL, handler: k, until: 0, trail: 0, rest: 0, path: [], goal: -1, best: FOREVER, stuck: 0 });
+      if (d.dog)
+        dogs.push({
+          body: bodyAt(b0.x + ox, b0.z + oz, b0.face ?? 5),
+          mode: HOUND.HEEL,
+          handler: k,
+          until: 0,
+          trail: 0,
+          rest: 0,
+          path: [],
+          goal: -1,
+          best: FOREVER,
+          stuck: 0,
+        });
       // (Never: a lesson leaves it out; at once: a patrol out before any alarm.)
       const t = d.at < 0 ? -1 : times[late.indexOf(k)];
-      this.outAt.push(opts.searchers && !opts.searchers.includes(k) ? Infinity : t < 0 ? -Infinity : Math.max(0, t + shift(DRAW.TIME, k)) * S);
+      this.outAt.push(
+        opts.searchers && !opts.searchers.includes(k) ? Infinity : t < 0 ? -Infinity : Math.max(0, t + shift(DRAW.TIME, k)) * S,
+      );
       const n = d.beat.length;
       this.firstStop.push(d.at < 0 || d.from ? draw(DRAW.STOP, k, n) : n > 1 ? 1 + draw(DRAW.STOP, k, n - 1) : 0);
     });
@@ -167,7 +193,15 @@ export class Hunt {
       trail: [],
       searchers,
       dogs,
-      heli: { on: false, x: (h0.x + ox) * UNIT + UNIT / 2, z: (h0.z + oz) * UNIT + UNIT / 2, k: 1 % def.heli.route.length, hold: 0, lit: false, aim: -1 },
+      heli: {
+        on: false,
+        x: (h0.x + ox) * UNIT + UNIT / 2,
+        z: (h0.z + oz) * UNIT + UNIT / 2,
+        k: 1 % def.heli.route.length,
+        hold: 0,
+        lit: false,
+        aim: -1,
+      },
       alarmAt: Math.max(0, Math.round(carry.headStart)) * S,
       blocks: 0,
       lines: 0,
@@ -292,7 +326,11 @@ export class Hunt {
         const bz = Math.floor(bt / MAP_W) - this.out.oz;
         return bx >= x0 && bx <= x1 && bz >= z0 && bz <= z1;
       };
-      if (s.searchers.some((m) => m.mode !== SEEK.OFF && on(m.body)) || s.dogs.some((d) => s.searchers[d.handler].mode !== SEEK.OFF && on(d.body))) return;
+      if (
+        s.searchers.some((m) => m.mode !== SEEK.OFF && on(m.body)) ||
+        s.dogs.some((d) => s.searchers[d.handler].mode !== SEEK.OFF && on(d.body))
+      )
+        return;
       s.blocks |= 1 << k;
       this.refreshGrid();
       this.events.push({ type: 'roadblock', k });
@@ -329,7 +367,11 @@ export class Hunt {
     const d = k < n ? this.def.searchers[k] : null;
     const beat = this.beatOf(k);
     // Where it comes on: its post, its edge or gate; a patrol already out, on its beat from its first stop.
-    const spots: Array<[Spot, number]> = !d ? [[beat[0], 0]] : d.at < 0 ? beat.map((_, j) => [beat[(this.firstStop[k] + j) % beat.length], (this.firstStop[k] + j + 1) % beat.length]) : [[d.from ?? beat[0], this.firstStop[k]]];
+    const spots: Array<[Spot, number]> = !d
+      ? [[beat[0], 0]]
+      : d.at < 0
+        ? beat.map((_, j) => [beat[(this.firstStop[k] + j) % beat.length], (this.firstStop[k] + j + 1) % beat.length])
+        : [[d.from ?? beat[0], this.firstStop[k]]];
     const { ox, oz } = this.out;
     for (const [spot, next] of spots) {
       const t = spotTile(spot, ox, oz);
@@ -453,7 +495,13 @@ export class Hunt {
   /** A pace on a tile: the outside's share of it (HUNT.pace), less off the roads (grass, snow, sand), in cover, in a ford. */
   terrain(tile: number, pace: number): number {
     const o = this.out;
-    const share = o.ford[tile] ? HUNT.fordPace : o.cover[tile] ? HUNT.coverPace : this.world.ground.kind[tile] === TILE.GRASS ? HUNT.roughPace : 100;
+    const share = o.ford[tile]
+      ? HUNT.fordPace
+      : o.cover[tile]
+        ? HUNT.coverPace
+        : this.world.ground.kind[tile] === TILE.GRASS
+          ? HUNT.roughPace
+          : 100;
     return Math.floor((pace * share * HUNT.pace) / 10000);
   }
 
@@ -488,7 +536,10 @@ export class Hunt {
   lineNear(): number {
     const s = this.state;
     const o = this.out;
-    return this.def.lines.findIndex((l, k) => !(s.lines & (1 << k)) && within(s.player, { x: (l.x + o.ox) * UNIT + UNIT / 2, z: (l.z + o.oz) * UNIT + UNIT / 2 }, LINE_REACH));
+    return this.def.lines.findIndex(
+      (l, k) =>
+        !(s.lines & (1 << k)) && within(s.player, { x: (l.x + o.ox) * UNIT + UNIT / 2, z: (l.z + o.oz) * UNIT + UNIT / 2 }, LINE_REACH),
+    );
   }
 
   /** The wire fence tile the player faces, next to them (-1 none). */
@@ -536,7 +587,14 @@ export class Hunt {
   private stone(tile: number) {
     const s = this.state;
     if (s.step - s.stoneAt < HUNT.stoneEvery) return void this.events.push({ type: 'refused', why: 'stoneSoon' });
-    if (tile < 0 || tile >= N || !this.out.inside[tile] || this.grid[tile] || chebTiles(tile, this.tile) > HUNT.stoneRange || !lineOfSight(this.world, s.player.x, s.player.z, centerX(tile), centerZ(tile))) {
+    if (
+      tile < 0 ||
+      tile >= N ||
+      !this.out.inside[tile] ||
+      this.grid[tile] ||
+      chebTiles(tile, this.tile) > HUNT.stoneRange ||
+      !lineOfSight(this.world, s.player.x, s.player.z, centerX(tile), centerZ(tile))
+    ) {
       return void this.events.push({ type: 'refused', why: 'stoneFar' });
     }
     s.stoneAt = s.step;
@@ -565,7 +623,13 @@ export class Hunt {
     const d = s.dogs[k];
     if (!d || what < 0 || what > 2 || s.treats[what] <= 0) return void this.events.push({ type: 'refused', why: 'noTreat' });
     // (Not a dog whose handler isn't out yet: it's nowhere to be seen.)
-    if (d.mode === HOUND.ASLEEP || s.searchers[d.handler].mode === SEEK.OFF || !within(d.body, s.player, HUNT.treatRange) || !lineOfSight(this.world, s.player.x, s.player.z, d.body.x, d.body.z)) return void this.events.push({ type: 'refused', why: 'dogFar' });
+    if (
+      d.mode === HOUND.ASLEEP ||
+      s.searchers[d.handler].mode === SEEK.OFF ||
+      !within(d.body, s.player, HUNT.treatRange) ||
+      !lineOfSight(this.world, s.player.x, s.player.z, d.body.x, d.body.z)
+    )
+      return void this.events.push({ type: 'refused', why: 'dogFar' });
     s.treats[what]--;
     s.feats[HFEAT.treats]++;
     d.path = [];
@@ -597,7 +661,10 @@ export class Hunt {
       const t = queue[q];
       if (d[t] >= reach) continue;
       for (const [j, ok] of neighbours4(t))
-        if (ok && d[j] < 0 && (!this.grid[j] || this.out.cover[j])) (d[j] = d[t] + 1), queue.push(j);
+        if (ok && d[j] < 0 && (!this.grid[j] || this.out.cover[j])) {
+          d[j] = d[t] + 1;
+          queue.push(j);
+        }
     }
     s.searchers.forEach((m, k) => {
       // (A bark: not its own handler, who goes to his dog anyway.)
@@ -856,7 +923,10 @@ export class Hunt {
     for (const t of pts) {
       if (done.includes(t)) continue;
       const d = 2 * chebTiles(t, aim) + chebTiles(t, here);
-      if (d < bestD) (best = t), (bestD = d);
+      if (d < bestD) {
+        best = t;
+        bestD = d;
+      }
     }
     if (best < 0) return;
     done.push(best);
@@ -878,7 +948,8 @@ export class Hunt {
     w.best = FOREVER;
     w.stuck = 0;
     const from = tileAt(w.body.x, w.body.z);
-    const find = (g: Uint8Array) => findPath(this.world, from, !g[goal] ? (i) => i === goal : (i) => chebTiles(i, goal) <= 1, goal, N, undefined, g);
+    const find = (g: Uint8Array) =>
+      findPath(this.world, from, !g[goal] ? (i) => i === goal : (i) => chebTiles(i, goal) <= 1, goal, N, undefined, g);
     w.path = find(grid) ?? (grid !== this.chaseGrid ? find(this.chaseGrid) : null) ?? [];
   }
 
@@ -902,7 +973,13 @@ export class Hunt {
         this.route(w, w.goal, grid);
         return;
       }
-      walk(this.npcFeet, b, nearestDir(dx, dz), rough ? this.terrain(tileAt(b.x, b.z), speed) : Math.floor((speed * HUNT.pace) / 100), LAYER.GROUND);
+      walk(
+        this.npcFeet,
+        b,
+        nearestDir(dx, dz),
+        rough ? this.terrain(tileAt(b.x, b.z), speed) : Math.floor((speed * HUNT.pace) / 100),
+        LAYER.GROUND,
+      );
       return;
     }
     b.moving = false;
@@ -952,7 +1029,8 @@ export class Hunt {
         default: {
           // At the heel: the player under its nose, it points; a fresh trail close by puts it on it. At a place swept, it casts about round its handler for anyone hidden in the cover there.
           if (within(d.body, s.player, HUNT.nose)) return this.point(d, k);
-          if (s.hidden && h.mode === SEEK.SWEEP && h.goal >= 0 && this.arrived(h) && within(h.body, s.player, HUNT.nose + HUNT.cast)) return this.point(d, k);
+          if (s.hidden && h.mode === SEEK.SWEEP && h.goal >= 0 && this.arrived(h) && within(h.body, s.player, HUNT.nose + HUNT.cast))
+            return this.point(d, k);
           if (s.step >= d.rest) {
             for (let j = s.trail.length - 1; j >= 0; j--) {
               const [t, at] = s.trail[j];
@@ -1077,7 +1155,10 @@ export class Hunt {
           if (m.mode === SEEK.OFF || this.isPost(j)) return;
           if (m.mode === SEEK.CHASE) return void (came = true);
           const d = dist2(m.body, s.player);
-          if (d < near) (near = d), (nearest = j);
+          if (d < near) {
+            near = d;
+            nearest = j;
+          }
           if (!within(m.body, s.player, HUNT.radio)) return;
           this.lookAt(j, t);
           came = true;
@@ -1128,7 +1209,11 @@ export class Hunt {
       }
       if (s.hidden || m.mode === SEEK.CHASE || !within(m.body, s.player, HUNT.lookoutWarn)) return;
       // (Only one the lookout sees from their rise: within sight of it, nothing in the way.)
-      if (!within(m.body, this.lookoutAt, HUNT.lookoutSight) || !lineOfSight(this.world, this.lookoutAt.x, this.lookoutAt.z, m.body.x, m.body.z)) return;
+      if (
+        !within(m.body, this.lookoutAt, HUNT.lookoutSight) ||
+        !lineOfSight(this.world, this.lookoutAt.x, this.lookoutAt.z, m.body.x, m.body.z)
+      )
+        return;
       s.warned |= bit;
       s.feats[HFEAT.whistles]++;
       this.events.push({ type: 'whistle', who: k });
@@ -1141,7 +1226,9 @@ export class Hunt {
     const d = this.walkTo(t);
     if (d >= 0 && d < s.best) s.best = d;
     const o = this.out;
-    const lou = this.carry.lou && within(s.player, { x: (this.def.lou.x + o.ox) * UNIT + UNIT / 2, z: (this.def.lou.z + o.oz) * UNIT + UNIT / 2 }, HUNT.car);
+    const lou =
+      this.carry.lou &&
+      within(s.player, { x: (this.def.lou.x + o.ox) * UNIT + UNIT / 2, z: (this.def.lou.z + o.oz) * UNIT + UNIT / 2 }, HUNT.car);
     if (!o.safe[t] && !lou) return;
     s.over = lou && !o.safe[t] ? OVER.LOU : OVER.SAFE;
     s.overAt = s.step;
@@ -1157,6 +1244,19 @@ export class Hunt {
 }
 
 function fresh(body: Body, dog: number): Searcher {
-  return { body, mode: SEEK.OFF, k: 0, wait: 0, goal: -1, path: [], best: FOREVER, stuck: 0, notice: 0, unseen: 0, last: -1, sees: false, dog };
+  return {
+    body,
+    mode: SEEK.OFF,
+    k: 0,
+    wait: 0,
+    goal: -1,
+    path: [],
+    best: FOREVER,
+    stuck: 0,
+    notice: 0,
+    unseen: 0,
+    last: -1,
+    sees: false,
+    dog,
+  };
 }
-

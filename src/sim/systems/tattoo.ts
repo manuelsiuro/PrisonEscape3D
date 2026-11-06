@@ -16,7 +16,35 @@
  *
  * Either way the ink's used as it starts. A guard who sees it going on: INK_HEAT, once a sitting.
  */
-import { DESIGNS, FRIEND_INK, INK_GAIN, INK_GAIN_BASE, INK_HEAT, INK_ME_STEPS, INK_OPINION, INK_POOR, INK_PULL, INK_QUIT, INK_SLACK, INK_TIME, LEAD_IN, LINE_AHEAD, LINE_END, LINE_POOR, LINE_SLACK, MAX_INKED, NEEDLE_KEYS, NEEDLE_REACH, NEEDLE_SPEED, ON_LINE, PAY_MIN, PAY_SPAN, PEN_SPEED, INK_LINGER, INKS_A_DAY } from '../../content/team';
+import {
+  DESIGNS,
+  FRIEND_INK,
+  INK_GAIN,
+  INK_GAIN_BASE,
+  INK_HEAT,
+  INK_ME_STEPS,
+  INK_OPINION,
+  INK_POOR,
+  INK_PULL,
+  INK_QUIT,
+  INK_SLACK,
+  INK_TIME,
+  LEAD_IN,
+  LINE_AHEAD,
+  LINE_END,
+  LINE_POOR,
+  LINE_SLACK,
+  MAX_INKED,
+  NEEDLE_KEYS,
+  NEEDLE_REACH,
+  NEEDLE_SPEED,
+  ON_LINE,
+  PAY_MIN,
+  PAY_SPAN,
+  PEN_SPEED,
+  INK_LINGER,
+  INKS_A_DAY,
+} from '../../content/team';
 import { GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
 import { DIR_X, DIR_Z, needlePoint } from '../command';
@@ -109,7 +137,10 @@ function nearest(design: number, x: number, y: number, from: number, to: number)
     if (at[k] < from || a0 > to || len === 0) continue;
     const [x0, y0] = p[k - 1];
     const [x1, y1] = p[k];
-    const t = Math.max((Math.max(from, a0) - a0) / len, Math.min((Math.min(to, at[k]) - a0) / len, ((x - x0) * (x1 - x0) + (y - y0) * (y1 - y0)) / (len * len)));
+    const t = Math.max(
+      (Math.max(from, a0) - a0) / len,
+      Math.min((Math.min(to, at[k]) - a0) / len, ((x - x0) * (x1 - x0) + (y - y0) * (y1 - y0)) / (len * len)),
+    );
     const px = x0 + (x1 - x0) * t;
     const py = y0 + (y1 - y0) * t;
     const d = Math.sqrt((px - x) ** 2 + (py - y) ** 2);
@@ -119,7 +150,8 @@ function nearest(design: number, x: number, y: number, from: number, to: number)
 }
 
 /** Where the ring waits (2.22): `ahead` past what's been traced. */
-export const ringAt = (o: Pick<Ink, 'design' | 'at'>, ahead: number, out: [number, number] = [0, 0]) => pointAt(o.design, o.at + ahead, out);
+export const ringAt = (o: Pick<Ink, 'design' | 'at'>, ahead: number, out: [number, number] = [0, 0]) =>
+  pointAt(o.design, o.at + ahead, out);
 
 /** The share of the design traced so far (0–1). */
 export const tracedShare = (o: Pick<Ink, 'design' | 'at'>) => Math.min(1, o.at / (pathLength(o.design) - LINE_END));
@@ -170,7 +202,8 @@ export function lineQuality(err: number, n: number): number {
 /** A tracing's quality (0–100): the line's, cut to the share of the design traced. */
 const inkQuality = (o: Ink) => Math.floor(lineQuality(o.err, o.n) * tracedShare(o));
 /** What a design traced at a quality pays (dollars). */
-export const payOf = (design: number, quality: number) => Math.floor((DESIGNS[design].price * (PAY_MIN + Math.floor((PAY_SPAN * quality) / 100))) / 100);
+export const payOf = (design: number, quality: number) =>
+  Math.floor((DESIGNS[design].price * (PAY_MIN + Math.floor((PAY_SPAN * quality) / 100))) / 100);
 /** What it does for the client's opinion. */
 const gainOf = (quality: number) => INK_GAIN_BASE + Math.floor((INK_GAIN * quality) / 100);
 
@@ -227,7 +260,8 @@ export function startInk(sim: SimContext, who: number, design: number, mine: boo
 export function steerNeedle(sim: Pick<SimContext, 'state' | 'rules221'>, dir: number) {
   const o = sim.state.ink;
   if (!o || o.mine || !dir) return;
-  if (!sim.rules221) return needleTo(o, o.nx + Math.trunc((DIR_X[dir] * NEEDLE_KEYS) / 1024), o.nz + Math.trunc((DIR_Z[dir] * NEEDLE_KEYS) / 1024), true);
+  if (!sim.rules221)
+    return needleTo(o, o.nx + Math.trunc((DIR_X[dir] * NEEDLE_KEYS) / 1024), o.nz + Math.trunc((DIR_Z[dir] * NEEDLE_KEYS) / 1024), true);
   o.nx = Math.max(0, Math.min(1000, o.nx + Math.trunc((DIR_X[dir] * NEEDLE_SPEED) / 1024)));
   o.nz = Math.max(0, Math.min(1000, o.nz + Math.trunc((DIR_Z[dir] * NEEDLE_SPEED) / 1024)));
 }
@@ -252,7 +286,18 @@ export function keepInk(sim: SimContext) {
   const m = s.inmates[o.who];
   // (Off: the sirens, either of them out of it, the two apart, the player off the ground floor.)
   const apart = !m || Math.max(Math.abs(m.body.x - s.player.x), Math.abs(m.body.z - s.player.z)) > INK_APART;
-  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed || s.layer !== LAYER.GROUND || (o.k > INK_GATHER && apart)) return endInk(sim, 'off');
+  if (
+    !m ||
+    m.ko > 0 ||
+    m.angry > 0 ||
+    s.lockdown ||
+    sim.away ||
+    s.sleeping ||
+    s.stowed ||
+    s.layer !== LAYER.GROUND ||
+    (o.k > INK_GATHER && apart)
+  )
+    return endInk(sim, 'off');
   seenInking(sim);
   o.k++;
   if (o.mine) {
@@ -303,7 +348,10 @@ export function endInk(sim: SimContext, how: 'done' | 'quit' | 'off') {
     changeOpinion(sim, o.who, gainOf(quality));
     s.cash += pay;
     s.tally[3] += pay;
-    sim.events.push({ type: 'tattoo', what: 'done', who: o.who, design: o.design, mine: false, quality, pay, gain: (m?.opinion ?? 0) - was }, { type: 'cash', n: pay, why: 'tattoo' });
+    sim.events.push(
+      { type: 'tattoo', what: 'done', who: o.who, design: o.design, mine: false, quality, pay, gain: (m?.opinion ?? 0) - was },
+      { type: 'cash', n: pay, why: 'tattoo' },
+    );
     return;
   }
   if (how === 'quit' && !o.mine) changeOpinion(sim, o.who, -INK_QUIT);

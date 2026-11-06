@@ -19,7 +19,34 @@
  *
  * The music drowns noise in the canteen meanwhile (calendar.ts `muffled`), as movie night's does.
  */
-import { ACT_CALL, ACT_GAP, ACT_MINUTES, ACT_WALK, NO_SHOW, APPLAUSE, CHARTS, countIn, GOOD, GOOD_POINTS, GOODWILL, GOODWILL_HEAT, INSTRUMENT, LATE, PERFECT, PERFECT_POINTS, PRIZES, RIVAL_MARK, RIVAL_SPREAD, RIVALS_MIN, RIVALS_SPAN, SONG_PAY, SONGS, songSteps, STAGE_OPINION, STRAY_POINTS } from '../../content/nights';
+import {
+  ACT_CALL,
+  ACT_GAP,
+  ACT_MINUTES,
+  ACT_WALK,
+  NO_SHOW,
+  APPLAUSE,
+  CHARTS,
+  countIn,
+  GOOD,
+  GOOD_POINTS,
+  GOODWILL,
+  GOODWILL_HEAT,
+  INSTRUMENT,
+  LATE,
+  PERFECT,
+  PERFECT_POINTS,
+  PRIZES,
+  RIVAL_MARK,
+  RIVAL_SPREAD,
+  RIVALS_MIN,
+  RIVALS_SPAN,
+  SONG_PAY,
+  SONGS,
+  songSteps,
+  STAGE_OPINION,
+  STRAY_POINTS,
+} from '../../content/nights';
 import { EVENT_TIMES } from '../../content/days';
 import type { Stage } from '../../content/prisons/types';
 import { itemNumber } from '../../content/items';
@@ -76,7 +103,8 @@ export function boardsOf(st: Stage): number[] {
   const [fx, fz] = faceStep(st.face);
   const [ax, az] = [-fz, fx];
   const out: number[] = [];
-  for (const front of [0, 1]) for (const side of [-1, 0, 1]) out.push((st.z + fz * front + az * side) * MAP_W + st.x + fx * front + ax * side);
+  for (const front of [0, 1])
+    for (const side of [-1, 0, 1]) out.push((st.z + fz * front + az * side) * MAP_W + st.x + fx * front + ax * side);
   return out;
 }
 
@@ -183,7 +211,14 @@ export function keepActs(sim: SimContext) {
   if (acted(s, k) || dayMinute(s.step) >= a.at + NO_SHOW) return;
   const m = s.inmates[a.who];
   const st = stageOf(sim.world)!;
-  const held = s.talk === a.who || s.followers.includes(a.who) || s.match?.team.includes(a.who) || s.ink?.who === a.who || s.quiz?.who.includes(a.who) || s.shootout?.who === a.who || s.cheat?.who === a.who;
+  const held =
+    s.talk === a.who ||
+    s.followers.includes(a.who) ||
+    s.match?.team.includes(a.who) ||
+    s.ink?.who === a.who ||
+    s.quiz?.who.includes(a.who) ||
+    s.shootout?.who === a.who ||
+    s.cheat?.who === a.who;
   const there = !!m && m.ko <= 0 && m.angry <= 0 && onStage(st, m.body.x, m.body.z);
   if (!held && !there) return;
   s.acted = [day, (s.acted[0] === day ? s.acted[1] : 0) | (1 << k)];
@@ -277,7 +312,8 @@ export function markOf(o: Show): number {
 export const placeOf = (mark: number, acts: readonly Act[]) => acts.filter((a) => a.mark > mark).length;
 
 /** The prize money for a place with a song (dollars). */
-export const prizeOf = (place: number, song: number) => (place < PRIZES.length ? Math.floor((PRIZES[place] * SONG_PAY[SONGS[song].level - 1]) / 100) : 0);
+export const prizeOf = (place: number, song: number) =>
+  place < PRIZES.length ? Math.floor((PRIZES[place] * SONG_PAY[SONGS[song].level - 1]) / 100) : 0;
 
 /** The act given up (EXT.STAGE with b = STAGE_QUIT): off, the night's turn used. */
 export const STAGE_QUIT = 255;

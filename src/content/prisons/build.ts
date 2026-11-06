@@ -11,7 +11,7 @@ import type { Rect } from './types';
 export function sideCell(cells: Rect[], props: PropPlacement[], x0: number, z0: number, doorEast: boolean) {
   cells.push([x0, z0, x0 + 3, z0 + 3]);
   props.push(
-    ...(doorEast
+    ...((doorEast
       ? [
           { kind: 'bed', x: x0, z: z0, d: 2 },
           { kind: 'desk', x: x0 + 3, z: z0, rot: 3 },
@@ -23,6 +23,6 @@ export function sideCell(cells: Rect[], props: PropPlacement[], x0: number, z0: 
           { kind: 'desk', x: x0, z: z0, rot: 1 },
           { kind: 'toilet', x: x0, z: z0 + 3, rot: 1 },
           { kind: 'chair', x: x0 + 1, z: z0, rot: 3 },
-        ]) as PropPlacement[],
+        ]) as PropPlacement[]),
   );
 }

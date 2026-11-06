@@ -45,7 +45,6 @@ import { check } from './assert';
 const at = (x: number, z: number) => z * MAP_W + x;
 /** The step a minute of prison day 1 falls on (08:00 is step 0). */
 const minute = (m: number) => ((m - 8 * 60 + 1440) % 1440) * STEPS_PER_MINUTE;
-const FACINGS = [1, 5, 9, 13] as const;
 /** Everyone about on the ground floor (what the sim and the button both land around). */
 const bodiesOf = (sim: Sim) => [...sim.state.inmates.map((m) => m.body), ...sim.state.guards.map((g) => g.body)];
 const DIR8: Record<number, number> = { 1: 2, 5: 4, 9: 6, 13: 0 };
@@ -89,18 +88,42 @@ for (const def of [...PRISONS, TRAINING]) {
               penned += bad ? 1 : 0;
             }
           }
-  check(penned === 0, `${def.id}: every glide comes down out or on ground that walks home (${landings} landings, ${penned} between; 2.5.0: ${pennedOld})`);
+  check(
+    penned === 0,
+    `${def.id}: every glide comes down out or on ground that walks home (${landings} landings, ${penned} between; 2.5.0: ${pennedOld})`,
+  );
   if (def.id === 'shankton') check(pennedOld > 0, 'shankton: 2.5.0 could come down between the fences (the case is covered)');
   if (!c) continue;
-  for (const q of c.window) check(!w.blocked(q.x, q.z) && w.ground.kind[at(q.x, q.z)] !== TILE.DOOR, `${def.id}: the window ${q.x},${q.z} is floor to stand on`);
-  check(c.window.some((q) => c.gates.some((g) => Math.abs(g.x - q.x) + Math.abs(g.z - q.z) === 1)), `${def.id}: the window is beside the first gate`);
-  for (const q of c.gates) check(w.ground.kind[at(q.x, q.z)] === TILE.DOOR && w.gate[at(q.x, q.z)] === 1, `${def.id}: ${q.x},${q.z} is a perimeter gate`);
+  for (const q of c.window)
+    check(!w.blocked(q.x, q.z) && w.ground.kind[at(q.x, q.z)] !== TILE.DOOR, `${def.id}: the window ${q.x},${q.z} is floor to stand on`);
+  check(
+    c.window.some((q) => c.gates.some((g) => Math.abs(g.x - q.x) + Math.abs(g.z - q.z) === 1)),
+    `${def.id}: the window is beside the first gate`,
+  );
+  for (const q of c.gates)
+    check(w.ground.kind[at(q.x, q.z)] === TILE.DOOR && w.gate[at(q.x, q.z)] === 1, `${def.id}: ${q.x},${q.z} is a perimeter gate`);
   // The booth stands where nobody walks: outdoors, off every guard's way and the delivery's road and bay, not on the way out.
   const bt = at(c.booth.x, c.booth.z);
   const stops = def.guards.flatMap((g) => [...g.beat, ...(g.night ?? []), ...Object.values(g.posts ?? {})]);
-  check(TILE_INFO[w.ground.kind[bt]].outdoor && !w.checkpoint[bt] && !c.window.some((q) => at(q.x, q.z) === bt) && !stops.some((p) => Math.abs(p.x - c.booth.x) <= 1 && Math.abs(p.z - c.booth.z) <= 1), `${def.id}: the booth stands out of everyone's way`);
+  check(
+    TILE_INFO[w.ground.kind[bt]].outdoor &&
+      !w.checkpoint[bt] &&
+      !c.window.some((q) => at(q.x, q.z) === bt) &&
+      !stops.some((p) => Math.abs(p.x - c.booth.x) <= 1 && Math.abs(p.z - c.booth.z) <= 1),
+    `${def.id}: the booth stands out of everyone's way`,
+  );
   const road = def.delivery?.road ?? [];
-  check(!road.some((p, k) => k > 0 && Math.min(p.x, road[k - 1].x) - 1 <= c.booth.x && c.booth.x <= Math.max(p.x, road[k - 1].x) + 1 && Math.min(p.z, road[k - 1].z) <= c.booth.z && c.booth.z <= Math.max(p.z, road[k - 1].z)), `${def.id}: the booth is off the delivery's road`);
+  check(
+    !road.some(
+      (p, k) =>
+        k > 0 &&
+        Math.min(p.x, road[k - 1].x) - 1 <= c.booth.x &&
+        c.booth.x <= Math.max(p.x, road[k - 1].x) + 1 &&
+        Math.min(p.z, road[k - 1].z) <= c.booth.z &&
+        c.booth.z <= Math.max(p.z, road[k - 1].z),
+    ),
+    `${def.id}: the booth is off the delivery's road`,
+  );
   // Waved through, the window walks out to the road (the gates, the drawbridge): and not without.
   const walkOut = (waved: boolean) => {
     w.setWaved(waved);
@@ -110,7 +133,11 @@ for (const def of [...PRISONS, TRAINING]) {
     for (let k = 0; k < q.length; k++) {
       const t = q[k];
       if (w.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'outside') return true;
-      for (const j of [t - 1, t + 1, t - MAP_W, t + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) (seen[j] = 1), q.push(j);
+      for (const j of [t - 1, t + 1, t - MAP_W, t + MAP_W])
+        if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) {
+          seen[j] = 1;
+          q.push(j);
+        }
     }
     return false;
   };
@@ -122,7 +149,12 @@ for (const def of [...PRISONS, TRAINING]) {
     const seen = new Uint8Array(MAP_W * MAP_H);
     const q = [at(c.window[0].x, c.window[0].z)];
     seen[q[0]] = 1;
-    for (let k = 0; k < q.length; k++) for (const j of [q[k] - 1, q[k] + 1, q[k] - MAP_W, q[k] + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) (seen[j] = 1), q.push(j);
+    for (let k = 0; k < q.length; k++)
+      for (const j of [q[k] - 1, q[k] + 1, q[k] - MAP_W, q[k] + MAP_W])
+        if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) {
+          seen[j] = 1;
+          q.push(j);
+        }
     w.setWaved(false);
     return q.length;
   };
@@ -132,7 +164,10 @@ for (const def of [...PRISONS, TRAINING]) {
   const walked = !w.blocked(c.booth.x, c.booth.z);
   const reachedBefore = reach();
   w.plainBooth = false;
-  check(solid && walked && w.blocked(c.booth.x, c.booth.z) && reached === reachedBefore - 1, `${def.id}: the booth stands in the way (walked through before 2.33.2) and cuts no ground off (${reached} tiles reached, ${reachedBefore} before)`);
+  check(
+    solid && walked && w.blocked(c.booth.x, c.booth.z) && reached === reachedBefore - 1,
+    `${def.id}: the booth stands in the way (walked through before 2.33.2) and cuts no ground off (${reached} tiles reached, ${reachedBefore} before)`,
+  );
 }
 // 2.33.2: walked into from beside it, the booth stops the player; a run from before walks through it, and replays so.
 {
@@ -147,21 +182,42 @@ for (const def of [...PRISONS, TRAINING]) {
   };
   const now = push(false);
   const before = push(true);
-  check(now === b.x - 1 && before > b.x, `center-perks: the booth stops the player walking east into it (stopped on ${now}; before 2.33.2 on through to ${before})`);
+  check(
+    now === b.x - 1 && before > b.x,
+    `center-perks: the booth stops the player walking east into it (stopped on ${now}; before 2.33.2 on through to ${before})`,
+  );
   const rec = new RunRecorder(new Sim(CENTER_PERKS, 1), { seed: 1, game: '2.33.1' });
   for (let k = 0; k < 200; k++) rec.step(0);
   const old = replayLog(rec.toLog(), CENTER_PERKS);
   const today = replayLog({ ...rec.toLog(), game: '2.33.2' }, CENTER_PERKS);
-  check(!!old?.ok && old.sim.rules2331 && !!today?.ok && !today.sim.rules2331, 'a log from 2.33.1 replays with the booth walked through; one from 2.33.2 with it in the way');
+  check(
+    !!old?.ok && old.sim.rules2331 && !!today?.ok && !today.sim.rules2331,
+    'a log from 2.33.1 replays with the booth walked through; one from 2.33.2 with it in the way',
+  );
   check(new RunRecorder(rec.sim, { log: rec.toLog(), game: '2.33.2' }).toLog().seed === -1, 'and a log from 2.33.1 is not carried on');
 }
 const card = CATALOGUE.findIndex((c) => c.item === 'blank_id');
 check(card === 9 && CATALOGUE[card].price === 80, 'the blank ID card on the phone at $80 (appended)');
 const recipe = (id: string) => RECIPES.find((r) => r.result === id)!;
-check([...recipe('fake_id').ingredients].sort().join() === 'blank_id,ink,magazine' && recipe('fake_id').int === 50, 'a fake ID: a blank card, ink and a magazine, Intellect 50');
-check([...recipe('glider_frame').ingredients].sort().join() === 'balsa,balsa,timber' && recipe('glider_frame').int === 60, 'a glider frame: two balsa and a timber, Intellect 60');
-check([...recipe('glider').ingredients].sort().join() === 'bed_sheet,duct_tape,glider_frame' && recipe('glider').int === 80, 'a glider: the frame, a bed sheet and duct tape, Intellect 80');
-console.log(`data: checkpoints at ${PRISONS.filter((p) => p.checkpoint).map((p) => p.id).join(', ')}; gliders out of ${PRISONS.filter((p) => p.escapes?.includes('glider')).map((p) => p.id).join(', ')}; the card $80, the ID Int 50, the frame Int 60, the glider Int 80`);
+check(
+  [...recipe('fake_id').ingredients].sort().join() === 'blank_id,ink,magazine' && recipe('fake_id').int === 50,
+  'a fake ID: a blank card, ink and a magazine, Intellect 50',
+);
+check(
+  [...recipe('glider_frame').ingredients].sort().join() === 'balsa,balsa,timber' && recipe('glider_frame').int === 60,
+  'a glider frame: two balsa and a timber, Intellect 60',
+);
+check(
+  [...recipe('glider').ingredients].sort().join() === 'bed_sheet,duct_tape,glider_frame' && recipe('glider').int === 80,
+  'a glider: the frame, a bed sheet and duct tape, Intellect 80',
+);
+console.log(
+  `data: checkpoints at ${PRISONS.filter((p) => p.checkpoint)
+    .map((p) => p.id)
+    .join(', ')}; gliders out of ${PRISONS.filter((p) => p.escapes?.includes('glider'))
+    .map((p) => p.id)
+    .join(', ')}; the card $80, the ID Int 50, the frame Int 60, the glider Int 80`,
+);
 
 // ------------------------------------------------------------------ the bluff
 /** A game at 19:40 on day 1 with the player at the checkpoint's window, in uniform with papers (setup only). */
@@ -211,7 +267,13 @@ const showAt = (sim: Sim, m: number) => {
     when.push(`${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} ${sim.state.waved > 0 ? 'waved' : refusedWhy(sim)}`);
   }
   check(when.join() === '19:49 notShift,19:50 waved,20:09 waved,20:10 notShift', `the shift change only (${when.join(', ')})`);
-  check(shiftChange(minute(SHIFT_FROM)) && !shiftChange(minute(SHIFT_FROM) - 1) && shiftChange(minute(SHIFT_TO) - 1) && !shiftChange(minute(SHIFT_TO)), 'the shift change: 19:50–20:10');
+  check(
+    shiftChange(minute(SHIFT_FROM)) &&
+      !shiftChange(minute(SHIFT_FROM) - 1) &&
+      shiftChange(minute(SHIFT_TO) - 1) &&
+      !shiftChange(minute(SHIFT_TO)),
+    'the shift change: 19:50–20:10',
+  );
   // Out of uniform, too hot, wanted, a lockdown: refused, nothing lost.
   const refusals: string[] = [];
   const tryWith = (label: string, set: (s: Sim['state']) => void) => {
@@ -227,14 +289,20 @@ const showAt = (sim: Sim, m: number) => {
   tryWith(`heat ${BLUFF_HEAT - 1}`, (s) => (s.heat = BLUFF_HEAT - 1));
   tryWith('wanted', (s) => (s.heat = CHASE_HEAT));
   tryWith('lockdown', (s) => (s.lockdown = true));
-  check(refusals.join() === `orange notGuard,heat 40 papersHot,heat 39 waved,wanted hunted,lockdown hunted`, `refusals (${refusals.join(', ')})`);
+  check(
+    refusals.join() === `orange notGuard,heat 40 papersHot,heat 39 waved,wanted hunted,lockdown hunted`,
+    `refusals (${refusals.join(', ')})`,
+  );
   // Waved through: the gates open for the player alone, for WAVED_STEPS.
   sim = fresh();
   showAt(sim, SHIFT_FROM + 1);
   const s = sim.state;
   const gates = CENTER_PERKS.checkpoint!.gates.map((q) => at(q.x, q.z));
   check(s.waved === s.step + WAVED_STEPS && events(sim).some((e) => e.type === 'bluff' && e.on), 'waved through for 60 s');
-  check(gates.every((g) => !sim.world.block[g]) && gates.every((g) => sim.world.npcBlock[g] === 1), 'the gates open for the player, not for inmates');
+  check(
+    gates.every((g) => !sim.world.block[g]) && gates.every((g) => sim.world.npcBlock[g] === 1),
+    'the gates open for the player, not for inmates',
+  );
   // Shown again: nothing new.
   const was = s.waved;
   sim.step(command(0, OP.INTERACT));
@@ -270,7 +338,10 @@ const showAt = (sim: Sim, m: number) => {
   showAt(sim, SHIFT_FROM + 1);
   sim.state.followers = [0];
   Object.assign(sim.state.inmates[0].body, { x: sim.state.player.x + UNIT, z: sim.state.player.z });
-  check(crewEscape(sim, 'bluff').length === 0 && crewEscape(sim, 'glider').length === 0 && crewEscape(sim, 'gate').length === 1, 'the bluff and the glider are solo (the same follower would go through a gate)');
+  check(
+    crewEscape(sim, 'bluff').length === 0 && crewEscape(sim, 'glider').length === 0 && crewEscape(sim, 'gate').length === 1,
+    'the bluff and the glider are solo (the same follower would go through a gate)',
+  );
   sim.state.followers = [];
   for (let k = 0; k < 200 && !sim.state.escaped; k++) sim.step(command(5));
   const outBy = ESCAPES[sim.state.via];
@@ -287,7 +358,10 @@ const showAt = (sim: Sim, m: number) => {
     x.state.items.rev++;
     x.state.step = minute(SHIFT_FROM - 5);
     x.step(command(0, OP.INTERACT));
-    check(events(x).some((e) => e.type === 'pickup') && !refusedWhy(x), 'outside the shift change, Interact picks up what lies at the window');
+    check(
+      events(x).some((e) => e.type === 'pickup') && !refusedWhy(x),
+      'outside the shift change, Interact picks up what lies at the window',
+    );
     const y = fresh();
     y.state.items.ground.push([placeKey(LAYER.GROUND, tile), slot(n('sock'))]);
     showAt(y, SHIFT_FROM + 1);
@@ -300,19 +374,27 @@ const showAt = (sim: Sim, m: number) => {
   loaded.restore(old);
   check(loaded.state.waved === 0, 'a save from before the bluff loads with the gates shut');
   check(!checkpointOf(new Sim(TRAINING, 1)), 'no checkpoint in the Training Block');
-  console.log(`bluff: ${when.join(', ')}; ${refusals.join(', ')}; the gates for the player alone, 60 s, never shut on them, at once when wanted; out by ${outBy}`);
+  console.log(
+    `bluff: ${when.join(', ')}; ${refusals.join(', ')}; the gates for the player alone, 60 s, never shut on them, at once when wanted; out by ${outBy}`,
+  );
 }
 // Irongate: the drawbridge comes down for the player alone; Shankton: the shell's gate and both of the gatehouse's.
 {
   const sim = atTheWindow(IRONGATE);
   showAt(sim, SHIFT_FROM + 1);
   const bridge = at(30, 57);
-  check(!sim.world.block[bridge] && sim.world.npcBlock[bridge] === 1 && sim.world.guardBlock[bridge] === 1, 'Irongate: the drawbridge down for the player alone');
+  check(
+    !sim.world.block[bridge] && sim.world.npcBlock[bridge] === 1 && sim.world.guardBlock[bridge] === 1,
+    'Irongate: the drawbridge down for the player alone',
+  );
   for (let k = 0; k < 300 && !sim.state.escaped; k++) sim.step(command(5));
   check(ESCAPES[sim.state.via] === 'bluff', `Irongate: out over the drawbridge (${ESCAPES[sim.state.via]})`);
   const sh = atTheWindow(SHANKTON);
   showAt(sh, SHIFT_FROM + 1);
-  check(SHANKTON.checkpoint!.gates.every((q) => !sh.world.block[at(q.x, q.z)]), 'Shankton: the shell gate and both gatehouse gates open');
+  check(
+    SHANKTON.checkpoint!.gates.every((q) => !sh.world.block[at(q.x, q.z)]),
+    'Shankton: the shell gate and both gatehouse gates open',
+  );
   for (let k = 0; k < 400 && !sh.state.escaped; k++) sh.step(command(5));
   check(ESCAPES[sh.state.via] === 'bluff', `Shankton: out through the gatehouse (${ESCAPES[sh.state.via]})`);
   // Off the drawbridge onto the rock beside it: never shut out there (only the way back leads in).
@@ -321,14 +403,25 @@ const showAt = (sim: Sim, m: number) => {
   Object.assign(rock.state.player, { x: 33 * UNIT + UNIT / 2, z: 57 * UNIT + UNIT / 2 });
   rock.state.waved = rock.state.step + 2;
   for (let k = 0; k < 40; k++) rock.step(0);
-  check(rock.state.waved > 0 && !rock.world.block[at(30, 57)], 'Irongate: on the rock past the gate, the drawbridge stays down until the player is back');
+  check(
+    rock.state.waved > 0 && !rock.world.block[at(30, 57)],
+    'Irongate: on the rock past the gate, the drawbridge stays down until the player is back',
+  );
   Object.assign(rock.state.player, { x: 30 * UNIT + UNIT / 2, z: 54 * UNIT + UNIT / 2 });
   rock.step(0);
   check(rock.state.waved === 0, 'back on the walkway: the gate shuts');
-  check(!rock.world.pastCheckpoint(at(30, 54)) && !rock.world.pastCheckpoint(at(30, 59)) && rock.world.pastCheckpoint(at(33, 57)), 'past the checkpoint: the rock outside, not the walkway or the landing');
+  check(
+    !rock.world.pastCheckpoint(at(30, 54)) && !rock.world.pastCheckpoint(at(30, 59)) && rock.world.pastCheckpoint(at(33, 57)),
+    'past the checkpoint: the rock outside, not the walkway or the landing',
+  );
   const sh2 = new Sim(SHANKTON, 1);
-  check(sh2.world.pastCheckpoint(at(52, 60)) && !sh2.world.pastCheckpoint(at(40, 56)), 'Shankton: the gatehouse is past the checkpoint, the gravel round the shell is not');
-  console.log(`checkpoints: Irongate's drawbridge for the player alone, out over it, never shut on the rock past it; Shankton's three gates, its gatehouse held open`);
+  check(
+    sh2.world.pastCheckpoint(at(52, 60)) && !sh2.world.pastCheckpoint(at(40, 56)),
+    'Shankton: the gatehouse is past the checkpoint, the gravel round the shell is not',
+  );
+  console.log(
+    `checkpoints: Irongate's drawbridge for the player alone, out over it, never shut on the rock past it; Shankton's three gates, its gatehouse held open`,
+  );
 }
 
 // ------------------------------------------------------------------ the glider
@@ -350,11 +443,16 @@ const showAt = (sim: Sim, m: number) => {
     for (let wind = 0; wind < 8; wind++)
       for (let force = 0; force <= 3; force++)
         for (const weather of ['clear', 'rain', 'fog'] as const) {
-          const off = ((((wind + 4) % 8) - heading) % 8 + 8) % 8;
+          const off = (((((wind + 4) % 8) - heading) % 8) + 8) % 8;
           if (glideReach({ wind, force, weather }, heading) !== want(off, force, weather === 'rain')) ok = false;
         }
-  check(ok, 'glide reach: 3, +2 a point from behind (+1 a quarter behind), −1 a point ahead (half from a quarter ahead), −1 in rain, 1 to 10');
-  console.log(`glide reach (tailwind, quarter tail, cross, quarter head, head, quarter head, cross, quarter tail):\n  ${rows.join('\n  ')}`);
+  check(
+    ok,
+    'glide reach: 3, +2 a point from behind (+1 a quarter behind), −1 a point ahead (half from a quarter ahead), −1 in rain, 1 to 10',
+  );
+  console.log(
+    `glide reach (tailwind, quarter tail, cross, quarter head, head, quarter head, cross, quarter tail):\n  ${rows.join('\n  ')}`,
+  );
 }
 // Where it goes and doesn't, at Stalag Flucht's generator hut.
 {
@@ -365,8 +463,12 @@ const showAt = (sim: Sim, m: number) => {
   const east: Air = { wind: 6, force: 1, weather: 'clear' };
   const body = (x: number, z: number, facing: number) => ({ x: x * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2, facing, moving: false });
   const G = n('glider');
-  const tt = (x: number, z: number, facing: number, air: Air, layer: number = LAYER.ROOF) => toolTarget(w, layer, body(x, z, facing), G, [], [slot(G)], air);
-  check(tt(58, 24, 1, east)?.action === 'glide' && tt(58, 24, 1, east)!.fits && tt(58, 24, 1, east)!.glide!.out, 'the hut’s east edge, a west wind: out');
+  const tt = (x: number, z: number, facing: number, air: Air, layer: number = LAYER.ROOF) =>
+    toolTarget(w, layer, body(x, z, facing), G, [], [slot(G)], air);
+  check(
+    tt(58, 24, 1, east)?.action === 'glide' && tt(58, 24, 1, east)!.fits && tt(58, 24, 1, east)!.glide!.out,
+    'the hut’s east edge, a west wind: out',
+  );
   check(tt(57, 24, 1, east) === null, 'a tile back from the edge: no glide');
   check(tt(58, 24, 1, east, LAYER.GROUND) === null, 'on the ground: no glide');
   check(tt(58, 24, 1, { ...east, weather: 'storm' })?.glide?.why === 'storm', 'in a storm: grounded');
@@ -396,15 +498,32 @@ const showAt = (sim: Sim, m: number) => {
         ts.items.inv[0] = slot(G);
         ts.items.hand = 0;
         const plan = today(twin);
-        const promise = toolTarget(twin.world, LAYER.ROOF, ts.player, G, bodiesOf(twin), ts.items.inv, { wind: plan.wind, force: plan.windForce, weather: plan.weather });
+        const promise = toolTarget(twin.world, LAYER.ROOF, ts.player, G, bodiesOf(twin), ts.items.inv, {
+          wind: plan.wind,
+          force: plan.windForce,
+          weather: plan.weather,
+        });
         twin.step(command(0, OP.USE, 1));
         flown++;
         if (!promise || promise.action !== 'glide') continue;
         const ev = (twin.events as SimEvent[]).find((e): e is Extract<SimEvent, { type: 'glide' }> => e.type === 'glide');
         const landed = Math.floor(ts.player.z / UNIT) * MAP_W + Math.floor(ts.player.x / UNIT);
-        const same = promise.fits ? !!ev && ts.layer === LAYER.GROUND && landed === promise.tile && ev.dist === promise.glide!.dist && ev.short === promise.glide!.short && (ts.escaped > 0) === promise.glide!.out && (ts.escaped > 0 ? ESCAPES[ts.via] === 'glider' : true) && ts.items.inv[0] === 0 : !ev && ts.layer === LAYER.ROOF && ts.items.inv[0] === slot(G);
+        const same = promise.fits
+          ? !!ev &&
+            ts.layer === LAYER.GROUND &&
+            landed === promise.tile &&
+            ev.dist === promise.glide!.dist &&
+            ev.short === promise.glide!.short &&
+            ts.escaped > 0 === promise.glide!.out &&
+            (ts.escaped > 0 ? ESCAPES[ts.via] === 'glider' : true) &&
+            ts.items.inv[0] === 0
+          : !ev && ts.layer === LAYER.ROOF && ts.items.inv[0] === slot(G);
         if (same) agree++;
-        else check(false, `the promise at ${t % MAP_W},${Math.floor(t / MAP_W)} facing ${facing}, wind ${wind}/${force}: ${promise.fits ? `${promise.tile} ${promise.glide!.out}` : promise.glide!.why} vs ${landed} ${ts.escaped}`);
+        else
+          check(
+            false,
+            `the promise at ${t % MAP_W},${Math.floor(t / MAP_W)} facing ${facing}, wind ${wind}/${force}: ${promise.fits ? `${promise.tile} ${promise.glide!.out}` : promise.glide!.why} vs ${landed} ${ts.escaped}`,
+          );
       }
   check(agree > 0, 'some glides flown');
   // Someone standing where it would land: down on the tile before, as the button says.
@@ -424,9 +543,14 @@ const showAt = (sim: Sim, m: number) => {
     const promise = toolTarget(twin.world, LAYER.ROOF, ts.player, G, bodiesOf(twin), ts.items.inv, air)!;
     twin.step(command(0, OP.USE, 1));
     const landed = Math.floor(ts.player.z / UNIT) * MAP_W + Math.floor(ts.player.x / UNIT);
-    check(promise.tile !== clear.tile && landed === promise.tile, `never down on someone: ${clear.tile % MAP_W} taken, down at ${landed % MAP_W} as promised`);
+    check(
+      promise.tile !== clear.tile && landed === promise.tile,
+      `never down on someone: ${clear.tile % MAP_W} taken, down at ${landed % MAP_W} as promised`,
+    );
   }
-  console.log(`glider: the button's promise agrees with the flight ${agree}/${flown - (flown - agree)} times off Stalag Flucht's hut; still air ${g.dist} of ${g.reach} (a fence in the way)`);
+  console.log(
+    `glider: the button's promise agrees with the flight ${agree}/${flown - (flown - agree)} times off Stalag Flucht's hut; still air ${g.dist} of ${g.reach} (a fence in the way)`,
+  );
   void s;
   void RUN_UP;
 }
@@ -456,10 +580,14 @@ const showAt = (sim: Sim, m: number) => {
         ts.items.inv[0] = slot(n('glider'));
         ts.items.hand = 0;
         const p = today(twin);
-        const promise = toolTarget(twin.world, LAYER.ROOF, ts.player, n('glider'), bodiesOf(twin), ts.items.inv, { wind: p.wind, force: p.windForce, weather: p.weather })!;
+        const promise = toolTarget(twin.world, LAYER.ROOF, ts.player, n('glider'), bodiesOf(twin), ts.items.inv, {
+          wind: p.wind,
+          force: p.windForce,
+          weather: p.weather,
+        })!;
         twin.step(command(0, OP.USE, 1));
         const landed = Math.floor(ts.player.z / UNIT) * MAP_W + Math.floor(ts.player.x / UNIT);
-        const ok = promise.fits ? landed === promise.tile && (ts.escaped > 0) === promise.glide!.out : ts.layer === LAYER.ROOF;
+        const ok = promise.fits ? landed === promise.tile && ts.escaped > 0 === promise.glide!.out : ts.layer === LAYER.ROOF;
         check(ok, `${def.id}: the promise at ${t % MAP_W},${Math.floor(t / MAP_W)} facing ${facing} in wind ${wind}/${force}`);
         if (ok) agree++;
         if (ts.escaped) {
@@ -479,7 +607,10 @@ const showAt = (sim: Sim, m: number) => {
 {
   const p = dayPlan('center-perks', 7, 3, [[3, -1, -1, 6, 2]]);
   const fog = dayPlan('center-perks', 7, 3, [[3, -1, 1, 6, 2]]);
-  check(p.wind === 6 && p.windForce === 2 && fog.wind === 6 && fog.windForce === 0, 'a forced wind: from where it says, as strong (calm in fog)');
+  check(
+    p.wind === 6 && p.windForce === 2 && fog.wind === 6 && fog.windForce === 0,
+    'a forced wind: from where it says, as strong (calm in fog)',
+  );
   const s = new Sim(CENTER_PERKS, 1);
   s.state.calendar = [[1, -1, -1, 2, 1]];
   const snap = s.snapshot();

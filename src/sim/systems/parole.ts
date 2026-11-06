@@ -21,7 +21,25 @@
  * Nothing runs until the player first applies in the run (the escape bots play as before), and
  * every draw comes from roll() (SALT.PAROLE).
  */
-import { ANSWER, ANSWER_STEPS, APPLY_AGAIN, APPLY_DAY, HEARING_AFTER, HEARING_FROM, HEARING_TO, HEARINGS, LAWYER_SOONER, MEMBERS, PASS, RECORD, SILENT, SIT_STEPS, TOPICS, WEIGH_STEPS, type HearingPlace } from '../../content/parole';
+import {
+  ANSWER,
+  ANSWER_STEPS,
+  APPLY_AGAIN,
+  APPLY_DAY,
+  HEARING_AFTER,
+  HEARING_FROM,
+  HEARING_TO,
+  HEARINGS,
+  LAWYER_SOONER,
+  MEMBERS,
+  PASS,
+  RECORD,
+  SILENT,
+  SIT_STEPS,
+  TOPICS,
+  WEIGH_STEPS,
+  type HearingPlace,
+} from '../../content/parole';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { SimState } from '../state';
@@ -56,8 +74,10 @@ export const WALKED_OUT = 99;
 export const freshParole = () => [0, 0, 0, 0, 0, 0, -1, -1, 0, 0];
 
 /** The lowest and highest score a verdict can have (every line against at its cap and the worst answers; the reverse): a save's bounds. */
-export const SCORE_MIN = -RECORD.reduce((a, r) => a + (r.side < 0 ? r.cap : 0), 0) + MEMBERS.reduce((a, m) => a + Math.min(m.lie, SILENT, 0), 0);
-export const SCORE_MAX = RECORD.reduce((a, r) => a + (r.side > 0 ? r.cap : 0), 0) + MEMBERS.reduce((a, m) => a + Math.max(m.claim, m.own, m.words, 0), 0);
+export const SCORE_MIN =
+  -RECORD.reduce((a, r) => a + (r.side < 0 ? r.cap : 0), 0) + MEMBERS.reduce((a, m) => a + Math.min(m.lie, SILENT, 0), 0);
+export const SCORE_MAX =
+  RECORD.reduce((a, r) => a + (r.side > 0 ? r.cap : 0), 0) + MEMBERS.reduce((a, m) => a + Math.max(m.claim, m.own, m.words, 0), 0);
 
 /** A hearing before the board (P39): plain data in the state. */
 export interface Hearing {
@@ -74,7 +94,8 @@ export interface Hearing {
 }
 
 /** The prison's hearing room and board (none at the Training Block, nor where there's no release desk). */
-export const hearingOf = (sim: Pick<SimContext, 'world'>): HearingPlace | null => (releaseOf(sim) ? (HEARINGS[sim.world.def.id] ?? null) : null);
+export const hearingOf = (sim: Pick<SimContext, 'world'>): HearingPlace | null =>
+  releaseOf(sim) ? (HEARINGS[sim.world.def.id] ?? null) : null;
 
 /** The name on the release list by the board's grant (P36's release then takes it as route `parole`). */
 export const paroled = (s: Pick<SimState, 'parole' | 'release'>) => s.parole[P.RELEASE] > 0 && s.release[0] === s.parole[P.RELEASE];
@@ -137,7 +158,8 @@ export function recordCounts(s: Pick<SimState, 'feats' | 'days' | 'parole' | 'pa
 }
 
 /** Each line's points (signed: against lines below zero). */
-export const linePoints = (counts: readonly number[]) => RECORD.map((r, k) => r.side * Math.min(r.cap, Math.floor((counts[k] * r.w) / r.each)));
+export const linePoints = (counts: readonly number[]) =>
+  RECORD.map((r, k) => r.side * Math.min(r.cap, Math.floor((counts[k] * r.w) / r.each)));
 
 /** The record's score: the lines' points added up. */
 export const recordScore = (counts: readonly number[]) => linePoints(counts).reduce((a, b) => a + b, 0);
@@ -300,7 +322,9 @@ function sitDown(sim: SimContext) {
   stopTraining(sim);
   endTalk(sim);
   const h = hearingOf(sim)!;
-  const seat = sim.world.props.findIndex((p) => p.kind !== 'table' && h.seat.x >= p.x && h.seat.x < p.x + p.w && h.seat.z >= p.z && h.seat.z < p.z + p.d);
+  const seat = sim.world.props.findIndex(
+    (p) => p.kind !== 'table' && h.seat.x >= p.x && h.seat.x < p.x + p.w && h.seat.z >= p.z && h.seat.z < p.z + p.d,
+  );
   if (seat >= 0 && s.seat < 0 && atProp(sim.world, seat, s.player, REACH)) {
     s.player.moving = false;
     s.player.facing = seatSpot(sim.world, seat, s.player).facing;
@@ -343,7 +367,13 @@ function verdict(sim: SimContext) {
     p[P.OUTCOME] = OUTCOME.DENIED;
     p[P.AGAIN] = day + APPLY_AGAIN;
   }
-  sim.events.push({ type: 'parole', what: granted ? 'granted' : 'denied', score, lines: lines.slice(), n: granted ? day + 1 : day + APPLY_AGAIN });
+  sim.events.push({
+    type: 'parole',
+    what: granted ? 'granted' : 'denied',
+    score,
+    lines: lines.slice(),
+    n: granted ? day + 1 : day + APPLY_AGAIN,
+  });
 }
 
 /** The hearing lost: not there in time (`missed`), or walked out of (a denial). */
@@ -463,7 +493,8 @@ export function paroleOp(sim: SimContext, b: number, c: number) {
 }
 
 /** Steps left to answer the question put (0 none). */
-export const answerLeft = (s: Pick<SimState, 'hearing' | 'step'>) => (s.hearing && s.hearing.q >= 0 && !s.hearing.until ? Math.max(0, ANSWER_STEPS - (s.step - s.hearing.at)) : 0);
+export const answerLeft = (s: Pick<SimState, 'hearing' | 'step'>) =>
+  s.hearing && s.hearing.q >= 0 && !s.hearing.until ? Math.max(0, ANSWER_STEPS - (s.step - s.hearing.at)) : 0;
 
 /** A hearing as a save holds it (state.ts loadState). */
 export function hearingOk(o: Hearing | null, step: number): boolean {

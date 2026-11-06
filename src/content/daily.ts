@@ -87,7 +87,9 @@ export function dailyOf(n: number): Daily {
   let best: TwistId[] = [];
   // Shuffled afresh until a hand fits (a few tries are plenty; the first that deals them all wins).
   for (let attempt = 0; attempt < 32 && best.length < rhythm.twists; attempt++) {
-    const deck = fits.map((t, k) => ({ t, r: roll(0, SALT.DAILY, n, 1 + attempt * 64 + k) })).sort((a, b) => a.r - b.r || TWIST_IDS.indexOf(a.t.id) - TWIST_IDS.indexOf(b.t.id));
+    const deck = fits
+      .map((t, k) => ({ t, r: roll(0, SALT.DAILY, n, 1 + attempt * 64 + k) }))
+      .sort((a, b) => a.r - b.r || TWIST_IDS.indexOf(a.t.id) - TWIST_IDS.indexOf(b.t.id));
     const hand: TwistId[] = [];
     let spent = 0;
     for (const { t } of deck) {
@@ -104,5 +106,5 @@ export function dailyOf(n: number): Daily {
     if (hand.length > best.length) best = hand;
   }
   const twists = best.sort((a, b) => TWIST_IDS.indexOf(a) - TWIST_IDS.indexOf(b));
-  return { n, weekday, prison, seed: (roll(0, SALT.DAILY, n, 4096) >>> 1) || 1, twists };
+  return { n, weekday, prison, seed: roll(0, SALT.DAILY, n, 4096) >>> 1 || 1, twists };
 }

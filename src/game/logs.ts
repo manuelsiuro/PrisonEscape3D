@@ -33,4 +33,5 @@ export function dropAllLogs() {
   for (const p of PRISONS) removeKey(replayBestKey(p.id));
 }
 
-export const readReplay = (prison?: string): RunLog | null => fitLog(readJSON<unknown>(prison ? replayBestKey(prison) : KEYS.replayLast, null));
+export const readReplay = (prison?: string): RunLog | null =>
+  fitLog(readJSON<unknown>(prison ? replayBestKey(prison) : KEYS.replayLast, null));

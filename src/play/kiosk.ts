@@ -1,5 +1,17 @@
 import { buzz } from '../app/haptics';
-import { COURSE_INT, COURSE_PASS, COURSE_QUESTIONS, COURSE_STEPS, KIOSK, KIOSK_BLOCK, NEWS_AHEAD, NEWS_DAYS, PHOTOS, SHOP, shopPrice } from '../content/kiosk';
+import {
+  COURSE_INT,
+  COURSE_PASS,
+  COURSE_QUESTIONS,
+  COURSE_STEPS,
+  KIOSK,
+  KIOSK_BLOCK,
+  NEWS_AHEAD,
+  NEWS_DAYS,
+  PHOTOS,
+  SHOP,
+  shopPrice,
+} from '../content/kiosk';
 import { MONEY_EVERY } from '../content/phone';
 import { phoneOpen } from '../sim/systems/phone';
 import { UNIT } from '../sim/tuning';
@@ -37,17 +49,52 @@ export function resetKiosk() {
   spent = 0;
 }
 
-const view: KioskView = { phase: 'off', cash: 0, closed: '', loginWhy: '', left: 0, secs: 0, spent: 0, mailWhy: '', mailNote: '', coming: [], photos: [], shop: [], ordered: '', days: [], next: [], headlines: [], course: 'offer', courseWhy: '', q: 0, right: 0, question: '', choices: [], answer: 0, said: -1, result: '', good: true };
+const view: KioskView = {
+  phase: 'off',
+  cash: 0,
+  closed: '',
+  loginWhy: '',
+  left: 0,
+  secs: 0,
+  spent: 0,
+  mailWhy: '',
+  mailNote: '',
+  coming: [],
+  photos: [],
+  shop: [],
+  ordered: '',
+  days: [],
+  next: [],
+  headlines: [],
+  course: 'offer',
+  courseWhy: '',
+  q: 0,
+  right: 0,
+  question: '',
+  choices: [],
+  answer: 0,
+  said: -1,
+  result: '',
+  good: true,
+};
 
 const why = (k: string | null) => (k ? t(`refused.${k}` as Key) : '');
 
 /** A day the news names: tomorrow, or its number (`low`: after a colon, in lower case). */
-const dayName = (sim: Sim, d: number, low = false) => (d === prisonDay(sim.state.step) + 1 ? t(low ? 'kiosk.news.tomorrowLow' : 'profile.tomorrow') : t(low ? 'kiosk.news.dayLow' : 'kiosk.news.day', { n: d }));
+const dayName = (sim: Sim, d: number, low = false) =>
+  d === prisonDay(sim.state.step) + 1
+    ? t(low ? 'kiosk.news.tomorrowLow' : 'profile.tomorrow')
+    : t(low ? 'kiosk.news.dayLow' : 'kiosk.news.day', { n: d });
 
 /** What a day ahead holds, in the news's words (a food fight is never announced: a rowdy canteen). */
 function newsDay(sim: Sim, p: DayPlan) {
   const ev = p.event === 'foodFight' ? 'rowdy' : p.event;
-  const when = p.event === 'none' || p.event === 'foodFight' ? '' : p.event === 'drill' ? t('day.whenBell') : t('day.when', { from: dayTime(p.at), to: dayTime(p.until) });
+  const when =
+    p.event === 'none' || p.event === 'foodFight'
+      ? ''
+      : p.event === 'drill'
+        ? t('day.whenBell')
+        : t('day.when', { from: dayTime(p.at), to: dayTime(p.until) });
   const title = p.event === 'delivery' ? vehicleName(sim) : t(`day.event.${ev}` as Key);
   return {
     name: dayName(sim, p.day),
@@ -105,7 +152,8 @@ export function kioskNow(sim: Sim): KioskView | null {
   // Shop: each row's own refusal; one shared by every row (an order coming, today's placed) said once.
   const shared = kioskRefusal(sim, KIOSK.ORDER, 0);
   const once = shared === 'orderComing' || shared === 'shopToday';
-  v.ordered = shared === 'orderComing' ? t('kiosk.orderComing', { item: itemName(s.post[3]) }) : shared === 'shopToday' ? t('refused.shopToday') : '';
+  v.ordered =
+    shared === 'orderComing' ? t('kiosk.orderComing', { item: itemName(s.post[3]) }) : shared === 'shopToday' ? t('refused.shopToday') : '';
   v.shop = SHOP.map((id, k) => {
     const r = once ? shared : kioskRefusal(sim, KIOSK.ORDER, k);
     return { k, name: itemName(itemNumber(id)), price: t('phone.price', { n: shopPrice(id) }), why: once ? ' ' : why(r) };
@@ -119,7 +167,11 @@ export function kioskNow(sim: Sim): KioskView | null {
     if (!deck.includes(ev)) continue;
     let found = 0;
     for (let d = 1; d <= NEWS_AHEAD && !found; d++) if (planOf(sim, day + d).event === ev) found = day + d;
-    v.next.push(found ? t(`kiosk.news.next.${ev}` as Key, { day: dayName(sim, found, true), what: ev === 'delivery' ? vehicleName(sim) : '' }) : t(`kiosk.news.none.${ev}` as Key, { n: NEWS_AHEAD }));
+    v.next.push(
+      found
+        ? t(`kiosk.news.next.${ev}` as Key, { day: dayName(sim, found, true), what: ev === 'delivery' ? vehicleName(sim) : '' })
+        : t(`kiosk.news.none.${ev}` as Key, { n: NEWS_AHEAD }),
+    );
   }
   v.headlines = headlines(sim);
   // Courses.
@@ -213,7 +265,11 @@ export function announceKiosk(e: Extract<SimEvent, { type: 'kiosk' }>) {
     case 'passed':
       sound.chime();
       {
-        const said = t(e.int === 0 ? 'kiosk.course.passedTop' : 'kiosk.course.passed', { n: e.n ?? 0, of: COURSE_QUESTIONS, m: e.int ?? COURSE_INT });
+        const said = t(e.int === 0 ? 'kiosk.course.passedTop' : 'kiosk.course.passed', {
+          n: e.n ?? 0,
+          of: COURSE_QUESTIONS,
+          m: e.int ?? COURSE_INT,
+        });
         end(said, true);
         return banner.toast(said, 'good', 3600);
       }

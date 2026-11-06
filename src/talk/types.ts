@@ -5,7 +5,18 @@
  */
 
 /** How an inmate talks: weights its own lines, how chatty it is, its murmur's pitch. */
-export const INMATE_VOICES = ['jokester', 'grump', 'philosopher', 'tough', 'worrier', 'oldTimer', 'hustler', 'sweetheart', 'conspiracist', 'poet'] as const;
+export const INMATE_VOICES = [
+  'jokester',
+  'grump',
+  'philosopher',
+  'tough',
+  'worrier',
+  'oldTimer',
+  'hustler',
+  'sweetheart',
+  'conspiracist',
+  'poet',
+] as const;
 /** How a guard talks: a steady one as a rookie or a veteran, the others by their ways (P15: lazy, strict, corrupt). */
 export const GUARD_VOICES = ['rookie', 'veteran', 'slacker', 'stickler', 'crook'] as const;
 export type InmateVoice = (typeof INMATE_VOICES)[number];
@@ -13,7 +24,26 @@ export type GuardVoice = (typeof GUARD_VOICES)[number];
 export type Voice = InmateVoice | GuardVoice;
 
 /** When a line fits: every tag it lists must hold now. */
-const TAGS = ['night', 'morning', 'evening', 'day1', 'newbie', 'freeTime', 'veteran', 'suburban', 'alpine', 'industrial', 'desert', 'island', 'rich', 'broke', 'heatHigh', 'hostile', 'outdoors', 'indoors'] as const;
+const TAGS = [
+  'night',
+  'morning',
+  'evening',
+  'day1',
+  'newbie',
+  'freeTime',
+  'veteran',
+  'suburban',
+  'alpine',
+  'industrial',
+  'desert',
+  'island',
+  'rich',
+  'broke',
+  'heatHigh',
+  'hostile',
+  'outdoors',
+  'indoors',
+] as const;
 export type Tag = (typeof TAGS)[number];
 
 /**

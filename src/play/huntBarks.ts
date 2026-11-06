@@ -23,7 +23,9 @@ export function say(run: HuntRun, who: number, bank: BankId, style: 'say' | 'sho
   const all = (lang === 'fr' ? frBarks : enBarks)[bank] ?? enBarks[bank];
   // (A line for the dark only after dark: torches, a warm bed.)
   const night = run.hunt.night;
-  const fits = ((all ?? []) as readonly Line[]).map((l, k) => [l, k] as const).filter(([l]) => typeof l === 'string' || !l.when?.includes('night') || night);
+  const fits = ((all ?? []) as readonly Line[])
+    .map((l, k) => [l, k] as const)
+    .filter(([l]) => typeof l === 'string' || !l.when?.includes('night') || night);
   if (!fits.length) return;
   let j = Math.floor(Math.random() * fits.length);
   if (fits[j][1] === last.get(bank) && fits.length > 1) j = (j + 1) % fits.length;
@@ -34,7 +36,18 @@ export function say(run: HuntRun, who: number, bank: BankId, style: 'say' | 'sho
   // One bubble a speaker: a new line replaces theirs.
   const speaker = (run.lookout ? 1 : 0) + who;
   run.said = run.said.filter((b) => b.speaker !== speaker);
-  run.said.push({ speaker, guard: true, text, style, start: now, until: now + (style === 'shout' ? 2.6 : 3.2), pitch: 130 + (who % 5) * 14, line: k, bank, reaction: true });
+  run.said.push({
+    speaker,
+    guard: true,
+    text,
+    style,
+    start: now,
+    until: now + (style === 'shout' ? 2.6 : 3.2),
+    pitch: 130 + (who % 5) * 14,
+    line: k,
+    bank,
+    reaction: true,
+  });
 }
 
 const head = (id: number, out: { x: number; y: number }, height: number) => view.screenOf(id, out, height);

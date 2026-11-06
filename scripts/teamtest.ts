@@ -17,12 +17,40 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import { itemNumber } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
-import { AIM_IN, DESIGNS, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, INK_HEAT, INK_ME_STEPS, INK_TIME, KICK_GRACE, KICK_MAX, KICK_MIN, KICK_TAP, MATCH_STEPS, MATCH_STEPS_215, RING_AHEAD, TEAM_WIN_OPINION } from '../src/content/team';
+import {
+  AIM_IN,
+  DESIGNS,
+  GATHER_STEPS,
+  GOAL_HALF,
+  GOAL_LOOK,
+  INK_HEAT,
+  INK_ME_STEPS,
+  INK_TIME,
+  KICK_GRACE,
+  KICK_MAX,
+  KICK_MIN,
+  KICK_TAP,
+  MATCH_STEPS,
+  MATCH_STEPS_215,
+  RING_AHEAD,
+  TEAM_WIN_OPINION,
+} from '../src/content/team';
 import { command, EXT, needleArgs, needlePoint, OP, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
-import { centreOf, fieldOf, kickPower, matchSteps, onPitch, pitchOf, sightFor, TEAM, teamsFor, watchingMatch } from '../src/sim/systems/football';
+import {
+  centreOf,
+  fieldOf,
+  kickPower,
+  matchSteps,
+  onPitch,
+  pitchOf,
+  sightFor,
+  TEAM,
+  teamsFor,
+  watchingMatch,
+} from '../src/sim/systems/football';
 import { GUARD } from '../src/sim/systems/guards';
 import { DOING } from '../src/sim/systems/inmates';
 import { slot } from '../src/sim/systems/items';
@@ -36,7 +64,8 @@ import { check } from './assert';
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
 const n = itemNumber;
 const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
-const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
+const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet and clear. */
 function game(prison = CENTER_PERKS, seed = 5) {
@@ -162,7 +191,8 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
         const zone = w.zoneAt(x, z);
         const prop = w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d);
         const decor = (p.decor ?? []).some((d) => x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
-        if ((zone !== 'yard' && zone !== 'rollCall' && zone !== 'sports') || w.blocked(x, z) || prop || decor) bad.push(`${x},${z} ${zone}${prop ? ' prop' : ''}${decor ? ' decor' : ''}`);
+        if ((zone !== 'yard' && zone !== 'rollCall' && zone !== 'sports') || w.blocked(x, z) || prop || decor)
+          bad.push(`${x},${z} ${zone}${prop ? ' prop' : ''}${decor ? ' decor' : ''}`);
       }
     check(bad.length === 0, `${p.id}: the pitch is open yard floor clear of the garden, the hoop, props and decor (${bad.join('; ')})`);
     // No roll-call spot or hoop spot in a net (nobody lines up, or shoots, inside a goal).
@@ -175,10 +205,14 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
     check(inNet.length === 0, `${p.id}: no roll-call or hoop spot in a net (${inNet.map((q) => `${q.x},${q.z}`).join(' ')})`);
     // No roll-call box or hoop spot painted on the pitch at all (2.5.1). (Center Perks' court shared
     // its small yard until its sports ground, P31; Shankton's roll call its yard's middle until its rec ground, P32.)
-    const onIt = [...p.rollCall, ...p.leisure!.hoop.spots].filter(({ x, z }) => x >= pitch.x && x < pitch.x + pitch.w && z >= pitch.z && z < pitch.z + pitch.d);
+    const onIt = [...p.rollCall, ...p.leisure!.hoop.spots].filter(
+      ({ x, z }) => x >= pitch.x && x < pitch.x + pitch.w && z >= pitch.z && z < pitch.z + pitch.d,
+    );
     check(onIt.length === 0, `${p.id}: no roll-call or hoop spots on the pitch (${onIt.map((q) => `${q.x},${q.z}`).join(' ')})`);
     check((f.a1 - f.a0) / UNIT >= 8 && (f.l1 - f.l0) / UNIT >= 4, `${p.id}: the field is at least 8 tiles long and 4 wide`);
-    lines.push(`${p.id}: pitch ${pitch.w}×${pitch.d} at ${pitch.x},${pitch.z}, field ${(f.a1 - f.a0) / UNIT}×${(f.l1 - f.l0) / UNIT} along ${f.along ? 'x' : 'z'}`);
+    lines.push(
+      `${p.id}: pitch ${pitch.w}×${pitch.d} at ${pitch.x},${pitch.z}, field ${(f.a1 - f.a0) / UNIT}×${(f.l1 - f.l0) / UNIT} along ${f.along ? 'x' : 'z'}`,
+    );
   }
   console.log(lines.join('\n'));
 }
@@ -222,13 +256,19 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   sim.state.match!.last = -1;
   for (let k = 0; k < 10; k++) g.step();
   const goals = of(g.seen, 'football').filter((e) => e.what === 'goal');
-  check(goals.length === 1 && goals[0].mine === true && goals[0].by === -1 && sim.state.match!.goals[0] === 1 && sim.state.match!.scored === 1, 'into the other net: a goal, the player its scorer');
+  check(
+    goals.length === 1 && goals[0].mine === true && goals[0].by === -1 && sim.state.match!.goals[0] === 1 && sim.state.match!.scored === 1,
+    'into the other net: a goal, the player its scorer',
+  );
   // Wide of the mouth: off the end boards.
   for (let k = 0; k < 60; k++) g.step();
   check(!sim.state.match!.pause, 'after the goal, back to the middle');
   sim.state.match!.ball = [f.along ? f.a1 - UNIT : f.l0 + 400, f.along ? f.l0 + 400 : f.a1 - UNIT, f.along ? 300 : 0, f.along ? 0 : 300];
   for (let k = 0; k < 10; k++) g.step();
-  check(sim.state.match!.goals[0] === 1 && (f.along ? sim.state.match!.ball[2] : sim.state.match!.ball[3]) < 0, 'wide of the mouth it bounces back off the end');
+  check(
+    sim.state.match!.goals[0] === 1 && (f.along ? sim.state.match!.ball[2] : sim.state.match!.ball[3]) < 0,
+    'wide of the mouth it bounces back off the end',
+  );
   console.log(`the ball: rolled ${steps} steps across and stopped`);
 }
 
@@ -265,14 +305,20 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   g.ext(EXT.KICK, 0);
   for (let k = 0; k < 20 && !kicks(); k++) g.step(command(1));
   const o = sim.state.match!;
-  check(kicks() === 1 && o.ball[2] > KICK_MIN && !o.hold, `Kick held running at the ball: kicked on reaching it, east (${o.ball[2]} units a step)`);
+  check(
+    kicks() === 1 && o.ball[2] > KICK_MIN && !o.hold,
+    `Kick held running at the ball: kicked on reaching it, east (${o.ball[2]} units a step)`,
+  );
   // Held down with the ball already at the feet: it charges until let go (no kick on contact), then goes harder.
   setUp(c.x - 400, c.z, 1, c.x, c.z);
   g.ext(EXT.KICK, 0);
   for (let k = 0; k < 20; k++) g.step();
   const charged = kicks() === 0;
   g.step(command(0, OP.EXT, EXT.KICK, 1));
-  check(charged && kicks() === 1 && sim.state.match!.ball[2] >= kickPower(20), `held at the feet: charged until let go, then kicked hard (${sim.state.match!.ball[2]})`);
+  check(
+    charged && kicks() === 1 && sim.state.match!.ball[2] >= kickPower(20),
+    `held at the feet: charged until let go, then kicked hard (${sim.state.match!.ball[2]})`,
+  );
   // Let go a moment early: the kick waits for the ball (KICK_GRACE).
   setUp(c.x - 1300, c.z, 1, c.x, c.z);
   g.ext(EXT.KICK, 0);
@@ -302,7 +348,10 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   };
   const aimed = aimAt(false);
   const raw = aimAt(true);
-  check(Math.abs(aimed - f.mid) <= AIM_IN + 50, `facing 45° off the net: the kick goes at its mouth (crosses ${Math.round(aimed - f.mid)} from its middle)`);
+  check(
+    Math.abs(aimed - f.mid) <= AIM_IN + 50,
+    `facing 45° off the net: the kick goes at its mouth (crosses ${Math.round(aimed - f.mid)} from its middle)`,
+  );
   check(Math.abs(raw - f.mid) > GOAL_HALF, `before 2.16: the way faced, wide of it (${Math.round(raw - f.mid)})`);
   // At the player's own net: cleared out wide, up the field.
   setUp(f.a0 + 3 * UNIT, f.mid + 300, 9, f.a0 + 3 * UNIT - 400, f.mid + 300);
@@ -318,7 +367,10 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   rival.body.x = c.x + 500;
   rival.body.z = c.z;
   g.step();
-  check(of(g.seen, 'football').every((e) => e.what !== 'kick') && ro.cool[5] > sim.state.step, 'a rival takes the ball off their feet: theirs again only in a moment');
+  check(
+    of(g.seen, 'football').every((e) => e.what !== 'kick') && ro.cool[5] > sim.state.step,
+    'a rival takes the ball off their feet: theirs again only in a moment',
+  );
   console.log(`the kick: aimed at the mouth ${Math.round(aimed - f.mid)} from its middle (the way faced: ${Math.round(raw - f.mid)})`);
 }
 
@@ -329,7 +381,7 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   g.jump(1, 9, 30);
   atPitch(g, 0);
   g.talk(TALK.FOOTBALL);
-  check(!sim.state.match && refusals(g.seen).includes('gamesClosed'), 'not in the morning\'s work (only the games\' hours)');
+  check(!sim.state.match && refusals(g.seen).includes('gamesClosed'), "not in the morning's work (only the games' hours)");
   g.jump(1, 10, 30);
   // Too few to play: everyone else out cold.
   atPitch(g, 0);
@@ -356,10 +408,16 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   const o = sim.state.match!;
   const ops = sim.state.inmates.map((m) => m.opinion);
   const mates = [o.team[0], o.team[1]];
-  const best = sim.state.inmates.map((_, k) => k).filter((k) => k !== 0).sort((a, b) => ops[b] - ops[a])[0];
+  const best = sim.state.inmates
+    .map((_, k) => k)
+    .filter((k) => k !== 0)
+    .sort((a, b) => ops[b] - ops[a])[0];
   check(mates.includes(best), 'the team-mates: those who think most of the player');
   for (let k = 0; k < GATHER_STEPS + 2 && !sim.state.match!.at; k++) g.step();
-  check(sim.state.match!.at > 0 && of(g.seen, 'football').some((e) => e.what === 'kickoff'), `the whistle once they've walked on (${sim.state.match!.at - o.from} steps)`);
+  check(
+    sim.state.match!.at > 0 && of(g.seen, 'football').some((e) => e.what === 'kickoff'),
+    `the whistle once they've walked on (${sim.state.match!.at - o.from} steps)`,
+  );
   const on = o.team.filter((id) => onPitch(pitchOf(sim)!, sim.state.inmates[id].body.x, sim.state.inmates[id].body.z)).length;
   check(on === 5, `all five on the pitch for the kick-off (${on})`);
   console.log(`walk on: the whistle after ${sim.state.match!.at - o.from} steps`);
@@ -398,7 +456,9 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
     const spd0 = sim.state.spd;
     for (let k = 0; k < GATHER_STEPS + MATCH_STEPS + 50 && sim.state.match; k++) g.step(bot(sim, 12, st));
     void spd0;
-    const end = of(g.seen, 'football').find((e) => e.what === 'won' || e.what === 'lost' || e.what === 'draw' || e.what === 'off' || e.what === 'foul');
+    const end = of(g.seen, 'football').find(
+      (e) => e.what === 'won' || e.what === 'lost' || e.what === 'draw' || e.what === 'off' || e.what === 'foul',
+    );
     if (!end) continue;
     tally[end.what as 'won'] = (tally[end.what as 'won'] ?? 0) + 1;
     tally.goalsFor += end.score?.[0] ?? 0;
@@ -406,11 +466,18 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
     tally.kicks += of(g.seen, 'football').filter((e) => e.what === 'kick').length;
     if (end.what === 'won') {
       check(end.spd === 1 && sim.state.spd === spd0 + 1, 'a win: a point of Speed');
-      const mates = of(g.seen, 'football').find((e) => e.what === 'start')!.team!.slice(0, 2);
-      check(mates.every((k) => sim.state.inmates[k].opinion >= 60 + k + TEAM_WIN_OPINION - 1), 'and the team-mates think more of the player');
+      const mates = of(g.seen, 'football')
+        .find((e) => e.what === 'start')!
+        .team!.slice(0, 2);
+      check(
+        mates.every((k) => sim.state.inmates[k].opinion >= 60 + k + TEAM_WIN_OPINION - 1),
+        'and the team-mates think more of the player',
+      );
     }
   }
-  console.log(`a simple bot over ${N} matches: won ${tally.won}, lost ${tally.lost}, drawn ${tally.draw}, off ${tally.off}; goals ${tally.goalsFor}–${tally.goalsAgainst}; kicks ${tally.kicks}`);
+  console.log(
+    `a simple bot over ${N} matches: won ${tally.won}, lost ${tally.lost}, drawn ${tally.draw}, off ${tally.off}; goals ${tally.goalsFor}–${tally.goalsAgainst}; kicks ${tally.kicks}`,
+  );
   check(tally.off === 0, 'no match was called off');
   // (2.16: a frame-perfect bot, sixteen ways and no reaction time, wins nearly all of its 90-second matches; never every one.)
   check(tally.won >= N / 5 && tally.won < N, 'a simple bot wins most and not all');
@@ -472,7 +539,9 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   };
   const was = play(true);
   const now = play(false);
-  console.log(`a newcomer over ${N} matches: before 2.16 won ${was.won}, lost ${was.lost}, drawn ${was.draw}, their goals ${was.scored}, own goals ${was.own}; now won ${now.won}, lost ${now.lost}, drawn ${now.draw}, their goals ${now.scored}, own goals ${now.own}`);
+  console.log(
+    `a newcomer over ${N} matches: before 2.16 won ${was.won}, lost ${was.lost}, drawn ${was.draw}, their goals ${was.scored}, own goals ${was.own}; now won ${now.won}, lost ${now.lost}, drawn ${now.draw}, their goals ${now.scored}, own goals ${now.own}`,
+  );
   check(now.won >= was.won + 4 && now.scored >= 2 * was.scored, 'a newcomer wins more matches and scores more goals than before 2.16');
   check(now.own <= was.own, 'and puts no more in their own net');
 }
@@ -511,7 +580,9 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   check(guard.body.facing === nearestDir(netX - guard.body.x, netZ - guard.body.z), 'turned to the net');
   for (let k = 0; k < 20; k++) g.step();
   check(guard.body.facing === nearestDir(netX - guard.body.x, netZ - guard.body.z), 'and keeps looking a moment');
-  console.log(`the cover: sight ${full / UNIT} tiles on the pitch, ${Math.floor(full / 2) / UNIT} off it; a goal holds a guard's eyes ${GOAL_LOOK} steps`);
+  console.log(
+    `the cover: sight ${full / UNIT} tiles on the pitch, ${Math.floor(full / 2) / UNIT} off it; a goal holds a guard's eyes ${GOAL_LOOK} steps`,
+  );
 }
 
 // ------------------------------------------------------------------ the rules review's cases
@@ -534,7 +605,10 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   guard.body.z = c.z - 2 * UNIT;
   check(watchingMatch(sim, guard), 'one by the pitch is');
   guard.mode = GUARD.CHASE;
-  check(!watchingMatch(sim, guard) && sightFor(sim, guard, c.x, c.z - 8 * UNIT) === sightOf(sim, guard), 'a guard giving chase sees as far as ever');
+  check(
+    !watchingMatch(sim, guard) && sightFor(sim, guard, c.x, c.z - 8 * UNIT) === sightOf(sim, guard),
+    'a guard giving chase sees as far as ever',
+  );
   guard.mode = GUARD.DUTY;
   // A goal: the ball judged where it crossed the line. Wide of the mouth as it crosses, back inside by the step's end: no goal.
   const f = fieldOf(pitchOf(sim)!);
@@ -555,7 +629,7 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   g.talk(TALK.FOOTBALL);
   for (let k = 0; k < GATHER_STEPS + 2 && !sim.state.match!.at; k++) g.step();
   const o = sim.state.match!;
-  check(o.kick === 1, 'the first kick-off is the other side\'s');
+  check(o.kick === 1, "the first kick-off is the other side's");
   // The player on the spot: neither dribble nor kick moves the ball before they've touched it.
   o.cool = o.cool.map((x, k) => (k < 5 ? sim.state.step + 1000 : x));
   sim.state.player.x = o.ball[0] - 300;
@@ -564,9 +638,9 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   g.step(command(1));
   g.step(command(1, OP.EXT, EXT.KICK, 0));
   g.step(command(1, OP.EXT, EXT.KICK, 1));
-  check(o.ball[2] === 0 && o.ball[3] === 0 && o.kick === 1, 'the player can\'t take the other side\'s kick-off');
+  check(o.ball[2] === 0 && o.ball[3] === 0 && o.kick === 1, "the player can't take the other side's kick-off");
   for (let k = 0; k < 70; k++) g.step();
-  check(o.kick === -1, 'after a few seconds it is anyone\'s ball');
+  check(o.kick === -1, "after a few seconds it is anyone's ball");
 }
 {
   // A rival going for the player on his own (a grudge, an ambush) isn't the player's foul: the match is off, no brawl.
@@ -577,7 +651,10 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   const o = g.sim.state.match!;
   g.sim.state.inmates[o.team[TEAM.RIVAL]].angry = 300;
   g.step();
-  check(!g.sim.state.match && of(g.seen, 'football').some((e) => e.what === 'off') && !of(g.seen, 'football').some((e) => e.what === 'foul'), 'a rival\'s own ambush ends the match as off, not a foul');
+  check(
+    !g.sim.state.match && of(g.seen, 'football').some((e) => e.what === 'off') && !of(g.seen, 'football').some((e) => e.what === 'foul'),
+    "a rival's own ambush ends the match as off, not a foul",
+  );
   // The bell for the next block: full time there and then.
   const h = game();
   h.jump(1, 11, 58);
@@ -644,8 +721,14 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
   }
   const foul = of(h.seen, 'football').find((e) => e.what === 'foul');
   check(!h.sim.state.match && !!foul, 'a blow at a rival: a foul, the match over');
-  check([TEAM.CAPTAIN, TEAM.RIVAL, TEAM.RIVAL_KEEPER].every((k) => h.sim.state.inmates[o.team[k]].angry > 0), 'the other side goes for the player (a brawl)');
-  check((foul?.guards?.length ?? 0) > 0 && foul!.guards!.every((k) => h.sim.state.guards[k].mode === GUARD.INVESTIGATE), 'and the nearest guards come to look');
+  check(
+    [TEAM.CAPTAIN, TEAM.RIVAL, TEAM.RIVAL_KEEPER].every((k) => h.sim.state.inmates[o.team[k]].angry > 0),
+    'the other side goes for the player (a brawl)',
+  );
+  check(
+    (foul?.guards?.length ?? 0) > 0 && foul!.guards!.every((k) => h.sim.state.guards[k].mode === GUARD.INVESTIGATE),
+    'and the nearest guards come to look',
+  );
   // Nothing without the player: a game left alone never has a match.
   const q = game();
   for (let k = 0; k < 2000; k++) q.step();
@@ -654,7 +737,10 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
 
 // ------------------------------------------------------------------ tattoos
 {
-  check(RECIPES.some((r) => r.result === 'tattoo_gun' && [...r.ingredients].sort().join() === 'battery,razor_blade,toothbrush'), 'the gun: a toothbrush, a battery and a razor blade');
+  check(
+    RECIPES.some((r) => r.result === 'tattoo_gun' && [...r.ingredients].sort().join() === 'battery,razor_blade,toothbrush'),
+    'the gun: a toothbrush, a battery and a razor blade',
+  );
   const lines: string[] = [];
   for (let d = 0; d < DESIGNS.length; d++) lines.push(`${DESIGNS[d].id}: ${traceSteps(d)} steps, pays $${payOf(d, 0)}–$${payOf(d, 100)}`);
   console.log(lines.join('\n'));
@@ -719,15 +805,18 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
     check(idle.done.quality! <= 20, `${DESIGNS[d].id}: the needle left still, a poor one (${idle.done.quality})`);
     check(good.done.pay! > idle.done.pay! && good.done.gain! > idle.done.gain!, 'a cleaner line pays more and wins more respect');
     lines.length = 0;
-    console.log(`${DESIGNS[d].id}: followed ${good.done.quality} ($${good.done.pay}, +${good.done.gain}), left still ${idle.done.quality} ($${idle.done.pay}, +${idle.done.gain})`);
+    console.log(
+      `${DESIGNS[d].id}: followed ${good.done.quality} ($${good.done.pay}, +${good.done.gain}), left still ${idle.done.quality} ($${idle.done.pay}, +${idle.done.gain})`,
+    );
   }
   // 2.22: the needle's point in a command, to within half a step of its grid.
   {
     let worst = 0;
-    for (let x = 0; x <= 1000; x += 37) for (let y = 0; y <= 1000; y += 41) {
-      const [px, py] = needlePoint(...needleArgs(x, y));
-      worst = Math.max(worst, Math.abs(px - x), Math.abs(py - y));
-    }
+    for (let x = 0; x <= 1000; x += 37)
+      for (let y = 0; y <= 1000; y += 41) {
+        const [px, py] = needlePoint(...needleArgs(x, y));
+        worst = Math.max(worst, Math.abs(px - x), Math.abs(py - y));
+      }
     check(worst <= 4, `the needle's point sent to within ${worst} of where it was`);
   }
   // 2.22: drawn by hand (the finger set down at the start, then drawn after a point a little ahead on the line); steered by the keys after the ring; left still; scribbled beside the line.
@@ -758,13 +847,30 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
     const steered = trace(d, keys);
     const idle = trace(d, () => 0);
     const scribbled = trace(d, beside);
-    check(hand.done.quality! >= 95 && hand.steps < INK_TIME, `${DESIGNS[d].id}: drawn along the line, a clean one (${hand.done.quality}, ${hand.steps} steps)`);
-    check(shaky.done.quality! < hand.done.quality! && shaky.done.quality! >= 40, `${DESIGNS[d].id}: a shaky hand, a poorer line (${shaky.done.quality})`);
-    check(steered.done.quality! >= 85 && steered.steps < INK_TIME, `${DESIGNS[d].id}: steered after the ring with the keys, a clean line (${steered.done.quality}, ${steered.steps} steps)`);
-    check(idle.done.quality === 0 && idle.steps === INK_TIME - 1, `${DESIGNS[d].id}: the needle left still, nothing traced by the end of the time (${idle.done.quality}, ${idle.steps} steps)`);
+    check(
+      hand.done.quality! >= 95 && hand.steps < INK_TIME,
+      `${DESIGNS[d].id}: drawn along the line, a clean one (${hand.done.quality}, ${hand.steps} steps)`,
+    );
+    check(
+      shaky.done.quality! < hand.done.quality! && shaky.done.quality! >= 40,
+      `${DESIGNS[d].id}: a shaky hand, a poorer line (${shaky.done.quality})`,
+    );
+    check(
+      steered.done.quality! >= 85 && steered.steps < INK_TIME,
+      `${DESIGNS[d].id}: steered after the ring with the keys, a clean line (${steered.done.quality}, ${steered.steps} steps)`,
+    );
+    check(
+      idle.done.quality === 0 && idle.steps === INK_TIME - 1,
+      `${DESIGNS[d].id}: the needle left still, nothing traced by the end of the time (${idle.done.quality}, ${idle.steps} steps)`,
+    );
     check(scribbled.done.quality! <= 10, `${DESIGNS[d].id}: scribbled beside the line, nothing traced (${scribbled.done.quality})`);
-    check(hand.done.pay! > shaky.done.pay! && shaky.done.pay! > idle.done.pay! && hand.done.gain! > idle.done.gain!, 'a line closer to the design pays more and wins more respect');
-    console.log(`${DESIGNS[d].id} drawn: by hand ${hand.done.quality} ($${hand.done.pay}, +${hand.done.gain}, ${hand.steps} steps), shaky ${shaky.done.quality} ($${shaky.done.pay}), keys ${steered.done.quality} (${steered.steps} steps), left still ${idle.done.quality} ($${idle.done.pay}), scribbled ${scribbled.done.quality}`);
+    check(
+      hand.done.pay! > shaky.done.pay! && shaky.done.pay! > idle.done.pay! && hand.done.gain! > idle.done.gain!,
+      'a line closer to the design pays more and wins more respect',
+    );
+    console.log(
+      `${DESIGNS[d].id} drawn: by hand ${hand.done.quality} ($${hand.done.pay}, +${hand.done.gain}, ${hand.steps} steps), shaky ${shaky.done.quality} ($${shaky.done.pay}), keys ${steered.done.quality} (${steered.steps} steps), left still ${idle.done.quality} ($${idle.done.pay}), scribbled ${scribbled.done.quality}`,
+    );
   }
   // 2.22: no skipping: the needle set down on the line ahead, a dab of ink on from there, set down further on… gets no further than the ink it lays.
   {
@@ -788,12 +894,18 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
     delete old.ink.at;
     delete old.ink.n;
     const back = loadState(g.sim.world, TRAINING, old);
-    check(!!back.ink && back.ink.at === 0 && back.ink.n === 0 && back.ink.nx === g.sim.state.ink!.nx && back.ink.k === g.sim.state.ink!.k, 'a sitting saved before 2.22 loads, nothing traced by hand yet');
+    check(
+      !!back.ink && back.ink.at === 0 && back.ink.n === 0 && back.ink.nx === g.sim.state.ink!.nx && back.ink.k === g.sim.state.ink!.k,
+      'a sitting saved before 2.22 loads, nothing traced by hand yet',
+    );
   }
   // Before 2.22 the hand's commands did nothing: the needle stays put, the pen runs on.
   {
     const ignored = trace(0, draw(40, 0), true);
-    check(ignored.done.quality! <= 20 && ignored.steps === traceSteps(0) - 1, `under the old rules, the needle drawn by hand stays put (${ignored.done.quality})`);
+    check(
+      ignored.done.quality! <= 20 && ignored.steps === traceSteps(0) - 1,
+      `under the old rules, the needle drawn by hand stays put (${ignored.done.quality})`,
+    );
   }
   // Seen at it: heat once.
   {
@@ -818,7 +930,10 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
     const was = g.sim.state.inmates[0].opinion;
     for (let k = 0; k < 40; k++) g.step();
     g.ext(EXT.INK, 0);
-    check(!g.sim.state.ink && g.sim.state.inmates[0].opinion < was && !of(g.seen, 'tattoo').some((e) => e.what === 'done'), 'given up halfway: no pay, and he thinks less of the player');
+    check(
+      !g.sim.state.ink && g.sim.state.inmates[0].opinion < was && !of(g.seen, 'tattoo').some((e) => e.what === 'done'),
+      'given up halfway: no pay, and he thinks less of the player',
+    );
   }
   // A friend's work on the player's arm.
   {
@@ -826,7 +941,7 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
     g.talk(TALK.INK_ME, 1);
     check(!!g.sim.state.ink && g.sim.state.ink.mine === 1, 'a friend at work on the player');
     for (let k = 0; k < INK_ME_STEPS + 2; k++) g.step(command(1));
-    check(g.sim.state.inked.join() === '1' && of(g.seen, 'tattoo').some((e) => e.what === 'inked'), 'a skull on the player\'s arm');
+    check(g.sim.state.inked.join() === '1' && of(g.seen, 'tattoo').some((e) => e.what === 'inked'), "a skull on the player's arm");
     const m = g.sim.state.inmates[0];
     m.body.x = g.sim.state.player.x - UNIT;
     m.body.z = g.sim.state.player.z;

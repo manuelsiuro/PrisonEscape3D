@@ -26,7 +26,13 @@ const TABS: HelpTab[] = ['basics', 'life', 'escape', 'controls'];
 
 /** The keys, in groups (read when shown: the language and the keyboard's labels may change). */
 const keys = (): Array<[string, Array<[string, Key]>]> => [
-  ['move', [['%KeyW% %KeyA% %KeyS% %KeyD%', 'help.k.walk'], [t('help.k.clickKey'), 'help.k.click']]],
+  [
+    'move',
+    [
+      ['%KeyW% %KeyA% %KeyS% %KeyD%', 'help.k.walk'],
+      [t('help.k.clickKey'), 'help.k.click'],
+    ],
+  ],
   [
     'do',
     [
@@ -69,7 +75,13 @@ const keys = (): Array<[string, Array<[string, Key]>]> => [
 
 /** The touch controls, in groups: each the HUD's own icon for it. */
 const TOUCHES: Array<[string, Array<[string, Key]>]> = [
-  ['move', [['walk', 'help.t.stick'], ['pin', 'help.t.tap']]],
+  [
+    'move',
+    [
+      ['walk', 'help.t.stick'],
+      ['pin', 'help.t.tap'],
+    ],
+  ],
   [
     'do',
     [
@@ -93,7 +105,14 @@ const TOUCHES: Array<[string, Array<[string, Key]>]> = [
       ['pause', 'help.t.pause'],
     ],
   ],
-  ['games', [['ball', 'help.t.kick'], ['music', 'help.t.lanes'], ['brain', 'help.t.answer']]],
+  [
+    'games',
+    [
+      ['ball', 'help.t.kick'],
+      ['music', 'help.t.lanes'],
+      ['brain', 'help.t.answer'],
+    ],
+  ],
 ];
 
 // ------------------------------------------------------------ words
@@ -112,16 +131,24 @@ const title = (id: string) => t(`help.${id}.t` as Key);
 const open = (tp: HelpTopic) => !tp.prison || openPrisons().some((p) => p.id === tp.prison);
 
 /** Every word a topic says, for the search (lower case, accents off). */
-const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae');
+const fold = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae');
 const SEARCHED = ['hook', 'sum', 'sh', 'steps', 'lh', 'list', 'lh2', 'list2', 'nums', 'tip', 'warn', 'more', 'dh', 'meter', 'tl', 'bars'];
-const words = (id: string) => fold([title(id), ...SEARCHED.map((p) => part(id, p)), shaped(id) ? '' : t(`help.${id}` as Key)].join(' ')).split(/[^a-z0-9]+/);
+const words = (id: string) =>
+  fold([title(id), ...SEARCHED.map((p) => part(id, p)), shaped(id) ? '' : t(`help.${id}` as Key)].join(' ')).split(/[^a-z0-9]+/);
 /** A word searched for, said whole by a topic (or its plural: "tunnel", "tunnels"). */
 const whole = (w: readonly string[], x: string) => w.some((y) => y === x || y === `${x}s` || y === `${x}x` || y === `${x}es`);
 /**
  * A topic found: each word searched for is one of its words — whole, when some topic shown says it
  * whole ("lou" is Lou, not "loud"), else the start of one (a word still being typed: "tun").
  */
-const found = (w: readonly string[], q: readonly string[], exact: readonly boolean[]) => q.every((x, k) => (exact[k] ? whole(w, x) : w.some((y) => y.startsWith(x))));
+const found = (w: readonly string[], q: readonly string[], exact: readonly boolean[]) =>
+  q.every((x, k) => (exact[k] ? whole(w, x) : w.some((y) => y.startsWith(x))));
 
 // ------------------------------------------------------------ pieces
 
@@ -142,7 +169,6 @@ function tile(tp: HelpTopic) {
   const hook = part(tp.id, 'hook');
   return `<button class="help-tile" data-topic="${tp.id}" style="${tone(tp)}">${badge(tp, 20)}<span class="ht-text"><b>${title(tp.id)}</b>${hook ? `<small>${hook}</small>` : ''}</span></button>`;
 }
-
 
 /** The day, block by block: when, what, where, and what missing it costs. */
 function schedule() {
@@ -180,13 +206,17 @@ function timeline(id: string) {
 /** Distances in tiles: a row of tiles for each. */
 function bars(id: string) {
   return `<ul class="hd-bars">${pairs(part(id, 'bars'))
-    .map(([n, what]) => `<li><span class="hd-bars-what">${what}</span><span class="hd-tiles">${'<i></i>'.repeat(parseInt(n, 10))}<b>${t('help.tiles', { n })}</b></span></li>`)
+    .map(
+      ([n, what]) =>
+        `<li><span class="hd-bars-what">${what}</span><span class="hd-tiles">${'<i></i>'.repeat(parseInt(n, 10))}<b>${t('help.tiles', { n })}</b></span></li>`,
+    )
     .join('')}</ul>`;
 }
 
 /** The pockets as the HUD has them: six, then the weapon and the outfit (one thing in them is contraband). */
 function pockets() {
-  const slot = (item: string) => `<span class="hd-slot">${item ? itemImg(item) : ''}${item && itemDef(itemNumber(item)).contraband ? '<i class="slot-cb"></i>' : ''}</span>`;
+  const slot = (item: string) =>
+    `<span class="hd-slot">${item ? itemImg(item) : ''}${item && itemDef(itemNumber(item)).contraband ? '<i class="slot-cb"></i>' : ''}</span>`;
   const { pockets: six, weapon, outfit } = POCKET_SAMPLE;
   return `<div class="hd-pockets">
     <div class="hd-pk-group">${six.map(slot).join('')}<small>${t('help.pk.pockets')}</small></div>
@@ -240,7 +270,8 @@ function recipe(result: string) {
 }
 
 function picture(tp: HelpTopic) {
-  if (tp.pic) return `<figure class="hd-pic"${tp.picAt ? ` style="--pic-at:${tp.picAt}"` : ''}><img src="./help/${tp.id}.webp" alt="" width="1040" height="480" decoding="async"></figure>`;
+  if (tp.pic)
+    return `<figure class="hd-pic"${tp.picAt ? ` style="--pic-at:${tp.picAt}"` : ''}><img src="./help/${tp.id}.webp" alt="" width="1040" height="480" decoding="async"></figure>`;
   return '';
 }
 
@@ -276,17 +307,26 @@ function page(tp: HelpTopic, lessons: boolean, seq: readonly HelpTopic[]) {
   const learn = lessonsOf(tp, lessons);
   if (!shaped(id)) return `${head}<div class="hd-page"><p class="hd-plain">${t(`help.${id}` as Key)}</p>${learn}${nav(tp, seq)}</div>`;
   const nums = pairs(part(id, 'nums'));
-  const chips = nums.length ? `<ul class="hd-nums">${nums.map(([v, what]) => `<li><b>${v}</b><span>${what}</span></li>`).join('')}</ul>` : '';
-  const recipes = tp.recipes?.length ? `<h4 class="hd-h">${icon('hammer', 15)}${t(tp.recipes.length > 1 ? 'help.recipes' : 'help.recipe')}</h4><ul class="hd-recipes">${tp.recipes.map(recipe).join('')}</ul>` : '';
+  const chips = nums.length
+    ? `<ul class="hd-nums">${nums.map(([v, what]) => `<li><b>${v}</b><span>${what}</span></li>`).join('')}</ul>`
+    : '';
+  const recipes = tp.recipes?.length
+    ? `<h4 class="hd-h">${icon('hammer', 15)}${t(tp.recipes.length > 1 ? 'help.recipes' : 'help.recipe')}</h4><ul class="hd-recipes">${tp.recipes.map(recipe).join('')}</ul>`
+    : '';
   const see = tp.see?.length
     ? `<h4 class="hd-h">${t('help.seeAlso')}</h4><div class="hd-see">${tp.see
         .map(topicById)
         .filter((x): x is NonNullable<typeof x> => !!x && open(x))
-        .map((x) => `<button class="hd-link" data-topic="${x.id}" style="${tone(x)}">${badge(x, 16)}<span>${title(x.id)}</span>${icon('chevronRight', 14)}</button>`)
+        .map(
+          (x) =>
+            `<button class="hd-link" data-topic="${x.id}" style="${tone(x)}">${badge(x, 16)}<span>${title(x.id)}</span>${icon('chevronRight', 14)}</button>`,
+        )
         .join('')}</div>`
     : '';
   const more = lines(part(id, 'more'));
-  const fine = more.length ? `<details class="hd-more"><summary>${icon('chevronRight', 14)}${t('help.more')}</summary><ul>${more.map((s) => `<li>${s}</li>`).join('')}</ul></details>` : '';
+  const fine = more.length
+    ? `<details class="hd-more"><summary>${icon('chevronRight', 14)}${t('help.more')}</summary><ul>${more.map((s) => `<li>${s}</li>`).join('')}</ul></details>`
+    : '';
   return `${head}<div class="hd-page">
     ${picture(tp)}
     <p class="hd-sum">${part(id, 'sum')}</p>
@@ -311,7 +351,9 @@ function nav(tp: HelpTopic, seq: readonly HelpTopic[]) {
   const prev = seq[k - 1];
   const next = seq[k + 1];
   const b = (x: HelpTopic | undefined, dir: 'prev' | 'next') =>
-    x ? `<button class="hd-nav-btn ${dir}" data-topic="${x.id}">${dir === 'prev' ? icon('chevronLeft', 16) : ''}<span><small>${t(dir === 'prev' ? 'help.prev' : 'help.next')}</small><b>${title(x.id)}</b></span>${dir === 'next' ? icon('chevronRight', 16) : ''}</button>` : '<span></span>';
+    x
+      ? `<button class="hd-nav-btn ${dir}" data-topic="${x.id}">${dir === 'prev' ? icon('chevronLeft', 16) : ''}<span><small>${t(dir === 'prev' ? 'help.prev' : 'help.next')}</small><b>${title(x.id)}</b></span>${dir === 'next' ? icon('chevronRight', 16) : ''}</button>`
+      : '<span></span>';
   return `<nav class="hd-nav">${b(prev, 'prev')}${b(next, 'next')}</nav>`;
 }
 
@@ -319,31 +361,47 @@ function nav(tp: HelpTopic, seq: readonly HelpTopic[]) {
 const shown = (tab: Exclude<HelpTab, 'controls'>) => HELP[tab].flatMap((g) => g.topics.filter(open));
 
 function index(tab: Exclude<HelpTab, 'controls'>, query: string) {
-  const q = fold(query).split(/[^a-z0-9]+/).filter(Boolean);
+  const q = fold(query)
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
   if (q.length) {
     const pool = TABS.filter((x): x is Exclude<HelpTab, 'controls'> => x !== 'controls')
       .flatMap(shown)
       .map((tp) => ({ tp, w: words(tp.id) }));
     const exact = q.map((x) => pool.some((p) => whole(p.w, x)));
     const hits = pool.filter((p) => found(p.w, q, exact)).map((p) => p.tp);
-    return hits.length ? `<h4 class="help-group">${t('help.results', { n: hits.length })}</h4><div class="help-tiles">${hits.map(tile).join('')}</div>` : `<p class="hd-none">${t('help.noResults')}</p>`;
+    return hits.length
+      ? `<h4 class="help-group">${t('help.results', { n: hits.length })}</h4><div class="help-tiles">${hits.map(tile).join('')}</div>`
+      : `<p class="hd-none">${t('help.noResults')}</p>`;
   }
   return HELP[tab]
     .map((g) => {
       const tiles = g.topics.filter(open);
-      return tiles.length ? `<h4 class="help-group">${t(`help.group.${g.id}` as Key)}</h4><div class="help-tiles">${tiles.map(tile).join('')}</div>` : '';
+      return tiles.length
+        ? `<h4 class="help-group">${t(`help.group.${g.id}` as Key)}</h4><div class="help-tiles">${tiles.map(tile).join('')}</div>`
+        : '';
     })
     .join('');
 }
 
 function controls(touch: boolean) {
   const which = `<div class="seg help-device" role="radiogroup">${(['keys', 'touch'] as const)
-    .map((d) => `<button role="radio" data-device="${d}" class="${(d === 'touch') === touch ? 'on' : ''}" aria-checked="${(d === 'touch') === touch}">${icon(d === 'keys' ? 'keyboard' : 'hand', 15)}${t(`help.device.${d}`)}</button>`)
+    .map(
+      (d) =>
+        `<button role="radio" data-device="${d}" class="${(d === 'touch') === touch ? 'on' : ''}" aria-checked="${(d === 'touch') === touch}">${icon(d === 'keys' ? 'keyboard' : 'hand', 15)}${t(`help.device.${d}`)}</button>`,
+    )
     .join('')}</div>`;
   const groups = touch
-    ? TOUCHES.map(([g, rows]) => [g, rows.map(([ic, k]) => `<li><span class="help-btn">${icon(ic, 18)}</span><span>${t(k)}</span></li>`).join('')] as const)
-    : keys().map(([g, rows]) => [g, rows.map(([label, k]) => `<li><kbd>${withKeys(label)}</kbd><span>${t(k)}</span></li>`).join('')] as const);
-  const body = groups.map(([g, items]) => `<h4 class="help-group">${t(`help.cg.${g}` as Key)}</h4><ul class="help-keys">${items}</ul>`).join('');
+    ? TOUCHES.map(
+        ([g, rows]) =>
+          [g, rows.map(([ic, k]) => `<li><span class="help-btn">${icon(ic, 18)}</span><span>${t(k)}</span></li>`).join('')] as const,
+      )
+    : keys().map(
+        ([g, rows]) => [g, rows.map(([label, k]) => `<li><kbd>${withKeys(label)}</kbd><span>${t(k)}</span></li>`).join('')] as const,
+      );
+  const body = groups
+    .map(([g, items]) => `<h4 class="help-group">${t(`help.cg.${g}` as Key)}</h4><ul class="help-keys">${items}</ul>`)
+    .join('');
   return `${which}${body}<p class="help-foot">${t(touch ? 'help.t.zoom' : 'help.k.zoom')}</p>`;
 }
 

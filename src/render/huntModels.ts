@@ -44,7 +44,8 @@ export function vanGeometry(): THREE.BufferGeometry {
 
 /** The safe point's vehicle or post (nose toward +z, centered): a bus, a border barrier with its sign, a boxcar, a rig, a coach. */
 export function vehicleGeometry(kind: SafeKind): THREE.BufferGeometry {
-  const wheels = (w: number, zs: number[], r = 0.26) => zs.flatMap((z) => [-1, 1].map((s) => rod(r, 0.2, 0x15171b, s * (w / 2 - 0.08), r, z, 10)));
+  const wheels = (w: number, zs: number[], r = 0.26) =>
+    zs.flatMap((z) => [-1, 1].map((s) => rod(r, 0.2, 0x15171b, s * (w / 2 - 0.08), r, z, 10)));
   switch (kind) {
     case 'bus':
     case 'coach': {
@@ -70,14 +71,24 @@ export function vehicleGeometry(kind: SafeKind): THREE.BufferGeometry {
     }
     case 'train': {
       const w = 1.2;
-      return merge([box(w, 1.3, 4.4, 0x7a3f2a, 0, 0.35), box(w + 0.02, 0.9, 1.0, 0x2a1e18, 0, 0.5, 0), box(w - 0.1, 0.06, 4.3, 0x5a2f20, 0, 1.65), ...wheels(w, [1.5, -1.5], 0.22)]);
+      return merge([
+        box(w, 1.3, 4.4, 0x7a3f2a, 0, 0.35),
+        box(w + 0.02, 0.9, 1.0, 0x2a1e18, 0, 0.5, 0),
+        box(w - 0.1, 0.06, 4.3, 0x5a2f20, 0, 1.65),
+        ...wheels(w, [1.5, -1.5], 0.22),
+      ]);
     }
     case 'border':
     default: {
       // The barrier across the road, a striped pole on a post, the frontier's sign and flag.
       const parts: Part[] = [cyl(0.08, 1.0, 0x3a3f46, -1.1, 0), box(0.2, 0.2, 0.2, 0x3a3f46, -1.1, 0.9)];
       for (let k = 0; k < 8; k++) parts.push(box(0.28, 0.1, 0.1, k % 2 ? 0xf4f1ea : 0xd23f36, -0.95 + k * 0.28, 0.95));
-      parts.push(cyl(0.04, 2.4, 0x9aa1ab, 1.4, 0), box(0.7, 0.45, 0.03, 0x2f6fa8, 1.77, 1.85), box(0.9, 0.5, 0.06, 0x2f6fa8, 1.4, 1.1, -0.2), box(0.75, 0.08, 0.07, 0xf4f1ea, 1.4, 1.3, -0.17));
+      parts.push(
+        cyl(0.04, 2.4, 0x9aa1ab, 1.4, 0),
+        box(0.7, 0.45, 0.03, 0x2f6fa8, 1.77, 1.85),
+        box(0.9, 0.5, 0.06, 0x2f6fa8, 1.4, 1.1, -0.2),
+        box(0.75, 0.08, 0.07, 0xf4f1ea, 1.4, 1.3, -0.17),
+      );
       return merge(parts);
     }
   }

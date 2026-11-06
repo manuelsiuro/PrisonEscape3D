@@ -24,10 +24,11 @@ const M = 34;
 const TITLE_H = 44;
 const ALL = [TRAINING, ...PRISONS];
 
-const frames = (n: number) => new Promise<void>((done) => {
-  const step = (k: number) => (k ? requestAnimationFrame(() => step(k - 1)) : done());
-  step(n);
-});
+const frames = (n: number) =>
+  new Promise<void>((done) => {
+    const step = (k: number) => (k ? requestAnimationFrame(() => step(k - 1)) : done());
+    step(n);
+  });
 
 export async function shoot(k: number) {
   const def = ALL[k];
@@ -36,7 +37,12 @@ export async function shoot(k: number) {
   // A few frames behind the title first: the new prison's meshes built, its shaders warm.
   await frames(30);
   const name = def.id === 'training' ? 'Training Block' : ((en as Record<string, string>)[`prison.${def.id}`] ?? def.id);
-  return framed(view.mapShot(S, 2, true), `${k}-${def.id}-game.webp`, `${name} — in game: the 3D view from the game's camera, nobody in it, 10:00 (searchlights faint: they light at night)`, `v${pkg.version} · map rev ${def.map ?? 0} · rulers: the floor's tiles (walls stand up over the rows north of them)`);
+  return framed(
+    view.mapShot(S, 2, true),
+    `${k}-${def.id}-game.webp`,
+    `${name} — in game: the 3D view from the game's camera, nobody in it, 10:00 (searchlights faint: they light at night)`,
+    `v${pkg.version} · map rev ${def.map ?? 0} · rulers: the floor's tiles (walls stand up over the rows north of them)`,
+  );
 }
 
 /**
@@ -56,14 +62,25 @@ export async function shootOutside(k: number) {
   if (play.game) play.game.paused = true;
   await frames(5);
   // Nobody in it: the player, the searchers out on their beats and their dogs, their cones, the lookout.
-  const v = view as unknown as { player: { root: { visible: boolean } }; dogs: { group: { visible: boolean } }; cones: { group: { visible: boolean } }; setGuards(b: unknown[]): void; setCast(c: 0): void };
+  const v = view as unknown as {
+    player: { root: { visible: boolean } };
+    dogs: { group: { visible: boolean } };
+    cones: { group: { visible: boolean } };
+    setGuards(b: unknown[]): void;
+    setCast(c: 0): void;
+  };
   v.player.root.visible = false;
   v.setGuards([]);
   v.setCast(0);
   v.dogs.group.visible = false;
   v.cones.group.visible = false;
   const name = (en as Record<string, string>)[`prison.${def.id}`] ?? def.id;
-  const out = framed(view.mapShot(S, 2), `${k}-${def.id}-outside-game.webp`, `${name} — the outside in game (P41, the manhunt): the 3D view from the game's camera, nobody in it, 10:00`, `v${pkg.version} · rulers: the outside's tiles as the Outside view's · the prison stands past the wall (bottom)`);
+  const out = framed(
+    view.mapShot(S, 2),
+    `${k}-${def.id}-outside-game.webp`,
+    `${name} — the outside in game (P41, the manhunt): the 3D view from the game's camera, nobody in it, 10:00`,
+    `v${pkg.version} · rulers: the outside's tiles as the Outside view's · the prison stands past the wall (bottom)`,
+  );
   v.player.root.visible = true;
   v.dogs.group.visible = true;
   v.cones.group.visible = true;

@@ -56,7 +56,9 @@ const ALL = [...PRISONS, TRAINING];
       check(!h || z, `trees: a body at (${dx.toFixed(2)}, ${dz.toFixed(2)}) from the trunk is hidden by the leaves, outside the fade zone`);
     }
   check(spare / inZone < 0.2, `trees: the fade zone isn't much wider than where the leaves hide someone (${spare} of ${inZone} spare)`);
-  console.log(`trees: the leaves fade within ${CANOPY_SHADE.r} of the line ${CANOPY_SHADE.north} north to ${CANOPY_SHADE.south} south of the trunk; ${covered} hidden samples all inside, ${spare} of ${inZone} in the zone not hidden`);
+  console.log(
+    `trees: the leaves fade within ${CANOPY_SHADE.r} of the line ${CANOPY_SHADE.north} north to ${CANOPY_SHADE.south} south of the trunk; ${covered} hidden samples all inside, ${spare} of ${inZone} in the zone not hidden`,
+  );
   for (const p of ALL) {
     const trees = (p.decor ?? []).filter((d) => d.kind === 'tree');
     if (trees.length) console.log(`trees: ${p.id} ${trees.length} (${trees.map((t) => `${t.x},${t.z}`).join(' ')})`);
@@ -86,7 +88,9 @@ const ALL = [...PRISONS, TRAINING];
       let clear = Infinity;
       for (const sx of [-1, 1])
         for (const sz of [-1, 1]) {
-          const c = new THREE.Vector3((sx * HOOP_BOARD.w) / 2, 2.2, HOOP_BOARD.z + (sz * HOOP_BOARD.d) / 2).applyMatrix4(m).applyMatrix4(back);
+          const c = new THREE.Vector3((sx * HOOP_BOARD.w) / 2, 2.2, HOOP_BOARD.z + (sz * HOOP_BOARD.d) / 2)
+            .applyMatrix4(m)
+            .applyMatrix4(back);
           clear = Math.min(clear, c.z + 0.5);
         }
       check(clear > 0.01, `hoops: ${p.id}'s backboard stays off the wall behind (${clear.toFixed(3)})`);
@@ -108,8 +112,15 @@ const ALL = [...PRISONS, TRAINING];
     });
     // The roll call's marks: off the pitch, or on their own layer.
     const layer = rollCallOverPitch(p);
-    if (pitch && !layer) for (const s of p.rollCall) check(!(s.x >= pitch.x && s.x < pitch.x + pitch.w && s.z >= pitch.z && s.z < pitch.z + pitch.d), `pitch: ${p.id}'s roll call box ${s.x},${s.z} on the pitch, baked`);
-    console.log(`pitch: ${p.id} ${pitch ? `${pitch.w}×${pitch.d}` : 'none'}; hoop spots on it ${on.filter(Boolean).length}; roll call ${layer ? 'on its own layer (shown for roll call)' : 'baked'}`);
+    if (pitch && !layer)
+      for (const s of p.rollCall)
+        check(
+          !(s.x >= pitch.x && s.x < pitch.x + pitch.w && s.z >= pitch.z && s.z < pitch.z + pitch.d),
+          `pitch: ${p.id}'s roll call box ${s.x},${s.z} on the pitch, baked`,
+        );
+    console.log(
+      `pitch: ${p.id} ${pitch ? `${pitch.w}×${pitch.d}` : 'none'}; hoop spots on it ${on.filter(Boolean).length}; roll call ${layer ? 'on its own layer (shown for roll call)' : 'baked'}`,
+    );
   }
   // When the roll call's marks over a pitch show: roll call, and the minutes before.
   const at = (id: string) => ROUTINE.findIndex((r) => r.id === id);
@@ -123,7 +134,8 @@ const ALL = [...PRISONS, TRAINING];
     ['freeTime', 11 * 60, false],
     ['exercise', 15 * 60 + 30, false],
   ];
-  for (const [id, minute, want] of cases) check(rollCallSoon(at(id), minute) === want, `pitch: roll call's marks at ${id} ${minute} ${want ? 'shown' : 'hidden'}`);
+  for (const [id, minute, want] of cases)
+    check(rollCallSoon(at(id), minute) === want, `pitch: roll call's marks at ${id} ${minute} ${want ? 'shown' : 'hidden'}`);
   console.log(`pitch: the roll call's marks over a pitch show for roll call and ${ROLL_CALL_LEAD} minutes before`);
   // A fire drill (P17) musters everyone at roll call outside the routine: the marks show for it too.
   const sim = new Sim(STALAG_FLUCHT, 5);
@@ -140,10 +152,18 @@ const ALL = [...PRISONS, TRAINING];
   };
   check(plan.event === 'drill', 'pitch: the forced drill day');
   const during = put(plan.at + 1);
-  check(drillOn(sim) && !rollCallSoon(sim.state.routine, during) && rollCallShows(sim, during), `pitch: the marks show for the drill at ${during} (out of the routine's roll call)`);
+  check(
+    drillOn(sim) && !rollCallSoon(sim.state.routine, during) && rollCallShows(sim, during),
+    `pitch: the marks show for the drill at ${during} (out of the routine's roll call)`,
+  );
   const after = put(plan.until + 5);
-  check(!drillOn(sim) && rollCallShows(sim, after) === rollCallSoon(sim.state.routine, after), 'pitch: the drill over, the routine decides again');
-  console.log(`pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${STALAG_FLUCHT.id}`);
+  check(
+    !drillOn(sim) && rollCallShows(sim, after) === rollCallSoon(sim.state.routine, after),
+    'pitch: the drill over, the routine decides again',
+  );
+  console.log(
+    `pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${STALAG_FLUCHT.id}`,
+  );
 }
 
 // ------------------------------------------------------------------ a 2.5.0 replay's pitch
@@ -153,9 +173,14 @@ const ALL = [...PRISONS, TRAINING];
   const was = def.leisure!.pitchWas!;
   const old = new Sim(def, 3);
   old.rules250 = true;
-  check(pitchOf(old) === was && pitchOf(new Sim(def, 3)) === def.leisure!.pitch, 'replay pitch: a 2.5.0 replay plays on the old pitch, a game on the new');
+  check(
+    pitchOf(old) === was && pitchOf(new Sim(def, 3)) === def.leisure!.pitch,
+    'replay pitch: a 2.5.0 replay plays on the old pitch, a game on the new',
+  );
   const crossed = rollCallOverPitch(def, was);
   const spots = spotsOnPitch(def.leisure!.hoop!, was).filter(Boolean).length;
   check(crossed && !rollCallOverPitch(def), 'replay pitch: the roll call goes on its own layer over the old pitch, baked beside the new');
-  console.log(`replay pitch: ${def.id} 2.5.0 replays on ${was.x},${was.z} ${was.w}×${was.d}: roll call ${crossed ? 'on its own layer' : 'baked'}, hoop spots on it ${spots}`);
+  console.log(
+    `replay pitch: ${def.id} 2.5.0 replays on ${was.x},${was.z} ${was.w}×${was.d}: roll call ${crossed ? 'on its own layer' : 'baked'}, hoop spots on it ${spots}`,
+  );
 }

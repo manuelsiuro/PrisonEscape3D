@@ -9,7 +9,17 @@
  * snipers; fog and rain on the guards' eyes (the cones drawn are the sight); a heatwave's sun and
  * the shower that cools it. A game saved mid-event plays on the same; an old save's today is quiet.
  */
-import { DAY_BOOKS, DAY_EVENTS, DRILL_HEAT, COMMENDATION, FEAST_ENERGY, MUSTER_MINUTES, WEATHERS, type DayEvent, type Weather } from '../src/content/days';
+import {
+  DAY_BOOKS,
+  DAY_EVENTS,
+  DRILL_HEAT,
+  COMMENDATION,
+  FEAST_ENERGY,
+  MUSTER_MINUTES,
+  WEATHERS,
+  type DayEvent,
+  type Weather,
+} from '../src/content/days';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAY } from '../src/sim/systems/inmates';
 import { PRISONS } from '../src/content/prisons';
@@ -20,7 +30,21 @@ import { canSee } from '../src/sim/ai/sight';
 import { floorOf, placesOf } from '../src/sim/ai/places';
 import { command, OP, SLOT } from '../src/sim/command';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
-import { byCanteen, dayMinute, dayPlan, eventOn, inFoodFight, muffled, planOf, prisonDay, quietCalendar, sightOf, TODAY, today, weatherNow } from '../src/sim/systems/calendar';
+import {
+  byCanteen,
+  dayMinute,
+  dayPlan,
+  eventOn,
+  inFoodFight,
+  muffled,
+  planOf,
+  prisonDay,
+  quietCalendar,
+  sightOf,
+  TODAY,
+  today,
+  weatherNow,
+} from '../src/sim/systems/calendar';
 import { maxHealth } from '../src/sim/systems/combat';
 import { GUARD } from '../src/sim/systems/guards';
 import { slot } from '../src/sim/systems/items';
@@ -64,14 +88,22 @@ const hhmm = (dayMin: number) => {
         was = plan.weather;
         days++;
         check(JSON.stringify(plan) === JSON.stringify(dayPlan(p.id, salt, d)), `${p.id} day ${d}: the same plan every time`);
-        if (plan.event !== 'none') check(plan.at >= 0 && plan.until > plan.at && plan.until <= 1440, `${p.id} day ${d}: the ${plan.event} has its times`);
-        check(plan.outages.length === (plan.weather === 'storm' && book ? plan.outages.length : 0) && (plan.weather !== 'storm' || !book || (plan.outages.length >= 2 && plan.outages.length <= 3)), `${p.id} day ${d}: a storm cuts the power 2–3 times (and only a storm)`);
-        for (let k = 1; k < plan.outages.length; k++) check(plan.outages[k] - plan.outages[k - 1] >= 50, `${p.id} day ${d}: a storm's power cuts never overlap`);
+        if (plan.event !== 'none')
+          check(plan.at >= 0 && plan.until > plan.at && plan.until <= 1440, `${p.id} day ${d}: the ${plan.event} has its times`);
+        check(
+          plan.outages.length === (plan.weather === 'storm' && book ? plan.outages.length : 0) &&
+            (plan.weather !== 'storm' || !book || (plan.outages.length >= 2 && plan.outages.length <= 3)),
+          `${p.id} day ${d}: a storm cuts the power 2–3 times (and only a storm)`,
+        );
+        for (let k = 1; k < plan.outages.length; k++)
+          check(plan.outages[k] - plan.outages[k - 1] >= 50, `${p.id} day ${d}: a storm's power cuts never overlap`);
       }
       // Each week deals the deck once.
       if (book) {
         for (let wk = 0; wk < 4; wk++) {
-          const week = Array.from({ length: book.deck.length }, (_, k) => dayPlan(p.id, salt, 2 + wk * book.deck.length + k).event).sort().join();
+          const week = Array.from({ length: book.deck.length }, (_, k) => dayPlan(p.id, salt, 2 + wk * book.deck.length + k).event)
+            .sort()
+            .join();
           if (week !== [...book.deck].sort().join()) dealt = false;
         }
       }
@@ -82,20 +114,36 @@ const hhmm = (dayMin: number) => {
       continue;
     }
     const pct = (k: number, of: number[]) => `${Math.round((100 * of[k]) / days)}%`;
-    console.log(`${p.id}: ${WEATHERS.map((w, k) => (counts[k] ? `${w} ${pct(k, counts)}` : '')).filter(Boolean).join(', ')}; kept ${Math.round((100 * kept) / days)}%; ${DAY_EVENTS.map((e, k) => (events[k] ? `${e} ${pct(k, events)}` : '')).filter(Boolean).join(', ')}`);
+    console.log(
+      `${p.id}: ${WEATHERS.map((w, k) => (counts[k] ? `${w} ${pct(k, counts)}` : ''))
+        .filter(Boolean)
+        .join(', ')}; kept ${Math.round((100 * kept) / days)}%; ${DAY_EVENTS.map((e, k) => (events[k] ? `${e} ${pct(k, events)}` : ''))
+        .filter(Boolean)
+        .join(', ')}`,
+    );
     book.climate.weights.forEach((wt, k) => check(wt > 0 || counts[k] === 0, `${p.id}: never ${WEATHERS[k]} (not its climate)`));
   }
   check(quietOne, 'day 1 is quiet and clear everywhere (the escape bots run on it)');
   check(dealt, 'every week deals each event card once');
   // Forcing: an exact day over every day; -1 keeps what's drawn.
   const salt = SALTS[0];
-  const forced = dayPlan('center-perks', salt, 3, [[0, E('feast'), W('rain')], [3, E('drill'), -1]]);
+  const forced = dayPlan('center-perks', salt, 3, [
+    [0, E('feast'), W('rain')],
+    [3, E('drill'), -1],
+  ]);
   check(forced.event === 'drill' && forced.weather === 'rain', 'a forced day: the exact day wins, -1 keeps the rest');
-  check(dayPlan('center-perks', salt, 5, quietCalendar()).event === 'none' && dayPlan('center-perks', salt, 5, quietCalendar()).weather === 'clear', 'the quiet calendar: nothing on');
+  check(
+    dayPlan('center-perks', salt, 5, quietCalendar()).event === 'none' &&
+      dayPlan('center-perks', salt, 5, quietCalendar()).weather === 'clear',
+    'the quiet calendar: nothing on',
+  );
   check(dayPlan('center-perks', salt, 1, [[1, E('movie'), W('fog')]]).event === 'movie', 'day 1 can be forced (bots, the Daily)');
   check(dayPlan('center-perks', salt, 4, [], ['fogDays']).weather === 'fog', "the Daily's fog twist (dormant until P26)");
   // The day's clock: 08:00 to 08:00.
-  check(prisonDay(0) === 1 && prisonDay(1440 * STEPS_PER_MINUTE - 1) === 1 && prisonDay(1440 * STEPS_PER_MINUTE) === 2, 'a prison day runs from 08:00 to 08:00');
+  check(
+    prisonDay(0) === 1 && prisonDay(1440 * STEPS_PER_MINUTE - 1) === 1 && prisonDay(1440 * STEPS_PER_MINUTE) === 2,
+    'a prison day runs from 08:00 to 08:00',
+  );
   check(dayMinute(16 * 60 * STEPS_PER_MINUTE) === 960 && hhmm(960) === '00:00', 'minutes into the day count from 08:00');
 }
 
@@ -104,14 +152,20 @@ const hhmm = (dayMin: number) => {
 /** A model prisoner on Center Perks, every day forced; the events seen from the start. */
 function botFor(event: DayEvent, weather: Weather = 'clear', seed = 5, prison = CENTER_PERKS) {
   const bot = new Bot(prison, seed);
-  bot.st.calendar = [[0, 0, 0], [2, E(event), W(weather)]];
+  bot.st.calendar = [
+    [0, 0, 0],
+    [2, E(event), W(weather)],
+  ];
   const seen: SimEvent[] = [];
   const until = (day: number, minute: number) => {
     const target = ((day - 1) * 1440 + minute - 8 * 60) * STEPS_PER_MINUTE;
-    bot.keepRoutine(() => {
-      seen.push(...bot.sim.events);
-      return bot.st.step >= target;
-    }, Math.max(0, target - bot.st.step) + 1);
+    bot.keepRoutine(
+      () => {
+        seen.push(...bot.sim.events);
+        return bot.st.step >= target;
+      },
+      Math.max(0, target - bot.st.step) + 1,
+    );
   };
   /** Until a minute into prison day 2 (0 is its 08:00). */
   const into = (dayMin: number) => until(2, 8 * 60 + dayMin);
@@ -161,18 +215,33 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const usual = botFor('none');
   usual.until(2, 8 * 60 + 5);
   const plain = usual.seen.find((e): e is Extract<SimEvent, { type: 'shakedown' }> => e.type === 'shakedown');
-  check(shake.length === 1 && shake[0].cells.length === 4 && !!plain && plain.cells.length < 4 && plain.cells.every((c, k) => shake[0].cells[k] === c), `an inspection morning's shakedown names 4 cells, the usual ones first (${plain?.cells.join(', ')} → ${shake[0]?.cells.join(', ')})`);
+  check(
+    shake.length === 1 &&
+      shake[0].cells.length === 4 &&
+      !!plain &&
+      plain.cells.length < 4 &&
+      plain.cells.every((c, k) => shake[0].cells[k] === c),
+    `an inspection morning's shakedown names 4 cells, the usual ones first (${plain?.cells.join(', ')} → ${shake[0]?.cells.join(', ')})`,
+  );
   const before = sightAt(sim, inside);
   until(2, 10 * 60 + 30);
   const during = [sightAt(sim, inside), sightAt(sim, open)];
-  check(before === 7 && during[0] === 8 && during[1] === 8, `the inspectors in: guards see 8 tiles (before: ${before}; indoors ${during[0]}, outdoors ${during[1]})`);
+  check(
+    before === 7 && during[0] === 8 && during[1] === 8,
+    `the inspectors in: guards see 8 tiles (before: ${before}; indoors ${during[0]}, outdoors ${during[1]})`,
+  );
   const cash = bot.st.cash;
   until(2, 16 * 60 + 1);
   const commend = seen.filter((e) => e.type === 'today' && e.phase === 'commend').length;
   const start = seen.find((e) => e.type === 'today' && e.event === 'inspection' && e.phase === 'start');
-  console.log(`inspection ${hhmm(plan().at)}–${hhmm(plan().until)}: shakedown ${shake[0].cells.join(', ')}; sight 7 → ${during[0]}; the model prisoner commended: +$${bot.st.cash - cash}`);
-  check(!!start && commend === 1 && bot.st.cash - cash === COMMENDATION && (bot.st.eventFlags & TODAY.COMMENDED) !== 0, 'a clean inspection day: a commendation, $25');
-  check(bot.st.feats[FEAT.commended] === 1, 'the ledger counts the commendation (Teacher\'s Pet)');
+  console.log(
+    `inspection ${hhmm(plan().at)}–${hhmm(plan().until)}: shakedown ${shake[0].cells.join(', ')}; sight 7 → ${during[0]}; the model prisoner commended: +$${bot.st.cash - cash}`,
+  );
+  check(
+    !!start && commend === 1 && bot.st.cash - cash === COMMENDATION && (bot.st.eventFlags & TODAY.COMMENDED) !== 0,
+    'a clean inspection day: a commendation, $25',
+  );
+  check(bot.st.feats[FEAT.commended] === 1, "the ledger counts the commendation (Teacher's Pet)");
   check(sightAt(sim, inside) === 7, 'the inspectors gone: 7 tiles again');
   // Contraband in sight during an inspection: twice the heat. A guard looking straight at the player.
   const b2 = botFor('inspection');
@@ -187,7 +256,12 @@ function resumesSame(bot: Bot, steps: number): boolean {
     st.items.hand = 0;
     st.items.rev++;
     let best = 0;
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [dx, dz] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
       const t = (gz + dz) * MAP_W + gx + dx;
       if (TILE_INFO[b.sim.world.ground.kind[t]].solid) continue;
       st.heat = 0;
@@ -219,13 +293,18 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const sim = bot.sim;
   check(sim.dutyZones.includes('rollCall'), 'the drill: roll call is where to be');
   until(2, (at + 8 * 60 + MUSTER_MINUTES) % 1440);
-  const atRollCall = () => sim.state.inmates.filter((m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'rollCall').length;
+  const atRollCall = () =>
+    sim.state.inmates.filter((m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'rollCall').length;
   const out = atRollCall();
   // (Those still on their way: from the far end of the sports ground or the garden, P31.)
-  const coming = sim.state.inmates.filter((m) => m.goal >= 0 && sim.world.zoneAt(m.goal % MAP_W, Math.floor(m.goal / MAP_W)) === 'rollCall').length;
+  const coming = sim.state.inmates.filter(
+    (m) => m.goal >= 0 && sim.world.zoneAt(m.goal % MAP_W, Math.floor(m.goal / MAP_W)) === 'rollCall',
+  ).length;
   until(2, (at + 8 * 60 + MUSTER_MINUTES + 1) % 1440);
   const mustered = seen.some((e) => e.type === 'today' && e.phase === 'muster');
-  console.log(`fire drill at ${hhmm(at)}: ${out}/${sim.state.inmates.length} inmates out at roll call as the muster closes, ${coming} on their way; the model prisoner mustered ${mustered ? 'in time' : 'late'}, heat ${bot.st.heat}%`);
+  console.log(
+    `fire drill at ${hhmm(at)}: ${out}/${sim.state.inmates.length} inmates out at roll call as the muster closes, ${coming} on their way; the model prisoner mustered ${mustered ? 'in time' : 'late'}, heat ${bot.st.heat}%`,
+  );
   check(coming === sim.state.inmates.length, 'the drill empties the buildings: everyone out at roll call or on the way there');
   check(mustered && !seen.some((e) => e.type === 'today' && e.phase === 'missed') && bot.st.heat === 0, 'mustered in time: no heat');
   check(bot.st.feats[FEAT.mustered] === 1, 'the ledger counts the muster (Present and Correct)');
@@ -234,7 +313,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   // (From the garden's far end, a couple may still be on the way: in 4 seeds of 24 before 2.26, 6 of 24 after, 2 at most.)
   check(atRollCall() >= sim.state.inmates.length - 2, 'everyone out at roll call by the end, or nearly');
   until(2, (at + 8 * 60 + 21) % 1440);
-  check(seen.some((e) => e.type === 'today' && e.event === 'drill' && e.phase === 'end') && !sim.dutyZones.includes('rollCall'), 'the drill over: back to the routine');
+  check(
+    seen.some((e) => e.type === 'today' && e.event === 'drill' && e.phase === 'end') && !sim.dutyZones.includes('rollCall'),
+    'the drill over: back to the routine',
+  );
   // Staying put in the cell: +40 heat when the muster closes.
   const b2 = botFor('drill', 'clear', 6);
   b2.until(2, (at + 8 * 60 - 1) % 1440);
@@ -243,7 +325,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
     b2.bot.step(0);
     b2.seen.push(...b2.bot.sim.events);
   }
-  check(b2.seen.some((e) => e.type === 'today' && e.phase === 'missed') && b2.bot.st.heat - h0 >= DRILL_HEAT - 1, `missing the drill: +${b2.bot.st.heat - h0}% heat`);
+  check(
+    b2.seen.some((e) => e.type === 'today' && e.phase === 'missed') && b2.bot.st.heat - h0 >= DRILL_HEAT - 1,
+    `missing the drill: +${b2.bot.st.heat - h0}% heat`,
+  );
   check(b2.bot.st.feats[FEAT.drillsMissed] === 1, 'the ledger counts the drill missed (Drill Dodger)');
   // Saved mid-drill: plays on the same.
   const b3 = botFor('drill', 'clear', 6);
@@ -267,8 +352,14 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const e0 = bot.st.energy;
   bot.until(() => bot.st.eaten >= MEAL_STEPS, MEAL_STEPS + 2);
   const meal = bot.st.energy - e0;
-  check(seen.some((e) => e.type === 'today' && e.event === 'feast' && e.phase === 'start'), 'the feast starts with dinner');
-  check(meal >= FEAST_ENERGY && bot.st.health === maxHealth(bot.st.str) && (bot.st.eventFlags & TODAY.FEASTED) !== 0, `a feast's tray: +${meal} energy, health full`);
+  check(
+    seen.some((e) => e.type === 'today' && e.event === 'feast' && e.phase === 'start'),
+    'the feast starts with dinner',
+  );
+  check(
+    meal >= FEAST_ENERGY && bot.st.health === maxHealth(bot.st.str) && (bot.st.eventFlags & TODAY.FEASTED) !== 0,
+    `a feast's tray: +${meal} energy, health full`,
+  );
   console.log(`feast: the tray +${meal} energy, health ${bot.st.health}`);
   check(bot.st.feats[FEAT.feasts] === 1, 'the ledger counts the feast (Seconds, Please)');
 }
@@ -279,7 +370,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   until(2, 13 * 60 + 46);
   const power = seen.filter((e): e is Extract<SimEvent, { type: 'power' }> => e.type === 'power');
   const off = power.find((e) => !e.on);
-  check(!!off && off.by === 'maintenance' && power.some((e) => e.on), `the service: the power off at 13:00 and back by 13:45 (${power.map((e) => `${e.on ? 'on' : 'off'} by ${e.by}`).join(', ')})`);
+  check(
+    !!off && off.by === 'maintenance' && power.some((e) => e.on),
+    `the service: the power off at 13:00 and back by 13:45 (${power.map((e) => `${e.on ? 'on' : 'off'} by ${e.by}`).join(', ')})`,
+  );
 }
 
 // ------------------------------------------------------------------ movie night
@@ -287,11 +381,15 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const { bot, seen, until } = botFor('movie');
   until(2, 19 * 60 + 40);
   const sim = bot.sim;
-  const inCanteen = sim.state.inmates.filter((m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'canteen').length;
+  const inCanteen = sim.state.inmates.filter(
+    (m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'canteen',
+  ).length;
   const { open, inside } = tiles(sim);
   const muffle = muffled(sim, LAYER.GROUND, inside, 6);
   const yard = muffled(sim, LAYER.GROUND, open, 6);
-  console.log(`movie night: ${inCanteen}/${sim.state.inmates.length} inmates in the canteen; a chip in there carries ${muffle} tiles (6 elsewhere: ${yard})`);
+  console.log(
+    `movie night: ${inCanteen}/${sim.state.inmates.length} inmates in the canteen; a chip in there carries ${muffle} tiles (6 elsewhere: ${yard})`,
+  );
   check(eventOn(sim, 'movie') && seen.some((e) => e.type === 'today' && e.event === 'movie'), 'movie night is on');
   check(inCanteen >= Math.ceil(sim.state.inmates.length * 0.6), 'movie night: most inmates in the canteen');
   check(muffle < 6 && yard === 6, "the film's soundtrack drowns a noise in the canteen");
@@ -305,14 +403,20 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const sim = bot.sim;
   const mid = floorOf(sim.world, ['canteen']);
   const drawn = sim.state.guards.filter((g) => g.mode === GUARD.INVESTIGATE && mid.includes(g.target)).length;
-  check(seen.some((e) => e.type === 'today' && e.event === 'foodFight' && e.phase === 'start') && drawn >= 2, `the food fight at ${hhmm(at)}: ${drawn} guards drawn into the canteen`);
+  check(
+    seen.some((e) => e.type === 'today' && e.event === 'foodFight' && e.phase === 'start') && drawn >= 2,
+    `the food fight at ${hhmm(at)}: ${drawn} guards drawn into the canteen`,
+  );
   // A blow at an inmate in the canteen, right in front of a guard drawn in: no heat.
   const st = bot.st;
   const inCanteen = (b: { x: number; z: number }) => sim.world.zoneAt(Math.floor(b.x / UNIT), Math.floor(b.z / UNIT)) === 'canteen';
   bot.until(() => st.guards.some((g) => g.mode === GUARD.INVESTIGATE && inCanteen(g.body) && !g.path.length), 900);
   const b0 = st.feats[FEAT.blows];
   const g = st.guards.find((x) => x.mode === GUARD.INVESTIGATE && inCanteen(x.body) && !x.path.length);
-  const free = (t: number) => !TILE_INFO[sim.world.ground.kind[t]].solid && !sim.world.propSolid[t] && sim.world.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'canteen';
+  const free = (t: number) =>
+    !TILE_INFO[sim.world.ground.kind[t]].solid &&
+    !sim.world.propSolid[t] &&
+    sim.world.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'canteen';
   let heat = -1;
   let watched = 0;
   const m = st.inmates.find((x) => inCanteen(x.body) && x.ko === 0);
@@ -337,10 +441,13 @@ function resumesSame(bot: Bot, steps: number): boolean {
       heat = st.heat - h0;
     }
   }
-  console.log(`food fight: ${watched ? 'a blow at an inmate under a guard\'s eyes' : 'no blow seen'}, heat +${heat}`);
+  console.log(`food fight: ${watched ? "a blow at an inmate under a guard's eyes" : 'no blow seen'}, heat +${heat}`);
   check(watched > 0, 'a guard saw the blow');
   check(heat === 0, 'blows at inmates in a food fight cost no heat');
-  check(st.feats[FEAT.foodBlows] >= 1 && st.feats[FEAT.foodBlows] === st.feats[FEAT.blows] - b0, `the ledger counts blows in a food fight (${st.feats[FEAT.foodBlows]})`);
+  check(
+    st.feats[FEAT.foodBlows] >= 1 && st.feats[FEAT.foodBlows] === st.feats[FEAT.blows] - b0,
+    `the ledger counts blows in a food fight (${st.feats[FEAT.foodBlows]})`,
+  );
 }
 
 // ------------------------------------------------------------------ weather: fog, rain, storm
@@ -355,7 +462,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   until(2, 20 * 60);
   const evening = sightAt(sim, open);
   console.log(`fog: outdoors ${morning[0]} tiles at 08:30, ${noon[0]} at 13:00, ${evening} at 20:00; indoors ${morning[1]}`);
-  check(morning[0] === 4 && morning[1] === 7 && evening === 4 && noon[0] === 7, 'fog: guards out in it see 4 tiles while it lies thick (morning, night); indoors 7');
+  check(
+    morning[0] === 4 && morning[1] === 7 && evening === 4 && noon[0] === 7,
+    'fog: guards out in it see 4 tiles while it lies thick (morning, night); indoors 7',
+  );
   check(morning[2] === 0 && noon[1] === 1, "fog: the snipers can't see through it (they're back once it lifts)");
   check(weatherNow(sim) === 'fog', 'the weather now: fog');
   // The cones drawn are the sight.
@@ -366,7 +476,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const s = botFor('none', 'storm', 8);
   s.until(2, 12 * 60);
   const storm = [sightAt(s.bot.sim, open), muffled(s.bot.sim, LAYER.GROUND, open, 10), snipersOnDuty(s.bot.sim) ? 1 : 0];
-  check(storm[0] === 5 && storm[1] === 4 && storm[2] === 0, `a storm: 5 tiles of sight out in it, noise 40%, the snipers stand down (${storm.join(', ')})`);
+  check(
+    storm[0] === 5 && storm[1] === 4 && storm[2] === 0,
+    `a storm: 5 tiles of sight out in it, noise 40%, the snipers stand down (${storm.join(', ')})`,
+  );
   const cuts = s.plan().outages;
   s.until(3, 7 * 60 + 59);
   const offs = s.seen.filter((e) => e.type === 'power' && !e.on && e.by === 'storm').length;
@@ -376,7 +489,11 @@ function resumesSame(bot: Bot, steps: number): boolean {
   // A storm at Irongate cuts both halves (both generators).
   const ig = botFor('none', 'storm', 4, IRONGATE);
   ig.into(ig.plan().outages[0] + 1);
-  const halves = ig.seen.filter((e) => e.type === 'power' && !e.on && e.by === 'storm').map((e) => (e as { gen?: number }).gen).sort().join();
+  const halves = ig.seen
+    .filter((e) => e.type === 'power' && !e.on && e.by === 'storm')
+    .map((e) => (e as { gen?: number }).gen)
+    .sort()
+    .join();
   check(halves === '0,1', `Irongate: a storm's power cut takes both generators (${halves})`);
   // The sight in fog is the rule: an outdoor guard really sees the player 3 tiles ahead and not 5 (the cone is drawn sightOf long).
   const fog = botFor('none', 'fog');
@@ -416,7 +533,9 @@ function resumesSame(bot: Bot, steps: number): boolean {
   check(bot.st.feats[FEAT.baked] === 1, 'the ledger counts it (Sunstroke)');
   until(2, 16 * 60 + 5);
   // (A head nobody's under.)
-  const head = placesOf(sim.world).showers.find((h) => !sim.state.inmates.some((m) => tileAt(m.body.x, m.body.z) === h.tile)) ?? placesOf(sim.world).showers[0];
+  const head =
+    placesOf(sim.world).showers.find((h) => !sim.state.inmates.some((m) => tileAt(m.body.x, m.body.z) === h.tile)) ??
+    placesOf(sim.world).showers[0];
   put(sim, head.tile);
   bot.act();
   for (let k = 0; k < 5; k++) bot.step(0);
@@ -438,7 +557,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   delete (snap.state as Partial<typeof snap.state>).eventFlags;
   const old = new Sim(CENTER_PERKS, 1);
   old.restore(snap);
-  check(old.state.calendar.length === 1 && old.state.calendar[0][0] === 2 && today(old).event === 'none' && today(old).weather === 'clear', "an old save's today is quiet");
+  check(
+    old.state.calendar.length === 1 && old.state.calendar[0][0] === 2 && today(old).event === 'none' && today(old).weather === 'clear',
+    "an old save's today is quiet",
+  );
   check(planOf(old, 3).event === planOf(sim, 3).event, 'and tomorrow is as drawn');
   // Every event saved and loaded mid-way plays on the same.
   for (const ev of ['inspection', 'maintenance', 'movie', 'foodFight'] as const) {
@@ -452,16 +574,32 @@ function resumesSame(bot: Bot, steps: number): boolean {
   check(resumesSame(night.bot, 50 * STEPS_PER_MINUTE), "saved and loaded in a storm's power cut: the same game");
 }
 
-
 // ------------------------------------------------------------------ the day's achievements
 {
   const run = { prison: 'center-perks', feats: new Array(60).fill(0), days: [], str: 40, spd: 40, int: 40 };
-  const esc = (weather?: string) => ACHIEVEMENTS.filter((a) => a.escape?.({ ...run, via: 'fence', day: 4, medal: null, weather })).map((a) => a.id);
-  check(esc('storm').includes('stormRunner') && !esc('clear').includes('stormRunner') && !esc().includes('stormRunner'), 'Storm Runner: an escape in a storm (never from the records, which keep no weather)');
+  const esc = (weather?: string) =>
+    ACHIEVEMENTS.filter((a) => a.escape?.({ ...run, via: 'fence', day: 4, medal: null, weather })).map((a) => a.id);
+  check(
+    esc('storm').includes('stormRunner') && !esc('clear').includes('stormRunner') && !esc().includes('stormRunner'),
+    'Storm Runner: an escape in a storm (never from the records, which keep no weather)',
+  );
   check(esc('fog').includes('peaSouper') && !esc('rain').includes('peaSouper'), 'Pea Souper: an escape while the fog lies thick');
-  const earns = (feat: string, n: number) => ACHIEVEMENTS.filter((a) => a.run?.({ ...run, feats: run.feats.map((_, k) => (k === FEAT[feat as keyof typeof FEAT] ? n : 0)) })).map((a) => a.id);
-  check(earns('foodBlows', 2).every((id) => id !== 'foodFighter') && earns('foodBlows', 3).includes('foodFighter'), 'Food Fighter: three blows in a food fight');
-  check(earns('commended', 1).includes('teachersPet') && earns('mustered', 1).includes('present') && earns('feasts', 1).includes('seconds') && earns('baked', 1).includes('sunstroke') && earns('drillsMissed', 1).includes('drillDodger'), 'the day\'s other achievements, each from its counter');
+  const earns = (feat: string, n: number) =>
+    ACHIEVEMENTS.filter((a) => a.run?.({ ...run, feats: run.feats.map((_, k) => (k === FEAT[feat as keyof typeof FEAT] ? n : 0)) })).map(
+      (a) => a.id,
+    );
+  check(
+    earns('foodBlows', 2).every((id) => id !== 'foodFighter') && earns('foodBlows', 3).includes('foodFighter'),
+    'Food Fighter: three blows in a food fight',
+  );
+  check(
+    earns('commended', 1).includes('teachersPet') &&
+      earns('mustered', 1).includes('present') &&
+      earns('feasts', 1).includes('seconds') &&
+      earns('baked', 1).includes('sunstroke') &&
+      earns('drillsMissed', 1).includes('drillDodger'),
+    "the day's other achievements, each from its counter",
+  );
 }
 
 // ------------------------------------------------------------------ the review's edge cases
@@ -478,18 +616,27 @@ function resumesSame(bot: Bot, steps: number): boolean {
   idle(before, 60);
   before.until(2, 16 * 60 + 1);
   const missedBefore = before.seen.some((e) => e.type === 'missed');
-  check(missedBefore && before.seen.some((e) => e.type === 'today' && e.phase === 'commend'), 'breakfast missed before the inspection: still commended');
+  check(
+    missedBefore && before.seen.some((e) => e.type === 'today' && e.phase === 'commend'),
+    'breakfast missed before the inspection: still commended',
+  );
   const during = botFor('inspection');
   during.until(2, 15 * 60 + 1);
   idle(during, 60);
   during.until(2, 16 * 60 + 2);
-  check(during.seen.some((e) => e.type === 'missed') && !during.seen.some((e) => e.type === 'today' && e.phase === 'commend'), 'exercise missed while the inspectors are in: no commendation');
+  check(
+    during.seen.some((e) => e.type === 'missed') && !during.seen.some((e) => e.type === 'today' && e.phase === 'commend'),
+    'exercise missed while the inspectors are in: no commendation',
+  );
   // Irongate, GEN-1 already off: the storm still cuts GEN-2.
   const ig = botFor('none', 'storm', 4, IRONGATE);
   ig.into(ig.plan().outages[0] - 1);
   ig.bot.st.powerOff = 400;
   ig.into(ig.plan().outages[0] + 1);
-  check(ig.seen.some((e) => e.type === 'power' && !e.on && e.by === 'storm' && e.gen === 1), 'Irongate: GEN-1 already off, the storm cuts GEN-2');
+  check(
+    ig.seen.some((e) => e.type === 'power' && !e.on && e.by === 'storm' && e.gen === 1),
+    'Irongate: GEN-1 already off, the storm cuts GEN-2',
+  );
   // Out cold for part of the drill's muster: excused, even back on one's feet before it closes.
   const ko = botFor('drill', 'clear', 6);
   const at = ko.plan().at;
@@ -497,7 +644,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   ko.bot.st.ko = 3 * STEPS_PER_MINUTE;
   const h0 = ko.bot.st.heat;
   idle(ko, MUSTER_MINUTES);
-  check(!ko.seen.some((e) => e.type === 'today' && e.phase === 'missed') && ko.bot.st.heat <= h0, 'out cold during the muster: no heat for missing the drill');
+  check(
+    !ko.seen.some((e) => e.type === 'today' && e.phase === 'missed') && ko.bot.st.heat <= h0,
+    'out cold during the muster: no heat for missing the drill',
+  );
 }
 
 // ------------------------------------------------------------------ the second review's edge cases
@@ -510,7 +660,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
     b.bot.step(0);
     b.seen.push(...b.bot.sim.events);
   }
-  check(b.seen.some((e) => e.type === 'today' && e.phase === 'commend'), 'out cold at 16:00 after a clean inspection: still commended');
+  check(
+    b.seen.some((e) => e.type === 'today' && e.phase === 'commend'),
+    'out cold at 16:00 after a clean inspection: still commended',
+  );
   // Out cold at roll call as the bell rings: not mustered (and excused).
   const d = botFor('drill', 'clear', 6);
   const at = d.plan().at;
@@ -521,7 +674,11 @@ function resumesSame(bot: Bot, steps: number): boolean {
     d.bot.step(0);
     d.seen.push(...d.bot.sim.events);
   }
-  check(!d.seen.some((e) => e.type === 'today' && (e.phase === 'muster' || e.phase === 'missed')) && (d.bot.st.eventFlags & TODAY.EXCUSED) !== 0, 'out cold at roll call when the bell rings: excused, not mustered');
+  check(
+    !d.seen.some((e) => e.type === 'today' && (e.phase === 'muster' || e.phase === 'missed')) &&
+      (d.bot.st.eventFlags & TODAY.EXCUSED) !== 0,
+    'out cold at roll call when the bell rings: excused, not mustered',
+  );
   // Tools at work in the canteen between food-fight blows: still tampering.
   const f = botFor('foodFight', 'clear', 7);
   f.until(2, (f.plan().at + 8 * 60 + 2) % 1440);
@@ -533,7 +690,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
   put(f.bot.sim, Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT));
   const h0 = st.heat;
   f.bot.step(0);
-  check(g.sees && (st.heat - h0 >= 100 || st.lockdown), `a scuffle never hides tools at work from a guard who sees them (+${st.heat - h0})`);
+  check(
+    g.sees && (st.heat - h0 >= 100 || st.lockdown),
+    `a scuffle never hides tools at work from a guard who sees them (+${st.heat - h0})`,
+  );
 }
 
 // ------------------------------------------------------------------ the third review's edge cases
@@ -555,7 +715,10 @@ function resumesSame(bot: Bot, steps: number): boolean {
     if (outside && yardWall < 0 && x > 2 && z > 2) yardWall = i;
     if (inside && innerWall < 0) innerWall = i;
   }
-  check(muffled(sim, LAYER.GROUND, yardWall, 6) === 3 && muffled(sim, LAYER.GROUND, innerWall, 6) === 6, `rain: a wall chipped from the yard carries 3 tiles, one indoors 6 (${muffled(sim, LAYER.GROUND, yardWall, 6)}, ${muffled(sim, LAYER.GROUND, innerWall, 6)})`);
+  check(
+    muffled(sim, LAYER.GROUND, yardWall, 6) === 3 && muffled(sim, LAYER.GROUND, innerWall, 6) === 6,
+    `rain: a wall chipped from the yard carries 3 tiles, one indoors 6 (${muffled(sim, LAYER.GROUND, yardWall, 6)}, ${muffled(sim, LAYER.GROUND, innerWall, 6)})`,
+  );
   // The canteen's edge (its doorways, the corridor tile it opens onto) is part of a food fight.
   const f = botFor('foodFight', 'clear', 7);
   const fw = f.bot.sim.world;
@@ -567,5 +730,8 @@ function resumesSame(bot: Bot, steps: number): boolean {
   }
   f.until(2, (f.plan().at + 8 * 60 + 2) % 1440);
   put(f.bot.sim, edge);
-  check(edge >= 0 && f.bot.sim.world.zoneAt(edge % MAP_W, Math.floor(edge / MAP_W)) !== 'canteen' && inFoodFight(f.bot.sim), 'standing at the canteen\'s edge, the player is in the food fight');
+  check(
+    edge >= 0 && f.bot.sim.world.zoneAt(edge % MAP_W, Math.floor(edge / MAP_W)) !== 'canteen' && inFoodFight(f.bot.sim),
+    "standing at the canteen's edge, the player is in the food fight",
+  );
 }

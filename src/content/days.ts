@@ -7,7 +7,20 @@
  */
 
 /** The day's event. Stored as numbers: append only, never renumber. */
-export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight', 'delivery', 'visiting', 'sports', 'talent', 'quiz'] as const;
+export const DAY_EVENTS = [
+  'none',
+  'inspection',
+  'drill',
+  'feast',
+  'maintenance',
+  'movie',
+  'foodFight',
+  'delivery',
+  'visiting',
+  'sports',
+  'talent',
+  'quiz',
+] as const;
 export type DayEvent = (typeof DAY_EVENTS)[number];
 
 /** The weather. Stored as numbers: append only. In the snow (Stalag Flucht) the storm is a blizzard. */
@@ -104,7 +117,13 @@ export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | Reado
   // 10:00–16:00.
   inspection: { at: 120, length: 360 },
   // Morning free time (10:15–11:15) or the evening's (19:00–21:00): 20 minutes out in the yard.
-  drill: { at: [[135, 195], [660, 780]], length: 20 },
+  drill: {
+    at: [
+      [135, 195],
+      [660, 780],
+    ],
+    length: 20,
+  },
   // Dinner, 17:00–18:00.
   feast: { at: 540, length: 60 },
   // 13:00–13:45: the generator off for its service.
@@ -112,7 +131,13 @@ export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | Reado
   // 19:00–21:30, in the canteen.
   movie: { at: 660, length: 150 },
   // 15 minutes of a meal: breakfast (09:05–09:40) or dinner (17:05–17:40).
-  foodFight: { at: [[65, 100], [545, 580]], length: 15 },
+  foodFight: {
+    at: [
+      [65, 100],
+      [545, 580],
+    ],
+    length: 15,
+  },
   // 12:30–14:31: the vehicle in (its search at 14:30, away at 14:31).
   delivery: { at: 270, length: 121 },
   // 10:00–12:00: visiting hours (P21).

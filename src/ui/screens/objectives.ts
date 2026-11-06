@@ -23,7 +23,10 @@ export function showObjectives(o: Objectives, click: () => void): Promise<void> 
   const step = (s: { text: Key; touch?: Key }) => t(TOUCH && s.touch ? s.touch : s.text);
   const rows = o.steps
     .slice(0, o.done + 1)
-    .map((s, k) => `<li class="${k < o.done ? 'done' : 'now'}"><span class="obj-ic">${icon(k < o.done ? 'check' : 'bulb', k < o.done ? 14 : 16)}</span><span>${step(s)}</span></li>`)
+    .map(
+      (s, k) =>
+        `<li class="${k < o.done ? 'done' : 'now'}"><span class="obj-ic">${icon(k < o.done ? 'check' : 'bulb', k < o.done ? 14 : 16)}</span><span>${step(s)}</span></li>`,
+    )
     .join('');
   const left = o.steps.length - o.done - 1;
   const el = h(

@@ -1,10 +1,40 @@
 import { buzz } from '../app/haptics';
-import { APPEAL_HEAT, CALL_STEPS, CALLEE, COINS, codeBit, HOME_ENERGY, JOB, JOB_FEES, JOBS, LAWYER_FEES, LINE_STEPS, LINES, RETAINER_DAYS, TAP_HEAT, TIER, TIERS, TURN_STEPS } from '../content/phone';
+import {
+  APPEAL_HEAT,
+  CALL_STEPS,
+  CALLEE,
+  COINS,
+  codeBit,
+  HOME_ENERGY,
+  JOB,
+  JOB_FEES,
+  JOBS,
+  LAWYER_FEES,
+  LINE_STEPS,
+  LINES,
+  RETAINER_DAYS,
+  TAP_HEAT,
+  TIER,
+  TIERS,
+  TURN_STEPS,
+} from '../content/phone';
 import { t, type Key } from '../i18n';
 import { HEARING_AFTER, LAWYER_SOONER } from '../content/parole';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { traitOf } from '../sim/systems/guards';
-import { atPhone, byPhone, callRefusal, commsOf, mailWaiting, nextMoneyDay, phoneBusy, phoneOpen, phrasesOf, placeInLine, PLAYER_IN_LINE } from '../sim/systems/phone';
+import {
+  atPhone,
+  byPhone,
+  callRefusal,
+  commsOf,
+  mailWaiting,
+  nextMoneyDay,
+  phoneBusy,
+  phoneOpen,
+  phrasesOf,
+  placeInLine,
+  PLAYER_IN_LINE,
+} from '../sim/systems/phone';
 import { smugglingOf } from '../sim/systems/smuggling';
 import type { DialRow, PayphoneView } from '../ui/payphone';
 import { DIAL_B } from '../ui/payphone';
@@ -30,7 +60,31 @@ export function resetPayphone() {
   result = null;
 }
 
-const view0: PayphoneView = { phase: 'dial', cash: 0, on: '', walking: false, waiting: [], place: -1, turnLeft: -1, canJoin: false, canCut: false, rows: [], mail: '', calling: '', progress: 0, line: 0, ear: '', phrases: [], known: [], result: '', good: true, secs: 0, closed: '', hint: '', second: '' };
+const view0: PayphoneView = {
+  phase: 'dial',
+  cash: 0,
+  on: '',
+  walking: false,
+  waiting: [],
+  place: -1,
+  turnLeft: -1,
+  canJoin: false,
+  canCut: false,
+  rows: [],
+  mail: '',
+  calling: '',
+  progress: 0,
+  line: 0,
+  ear: '',
+  phrases: [],
+  known: [],
+  result: '',
+  good: true,
+  secs: 0,
+  closed: '',
+  hint: '',
+  second: '',
+};
 /** The view as it starts each frame (nothing left over from the last: a turn's note under a call). */
 const blank: PayphoneView = { ...view0, waiting: [], rows: [], phrases: [], known: [] };
 
@@ -55,9 +109,15 @@ export function payphoneNow(sim: Sim): PayphoneView | null {
       v.line = Math.min(2, call.at);
       const ear = call.ear >= 0 ? sim.prison.guards[call.ear] : null;
       const name = ear ? t('guard.title', { name: ear.name ?? '' }) : '';
-      v.ear = !ear ? t('phone.earNone') : talk.knows(`trait:${call.ear}`) ? t('phone.earTrait', { name, trait: t(`trait.${traitOf(ear)}` as Key) }) : t('phone.ear', { name });
+      v.ear = !ear
+        ? t('phone.earNone')
+        : talk.knows(`trait:${call.ear}`)
+          ? t('phone.earTrait', { name, trait: t(`trait.${traitOf(ear)}` as Key) })
+          : t('phone.ear', { name });
       const ph = phrasesOf(s, call, v.line);
-      v.phrases = ph.map(([tier, k]) => t(`lou.${JOBS[call.sub]}.${LINES[v.line]}.${TIERS[tier]}.${k}` as Key, { hour: hourText(call.arg) }));
+      v.phrases = ph.map(([tier, k]) =>
+        t(`lou.${JOBS[call.sub]}.${LINES[v.line]}.${TIERS[tier]}.${k}` as Key, { hour: hourText(call.arg) }),
+      );
       v.known = ph.map(([tier, k]) => tier === TIER.DEEP && (s.lou[0] & codeBit(call.sub, v.line, k)) !== 0);
       v.progress = Math.max(0, (call.ends - s.step) / LINE_STEPS);
       v.secs = Math.max(0, call.ends - s.step) / 20;
@@ -219,7 +279,11 @@ export function announcePhone(sim: Sim, e: Extract<SimEvent, { type: 'phone' }>)
     case 'ignored':
       sound.carAlarm();
       if (e.tile !== undefined) view.phoneAlarm(e.tile);
-      return banner.toast(t(e.what === 'diversion' ? 'toast.phone.diversion' : 'toast.phone.ignored'), e.what === 'diversion' ? 'good' : 'bad', 3600);
+      return banner.toast(
+        t(e.what === 'diversion' ? 'toast.phone.diversion' : 'toast.phone.ignored'),
+        e.what === 'diversion' ? 'good' : 'bad',
+        3600,
+      );
     case 'cake':
       sound.pickup();
       return banner.toast(t(smugglingOf(sim)?.parcel ? 'toast.phone.cakeDesk' : 'toast.phone.cake'), 'good', 3600);

@@ -160,7 +160,10 @@ export class VendCard {
     if (acts !== this.actionsDrawn) {
       this.actionsDrawn = acts;
       const parts: string[] = [];
-      if (v.jam >= 0 && v.ahead === 0) parts.push(`<button class="big-btn primary vend-thump" data-ask="${VEND.THUMP}">${icon('fist', 18)}<span>${esc(t('vend.thump'))}</span></button>`);
+      if (v.jam >= 0 && v.ahead === 0)
+        parts.push(
+          `<button class="big-btn primary vend-thump" data-ask="${VEND.THUMP}">${icon('fist', 18)}<span>${esc(t('vend.thump'))}</span></button>`,
+        );
       else if (v.ahead > 0) {
         if (!v.inLine) parts.push(`<button class="big-btn ghost" data-ask="${VEND.WAIT}">${esc(t('vend.wait'))}</button>`);
         if (v.canCut) parts.push(`<button class="big-btn ghost vend-cut" data-ask="${VEND.CUT}">${esc(t('vend.cut'))}</button>`);

@@ -60,7 +60,8 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   const { things, grounds, edges } = holidayTaken(w);
   // (Out on the floor: on nothing, off the pastimes' ground, clear of the doorways and openings and out of line with them, out of the one-wide passages, off the fences' wire.)
   const ways = lanesOf(w, 0);
-  const floorOk = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 1) && !ways.has(t) && !narrowAt(w, things, t) && !nearFence(w, t);
+  const floorOk = (t: number) =>
+    !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 1) && !ways.has(t) && !narrowAt(w, things, t) && !nearFence(w, t);
   const free = (t: number) => floorOk(t) && !edges.has(t);
   const canteen = canteenOf(w, things, grounds);
   const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen');
@@ -173,7 +174,12 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
  * over open floor with nothing standing on it (`blocked`: furniture, the other summer pieces) and
  * lands on the sports ground; null if none does.
  */
-function hoseAim(w: World, blocked: (t: number) => boolean, ground: ReadonlySet<number>, t: number): { dx: number; dz: number; reach: number } | null {
+function hoseAim(
+  w: World,
+  blocked: (t: number) => boolean,
+  ground: ReadonlySet<number>,
+  t: number,
+): { dx: number; dz: number; reach: number } | null {
   const x = t % MAP_W;
   const z = Math.floor(t / MAP_W);
   const edge = edgeAt(w, t);
@@ -211,7 +217,6 @@ export const LANE = 4;
 /** Parasols stand this many tiles apart at least (their canopies and deckchairs clear of each other). */
 export const PARASOL_GAP = 3;
 
-
 /**
  * The tiles a holiday's decor keeps off: `things` that stand there (furniture, the prison's own
  * floor decor: plants, bins, the water cooler, trees and bushes, the hoop's pole) and the pastimes'
@@ -225,7 +230,8 @@ function holidayTaken(w: World): { things: Set<number>; grounds: Set<number>; ed
   const grounds = new Set<number>();
   const edges = new Set<number>();
   const rect = (out: Set<number>, x: number, z: number, wd: number, d: number) => {
-    for (let zz = z; zz < z + d; zz++) for (let xx = x; xx < x + wd; xx++) if (xx >= 0 && zz >= 0 && xx < MAP_W && zz < MAP_H) out.add(zz * MAP_W + xx);
+    for (let zz = z; zz < z + d; zz++)
+      for (let xx = x; xx < x + wd; xx++) if (xx >= 0 && zz >= 0 && xx < MAP_W && zz < MAP_H) out.add(zz * MAP_W + xx);
   };
   for (const p of w.props) rect(things, p.x, p.z, p.w, p.d);
   for (const d of w.def.decor ?? []) if (!DECOR[d.kind].wall) rect(things, d.x, d.z, d.w ?? 1, d.d ?? 1);
@@ -257,10 +263,11 @@ export function courtRect(c: { x: number; z: number; face: number }): [number, n
   const [sx, sz] = [-az, ax];
   const xs: number[] = [];
   const zs: number[] = [];
-  for (const a of [-0.5, 4.5]) for (const s of [-2.5, 2.5]) {
-    xs.push(c.x + 0.5 + ax * a + sx * s);
-    zs.push(c.z + 0.5 + az * a + sz * s);
-  }
+  for (const a of [-0.5, 4.5])
+    for (const s of [-2.5, 2.5]) {
+      xs.push(c.x + 0.5 + ax * a + sx * s);
+      zs.push(c.z + 0.5 + az * a + sz * s);
+    }
   const x0 = Math.floor(Math.min(...xs) + 0.01);
   const z0 = Math.floor(Math.min(...zs) + 0.01);
   return [x0, z0, Math.ceil(Math.max(...xs) - 0.01) - x0, Math.ceil(Math.max(...zs) - 0.01) - z0];
@@ -301,7 +308,10 @@ function openingsOf(w: World): ReadonlySet<number> {
   };
   for (let z = 0; z < MAP_H; z++) {
     for (let x = 0; x < MAP_W; x++) {
-      for (const [ax, az] of [[0, 1], [1, 0]]) {
+      for (const [ax, az] of [
+        [0, 1],
+        [1, 0],
+      ]) {
         if (!through(x, z, ax, az)) continue;
         // (Along the wall's line, both ways, to the wall each side.)
         const [px, pz] = [az, ax];
@@ -332,13 +342,19 @@ function lanesOf(w: World, wide: 0 | 1 = 1): ReadonlySet<number> {
     if (k !== TILE.DOOR && k !== TILE.DETECTOR && !open.has(t)) continue;
     const x = t % MAP_W;
     const z = Math.floor(t / MAP_W);
-    for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [ax, az] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
       if (!floor(x + ax, z + az) || !floor(x - ax, z - az)) continue;
-      for (let d = 1; d <= LANE; d++) for (let j = -wide; j <= wide; j++) {
-        const xx = x + ax * d + az * j;
-        const zz = z + az * d + ax * j;
-        if (floor(xx, zz)) got.add(zz * MAP_W + xx);
-      }
+      for (let d = 1; d <= LANE; d++)
+        for (let j = -wide; j <= wide; j++) {
+          const xx = x + ax * d + az * j;
+          const zz = z + az * d + ax * j;
+          if (floor(xx, zz)) got.add(zz * MAP_W + xx);
+        }
     }
   }
   return got;
@@ -412,9 +428,14 @@ function wallAt(w: World, x: number, z: number): boolean {
  * the counter), against a wall (a corner first; never just north of one, which would hide it) or
  * else free in the room (clear of the counter's queue), no doorway or opening within two tiles.
  */
-function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<number>): { walls: HolidayPiece[]; corner: [number, number] | null } | null {
+function canteenOf(
+  w: World,
+  things: ReadonlySet<number>,
+  grounds: ReadonlySet<number>,
+): { walls: HolidayPiece[]; corner: [number, number] | null } | null {
   const tiles: number[] = [];
-  for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (w.zoneAt(x, z) === 'canteen' && !solidAt(w, x, z)) tiles.push(z * MAP_W + x);
+  for (let z = 0; z < MAP_H; z++)
+    for (let x = 0; x < MAP_W; x++) if (w.zoneAt(x, z) === 'canteen' && !solidAt(w, x, z)) tiles.push(z * MAP_W + x);
   if (!tiles.length) return null;
   // (What hangs on the north wall, the west and the east: the floor tiles in front of it.)
   const hung = new Set<number>();
@@ -430,7 +451,7 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
   }
   // (P40's cork board, on the wall its reader faces.)
   const board = w.def.board;
-  if (board) ({ 13: hung, 9: hungWest, 1: hungEast } as Record<number, Set<number>>)[board.face]?.add(board.z * MAP_W + board.x);
+  if (board) (({ 13: hung, 9: hungWest, 1: hungEast }) as Record<number, Set<number>>)[board.face]?.add(board.z * MAP_W + board.x);
   // (P39's parole board, seated in the canteen at its hearing: their heads in front of the wall a garland hangs on.)
   const hearing = HEARINGS[w.def.id];
   const heads = new Set(hearing?.zone === 'canteen' ? hearing.board.map((b) => b.z * MAP_W + b.x) : []);
@@ -481,7 +502,8 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
   for (const d of w.def.decor ?? []) {
     if (!DECOR[d.kind].wall) continue;
     const r = d.rot ?? 0;
-    for (let z = d.z; z < d.z + (d.d ?? 1); z++) for (let x = d.x; x < d.x + (d.w ?? 1); x++) (r === 0 || r === 2 ? alongRow : alongColumn).add(z * MAP_W + x);
+    for (let z = d.z; z < d.z + (d.d ?? 1); z++)
+      for (let x = d.x; x < d.x + (d.w ?? 1); x++) (r === 0 || r === 2 ? alongRow : alongColumn).add(z * MAP_W + x);
   }
   if (board) (board.face === 1 || board.face === 9 ? alongColumn : alongRow).add(board.z * MAP_W + board.x);
   const byBoard = (t: number) => [-1, 0, 1].some((k) => alongRow.has(t + k) || alongColumn.has(t + k * MAP_W));
@@ -490,7 +512,13 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
     return walls.some((g) => (g.side ? g.x === x && z >= g.z - 1 && z <= g.z1! : g.z === z && x >= g.x - 1 && x <= g.x1!));
   };
-  const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2) && !byBoard(t) && !underGarland(t) && !wallAt(w, t % MAP_W, Math.floor(t / MAP_W) + 1);
+  const bare = (t: number) =>
+    !things.has(t) &&
+    !grounds.has(t) &&
+    !nearDoor(w, t, 2) &&
+    !byBoard(t) &&
+    !underGarland(t) &&
+    !wallAt(w, t % MAP_W, Math.floor(t / MAP_W) + 1);
   // (Nothing standing on any tile round it: its boughs and presents, 0.6 or so out, never touch a table, the counter or a plant.)
   const roomy = (t: number) => [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => !things.has(t + dz * MAP_W + dx)));
   // (Out in the room: canteen floor all round, off the pastimes' ground, and out of the way of the queue at a serving counter.)
@@ -501,9 +529,17 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     for (let z = p.z - 1; z < p.z + p.d + 1; z++) for (let x = p.x - 1; x < p.x + p.w + 1; x++) queue.add(z * MAP_W + x);
   }
   const doors: number[] = [];
-  for (let t = 0; t < w.ground.kind.length; t++) if ((w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR || gaps.has(t)) && (inside.has(t) || [1, -1, MAP_W, -MAP_W].some((d) => inside.has(t + d)))) doors.push(t);
-  const fromDoors = (t: number) => Math.min(99, ...doors.map((d) => Math.abs((d % MAP_W) - (t % MAP_W)) + Math.abs(Math.floor(d / MAP_W) - Math.floor(t / MAP_W))));
-  const middle = (t: number) => !queue.has(t) && [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => inside.has(t + dz * MAP_W + dx) && !grounds.has(t + dz * MAP_W + dx)));
+  for (let t = 0; t < w.ground.kind.length; t++)
+    if (
+      (w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR || gaps.has(t)) &&
+      (inside.has(t) || [1, -1, MAP_W, -MAP_W].some((d) => inside.has(t + d)))
+    )
+      doors.push(t);
+  const fromDoors = (t: number) =>
+    Math.min(99, ...doors.map((d) => Math.abs((d % MAP_W) - (t % MAP_W)) + Math.abs(Math.floor(d / MAP_W) - Math.floor(t / MAP_W))));
+  const middle = (t: number) =>
+    !queue.has(t) &&
+    [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => inside.has(t + dz * MAP_W + dx) && !grounds.has(t + dz * MAP_W + dx)));
   // (A corner with room round it first, then anywhere along a wall; else standing free in the room, nearest the north wall.)
   const c =
     tiles.find((t) => walled(t) >= 2 && bare(t) && roomy(t)) ??

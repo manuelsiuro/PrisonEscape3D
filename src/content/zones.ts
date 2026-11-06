@@ -51,4 +51,14 @@ export type ZoneId = (typeof ZONES)[number];
 export const zoneIndex = (id: ZoneId): number => ZONES.indexOf(id);
 
 /** Staff only: seen in one without a guard outfit means instant 100% heat (GDD §5.2). */
-export const RESTRICTED: readonly ZoneId[] = ['generator', 'guardQuarters', 'controlRoom', 'vents', 'roof', 'walkway', 'minefield', 'helipad', 'dock'];
+export const RESTRICTED: readonly ZoneId[] = [
+  'generator',
+  'guardQuarters',
+  'controlRoom',
+  'vents',
+  'roof',
+  'walkway',
+  'minefield',
+  'helipad',
+  'dock',
+];

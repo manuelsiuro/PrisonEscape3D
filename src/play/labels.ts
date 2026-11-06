@@ -49,11 +49,74 @@ const BED_DUMMY = itemNumber('bed_dummy');
 
 /** Why a strike can't land, by what it needs. */
 export const NEED: Record<string, string> = {
-  rope: 'toast.noLanding', glide: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
+  rope: 'toast.noLanding',
+  glide: 'toast.noLanding',
+  chip: 'toast.needChip',
+  cut: 'toast.needCut',
+  unscrew: 'toast.needUnscrew',
+  dig: 'toast.needDig',
+  digUp: 'toast.needDig',
+  eat: 'toast.needDig',
+  pick: 'toast.pickGate',
+};
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide', 'drink', 'track', 'plant', 'water', 'harvest', 'unbook', 'carve'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider', drink: 'brew', track: 'race', plant: 'sprout', water: 'water', harvest: 'fruit', unbook: 'book', carve: 'pumpkin' };
+export const ACTION_IDS = [
+  'chip',
+  'cut',
+  'unscrew',
+  'dig',
+  'digUp',
+  'eat',
+  'cover',
+  'brace',
+  'rope',
+  'sharpen',
+  'grapnel',
+  'tape',
+  'launch',
+  'wind',
+  'wash',
+  'feed',
+  'setTrap',
+  'pick',
+  'glide',
+  'drink',
+  'track',
+  'plant',
+  'water',
+  'harvest',
+  'unbook',
+  'carve',
+];
+const TOOL_ICON: Record<string, string> = {
+  chip: 'pick',
+  dig: 'shovel',
+  digUp: 'up',
+  cut: 'cutters',
+  unscrew: 'screw',
+  eat: 'cookie',
+  cover: 'lock',
+  brace: 'hammer',
+  rope: 'down',
+  sharpen: 'sword',
+  grapnel: 'hook',
+  tape: 'eyeOff',
+  launch: 'boat',
+  wind: 'clock',
+  wash: 'drop',
+  feed: 'cookie',
+  setTrap: 'rat',
+  pick: 'lockpick',
+  glide: 'glider',
+  drink: 'brew',
+  track: 'race',
+  plant: 'sprout',
+  water: 'water',
+  harvest: 'fruit',
+  unbook: 'book',
+  carve: 'pumpkin',
+};
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -122,7 +185,8 @@ export function boxTitle(sim: Sim, index: number) {
     titleKey = key;
     const name = thingName(sim, index);
     titleText = name.charAt(0).toUpperCase() + name.slice(1);
-    if (who >= 0) titleText = t(isGuard(sim.state, who) ? 'box.pocketsGuard' : 'box.pocketsInmate', { s: Math.ceil(ko / STEPS_PER_SECOND) });
+    if (who >= 0)
+      titleText = t(isGuard(sim.state, who) ? 'box.pocketsGuard' : 'box.pocketsInmate', { s: Math.ceil(ko / STEPS_PER_SECOND) });
   }
   return titleText;
 }
@@ -130,7 +194,13 @@ export function boxTitle(sim: Sim, index: number) {
 /** The action label for what is in reach, worked out only when the target (or language) changes. */
 const actionLabel = { verb: '', what: '' };
 let actionKey = '';
-export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, held: number, station: Station | null = null): { verb: string; what: string } | null {
+export function describeTarget(
+  sim: Sim,
+  target: Target,
+  climb: ClimbTarget | null,
+  held: number,
+  station: Station | null = null,
+): { verb: string; what: string } | null {
   // Called by the warden at roll call (2.27): nothing comes before answering.
   if (canAnswer(sim)) {
     const key = `here:${currentLang()}`;
@@ -146,8 +216,23 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     if (key !== actionKey) {
       actionKey = key;
       const prop = sim.world.props[station.prop];
-      const what = station.act === 'take' || station.act === 'unload' || station.act === 'put' || station.act === 'load' ? itemName(station.item) : prop ? t(`thing.${prop.kind}` as Key) : t('thing.puddle');
-      Object.assign(actionLabel, { verb: t(`work.${station.act}` as Key), what: station.act === 'mop' ? t('thing.puddle') : station.act === 'running' || station.act === 'full' ? (prop ? t(`thing.${prop.kind}` as Key) : '') : what });
+      const what =
+        station.act === 'take' || station.act === 'unload' || station.act === 'put' || station.act === 'load'
+          ? itemName(station.item)
+          : prop
+            ? t(`thing.${prop.kind}` as Key)
+            : t('thing.puddle');
+      Object.assign(actionLabel, {
+        verb: t(`work.${station.act}` as Key),
+        what:
+          station.act === 'mop'
+            ? t('thing.puddle')
+            : station.act === 'running' || station.act === 'full'
+              ? prop
+                ? t(`thing.${prop.kind}` as Key)
+                : ''
+              : what,
+      });
     }
     return actionLabel;
   }
@@ -227,19 +312,27 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     }
   }
   // Dirt in hand at a toilet: down it goes.
-  const flush = target.kind === 'container' && (held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet';
+  const flush =
+    target.kind === 'container' && (held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet';
   if (target.kind === 'person') {
     // The player's letter for them (the mail round), else a talk.
     const letter = LETTER;
     const it = sim.state.items;
-    const mail = sim.onDuty && sim.state.mail.includes(target.who) && it.inv.slice(0, 6).some((v) => itemOf(v) === letter && usesOf(v) - 1 === target.who);
+    const mail =
+      sim.onDuty &&
+      sim.state.mail.includes(target.who) &&
+      it.inv.slice(0, 6).some((v) => itemOf(v) === letter && usesOf(v) - 1 === target.who);
     const key = `person:${target.who}:${mail}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
       const n = sim.state.inmates.length;
       // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
       const guard = target.who >= n ? sim.prison.guards[target.who - n] : undefined;
-      const what = !guard ? inmateName(sim, target.who) : guard.name ? t('guard.addressed', { name: guard.name }) : t('guard.addressedNameless');
+      const what = !guard
+        ? inmateName(sim, target.who)
+        : guard.name
+          ? t('guard.addressed', { name: guard.name })
+          : t('guard.addressedNameless');
       Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk'), what });
     }
     return actionLabel;
@@ -253,11 +346,28 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     const offer = machineOffer(sim, target.index);
     const on = offer === 'talk' ? onMachine(sim, target.index) : -1;
     // (2.31: a book in hand, at a library chair: it's read there.)
-    const book = target.use === 'sit' && sim.state.book > 0 && sim.world.zoneAt(sim.world.props[target.index].x, sim.world.props[target.index].z) === 'library' ? sim.state.book : 0;
+    const book =
+      target.use === 'sit' &&
+      sim.state.book > 0 &&
+      sim.world.zoneAt(sim.world.props[target.index].x, sim.world.props[target.index].z) === 'library'
+        ? sim.state.book
+        : 0;
     const key = `fixture:${target.use}:${kind}:${power}:${gen}:${offer}:${on}:${book}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
-      const verb = book ? 'act.read' : offer === 'ask' ? 'act.askTurn' : offer === 'talk' ? 'act.talk' : target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : target.use === 'helicopter' && !power ? 'act.helipad' : `act.${target.use}`;
+      const verb = book
+        ? 'act.read'
+        : offer === 'ask'
+          ? 'act.askTurn'
+          : offer === 'talk'
+            ? 'act.talk'
+            : target.use === 'generator'
+              ? power
+                ? 'act.powerOff'
+                : 'act.powerOn'
+              : target.use === 'helicopter' && !power
+                ? 'act.helipad'
+                : `act.${target.use}`;
       // A seat, bench or chair by its own name; an infirmary bed; GEN-1 and GEN-2 by what they run.
       const thing =
         target.use === 'board'
@@ -271,7 +381,10 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
                 : target.use === 'helicopter' && !power
                   ? 'helipad'
                   : target.use;
-      Object.assign(actionLabel, { verb: t(verb as Key), what: book ? t(`book.${SUBJECTS[book - 1]}.title` as Key) : on >= 0 ? inmateName(sim, on) : t(`thing.${thing}` as Key) });
+      Object.assign(actionLabel, {
+        verb: t(verb as Key),
+        what: book ? t(`book.${SUBJECTS[book - 1]}.title` as Key) : on >= 0 ? inmateName(sim, on) : t(`thing.${thing}` as Key),
+      });
     }
     return actionLabel;
   }
@@ -337,7 +450,13 @@ export function targetInfo(sim: Sim): TargetInfo | null {
   v.guard = guard;
   v.health = f.hp / maxHealth(f.str);
   v.str = f.str;
-  v.attitude = guard ? (s.guards[s.lock - s.inmates.length].mode === GUARD.CHASE ? 'chasing' : 'onDuty') : s.inmates[s.lock].angry > 0 ? 'angry' : 'calm';
+  v.attitude = guard
+    ? s.guards[s.lock - s.inmates.length].mode === GUARD.CHASE
+      ? 'chasing'
+      : 'onDuty'
+    : s.inmates[s.lock].angry > 0
+      ? 'angry'
+      : 'calm';
   v.inReach = !!press.toolNow?.attack && press.toolNow.fits;
   return v;
 }
@@ -395,7 +514,11 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   // A caught rat (P20): fed (its meals so far out of RAT_MEALS); grey with no bait in the hotbar, or a rat already tame.
   if (tt.action === 'feed') {
     const pet = !!petOf(sim.state);
-    v.what = pet ? t('thing.ratHaveOne') : tt.fits ? t('thing.ratMeals', { n: usesOf(sim.state.items.inv[sim.state.items.hand]), of: RAT_MEALS }) : t('thing.ratBait');
+    v.what = pet
+      ? t('thing.ratHaveOne')
+      : tt.fits
+        ? t('thing.ratMeals', { n: usesOf(sim.state.items.inv[sim.state.items.hand]), of: RAT_MEALS })
+        : t('thing.ratBait');
     v.fits = tt.fits && !pet;
     v.repeat = false;
     v.progress = pet ? null : usesOf(sim.state.items.inv[sim.state.items.hand]) / RAT_MEALS;
@@ -431,7 +554,13 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
         ? t('thing.gardenBed')
         : tt.action === 'harvest'
           ? crop
-          : t(wilted(b) ? 'thing.bedWilted' : 'thing.bedGrowing', { crop, n: b[BED.GROWN], of: GROWN, w: b[BED.WATER], m: planOf(sim).weather === 'heatwave' ? HEATWAVE_WATER : 1 });
+          : t(wilted(b) ? 'thing.bedWilted' : 'thing.bedGrowing', {
+              crop,
+              n: b[BED.GROWN],
+              of: GROWN,
+              w: b[BED.WATER],
+              m: planOf(sim).weather === 'heatwave' ? HEATWAVE_WATER : 1,
+            });
     v.fits = tt.fits;
     v.repeat = false;
     v.progress = tt.action === 'water' ? b[BED.GROWN] / GROWN : null;
@@ -451,7 +580,9 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     const s = sim.state;
     const at = s.pick.length > 0 && s.pick[0] === tt.tile;
     v.verb = t(at ? 'act.setPin' : 'act.pick');
-    v.what = tt.fits ? t('thing.lock', { key: t(`keyColor.${KEY_ITEM_COLORS[w.ground.key[tt.tile] - 1]?.[0] ?? 'yellow'}` as Key) }) : t('thing.gate');
+    v.what = tt.fits
+      ? t('thing.lock', { key: t(`keyColor.${KEY_ITEM_COLORS[w.ground.key[tt.tile] - 1]?.[0] ?? 'yellow'}` as Key) })
+      : t('thing.gate');
     v.fits = tt.fits;
     v.repeat = false;
     v.progress = at ? s.pick[1] / Math.max(1, tt.hp) : null;
@@ -461,7 +592,16 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   if (tt.action === 'glide') {
     const g = tt.glide!;
     v.caption = true;
-    v.what = g.why === 'storm' ? t('thing.glideStorm') : g.why === 'runUp' ? t('thing.glideRunUp') : g.why === 'noLanding' ? t('thing.glideNowhere') : t(g.out ? (g.dist === 1 ? 'thing.glideOutOne' : 'thing.glideOut') : g.dist === 1 ? 'thing.glideInOne' : 'thing.glideIn', { n: g.dist });
+    v.what =
+      g.why === 'storm'
+        ? t('thing.glideStorm')
+        : g.why === 'runUp'
+          ? t('thing.glideRunUp')
+          : g.why === 'noLanding'
+            ? t('thing.glideNowhere')
+            : t(g.out ? (g.dist === 1 ? 'thing.glideOutOne' : 'thing.glideOut') : g.dist === 1 ? 'thing.glideInOne' : 'thing.glideIn', {
+                n: g.dist,
+              });
     v.fits = tt.fits;
     v.repeat = false;
     v.progress = null;
@@ -479,7 +619,8 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= energyCost(sim, d?.tool?.energy ?? 0)));
   // Digging up takes a press per strike (a hold never surfaces the player).
   v.repeat = strike && tt.action !== 'digUp';
-  if (tt.action === 'eat') v.fits = itemDef(held).food ? foodUse(held, sim.state.energy, sim.state.health, maxHealth(sim.state.str)) : sim.state.energy < 100;
+  if (tt.action === 'eat')
+    v.fits = itemDef(held).food ? foodUse(held, sim.state.energy, sim.state.health, maxHealth(sim.state.str)) : sim.state.energy < 100;
   if (!strike) {
     v.what =
       tt.action === 'eat'
@@ -521,13 +662,26 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
           : tt.action === 'digUp'
             ? t(k === TILE.MINE && !sim.state.craters.includes(tt.tile) ? 'thing.intoMines' : 'thing.surface')
             : tt.layer === LAYER.UNDER
-              ? t(w.layers[LAYER.UNDER].kind[tt.tile] === TILE.BOULDER ? 'thing.boulder' : underSea(w, tt.tile) ? 'thing.underSea' : 'thing.earth')
+              ? t(
+                  w.layers[LAYER.UNDER].kind[tt.tile] === TILE.BOULDER
+                    ? 'thing.boulder'
+                    : underSea(w, tt.tile)
+                      ? 'thing.underSea'
+                      : 'thing.earth',
+                )
               : t('thing.floor');
   const worn = sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0;
   v.progress = tt.hp > 0 ? Math.min(1, worn / tt.hp) : 0;
   // The last blow would drop a chunk or dirt at the player's feet with no room in their pockets: grey, as the sim refuses it.
   const yields = tt.action === 'chip' || (tt.action === 'dig' && tt.layer === LAYER.GROUND);
-  if (yields && sim.state.layer === LAYER.GROUND && d?.tool && worn + d.tool.damage >= tt.hp && !sim.state.items.inv.slice(0, 6).includes(0)) v.fits = false;
+  if (
+    yields &&
+    sim.state.layer === LAYER.GROUND &&
+    d?.tool &&
+    worn + d.tool.damage >= tt.hp &&
+    !sim.state.items.inv.slice(0, 6).includes(0)
+  )
+    v.fits = false;
   return v;
 }
 

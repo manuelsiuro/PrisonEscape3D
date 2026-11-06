@@ -24,7 +24,10 @@ export async function dailyFlow(): Promise<void> {
     const f = readSave('daily');
     // (A run of a Daily older than yesterday's can't be finished any more: let go.)
     const saved = f && f.daily! >= today - 1 ? f.daily! : null;
-    const choice = next !== null ? { act: 'play' as const, n: next } : await showDaily({ today, record: dailyRecord, saved, savedWhen: f ? saveWhen(f) : '', streak: streakOf(today) }, click);
+    const choice =
+      next !== null
+        ? { act: 'play' as const, n: next }
+        : await showDaily({ today, record: dailyRecord, saved, savedWhen: f ? saveWhen(f) : '', streak: streakOf(today) }, click);
     next = null;
     if (!choice) return;
     // A new try replaces the saved run of another Daily (asked first).

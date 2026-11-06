@@ -19,7 +19,23 @@
  *
  * Every draw comes from roll() (SALT.KIOSK, SALT.COURSE), never the state's RNG.
  */
-import { COURSE_ENERGY, COURSE_LATE, COURSE_FEE, COURSE_INT, COURSE_PASS, COURSE_QUESTIONS, COURSE_REVEAL, COURSE_STEPS, KIOSK, KIOSK_BLOCK, KIOSK_FEE, PHOTO_WALL, PHOTOS, SHOP, shopPrice } from '../../content/kiosk';
+import {
+  COURSE_ENERGY,
+  COURSE_LATE,
+  COURSE_FEE,
+  COURSE_INT,
+  COURSE_PASS,
+  COURSE_QUESTIONS,
+  COURSE_REVEAL,
+  COURSE_STEPS,
+  KIOSK,
+  KIOSK_BLOCK,
+  KIOSK_FEE,
+  PHOTO_WALL,
+  PHOTOS,
+  SHOP,
+  shopPrice,
+} from '../../content/kiosk';
 import { itemDef, itemNumber } from '../../content/items';
 import { MAIL_MINUTE } from '../../content/phone';
 import type { CommsDef } from '../../content/prisons/types';
@@ -41,7 +57,6 @@ import { HOLLOW_BOOK } from './structure';
 import { stopTraining } from './training';
 import { powered } from './power';
 import { atFixture } from './presence';
-
 
 /** The prison's kiosk: where the player stands to use it (none at the Training Block). */
 export const kioskOf = (sim: Pick<SimContext, 'world'>): CommsDef['kiosk'] | null => commsOf(sim)?.kiosk ?? null;

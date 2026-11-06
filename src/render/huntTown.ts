@@ -35,7 +35,8 @@ const WALL = 1.45;
 function blocksOf(o: OutsideWorld): Block[] {
   const kind = o.world.ground.base;
   const taken = new Uint8Array(kind.length);
-  const free = (x: number, z: number) => x >= o.ox && z >= o.oz && x < o.ox + o.w && z < o.oz + o.h && kind[z * MAP_W + x] === TILE.BRICK && !taken[z * MAP_W + x];
+  const free = (x: number, z: number) =>
+    x >= o.ox && z >= o.oz && x < o.ox + o.w && z < o.oz + o.h && kind[z * MAP_W + x] === TILE.BRICK && !taken[z * MAP_W + x];
   const out: Block[] = [];
   const take = (b: Block) => {
     for (let r = b.z0; r <= b.z1; r++) for (let c = b.x0; c <= b.x1; c++) taken[r * MAP_W + c] = 1;
@@ -116,15 +117,35 @@ interface Style {
 const STYLES: Record<string, Style> = {
   suburban: { walls: [0xece3cf, 0xe2d6bc, 0xf2eee4], roof: [0x9a4a34, 0x5a5f68, 0x8a5a3c], trim: 0xffffff, door: 0x5a3a26, pitch: 0.55 },
   alpine: { walls: [0x7a5236, 0x8a6040, 0x6e4a30], roof: [0x3e3b3a, 0x4a3f38], trim: 0xe8e2d4, door: 0x3e2a1c, pitch: 0.8, snow: true },
-  industrial: { walls: [0x8f979d, 0x7d8a92, 0x9a8f80, 0x6f7d86], roof: [0x5e666d, 0x6a6460], trim: 0xc8ccd0, door: 0x4e555c, pitch: 0.22, shed: true },
+  industrial: {
+    walls: [0x8f979d, 0x7d8a92, 0x9a8f80, 0x6f7d86],
+    roof: [0x5e666d, 0x6a6460],
+    trim: 0xc8ccd0,
+    door: 0x4e555c,
+    pitch: 0.22,
+    shed: true,
+  },
   desert: { walls: [0xd8b088, 0xe0bf98, 0xcf9f78], roof: [0xc79c74], trim: 0x8a5a36, door: 0x6a3f24, pitch: 0 },
-  island: { walls: [0xe9d8b8, 0xc8dbe6, 0xe6c6c0, 0xd4e2c6, 0xf1e7c9, 0xb9c9d8], roof: [0x4f5863, 0x5a5550, 0x46505a], trim: 0xf6f4ee, door: 0x2f4f6e, pitch: 0.6, terrace: true },
+  island: {
+    walls: [0xe9d8b8, 0xc8dbe6, 0xe6c6c0, 0xd4e2c6, 0xf1e7c9, 0xb9c9d8],
+    roof: [0x4f5863, 0x5a5550, 0x46505a],
+    trim: 0xf6f4ee,
+    door: 0x2f4f6e,
+    pitch: 0.6,
+    terrace: true,
+  },
 };
 
 /** The houses (one mesh, see-through over the player as trees are) and their windows (lit after dark: `glass` follows the night). */
 export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Group; glass: THREE.MeshStandardMaterial } {
   const group = new THREE.Group();
-  const glass = new THREE.MeshStandardMaterial({ color: 0x2a3440, roughness: 0.3, metalness: 0.2, emissive: 0xffc878, emissiveIntensity: 0 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x2a3440,
+    roughness: 0.3,
+    metalness: 0.2,
+    emissive: 0xffc878,
+    emissiveIntensity: 0,
+  });
   const st = STYLES[theme] ?? STYLES.suburban;
   const parts: Part[] = [];
   const panes: Part[] = [];
@@ -151,7 +172,10 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
       const cx = (b.x0 + b.x1 + 1) / 2;
       const cz = (b.z0 + b.z1 + 1) / 2;
       const color = theme === 'desert' ? 0xcfa47c : theme === 'industrial' ? 0x8a8a84 : 0x9c6b52;
-      lowWalls.push(box(w - 0.1, 0.9, d - 0.1, color, cx, 0, cz), box(w + 0.02 - 0.1, 0.07, d + 0.02 - 0.1, theme === 'island' ? 0xd8d4cc : 0xb8b2a8, cx, 0.9, cz));
+      lowWalls.push(
+        box(w - 0.1, 0.9, d - 0.1, color, cx, 0, cz),
+        box(w + 0.02 - 0.1, 0.07, d + 0.02 - 0.1, theme === 'island' ? 0xd8d4cc : 0xb8b2a8, cx, 0.9, cz),
+      );
       continue;
     }
     const seed = b.z0 * MAP_W + b.x0;
@@ -186,12 +210,23 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
       const roofColor = barn ? 0x4e5258 : pick(st.roof, 2);
       const h = WALL + (st.terrace ? (hash01(seed + k, 3) - 0.5) * 0.3 : 0) + (st.shed ? 0.25 : 0);
       // The walls, a little in from the tile's edge, and a plinth.
-      parts.push(box(uw - 0.08, h, ud - 0.08, wallColor, cx, 0, cz), box(uw - 0.02, 0.12, ud - 0.02, theme === 'alpine' ? 0x8f9196 : 0x8a847a, cx, 0, cz));
+      parts.push(
+        box(uw - 0.08, h, ud - 0.08, wallColor, cx, 0, cz),
+        box(uw - 0.02, 0.12, ud - 0.02, theme === 'alpine' ? 0x8f9196 : 0x8a847a, cx, 0, cz),
+      );
       if (st.shed) {
         // Corrugated: ribs down the long faces.
         for (let r = 0.25; r < (alongX ? uw : ud) - 0.1; r += 0.5) {
-          if (alongX) parts.push(box(0.05, h - 0.12, 0.03, 0x6e767c, ux0 + r, 0.12, uz0 + ud - 0.03), box(0.05, h - 0.12, 0.03, 0x6e767c, ux0 + r, 0.12, uz0 + 0.03));
-          else parts.push(box(0.03, h - 0.12, 0.05, 0x6e767c, ux0 + uw - 0.03, 0.12, uz0 + r), box(0.03, h - 0.12, 0.05, 0x6e767c, ux0 + 0.03, 0.12, uz0 + r));
+          if (alongX)
+            parts.push(
+              box(0.05, h - 0.12, 0.03, 0x6e767c, ux0 + r, 0.12, uz0 + ud - 0.03),
+              box(0.05, h - 0.12, 0.03, 0x6e767c, ux0 + r, 0.12, uz0 + 0.03),
+            );
+          else
+            parts.push(
+              box(0.03, h - 0.12, 0.05, 0x6e767c, ux0 + uw - 0.03, 0.12, uz0 + r),
+              box(0.03, h - 0.12, 0.05, 0x6e767c, ux0 + 0.03, 0.12, uz0 + r),
+            );
         }
       }
       // The roof: a gable along the long side with eaves over the walls; flat with a parapet in the desert.
@@ -215,12 +250,26 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
           }
         }
         // The ridge capped.
-        parts.push(alongX ? box(long + 0.02, 0.07, 0.14, 0x3a3634, cx, h + rise - 0.05, cz) : box(0.14, 0.07, long + 0.02, 0x3a3634, cx, h + rise - 0.05, cz));
+        parts.push(
+          alongX
+            ? box(long + 0.02, 0.07, 0.14, 0x3a3634, cx, h + rise - 0.05, cz)
+            : box(0.14, 0.07, long + 0.02, 0x3a3634, cx, h + rise - 0.05, cz),
+        );
         if (st.snow) parts.push(gable(span + 0.32, rise * 0.45, (alongX ? uw : ud) + 0.26, 0xf2f6fb, cx, h + rise * 0.56, cz, alongX));
         // A chimney on most houses (not sheds or barns).
         if (!st.shed && !barn && hash01(seed + k, 4) < 0.75) {
           const off = (hash01(seed + k, 5) - 0.5) * (alongX ? uw : ud) * 0.6;
-          parts.push(box(0.26, rise + 0.35, 0.26, theme === 'alpine' ? 0x6a6a6e : 0x8a5040, alongX ? cx + off : cx + span * 0.18, h + 0.05, alongX ? cz - span * 0.18 : cz + off));
+          parts.push(
+            box(
+              0.26,
+              rise + 0.35,
+              0.26,
+              theme === 'alpine' ? 0x6a6a6e : 0x8a5040,
+              alongX ? cx + off : cx + span * 0.18,
+              h + 0.05,
+              alongX ? cz - span * 0.18 : cz + off,
+            ),
+          );
         }
       } else {
         parts.push(box(uw - 0.08, 0.06, ud - 0.08, roofColor, cx, h, cz));
@@ -245,7 +294,13 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
       ];
       for (const [face, from, to, at, ax] of faces) {
         // (A terrace's houses have no windows into each other.)
-        if (st.terrace && units.length > 1 && ((alongX && face >= 2 && ((face === 2 && k < units.length - 1) || (face === 3 && k > 0))) || (!alongX && face < 2 && ((face === 0 && k < units.length - 1) || (face === 1 && k > 0))))) continue;
+        if (
+          st.terrace &&
+          units.length > 1 &&
+          ((alongX && face >= 2 && ((face === 2 && k < units.length - 1) || (face === 3 && k > 0))) ||
+            (!alongX && face < 2 && ((face === 0 && k < units.length - 1) || (face === 1 && k > 0))))
+        )
+          continue;
         const n = to - from;
         const door = face === doorSide;
         const doorAt = from + n / 2 + (units.length > 1 ? 0 : (hash01(seed, 6) - 0.5) * Math.max(0, n - 2) * 0.5);
@@ -269,8 +324,16 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
           const dw = st.shed ? 1.2 : barn ? 1.1 : 0.42;
           const dh = st.shed ? 1.05 : barn ? 1.15 : 0.86;
           const doorColor = st.shed ? 0x5a6066 : barn ? 0xe8e0d0 : st.terrace ? pick([0x2f4f6e, 0x7a2e2a, 0x2e5a3a, 0x3a3a40], 8) : st.door;
-          if (ax) parts.push(box(dw, dh, 0.06, doorColor, doorAt, 0.08, at + out), box(dw + 0.12, 0.08, 0.1, st.trim, doorAt, 0.08 + dh, at + out));
-          else parts.push(box(0.06, dh, dw, doorColor, at + out, 0.08, doorAt), box(0.1, 0.08, dw + 0.12, st.trim, at + out, 0.08 + dh, doorAt));
+          if (ax)
+            parts.push(
+              box(dw, dh, 0.06, doorColor, doorAt, 0.08, at + out),
+              box(dw + 0.12, 0.08, 0.1, st.trim, doorAt, 0.08 + dh, at + out),
+            );
+          else
+            parts.push(
+              box(0.06, dh, dw, doorColor, at + out, 0.08, doorAt),
+              box(0.1, 0.08, dw + 0.12, st.trim, at + out, 0.08 + dh, doorAt),
+            );
           // A step, and in the desert an awning over the door.
           if (ax) parts.push(box(dw + 0.2, 0.06, 0.24, 0x9a968c, doorAt, 0, at + out * 4));
           if (theme === 'desert' && ax) parts.push(box(dw + 1.4, 0.05, 0.6, 0xb5442e, doorAt, dh + 0.25, at + out * 10));

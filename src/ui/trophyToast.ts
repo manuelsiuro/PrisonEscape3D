@@ -44,7 +44,10 @@ export class TrophyToast {
     el.setAttribute('aria-hidden', 'true');
     el.querySelector('b')!.textContent = t(`ach.${a.id}` as Key);
     if (a.gives) el.querySelector('em span')!.textContent = t('trophy.gives', { what: t(`look.${a.gives}` as Key) });
-    this.live.textContent = t('trophy.unlockedSr', { name: el.querySelector('b')!.textContent!, gift: a.gives ? ` ${el.querySelector('em span')!.textContent}` : '' });
+    this.live.textContent = t('trophy.unlockedSr', {
+      name: el.querySelector('b')!.textContent!,
+      gift: a.gives ? ` ${el.querySelector('em span')!.textContent}` : '',
+    });
     document.body.append(el);
     this.el = el;
     this.onShow();

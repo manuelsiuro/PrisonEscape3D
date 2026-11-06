@@ -4,7 +4,6 @@ import { EXT, OP } from '../sim/command';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-
 /**
  * The odd jobs board (P40) on screen: its card at the board (the day's three pins and the story's
  * card, each with who asks, what, how long, the pay and what comes with it, and Take it or why
@@ -12,7 +11,6 @@ import { icon } from './icons';
  * and a story's short cards as its steps are taken and handed in. Drawn from a view the play layer
  * fills from the sim (play/oddjobs.ts): the sim's own functions decide everything shown.
  */
-
 
 /** A job as a pin shows it. */
 export interface PinView {
@@ -182,8 +180,15 @@ export class OddJobsCard {
 }
 
 function heldHtml(j: HeldView, alone: boolean): string {
-  const steps = j.steps.map((s) => `<li class="${s.done ? 'done' : s.now ? 'now' : ''}">${icon(s.done ? 'check' : s.now ? 'chevronRight' : 'clock', 13)}<span>${esc(s.text)}</span></li>`).join('');
-  const whistle = j.whistle ? `<button class="big-btn ${j.urgent ? 'primary urgent' : 'ghost'} small" data-whistle>${icon('megaphone', 16)}<span>${esc(t(TOUCH ? 'oddjob.whistle' : 'oddjob.whistleKey'))}</span></button>` : '';
+  const steps = j.steps
+    .map(
+      (s) =>
+        `<li class="${s.done ? 'done' : s.now ? 'now' : ''}">${icon(s.done ? 'check' : s.now ? 'chevronRight' : 'clock', 13)}<span>${esc(s.text)}</span></li>`,
+    )
+    .join('');
+  const whistle = j.whistle
+    ? `<button class="big-btn ${j.urgent ? 'primary urgent' : 'ghost'} small" data-whistle>${icon('megaphone', 16)}<span>${esc(t(TOUCH ? 'oddjob.whistle' : 'oddjob.whistleKey'))}</span></button>`
+    : '';
   return `<section class="oddjobs-held">${alone ? '' : `<div class="box-label">${icon('briefcase', 14)}<span>${esc(t('oddjob.yourJob'))}</span></div>`}
     <div class="oddjob-pin held"><i class="oddjob-ic">${icon(j.icon, 16)}</i><span class="oddjob-text"><b>${esc(j.kind)} · ${esc(j.who)}</b><small>${esc(j.ask)}</small></span></div>
     <ul class="oddjob-steps">${steps}</ul>
@@ -208,7 +213,11 @@ export class StoryCard {
   private waiting = false;
 
   constructor(private readonly click: () => void) {
-    this.el = h('div', 'story-card hidden', `<div class="story-head"><i>${icon('book', 18)}</i><span><b></b><small></small></span></div><p class="story-text"></p><button class="big-btn primary small story-ok">${icon('check', 16)}<span></span></button>`);
+    this.el = h(
+      'div',
+      'story-card hidden',
+      `<div class="story-head"><i>${icon('book', 18)}</i><span><b></b><small></small></span></div><p class="story-text"></p><button class="big-btn primary small story-ok">${icon('check', 16)}<span></span></button>`,
+    );
     this.el.setAttribute('role', 'dialog');
     this.el.setAttribute('aria-live', 'polite');
     this.el.querySelector('.story-ok')!.addEventListener('click', () => {

@@ -62,7 +62,15 @@ export function reachedSquare(sim: SimContext, index: number, guard: Guard) {
     return;
   }
   // (Counted already, they're free to go: nothing to answer.)
-  const here = !s.attended && !sim.away && !s.sleeping && !s.stowed && !s.lockdown && s.solitary <= 0 && s.layer === LAYER.GROUND && sim.playerZone === 'rollCall';
+  const here =
+    !s.attended &&
+    !sim.away &&
+    !s.sleeping &&
+    !s.stowed &&
+    !s.lockdown &&
+    s.solitary <= 0 &&
+    s.layer === LAYER.GROUND &&
+    sim.playerZone === 'rollCall';
   sim.events.push({ type: 'count', what: here ? 'you' : 'called', who: -1 });
   if (!here) return;
   // (Whatever's open is put away, so that the button is there to press.)
@@ -96,6 +104,9 @@ export function rollCall(sim: SimContext) {
   const g = s.guards[k];
   if (!g || g.ko > 0 || g.mode !== GUARD.DUTY) return;
   s.countDone = true;
-  assign(g, GUARD.COUNT, placesOf(sim.world).countStops.map((_, i) => i));
+  assign(
+    g,
+    GUARD.COUNT,
+    placesOf(sim.world).countStops.map((_, i) => i),
+  );
 }
-

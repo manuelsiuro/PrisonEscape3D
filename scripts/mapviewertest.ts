@@ -62,16 +62,48 @@ const KNOWN_PRISON = new Set([
   'menu',
   'cooler',
   // Drawn on the pictures, or under the cursor.
-  'ground', 'vents', 'under', 'zones', 'cells', 'props', 'rollCall', 'spawn', 'guards', 'names', 'cameras', 'searchlights', 'decor', 'gates', 'landings', 'drawbridge', 'delivery', 'smuggling', 'checkpoint', 'leisure', 'comms', 'board',
+  'ground',
+  'vents',
+  'under',
+  'zones',
+  'cells',
+  'props',
+  'rollCall',
+  'spawn',
+  'guards',
+  'names',
+  'cameras',
+  'searchlights',
+  'decor',
+  'gates',
+  'landings',
+  'drawbridge',
+  'delivery',
+  'smuggling',
+  'checkpoint',
+  'leisure',
+  'comms',
+  'board',
   // On the sheet or the sidebar.
-  'id', 'difficulty', 'theme', 'merchants', 'crew', 'jobs', 'rules', 'escapes', 'grid', 'map',
+  'id',
+  'difficulty',
+  'theme',
+  'merchants',
+  'crew',
+  'jobs',
+  'rules',
+  'escapes',
+  'grid',
+  'map',
   // No place on a map: the zones maptest checks can be walked to.
   'reachable',
 ]);
 const KNOWN_GUARD = new Set(['name', 'beat', 'posts', 'night', 'duties', 'key', 'riot', 'helipad', 'trait', 'dog', 'about']);
 const KNOWN_LEISURE = new Set(['hoop', 'oldTimer', 'garden', 'race', 'pitch', 'pitchWas', 'stage', 'quiz', 'track', 'librarian']);
 const unknown = (where: string, o: object, known: ReadonlySet<string>) => {
-  for (const key of Object.keys(o)) if (!known.has(key)) fail(`${where}: the viewer doesn't know "${key}" (draw it in scripts/dev/mapimage.ts or mapdata.ts, then list it here)`);
+  for (const key of Object.keys(o))
+    if (!known.has(key))
+      fail(`${where}: the viewer doesn't know "${key}" (draw it in scripts/dev/mapimage.ts or mapdata.ts, then list it here)`);
 };
 for (const def of [TRAINING, ...PRISONS]) {
   unknown(def.id, def, KNOWN_PRISON);

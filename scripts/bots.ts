@@ -49,7 +49,7 @@ export class Bot {
   /** Highest heat seen, and the notable events with their times. */
   heatPeak = 0;
   readonly log: string[] = [];
-  private readonly events: SimEvent[] = [];
+  readonly events: SimEvent[] = [];
   /** The state before the first step (after any setup) and every command since: the run, replayable. */
   start: Snapshot | null = null;
   readonly cmds: number[] = [];
@@ -150,7 +150,8 @@ export class Bot {
       if (itemOf(this.st.items.inv[this.st.items.hand]) !== n(tool) && !this.hold(tool)) return false;
       this.op(OP.USE, 1);
       // Out of breath: a breather (a minute or two standing still).
-      if (this.sim.events.some((e) => e.type === 'cantStrike' && e.why === 'tired')) this.until(() => this.st.energy >= 40, 40 * STEPS_PER_MINUTE);
+      if (this.sim.events.some((e) => e.type === 'cantStrike' && e.why === 'tired'))
+        this.until(() => this.st.energy >= 40, 40 * STEPS_PER_MINUTE);
     }
     return done();
   }
@@ -253,7 +254,9 @@ export function describe(e: SimEvent): string {
   switch (e.type) {
     // (P39: the parole board, only ever in a run that applied: the escape bots' logs as they were.)
     case 'parole':
-      return e.what === 'question' || e.what === 'answer' || e.what === 'silent' ? '' : `parole: ${e.what}${e.why ? ` (${e.why})` : ''}${e.score !== undefined ? ` at ${e.score}` : ''}`;
+      return e.what === 'question' || e.what === 'answer' || e.what === 'silent'
+        ? ''
+        : `parole: ${e.what}${e.why ? ` (${e.why})` : ''}${e.score !== undefined ? ` at ${e.score}` : ''}`;
     case 'lockdown':
       return e.on ? 'LOCKDOWN' : 'lockdown lifted';
     case 'spotted':
@@ -290,15 +293,37 @@ export function describe(e: SimEvent): string {
       return e.what === 'sniff' || e.what === 'dug' || e.what === 'track' || e.what === 'point' ? `dog #${e.dog} ${e.what}` : '';
     case 'today':
       if (e.event !== 'delivery') return '';
-      return e.phase === 'start' ? 'the delivery is in' : e.phase === 'search' ? `the vehicle searched (${e.thorough ? 'thoroughly' : 'a quick look'})` : e.phase === 'waved' ? 'the vehicle waved through' : e.phase === 'end' ? 'the delivery leaves' : '';
+      return e.phase === 'start'
+        ? 'the delivery is in'
+        : e.phase === 'search'
+          ? `the vehicle searched (${e.thorough ? 'thoroughly' : 'a quick look'})`
+          : e.phase === 'waved'
+            ? 'the vehicle waved through'
+            : e.phase === 'end'
+              ? 'the delivery leaves'
+              : '';
     case 'refused':
-      return e.why === 'watched' || e.why === 'tailgate' || e.why === 'notShift' || e.why === 'notGuard' || e.why === 'papersHot' ? `refused: ${e.why}` : '';
+      return e.why === 'watched' || e.why === 'notShift' || e.why === 'notGuard' || e.why === 'papersHot' ? `refused: ${e.why}` : '';
     case 'bluff':
       return e.on ? 'waved through the checkpoint' : 'the checkpoint’s gates shut';
     case 'glide':
       return `off the roof on a glider: ${e.dist} tiles${e.short ? ' (down short)' : ''}`;
     case 'paper':
-      return e.what === 'filed' ? `form filed: on the release list for day ${e.n}` : e.what === 'passed' ? 'the records: the form passes' : e.what === 'found' ? 'the records: FORGERY FOUND' : e.what === 'called' ? 'the name called' : e.what === 'cleared' ? 'cleared at the desk' : e.what === 'turnedAway' ? `turned away (${e.why})` : e.what === 'missed' ? 'the name missed' : '';
+      return e.what === 'filed'
+        ? `form filed: on the release list for day ${e.n}`
+        : e.what === 'passed'
+          ? 'the records: the form passes'
+          : e.what === 'found'
+            ? 'the records: FORGERY FOUND'
+            : e.what === 'called'
+              ? 'the name called'
+              : e.what === 'cleared'
+                ? 'cleared at the desk'
+                : e.what === 'turnedAway'
+                  ? `turned away (${e.why})`
+                  : e.what === 'missed'
+                    ? 'the name missed'
+                    : '';
     default:
       return '';
   }

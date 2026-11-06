@@ -30,7 +30,6 @@ import { inmateName } from '../ui/names';
  * sim's own functions (cards.ts, hoops.ts, checkers.ts) decide everything shown.
  */
 
-
 // ------------------------------------------------------------------ what's shown between steps
 
 /** A call's cards turned over, while the sim holds them up (and the game's last, for a moment after it ends). */
@@ -88,7 +87,20 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
         // The last call's cards stay up a moment with the verdict (on play time: held while paused).
         const now = playNow();
         if (lastCheat) {
-          endView = { ...lastCheat, chips: [lastCheat.chips[0] - (reveal.loser === 0 ? 1 : 0), lastCheat.chips[1] - (reveal.loser === 1 ? 1 : 0)] as [number, number], phase: 'reveal', reveal: { ...reveal }, canPlay: false, canCall: false, mustCall: false, last: null, tell: '' };
+          endView = {
+            ...lastCheat,
+            chips: [lastCheat.chips[0] - (reveal.loser === 0 ? 1 : 0), lastCheat.chips[1] - (reveal.loser === 1 ? 1 : 0)] as [
+              number,
+              number,
+            ],
+            phase: 'reveal',
+            reveal: { ...reveal },
+            canPlay: false,
+            canCall: false,
+            mustCall: false,
+            last: null,
+            tell: '',
+          };
           endUntil = now + 2600;
         }
         const n = e.stake ?? 0;
@@ -118,7 +130,14 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       if (!c) break;
       const m = e.by >= 0 ? sim.state.inmates[e.by] : null;
       const from = m ? m.body : sim.state.player;
-      ball = { by: e.by >= 0 ? e.by : -1, fromX: from.x / UNIT, fromZ: from.z / UNIT, result: e.result, short: e.by < 0 ? e.power < e.need : (e.power + e.spot) % 2 === 0, at: playNow() };
+      ball = {
+        by: e.by >= 0 ? e.by : -1,
+        fromX: from.x / UNIT,
+        fromZ: from.z / UNIT,
+        result: e.result,
+        short: e.by < 0 ? e.power < e.need : (e.power + e.spot) % 2 === 0,
+        at: playNow(),
+      };
       const land = FLIGHT_S * 1000;
       playLater(land, () => {
         if (play.game !== g) return;
@@ -129,9 +148,23 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
         } else if (e.result === 'rim') sound.rimClang();
         else sound.bounce();
         if (e.by < 0) {
-          floatUp(t(e.result === 'swish' ? 'toast.swish' : e.result === 'in' ? 'toast.basket' : e.result === 'rim' ? 'toast.rimOut' : 'toast.airball'), e.result === 'swish' || e.result === 'in' ? 'gain' : 'taken');
+          floatUp(
+            t(
+              e.result === 'swish'
+                ? 'toast.swish'
+                : e.result === 'in'
+                  ? 'toast.basket'
+                  : e.result === 'rim'
+                    ? 'toast.rimOut'
+                    : 'toast.airball',
+            ),
+            e.result === 'swish' || e.result === 'in' ? 'gain' : 'taken',
+          );
           if (e.result === 'swish' || e.result === 'in') buzz('attended');
-        } else itemsUI.toast(t(e.result === 'swish' || e.result === 'in' ? 'toast.theyScore' : 'toast.theyMiss', { name: inmateName(sim, e.by) }));
+        } else
+          itemsUI.toast(
+            t(e.result === 'swish' || e.result === 'in' ? 'toast.theyScore' : 'toast.theyMiss', { name: inmateName(sim, e.by) }),
+          );
       });
       playLater(land + 420, () => play.game === g && e.result !== 'air' && sound.bounce(0.6));
       break;
@@ -157,15 +190,24 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
           sound.levelUp();
           buzz('attended');
           if (e.spd) floatUp(`+1 ${t('attr.spdShort')}`, 'gain');
-          const parts = [e.gain ? t('toast.partOpinion', { n: e.gain }) : '', e.spd ? t('toast.partSpd') : t('toast.partSpdTop'), e.crowd ? t('toast.partCrowd', { m: CROWD_OPINION }) : ''].filter(Boolean);
+          const parts = [
+            e.gain ? t('toast.partOpinion', { n: e.gain }) : '',
+            e.spd ? t('toast.partSpd') : t('toast.partSpdTop'),
+            e.crowd ? t('toast.partCrowd', { m: CROWD_OPINION }) : '',
+          ].filter(Boolean);
           banner.toast(`${t('toast.hoopsWon', { m, n })} ${parts.join(', ')}`, 'good', 4200);
         });
       else if (e.what === 'lost')
         later(() => {
           sound.sting();
-          banner.toast(e.gain ? t('toast.hoopsLost', { name, m: n, n: m, g: e.gain }) : t('toast.hoopsLostNone', { name, m: n, n: m }), 'bad', 3600);
+          banner.toast(
+            e.gain ? t('toast.hoopsLost', { name, m: n, n: m, g: e.gain }) : t('toast.hoopsLostNone', { name, m: n, n: m }),
+            'bad',
+            3600,
+          );
         });
-      else if (e.what === 'draw') later(() => banner.toast(e.gain ? t('toast.hoopsDraw', { m, n, g: e.gain }) : t('toast.hoopsDrawNone', { m, n }), undefined, 3600));
+      else if (e.what === 'draw')
+        later(() => banner.toast(e.gain ? t('toast.hoopsDraw', { m, n, g: e.gain }) : t('toast.hoopsDrawNone', { m, n }), undefined, 3600));
       else if (e.what === 'off' && !sim.state.escaped) itemsUI.toast(t('toast.hoopsOff'));
       break;
     }
@@ -184,7 +226,20 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       } else if (e.what === 'lost' || e.what === 'drawn') {
         sound.click();
         if (e.int) floatUp(`+1 ${t('attr.intShort')}`, 'gain');
-        banner.toast(t(e.what === 'lost' ? (e.int ? 'toast.checkersLostInt' : 'toast.checkersLost') : e.int ? 'toast.checkersDrawnInt' : 'toast.checkersDrawn', { name }), undefined, 3600);
+        banner.toast(
+          t(
+            e.what === 'lost'
+              ? e.int
+                ? 'toast.checkersLostInt'
+                : 'toast.checkersLost'
+              : e.int
+                ? 'toast.checkersDrawnInt'
+                : 'toast.checkersDrawn',
+            { name },
+          ),
+          undefined,
+          3600,
+        );
       }
       break;
     }
@@ -193,7 +248,25 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
 
 // ------------------------------------------------------------------ Cheat's card
 
-const cheatView: CheatView = { name: '', stake: 0, chips: [CHIPS, CHIPS], of: CHIPS, table: 1, mine: [], theirs: 0, pile: 0, phase: 'yours', last: null, tell: '', reveal: null, canPlay: false, canCall: false, mustCall: false, deal: 0, clock: 0 };
+const cheatView: CheatView = {
+  name: '',
+  stake: 0,
+  chips: [CHIPS, CHIPS],
+  of: CHIPS,
+  table: 1,
+  mine: [],
+  theirs: 0,
+  pile: 0,
+  phase: 'yours',
+  last: null,
+  tell: '',
+  reveal: null,
+  canPlay: false,
+  canCall: false,
+  mustCall: false,
+  deal: 0,
+  clock: 0,
+};
 let lastCheat: CheatView | null = null;
 
 /** The hand of Cheat under way (null: none), or the last one's verdict for a moment after. */
@@ -232,7 +305,22 @@ export function cheatNow(sim: Sim): CheatView | null {
 
 // ------------------------------------------------------------------ the court's card
 
-const courtView: CourtView = { name: '', spot: 1, onSpot: false, holding: false, marker: 0, need: 0.5, half: 0.05, wind: '', rain: false, mine: [], theirs: [], turn: 0, practice: 0, of: PRACTICE_MAKES };
+const courtView: CourtView = {
+  name: '',
+  spot: 1,
+  onSpot: false,
+  holding: false,
+  marker: 0,
+  need: 0.5,
+  half: 0.05,
+  wind: '',
+  rain: false,
+  mine: [],
+  theirs: [],
+  turn: 0,
+  practice: 0,
+  of: PRACTICE_MAKES,
+};
 const win: [number, number] = [0, 0];
 
 /** The court's card (null: not on a spot and no shootout): the shot from the step's power, between steps (`a`). */
@@ -278,7 +366,20 @@ export function courtNow(sim: Sim, a: number): CourtView | null {
 
 // ------------------------------------------------------------------ the old-timer's board
 
-const boardView: BoardView = { name: '', sq: [], steps: [], chain: -1, last: [], over: 0, thinking: false, won: 0, lost: 0, drawn: 0, mine: 0, his: 0 };
+const boardView: BoardView = {
+  name: '',
+  sq: [],
+  steps: [],
+  chain: -1,
+  last: [],
+  over: 0,
+  thinking: false,
+  won: 0,
+  lost: 0,
+  drawn: 0,
+  mine: 0,
+  his: 0,
+};
 const steps: Step[] = [];
 
 /** The board, while the player is at it (null: not). */
@@ -309,7 +410,14 @@ export function elderOffer(sim: Sim, who: number): { open: boolean; why: string;
   const b = sim.state.board;
   return {
     open: !why,
-    why: why === 'gamesLockdown' ? t('refused.gamesLockdown') : why === 'elderOpinion' ? t('refused.elderOpinion', { n: ELDER_OPINION }) : why ? t('games.closed') : '',
+    why:
+      why === 'gamesLockdown'
+        ? t('refused.gamesLockdown')
+        : why === 'elderOpinion'
+          ? t('refused.elderOpinion', { n: ELDER_OPINION })
+          : why
+            ? t('games.closed')
+            : '',
     game: !b ? 'none' : b.over ? 'over' : 'on',
     won: sim.state.elder[0] ?? 0,
   };
@@ -370,7 +478,11 @@ export function pastimeKey(code: string): boolean {
 // ------------------------------------------------------------------ the picture
 
 const frame: PastimesFrame = { spot: -1, ball: null, holding: null, cards: null, board: null };
-const ballFrame: NonNullable<PastimesFrame['ball']> = { show: { by: -1, fromX: 0, fromZ: 0, result: 'air', short: false, at: 0 }, t: 0, fromY: 1.5 };
+const ballFrame: NonNullable<PastimesFrame['ball']> = {
+  show: { by: -1, fromX: 0, fromZ: 0, result: 'air', short: false, at: 0 },
+  t: 0,
+  fromY: 1.5,
+};
 const holdFrame = { who: -1, power: 0, dx: 0, dz: 0 };
 const cardsFrame = { x: 0, z: 0, angle: 0, pile: 0, reveal: null as number[] | null };
 const boardFrame = { x: 0, z: 0, angle: 0, sq: [] as number[], last: [] as number[] };

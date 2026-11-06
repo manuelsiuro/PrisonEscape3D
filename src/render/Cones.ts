@@ -77,7 +77,16 @@ export class Cones {
   readonly group = new THREE.Group();
   private cones: Cone[] = [];
   private mesh: THREE.Mesh | null = null;
-  private readonly material = new THREE.MeshBasicMaterial({ map: fade(), vertexColors: true, transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1, side: THREE.DoubleSide });
+  private readonly material = new THREE.MeshBasicMaterial({
+    map: fade(),
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    side: THREE.DoubleSide,
+  });
   private positions = new Float32Array(0);
   private uvs = new Float32Array(0);
   /** RGBA per vertex: the cone's tint, and its opacity in alpha. */
@@ -186,7 +195,8 @@ export class Cones {
         const away = !!g.away && g.alert === ALERT.CALM;
         const ending = away && (g.awayLeft ?? ENDING) < ENDING;
         this.goal.setHex(away ? AWAY : (this.colors[g.alert] ?? this.colors[ALERT.CALM]));
-        if (ending) this.goal.lerp(this.calm.setHex(this.colors[ALERT.CALM]), motion ? 0.5 + 0.5 * Math.sin(this.clock * Math.PI * 2.4) : 0.5);
+        if (ending)
+          this.goal.lerp(this.calm.setHex(this.colors[ALERT.CALM]), motion ? 0.5 + 0.5 * Math.sin(this.clock * Math.PI * 2.4) : 0.5);
         const breath = away && motion ? 0.7 + 0.3 * Math.sin(this.clock * 2 + k) : 1;
         const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : away ? 0.26 * breath : 0.32;
         if (was < 0.05 || !motion || g.alert === ALERT.HOSTILE || g.alert === ALERT.SUSPICIOUS) {

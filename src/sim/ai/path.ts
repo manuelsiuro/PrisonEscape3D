@@ -78,7 +78,15 @@ function octile(ax: number, az: number, bx: number, bz: number) {
  * tile index) when there is a single goal: it guides the search. Returns null when no goal
  * can be reached, [] when the start already is one. `limit` caps the tiles explored.
  */
-export function findPath(w: World, start: number, isGoal: (i: number) => boolean, target = -1, limit = N, avoid?: Uint8Array, grid: Uint8Array = w.block): number[] | null {
+export function findPath(
+  w: World,
+  start: number,
+  isGoal: (i: number) => boolean,
+  target = -1,
+  limit = N,
+  avoid?: Uint8Array,
+  grid: Uint8Array = w.block,
+): number[] | null {
   if (isGoal(start)) return [];
   const blocked = blockedIn(grid);
   search++;
@@ -124,14 +132,22 @@ export function findPath(w: World, start: number, isGoal: (i: number) => boolean
 }
 
 /** The path to one tile (keeping off `avoid` tiles, such as people standing in the way). */
-export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array, grid: Uint8Array = w.block) => findPath(w, start, (i) => i === goal, goal, N, avoid, grid);
-
+export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array, grid: Uint8Array = w.block) =>
+  findPath(w, start, (i) => i === goal, goal, N, avoid, grid);
 
 /**
  * Whether a body can walk straight from one point to another (units) without touching
  * anything blocked. `grid` says what blocks (World.block for inmates, guardBlock for guards).
  */
-export function clearLine(w: World, ax: number, az: number, bx: number, bz: number, avoid?: Uint8Array, grid: Uint8Array = w.block): boolean {
+export function clearLine(
+  w: World,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+  avoid?: Uint8Array,
+  grid: Uint8Array = w.block,
+): boolean {
   const blocked = blockedIn(grid);
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(bz - az)) / (UNIT / 4)));
   const r = BODY_HALF + 40;

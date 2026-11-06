@@ -14,7 +14,17 @@ import { icon } from '../icons';
  * Keyboard: the parts are tabs (arrows switch part), the choices a radio group (arrows choose;
  * a locked one says what opens it), one Tab stop each.
  */
-const PART_ICON: Record<LookPart, string> = { skin: 'hand', hair: 'drop', style: 'star', beard: 'chat', build: 'dumbbell', hat: 'home', glasses: 'eye', tattoo: 'heart', trim: 'shirt' };
+const PART_ICON: Record<LookPart, string> = {
+  skin: 'hand',
+  hair: 'drop',
+  style: 'star',
+  beard: 'chat',
+  build: 'dumbbell',
+  hat: 'home',
+  glasses: 'eye',
+  tattoo: 'heart',
+  trim: 'shirt',
+};
 
 /** A colour as CSS. */
 const css = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
@@ -69,7 +79,13 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
         const open = opts.unlocked.has(c.id);
         const on = p.look[part] === c.id;
         const name = t(`look.${c.id}` as Key);
-        const swatch = colour ? (c.color ? `<i class="sw" style="--c:${css(c.color)}"></i>` : '<i class="sw none"></i>') : c.color ? `<i class="sw dot" style="--c:${css(c.color)}"></i>` : '';
+        const swatch = colour
+          ? c.color
+            ? `<i class="sw" style="--c:${css(c.color)}"></i>`
+            : '<i class="sw none"></i>'
+          : c.color
+            ? `<i class="sw dot" style="--c:${css(c.color)}"></i>`
+            : '';
         return `<button role="radio" tabindex="${on ? 0 : -1}" class="opt${on ? ' on' : ''}${open ? '' : ' locked'}${colour ? ' colour' : ''}" data-id="${c.id}" aria-checked="${on}" aria-label="${name}${open ? '' : ` (${t('intake.locked')})`}" title="${name}">${swatch}${colour ? '' : `<span>${name}</span>`}${open ? '' : `<em>${icon('lock', 11)}</em>`}</button>`;
       })
       .join('');
@@ -81,7 +97,11 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
     part = k;
     showOpts();
     // The part chosen in full view (the row scrolls on a phone).
-    el.querySelector<HTMLElement>(`[data-part="${k}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: document.body.classList.contains('reduced-motion') ? 'auto' : 'smooth' });
+    el.querySelector<HTMLElement>(`[data-part="${k}"]`)?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: document.body.classList.contains('reduced-motion') ? 'auto' : 'smooth',
+    });
   };
   /** A choice: worn (and the preview follows), or, still locked, what opens it. */
   const pick = (id: string) => {
@@ -123,7 +143,15 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
       if ([...input.value].length > NAME_MAX) input.value = cleanName(input.value);
     });
     const stepOf = (e: KeyboardEvent, n: number, k: number) =>
-      e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : e.key === 'ArrowRight' || e.key === 'ArrowDown' ? (k + 1) % n : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? (k + n - 1) % n : -1;
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? n - 1
+          : e.key === 'ArrowRight' || e.key === 'ArrowDown'
+            ? (k + 1) % n
+            : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+              ? (k + n - 1) % n
+              : -1;
     // The parts: arrows switch part (the choices follow).
     el.querySelector<HTMLElement>('.intake-parts')!.addEventListener('keydown', (e) => {
       const k = LOOK_PARTS.indexOf(part);
@@ -176,7 +204,10 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
       }
       if (c === 'done') {
         click();
-        return done({ name: cleanName(input.value), look: Object.fromEntries(LOOK_PARTS.map((k) => [k, cosmetic(p.look[k]) ? p.look[k] : start.look[k]])) as Prisoner['look'] });
+        return done({
+          name: cleanName(input.value),
+          look: Object.fromEntries(LOOK_PARTS.map((k) => [k, cosmetic(p.look[k]) ? p.look[k] : start.look[k]])) as Prisoner['look'],
+        });
       }
     });
     // Dragging across the picture turns your prisoner round.

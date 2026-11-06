@@ -166,7 +166,7 @@ seen and where), or "not checked". Never tick a line from memory.
 
 | Check | Proof |
 |---|---|
-| `npm run build` and `npm test` (exit codes, clean re-run) | |
+| `npm run build` and `npm run check` (types, lint, layout, tests: exit codes, clean re-run) | |
 | Works in all five prisons | |
 | Lesson played from the menu; first-day guide | |
 | How to play page and picture; other pages that mention it | |

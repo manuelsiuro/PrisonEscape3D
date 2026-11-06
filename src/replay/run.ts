@@ -29,7 +29,7 @@ export function runScout(log: RunLog, onProgress: (p: ScoutProgress) => void): {
       w.onerror = (ev) => {
         ev.preventDefault();
         w.terminate();
-        if (!stopped) mainThread(log, onProgress, () => stopped).then(resolve);
+        if (!stopped) void mainThread(log, onProgress, () => stopped).then(resolve);
       };
     });
     w.postMessage(log);

@@ -1,16 +1,20 @@
 /** Minimal stroke icon set (24×24, currentColor). Add paths as the game needs them. */
 const P: Record<string, string> = {
-  gamepad: '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="17.5" cy="13.5" r="1" fill="currentColor"/>',
+  gamepad:
+    '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="17.5" cy="13.5" r="1" fill="currentColor"/>',
   play: '<path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="currentColor" stroke="none"/>',
   sound: '<path d="M11 5 6 9H2v6h4l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>',
   mute: '<path d="M11 5 6 9H2v6h4l5 4Z"/><path d="m22 9-6 6M16 9l6 6"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
-  share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>',
+  share:
+    '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>',
   /** The browsers' own buttons, named in the install steps: Safari's Share, Add to Home Screen, the menus, Install, a Mac's Dock. */
-  iosShare: '<path d="M12 14V3M8 7l4-4 4 4"/><path d="M8.5 10H6.5a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5h-2"/>',
+  iosShare:
+    '<path d="M12 14V3M8 7l4-4 4 4"/><path d="M8.5 10H6.5a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5h-2"/>',
   addSquare: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M12 8.5v7M8.5 12h7"/>',
   dots: '<circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/>',
-  dotsH: '<circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/>',
+  dotsH:
+    '<circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/>',
   install: '<path d="M12 3v11M7.5 9.5 12 14l4.5-4.5"/><path d="M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/>',
   dock: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 21h10M7.5 13.5h2M11 13.5h2M14.5 13.5h2"/>',
   link: '<path d="M10 13.5a4.5 4.5 0 0 0 6.4.4l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10.5a4.5 4.5 0 0 0-6.4-.4l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/>',
@@ -49,7 +53,8 @@ const P: Record<string, string> = {
   up: '<path d="M12 20V5M5 12l7-7 7 7"/>',
   down: '<path d="M12 4v15M5 12l7 7 7-7"/>',
   cookie: '<path d="M4 8h16v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3Z"/><path d="M4 12h16M10 8v12M14 8v12"/>',
-  heart: '<path d="M12 20s-7.5-4.6-9-9.5C1.9 6.8 4.4 4 7.4 4c1.9 0 3.6 1 4.6 2.6C13 5 14.7 4 16.6 4c3 0 5.5 2.8 4.4 6.5-1.5 4.9-9 9.5-9 9.5Z"/>',
+  heart:
+    '<path d="M12 20s-7.5-4.6-9-9.5C1.9 6.8 4.4 4 7.4 4c1.9 0 3.6 1 4.6 2.6C13 5 14.7 4 16.6 4c3 0 5.5 2.8 4.4 6.5-1.5 4.9-9 9.5-9 9.5Z"/>',
   target: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
   fist: '<path d="M7 11V8.5a1.5 1.5 0 0 1 3 0V11M10 8a1.5 1.5 0 0 1 3 0v3M13 8.5a1.5 1.5 0 0 1 3 0V12M16 10a1.5 1.5 0 0 1 3 0v3.5a6.5 6.5 0 0 1-6.5 6.5h-1A6.5 6.5 0 0 1 5 13.5V12a1.5 1.5 0 0 1 2-1.4"/><path d="M7 14h4"/>',
   splash: '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11Z"/><path d="M3 9l2 1M21 9l-2 1M5 4l1.5 2M19 4l-1.5 2"/>',
@@ -65,16 +70,19 @@ const P: Record<string, string> = {
   chat: '<path d="M4 5h16v11H9l-5 4Z"/><path d="M8 9h8M8 12h5"/>',
   gift: '<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M12 9v12M3 13h18M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6-.5 6-1.5S14 5 12 9Z"/>',
   cart: '<path d="M3 4h2l2.5 11h11L21 7H7"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
-  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14a5 5 0 0 1 4.5 5"/>',
+  users:
+    '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14a5 5 0 0 1 4.5 5"/>',
   person: '<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
   dumbbell: '<path d="M6 7v10M3 9.5v5M18 7v10M21 9.5v5M6 12h12"/>',
   run: '<circle cx="14" cy="4.5" r="2"/><path d="m5 21 4-6 3 2 1 4M7 12l3-4h4l2 3 3 1M10 8l2 6"/>',
-  brain: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1ZM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>',
+  brain:
+    '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1ZM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>',
   letter: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   drop: '<path d="M12 3c3 4.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-6.5 6-11Z"/>',
   hook: '<path d="M12 3v11a4 4 0 0 1-8 0"/><path d="M12 14a4 4 0 0 0 8 0M12 3l-3 3M12 3l3 3"/>',
   camera: '<path d="M3 8h12l4-3v10l-4-3H3Z"/><path d="M7 12v5M4 17h6"/>',
-  eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.6 6.6A16.7 16.7 0 0 0 2.5 12s3.5 6 9.5 6a9.5 9.5 0 0 0 4.4-1.1"/>',
+  eyeOff:
+    '<path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.6 6.6A16.7 16.7 0 0 0 2.5 12s3.5 6 9.5 6a9.5 9.5 0 0 0 4.4-1.1"/>',
   plug: '<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0Z"/><path d="M12 17v5"/>',
   route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/>',
   board: '<rect x="4" y="3" width="16" height="13" rx="1.5"/><path d="M8 21l2-5M16 21l-2-5M8 7h5M8 10h8"/>',
@@ -100,8 +108,10 @@ const P: Record<string, string> = {
   film: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 8h4M3 12h4M3 16h4M17 8h4M17 12h4M17 16h4"/>',
   clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 2.5h6v3H9ZM8.5 11l2 2 4-4M8.5 17h7"/>',
   utensils: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 2.5-3 6s1.5 4 3 4v8"/>',
-  wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9Z"/>',
-  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/>',
+  wrench:
+    '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9Z"/>',
+  calendar:
+    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/>',
   /** A paw print (P19: the dogs). */
   paw: '<ellipse cx="12" cy="16" rx="4.5" ry="3.6"/><circle cx="5.5" cy="10.5" r="1.8"/><circle cx="9.5" cy="6.5" r="1.8"/><circle cx="14.5" cy="6.5" r="1.8"/><circle cx="18.5" cy="10.5" r="1.8"/>',
   rat: '<path d="M5 16c0-4 4-7 9-7 3 0 5 2 7 4-2 2-4 3-7 3Z"/><circle cx="14.5" cy="9.2" r="1.8"/><circle cx="17.6" cy="12.2" r=".8" fill="currentColor" stroke="none"/><path d="M5 16c-2.5 0-3.5 1.5-2.5 3s4 1 5.5-.5M10 16v2M14 16v2"/>',
@@ -110,33 +120,42 @@ const P: Record<string, string> = {
   /** A burner phone (P21: smuggling). */
   phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5.5h4M11 18.5h2"/>',
   /** A drone with a parcel slung under it (P21). */
-  drone: '<path d="M2.5 6h5M16.5 6h5M5 6v2.5l4 2h6l4-2V6"/><rect x="9" y="9" width="6" height="3.5" rx="1"/><path d="M12 12.5v3"/><rect x="9.5" y="15.5" width="5" height="5" rx=".5"/>',
+  drone:
+    '<path d="M2.5 6h5M16.5 6h5M5 6v2.5l4 2h6l4-2V6"/><rect x="9" y="9" width="6" height="3.5" rx="1"/><path d="M12 12.5v3"/><rect x="9.5" y="15.5" width="5" height="5" rx=".5"/>',
   /** Two dice (P22: side games). */
   dice: '<rect x="2.5" y="9.5" width="10" height="10" rx="2"/><rect x="11.5" y="3.5" width="10" height="10" rx="2" transform="rotate(12 16.5 8.5)"/><circle cx="5.5" cy="12.5" r=".9" fill="currentColor"/><circle cx="9.5" cy="16.5" r=".9" fill="currentColor"/><circle cx="16.5" cy="8.5" r=".9" fill="currentColor"/>',
   /** A flexed arm (P22: arm-wrestling). */
   arm: '<path d="M4 20c-.8-3.6.2-7.6 3.2-10.6L10 6.5 9 4h4.5l1.5 2.5-3 2.5.8 2.8c2.6-1.4 6.2-.6 7.2 2.4s-1.2 5.8-4.5 5.8Z"/>',
   /** A lockpick and its tension wrench (P22). */
-  cards: '<rect x="3.5" y="5.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 12.5)"/><rect x="10" y="4" width="10" height="14" rx="1.6" transform="rotate(10 15 11)"/><path d="m15.4 8.6-1.8 2.8 1.8 2.8 1.8-2.8Z"/>',
+  cards:
+    '<rect x="3.5" y="5.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 12.5)"/><rect x="10" y="4" width="10" height="14" rx="1.6" transform="rotate(10 15 11)"/><path d="m15.4 8.6-1.8 2.8 1.8 2.8 1.8-2.8Z"/>',
   ball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/><path d="M5.6 5.6a12 12 0 0 1 0 12.8M18.4 5.6a12 12 0 0 0 0 12.8"/>',
-  checkers: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="18" r="1.4"/>',
+  checkers:
+    '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="18" r="1.4"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
   // P28: a bag of pruno bubbling, a seedling, fruit, a watering cup, a race track's lanes, a ticket (a bet).
   brew: '<path d="M9 3h6l-1 3.5c3 1.2 4.5 4 4.5 7A6.5 6.5 0 0 1 12 20a6.5 6.5 0 0 1-6.5-6.5c0-3 1.5-5.8 4.5-7Z"/><circle cx="10" cy="14" r="1"/><circle cx="13.8" cy="15.6" r="1.3"/><circle cx="12.6" cy="11.4" r=".8"/>',
-  sprout: '<path d="M12 21v-8"/><path d="M12 13C12 9 9 7 5 7c0 4 3 6 7 6Z"/><path d="M12 14c0-3 2.5-5.5 6.5-5.5 0 3.5-2.5 5.5-6.5 5.5Z"/><path d="M6 21h12"/>',
-  fruit: '<path d="M12 8c-4-2-8 1-8 5.5S7 21 9.5 21c1 0 1.5-.5 2.5-.5s1.5.5 2.5.5C17 21 20 18 20 13.5S16 6 12 8Z"/><path d="M12 8c0-2 1-4 3-5"/>',
-  water: '<path d="M6 8h10l-1 12H7Z"/><path d="M16 10h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M12 2.5c1.5 2 2 3 2 3.8a2 2 0 0 1-4 0c0-.8.5-1.8 2-3.8Z" fill="currentColor" stroke="none"/>',
+  sprout:
+    '<path d="M12 21v-8"/><path d="M12 13C12 9 9 7 5 7c0 4 3 6 7 6Z"/><path d="M12 14c0-3 2.5-5.5 6.5-5.5 0 3.5-2.5 5.5-6.5 5.5Z"/><path d="M6 21h12"/>',
+  fruit:
+    '<path d="M12 8c-4-2-8 1-8 5.5S7 21 9.5 21c1 0 1.5-.5 2.5-.5s1.5.5 2.5.5C17 21 20 18 20 13.5S16 6 12 8Z"/><path d="M12 8c0-2 1-4 3-5"/>',
+  water:
+    '<path d="M6 8h10l-1 12H7Z"/><path d="M16 10h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M12 2.5c1.5 2 2 3 2 3.8a2 2 0 0 1-4 0c0-.8.5-1.8 2-3.8Z" fill="currentColor" stroke="none"/>',
   race: '<path d="M3 6h18M3 12h18M3 18h18"/><path d="M18 3v18" stroke-dasharray="1.5 1.5"/><circle cx="8" cy="9" r="1.3" fill="currentColor"/><circle cx="12" cy="15" r="1.3" fill="currentColor"/>',
   ticket: '<path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4Z"/><path d="M14 7v10" stroke-dasharray="1.5 1.5"/>',
   lockpick: '<path d="M3.5 20.5 14 10l2.2 1.2L18.5 9"/><path d="M8 3.5v6.5h4"/><circle cx="18.8" cy="8.6" r=".4"/>',
   /** An ID card: a photo and two lines (P24, the bluff). */
-  idCard: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13.5h3"/>',
+  idCard:
+    '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13.5h3"/>',
   /** A hang glider's wing over its bar (P24). */
-  needle: '<path d="M4 20 9.5 14.5"/><rect x="9" y="5.5" width="5.5" height="9" rx="1.6" transform="rotate(45 11.75 10)"/><path d="M15.5 4.5 19.5 8.5"/><path d="M13.5 2.5 21.5 10.5"/>',
+  needle:
+    '<path d="M4 20 9.5 14.5"/><rect x="9" y="5.5" width="5.5" height="9" rx="1.6" transform="rotate(45 11.75 10)"/><path d="M15.5 4.5 19.5 8.5"/><path d="M13.5 2.5 21.5 10.5"/>',
   glider: '<path d="M2 11 12 5l10 6-10-1.6Z"/><path d="M12 9.4V15M9 15h6M12 15l-1.4 4M12 15l1.4 4"/>',
   /** A bucket drum and its two sticks (P30, talent night). */
   drum: '<path d="M5 11h14l-1.6 9H6.6Z"/><path d="M5 11c0-1.2 3.1-2 7-2s7 .8 7 2"/><path d="M8 3l3 6M16 3l-3 6"/>',
   /** A guitar (P30): its body, the sound hole, the neck. */
-  guitar: '<path d="M14 10a4 4 0 0 0-5.6-.4 3.5 3.5 0 0 0-2.9 1.6 3.6 3.6 0 0 0 .9 5 3.6 3.6 0 0 0 5 .9 3.5 3.5 0 0 0 1.6-2.9A4 4 0 0 0 14 10Z"/><circle cx="10" cy="14" r="1.1"/><path d="M13 11 20 4M18.5 2.5l3 3"/>',
+  guitar:
+    '<path d="M14 10a4 4 0 0 0-5.6-.4 3.5 3.5 0 0 0-2.9 1.6 3.6 3.6 0 0 0 .9 5 3.6 3.6 0 0 0 5 .9 3.5 3.5 0 0 0 1.6-2.9A4 4 0 0 0 14 10Z"/><circle cx="10" cy="14" r="1.1"/><path d="M13 11 20 4M18.5 2.5l3 3"/>',
   /** P35: the internet kiosk's screen on its stand; a newspaper; a framed drawing. */
   monitor: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 8h6M7 11h9"/>',
   news: '<path d="M4 5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v9a2 2 0 0 1-2 2M7 8h7M7 12h7M7 16h4"/>',
@@ -146,17 +165,20 @@ const P: Record<string, string> = {
   scale: '<path d="M12 3v18M8 21h8M5 7h14M12 5l0 2"/><path d="m5 7-3 7a3.5 3.5 0 0 0 6 0Z"/><path d="m19 7-3 7a3.5 3.5 0 0 0 6 0Z"/>',
   // v2.21 (P42, holidays): an egg, a pumpkin, a burst of fireworks, a Christmas tree.
   egg: '<path d="M12 3c-3.5 0-6.5 5.5-6.5 10a6.5 6.5 0 0 0 13 0C18.5 8.5 15.5 3 12 3Z"/><path d="M6 13l3-2 3 2 3-2 3 2"/>',
-  pumpkin: '<path d="M12 7c-5-1-9 2-9 7s3 7 6 7c1 0 2-.5 3-.5s2 .5 3 .5c3 0 6-2 6-7s-4-8-9-7Z"/><path d="M12 7c-1.5 2-1.5 11 0 13.5M12 7c1.5 2 1.5 11 0 13.5M12 7c0-2 1-3.5 2.5-4"/>',
-  sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
+  pumpkin:
+    '<path d="M12 7c-5-1-9 2-9 7s3 7 6 7c1 0 2-.5 3-.5s2 .5 3 .5c3 0 6-2 6-7s-4-8-9-7Z"/><path d="M12 7c-1.5 2-1.5 11 0 13.5M12 7c1.5 2 1.5 11 0 13.5M12 7c0-2 1-3.5 2.5-4"/>',
+  sparkle:
+    '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
   tree: '<path d="M12 2.5 6.5 9h3L5 15h4l-3.5 4.5h13L15 15h4l-4.5-6h3Z"/><path d="M12 19.5V22"/>',
   /** 2.33: a stick of chalk and its scrawl (the menu board scribbled on). */
-  chalk: '<rect x="11" y="2.5" width="4.5" height="12" rx="1.2" transform="rotate(40 13.25 8.5)"/><path d="M3 20c2-2 3 1 5-1s3 1 5-1 3 1 5-1"/>',
+  chalk:
+    '<rect x="11" y="2.5" width="4.5" height="12" rx="1.2" transform="rotate(40 13.25 8.5)"/><path d="M3 20c2-2 3 1 5-1s3 1 5-1 3 1 5-1"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */
 export const hasIcon = (name: string) => name in P;
 
 /** An inline SVG icon (`.ic`, display: block; inside text, make it inline-block). */
-export function icon(name: keyof typeof P | string, size = 22): string {
+export function icon(name: keyof typeof P | (string & {}), size = 22): string {
   return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] ?? ''}</svg>`;
 }

@@ -67,7 +67,18 @@ import {
   fileAway,
 } from './context';
 import { play, type Game } from './game';
-import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, describeCall, dogName, targetInfo } from './labels';
+import {
+  ACTION_IDS,
+  boxTitle,
+  describeAttack,
+  describeTarget,
+  describeTool,
+  describeToss,
+  describeTreat,
+  describeCall,
+  dogName,
+  targetInfo,
+} from './labels';
 import { DOG, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
 import { coachOnce, seenTip } from './tips';
@@ -102,7 +113,22 @@ import { hudFrame, hudState, setSongOn } from './hudframe';
  * music and ambience that follow the game.
  */
 
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, boxTheirs: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false, books: null, take: [] };
+const itemsView: ItemsView = {
+  items: null as unknown as ItemState,
+  boxTitle: '',
+  boxHidden: 0,
+  boxMine: false,
+  boxTheirs: false,
+  carried: [],
+  tips: [],
+  usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k),
+  action: null,
+  sleeping: false,
+  deskTunnel: false,
+  study: false,
+  books: null,
+  take: [],
+};
 const GET_UP = { verb: '', what: '' };
 /** 2.31: on a library chair with a book. */
 const READ_ON = { verb: '', what: '' };
@@ -146,7 +172,8 @@ export function keepPlayerClear(open: boolean) {
   const h = innerHeight;
   const top = 110;
   // (P27: a card docked to the left reaching past the middle (a phone held sideways): the picture slides right.)
-  if (r.left < w * 0.1 && r.right < w * 0.75 && r.top < h * 0.45) view.setShift(r.right > w / 2 - 60 ? Math.round((r.right + w) / 2 - w / 2) : 0, 0);
+  if (r.left < w * 0.1 && r.right < w * 0.75 && r.top < h * 0.45)
+    view.setShift(r.right > w / 2 - 60 ? Math.round((r.right + w) / 2 - w / 2) : 0, 0);
   else if (r.top < h * 0.45 && r.left > w * 0.2) {
     // To the side: centre the player in what's left of the width.
     view.setShift(r.left < w / 2 + 60 ? Math.round(r.left / 2 - w / 2) : 0, 0);
@@ -192,7 +219,28 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   }
   // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
   const papers = tail || st.stowed ? null : (deskAction(sim) ?? windowAction(sim, !!target || !!climb));
-  v.action = st.ko > 0 || g.over ? null : st.vendOpen ? vendAction(sim) : st.menuOpen ? menuAction() : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && st.train >= 0 && !sim.rules230 ? null : st.seat >= 0 && it.open < 0 && st.talk < 0 ? (readSeated(sim) ? READ_ON : GET_UP) : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
+  v.action =
+    st.ko > 0 || g.over
+      ? null
+      : st.vendOpen
+        ? vendAction(sim)
+        : st.menuOpen
+          ? menuAction()
+          : st.solitary > 0
+            ? PEEL_ACTION
+            : st.stowed
+              ? CLIMB_OUT
+              : st.seat >= 0 && st.train >= 0 && !sim.rules230
+                ? null
+                : st.seat >= 0 && it.open < 0 && st.talk < 0
+                  ? readSeated(sim)
+                    ? READ_ON
+                    : GET_UP
+                  : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen()
+                    ? null
+                    : tail
+                      ? STOW
+                      : (papers ?? describeTarget(sim, target, climb, held, memo.station));
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -212,7 +260,13 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // Jerky, pepper or sleepy jerky in hand with a dog within a throw (P19): its button throws it to the dog.
   if (!press.toolNow && FOR_DOGS.has(held) && !busy && st.layer === LAYER.GROUND) {
     const to = treatTarget(sim);
-    if (to) press.toolNow = describeTreat(dogName(sim, to.dog), to.tile, held === PEPPER, held === JERKY && st.dogs[to.dog].fed === prisonDay(st.step));
+    if (to)
+      press.toolNow = describeTreat(
+        dogName(sim, to.dog),
+        to.tile,
+        held === PEPPER,
+        held === JERKY && st.dogs[to.dog].fed === prisonDay(st.step),
+      );
   }
   // The dogs (P19): told about a dog's nose the first time one could smell the contraband, and about the trail the first time one is laid with a dog at work.
   if (!busy && hudState.dog === 'nose') coachOnce('sniffed', 'hint.sniffed');
@@ -230,7 +284,18 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P24: a glider, the first time one is in hand on a roof.)
   if (!busy && held === GLIDER && st.layer === LAYER.ROOF) coachOnce('glider', 'hint.glider');
   // A guard dozing close by, in plain sight (P15): what it means, the first time one is seen.
-  if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT && lineOfSight(sim.world, st.player.x, st.player.z, x.body.x, x.body.z))) coachOnce('nap', 'hint.nap');
+  if (
+    !busy &&
+    st.layer === LAYER.GROUND &&
+    !seenTip('nap') &&
+    st.guards.some(
+      (x) =>
+        x.doing === DOING.DOZE &&
+        Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT &&
+        lineOfSight(sim.world, st.player.x, st.player.z, x.body.x, x.body.z),
+    )
+  )
+    coachOnce('nap', 'hint.nap');
   // Each new target takes a new press: a held button never digs on into the next thing.
   press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
@@ -240,7 +305,14 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
   // (P27: so do a hand of Cheat and the old-timer's board.)
   const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated || !!st.ink;
-  tools.update(training ? null : press.toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
+  tools.update(
+    training ? null : press.toolNow,
+    st.energy,
+    !!(held && itemDef(held).tool) || training,
+    busy || panel,
+    st.health / maxHealth(st.str),
+    fighting,
+  );
   // Dig up, in a tunnel (the floor overhead): a new tile takes a new press.
   const up = memo.up;
   const upKey = up ? up.tile : -1;
@@ -323,7 +395,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   paroleCard.update(paroleV);
   document.body.classList.toggle('paroling', !!paroleV);
   // (Before the board the answers are the controls; the verdict's card a moment, the action button off it too.)
-  document.body.dataset.parole = paroleV && (paroleV.phase === 'ask' || paroleV.phase === 'weigh' || paroleV.phase === 'sat') ? 'on' : paroleV?.phase === 'verdict' ? 'verdict' : '';
+  document.body.dataset.parole =
+    paroleV && (paroleV.phase === 'ask' || paroleV.phase === 'weigh' || paroleV.phase === 'sat')
+      ? 'on'
+      : paroleV?.phase === 'verdict'
+        ? 'verdict'
+        : '';
   // The odd jobs board (P40): its card at the board, the job's own card from its chip — one card docked at a time:
   // any other game's or place's card (the parole board's at the desk, the hearing, the verdict) comes first, and the
   // job's own card, asked for from its chip, is closed for it (not left to come back later on its own).
@@ -336,7 +413,25 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (A story's card waits while another card is docked where it docks; it takes the race's place while it's up.)
   storyCard.wait(docked);
   // (P40: the odd jobs' card docked left takes the place of the race's while it's open; so do the phone's, the kiosk's, the parole board's.)
-  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV || phoneV || kioskV || paroleV || jobsV || storyCard.open ? null : raceNow(sim, a);
+  const race =
+    busy ||
+    panel ||
+    cheat ||
+    boardV ||
+    court ||
+    bout ||
+    pick ||
+    match ||
+    inkV ||
+    stageV ||
+    quizV ||
+    phoneV ||
+    kioskV ||
+    paroleV ||
+    jobsV ||
+    storyCard.open
+      ? null
+      : raceNow(sim, a);
   const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
@@ -359,13 +454,19 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The crew (P23): their panel, their pill, the chips over their heads.
   crewPanel.update(crewPanel.isOpen ? crewRows(sim) : null, busy);
   const chipsOff = busy || panel || st.layer !== LAYER.GROUND || !st.followers.length;
-  crewChips.update(chipsOff ? NO_CREW : crewChipList(sim), chipAt, chipsOff, chipsOff ? 57 : unitPx(st.player.x / UNIT, st.player.z / UNIT));
+  crewChips.update(
+    chipsOff ? NO_CREW : crewChipList(sim),
+    chipAt,
+    chipsOff,
+    chipsOff ? 57 : unitPx(st.player.x / UNIT, st.player.z / UNIT),
+  );
   smuggleHints(sim, busy || panel);
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it (not over the warden's morning card: after it).
-  if (target && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
+  if (target && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk'))
+    hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   hudFrame(g, a, tile, busy);
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
   // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)

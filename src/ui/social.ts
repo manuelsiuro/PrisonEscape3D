@@ -11,7 +11,16 @@ import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_STATE, giftOpinion, p
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
 import { nextTip } from '../sim/systems/recipes';
-import { BRIBE_REPORT_HEAT, LOOK_AWAY_STEPS, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, PAPER_HEAT, STEPS_PER_MINUTE, TIP_OPINION } from '../sim/tuning';
+import {
+  BRIBE_REPORT_HEAT,
+  LOOK_AWAY_STEPS,
+  MAX_FOLLOWERS,
+  OPINION_HIGH,
+  OPINION_LOW,
+  PAPER_HEAT,
+  STEPS_PER_MINUTE,
+  TIP_OPINION,
+} from '../sim/tuning';
 import { clockAt, formatTime } from '../sim/systems/clock';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, type Key, t } from '../i18n';
@@ -25,7 +34,6 @@ import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
 import { gamesSection, type GamesView } from './games';
 import { twist } from '../sim/systems/twists';
 import { favorText, guardTitle, inmateName } from './names';
-
 
 /**
  * What odd jobs bring to a talk (P40, play/oddjobs.ts): the job held handed in to him (its words,
@@ -70,7 +78,10 @@ export class TalkPanel {
   private diceMask = 0;
   private diceGame = -1;
 
-  constructor(private readonly send: Send, private readonly click: () => void) {
+  constructor(
+    private readonly send: Send,
+    private readonly click: () => void,
+  ) {
     this.el = h('div', 'item-panel talk-panel hidden');
     this.el.setAttribute('role', 'dialog');
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
@@ -136,7 +147,28 @@ export class TalkPanel {
     }
     const now = performance.now();
     const shown = gv?.show;
-    const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(','), gv.court, gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : '', gv.football ? `${gv.football.open}${gv.football.why}` : '', gv.ink ? `${gv.ink.why}|${gv.ink.mineWhy}|${gv.ink.inked.join()}` : '', gv.inkHeat].join(':') : '';
+    const gamesKey = gv
+      ? [
+          gv.id,
+          gv.open,
+          gv.why,
+          gv.left,
+          gv.seen,
+          gv.dice?.mine.join(',') ?? '',
+          shown ? (now < shown.shownAt ? 1 : 2) : 0,
+          shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '',
+          gv.arm,
+          gv.tired,
+          gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '',
+          this.diceMask,
+          gv.stakes.map((x) => x.ok).join(','),
+          gv.court,
+          gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : '',
+          gv.football ? `${gv.football.open}${gv.football.why}` : '',
+          gv.ink ? `${gv.ink.why}|${gv.ink.mineWhy}|${gv.ink.inked.join()}` : '',
+          gv.inkHeat,
+        ].join(':')
+      : '';
     // The crew (P23): a follower's orders; everyone's line of work.
     const cv = this.crew(sim, who);
     const spec = specialityOf(sim.world, who, m.cell);
@@ -149,7 +181,32 @@ export class TalkPanel {
     const his = s.line.indexOf(who);
     const ahead = mine > 0 && his >= 0 && his < mine;
     const oj = this.oddJob(sim, who);
-    const key = [oj?.key ?? '', crewKey, gamesKey, who, m.opinion, fixer, librarian, hasPhone, ahead, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    const key = [
+      oj?.key ?? '',
+      crewKey,
+      gamesKey,
+      who,
+      m.opinion,
+      fixer,
+      librarian,
+      hasPhone,
+      ahead,
+      favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '',
+      shop?.join(',') ?? '',
+      sim.shopsOpen,
+      sim.fixerOpen,
+      s.cash,
+      inv.join(','),
+      s.followers.join(','),
+      s.jobs.join(','),
+      s.tipDay[who] ?? 0,
+      s.tips.length,
+      s.items.known.length,
+      s.items.int,
+      sim.clock.day,
+      currentLang(),
+      this.greeting,
+    ].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -171,7 +228,9 @@ export class TalkPanel {
     let favorHtml = '';
     if (favor) {
       const carrying = favor.item ? inv.some((v) => itemOf(v) === favor.item) : false;
-      const ready = favor.state === FAVOR_STATE.DONE || ((favor.kind === FAVOR.SCAVENGE || favor.kind === FAVOR.RETRIEVE) && favor.state === FAVOR_STATE.TAKEN && carrying);
+      const ready =
+        favor.state === FAVOR_STATE.DONE ||
+        ((favor.kind === FAVOR.SCAVENGE || favor.kind === FAVOR.RETRIEVE) && favor.state === FAVOR_STATE.TAKEN && carrying);
       const status =
         favor.state === FAVOR_STATE.OFFERED
           ? `<button class="big-btn primary small" data-act="${TALK.ACCEPT}">${icon('check', 16)}<span>${t('talk.accept')}</span></button>`
@@ -210,7 +269,9 @@ export class TalkPanel {
         .map((v, k) => {
           const n = itemOf(v);
           const price = v ? saleOf(n) : 0;
-          return price ? `<button class="shop-item sell" data-act="${TALK.SELL}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.sell', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(t('talk.sellItem', { item: itemName(n) }))}</span><b>+$${price}</b></button>` : '';
+          return price
+            ? `<button class="shop-item sell" data-act="${TALK.SELL}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.sell', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(t('talk.sellItem', { item: itemName(n) }))}</span><b>+$${price}</b></button>`
+            : '';
         })
         .join('');
       // (Its own stock sold out, the staples still on offer: no "sold out" over them.)
@@ -224,7 +285,15 @@ export class TalkPanel {
       const closed = !sim.fixerOpen;
       const friend = m.opinion >= PHONE_OPINION;
       const ok = !closed && friend && !hasPhone;
-      const note = hasPhone ? t('phone.haveOne') : closed ? t('phone.closed') : !friend ? t('phone.needOpinion', { n: PHONE_OPINION }) : s.cash < PHONE_PRICE ? t('phone.needCash', { n: PHONE_PRICE }) : t('phone.offer');
+      const note = hasPhone
+        ? t('phone.haveOne')
+        : closed
+          ? t('phone.closed')
+          : !friend
+            ? t('phone.needOpinion', { n: PHONE_OPINION })
+            : s.cash < PHONE_PRICE
+              ? t('phone.needCash', { n: PHONE_PRICE })
+              : t('phone.offer');
       phoneHtml = `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.fixerTitle')}</span></div>
         <div class="bribe-row"><span class="bribe-text"><b>${t('item.burner_phone')}</b><small>${esc(note)}</small></span><button class="big-btn ${ok && s.cash >= PHONE_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.PHONE}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirmBuy', { n: PHONE_PRICE }))}" aria-label="${esc(t('talk.buy', { item: t('item.burner_phone'), price: PHONE_PRICE }))}"><img class="btn-item" src="${itemIcons()[PHONE]}" alt="" draggable="false"><span>$${PHONE_PRICE}</span></button></div></section>`;
     }
@@ -232,10 +301,22 @@ export class TalkPanel {
     let ojHtml = '';
     if (oj) {
       const rows: string[] = [];
-      if (oj.give) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.giveParcel')}</b><small>${esc(oj.give.text)}</small></span><button class="big-btn primary small" data-act="${TALK.GIFT}" data-arg="${oj.give.slot}">${icon('gift', 16)}<span>${t('oddjob.give')}</span></button></div>`);
-      if (oj.handIn) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.handIn.text)}</b><small>${esc(oj.handIn.why || oj.handIn.pay)}</small></span><button class="big-btn ${oj.handIn.why ? 'ghost' : 'primary'} small" data-act="${TALK.JOB_IN}" ${oj.handIn.why ? 'disabled' : ''}>${icon('coin', 16)}<span>${t('oddjob.handIn')}</span></button></div>`);
-      if (oj.offer) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.offer.text)}</b><small>${esc(oj.offer.why || oj.offer.pay)}</small></span><button class="big-btn ${oj.offer.why ? 'ghost' : 'primary'} small" data-act="${TALK.ODD_JOB}" aria-label="${esc(`${t('oddjob.take')}: ${oj.offer.text}`)}" ${oj.offer.why ? 'disabled' : ''}>${icon('check', 16)}<span>${t('oddjob.take')}</span></button></div>`);
-      if (oj.owed !== null) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.owes')}</b><small>${esc(oj.owed || t('oddjob.owesNote'))}</small></span><button class="big-btn primary small" data-act="${TALK.CALL_IN}" data-confirm="${esc(t('oddjob.callInSure'))}">${icon('wrench', 16)}<span>${t('oddjob.callIn')}</span></button></div>`);
+      if (oj.give)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.giveParcel')}</b><small>${esc(oj.give.text)}</small></span><button class="big-btn primary small" data-act="${TALK.GIFT}" data-arg="${oj.give.slot}">${icon('gift', 16)}<span>${t('oddjob.give')}</span></button></div>`,
+        );
+      if (oj.handIn)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.handIn.text)}</b><small>${esc(oj.handIn.why || oj.handIn.pay)}</small></span><button class="big-btn ${oj.handIn.why ? 'ghost' : 'primary'} small" data-act="${TALK.JOB_IN}" ${oj.handIn.why ? 'disabled' : ''}>${icon('coin', 16)}<span>${t('oddjob.handIn')}</span></button></div>`,
+        );
+      if (oj.offer)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.offer.text)}</b><small>${esc(oj.offer.why || oj.offer.pay)}</small></span><button class="big-btn ${oj.offer.why ? 'ghost' : 'primary'} small" data-act="${TALK.ODD_JOB}" aria-label="${esc(`${t('oddjob.take')}: ${oj.offer.text}`)}" ${oj.offer.why ? 'disabled' : ''}>${icon('check', 16)}<span>${t('oddjob.take')}</span></button></div>`,
+        );
+      if (oj.owed !== null)
+        rows.push(
+          `<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.owes')}</b><small>${esc(oj.owed || t('oddjob.owesNote'))}</small></span><button class="big-btn primary small" data-act="${TALK.CALL_IN}" data-confirm="${esc(t('oddjob.callInSure'))}">${icon('wrench', 16)}<span>${t('oddjob.callIn')}</span></button></div>`,
+        );
       ojHtml = `<section class="talk-phone talk-oddjob"><div class="box-label">${icon('pin', 14)}<span>${t(oj.offer ? 'oddjob.fixerTitle' : 'oddjob.talkTitle')}</span></div>${rows.join('')}</section>`;
     }
     // The pay phone's queue (P34): the place of an inmate ahead, bought.
@@ -257,7 +338,10 @@ export class TalkPanel {
         return `<button class="slot gift" data-act="${TALK.GIFT}" data-arg="${k}" data-confirm="${esc(t('talk.confirmGive'))}" aria-label="${esc(t('talk.giveItem', { item: itemName(n) }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><i class="gift-gain">+${giftOpinion(value)}</i></button>`;
       })
       .join('');
-    const cashBtns = CASH_GIFTS.map((d) => `<button class="cash-btn" data-act="${TALK.GIFT_CASH}" data-arg="${d}" ${s.cash < d ? 'disabled' : ''}>$${d}<i>+${cashOpinion(d)}</i></button>`).join('');
+    const cashBtns = CASH_GIFTS.map(
+      (d) =>
+        `<button class="cash-btn" data-act="${TALK.GIFT_CASH}" data-arg="${d}" ${s.cash < d ? 'disabled' : ''}>$${d}<i>+${cashOpinion(d)}</i></button>`,
+    ).join('');
     const giftHtml = `<section class="talk-gift"><div class="box-label">${icon('gift', 14)}<span>${t('talk.gifts')}</span><em>${t('talk.giftsNote')}</em></div>
       ${gifts ? `<div class="slot-grid gift-grid">${gifts}</div>` : ''}<div class="cash-row">${cashBtns}</div></section>`;
     // A recipe tip (P8+): from those who like the player enough, once a day each.
@@ -267,7 +351,8 @@ export class TalkPanel {
     const tipHtml = `<button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${none ? t('talk.tipNone') : tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span>`;
     // Recruiting (GDD §10.3): from 80 opinion, two at most.
     let foot: string;
-    if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t(nightOf(s, who) ? 'talk.followingNight' : 'talk.followingNote')}</span>`;
+    if (following)
+      foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t(nightOf(s, who) ? 'talk.followingNight' : 'talk.followingNote')}</span>`;
     else {
       const full = s.followers.length >= MAX_FOLLOWERS;
       // (P26: a Lone Wolf Daily, nobody signs up.)
@@ -279,7 +364,14 @@ export class TalkPanel {
     }
     // (A redraw keeps the keyboard's place: the die or button that had the focus has it again.)
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
-    const again = had?.dataset.die !== undefined ? `[data-die="${had.dataset.die}"]` : had?.dataset.stand ? '[data-stand]' : had?.dataset.act ? `[data-act="${had.dataset.act}"]${had.dataset.arg !== undefined ? `[data-arg="${had.dataset.arg}"]` : ''}` : '';
+    const again =
+      had?.dataset.die !== undefined
+        ? `[data-die="${had.dataset.die}"]`
+        : had?.dataset.stand
+          ? '[data-stand]'
+          : had?.dataset.act
+            ? `[data-act="${had.dataset.act}"]${had.dataset.arg !== undefined ? `[data-arg="${had.dataset.arg}"]` : ''}`
+            : '';
     // (And a bet asking twice stays asking across a redraw: a guard glancing over doesn't disarm it.)
     const armed = this.el.querySelector<HTMLElement>('.armed[data-act]');
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
@@ -292,7 +384,15 @@ export class TalkPanel {
     }
     // (The button gone, the games' first live control takes the focus: a die, a stake, else the panel's close.)
     // (P23: an order given greys its own button: the focus goes on to the crew's next live one.)
-    if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? (had?.closest('.talk-crew') ? this.el.querySelector<HTMLElement>('.talk-crew button:not([disabled])') : null) ?? (had?.closest('.talk-games') ? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])') : null) ?? this.el.querySelector<HTMLElement>('[data-act="close"]'))?.focus();
+    if (again)
+      (
+        this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ??
+        (had?.closest('.talk-crew') ? this.el.querySelector<HTMLElement>('.talk-crew button:not([disabled])') : null) ??
+        (had?.closest('.talk-games')
+          ? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])')
+          : null) ??
+        this.el.querySelector<HTMLElement>('[data-act="close"]')
+      )?.focus();
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));
@@ -328,16 +428,30 @@ export class TalkPanel {
     this.who = who;
     const name = guardTitle(sim, k);
     const keyName = t(`keyColor.${def.key}` as Key);
-    const chip = trait ? `<span class="chip trait" data-trait="${trait}">${icon(TRAIT_ICON[trait], 13)}${t(`trait.${trait}` as Key)}</span>` : `<span class="chip trait unknown">${icon('ear', 13)}${t('trait.unknown')}</span>`;
+    const chip = trait
+      ? `<span class="chip trait" data-trait="${trait}">${icon(TRAIT_ICON[trait], 13)}${t(`trait.${trait}` as Key)}</span>`
+      : `<span class="chip trait unknown">${icon('ear', 13)}${t('trait.unknown')}</span>`;
     // Known not to take money, or short of it: the offer stays possible (a gamble; the guard
     // answers, a strict one reports it), drawn as a long shot.
     const pay = (kind: number, price: number) =>
       `<button class="big-btn ${(trait && trait !== 'corrupt') || s.cash < price ? 'ghost' : 'primary'} small" data-act="${TALK.BRIBE}" data-arg="${kind}" data-confirm="${esc(t('bribe.confirm', { n: price }))}" aria-label="${esc(t('bribe.payFor', { what: t(kind === BRIBE.LOOK ? 'bribe.look' : 'bribe.paper'), n: price }))}">${icon('coin', 16)}<span>$${price}</span></button>`;
     // Under the offers: the risk while its ways are unknown, else what to expect of this one.
-    const note = !trait ? t('bribe.risk', { n: BRIBE_REPORT_HEAT }) : trait === 'strict' ? t('bribe.strictNote', { n: BRIBE_REPORT_HEAT }) : trait !== 'corrupt' ? t('bribe.honestNote') : '';
+    const note = !trait
+      ? t('bribe.risk', { n: BRIBE_REPORT_HEAT })
+      : trait === 'strict'
+        ? t('bribe.strictNote', { n: BRIBE_REPORT_HEAT })
+        : trait !== 'corrupt'
+          ? t('bribe.honestNote')
+          : '';
     const hours = LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60;
-    const lookEnd = until ? `<span class="talk-status bribe-on">${icon('eyeOff', 14)}<span>${t('bribe.lookingAway', { time: until })}</span></span>` : pay(BRIBE.LOOK, look);
-    const paperEnd = paperDone ? `<span class="talk-status">${t('bribe.paperDone')}</span>` : s.heat > 0 ? pay(BRIBE.PAPER, paper) : `<span class="talk-status">${t('bribe.noHeat')}</span>`;
+    const lookEnd = until
+      ? `<span class="talk-status bribe-on">${icon('eyeOff', 14)}<span>${t('bribe.lookingAway', { time: until })}</span></span>`
+      : pay(BRIBE.LOOK, look);
+    const paperEnd = paperDone
+      ? `<span class="talk-status">${t('bribe.paperDone')}</span>`
+      : s.heat > 0
+        ? pay(BRIBE.PAPER, paper)
+        : `<span class="talk-status">${t('bribe.noHeat')}</span>`;
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face guard"${hasKey ? ` data-key="${def.key}"` : ''}>${icon('shield', 20)}</span><span class="talk-who"><b>${esc(name)}</b><small>${esc(t(hasKey ? 'talk.guardKey' : 'talk.guardKeyGone', { key: keyName }))}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet guard">${esc(this.greeting)}</p>` : ''}<div class="talk-chips">${chip}</div>
       <section class="talk-bribe"><div class="box-label">${icon('coin', 14)}<span>${t('bribe.title')}</span><em>${t('bribe.note')}</em></div>

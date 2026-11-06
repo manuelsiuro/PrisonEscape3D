@@ -1,5 +1,18 @@
 import { hhmm, pad2 } from '../sim/systems/clock';
-import { LIGHTS_OUT_GRACE, LIGHTS_OUT_GRACE_227, TRAY_HEAT, CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import {
+  LIGHTS_OUT_GRACE,
+  LIGHTS_OUT_GRACE_227,
+  TRAY_HEAT,
+  CHOCOLATE_ENERGY,
+  FRESH_ENERGY,
+  KO_STEPS,
+  LOOK_AWAY_STEPS,
+  MEAL_ENERGY,
+  PAPER_HEAT,
+  STEPS_PER_MINUTE,
+  STEPS_PER_SECOND,
+  UNIT,
+} from '../sim/tuning';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { hostile } from '../sim/systems/social';
@@ -38,7 +51,25 @@ import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { press } from './buttons';
-import { aimUI, banner, board, closeSocial, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, readCard, settings, sleepVeil, sound, tools, trainCard, view } from './context';
+import {
+  aimUI,
+  banner,
+  board,
+  closeSocial,
+  combatUI,
+  itemsUI,
+  profile,
+  ratPanel,
+  phonePanel,
+  crewPanel,
+  readCard,
+  settings,
+  sleepVeil,
+  sound,
+  tools,
+  trainCard,
+  view,
+} from './context';
 import { play } from './game';
 import { NEED } from './labels';
 import { outOfBounds } from '../sim/systems/k9';
@@ -65,7 +96,15 @@ const lastSpotted = { reason: '', at: 0 };
 /** Sitting at a canteen table at a meal with nothing to eat, and the counter serving. */
 function noTrayAtTable(sim: Sim): boolean {
   const s = sim.state;
-  return s.seat >= 0 && traysHere(sim) && mealOn(sim) && s.tray === TRAY.NONE && s.eaten < mealSteps(sim) && sim.world.props[s.seat].kind === 'seat' && sim.playerZone === 'canteen';
+  return (
+    s.seat >= 0 &&
+    traysHere(sim) &&
+    mealOn(sim) &&
+    s.tray === TRAY.NONE &&
+    s.eaten < mealSteps(sim) &&
+    sim.world.props[s.seat].kind === 'seat' &&
+    sim.playerZone === 'canteen'
+  );
 }
 
 /** Below this the morning after a night awake (2.28), they're told why, once. */
@@ -89,7 +128,14 @@ export function announce(e: SimEvent, sim: Sim) {
         sleptTonight = free ? false : null;
         if (free && !sim.world.def.rules?.relaxed) coachOnce('night', 'hint.night');
       } else if (ROUTINE[e.routine].id === 'rollCall') {
-        if (sleptTonight === false && !sim.state.lockdown && sim.state.solitary <= 0 && sim.state.ko <= 0 && sim.state.energy < NO_SLEEP_HINT) coachOnce('noSleep', 'hint.noSleep', { n: sim.state.energy });
+        if (
+          sleptTonight === false &&
+          !sim.state.lockdown &&
+          sim.state.solitary <= 0 &&
+          sim.state.ko <= 0 &&
+          sim.state.energy < NO_SLEEP_HINT
+        )
+          coachOnce('noSleep', 'hint.noSleep', { n: sim.state.energy });
         sleptTonight = null;
       }
       if (sim.state.lockdown) break;
@@ -128,7 +174,11 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'missed':
       sound.sting();
       buzz('missed');
-      if (e.heat < 100) banner.toast(t(e.offSquare ? 'toast.offSquare' : e.early ? 'toast.leftEarly' : 'toast.missed', { routine: routineName(e.routine), n: e.heat }), 'bad');
+      if (e.heat < 100)
+        banner.toast(
+          t(e.offSquare ? 'toast.offSquare' : e.early ? 'toast.leftEarly' : 'toast.missed', { routine: routineName(e.routine), n: e.heat }),
+          'bad',
+        );
       break;
     case 'lockdown':
       // The siren and the red glow follow the state every frame (see frame()).
@@ -173,7 +223,8 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.closePanels();
       play.game?.pilot.stop();
       // (Pulled out of the delivery's vehicle, P18: the banner says where they were found.)
-      if (sim.events.some((x) => x.type === 'stow' && x.found)) banner.show(t('banner.found'), t('banner.foundSub', { vehicle: vehicleThe(sim) }), 'alarm', 3600);
+      if (sim.events.some((x) => x.type === 'stow' && x.found))
+        banner.show(t('banner.found'), t('banner.foundSub', { vehicle: vehicleThe(sim) }), 'alarm', 3600);
       else banner.show(t('banner.caught'), e.solitary ? t('banner.caughtSolitary') : t('banner.caughtInfirmary'), 'alarm', 3000);
       break;
     case 'solitary':
@@ -277,13 +328,18 @@ export function announce(e: SimEvent, sim: Sim) {
       } else if (sleptSince >= 0 && !sim.state.lockdown && sim.state.ko <= 0) {
         // What the night did for them (2.28), for anything over a nap.
         const slept = (sim.clock.minuteOfDay - sleptSince + 1440) % 1440;
-        if (slept >= 60) banner.toast(t('toast.slept', { h: Math.floor(slept / 60), m: pad2(slept % 60), n: sim.state.energy }), 'good', 4500);
+        if (slept >= 60)
+          banner.toast(t('toast.slept', { h: Math.floor(slept / 60), m: pad2(slept % 60), n: sim.state.energy }), 'good', 4500);
         sleptSince = -1;
       }
       break;
     case 'bedDummy':
       sound.pickup();
-      banner.toast(e.swapped ? t('toast.dummySwapped', { item: itemName(e.swapped) }) : t(e.in ? 'toast.dummyIn' : 'toast.dummyOut'), 'info', 4500);
+      banner.toast(
+        e.swapped ? t('toast.dummySwapped', { item: itemName(e.swapped) }) : t(e.in ? 'toast.dummyIn' : 'toast.dummyOut'),
+        'info',
+        4500,
+      );
       break;
     case 'cells':
       if (e.locked) sound.lockClank();
@@ -294,7 +350,14 @@ export function announce(e: SimEvent, sim: Sim) {
       view.impact(e.action, e.tile, e.layer, e.broke);
       buzz(e.broke ? 'giveWay' : 'strike');
       if (e.broke) {
-        const done = ({ chip: 'toast.wallGone', cut: 'toast.fenceGone', unscrew: 'toast.grateGone', dig: e.layer === LAYER.GROUND ? 'toast.shaftDone' : '' } as Record<string, string>)[e.action];
+        const done = (
+          {
+            chip: 'toast.wallGone',
+            cut: 'toast.fenceGone',
+            unscrew: 'toast.grateGone',
+            dig: e.layer === LAYER.GROUND ? 'toast.shaftDone' : '',
+          } as Record<string, string>
+        )[e.action];
         if (done) itemsUI.toast(t(done as Key));
         if (e.action === 'chip') coachOnce('damage', 'hint.damage');
         // The first chunk or dirt in hand: it's evidence.
@@ -308,7 +371,32 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tired') : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'storm' ? 'toast.glideStorm' : e.why === 'runUp' ? 'toast.glideRunUp' : e.why === 'full' ? (e.action === 'eat' ? (itemDef(itemOf(sim.state.items.inv[sim.state.items.hand])).food?.health ? 'toast.notHurt' : 'toast.notHungry') : 'toast.pocketsFull') : NEED[e.action];
+      const why =
+        e.why === 'tired'
+          ? nightTired(sim)
+            ? 'toast.tiredNight'
+            : 'toast.tired'
+          : e.why === 'reinforced'
+            ? 'toast.reinforced'
+            : e.why === 'boulder'
+              ? 'toast.boulder'
+              : e.why === 'poster'
+                ? 'toast.posterCell'
+                : e.why === 'noRope'
+                  ? 'toast.noRope'
+                  : e.why === 'noScent'
+                    ? 'toast.noScent'
+                    : e.why === 'storm'
+                      ? 'toast.glideStorm'
+                      : e.why === 'runUp'
+                        ? 'toast.glideRunUp'
+                        : e.why === 'full'
+                          ? e.action === 'eat'
+                            ? itemDef(itemOf(sim.state.items.inv[sim.state.items.hand])).food?.health
+                              ? 'toast.notHurt'
+                              : 'toast.notHungry'
+                            : 'toast.pocketsFull'
+                          : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -401,12 +489,21 @@ export function announce(e: SimEvent, sim: Sim) {
           if (e.gen !== 1) banner.show(t(freezing(sim) ? 'banner.blizzard' : 'banner.storm'), t('banner.stormSub'), 'alarm', 3800);
         } else if (e.by === 'maintenance') {
           if (e.gen !== 1) banner.show(t('banner.service'), t('banner.serviceSub', { time: dayTime(today(sim).until) }), 'routine', 3800);
-        } else banner.show(t(split ? (e.gen === 1 ? 'banner.gen2Off' : 'banner.gen1Off') : 'banner.powerOff'), t(split ? (e.gen === 1 ? 'banner.gen2OffSub' : 'banner.gen1OffSub') : 'banner.powerOffSub'), 'routine', 3500);
+        } else
+          banner.show(
+            t(split ? (e.gen === 1 ? 'banner.gen2Off' : 'banner.gen1Off') : 'banner.powerOff'),
+            t(split ? (e.gen === 1 ? 'banner.gen2OffSub' : 'banner.gen1OffSub') : 'banner.powerOffSub'),
+            'routine',
+            3500,
+          );
         coachOnce('power', 'hint.power');
       } else {
         sound.powerUp();
         const split = !!sim.world.def.grid;
-        banner.toast(t(e.by === 'guard' ? (split ? (e.gen === 1 ? 'toast.gen2Back' : 'toast.gen1Back') : 'toast.powerBack') : 'toast.powerOn'), e.by === 'guard' ? 'bad' : 'info');
+        banner.toast(
+          t(e.by === 'guard' ? (split ? (e.gen === 1 ? 'toast.gen2Back' : 'toast.gen1Back') : 'toast.powerBack') : 'toast.powerOn'),
+          e.by === 'guard' ? 'bad' : 'info',
+        );
       }
       break;
     case 'scanned':
@@ -423,7 +520,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (e.blind) {
         sound.tape();
         itemsUI.toast(t('toast.taped'));
-      } else banner.toast(t("toast.cameraBack"), "info");
+      } else banner.toast(t('toast.cameraBack'), 'info');
       break;
     case 'aim': {
       sound.aim();
@@ -565,7 +662,8 @@ export function announce(e: SimEvent, sim: Sim) {
           buzz('missed');
           banner.toast(t('toast.fired', { job: jobName(sim, e.job) }), 'bad', 7000);
         } else banner.toast(t('toast.quit', { job: jobName(sim, e.job) }), 'info');
-      } else if (e.change === 'fired') banner.toast(t('toast.jobOpen', { name: inmateName(sim, e.who), job: jobName(sim, e.job) }), 'info', 5000);
+      } else if (e.change === 'fired')
+        banner.toast(t('toast.jobOpen', { name: inmateName(sim, e.who), job: jobName(sim, e.job) }), 'info', 5000);
       break;
     case 'board':
       seenInteract();
@@ -625,8 +723,7 @@ export function announce(e: SimEvent, sim: Sim) {
       else if (e.heat) {
         sound.trayDown();
         banner.toast(t('toast.trayHeat', { n: e.heat }), 'bad', 4000);
-      }
-      else {
+      } else {
         sound.trayDown();
         floatAt(-1, t(e.what === 'dropped' ? 'float.trayDropped' : e.what === 'left' ? 'float.trayLeft' : 'float.trayOver'), 'taken');
       }
@@ -668,7 +765,17 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'cantTrain':
       sound.sting();
-      itemsUI.toast(t(e.why === 'full' ? 'toast.headFull' : e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tooTiredTrain') : 'toast.maxed'));
+      itemsUI.toast(
+        t(
+          e.why === 'full'
+            ? 'toast.headFull'
+            : e.why === 'tired'
+              ? nightTired(sim)
+                ? 'toast.tiredNight'
+                : 'toast.tooTiredTrain'
+              : 'toast.maxed',
+        ),
+      );
       break;
     case 'book':
       // (2.31: taken from the shelf, to a chair with it.)
@@ -692,7 +799,10 @@ export function announce(e: SimEvent, sim: Sim) {
         phonePanel.close();
         crewPanel.close();
         // A guard (P15): what talking to one is for.
-        coachOnce(e.who >= sim.state.inmates.length ? 'guardTalk' : 'talk', e.who >= sim.state.inmates.length ? 'hint.guardTalk' : 'hint.talk');
+        coachOnce(
+          e.who >= sim.state.inmates.length ? 'guardTalk' : 'talk',
+          e.who >= sim.state.inmates.length ? 'hint.guardTalk' : 'hint.talk',
+        );
       }
       break;
     case 'opinion':
@@ -707,7 +817,11 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.pickup();
       // (A delivery done by it: the job's own banner says it, once.)
       if (sim.events.some((o) => o.type === 'oddjob' && o.what === 'done')) break;
-      itemsUI.toast(e.item ? t('toast.gaveItem', { item: lowerFirst(itemName(e.item)), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
+      itemsUI.toast(
+        e.item
+          ? t('toast.gaveItem', { item: lowerFirst(itemName(e.item)), name: inmateName(sim, e.who) })
+          : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }),
+      );
       break;
     case 'favor':
       if (e.state === 'taken') {
@@ -757,7 +871,11 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.buy();
       buzz('bell');
       floatAt(-1, `−$${e.price}`, 'cash');
-      itemsUI.toast(e.kind === 'look' ? t('toast.bribeLook', { name, n: LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60 }) : t('toast.bribePaper', { n: PAPER_HEAT }));
+      itemsUI.toast(
+        e.kind === 'look'
+          ? t('toast.bribeLook', { name, n: LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60 })
+          : t('toast.bribePaper', { n: PAPER_HEAT }),
+      );
       break;
     }
     case 'refused': {
@@ -905,7 +1023,6 @@ export function announce(e: SimEvent, sim: Sim) {
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
 
-
 /** How far off the showers can be heard (tiles). */
 const SHOWER_EARSHOT = 12;
 
@@ -916,10 +1033,12 @@ let lastFlight = 0;
 /** At a meal or the showers: how they pick the player up, told the first time (GDD §2, §3.1). */
 function arrivedAt(sim: Sim, id: RoutineId) {
   // (2.33: told afresh, now that what a tray gives depends on the day's dish.)
-  if ((id === 'breakfast' || id === 'dinner') && sim.rules232) coachOnce('meal', traysHere(sim) ? 'hint.meal' : 'hint.mealTable', { n: MEAL_ENERGY });
+  if ((id === 'breakfast' || id === 'dinner') && sim.rules232)
+    coachOnce('meal', traysHere(sim) ? 'hint.meal' : 'hint.mealTable', { n: MEAL_ENERGY });
   else if (id === 'breakfast' || id === 'dinner') coachOnce('mealMenu', traysHere(sim) ? 'hint.mealMenu' : 'hint.mealTableMenu');
   // (2.26: told afresh to those who knew the old way, standing still.)
-  if (id === 'showers') coachOnce(sim.rules225 ? 'shower' : 'showerOn', !sim.rules225 && hostile(sim) ? 'hint.showerHostile' : 'hint.shower');
+  if (id === 'showers')
+    coachOnce(sim.rules225 ? 'shower' : 'showerOn', !sim.rules225 && hostile(sim) ? 'hint.showerHostile' : 'hint.shower');
 }
 
 /** Ten times a second: the sound of the showers, by how near the nearest one running is (off while time runs fast). */
@@ -951,7 +1070,6 @@ export function tickTock(sim: Sim, speed: number) {
 /** When a cup was last thrown (real ms), and how long it's in the air (View's flight). */
 let thrownAt = -1e9;
 const THROW_FLIGHT_MS = 320;
-
 
 /** When a refusal was last said, and the sniper's aim (real ms): repeats keep quiet for a while. */
 let lastCant = 0;

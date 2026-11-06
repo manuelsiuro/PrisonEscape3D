@@ -43,7 +43,35 @@ import { chatterStart, chatterStop, director } from './chatter';
 import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
 import { resetButtons } from './buttons';
-import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
+import {
+  banner,
+  board,
+  click,
+  combatUI,
+  controls,
+  darkCell,
+  hint,
+  hud,
+  itemsUI,
+  profile,
+  ratPanel,
+  phonePanel,
+  crewPanel,
+  crewChips,
+  savedMark,
+  settings,
+  sleepVeil,
+  solitaryPanel,
+  sound,
+  stowPanel,
+  talk,
+  tools,
+  trainCard,
+  trophyToast,
+  view,
+  vignette,
+  workChips,
+} from './context';
 import { clearPlayTimers, play, type DailyRun, type Game } from './game';
 import { dailyBanner, dailyEscaped, dailyPlace, dailyRestart, dailyTwistsHtml } from './daily';
 import { ask } from '../ui/screens/ask';
@@ -59,7 +87,6 @@ import { carryFrom } from '../sim/hunt/carry';
 import { OVER } from '../sim/hunt/state';
 import { inmateName } from '../ui/names';
 import { type Rumor } from '../talk/gossip';
-
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and
@@ -90,7 +117,9 @@ export function autosave(g: Game, show = false) {
   // The lifetime stats catch up with the run as it's saved (P16).
   syncRun();
   // (A Daily's run in its own slot, P26: the campaign's game in progress stays as it was.)
-  g.saved = g.daily ? writeSave('daily', g.rec.sim, undefined, director.rumors, g.rec.toLog(), g.daily.n) : writeSave('auto', g.rec.sim, undefined, director.rumors, g.rec.toLog());
+  g.saved = g.daily
+    ? writeSave('daily', g.rec.sim, undefined, director.rumors, g.rec.toLog(), g.daily.n)
+    : writeSave('auto', g.rec.sim, undefined, director.rumors, g.rec.toLog());
   if (g.saved && show) flashSaved();
 }
 
@@ -99,7 +128,14 @@ export function autosave(g: Game, show = false) {
  * stays away, a "welcome back" instead). `origin`: where its run log starts (P16): a new
  * game's seed, or the log saved with the game loaded.
  */
-export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = [], origin: { seed: number } | { log: RunLog | null } = { seed: 0 }, daily: DailyRun | null = null) {
+export function startGame(
+  sim: Sim,
+  resumed = false,
+  lesson: LessonRun | null = null,
+  rumors: readonly Rumor[] = [],
+  origin: { seed: number } | { log: RunLog | null } = { seed: 0 },
+  daily: DailyRun | null = null,
+) {
   // Your prisoner (P16): how the player looks, and the name friends call them.
   const prisoner = readPrisoner();
   stageWorld(sim, prisoner);
@@ -178,7 +214,12 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   if (daily) later(resumed ? 4200 : 4400, () => dailyBanner(sim, daily));
   if (resumed) {
     // Back where they left: the block they're in, and when.
-    later(500, () => banner.show(routineName(sim.state.routine), t('toast.loaded', { when: `${t('hud.day', { n: sim.clock.day })} · ${formatTime(sim.clock)}` })));
+    later(500, () =>
+      banner.show(
+        routineName(sim.state.routine),
+        t('toast.loaded', { when: `${t('hud.day', { n: sim.clock.day })} · ${formatTime(sim.clock)}` }),
+      ),
+    );
     // A loaded game is the game in progress from now on.
     autosave(g);
     // Left on the first day before the guide was through: it picks up where the day is.
@@ -190,7 +231,11 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   // The first game: the guide through the first day (once; again when the tips are reset).
   if (!seenTip('guide')) later(5200, () => firstDay.start());
   if (!seenTip('walk')) {
-    later(4600, () => hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]));
+    later(4600, () =>
+      hint.show(
+        TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')],
+      ),
+    );
   }
 }
 
@@ -225,7 +270,13 @@ export async function pause() {
       // (In the manhunt, P41: leaving counts as recaptured, said instead of the save.)
       lesson ? lessonPlace(lesson.index) : note || (play.game.hunt ? `!${t('manhunt.leaveNote')}` : ''),
       !!lesson,
-      lesson ? '' : daily ? dailyPlace(sim, daily) : play.game.hunt ? `${prisonName(sim.prison)} · ${t('manhunt.title')}` : `${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`,
+      lesson
+        ? ''
+        : daily
+          ? dailyPlace(sim, daily)
+          : play.game.hunt
+            ? `${prisonName(sim.prison)} · ${t('manhunt.title')}`
+            : `${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`,
       daily ? dailyTwistsHtml(sim.state.mods) : '',
     );
     note = '';
@@ -413,7 +464,9 @@ export async function escaped() {
     }
     if (choice === 'run' && victory.hunt?.state === 'offer') {
       // Out there: the escape already counted; the hunt adds a clean getaway, or not.
-      const lookout = st.crewOut.length ? { name: inmateName(sim, st.crewOut[0]), cell: sim.state.inmates[st.crewOut[0]]?.cell ?? 2 } : null;
+      const lookout = st.crewOut.length
+        ? { name: inmateName(sim, st.crewOut[0]), cell: sim.state.inmates[st.crewOut[0]]?.cell ?? 2 }
+        : null;
       const r = await runHunt(g, carryFrom(sim), { lookout });
       // (Left from the pause card: given up, so a recapture in the stats.)
       if (r === 'quit') {
@@ -423,7 +476,13 @@ export async function escaped() {
       // (Left from the pause card while its last moment played: it counts as it ended.)
       const got = huntOver(sim, via, r);
       if (play.game !== g) return;
-      victory.hunt = { ...victory.hunt, state: r.over === OVER.CAUGHT ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };
+      victory.hunt = {
+        ...victory.hunt,
+        state: r.over === OVER.CAUGHT ? 'caught' : 'safe',
+        progress: r.progress,
+        secs: r.secs,
+        reached: r.goal,
+      };
       // (The hunt's own first: they're what this card is about now, never behind the "+N".)
       victory.earned = [...got, ...(victory.earned ?? []).filter((a) => !got.includes(a))];
       // (A clean getaway: the confetti again.)

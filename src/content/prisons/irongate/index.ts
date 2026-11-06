@@ -20,7 +20,7 @@ const props: PropPlacement[] = [];
 const cell = (x0: number, z0: number, doorSouth: boolean) => {
   cells.push([x0, z0, x0 + 3, z0 + 3]);
   props.push(
-    ...(doorSouth
+    ...((doorSouth
       ? [
           { kind: 'bed', x: x0, z: z0, d: 2 },
           { kind: 'desk', x: x0 + 3, z: z0 },
@@ -32,7 +32,7 @@ const cell = (x0: number, z0: number, doorSouth: boolean) => {
           { kind: 'desk', x: x0 + 3, z: z0 + 3, rot: 2 },
           { kind: 'chair', x: x0 + 3, z: z0 + 2 },
           { kind: 'toilet', x: x0, z: z0, rot: 1 },
-        ]) as PropPlacement[],
+        ]) as PropPlacement[]),
   );
 };
 for (let x0 = 8; x0 <= 43; x0 += 5) cell(x0, 9, true);
@@ -384,20 +384,50 @@ export const IRONGATE: PrisonDef = {
   cells,
   props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 28, z: 28 }, { kind: 'cooler', x: 34, z: 36 }],
   // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
-  vending: { x: 28, z: 28, line: [{ x: 28, z: 29 }, { x: 28, z: 30 }, { x: 28, z: 31 }, { x: 29, z: 31 }] },
+  vending: {
+    x: 28,
+    z: 28,
+    line: [
+      { x: 28, z: 29 },
+      { x: 28, z: 30 },
+      { x: 28, z: 31 },
+      { x: 29, z: 31 },
+    ],
+  },
   // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
   // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
   menu: { x: 33, z: 28, w: 2 },
   // (Where its decor stood, by the south door. The far corner was tried: over 60 seeds the bluff won 57 there against 58
   // here and in 2.32, the takeover 42 in all three.)
-  cooler: { x: 34, z: 36, spots: [{ x: 33, z: 36 }, { x: 34, z: 37 }] },
+  cooler: {
+    x: 34,
+    z: 36,
+    spots: [
+      { x: 33, z: 36 },
+      { x: 34, z: 37 },
+    ],
+  },
   rollCall,
   spawn: { x: 10, z: 11 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
   guards,
   names: ['Brick', 'Gull', 'Barnacle', 'Fog', 'Anchor', 'Tide', 'Crab', 'Mutton', 'Bosun', 'Kipper', 'Shanty', 'Rook', 'Granite'],
   merchants: [2, 6, 9, 13],
-  crew: ['muscle', 'lookout', 'digger', 'lookout', 'muscle', 'smuggler', 'digger', 'muscle', 'lookout', 'smuggler', 'lookout', 'smuggler', 'digger'],
+  crew: [
+    'muscle',
+    'lookout',
+    'digger',
+    'lookout',
+    'muscle',
+    'smuggler',
+    'digger',
+    'muscle',
+    'lookout',
+    'smuggler',
+    'lookout',
+    'smuggler',
+    'digger',
+  ],
   // The player starts in the woodshop (its timber and balsa make braces and rafts); every job is on offer, the mailroom open.
   jobs: [
     { id: 'woodshop', cell: 1 },
@@ -517,7 +547,33 @@ export const IRONGATE: PrisonDef = {
   // Rebuilt in 2.9 (P33): the sports ground in the yard's west third, the garden at its east end.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported at the corridor's south doors, then out through the ferry gate, the drawbridge lowered.)
-  comms: comms([40, 39, 13], [[39, 39], [38, 39], [37, 39], [36, 39]], [30, 54], [32, 60, 9], [48, 34, 13], { at: [[30, 40], [31, 40]], gates: [[30, 41], [31, 41], [30, 51], [31, 51], [30, 55], [31, 55]], bridge: true }),
+  comms: comms(
+    [40, 39, 13],
+    [
+      [39, 39],
+      [38, 39],
+      [37, 39],
+      [36, 39],
+    ],
+    [30, 54],
+    [32, 60, 9],
+    [48, 34, 13],
+    {
+      at: [
+        [30, 40],
+        [31, 40],
+      ],
+      gates: [
+        [30, 41],
+        [31, 41],
+        [30, 51],
+        [31, 51],
+        [30, 55],
+        [31, 55],
+      ],
+      bridge: true,
+    },
+  ),
   // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
   board: { x: 29, z: 28, face: 13 },
   map: 1,

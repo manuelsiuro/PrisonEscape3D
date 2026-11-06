@@ -18,7 +18,12 @@ import { announcePa, dayTime } from './warden';
  */
 
 const ACT = { verb: '', what: '', no: false };
-const TRAY_WHY: Record<string, Key> = { watched: 'thing.trayWatched', hunted: 'thing.hunted', onList: 'thing.onList', trayLate: 'thing.trayLate' };
+const TRAY_WHY: Record<string, Key> = {
+  watched: 'thing.trayWatched',
+  hunted: 'thing.hunted',
+  onList: 'thing.onList',
+  trayLate: 'thing.trayLate',
+};
 const DESK_WHY: Record<string, Key> = { heat: 'thing.releaseHeat', lockdown: 'thing.hunted', contraband: 'thing.releaseContraband' };
 
 /** At the release desk: Report (the name called; said what the desk will mind, it can still be tried), or File the form (greyed, saying why, when it wouldn't go in). */
@@ -63,7 +68,12 @@ export function announcePaper(sim: Sim, e: Extract<SimEvent, { type: 'paper' }>)
     case 'filed':
       sound.stamp();
       banner.toast(t('toast.paper.filed'), 'good', 4200);
-      coachOnce('records', 'hint.records', { time: dayTime(RECORDS_MINUTE), n: RECORDS_HEAT, call: dayTime(RELEASE_FROM), by: dayTime(RELEASE_TO) });
+      coachOnce('records', 'hint.records', {
+        time: dayTime(RECORDS_MINUTE),
+        n: RECORDS_HEAT,
+        call: dayTime(RELEASE_FROM),
+        by: dayTime(RELEASE_TO),
+      });
       return;
     case 'passed':
       // (A banner, queued after the filing's: the two never sit on top of each other.)

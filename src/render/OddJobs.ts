@@ -48,7 +48,8 @@ const CARDS: ReadonlyArray<{ x: number; y: number; w: number; h: number; tilt: n
 function cardParts(c: (typeof CARDS)[number]): Part[] {
   const parts: Part[] = [box(c.w, c.h, 0.004, c.paper, 0, -c.h / 2, 0)];
   parts.push(box(c.w * 0.62, 0.022, 0.002, INK, 0, c.h / 2 - 0.075, 0.003));
-  for (let k = 0; k < 4; k++) parts.push(box(c.w * (k === 3 ? 0.4 : 0.72), 0.01, 0.002, INK, k === 3 ? -c.w * 0.16 : 0, c.h / 2 - 0.12 - k * 0.035, 0.003));
+  for (let k = 0; k < 4; k++)
+    parts.push(box(c.w * (k === 3 ? 0.4 : 0.72), 0.01, 0.002, INK, k === 3 ? -c.w * 0.16 : 0, c.h / 2 - 0.12 - k * 0.035, 0.003));
   return parts;
 }
 
@@ -69,7 +70,10 @@ function boardParts(): Part[] {
 
 /** The red tag a job held hangs from the header's right end. */
 function tagParts(): Part[] {
-  return [box(0.07, 0.1, 0.004, TAG, W / 2 - 0.12, Y0 + H - 0.24, CORK_Z + 0.004), disc(0.014, 0.012, CREAM, W / 2 - 0.12, Y0 + H - 0.15, CORK_Z + 0.012, 8)];
+  return [
+    box(0.07, 0.1, 0.004, TAG, W / 2 - 0.12, Y0 + H - 0.24, CORK_Z + 0.004),
+    disc(0.014, 0.012, CREAM, W / 2 - 0.12, Y0 + H - 0.15, CORK_Z + 0.012, 8),
+  ];
 }
 
 /**

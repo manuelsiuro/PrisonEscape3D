@@ -123,7 +123,10 @@ props.push(
   ...cells.map(([x0, z0], k) => ({ kind: 'chair', x: x0 + 2, z: k < 4 ? z0 : z0 + 3, rot: 1 }) as const),
   ...[16, 17, 21, 22].map((x) => ({ kind: 'chair', x, z: 33, rot: 2 }) as const),
   ...[39, 40].map((x) => ({ kind: 'chair', x, z: 41, rot: 2 }) as const),
-  ...[27, 28, 29, 32, 33, 34, 35].flatMap((x) => [{ kind: 'chair', x, z: 40, rot: 0 } as const, { kind: 'chair', x, z: 42, rot: 2 } as const]),
+  ...[27, 28, 29, 32, 33, 34, 35].flatMap((x) => [
+    { kind: 'chair', x, z: 40, rot: 0 } as const,
+    { kind: 'chair', x, z: 42, rot: 2 } as const,
+  ]),
   { kind: 'chair', x: 55, z: 41, rot: 1 },
 );
 
@@ -254,9 +257,7 @@ const GEAR: PropPlacement[] = [
 ];
 
 /** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
-const READING: PropPlacement[] = [
-  { kind: 'deskChair', x: 18, z: 32, rot: 3 },
-];
+const READING: PropPlacement[] = [{ kind: 'deskChair', x: 18, z: 32, rot: 3 }];
 
 export const CENTER_PERKS: PrisonDef = {
   id: 'center-perks',
@@ -298,14 +299,44 @@ export const CENTER_PERKS: PrisonDef = {
   cells,
   props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 45, z: 7 }, { kind: 'cooler', x: 56, z: 7 }],
   // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
-  vending: { x: 45, z: 7, line: [{ x: 45, z: 8 }, { x: 45, z: 9 }, { x: 45, z: 10 }, { x: 45, z: 11 }] },
+  vending: {
+    x: 45,
+    z: 7,
+    line: [
+      { x: 45, z: 8 },
+      { x: 45, z: 9 },
+      { x: 45, z: 10 },
+      { x: 45, z: 11 },
+    ],
+  },
   // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
   // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
   menu: { x: 51, z: 7, w: 5 },
-  cooler: { x: 56, z: 7, spots: [{ x: 56, z: 8 }, { x: 55, z: 8 }] },
+  cooler: {
+    x: 56,
+    z: 7,
+    spots: [
+      { x: 56, z: 8 },
+      { x: 55, z: 8 },
+    ],
+  },
   rollCall,
   spawn: { x: 9, z: 9 },
-  reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation', 'sports', 'garden'],
+  reachable: [
+    'cellBlock',
+    'rollCall',
+    'canteen',
+    'corridor',
+    'gym',
+    'showers',
+    'library',
+    'infirmary',
+    'yard',
+    'woodshop',
+    'visitation',
+    'sports',
+    'garden',
+  ],
   guards,
   names: ['Rusty', 'Tank', 'Mouse', 'Doc', 'Lefty', 'Bones', 'Slim'],
   merchants: [2, 6, 7],
@@ -403,7 +434,30 @@ export const CENTER_PERKS: PrisonDef = {
   // Rebuilt in 2.7 (P31): the sports ground and the garden in the south grounds.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported by the visiting room's doors, then out through them and the south gate.)
-  comms: comms([41, 21, 13], [[40, 21], [39, 21], [38, 21], [37, 21]], [30, 60], [34, 63, 1], [19, 30, 13], { at: [[30, 44], [31, 44]], gates: [[30, 45], [31, 45], [30, 61], [31, 61]] }),
+  comms: comms(
+    [41, 21, 13],
+    [
+      [40, 21],
+      [39, 21],
+      [38, 21],
+      [37, 21],
+    ],
+    [30, 60],
+    [34, 63, 1],
+    [19, 30, 13],
+    {
+      at: [
+        [30, 44],
+        [31, 44],
+      ],
+      gates: [
+        [30, 45],
+        [31, 45],
+        [30, 61],
+        [31, 61],
+      ],
+    },
+  ),
   // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
   board: { x: 49, z: 7, face: 13 },
   map: 1,

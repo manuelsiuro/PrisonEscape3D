@@ -25,7 +25,12 @@ type Records = Record<string, PrisonRecord>;
 function fitRouteBest(v: unknown): RouteBest | null {
   const b = v as Partial<RouteBest> | null;
   if (!b || typeof b !== 'object' || typeof b.day !== 'number' || b.day < 1) return null;
-  return { day: b.day, minute: typeof b.minute === 'number' ? b.minute : 0, ...(b.medal && MEDALS.includes(b.medal) ? { medal: b.medal } : {}), ...(b.clean === true ? { clean: true as const } : {}) };
+  return {
+    day: b.day,
+    minute: typeof b.minute === 'number' ? b.minute : 0,
+    ...(b.medal && MEDALS.includes(b.medal) ? { medal: b.medal } : {}),
+    ...(b.clean === true ? { clean: true as const } : {}),
+  };
 }
 
 /** Every prison's record (an empty one for a prison never escaped). */
@@ -76,7 +81,15 @@ export function recordEscape(prison: string, route: string, day: number, minutes
   const medal = medalFor(prison, route, day);
   const top = betterMedal(old?.medal, medal);
   const newMedal = !!medal && top === medal && medal !== old?.medal;
-  const byRoute = { ...was.byRoute, [route]: { day: routeBest ? day : old.day, minute: routeBest ? minutes : old.minute, ...(top ? { medal: top } : {}), ...(old?.clean ? { clean: true as const } : {}) } };
+  const byRoute = {
+    ...was.byRoute,
+    [route]: {
+      day: routeBest ? day : old.day,
+      minute: routeBest ? minutes : old.minute,
+      ...(top ? { medal: top } : {}),
+      ...(old?.clean ? { clean: true as const } : {}),
+    },
+  };
   const record: PrisonRecord = {
     routes: newRoute ? [...was.routes, route] : was.routes,
     bestDay: best ? day : was.bestDay,

@@ -146,7 +146,10 @@ export class Dogs {
       ),
       4,
     );
-    this.saddle = inst(merge([box(0.225, 0.07, 0.3, COAT, 0, HIP_Y + 0.09, -0.04), box(0.13, 0.05, 0.1, COAT, 0, HIP_Y + 0.14, 0.17)], false), 4);
+    this.saddle = inst(
+      merge([box(0.225, 0.07, 0.3, COAT, 0, HIP_Y + 0.09, -0.04), box(0.13, 0.05, 0.1, COAT, 0, HIP_Y + 0.14, 0.17)], false),
+      4,
+    );
     this.head = inst(
       merge(
         [
@@ -162,7 +165,10 @@ export class Dogs {
       ),
       4,
     );
-    this.legs = inst(merge([box(0.06, LEG_H - 0.035, 0.06, COAT, 0, -LEG_H + 0.035, 0), box(0.07, 0.035, 0.08, PAW, 0, -LEG_H, 0.01)], false), 16);
+    this.legs = inst(
+      merge([box(0.06, LEG_H - 0.035, 0.06, COAT, 0, -LEG_H + 0.035, 0), box(0.07, 0.035, 0.08, PAW, 0, -LEG_H, 0.01)], false),
+      16,
+    );
     this.tail = inst(merge([box(0.045, 0.045, 0.22, COAT, 0, -0.02, -0.11)], false), 4);
     // A kennel: plank walls, a pitched roof, the dark doorway (facing +z), a nameplate, a water bowl beside it.
     const wood = 0x9a6a3c;
@@ -170,23 +176,62 @@ export class Dogs {
     // The gable: a triangle as wide as the walls under roof slabs at its own slope (nothing pokes through them).
     const pitch = 0.62;
     const rise = 0.25 * Math.tan(pitch);
-    const gable = paint(new THREE.CylinderGeometry(0.25 / Math.sin((2 * Math.PI) / 3), 0.25 / Math.sin((2 * Math.PI) / 3), 0.54, 3).rotateX(-Math.PI / 2), wood);
-    gable.scale(1, rise / (0.25 / Math.sin((2 * Math.PI) / 3) * 1.5), 1);
+    const gable = paint(
+      new THREE.CylinderGeometry(0.25 / Math.sin((2 * Math.PI) / 3), 0.25 / Math.sin((2 * Math.PI) / 3), 0.54, 3).rotateX(-Math.PI / 2),
+      wood,
+    );
+    gable.scale(1, rise / ((0.25 / Math.sin((2 * Math.PI) / 3)) * 1.5), 1);
     gable.computeBoundingBox();
     gable.translate(0, 0.4 - gable.boundingBox!.min.y, 0);
-    const slab = (side: number) => box(0.42, 0.035, 0.62, roof, 0, 0, 0).rotateZ(-side * pitch).translate(side * 0.125, 0.4 + rise / 2, 0);
+    const slab = (side: number) =>
+      box(0.42, 0.035, 0.62, roof, 0, 0, 0)
+        .rotateZ(-side * pitch)
+        .translate(side * 0.125, 0.4 + rise / 2, 0);
     this.kennels = inst(
-      merge([box(0.5, 0.4, 0.56, wood, 0, 0, 0), gable, slab(-1), slab(1), box(0.06, 0.05, 0.64, 0x6e2a1f, 0, 0.4 + rise + 0.015, 0), box(0.22, 0.28, 0.02, 0x1a1410, 0, 0.02, 0.281), box(0.14, 0.05, 0.015, 0xe8b828, 0, 0.34, 0.285), cyl(0.07, 0.04, 0x9aa2ad, 0.33, 0, 0.18, 12), cyl(0.055, 0.042, 0x5aa8d8, 0.33, 0.002, 0.18, 12)]),
+      merge([
+        box(0.5, 0.4, 0.56, wood, 0, 0, 0),
+        gable,
+        slab(-1),
+        slab(1),
+        box(0.06, 0.05, 0.64, 0x6e2a1f, 0, 0.4 + rise + 0.015, 0),
+        box(0.22, 0.28, 0.02, 0x1a1410, 0, 0.02, 0.281),
+        box(0.14, 0.05, 0.015, 0xe8b828, 0, 0.34, 0.285),
+        cyl(0.07, 0.04, 0x9aa2ad, 0.33, 0, 0.18, 12),
+        cyl(0.055, 0.042, 0x5aa8d8, 0.33, 0.002, 0.18, 12),
+      ]),
       4,
     );
     this.kennels.castShadow = true;
     this.kennels.receiveShadow = true;
     // The trail: flat prints, glowing faintly (added on: black is nothing), fading as they go stale.
     const flat = (g: THREE.BufferGeometry) => g.rotateX(-Math.PI / 2);
-    const shoe = merge([flat(new THREE.CircleGeometry(0.055, 10).scale(1, 1.6, 1)).translate(0, 0, 0.03), flat(new THREE.CircleGeometry(0.045, 10)).translate(0, 0, -0.085)], false);
-    const pad = merge([flat(new THREE.CircleGeometry(0.04, 9)), ...[-0.045, -0.015, 0.015, 0.045].map((x, k) => flat(new THREE.CircleGeometry(0.017, 7)).translate(x, 0, 0.05 + (k === 0 || k === 3 ? -0.012 : 0)))], false);
+    const shoe = merge(
+      [
+        flat(new THREE.CircleGeometry(0.055, 10).scale(1, 1.6, 1)).translate(0, 0, 0.03),
+        flat(new THREE.CircleGeometry(0.045, 10)).translate(0, 0, -0.085),
+      ],
+      false,
+    );
+    const pad = merge(
+      [
+        flat(new THREE.CircleGeometry(0.04, 9)),
+        ...[-0.045, -0.015, 0.015, 0.045].map((x, k) =>
+          flat(new THREE.CircleGeometry(0.017, 7)).translate(x, 0, 0.05 + (k === 0 || k === 3 ? -0.012 : 0)),
+        ),
+      ],
+      false,
+    );
     // (Plain blending, readable on sand and concrete in daylight as well as at night; stale ones shrink away.)
-    const glow = () => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    const glow = () =>
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.7,
+        depthWrite: false,
+        toneMapped: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+      });
     this.prints = inst(shoe, PRINTS, glow());
     this.paws = inst(pad, PAWS, glow());
     for (const m of [this.prints, this.paws]) {
@@ -198,7 +243,9 @@ export class Dogs {
     // Barking: sound rings over its head.
     const ringTex = barkTexture();
     for (let k = 0; k < 4; k++) {
-      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTex, transparent: true, depthWrite: false, depthTest: false, opacity: 0 }));
+      const s = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: ringTex, transparent: true, depthWrite: false, depthTest: false, opacity: 0 }),
+      );
       s.scale.setScalar(0.42);
       s.renderOrder = 5;
       s.visible = false;
@@ -250,7 +297,28 @@ export class Dogs {
       });
       const at = kennelSpot(s, LIE_OUT);
       root.position.set(at.x, 0, at.z);
-      this.rigs.push({ root, body, head, tail, legs, bodyShape, headShape, tailShape, yaw: headingAngle(s.face), gait: 0, sit: 0, lie: 1, still: 0, bark: 0, wag: this.rigs.length * 2.3, sneeze: 0, hx: 0, lift: 0.55, px: at.x, pz: at.z });
+      this.rigs.push({
+        root,
+        body,
+        head,
+        tail,
+        legs,
+        bodyShape,
+        headShape,
+        tailShape,
+        yaw: headingAngle(s.face),
+        gait: 0,
+        sit: 0,
+        lie: 1,
+        still: 0,
+        bark: 0,
+        wag: this.rigs.length * 2.3,
+        sneeze: 0,
+        hx: 0,
+        lift: 0.55,
+        px: at.x,
+        pz: at.z,
+      });
     }
     // A ring left up by the last prison's dogs goes.
     for (const ring of this.rings) ring.visible = false;
@@ -280,7 +348,18 @@ export class Dogs {
     // Lying by their kennels until the first frame says otherwise (the title's backdrop shows them so).
     const none: number[] = [];
     this.dt = 1;
-    spots.forEach((s, k) => this.pose(k, { x: s.x + 0.5, z: s.z + 0.5, facing: headingAngle(s.face), moving: false, pace: 1, pose: 'kennel', friend: false }, -99, -99, 1, 0, false, none));
+    spots.forEach((s, k) =>
+      this.pose(
+        k,
+        { x: s.x + 0.5, z: s.z + 0.5, facing: headingAngle(s.face), moving: false, pace: 1, pose: 'kennel', friend: false },
+        -99,
+        -99,
+        1,
+        0,
+        false,
+        none,
+      ),
+    );
     for (const m of this.pieces) m.instanceMatrix.needsUpdate = true;
     this.group.visible = n > 0;
   }
@@ -290,7 +369,17 @@ export class Dogs {
    * trail's prints (scent tiles with their freshness 0–1, oldest first), the paw prints fading.
    * Asleep dogs' heads go into `sleepers` (the view's Z's).
    */
-  update(dogs: readonly DogFrame[], scent: ReadonlyArray<readonly [number, number]>, px: number, pz: number, dt: number, time: number, motion: boolean, sleepers: number[], ground = true) {
+  update(
+    dogs: readonly DogFrame[],
+    scent: ReadonlyArray<readonly [number, number]>,
+    px: number,
+    pz: number,
+    dt: number,
+    time: number,
+    motion: boolean,
+    sleepers: number[],
+    ground = true,
+  ) {
     const n = Math.min(dogs.length, this.rigs.length);
     this.dt = dt;
     this.ground = ground;
@@ -390,7 +479,8 @@ export class Dogs {
       if (s > 0.8) hx += 1.05 * Math.sin(((s - 0.8) / 0.2) * Math.PI);
     }
     // Idle: a look about now and then.
-    if (!d.moving && !lie && !barking && d.pose !== 'dazed' && motion) hy += Math.sin(time * 0.7 + k * 2) * 0.35 * Math.max(0, Math.sin(time * 0.31 + k));
+    if (!d.moving && !lie && !barking && d.pose !== 'dazed' && motion)
+      hy += Math.sin(time * 0.7 + k * 2) * 0.35 * Math.max(0, Math.sin(time * 0.31 + k));
     r.head.rotation.set(hx + r.sit * 0.5, hy, 0);
     r.head.position.y = HIP_Y + 0.17 - r.lie * 0.04;
     // The tail: level on the trail, straight up pointing, a wag for a friend close by, a slow sway otherwise, still asleep.
@@ -492,7 +582,11 @@ export class Dogs {
       if (life < 0) continue;
       this.pawAt[k * 4 + 3] = life - dt;
       this.q.setFromAxisAngle(UP, this.pawAt[k * 4 + 2]);
-      this.m.compose(this.v.set(this.pawAt[k * 4], PRINT_Y, this.pawAt[k * 4 + 1]), this.q, this.s.setScalar(0.1 + 0.9 * Math.max(0, life / PAW_LIFE)));
+      this.m.compose(
+        this.v.set(this.pawAt[k * 4], PRINT_Y, this.pawAt[k * 4 + 1]),
+        this.q,
+        this.s.setScalar(0.1 + 0.9 * Math.max(0, life / PAW_LIFE)),
+      );
       this.paws.setMatrixAt(n, this.m);
       this.paws.setColorAt(n, PAW_ORANGE);
       n++;
@@ -501,7 +595,6 @@ export class Dogs {
     this.paws.instanceMatrix.needsUpdate = true;
     if (this.paws.instanceColor) this.paws.instanceColor.needsUpdate = true;
   }
-
 }
 
 const UP = new THREE.Vector3(0, 1, 0);

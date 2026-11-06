@@ -146,7 +146,11 @@ export class Snores {
         continue;
       }
       s.visible = true;
-      s.position.set(this.base[i * 3] + Math.sin(t * 6 + i) * 0.12 + t * 0.25, this.base[i * 3 + 1] + t * 1.1, this.base[i * 3 + 2] - t * 0.2);
+      s.position.set(
+        this.base[i * 3] + Math.sin(t * 6 + i) * 0.12 + t * 0.25,
+        this.base[i * 3 + 1] + t * 1.1,
+        this.base[i * 3 + 2] - t * 0.2,
+      );
       const size = 0.18 + t * 0.22;
       s.scale.set(size, size, 1);
       s.material.opacity = Math.min(1, t * 5) * (1 - t);

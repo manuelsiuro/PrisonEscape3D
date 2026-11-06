@@ -48,8 +48,12 @@ function deskParts() {
     ...[-0.05, 0, 0.05].map((y) => box(0.075, 0.012, 0.004, 0x9aa2ad, -0.09, 1.52 + y, -0.08)),
     box(0.11, 0.035, 0.006, PAPER, 0.06, 1.52, -0.085),
     // (Its head: two strokes at ±45°.)
-    box(0.07, 0.03, 0.006, PAPER).rotateZ(Math.PI / 4).translate(0.12, 1.54, -0.085),
-    box(0.07, 0.03, 0.006, PAPER).rotateZ(-Math.PI / 4).translate(0.12, 1.5, -0.085),
+    box(0.07, 0.03, 0.006, PAPER)
+      .rotateZ(Math.PI / 4)
+      .translate(0.12, 1.54, -0.085),
+    box(0.07, 0.03, 0.006, PAPER)
+      .rotateZ(-Math.PI / 4)
+      .translate(0.12, 1.5, -0.085),
     // The lamp's housing.
     disc(0.07, 0.03, STEEL_DARK, 0, 1.67, -0.1, 12),
   ];
@@ -64,7 +68,12 @@ function deskSpot(world: World): { x: number; z: number } | null {
   const r = world.def.comms?.release;
   if (!r || world.def.rules?.relaxed) return null;
   const at = (x: number, z: number) => r.at.some((q) => q.x === x && q.z === z);
-  const open = (x: number, z: number) => !world.blocked(x, z) && world.ground.kind[z * MAP_W + x] !== TILE.DOOR && !at(x, z) && !world.release[z * MAP_W + x] && !world.propSolid[z * MAP_W + x];
+  const open = (x: number, z: number) =>
+    !world.blocked(x, z) &&
+    world.ground.kind[z * MAP_W + x] !== TILE.DOOR &&
+    !at(x, z) &&
+    !world.release[z * MAP_W + x] &&
+    !world.propSolid[z * MAP_W + x];
   const q = r.at[0];
   const last = r.at[r.at.length - 1];
   const back = (x: number, z: number) => (world.blocked(x, z + 1) ? z + 0.8 : z + 0.5);
@@ -82,7 +91,14 @@ export class ReleaseView {
   private readonly mat = seeThrough(kitMaterial.clone(), 0.6, -0.05);
   private readonly lampMat = seeThrough(new THREE.MeshBasicMaterial({ color: OFF.clone(), toneMapped: false }), 0.6, -0.05);
   /** The lamp's glow: a sprite (it faces the camera, so the camera's tilt never flattens it). */
-  private readonly glowMat = new THREE.SpriteMaterial({ map: glowTexture(), color: 0xffb84a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  private readonly glowMat = new THREE.SpriteMaterial({
+    map: glowTexture(),
+    color: 0xffb84a,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
 
   /** A prison: its desk on its wall (none without one). */
   setWorld(world: World, later: Later = now) {
