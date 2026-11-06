@@ -3,6 +3,7 @@ import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { hash01 } from './rand';
 import { canvasTexture } from './canvas';
+import { chunked, type Placed } from './chunks';
 
 /** A tile's own small numbers (stable between loads): where its mine sits, how it's turned. */
 
@@ -37,16 +38,15 @@ const MAX_CRATERS = 24;
  */
 export class Minefield {
   readonly group = new THREE.Group();
-  private readonly mounds: THREE.InstancedMesh | null = null;
-  private readonly lids: THREE.InstancedMesh | null = null;
+  /** The mounds and lids, in squares the camera skips out of sight (chunks.ts: 1,024 mounds at San Pancho). */
+  private readonly pieces: THREE.InstancedMesh[] = [];
   private readonly craters: THREE.InstancedMesh;
-  /** Each mine tile's mound and lid instance (-1 none), to hide them under a crater. */
-  private readonly moundOf = new Map<number, number>();
-  private readonly lidOf = new Map<number, number>();
+  /** Each mine tile's mound and lid (none: no lid), to hide them under a crater. */
+  private readonly moundOf = new Map<number, Placed>();
+  private readonly lidOf = new Map<number, Placed>();
   private readonly hidden: number[] = [];
-  /** The instances as laid (copies of their matrices), to put back the morning after. */
-  private readonly moundsLaid: Float32Array | null = null;
-  private readonly lidsLaid: Float32Array | null = null;
+  /** Each piece's instances as laid (copies of their matrices), to put back the morning after. */
+  private readonly laid = new Map<THREE.InstancedMesh, Float32Array>();
   private rev = -1;
   private readonly m4 = new THREE.Matrix4();
   private readonly zero = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -56,40 +56,38 @@ export class Minefield {
     for (let i = 0; i < MAP_W * MAP_H; i++) if (world.ground.kind[i] === TILE.MINE) tiles.push(i);
     const lidTiles = tiles.filter((i) => hash01(i, 1) < 0.42);
     if (tiles.length) {
-      this.mounds = new THREE.InstancedMesh(
+      const moundAt = new Map<number, THREE.Matrix4>();
+      for (const i of tiles) {
+        const s = 0.85 + hash01(i, 2) * 0.35;
+        moundAt.set(
+          i,
+          new THREE.Matrix4()
+            .makeRotationY(hash01(i, 3) * Math.PI)
+            .scale(new THREE.Vector3(s * 1.1, 0.3, s))
+            .setPosition((i % MAP_W) + 0.3 + hash01(i, 4) * 0.4, 0, Math.floor(i / MAP_W) + 0.3 + hash01(i, 5) * 0.4),
+        );
+      }
+      const mounds = chunked(
         new THREE.SphereGeometry(0.15, 9, 4, 0, Math.PI * 2, 0, Math.PI / 2),
         new THREE.MeshStandardMaterial({ color: 0xb8915e, roughness: 1 }),
-        tiles.length,
+        tiles.map((i) => moundAt.get(i)!),
+        (m) => (m.receiveShadow = true),
       );
-      tiles.forEach((i, k) => {
-        this.moundOf.set(i, k);
-        const s = 0.85 + hash01(i, 2) * 0.35;
-        this.m4
-          .makeRotationY(hash01(i, 3) * Math.PI)
-          .scale(new THREE.Vector3(s * 1.1, 0.3, s))
-          .setPosition((i % MAP_W) + 0.3 + hash01(i, 4) * 0.4, 0, Math.floor(i / MAP_W) + 0.3 + hash01(i, 5) * 0.4);
-        this.mounds!.setMatrixAt(k, this.m4);
-      });
-      this.mounds.receiveShadow = true;
-      this.mounds.frustumCulled = false;
-      this.lids = new THREE.InstancedMesh(
+      tiles.forEach((i, k) => this.moundOf.set(i, mounds.placed[k]));
+      const lids = chunked(
         new THREE.CylinderGeometry(0.1, 0.12, 0.05, 12),
         new THREE.MeshStandardMaterial({ color: 0x4d5330, roughness: 0.55, metalness: 0.35 }),
-        lidTiles.length,
+        lidTiles.map((i) => {
+          const p = new THREE.Vector3().setFromMatrixPosition(moundAt.get(i)!);
+          return new THREE.Matrix4().makeRotationZ((hash01(i, 6) - 0.5) * 0.25).setPosition(p.x, 0.045, p.z);
+        }),
+        (m) => (m.castShadow = true),
       );
-      lidTiles.forEach((i, k) => {
-        this.lidOf.set(i, k);
-        const at = this.m4.identity();
-        this.mounds!.getMatrixAt(this.moundOf.get(i)!, at);
-        const p = new THREE.Vector3().setFromMatrixPosition(at);
-        this.m4.makeRotationZ((hash01(i, 6) - 0.5) * 0.25).setPosition(p.x, 0.045, p.z);
-        this.lids!.setMatrixAt(k, this.m4);
-      });
-      this.lids.castShadow = true;
-      this.lids.frustumCulled = false;
-      this.group.add(this.mounds, this.lids);
-      this.moundsLaid = Float32Array.from(this.mounds.instanceMatrix.array);
-      this.lidsLaid = Float32Array.from(this.lids.instanceMatrix.array);
+      lidTiles.forEach((i, k) => this.lidOf.set(i, lids.placed[k]));
+      this.pieces.push(...mounds.meshes, ...lids.meshes);
+      for (const m of this.pieces) this.laid.set(m, Float32Array.from(m.instanceMatrix.array));
+      // (Mounds first, then lids: the order they were added in when each was one mesh.)
+      this.group.add(...this.pieces);
     }
     this.craters = new THREE.InstancedMesh(
       new THREE.CircleGeometry(0.62, 20).rotateX(-Math.PI / 2),
@@ -131,21 +129,20 @@ export class Minefield {
 
   /** A mine tile's mound and lid shown (as laid), or flattened out of sight. */
   private show(i: number, on: boolean) {
-    for (const [mesh, of, laid] of [
-      [this.mounds, this.moundOf, this.moundsLaid],
-      [this.lids, this.lidOf, this.lidsLaid],
-    ] as const) {
-      const k = of.get(i);
-      if (!mesh || !laid || k === undefined) continue;
-      if (on) mesh.instanceMatrix.array.set(laid.subarray(k * 16, k * 16 + 16), k * 16);
+    for (const of of [this.moundOf, this.lidOf]) {
+      const at = of.get(i);
+      if (!at) continue;
+      const [mesh, k] = at;
+      if (on) mesh.instanceMatrix.array.set(this.laid.get(mesh)!.subarray(k * 16, k * 16 + 16), k * 16);
       else mesh.setMatrixAt(k, this.zero);
       mesh.instanceMatrix.needsUpdate = true;
     }
   }
 
   dispose() {
-    for (const m of [this.mounds, this.lids, this.craters]) {
-      if (!m) continue;
+    for (const m of [...this.pieces, this.craters]) {
+      // (The mesh's own instance buffer too, as disposeTree does: the review of session 5.)
+      m.dispose();
       m.geometry.dispose();
       const mat = m.material as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial;
       mat.map?.dispose();

@@ -5,6 +5,7 @@ import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { buildGround } from './ground';
 import { batched, disposeTree, type Piece } from './batch';
 import { box, cyl, kitMaterial, merge, paint } from './kit';
+import { chunked } from './chunks';
 import { Lights } from './lights';
 import { seeThrough } from './occlusion';
 import { lampParts, propGeometry } from './props';
@@ -626,7 +627,7 @@ export class WorldView {
     this.group.add(ground);
     if (outside) return;
 
-    // Trees in a ring outside the road: a seeded scatter, one draw call.
+    // Trees in a ring outside the road: a seeded scatter, in squares the camera skips out of sight (chunks.ts).
     const rand = seeded(12345);
     const tree = sceneryTree(theme);
     const spots: Array<[number, number, number]> = [];
@@ -637,10 +638,12 @@ export class WorldView {
       if (spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < 2.2)) continue;
       spots.push([x, z, 0.8 + rand() * 0.9]);
     }
-    const trees = new THREE.InstancedMesh(tree, kitMaterial, spots.length);
-    spots.forEach(([x, z, sc], i) => this.place(trees, i, x, 0, z, rand() * Math.PI, sc, sc * (0.9 + rand() * 0.3), sc));
-    trees.castShadow = true;
-    this.group.add(trees);
+    const at = spots.map(([x, z, sc]) => {
+      this.q.setFromAxisAngle(this.up, rand() * Math.PI);
+      return new THREE.Matrix4().compose(this.pos.set(x, 0, z), this.q, this.scale.set(sc, sc * (0.9 + rand() * 0.3), sc));
+    });
+    const trees = chunked(tree, kitMaterial, at, (m) => (m.castShadow = true));
+    if (trees.meshes.length) this.group.add(...trees.meshes);
   }
 
   /**
