@@ -62,4 +62,8 @@ measured and re-tuned, as the sports grounds were).
 - **The repository's size:** 705 MB, nearly all of it old versions of the map viewer's pictures.
   Since 2.34.1 they no longer change at every release, and the 3D photos are WebP (a fifth of the
   size), so it grows only when a map does. Shrinking what's already there means rewriting git
-  history and force-pushing: only if the user asks for it.
+  history and force-pushing (`git filter-repo` on old versions of `assets/maps/*`: to about 35 MB).
+  **On hold (the user, 2026-11-06):** another developer has a clone for a Roblox port and will
+  push soon. A rewrite gives every commit and tag a new id, so it needs his work in first and a
+  fresh clone on his side after; never without the user's go. Before it: a `git clone --mirror`
+  backup; after it: build, tests, every tag, the site and CI checked.
