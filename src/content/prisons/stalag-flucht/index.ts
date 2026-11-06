@@ -2,7 +2,7 @@ import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
-import type { PropPlacement } from '../../props';
+import { AIM, type PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
 import { L1 } from './L1.map';
@@ -110,20 +110,21 @@ props.push(
   // Chairs: the library's tables, the barracks' table.
   ...[6, 7, 14, 15].map((x) => ({ kind: 'chair', x, z: 57, rot: 2 }) as const),
   ...[50, 51, 52].flatMap((x) => [{ kind: 'chair', x, z: 9, rot: 0 } as const, { kind: 'chair', x, z: 11, rot: 2 } as const]),
-  // Lamps: the yard, the avenue, the east compound.
+  // Lamps: the yard's corners (leaning into it), the avenue's crossroads (two heads), the path along
+  // the south fence, the east compound's two fences (each facing its fence).
   ...[
-    [4, 22],
-    [37, 22],
-    [4, 28],
-    [37, 28],
-    [21, 44],
-    [3, 59],
-    [38, 59],
-    [44, 16],
-    [59, 16],
-    [44, 34],
-    [59, 34],
-  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+    [4, 22, AIM.SE],
+    [37, 22, AIM.SW],
+    [4, 28, AIM.NE],
+    [37, 28, AIM.NW],
+    [21, 44, AIM.E, 2],
+    [3, 59, AIM.SW],
+    [38, 59, AIM.S],
+    [44, 16, AIM.W],
+    [59, 16, AIM.E],
+    [44, 34, AIM.W],
+    [59, 34, AIM.E],
+  ].map(([x, z, aim, heads]) => ({ kind: 'lamp', x, z, aim, heads: heads === 2 ? 2 : 1 }) as const),
 );
 
 // The sports ground (P32), the guards' compound's south end behind its own electric fence: the
@@ -136,10 +137,10 @@ props.push(
   { kind: 'pullup', x: 48, z: 45, w: 2 },
   { kind: 'bleachers', x: 47, z: 49, w: 6 },
   ...[
-    [43, 60],
-    [60, 60],
-    [60, 45],
-  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+    [43, 60, AIM.NE],
+    [60, 60, AIM.NW],
+    [60, 45, AIM.SW],
+  ].map(([x, z, aim]) => ({ kind: 'lamp', x, z, aim }) as const),
   { kind: 'toolShed', x: 37, z: 4, w: 2, d: 2 },
   ...[24, 27, 30, 33].map((x) => ({ kind: 'planter', x, z: 4, w: 3 }) as const),
   { kind: 'crate', x: 38, z: 3 },
