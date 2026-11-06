@@ -33,20 +33,26 @@ export const READ_PAGE_STEPS = READ_GAPS[0].reduce((a, b) => a + b, 0);
 /** The last key word of a page comes this many steps before its end, so that it isn't turned under a late press. */
 export const READ_TAIL = 10;
 
+/**
+ * How slowly the marker reads: every gap above, and the tail, times this. 2.34 read at half 2.31's speed (about 100
+ * words a minute, the marker stopping at each key word besides); a run from before reads at 1.
+ */
+export const READ_PACE = 2;
+
 /** How far into the reading (steps) a key word comes up, by its number counted from the first page's first. */
-export function keyAt(k: number): number {
+export function keyAt(k: number, pace = 1): number {
   const page = Math.floor(k / READ_KEYS);
   const gaps = READ_GAPS[page % READ_GAPS.length];
-  let at = page * READ_PAGE_STEPS - READ_TAIL;
-  for (let i = 0; i <= k % READ_KEYS; i++) at += gaps[i];
+  let at = (page * READ_PAGE_STEPS - READ_TAIL) * pace;
+  for (let i = 0; i <= k % READ_KEYS; i++) at += gaps[i] * pace;
   return at;
 }
 
 /** The first key word not yet gone by, `grace` steps after it came up. */
-export function keyFrom(pos: number, grace = 0): number {
+export function keyFrom(pos: number, grace = 0, pace = 1): number {
   const seen = Math.max(0, pos - grace);
-  let k = Math.max(0, Math.floor(seen / READ_PAGE_STEPS) - 1) * READ_KEYS;
-  while (keyAt(k) < seen) k++;
+  let k = Math.max(0, Math.floor(seen / (READ_PAGE_STEPS * pace)) - 1) * READ_KEYS;
+  while (keyAt(k, pace) < seen) k++;
   return k;
 }
 

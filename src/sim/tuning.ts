@@ -198,6 +198,13 @@ export const READ_FILL_EVERY = 4;
 export const READ_WINDOW = 4;
 export const READ_HIT = 20;
 export const READ_SETS_A_DAY = 6;
+/**
+ * 2.34: the marker reads at half the speed (books.ts READ_PACE) and stops at each key word. The word lights
+ * READ_LEAD steps before the marker gets there, and a press while it's lit underlines it; the marker waits there up
+ * to READ_WAIT steps (3 s), then goes on and the word goes dim. A press with nothing lit still spends the next.
+ */
+export const READ_LEAD = 10;
+export const READ_WAIT = 60;
 /** An inmate looking along a shelf before it sits down with a book (2.31). */
 export const BROWSE_STEPS = 60;
 /** How long an inmate takes to finish up and step off a machine the player asked for (2.29). */

@@ -396,6 +396,8 @@ export interface SimState {
   /** 2.33, the water cooler (systems/cooler.ts): the step of the player's last cup (0: none yet); who's drinking at it. */
   drank: number;
   cooler: CoolerState;
+  /** 2.34: the steps the reading marker has stood at the key word it's on, waiting for the press (0: not waiting). */
+  readWait: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -597,5 +599,6 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     menu: newMenu(),
     drank: 0,
     cooler: newCooler(),
+    readWait: 0,
   };
 }
