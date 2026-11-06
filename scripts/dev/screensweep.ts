@@ -13,7 +13,7 @@
 //   ellipsis text cut short with "…" (fine for a long name; not for a label or an instruction)
 //   overlap  two buttons on top of each other, or a button under something else where it's pressed
 //   small    a button under 32×32 on a touch screen, a clear margin around it counted (44 recommended),
-//            text under 10px
+//            text under 10px (both in the screen's points: the interface scaled up, its scale counted)
 //   scroll   the page itself scrolls sideways or down (the game never should)
 //   scrolled a button of a card in play reached only by scrolling the card (dialogs' and panels' lists aside)
 import { play } from '../../src/play/game';
@@ -65,6 +65,8 @@ function layer(): Element {
 }
 
 export function audit(scene: string): Issue[] {
+  // (Sizes on the screen: with the interface scaled up (session 9, app/scale.ts) a CSS pixel is that many points.)
+  const Z = visualViewport?.scale ?? 1;
   const out: Issue[] = [];
   const W = innerWidth;
   const H = innerHeight;
@@ -126,7 +128,7 @@ export function audit(scene: string): Issue[] {
           add('cut', el, `out of its ${label(p).split(' ')[0]}`);
       }
     }
-    const fs = parseFloat(cs.fontSize);
+    const fs = parseFloat(cs.fontSize) * Z;
     if (fs < 10) add('small', el, `text ${fs}px`);
   }
 
@@ -152,6 +154,8 @@ export function audit(scene: string): Issue[] {
         w = Math.max(w, r.width + px(cs.left) + px(cs.right));
         ht = Math.max(ht, r.height + px(cs.top) + px(cs.bottom));
       }
+      w *= Z;
+      ht *= Z;
       if ((w < 31.5 || ht < 31.5) && !e.closest('p, li > span')) add('small', e, `target ${Math.round(w)}×${Math.round(ht)}`);
     }
   }
@@ -311,7 +315,7 @@ export async function sweep() {
     by.set(k, e);
   }
   return {
-    size: `${innerWidth}×${innerHeight}${matchMedia('(pointer: coarse)').matches ? ' touch' : ''}`,
+    size: `${innerWidth}×${innerHeight}${matchMedia('(pointer: coarse)').matches ? ' touch' : ''}${(visualViewport?.scale ?? 1) > 1.01 ? ` at ${Math.round(visualViewport!.scale * 100)}%` : ''}`,
     lines: [...by]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(

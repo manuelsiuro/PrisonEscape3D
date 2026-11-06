@@ -1,5 +1,5 @@
 import { BETS } from '../content/long';
-import { currentLang, t } from '../i18n';
+import { currentLang, t, textStamp } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { RACE_ENTER } from '../sim/systems/races';
 import { arrowStep, esc, h, type Send, setText } from './dom';
@@ -168,7 +168,7 @@ export class RaceCard {
     const card = v.phase === 'card';
     const betting = card && !v.bet;
     // The stakes: drawn when they come and go (and the language or the cash changes), toggled in place otherwise.
-    const sk = `${betting}|${v.cash}|${currentLang()}`;
+    const sk = `${betting}|${v.cash}|${textStamp()}`;
     if (sk !== this.stakesDrawn) {
       this.stakesDrawn = sk;
       if (betting && BETS[this.stake] > v.cash)
@@ -196,7 +196,7 @@ export class RaceCard {
       v.result,
       v.cash,
       this.stake,
-      currentLang(),
+      textStamp(),
     ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;

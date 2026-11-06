@@ -13,6 +13,7 @@ import { icon } from '../icons';
 import { HELP, POCKET_SAMPLE, topicById, type HelpTab, type HelpTopic } from './helpTopics';
 import { medalDisc } from './trophies';
 import { pad2 } from '../../sim/systems/clock';
+import { keyCode } from '../../input/bindings';
 
 /**
  * How to play (GDD §13; laid out again in P37): each tab a grid of tiles in groups, a search
@@ -37,7 +38,7 @@ const keys = (): Array<[string, Array<[string, Key]>]> => [
     'do',
     [
       ['%KeyE%', 'help.k.act'],
-      [t('help.k.space'), 'help.k.use'],
+      ['%Space%', 'help.k.use'],
       ['%KeyR%', 'help.k.lock'],
       ['1 – 6', 'help.k.slots'],
       ['%KeyQ%', 'help.k.drop'],
@@ -65,8 +66,8 @@ const keys = (): Array<[string, Array<[string, Key]>]> => [
     'games',
     [
       ['1 – 5 · Enter · %KeyL%', 'help.k.cheat'],
-      [t('help.k.space'), 'help.k.shoot'],
-      [t('help.k.space'), 'help.k.kick'],
+      ['%Space%', 'help.k.shoot'],
+      ['%Space%', 'help.k.kick'],
       ['%KeyA% %KeyS% %KeyD%', 'help.k.lanes'],
       ['1 – 4', 'help.k.answer'],
     ],
@@ -402,7 +403,7 @@ function controls(touch: boolean) {
   const body = groups
     .map(([g, items]) => `<h4 class="help-group">${t(`help.cg.${g}` as Key)}</h4><ul class="help-keys">${items}</ul>`)
     .join('');
-  return `${which}${body}<p class="help-foot">${t(touch ? 'help.t.zoom' : 'help.k.zoom')}</p>`;
+  return `${which}${body}<p class="help-foot">${t(touch ? 'help.t.zoom' : 'help.k.zoom')}${touch ? '' : ` ${t('help.k.keys')}`}</p>`;
 }
 
 export interface HelpOptions {
@@ -490,7 +491,7 @@ export function showHelp(click: () => void, opts: HelpOptions = {}): Promise<{ l
         e.stopImmediatePropagation();
         return;
       }
-      if (e.code === 'KeyH') {
+      if (keyCode(e.code) === 'KeyH') {
         e.stopImmediatePropagation();
         done();
       }

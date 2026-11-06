@@ -173,3 +173,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Hitches and memory (v2.34.3, not released yet)
 - The design tokens (v2.34.3, not released yet)
 - The screen sizes (v2.34.3, not released yet)
+- The accessibility options (v2.34.3, not released yet)

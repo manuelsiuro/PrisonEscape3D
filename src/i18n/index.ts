@@ -1,6 +1,7 @@
 import { en, type Strings } from './en';
 import type { Barks } from './barks/en';
-import { withKeys } from './keys';
+import { setKeyNames, withKeys } from './keys';
+import { keysVersion } from '../input/bindings';
 
 /**
  * Translations. `t('key', { n: 3 })` looks the key up in the current language (falling back
@@ -50,9 +51,12 @@ export function setLang(l: Lang | 'auto') {
   // The game speaks French itself: the browser shouldn't translate it again. English pages
   // stay translatable for players of other languages.
   document.documentElement.setAttribute('translate', lang === 'en' ? 'yes' : 'no');
+  setKeyNames({ Space: t('key.space') });
 }
 
 export const currentLang = () => lang;
+/** What text drawn earlier depends on: the language and the player's keys (session 9). A cache keyed on it redraws after either changes. */
+export const textStamp = () => `${lang}:${keysVersion()}`;
 
 export function t(key: Key, vars: Record<string, string | number> = {}): string {
   const s = TABLES[lang]?.[key] ?? en[key];

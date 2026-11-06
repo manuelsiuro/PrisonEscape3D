@@ -3,7 +3,7 @@ import { STEPS_PER_SECOND } from '../sim/tuning';
 import { ROUTINE, routineEnd, zonesOf } from '../content/routine';
 import { type Clock, formatTime, hhmm, pad2, spanText } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { keyLabel } from '../i18n/keys';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -128,7 +128,7 @@ export class Hud {
   private readonly tip: HTMLElement;
   private shownFace = '';
   private news = false;
-  private lang = currentLang();
+  private lang = textStamp();
 
   constructor(onPause: () => void, onProfile: () => void) {
     this.el = h(
@@ -228,7 +228,9 @@ export class Hud {
     this.lessonBtn.classList.toggle('hidden', !on);
     this.lessonBtn.classList.toggle('new', on && fresh);
     const label = t(fresh ? 'hud.objectivesNew' : 'hud.objectives');
-    if (this.lessonBtn.getAttribute('aria-label') !== label) {
+    // (Its tooltip names the key: written again when the keys change too.)
+    if (this.lessonBtn.getAttribute('aria-label') !== label || this.lessonBtn.dataset.stamp !== textStamp()) {
+      this.lessonBtn.dataset.stamp = textStamp();
       this.lessonBtn.setAttribute('aria-label', label);
       // (A keyboard's tooltip names its key.)
       this.lessonBtn.title = TOUCH ? '' : `${label} (${keyLabel('KeyO')})`;
@@ -346,7 +348,7 @@ export class Hud {
     const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
     bar.style.display = r.left === null ? 'none' : '';
     if (r.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, r.left / r.of)) * 100}%`;
-    el.title = TOUCH ? t('hud.rat') : `${t('hud.rat')} (T)`;
+    el.title = TOUCH ? t('hud.rat') : `${t('hud.rat')} (${keyLabel('KeyT')})`;
     el.setAttribute('aria-label', `${r.name}${r.status ? `, ${r.status}` : ''}. ${t('hud.rat')}`);
   }
 
@@ -366,9 +368,9 @@ export class Hud {
     if (o.done !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, o.done)) * 100}%`;
     // (A visitor coming with nothing ordered: no phone to open, said as it is.)
     el.classList.toggle('inert', !o.panel);
-    if (o.panel) el.setAttribute('aria-keyshortcuts', 'P');
+    if (o.panel) el.setAttribute('aria-keyshortcuts', keyLabel('KeyP'));
     else el.removeAttribute('aria-keyshortcuts');
-    el.title = !o.panel ? t('hud.visitor') : TOUCH ? t('hud.order') : `${t('hud.order')} (P)`;
+    el.title = !o.panel ? t('hud.visitor') : TOUCH ? t('hud.order') : `${t('hud.order')} (${keyLabel('KeyP')})`;
     el.setAttribute('aria-label', o.panel ? `${o.sr.replace(/\.\s*$/, '')}. ${t('hud.order')}` : o.sr);
   }
 
@@ -384,7 +386,7 @@ export class Hud {
       el.querySelector('.hud-crew-ic')!.innerHTML = c.icons.map((i) => icon(i, 15)).join('');
     }
     setText(el.querySelector('b')!, c.text);
-    el.title = TOUCH ? t('hud.crew') : `${t('hud.crew')} (G)`;
+    el.title = TOUCH ? t('hud.crew') : `${t('hud.crew')} (${keyLabel('KeyG')})`;
     el.setAttribute('aria-label', `${c.text}. ${t('hud.crew')}`);
   }
 
@@ -404,7 +406,7 @@ export class Hud {
     setText(el.querySelector('.hud-job-tail')!, j.tail);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, j.left)) * 100}%`;
     const what = t(j.urgent ? 'hud.whistle' : 'hud.job');
-    el.title = TOUCH ? what : `${what} (B)`;
+    el.title = TOUCH ? what : `${what} (${keyLabel('KeyB')})`;
     el.setAttribute('aria-label', `${j.sr}. ${what}`);
   }
 
@@ -470,14 +472,24 @@ export class Hud {
 
   update(clock: Clock, zone: ZoneId, s: HudState) {
     // The language changed (settings, from the pause menu): rewrite everything.
-    if (currentLang() !== this.lang) {
-      this.lang = currentLang();
+    if (textStamp() !== this.lang) {
+      this.lang = textStamp();
       this.shownKey = this.shownMinute = '';
       this.zone.textContent = '';
       this.cashPill.title = '';
       this.el.querySelector('.hud-pause')!.setAttribute('aria-label', t('hud.pause'));
       this.heatPill.setAttribute('aria-label', t('hud.heat'));
       this.el.querySelector<HTMLElement>('.hud-eye')!.title = t('hud.seen');
+      // (The keys their buttons answer to, for a screen reader: the player's, session 9.)
+      for (const [sel, code] of [
+        ['.hud-cash', 'KeyI'],
+        ['.hud-clock', 'KeyJ'],
+        ['.hud-lesson', 'KeyO'],
+        ['.hud-rat', 'KeyT'],
+        ['.hud-crew', 'KeyG'],
+        ['.hud-job', 'KeyB'],
+      ] as const)
+        this.el.querySelector(sel)?.setAttribute('aria-keyshortcuts', keyLabel(code));
     }
     // Text only when it changes: the clock once a game minute, the zone on entering one.
     const minute = `${clock.day}:${clock.minuteOfDay}:${NARROW.matches}`;
@@ -555,7 +567,7 @@ export class Hud {
       this.shownCash = s.cash;
       setText(this.cashText, `$${s.cash}`);
       // The keyboard's shortcut in the tooltip (not on touch).
-      this.cashPill.title = TOUCH ? t('hud.profile') : `${t('hud.profile')} (I)`;
+      this.cashPill.title = TOUCH ? t('hud.profile') : `${t('hud.profile')} (${keyLabel('KeyI')})`;
       this.label();
       setText(this.tip, t('hud.profile'));
     }

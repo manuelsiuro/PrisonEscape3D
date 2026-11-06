@@ -1,6 +1,19 @@
 import { PRISONS } from '../content/prisons';
+import { clean, type Bindings } from '../input/bindings';
 import { PICKABLE } from './holidays';
 import { KEYS, PROGRESS_KEYS, readJSON, removeKey, replayBestKey, writeJSON } from './storage';
+
+/** The interface's sizes on offer (session 9). */
+export const UI_SCALES = [1, 1.15, 1.3];
+/** The short side the page is never laid out below with the interface scaled, in CSS pixels (the sweep checked it there). */
+export const SCALE_FLOOR = 300;
+
+/** The scale for a screen of this size: the pick, capped by the short side (in steps of 5%; app/scale.ts). */
+export function fitScale(want: number, width: number, height: number): number {
+  // (Sizes rounded first: the window times a scale in single precision read 359.99998 for 360, a step lower.)
+  const most = Math.round(Math.min(width, height)) / SCALE_FLOOR;
+  return Math.max(1, Math.floor(Math.min(want, most) * 20 + 1e-3) / 20);
+}
 
 /** Player preferences, saved on this device. New fields get their default automatically. */
 export interface Settings {
@@ -31,6 +44,10 @@ export interface Settings {
   /** v2.21 (P42): holidays by the calendar (a run begun on one has it), one picked now (`holidayPick`), or none. */
   holidays: 'calendar' | 'pick' | 'off';
   holidayPick: 'easter' | 'summer' | 'halloween' | 'christmas';
+  /** Session 9: the interface's size on a phone or tablet (1, 1.15, 1.3; app/scale.ts caps it on a small screen). */
+  uiScale: number;
+  /** Session 9: the main actions moved off their default keys (input/bindings.ts). */
+  keys: Bindings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -48,6 +65,8 @@ export const DEFAULT_SETTINGS: Settings = {
   pa: 'full',
   holidays: 'calendar',
   holidayPick: 'christmas',
+  uiScale: 1,
+  keys: {},
 };
 
 /** Stored settings, each field checked against its default's type (a bad value gets the default). */
@@ -62,6 +81,8 @@ export function loadSettings(): Settings {
   if (!['full', 'short', 'off'].includes(out.pa)) out.pa = 'full';
   if (!['calendar', 'pick', 'off'].includes(out.holidays)) out.holidays = 'calendar';
   if (!PICKABLE.includes(out.holidayPick)) out.holidayPick = 'christmas';
+  if (!UI_SCALES.includes(out.uiScale)) out.uiScale = 1;
+  out.keys = clean(out.keys);
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
   out.musicVolume = Math.min(1, Math.max(0, Number.isFinite(out.musicVolume) ? out.musicVolume : DEFAULT_SETTINGS.musicVolume));
   return out;

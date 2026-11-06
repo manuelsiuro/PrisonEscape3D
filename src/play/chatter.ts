@@ -1,4 +1,4 @@
-import { currentLang } from '../i18n';
+import { currentLang, textStamp } from '../i18n';
 import { rumorHeard } from '../game/trophies';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { UNIT } from '../sim/tuning';
@@ -87,7 +87,7 @@ profile.notebook = () => {
   const g = play.game;
   if (!g) return [];
   const sim = g.rec.sim;
-  const key = `${director.rumors.length}|${director.rumors[0]?.step ?? 0}|${Math.floor(sim.state.step / 100)}|${currentLang()}`;
+  const key = `${director.rumors.length}|${director.rumors[0]?.step ?? 0}|${Math.floor(sim.state.step / 100)}|${textStamp()}`;
   if (key !== notesKey) {
     notesKey = key;
     notes = director.notebook(sim);

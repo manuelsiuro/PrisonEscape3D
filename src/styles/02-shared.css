@@ -70,6 +70,9 @@
   z-index: 50;
   display: grid;
   place-items: center;
+  /* (One column the screen's width at most: an "auto" one grew to fit a card's content, and at 300 wide, the
+     interface scaled up (session 9), How to play's tabs pushed its card off the screen.) */
+  grid-template-columns: minmax(0, 1fr);
   padding: 16px;
   background: rgba(var(--blue-25-rgb), 0.35);
   animation: fade 0.25s var(--ease);

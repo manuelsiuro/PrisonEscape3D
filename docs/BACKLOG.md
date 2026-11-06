@@ -67,12 +67,12 @@ fixes, and polished systems before the feature built on them; the user may reord
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
 4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
-7, the design tokens, and 8, the screen sizes, in v2.34.3).
+7, the design tokens, 8, the screen sizes, and 9, the accessibility options, in v2.34.3; 9's colour-blind
+palette was left out by the user).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 9 | Accessibility options | No text size, colour-blind palette or key remapping (built on 7's colour tokens; the ~500 font sizes are still px in each file) |
-| 10 | Gamepad support | No controller input (`getGamepads` nowhere); shares 9's remapping |
+| 10 | Gamepad support | No controller input (`getGamepads` nowhere); builds on 9's actions table (`input/bindings.ts`) |
 | 11 | Fights, stealth and heat | §1; the core of an escape, never reviewed |
 | 12 | Tools, digging, items, looting | §1: tools, digging, vents and roofs; items and crafting; searching and looting |
 | 13 | Talk, merchants, crew | §1: talking, favours and opinion; merchants and money; the crew |

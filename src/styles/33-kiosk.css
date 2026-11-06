@@ -588,6 +588,23 @@ body.vending .up-prompt {
     grid-template-columns: minmax(0, 1fr) 100px;
   }
 }
+/* (Session 9: narrower still, 300 wide with the interface scaled up: the screen beside the shelves gives way.) */
+@media (max-width: 340px) and (min-height: 501px) {
+  .vend-body {
+    grid-template-columns: minmax(0, 1fr) 76px;
+  }
+  .vend-glass {
+    gap: 3px;
+    padding: 4px;
+  }
+  .vend-glass > * {
+    padding-inline: 1px;
+  }
+  /* (9.5 px: here most often 11 or more on the screen, the interface scaled up.) */
+  .vend-name {
+    font-size: 9.5px;
+  }
+}
 /* A phone on its side: the height's what's short. Four to a shelf, above the hotbar. */
 @media (max-height: 500px) {
   .vend-card {

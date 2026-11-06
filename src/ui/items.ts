@@ -6,7 +6,8 @@ import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemS
 import { ALARM_CLOCK, HOLLOW_BOOK } from '../sim/systems/structure';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
 import { itemIcons } from '../render/itemIcons';
-import { currentLang, t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
+import { keyLabel } from '../i18n/keys';
 import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -211,7 +212,7 @@ export class ItemsUI {
 
   /** Writes the fixed labels in the current language (at start, and when it changes). */
   private relabel() {
-    this.lang = currentLang();
+    this.lang = textStamp();
     for (const root of [this.bar, this.box]) {
       root.querySelectorAll<HTMLElement>('[data-t]').forEach((el) => (el.textContent = t(el.dataset.t as Key)));
       root.querySelectorAll<HTMLElement>('[data-t-label]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.tLabel as Key)));
@@ -424,7 +425,7 @@ export class ItemsUI {
 
   update(v: ItemsView) {
     this.view = v;
-    if (this.lang !== currentLang()) this.relabel();
+    if (this.lang !== textStamp()) this.relabel();
     const it = v.items;
     // Bench entries that emptied (crafted, dropped) fall off; picks of a closed box go.
     for (let k = this.bench.length - 1; k >= 0; k--)
@@ -522,7 +523,7 @@ export class ItemsUI {
     this.act.classList.toggle('hidden', !show || !TOUCH);
     this.prompt.classList.toggle('hidden', !show || TOUCH || v.sleeping);
     if (!show || !a) return;
-    const label = `${a.verb}|${a.what}|${!!a.no}`;
+    const label = `${a.verb}|${a.what}|${!!a.no}|${textStamp()}`;
     // (P24: something there that won't do now, and says why: greyed, as the tool button is.)
     this.act.classList.toggle('no', !!a.no);
     this.prompt.classList.toggle('no', !!a.no);
@@ -538,7 +539,7 @@ export class ItemsUI {
       this.act.classList.add('pop');
     } else if (this.prompt.dataset.label !== label) {
       this.prompt.dataset.label = label;
-      this.prompt.innerHTML = `<kbd>E</kbd><span></span><b></b>`;
+      this.prompt.innerHTML = `<kbd>${keyLabel('KeyE')}</kbd><span></span><b></b>`;
       this.prompt.querySelector('span')!.textContent = a.verb;
       this.prompt.querySelector('b')!.textContent = a.what;
     }

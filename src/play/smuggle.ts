@@ -1,6 +1,6 @@
 import { itemDef } from '../content/items';
 import { CATALOGUE, FEES, PARCEL_MINUTE, VISIT_STEPS, WAY } from '../content/smuggling';
-import { currentLang, t, type Key } from '../i18n';
+import { currentLang, t, textStamp, type Key } from '../i18n';
 import { placePhrase } from '../i18n/barks/grammar';
 import { EXT, headingAngle, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -156,7 +156,7 @@ let hudKey = '';
 let hudLast: HudState['order'] = null;
 export function orderHud(sim: Sim): HudState['order'] {
   const s = sim.state;
-  const key = `${s.step}|${s.items.rev}|${currentLang()}`;
+  const key = `${s.step}|${s.items.rev}|${textStamp()}`;
   if (key === hudKey) return hudLast;
   hudKey = key;
   hudLast = orderPill(sim);
