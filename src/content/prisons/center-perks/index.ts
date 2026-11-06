@@ -373,8 +373,9 @@ export const CENTER_PERKS: PrisonDef = {
   // (21:00–22:00, free time: the yard is open to everyone then); visitors sit across the
   // visitation room's counters.
   smuggling: { fixer: 6, drop: [25, 25, 36, 34], droneHours: [780, 840], visits: [27, 38, 37, 44] },
-  // The checkpoint (P24): the gatekeeper's booth on the road beside the south gate; papers are
-  // shown through the wire at the end of the drive.
+  // The checkpoint (P24): papers are shown at the end of the drive, before the south gate. The
+  // gatekeeper's booth stands inside the wire on the grass east of the drive, its hatch to the
+  // window (2.33.2: it stood on the road, the only ground outside the gate, in the street).
   checkpoint: {
     window: [
       { x: 30, z: 60 },
@@ -384,7 +385,7 @@ export const CENTER_PERKS: PrisonDef = {
       { x: 30, z: 61 },
       { x: 31, z: 61 },
     ],
-    booth: { x: 33, z: 62, face: 13 },
+    booth: { x: 33, z: 60, face: 9 },
   },
   // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the sports ground, the beds in the garden (P31).
   leisure: {

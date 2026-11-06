@@ -28,6 +28,7 @@ import { CATALOGUE } from '../src/content/smuggling';
 import { ACHIEVEMENTS } from '../src/content/achievements';
 import { routineAt } from '../src/content/routine';
 import { command, OP, SLOT } from '../src/sim/command';
+import { RunRecorder, replayLog } from '../src/sim/runlog';
 import { ESCAPES, Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { dayPlan, today } from '../src/sim/systems/calendar';
 import { crewEscape } from '../src/sim/systems/crew';
@@ -114,7 +115,45 @@ for (const def of [...PRISONS, TRAINING]) {
     return false;
   };
   check(walkOut(true) && !walkOut(false), `${def.id}: waved through the window walks out to the road (and not without)`);
-  w.setWaved(false);
+  // 2.33.2: the booth can't be walked through (before, it was only drawn: plainBooth), and it shuts nobody off: the
+  // ground reached from the window, waved through, is the same less the booth's own tile.
+  const reach = () => {
+    w.setWaved(true);
+    const seen = new Uint8Array(MAP_W * MAP_H);
+    const q = [at(c.window[0].x, c.window[0].z)];
+    seen[q[0]] = 1;
+    for (let k = 0; k < q.length; k++) for (const j of [q[k] - 1, q[k] + 1, q[k] - MAP_W, q[k] + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) (seen[j] = 1), q.push(j);
+    w.setWaved(false);
+    return q.length;
+  };
+  const solid = w.blocked(c.booth.x, c.booth.z) && w.npcBlock[bt] === 1 && w.guardBlock[bt] === 1;
+  const reached = reach();
+  w.plainBooth = true;
+  const walked = !w.blocked(c.booth.x, c.booth.z);
+  const reachedBefore = reach();
+  w.plainBooth = false;
+  check(solid && walked && w.blocked(c.booth.x, c.booth.z) && reached === reachedBefore - 1, `${def.id}: the booth stands in the way (walked through before 2.33.2) and cuts no ground off (${reached} tiles reached, ${reachedBefore} before)`);
+}
+// 2.33.2: walked into from beside it, the booth stops the player; a run from before walks through it, and replays so.
+{
+  const b = CENTER_PERKS.checkpoint!.booth;
+  const push = (old: boolean) => {
+    const sim = new Sim(CENTER_PERKS, 1);
+    sim.rules233 = old;
+    sim.state.player.x = (b.x - 1) * UNIT + UNIT / 2;
+    sim.state.player.z = b.z * UNIT + UNIT / 2;
+    for (let k = 0; k < 40; k++) sim.step(command(1));
+    return Math.floor(sim.state.player.x / UNIT);
+  };
+  const now = push(false);
+  const before = push(true);
+  check(now === b.x - 1 && before > b.x, `center-perks: the booth stops the player walking east into it (stopped on ${now}; before 2.33.2 on through to ${before})`);
+  const rec = new RunRecorder(new Sim(CENTER_PERKS, 1), { seed: 1, game: '2.33.1' });
+  for (let k = 0; k < 200; k++) rec.step(0);
+  const old = replayLog(rec.toLog(), CENTER_PERKS);
+  const today = replayLog({ ...rec.toLog(), game: '2.33.2' }, CENTER_PERKS);
+  check(!!old?.ok && old.sim.rules233 && !!today?.ok && !today.sim.rules233, 'a log from 2.33.1 replays with the booth walked through; one from 2.33.2 with it in the way');
+  check(new RunRecorder(rec.sim, { log: rec.toLog(), game: '2.33.2' }).toLog().seed === -1, 'and a log from 2.33.1 is not carried on');
 }
 const card = CATALOGUE.findIndex((c) => c.item === 'blank_id');
 check(card === 9 && CATALOGUE[card].price === 80, 'the blank ID card on the phone at $80 (appended)');

@@ -110,7 +110,7 @@ export interface DeliveryDef {
 /**
  * The checkpoint (P24): the gatekeeper's booth at the gate out, where a player in a guard's
  * uniform shows a fake ID at the shift change and is waved through. All of it data: the booth
- * and its gatekeeper are drawn, nothing on the map changes.
+ * and its gatekeeper are drawn, and from 2.33.2 the booth's tile can't be walked (World.plainBooth before).
  */
 export interface CheckpointDef {
   /** Where the player stands to show the ID (tiles, just inside the first gate). */
@@ -119,7 +119,7 @@ export interface CheckpointDef {
   gates: ReadonlyArray<{ x: number; z: number }>;
   /** Irongate: the drawbridge (`drawbridge`) comes down for the player too. */
   bridge?: boolean;
-  /** The gatekeeper's booth (drawn only, just outside the gate where nobody walks): a tile, and the way its hatch faces (1–16). */
+  /** The gatekeeper's booth, by the gate where nobody walks (solid from 2.33.2): a tile, and the way its hatch faces (1–16). */
   booth: { x: number; z: number; face: number };
 }
 

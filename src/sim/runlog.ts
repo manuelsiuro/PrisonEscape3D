@@ -166,8 +166,9 @@ export class RunRecorder {
       // (Nor one from before inmates at work and guards minding work rooms, 2.30: the same.)
       // (Nor one from before the library's reading and its limit, 2.31: the same.)
       // (Nor one from before the vending machine worked, 2.32: the same.)
-      // (Every one of those versions comes before 2.33, the latest gate: one test covers them all.)
-      const stale = beforeCanteenBoard(log?.game ?? '');
+      // (Nor one from before the menu's dishes and the water cooler, 2.33.0, or the booth standing in the way, 2.33.2.)
+      // (Every one of those versions comes before 2.33.2, the latest gate: one test covers them all.)
+      const stale = beforeSolidBooth(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -290,6 +291,8 @@ const beforeBooks = (game: string) => versionBefore(game, 2, 31);
 const beforeVending = (game: string) => versionBefore(game, 2, 32);
 /** Before the menu's dishes, its board and the water cooler worked (2.33.0). Sim.rules232 plays it as it was. */
 const beforeCanteenBoard = (game: string) => versionBefore(game, 2, 33);
+/** Before the checkpoint's booth stood in the way (2.33.2). Sim.rules233 plays it as it was. */
+const beforeSolidBooth = (game: string) => versionBefore(game, 2, 33, 2);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -353,6 +356,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeVending(log.game)) sim.rules231 = true;
   // Played before the menu's dishes and the water cooler: as it was.
   if (beforeCanteenBoard(log.game)) sim.rules232 = true;
+  // Played before the checkpoint's booth stood in the way: walked through, as it was.
+  if (beforeSolidBooth(log.game)) sim.rules233 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

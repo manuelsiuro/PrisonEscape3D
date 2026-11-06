@@ -197,6 +197,16 @@ export class Sim {
     forgetReserved(this.world);
     reserved(this.world);
   }
+  /** Replaying a run from before 2.33.2: the checkpoint's booth only drawn, walked through. */
+  get rules233() {
+    return this.world.plainBooth;
+  }
+  set rules233(on: boolean) {
+    this.world.plainBooth = on;
+    forgetPlaces(this.world);
+    forgetReserved(this.world);
+    reserved(this.world);
+  }
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
