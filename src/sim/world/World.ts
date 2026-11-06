@@ -46,6 +46,9 @@ export interface Prop {
   w: number;
   d: number;
   rot: number;
+  /** A lamp's arm, in eighth turns, and its number of heads (drawing only: PropPlacement). */
+  aim: number;
+  heads: number;
 }
 
 /** Map pictures are trimmed of their first and last empty lines; every row must be MAP_W wide. */
@@ -209,7 +212,7 @@ export class World {
     if (def.checkpoint?.bridge && def.drawbridge) this.fill(this.checkpoint, ...def.drawbridge, 1);
     for (const q of def.comms?.release.gates ?? []) this.release[q.z * MAP_W + q.x] = 1;
     if (def.comms?.release.bridge && def.drawbridge) this.fill(this.release, ...def.drawbridge, 1);
-    this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0 }));
+    this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0, aim: p.aim ?? (p.rot ?? 0) * 2, heads: p.heads ?? 1 }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
     // The checkpoint's booth stands in the way (2.33.2; walked through before: plainBooth).
     if (def.checkpoint) this.propSolid[def.checkpoint.booth.z * MAP_W + def.checkpoint.booth.x] = 1;

@@ -2,7 +2,7 @@ import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
-import type { PropPlacement } from '../../props';
+import { AIM, type PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { sideCell } from '../build';
 import { L0 } from './L0.map';
@@ -94,17 +94,17 @@ props.push(
   { kind: 'chair', x: 53, z: 50, rot: 1 },
   // Lamps: the courtyard's north-east corner, the rec ground's, the gravel round the shell.
   ...[
-    [39, 28],
-    [54, 13],
-    [6, 6],
-    [31, 6],
-    [57, 6],
-    [6, 31],
-    [57, 31],
-    [6, 57],
-    [20, 57],
-    [57, 57],
-  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+    [39, 28, AIM.SW],
+    [54, 13, AIM.SW],
+    [6, 6, AIM.NW],
+    [31, 6, AIM.N],
+    [57, 6, AIM.NE],
+    [6, 31, AIM.W],
+    [57, 31, AIM.E],
+    [6, 57, AIM.SW],
+    [20, 57, AIM.S],
+    [57, 57, AIM.SE],
+  ].map(([x, z, aim]) => ({ kind: 'lamp', x, z, aim }) as const),
   // The rec ground (P32): the court, the bleachers and the weights corner north of the track.
   // The garden plot (P32), walled in the courtyard's west end: the planters, the tool shed, the crate.
   { kind: 'bleachers', x: 47, z: 13, w: 5 },

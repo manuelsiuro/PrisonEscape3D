@@ -2,7 +2,7 @@ import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
-import type { PropPlacement } from '../../props';
+import { AIM, type PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
 import { L1 } from './L1.map';
@@ -98,22 +98,22 @@ props.push(
   { kind: 'bench', x: 34, z: 32, w: 2, rot: 2 },
   // Lamps: the yards' corners, the perimeter ring and the south yard.
   ...[
-    [27, 7],
-    [38, 7],
-    [24, 25],
-    [37, 25],
-    [24, 34],
-    [37, 34],
+    [27, 7, AIM.SE],
+    [38, 7, AIM.SW],
+    [24, 25, AIM.SE],
+    [37, 25, AIM.SW],
+    [24, 34, AIM.NE],
+    [37, 34, AIM.NW],
     ...[9, 21, 33, 43].flatMap((z) => [
-      [4, z],
-      [59, z],
+      [4, z, AIM.W],
+      [59, z, AIM.E],
     ]),
-    ...[14, 26, 38, 50].map((x) => [x, 4]),
-    [28, 49],
-    [33, 49],
-    [28, 56],
-    [33, 56],
-  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+    ...[14, 26, 38, 50].map((x) => [x, 4, AIM.N]),
+    [28, 49, AIM.E],
+    [33, 49, AIM.W],
+    [28, 56, AIM.E],
+    [33, 56, AIM.W],
+  ].map(([x, z, aim]) => ({ kind: 'lamp', x, z, aim }) as const),
 );
 
 // Chairs (P8+), appended so every earlier prop keeps its index (saves, containers and
@@ -135,12 +135,12 @@ props.push(
   { kind: 'weights', x: 8, z: 52 },
   { kind: 'pullup', x: 7, z: 54, w: 2 },
   { kind: 'bleachers', x: 12, z: 46, w: 9 },
-  { kind: 'lamp', x: 26, z: 46 },
-  { kind: 'lamp', x: 6, z: 55 },
+  { kind: 'lamp', x: 26, z: 46, aim: AIM.SW },
+  { kind: 'lamp', x: 6, z: 55, aim: AIM.NE },
   ...[47, 50, 53].flatMap((z) => [{ kind: 'planter', x: 37, z, w: 3 } as const, { kind: 'planter', x: 41, z, w: 3 } as const]),
   { kind: 'toolShed', x: 52, z: 47, w: 3, d: 2 },
   { kind: 'crate', x: 50, z: 47 },
-  { kind: 'lamp', x: 56, z: 55 },
+  { kind: 'lamp', x: 56, z: 55, aim: AIM.NW },
 );
 
 /** Two rows of four, facing the guard at the north end. */

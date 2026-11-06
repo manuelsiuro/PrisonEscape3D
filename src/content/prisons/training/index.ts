@@ -1,4 +1,4 @@
-import type { PropPlacement } from '../../props';
+import { AIM, type PropPlacement } from '../../props';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import type { PrisonDef } from '../types';
@@ -25,10 +25,10 @@ const props: PropPlacement[] = [
   { kind: 'weights', x: 34, z: 33 },
   // Lamps by the yard and the gate.
   ...[
-    [18, 36],
-    [31, 36],
-    [29, 50],
-  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+    [18, 36, AIM.SE],
+    [31, 36, AIM.SW],
+    [29, 50, AIM.E],
+  ].map(([x, z, aim]) => ({ kind: 'lamp', x, z, aim }) as const),
   // Chairs at each desk.
   { kind: 'chair', x: 21, z: 17, rot: 1 },
   { kind: 'chair', x: 26, z: 17, rot: 1 },
@@ -37,7 +37,7 @@ const props: PropPlacement[] = [
   { kind: 'weights', x: 47, z: 37 },
   { kind: 'pullup', x: 46, z: 40, w: 2 },
   { kind: 'bleachers', x: 35, z: 40, w: 4 },
-  { kind: 'lamp', x: 48, z: 36 },
+  { kind: 'lamp', x: 48, z: 36, aim: AIM.SW },
   { kind: 'toolShed', x: 24, z: 47, w: 2, d: 2 },
 ];
 

@@ -7,7 +7,7 @@ import { batched, disposeTree, type Piece } from './batch';
 import { box, cyl, kitMaterial, merge, paint } from './kit';
 import { Lights } from './lights';
 import { seeThrough } from './occlusion';
-import { propGeometry } from './props';
+import { lampParts, propGeometry } from './props';
 import { TEX } from './textures';
 import { seeded } from './rand';
 import { isOutside } from '../sim/hunt/world';
@@ -504,8 +504,11 @@ export class WorldView {
       const w = turned ? p.d : p.w;
       const d = turned ? p.w : p.d;
       // rot: 0 front south (+z), 1 east, 2 north, 3 west.
-      this.q.setFromAxisAngle(this.up, [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]);
+      // (A lamp turns by its aim, in eighths, and may have two heads: 2.34.1.)
+      const lamp = p.kind === 'lamp';
+      this.q.setFromAxisAngle(this.up, lamp ? (p.aim * Math.PI) / 4 : [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]);
       const matrix = new THREE.Matrix4().compose(this.pos.set(p.x + p.w / 2, 0, p.z + p.d / 2), this.q, this.one);
+      if (lamp && p.heads === 2) return { key: 'lamp:twin', make: () => merge(lampParts(2)), matrix };
       return { key: `${p.kind}:${w}x${d}`, make: () => propGeometry(p.kind, w, d), matrix };
     });
     // Furniture is cut above waist height only: low pieces next to the player stay whole.

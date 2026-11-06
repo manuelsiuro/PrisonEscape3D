@@ -2,7 +2,7 @@ import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
-import type { PropPlacement } from '../../props';
+import { AIM, type PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { sideCell } from '../build';
 import { L0 } from './L0.map';
@@ -96,19 +96,19 @@ props.push(
   { kind: 'bench', x: 27, z: 23, d: 2, rot: 1 },
   { kind: 'bench', x: 36, z: 23, d: 2, rot: 3 },
   ...[
-    [27, 22],
-    [36, 22],
-  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+    [27, 22, AIM.SE],
+    [36, 22, AIM.SW],
+  ].map(([x, z, aim]) => ({ kind: 'lamp', x, z, aim }) as const),
   // The sports ground (P33, the plaza's south half): the court, the weights corner and the
   // bleachers north of the track; lamps at its corners.
   { kind: 'pullup', x: 36, z: 32, w: 2 },
   { kind: 'weights', x: 39, z: 33 },
   { kind: 'weights', x: 39, z: 35 },
   { kind: 'bleachers', x: 33, z: 36, w: 6 },
-  { kind: 'lamp', x: 26, z: 46 },
-  { kind: 'lamp', x: 39, z: 46 },
-  { kind: 'lamp', x: 26, z: 36 },
-  { kind: 'lamp', x: 39, z: 36 },
+  { kind: 'lamp', x: 26, z: 46, aim: AIM.NE },
+  { kind: 'lamp', x: 39, z: 46, aim: AIM.NW },
+  { kind: 'lamp', x: 26, z: 36, aim: AIM.SE },
+  { kind: 'lamp', x: 39, z: 36, aim: AIM.SW },
   // The garden (P33, the old showers): the planters and the tool shed along the north wall,
   // the crate under the shed; two more planters behind the beds (the wall hides the rows in
   // front of it from the camera, the crops stand above it).
