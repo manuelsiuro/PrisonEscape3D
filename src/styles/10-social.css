@@ -1664,6 +1664,15 @@ body.reduced-motion .item-panel .armed::after {
   display: none;
 }
 
+/* A small phone turned (under 820 wide): the training and arm-wrestling pads in the bottom corners would
+   cover the hotbar's ends (its first slot and Craft at 640×360), so it steps aside while they're up, as at
+   the phone (session 8). */
+@media (max-height: 520px) and (max-width: 820px) {
+  .touch:has(.gym-card:not(.hidden), .wrestle-card:not(.hidden)) .hotbar {
+    display: none;
+  }
+}
+
 /* Portrait phones: above the hotbar, as the training card. Landscape: a slim card, the button at the edge. */
 @media (max-height: 520px) {
   .read-card {

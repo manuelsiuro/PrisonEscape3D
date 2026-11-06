@@ -436,6 +436,14 @@
   .stage-lanes {
     height: max(110px, calc(100vh - 262px));
   }
+  /* (Playing, Stop is in the card too: the lanes and pads leave it room, or it sat below the card's edge,
+     reached only by scrolling mid-song; 915×412 and 640×360, session 8.) */
+  .stage-card[data-phase='play'] .stage-lanes {
+    height: max(90px, calc(100vh - 300px));
+  }
+  .touch .stage-pad {
+    height: 60px;
+  }
   .stage-acts li {
     padding: 3px 8px;
   }
@@ -519,6 +527,17 @@ body.quizzing[data-quiz='on'] .lock-btn {
 }
 .stage-card[data-phase='play'] .stage-quit {
   display: inline-flex;
+}
+
+/* (A small phone turned: playing, the line under the pads steps aside, as the quiz's does; the quiz's card
+   widens into the room on the right, its answers on a line each, Give up in sight.) */
+@media (max-height: 440px) {
+  .stage-card[data-phase='play'] .train-note {
+    display: none;
+  }
+  .quiz-card {
+    width: min(360px, calc(100vw - 280px));
+  }
 }
 
 @media (max-height: 520px) {

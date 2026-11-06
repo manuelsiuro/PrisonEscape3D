@@ -42,7 +42,9 @@ go to [`PLAN.md`](PLAN.md); for the original design, the
 - **A quick start:** a loading screen with a prison joke shows at once while the game downloads;
   French, the tutorial, the manhunt and the side games' cards come in their own files. A game's
   start and the way back to the title show a short loading veil while the prison is built.
-- **Screen shapes:** checked at desktop, phone portrait (412×915) and phone landscape (915×412).
+- **Screen shapes:** every screen and moment of play checked at two desktops, four phone sizes (upright
+  and turned) and a tablet both ways, in English and French. A phone turned in the browser goes full
+  screen at the first tap in a game (its bars took a third of the height).
 - **Performance:** three graphics tiers. On Auto, phones start one tier lower, and the game steps
   down when play averages under 40 fps. `?perf` in the address shows a frame counter (frames a
   second, a frame's time, the graphics card's, the tier, what's drawn), kept on until `?perf=0`; or

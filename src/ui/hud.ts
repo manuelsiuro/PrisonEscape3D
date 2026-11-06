@@ -85,7 +85,8 @@ const LAYER_ZONES: Partial<Record<ZoneId, string>> = { tunnels: 'under', vents: 
 const LAYER_ICONS: Record<string, string> = { under: 'down', vents: 'bars', roof: 'up' };
 
 /** Phones narrower than this move the block's deadline under its name. */
-const NARROW = matchMedia('(max-width: 440px)');
+// (Also a small phone turned: its top row is shared with the first day's guide, session 8.)
+const NARROW = matchMedia('(max-width: 440px), (max-height: 520px) and (max-width: 820px)');
 
 export const routineName = (k: number) => t(`routine.${ROUTINE[k].id}` as Key);
 
