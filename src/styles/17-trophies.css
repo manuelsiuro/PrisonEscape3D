@@ -4,15 +4,28 @@
  * the Intake editor beside its 3D preview, and the escape camera's letterbox.
  */
 :root {
-  --gold-1: #ffe08a;
-  --gold-2: #f2b01e;
-  --gold-3: #a8700a;
-  --silver-1: #f4f7fb;
-  --silver-2: #b9c4d2;
-  --silver-3: #6d7a8c;
-  --bronze-1: #ffcf9e;
-  --bronze-2: #d0803e;
-  --bronze-3: #81461a;
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --trophies-slate-64: #7d8ea6;
+  --trophies-slate-51: #56667c;
+  --trophies-slate-26: #1a2536;
+  --trophies-stone-97: #fff6dc;
+  --trophies-stone-20: #1c160a;
+  --trophies-stone-20-rgb: 28, 22, 10;
+  --trophies-red-60: #e0352a;
+  --trophies-orange-89: #ffd0a8;
+  --trophies-orange-84: #ffb877;
+  --trophies-gold-91: #ffdcb4;
+  --trophies-gold-91-rgb: 255, 220, 180;
+  --trophies-gold-91b: #ffdc82;
+  --trophies-gold-91b-rgb: 255, 220, 130;
+  --trophies-gold-86: #ffc850;
+  --trophies-gold-86-rgb: 255, 200, 80;
+  --trophies-gold-38: #5a3a00;
+  --trophies-gold-30: #3a2c10;
+  --trophies-gold-30-rgb: 58, 44, 16;
+  --trophies-yellow-95: #fff0be;
+  --trophies-yellow-95-rgb: 255, 240, 190;
+  --trophies-blue-35: #2a3a52;
 }
 
 /* ------------------------------------------------------------ the title row: three across */
@@ -38,7 +51,7 @@
 .title-screen .title-row.three .menu-btn {
   background:
     radial-gradient(90% 75% at 50% 0%, color-mix(in srgb, var(--tone) 30%, transparent), transparent 75%),
-    linear-gradient(180deg, rgba(34, 48, 71, 0.88), rgba(19, 28, 42, 0.9));
+    linear-gradient(180deg, rgba(var(--dlg-top-rgb), 0.88), rgba(var(--dlg-bottom-rgb), 0.9));
 }
 
 .title-row.three .menu-ic {
@@ -74,14 +87,14 @@
   font: 800 10px/1.35 var(--font-ui);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: #3b2600;
+  color: var(--gold-29);
   background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
-  box-shadow: 0 0 0 2px #1b2638;
+  box-shadow: 0 0 0 2px var(--slate-28);
 }
 
 .menu-count.new {
-  color: white;
-  background: linear-gradient(180deg, #ff6a5a, #e0352a);
+  color: var(--white);
+  background: linear-gradient(180deg, var(--red-71), var(--trophies-red-60));
 }
 
 .title-row.three .menu-bar {
@@ -92,7 +105,7 @@
   height: 3px;
   overflow: hidden;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--white-rgb), 0.1);
 }
 
 .title-row.three .menu-bar::after {
@@ -114,33 +127,33 @@
   width: var(--s);
   height: var(--s);
   border-radius: 50%;
-  color: rgba(0, 0, 0, 0.35);
-  fill: rgba(255, 255, 255, 0.55);
+  color: rgba(var(--black-rgb), 0.35);
+  fill: rgba(var(--white-rgb), 0.55);
 }
 
 .medal.gold {
   background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 55%, var(--gold-3));
   box-shadow:
-    inset 0 0 0 2px rgba(255, 240, 190, 0.6),
-    0 2px 8px -2px rgba(242, 176, 30, 0.7);
+    inset 0 0 0 2px rgba(var(--trophies-yellow-95-rgb), 0.6),
+    0 2px 8px -2px rgba(var(--gold-2-rgb), 0.7);
 }
 
 .medal.silver {
   background: radial-gradient(circle at 35% 30%, var(--silver-1), var(--silver-2) 55%, var(--silver-3));
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.6),
-    0 2px 8px -2px rgba(185, 196, 210, 0.6);
+    inset 0 0 0 2px rgba(var(--white-rgb), 0.6),
+    0 2px 8px -2px rgba(var(--silver-2-rgb), 0.6);
 }
 
 .medal.bronze {
   background: radial-gradient(circle at 35% 30%, var(--bronze-1), var(--bronze-2) 55%, var(--bronze-3));
   box-shadow:
-    inset 0 0 0 2px rgba(255, 220, 180, 0.5),
-    0 2px 8px -2px rgba(208, 128, 62, 0.6);
+    inset 0 0 0 2px rgba(var(--trophies-gold-91-rgb), 0.5),
+    0 2px 8px -2px rgba(var(--bronze-2-rgb), 0.6);
 }
 
 .medal.none {
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 2px rgba(var(--white-rgb), 0.14);
 }
 
 /* ------------------------------------------------------------ the unlock toast */
@@ -160,14 +173,14 @@
   max-width: min(380px, calc(100vw - 32px));
   padding: 10px 18px 10px 10px;
   border-radius: 18px;
-  color: #fff6dc;
+  color: var(--trophies-stone-97);
   background:
-    linear-gradient(90deg, transparent 10%, rgba(255, 220, 130, 0.9) 50%, transparent 90%) top / 100% 2px no-repeat,
-    linear-gradient(180deg, rgba(58, 44, 16, 0.96), rgba(28, 22, 10, 0.96));
+    linear-gradient(90deg, transparent 10%, rgba(var(--trophies-gold-91b-rgb), 0.9) 50%, transparent 90%) top / 100% 2px no-repeat,
+    linear-gradient(180deg, rgba(var(--trophies-gold-30-rgb), 0.96), rgba(var(--trophies-stone-20-rgb), 0.96));
   box-shadow:
-    inset 0 0 0 1.5px rgba(255, 200, 80, 0.75),
-    0 0 30px -6px rgba(255, 194, 61, 0.55),
-    0 18px 40px -16px rgba(0, 0, 0, 0.8);
+    inset 0 0 0 1.5px rgba(var(--trophies-gold-86-rgb), 0.75),
+    0 0 30px -6px rgba(var(--gold-rgb), 0.55),
+    0 18px 40px -16px rgba(var(--black-rgb), 0.8);
   pointer-events: none;
   animation: tt-in 0.55s var(--spring) both;
 }
@@ -194,11 +207,11 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  color: #5a3a00;
+  color: var(--trophies-gold-38);
   background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 60%, var(--gold-3));
   box-shadow:
-    inset 0 0 0 2px rgba(255, 245, 200, 0.7),
-    0 0 18px -2px rgba(255, 194, 61, 0.8);
+    inset 0 0 0 2px rgba(var(--yellow-97-rgb), 0.7),
+    0 0 18px -2px rgba(var(--gold-rgb), 0.8);
 }
 
 .tt-medal .ic {
@@ -227,7 +240,7 @@
 
 .tt-text b {
   font: 600 19px/1.15 var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .tt-text em {
@@ -238,7 +251,7 @@
   font-size: 12.5px;
   font-style: normal;
   font-weight: 600;
-  color: #ffd98a;
+  color: var(--gold-90);
 }
 
 /* ------------------------------------------------------------ the shelf */
@@ -261,8 +274,8 @@
   border-radius: 14px;
   text-align: left;
   color: var(--dlg-text);
-  background: linear-gradient(90deg, rgba(255, 119, 20, 0.22), rgba(255, 255, 255, 0.04) 70%);
-  box-shadow: inset 0 0 0 1px rgba(255, 150, 60, 0.35);
+  background: linear-gradient(90deg, rgba(var(--orange-rgb), 0.22), rgba(var(--white-rgb), 0.04) 70%);
+  box-shadow: inset 0 0 0 1px rgba(var(--orange-77-rgb), 0.35);
   transition: filter 0.2s;
 }
 
@@ -277,7 +290,7 @@
   height: 38px;
   flex: none;
   border-radius: 11px;
-  color: #fff;
+  color: var(--white);
   background: linear-gradient(150deg, var(--orange), var(--orange-2));
 }
 
@@ -314,7 +327,7 @@
 .shelf-sum b {
   margin: 0 1px 0 5px;
   font: 600 17px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .ss-count {
@@ -374,8 +387,8 @@
 }
 
 .ach.got {
-  background: linear-gradient(100deg, rgba(255, 194, 61, 0.14), rgba(255, 255, 255, 0.04) 60%);
-  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.3);
+  background: linear-gradient(100deg, rgba(var(--gold-rgb), 0.14), rgba(var(--white-rgb), 0.04) 60%);
+  box-shadow: inset 0 0 0 1px rgba(var(--gold-rgb), 0.3);
 }
 
 .ach-medal {
@@ -386,17 +399,17 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  color: #7d8ea6;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+  color: var(--trophies-slate-64);
+  background: rgba(var(--white-rgb), 0.06);
+  box-shadow: inset 0 0 0 2px rgba(var(--white-rgb), 0.1);
 }
 
 .ach.got .ach-medal {
-  color: #5a3a00;
+  color: var(--trophies-gold-38);
   background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 60%, var(--gold-3));
   box-shadow:
-    inset 0 0 0 2px rgba(255, 245, 200, 0.6),
-    0 2px 10px -3px rgba(242, 176, 30, 0.8);
+    inset 0 0 0 2px rgba(var(--yellow-97-rgb), 0.6),
+    0 2px 10px -3px rgba(var(--gold-2-rgb), 0.8);
 }
 
 .ach-medal i {
@@ -408,13 +421,13 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  color: #c9d4e3;
-  background: #2a3a52;
-  box-shadow: 0 0 0 2px #1a2536;
+  color: var(--slate-87);
+  background: var(--trophies-blue-35);
+  box-shadow: 0 0 0 2px var(--trophies-slate-26);
 }
 
 .ach.mystery .ach-medal {
-  color: #56667c;
+  color: var(--trophies-slate-51);
 }
 
 .ach-text {
@@ -430,11 +443,11 @@
   align-items: center;
   gap: 6px;
   font: 600 16px/1.2 var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .ach:not(.got) .ach-text b {
-  color: #c9d4e3;
+  color: var(--slate-87);
 }
 
 .ach-text small {
@@ -450,7 +463,7 @@
   font-style: normal;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #2a1a00;
+  color: var(--gold-23);
   background: var(--gold);
 }
 
@@ -460,7 +473,7 @@
   margin-top: 4px;
   overflow: hidden;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--white-rgb), 0.08);
 }
 
 .ach-bar i {
@@ -482,11 +495,11 @@
   gap: 4px;
   margin-top: 2px;
   font-weight: 600;
-  color: #ffb877;
+  color: var(--trophies-orange-84);
 }
 
 .ach.got .ach-gift {
-  color: #ffd98a;
+  color: var(--gold-90);
 }
 
 .ach-when {
@@ -519,13 +532,13 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  color: #ffd0a8;
-  background: rgba(255, 119, 20, 0.16);
+  color: var(--trophies-orange-89);
+  background: rgba(var(--orange-rgb), 0.16);
 }
 
 .medal-row.unfound .mr-ic {
   color: var(--dlg-faint);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--white-rgb), 0.05);
 }
 
 .mr-text {
@@ -537,7 +550,7 @@
 
 .mr-text b {
   font: 600 15px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .medal-row.unfound .mr-text b {
@@ -615,13 +628,13 @@
   width: 28px;
   height: 28px;
   border-radius: 9px;
-  color: #8fb6e0;
+  color: var(--blue-76);
 }
 
 .stat b {
   font: 600 22px/1.1 var(--font-display);
   white-space: nowrap;
-  color: #fff;
+  color: var(--white);
 }
 
 .stat small {
@@ -660,7 +673,7 @@
 
 .stat-day span {
   font-size: 1.54em;
-  color: #fff;
+  color: var(--white);
 }
 
 .stat-medals > span:not(.medal) {
@@ -685,13 +698,13 @@
 
 .stat-hero .stat {
   padding: 12px;
-  background: linear-gradient(150deg, rgba(242, 107, 29, 0.2), rgba(242, 107, 29, 0.04) 70%);
-  box-shadow: inset 0 0 0 1px rgba(255, 162, 92, 0.28);
+  background: linear-gradient(150deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0.04) 70%);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-2-rgb), 0.28);
 }
 
 .stat-hero .stat-ic {
   color: var(--accent-2);
-  background: rgba(242, 107, 29, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 .stat-hero b {
@@ -718,20 +731,20 @@
 }
 
 .v-medal.gold {
-  background: linear-gradient(110deg, rgba(255, 194, 61, 0.24), rgba(255, 194, 61, 0.05));
+  background: linear-gradient(110deg, rgba(var(--gold-rgb), 0.24), rgba(var(--gold-rgb), 0.05));
   box-shadow:
-    inset 0 0 0 1px rgba(255, 194, 61, 0.45),
-    0 0 24px -10px rgba(255, 194, 61, 0.6);
+    inset 0 0 0 1px rgba(var(--gold-rgb), 0.45),
+    0 0 24px -10px rgba(var(--gold-rgb), 0.6);
 }
 
 .v-medal.silver {
-  background: linear-gradient(110deg, rgba(200, 212, 228, 0.2), rgba(200, 212, 228, 0.04));
-  box-shadow: inset 0 0 0 1px rgba(200, 212, 228, 0.4);
+  background: linear-gradient(110deg, rgba(var(--slate-87-rgb), 0.2), rgba(var(--slate-87-rgb), 0.04));
+  box-shadow: inset 0 0 0 1px rgba(var(--slate-87-rgb), 0.4);
 }
 
 .v-medal.bronze {
-  background: linear-gradient(110deg, rgba(208, 128, 62, 0.24), rgba(208, 128, 62, 0.05));
-  box-shadow: inset 0 0 0 1px rgba(208, 128, 62, 0.45);
+  background: linear-gradient(110deg, rgba(var(--bronze-2-rgb), 0.24), rgba(var(--bronze-2-rgb), 0.05));
+  box-shadow: inset 0 0 0 1px rgba(var(--bronze-2-rgb), 0.45);
 }
 
 .v-medal span:last-child {
@@ -742,7 +755,7 @@
 
 .v-medal b {
   font: 600 17px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .v-medal small {
@@ -791,9 +804,9 @@
   border-radius: 12px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #ffe6a8;
-  background: rgba(255, 194, 61, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.35);
+  color: var(--gold-94);
+  background: rgba(var(--gold-rgb), 0.14);
+  box-shadow: inset 0 0 0 1px rgba(var(--gold-rgb), 0.35);
   animation: card-in 0.4s var(--spring) 0.8s both;
 }
 
@@ -839,7 +852,7 @@
   pointer-events: auto;
   cursor: grab;
   touch-action: none;
-  background: radial-gradient(60% 60% at 30% 50%, transparent 40%, rgba(5, 9, 16, 0.45));
+  background: radial-gradient(60% 60% at 30% 50%, transparent 40%, rgba(var(--slate-14b-rgb), 0.45));
 }
 
 .intake-stage:active {
@@ -858,8 +871,8 @@
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
-  color: #dbe5f2;
-  background: rgba(10, 16, 28, 0.6);
+  color: var(--slate-93);
+  background: rgba(var(--slate-18-rgb), 0.6);
   transform: translateX(-50%);
 }
 
@@ -875,22 +888,22 @@
   color: var(--dlg-text);
   pointer-events: auto;
   background:
-    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
-    radial-gradient(120% 60% at 50% 0%, rgba(255, 140, 50, 0.1), transparent 60%),
-    linear-gradient(180deg, rgba(34, 48, 71, 0.97), rgba(19, 28, 42, 0.97));
+    linear-gradient(90deg, transparent 8%, rgba(var(--orange-77-rgb), 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--orange-75-rgb), 0.1), transparent 60%),
+    linear-gradient(180deg, rgba(var(--dlg-top-rgb), 0.97), rgba(var(--dlg-bottom-rgb), 0.97));
   box-shadow:
-    0 40px 90px -30px rgba(0, 0, 0, 0.85),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 40px 90px -30px rgba(var(--black-rgb), 0.85),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.08),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.12);
   animation: card-in 0.4s var(--spring);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: rgba(var(--white-rgb), 0.18) transparent;
 }
 
 .intake-head h2 {
   margin: 2px 0 10px;
   font: 700 28px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .intake-tag {
@@ -903,8 +916,8 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #ffd0a8;
-  background: rgba(255, 119, 20, 0.18);
+  color: var(--trophies-orange-89);
+  background: rgba(var(--orange-rgb), 0.18);
 }
 
 .intake-name {
@@ -923,9 +936,9 @@
   border: 0;
   border-radius: 12px;
   font: 600 17px var(--font-display);
-  color: #fff;
+  color: var(--white);
   background: var(--dlg-well);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.12);
   outline: none;
   -webkit-user-select: text;
   user-select: text;
@@ -984,7 +997,7 @@
 }
 
 .intake-parts button.on {
-  color: #fff;
+  color: var(--white);
   background: linear-gradient(150deg, var(--orange), var(--orange-2));
   box-shadow: none;
 }
@@ -1027,13 +1040,13 @@
 }
 
 .opt.on {
-  background: rgba(255, 119, 20, 0.2);
+  background: rgba(var(--orange-rgb), 0.2);
   box-shadow: inset 0 0 0 2px var(--orange);
 }
 
 .opt.locked {
   color: var(--dlg-faint);
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(var(--white-rgb), 0.025);
   cursor: help;
 }
 
@@ -1044,13 +1057,13 @@
   border-radius: 50%;
   background: var(--c);
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.25),
-    0 2px 4px rgba(0, 0, 0, 0.35);
+    inset 0 0 0 2px rgba(var(--white-rgb), 0.25),
+    0 2px 4px rgba(var(--black-rgb), 0.35);
 }
 
 .opt .sw.none {
-  background: linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.45) 45% 55%, transparent 55%);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, transparent 45%, rgba(var(--white-rgb), 0.45) 45% 55%, transparent 55%);
+  box-shadow: inset 0 0 0 2px rgba(var(--white-rgb), 0.3);
 }
 
 .opt .sw.dot {
@@ -1076,7 +1089,7 @@
   margin: 8px 2px 0;
   font-size: 12.5px;
   font-weight: 600;
-  color: #ffd98a;
+  color: var(--gold-90);
 }
 
 /* (Kept in view at the card's foot while the options scroll under them: a short screen, a part with many — the hats.) */
@@ -1088,8 +1101,8 @@
   gap: 8px;
   margin: 2px 0 -14px;
   padding: 8px 0 14px;
-  background: rgb(20, 29, 43);
-  box-shadow: 0 -12px 12px -6px rgb(20, 29, 43);
+  background: var(--dlg-bottom);
+  box-shadow: 0 -12px 12px -6px var(--dlg-bottom);
 }
 
 .intake-actions .big-btn {
@@ -1101,7 +1114,7 @@
 .intake-actions .big-btn.ghost {
   color: var(--dlg-text);
   background: var(--dlg-surface-hi);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.12);
 }
 
 /* While the Intake is up, the title's version and update card make way. */
@@ -1215,7 +1228,7 @@ body.intake-on .update-card {
   left: 0;
   right: 0;
   height: 11vh;
-  background: #05070b;
+  background: var(--slate-14b);
   animation: bar-in 0.6s var(--ease) both;
 }
 
@@ -1239,16 +1252,16 @@ body.intake-on .update-card {
   /* Above the prisoner (the picture's middle), not over them. */
   margin-bottom: 34vh;
   padding: 6px 26px 2px;
-  border: 5px solid #ff5a3c;
+  border: 5px solid var(--red-68);
   border-radius: 12px;
   font: 700 clamp(44px, 11vw, 96px) / 1 var(--font-display);
   letter-spacing: 0.12em;
-  color: #ff5a3c;
-  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  color: var(--red-68);
+  text-shadow: 0 3px 0 rgba(var(--black-rgb), 0.35);
   box-shadow:
-    0 0 0 3px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 3px rgba(0, 0, 0, 0.12);
-  background: rgba(255, 245, 235, 0.08);
+    0 0 0 3px rgba(var(--black-rgb), 0.2),
+    inset 0 0 0 3px rgba(var(--black-rgb), 0.12);
+  background: rgba(var(--stone-97-rgb), 0.08);
   transform: rotate(-8deg);
   animation: stamp-in 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) 0.9s both;
 }
@@ -1267,8 +1280,8 @@ body.intake-on .update-card {
   border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(5, 7, 11, 0.6);
+  color: rgba(var(--white-rgb), 0.92);
+  background: rgba(var(--slate-14b-rgb), 0.6);
   animation: fade 0.4s var(--ease) 1.4s both;
 }
 
@@ -1328,8 +1341,8 @@ body.cinema-on > :not(canvas, .cinema, .trophy-toast, .v-confetti) {
     overflow-x: auto;
     scrollbar-width: none;
     /* More to the right: the row fades out there. */
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    -webkit-mask-image: linear-gradient(90deg, var(--black) calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, var(--black) calc(100% - 28px), transparent);
   }
 
   .v-ach {

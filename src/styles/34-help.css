@@ -3,11 +3,20 @@
  * picture or diagram, summary, key numbers, steps, call-outs, recipes, fine print and lessons).
  * Always a modal, so in the dialogs' dark colors (14-dialogs.css).
  */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --help-slate-68: #8a9bb3;
+  --help-red-76: #ff8a8d;
+  --help-red-71: #ff6b6f;
+  --help-red-55: #c2410c;
+  --help-red-51: #b91c1c;
+  --help-orange-74: #e8963a;
+}
 .help-card {
   /* The dialogs' faint grey is too dim for the guide's small type: a lighter one (4.7:1 on the card). */
-  --help-faint: #8a9bb3;
+  --help-faint: var(--help-slate-68);
   /* White numbers sit on a deeper orange than the accent (4.5:1). */
-  --help-num: #c2410c;
+  --help-num: var(--help-red-55);
   width: min(600px, 100%);
   max-height: min(880px, calc(100dvh - 24px));
 }
@@ -115,7 +124,7 @@
 
 .ht-text b {
   font: 600 15px/1.2 var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .ht-text small {
@@ -147,7 +156,7 @@
   min-width: 0;
   margin: 0;
   font: 600 20px/1.15 var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .hd-head .hd-back {
@@ -185,7 +194,7 @@
 .hd-sum {
   margin: 0;
   font: 600 16.5px/1.4 var(--font-ui);
-  color: #fff;
+  color: var(--white);
 }
 
 .hd-plain {
@@ -271,9 +280,9 @@
   margin-top: -1px;
   border-radius: 50%;
   font: 700 13px var(--font-ui);
-  color: #fff;
+  color: var(--white);
   background: var(--help-num);
-  box-shadow: 0 3px 8px -3px rgba(255, 119, 20, 0.8);
+  box-shadow: 0 3px 8px -3px rgba(var(--orange-rgb), 0.8);
 }
 
 .hd-list:not(.iconed) li::before {
@@ -302,11 +311,11 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--white-rgb), 0.2);
 }
 
 .hd-li-ic.item {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(var(--white-rgb), 0.85);
 }
 
 .hd-li-ic .hd-item {
@@ -352,7 +361,7 @@
 }
 
 .hd-call.tip {
-  background: rgba(67, 209, 142, 0.1);
+  background: rgba(var(--ok-rgb), 0.1);
   box-shadow: inset 3px 0 0 var(--ok);
 }
 
@@ -362,21 +371,21 @@
 }
 
 .hd-call.tip .hd-call-ic {
-  background: rgba(67, 209, 142, 0.16);
+  background: rgba(var(--ok-rgb), 0.16);
 }
 
 .hd-call.warn {
-  background: rgba(229, 72, 77, 0.12);
-  box-shadow: inset 3px 0 0 #ff6b6f;
+  background: rgba(var(--red-63-rgb), 0.12);
+  box-shadow: inset 3px 0 0 var(--help-red-71);
 }
 
 .hd-call.warn b,
 .hd-call.warn .hd-call-ic {
-  color: #ff8a8d;
+  color: var(--help-red-76);
 }
 
 .hd-call.warn .hd-call-ic {
-  background: rgba(229, 72, 77, 0.18);
+  background: rgba(var(--red-63-rgb), 0.18);
 }
 
 /* Recipes: the ingredients' pictures, what they make. */
@@ -406,7 +415,7 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(var(--white-rgb), 0.86);
 }
 
 .hd-ing.out {
@@ -428,7 +437,7 @@
   border-radius: 6px;
   font: 700 10px var(--font-ui);
   font-style: normal;
-  color: #fff;
+  color: var(--white);
   background: var(--steel-2);
 }
 
@@ -452,7 +461,7 @@
 
 .hd-rname b {
   font-size: 13.5px;
-  color: #fff;
+  color: var(--white);
 }
 
 .hd-rname small {
@@ -476,7 +485,7 @@
   border-radius: 12px;
   font: 600 14px var(--font-ui);
   text-align: left;
-  color: #fff;
+  color: var(--white);
   background: var(--dlg-surface);
   cursor: pointer;
 }
@@ -624,8 +633,8 @@
   position: relative;
   height: 14px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #43d18e, #ffc23d 55%, #ff7714 75%, #e5484d);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(90deg, var(--ok), var(--gold) 55%, var(--orange) 75%, var(--red-63));
+  box-shadow: inset 0 0 0 1px rgba(var(--black-rgb), 0.25);
 }
 
 .hd-bar i {
@@ -635,8 +644,8 @@
   width: 3px;
   margin-left: -1.5px;
   border-radius: 2px;
-  background: #fff;
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45);
+  background: var(--white);
+  box-shadow: 0 0 0 1.5px rgba(var(--black-rgb), 0.45);
 }
 
 .hd-bar i span {
@@ -646,7 +655,7 @@
   font: 700 12px var(--font-ui);
   font-style: normal;
   white-space: nowrap;
-  color: #fff;
+  color: var(--white);
   transform: translateX(-50%);
 }
 
@@ -672,12 +681,12 @@
   border-radius: 8px;
   font: 700 13px var(--font-ui);
   text-align: center;
-  color: #fff;
+  color: var(--white);
   background: var(--help-num);
 }
 
 .hd-mark.m1 {
-  background: #b91c1c;
+  background: var(--help-red-51);
 }
 
 /* A timeline: the hours in a column as wide as the longest, a dot and a line down beside what happens. */
@@ -727,7 +736,7 @@
   bottom: -14px;
   left: 4px;
   width: 2px;
-  background: rgba(255, 119, 20, 0.45);
+  background: rgba(var(--orange-rgb), 0.45);
 }
 
 /* Distances in tiles. */
@@ -762,13 +771,13 @@
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  background: linear-gradient(150deg, #ffa25c, #e8963a);
+  background: linear-gradient(150deg, var(--accent-2), var(--help-orange-74));
 }
 
 .hd-tiles b {
   margin-left: 6px;
   font: 700 14px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 /* The pockets. */
@@ -798,8 +807,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  background: rgba(var(--white-rgb), 0.86);
+  box-shadow: inset 0 0 0 1px rgba(var(--black-rgb), 0.15);
 }
 
 .hd-slot:empty {
@@ -831,7 +840,7 @@
   height: 30px;
   padding: 2px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(var(--white-rgb), 0.86);
 }
 
 .hd-pins span {
@@ -849,7 +858,7 @@
 
 .hd-pins b {
   font: 700 15px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 /* Medals. */

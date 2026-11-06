@@ -1,4 +1,13 @@
 /* ------------------------------------------------------------ long games (P28) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --long-orange-57: #b0602e;
+  --long-orange-36: #5a320a;
+  --long-orange-36-rgb: 90, 50, 10;
+  --long-gold-54: #966014;
+  --long-gold-54-rgb: 150, 96, 20;
+  --long-green-79: #7fd18a;
+}
 
 /* The open furniture's goods taken on request (fruit, sugar, seed packets). */
 .box-take {
@@ -32,12 +41,12 @@
   margin-top: 6px;
 }
 .shop-item.sell b {
-  color: var(--good, #2e9e55);
+  color: var(--green-62);
 }
 
 /* ------------------------------------------------------------ the race card */
 .race-card .train-ic {
-  background: #b0602e;
+  background: var(--long-orange-57);
 }
 .race-stakes {
   display: flex;
@@ -45,19 +54,19 @@
   padding: 3px;
   margin: 8px 0 6px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--white-rgb), 0.08);
 }
 .race-stakes .seg {
   flex: 1;
   padding: 6px 8px;
   border-radius: 9px;
   font: 700 13px var(--font-ui);
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
   background: none;
 }
 .race-stakes .seg.on {
-  color: #1d2026;
-  background: #ffd34a;
+  color: var(--grey-24);
+  background: var(--gold-88b);
 }
 .race-rows {
   display: flex;
@@ -73,13 +82,13 @@
   gap: 8px;
   padding: 6px 8px 10px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--white-rgb), 0.06);
 }
 .race-row.backed {
-  box-shadow: inset 0 0 0 2px #ffd34a;
+  box-shadow: inset 0 0 0 2px var(--gold-88b);
 }
 .race-row.won {
-  background: rgba(255, 211, 74, 0.2);
+  background: rgba(var(--gold-88b-rgb), 0.2);
 }
 .race-dot {
   width: 12px;
@@ -101,23 +110,23 @@
 }
 .race-name small {
   font: 500 11.5px var(--font-ui);
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(var(--white-rgb), 0.72);
 }
 .race-form {
   height: 6px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--white-rgb), 0.14);
   overflow: hidden;
 }
 .race-form i {
   display: block;
   height: 100%;
-  background: #7fd18a;
+  background: var(--long-green-79);
 }
 .race-odds {
   font: 700 13px var(--font-ui);
   font-variant-numeric: tabular-nums;
-  color: #ffd34a;
+  color: var(--gold-88b);
 }
 .race-row .big-btn {
   min-height: 34px;
@@ -128,7 +137,7 @@
   grid-column: 2 / -1;
   font: 600 11.5px var(--font-ui);
   font-style: normal;
-  color: #ffd34a;
+  color: var(--gold-88b);
 }
 /* The race as it's run: a thin bar along the bottom of each row. */
 .race-run {
@@ -138,14 +147,14 @@
   bottom: 3px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--white-rgb), 0.08);
   overflow: hidden;
 }
 .race-run i {
   display: block;
   height: 100%;
   width: 0;
-  background: #ffd34a;
+  background: var(--gold-88b);
 }
 .race-card:not(.running) .race-run {
   display: none;
@@ -223,8 +232,8 @@ body.reduced-motion .race-card {
 
 .race-card .train-head .race-close {
   margin-left: 6px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.1);
 }
 .race-stakes .seg.poor {
   opacity: 0.5;
@@ -252,22 +261,22 @@ body.reduced-motion .race-card {
   font: 700 10.5px var(--font-ui);
   font-variant-numeric: tabular-nums;
   text-align: center;
-  color: #7fd18a;
+  color: var(--long-green-79);
 }
 
 /* P28: Drink armed by a first press ("Drink it?"): the button glows amber until the second press or it lapses. */
 .tool-btn.armed .tool-round {
-  color: #1b1206;
-  background: radial-gradient(circle at 40% 30%, #ffd27a, #f29a1a);
+  color: var(--stone-19);
+  background: radial-gradient(circle at 40% 30%, var(--gold-88), var(--gold-76));
   box-shadow:
-    0 0 0 3px rgba(255, 194, 61, 0.55),
-    0 10px 22px -8px rgba(90, 50, 10, 0.9);
+    0 0 0 3px rgba(var(--gold-rgb), 0.55),
+    0 10px 22px -8px rgba(var(--long-orange-36-rgb), 0.9);
   animation: drink-armed 0.8s ease-in-out infinite alternate;
 }
 
 .tool-prompt.armed {
-  background: rgba(150, 96, 20, 0.92);
-  box-shadow: 0 0 0 2px rgba(255, 194, 61, 0.6);
+  background: rgba(var(--long-gold-54-rgb), 0.92);
+  box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.6);
 }
 
 @keyframes drink-armed {

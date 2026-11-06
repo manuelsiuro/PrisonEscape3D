@@ -1,4 +1,9 @@
 /* ------------------------------------------------------------ the victory screen (P7, GDD §13.2) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --security-orange-32: #5a1e00;
+  --security-orange-32-rgb: 90, 30, 0;
+}
 .victory .card {
   width: min(440px, 100%);
   max-height: calc(100dvh - 24px);
@@ -20,9 +25,9 @@
   padding: 10px 14px;
   border-radius: 16px;
   text-align: left;
-  color: white;
+  color: var(--white);
   background: linear-gradient(135deg, var(--navy), var(--steel-2));
-  box-shadow: 0 10px 22px -10px rgba(30, 58, 95, 0.8);
+  box-shadow: 0 10px 22px -10px rgba(var(--navy-rgb), 0.8);
 }
 
 .v-method > .ic {
@@ -71,7 +76,7 @@
   gap: 2px;
   padding: 10px 4px 8px;
   border-radius: 14px;
-  background: #f2f5f9;
+  background: var(--silver-1);
   animation: card-in 0.4s var(--spring) both;
 }
 
@@ -128,13 +133,13 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: #a7b2c0;
-  background: #eef1f5;
-  box-shadow: inset 0 0 0 1.5px #dbe1e8;
+  color: var(--slate-76);
+  background: var(--dlg-text);
+  box-shadow: inset 0 0 0 1.5px var(--grey-91);
 }
 
 .v-route.found {
-  color: white;
+  color: var(--white);
   background: linear-gradient(180deg, var(--accent-2), var(--accent));
   box-shadow: none;
 }
@@ -209,8 +214,8 @@
   padding: 2px 8px 2px 6px;
   border-radius: 999px;
   font: 700 12px var(--font-ui);
-  color: white;
-  background: rgba(90, 30, 0, 0.28);
+  color: var(--white);
+  background: rgba(var(--security-orange-32-rgb), 0.28);
   opacity: 1;
 }
 

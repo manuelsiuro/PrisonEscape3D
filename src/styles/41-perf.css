@@ -7,8 +7,8 @@
   max-width: calc(100vw - 12px);
   padding: 4px 6px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  background: rgba(var(--black-rgb), 0.55);
+  color: var(--white);
   font: 500 9px/1.3 var(--font-ui);
   font-variant-numeric: tabular-nums;
   white-space: pre;

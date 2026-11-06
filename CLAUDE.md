@@ -40,8 +40,10 @@ Rules that matter every time:
   every key, every zone and prison has a name). The one exception: the loading screen's lines, in
   `index.html` in both languages (shown before the game's text is in). French is fetched on demand:
   `loadLang` before using it outside the game (tests, dev tools).
-- **UI**: screens are functions returning a Promise; tokens in `src/styles/01-base.css`;
-  check desktop, phone portrait (412×915) and phone landscape (915×412).
+- **UI**: screens are functions returning a Promise; no colour written where it's used: a token on `:root`
+  (in `src/styles/01-base.css` if more than one file uses it, else at its file's top; translucent:
+  `rgba(var(--x-rgb), 0.4)`), which `tokentest` checks; check desktop, phone portrait (412×915) and
+  phone landscape (915×412).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
   prison and moment and drives it by real keys. A render change meant to draw nothing new (a refactor,

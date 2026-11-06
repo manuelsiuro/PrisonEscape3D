@@ -1,4 +1,21 @@
 /* ------------------------------------------------------------ the day (P17) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --day-red-56: #c8372d;
+  --day-red-50: #aa340a;
+  --day-red-50-rgb: 170, 52, 10;
+  --day-orange-62: #c46e0c;
+  --day-orange-62-rgb: 196, 110, 12;
+  --day-orange-49: #96460e;
+  --day-orange-49-rgb: 150, 70, 14;
+  --day-orange-47: #8c4606;
+  --day-orange-47-rgb: 140, 70, 6;
+  --day-gold-49: #785832;
+  --day-gold-49-rgb: 120, 88, 50;
+  --day-blue-88: #c8d7ff;
+  --day-blue-88-rgb: 200, 215, 255;
+  --day-blue-86: #9fd8ff;
+}
 
 /* The warden's morning card: a dark board under the HUD, an amber rule across its top. */
 .pa-card {
@@ -11,14 +28,14 @@
   margin-inline: auto;
   padding: 14px 16px 10px;
   border-radius: 20px;
-  color: #fff;
+  color: var(--white);
   background:
-    linear-gradient(90deg, transparent 6%, rgba(255, 194, 61, 0.95) 50%, transparent 94%) top / 100% 2px no-repeat,
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 1.5px) 0 0 / 7px 7px,
-    linear-gradient(180deg, rgba(30, 40, 60, 0.97), rgba(16, 21, 32, 0.97));
+    linear-gradient(90deg, transparent 6%, rgba(var(--gold-rgb), 0.95) 50%, transparent 94%) top / 100% 2px no-repeat,
+    radial-gradient(circle at 1px 1px, rgba(var(--white-rgb), 0.05) 1px, transparent 1.5px) 0 0 / 7px 7px,
+    linear-gradient(180deg, rgba(var(--slate-28-rgb), 0.97), rgba(var(--slate-18-rgb), 0.97));
   box-shadow:
-    0 22px 46px -14px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 22px 46px -14px rgba(var(--black-rgb), 0.7),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.1);
   cursor: pointer;
   animation: pa-in 0.5s var(--spring) both;
 }
@@ -53,9 +70,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: #2a1a00;
-  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold) 60%, #d99a12);
-  box-shadow: 0 0 0 3px rgba(255, 194, 61, 0.18);
+  color: var(--gold-23);
+  background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold) 60%, var(--gold-73));
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.18);
 }
 
 .pa-from {
@@ -63,7 +80,7 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #ffd98a;
+  color: var(--gold-90);
 }
 
 .pa-card .pa-close {
@@ -73,8 +90,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.08);
   box-shadow: none;
 }
 
@@ -100,7 +117,7 @@
   gap: 10px;
   padding: 8px 10px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--white-rgb), 0.05);
 }
 
 .pa-ic {
@@ -110,9 +127,9 @@
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  color: #fff;
-  background: color-mix(in srgb, var(--c) 78%, #000);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  background: color-mix(in srgb, var(--c) 78%, var(--black));
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.2);
 }
 
 .pa-text {
@@ -156,7 +173,7 @@
   font-size: 12px;
   font-style: normal;
   font-weight: 600;
-  color: #9fc4e8;
+  color: var(--blue-81);
 }
 
 .pa-hint {
@@ -182,11 +199,11 @@
   margin-inline: auto;
   padding: 9px 18px 9px 10px;
   border-radius: 18px;
-  color: #fff;
+  color: var(--white);
   background:
-    linear-gradient(90deg, rgba(255, 194, 61, 0.9), rgba(255, 194, 61, 0)) left / 3px 100% no-repeat,
-    linear-gradient(180deg, rgba(30, 40, 60, 0.95), rgba(16, 21, 32, 0.95));
-  box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.6);
+    linear-gradient(90deg, rgba(var(--gold-rgb), 0.9), rgba(var(--gold-rgb), 0)) left / 3px 100% no-repeat,
+    linear-gradient(180deg, rgba(var(--slate-28-rgb), 0.95), rgba(var(--slate-18-rgb), 0.95));
+  box-shadow: 0 16px 34px -12px rgba(var(--black-rgb), 0.6);
   pointer-events: none;
   animation: pa-in 0.45s var(--spring) both;
 }
@@ -278,8 +295,8 @@
 
 /* A drill missed: the badge says so (red). */
 .hud-routine.drill .hud-badge.missed {
-  color: #fff;
-  background: #c8372d;
+  color: var(--white);
+  background: var(--day-red-56);
 }
 
 body.reduced-motion .pa-card,
@@ -294,7 +311,7 @@ body.reduced-motion .pa-strip.leaving {
 
 /* The day's chip under the HUD: what's on (or coming), its time, and a bar for the drill's muster. */
 .hud-alert.hud-today {
-  background: rgba(30, 40, 60, 0.9);
+  background: rgba(var(--slate-28-rgb), 0.9);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--gold)) 70%, transparent);
 }
 
@@ -303,8 +320,8 @@ body.reduced-motion .pa-strip.leaving {
 }
 
 .hud-alert.hud-today.soon {
-  background: rgba(30, 40, 60, 0.82);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.18);
+  background: rgba(var(--slate-28-rgb), 0.82);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--white-rgb), 0.18);
 }
 
 .hud-alert.hud-today.soon .ic {
@@ -330,50 +347,50 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
   display: inline-grid;
   place-items: center;
   margin-left: 2px;
-  color: var(--wx, #cfe2ff);
+  color: var(--wx, var(--slate-91));
 }
 
 /* The fire drill holds the routine pill: an amber alert, roll call the place. */
 .hud-routine.drill {
-  background: linear-gradient(180deg, rgba(196, 110, 12, 0.92), rgba(140, 70, 6, 0.92)) !important;
+  background: linear-gradient(180deg, rgba(var(--day-orange-62-rgb), 0.92), rgba(var(--day-orange-47-rgb), 0.92)) !important;
 }
 
 .hud-routine.drill .hud-routine-ic .ic {
-  color: #fff;
+  color: var(--white);
 }
 
 /* Baked by a heatwave (P17): the cold's chip in the sun's colours. */
 .hud-alert.hud-cold.hot {
-  background: rgba(150, 70, 14, 0.9);
+  background: rgba(var(--day-orange-49-rgb), 0.9);
 }
 
 .hud-alert.hud-cold.hot .hud-alert-bar i {
-  background: #ffd27a;
+  background: var(--gold-88);
 }
 
 .hud-alert.hud-cold.hot b {
-  color: #ffe9c2;
+  color: var(--gold-94b);
 }
 
 .hud-alert.hud-cold.hot.bit {
-  background: rgba(170, 52, 10, 0.95);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 210, 122, 0.7);
+  background: rgba(var(--day-red-50-rgb), 0.95);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--gold-88-rgb), 0.7);
 }
 
 .hud-alert.hud-cold.hot.warming {
-  background: rgba(120, 88, 50, 0.85);
+  background: rgba(var(--day-gold-49-rgb), 0.85);
 }
 
 .hud-alert.hud-cold.hot.warming .hud-alert-bar i {
-  background: #9fd8ff;
+  background: var(--day-blue-86);
 }
 
 .baked .vital.en {
-  color: #ffb36a;
+  color: var(--orange-82);
 }
 
 .baked .vital.en .energy-bar i {
-  background: linear-gradient(90deg, #ff9a4a, #ffd27a);
+  background: linear-gradient(90deg, var(--orange-78), var(--gold-88));
 }
 
 /* Lightning: the whole screen flashes white for an instant (never with reduced motion: the view doesn't either). */
@@ -382,7 +399,7 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
   inset: 0;
   z-index: 21;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 30%, rgba(235, 242, 255, 0.75), rgba(200, 215, 255, 0.35));
+  background: radial-gradient(ellipse at 50% 30%, rgba(var(--slate-96-rgb), 0.75), rgba(var(--day-blue-88-rgb), 0.35));
   opacity: 0;
 }
 
@@ -412,7 +429,7 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
 }
 
 .file-day .pa-row {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--white-rgb), 0.05);
 }
 
 .file-day .pa-text span {
@@ -432,7 +449,7 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
   padding: 0 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #9fc4e8;
+  color: var(--blue-81);
 }
 
 /* A banner over the warden's card: the card steps aside until it's gone (its clock waits too). */

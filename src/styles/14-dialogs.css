@@ -6,20 +6,29 @@
  * before it lay things out, this one gives them their colors.
  */
 :root {
-  --dlg-top: #223047;
-  --dlg-bottom: #131c2a;
-  --dlg-text: #eef3fa;
-  --dlg-soft: #9db0c8;
-  --dlg-faint: #6c7f98;
-  --dlg-line: rgba(255, 255, 255, 0.08);
-  --dlg-surface: rgba(255, 255, 255, 0.055);
-  --dlg-surface-hi: rgba(255, 255, 255, 0.1);
-  --dlg-well: rgba(4, 10, 20, 0.35);
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --dialogs-slate-92: #d3e8ff;
+  --dialogs-slate-19: #0c1422;
+  --dialogs-slate-19-rgb: 12, 20, 34;
+  --dialogs-red-59: #d9363e;
+  --dialogs-orange-82: #ffb05c;
+  --dialogs-orange-81: #ffaa5a;
+  --dialogs-orange-81-rgb: 255, 170, 90;
+  --dialogs-orange-44: #784600;
+  --dialogs-orange-44-rgb: 120, 70, 0;
+  --dialogs-green-87: #7ff0b7;
+  --dialogs-blue-77: #7fbaf2;
+  --dialogs-blue-72: #6faae6;
+  --dialogs-blue-72-rgb: 111, 170, 230;
+  --dialogs-blue-70: #4da3ff;
+  --dialogs-blue-70-rgb: 77, 163, 255;
+  --dialogs-blue-41: #2b4a73;
+  --dialogs-blue-32: #1d3352;
 }
 
 /* ------------------------------------------------------------ the backdrop: the prison, dimmed and soft */
 .modal {
-  background: radial-gradient(120% 90% at 50% 40%, rgba(12, 20, 34, 0.45), rgba(5, 9, 16, 0.82));
+  background: radial-gradient(120% 90% at 50% 40%, rgba(var(--dialogs-slate-19-rgb), 0.45), rgba(var(--slate-14b-rgb), 0.82));
   -webkit-backdrop-filter: blur(7px) saturate(0.85);
   backdrop-filter: blur(7px) saturate(0.85);
 }
@@ -32,17 +41,17 @@
   color: var(--dlg-text);
   background:
     /* A warm edge of light along the top. */
-    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    linear-gradient(90deg, transparent 8%, rgba(var(--orange-77-rgb), 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
     /* Brushed steel: the faintest diagonal grain. */
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
-    radial-gradient(120% 60% at 50% 0%, rgba(255, 140, 50, 0.1), transparent 60%),
+    repeating-linear-gradient(135deg, rgba(var(--white-rgb), 0.012) 0 2px, transparent 2px 6px),
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--orange-75-rgb), 0.1), transparent 60%),
     linear-gradient(180deg, var(--dlg-top), var(--dlg-bottom));
   box-shadow:
-    0 40px 90px -30px rgba(0, 0, 0, 0.85),
-    0 12px 30px -12px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    0 40px 90px -30px rgba(var(--black-rgb), 0.85),
+    0 12px 30px -12px rgba(var(--black-rgb), 0.6),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.08),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.12);
+  scrollbar-color: rgba(var(--white-rgb), 0.18) transparent;
   scrollbar-width: thin;
 }
 
@@ -54,15 +63,15 @@
 .modal .card ::-webkit-scrollbar-thumb,
 .modal .card::-webkit-scrollbar-thumb {
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(var(--white-rgb), 0.18);
 }
 
 .modal .card h2 {
-  color: #fff;
+  color: var(--white);
   letter-spacing: 0.01em;
   text-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.3),
-    0 0 24px rgba(255, 140, 50, 0.18);
+    0 2px 0 rgba(var(--black-rgb), 0.3),
+    0 0 24px rgba(var(--orange-75-rgb), 0.18);
 }
 
 .modal .card-note {
@@ -77,7 +86,7 @@
 
 .modal .settings-head .icon-btn,
 .modal .card .icon-btn {
-  color: #dbe5f2;
+  color: var(--slate-93);
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
   transition:
@@ -87,7 +96,7 @@
 }
 
 .modal .card .icon-btn:hover {
-  color: #fff;
+  color: var(--white);
   background: var(--dlg-surface-hi);
 }
 
@@ -100,12 +109,12 @@
   color: var(--dlg-text);
   background: var(--dlg-surface-hi);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 8px 20px -12px rgba(0, 0, 0, 0.8);
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.12),
+    0 8px 20px -12px rgba(var(--black-rgb), 0.8);
 }
 
 .modal .big-btn.ghost:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--white-rgb), 0.15);
 }
 
 .modal .big-btn.primary:hover {
@@ -127,14 +136,14 @@
 }
 
 .modal .link-btn.danger.armed {
-  color: #fff;
-  background: #d9363e;
+  color: var(--white);
+  background: var(--dialogs-red-59);
   box-shadow: none;
 }
 
 .modal .link-btn.done {
-  color: #7ff0b7;
-  background: rgba(67, 209, 142, 0.14);
+  color: var(--dialogs-green-87);
+  background: rgba(var(--ok-rgb), 0.14);
 }
 
 .modal button:focus-visible {
@@ -177,19 +186,19 @@
 }
 
 .modal .switch {
-  background: #34425a;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+  background: var(--blue-37);
+  box-shadow: inset 0 1px 3px rgba(var(--black-rgb), 0.45);
 }
 
 .modal .switch.on {
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
   box-shadow:
-    0 0 14px -2px rgba(255, 119, 20, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 0 14px -2px rgba(var(--orange-rgb), 0.55),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.25);
 }
 
 .modal .switch i {
-  background: linear-gradient(180deg, #ffffff, #dfe6ef);
+  background: linear-gradient(180deg, var(--white), var(--grey-93));
 }
 
 .modal .seg {
@@ -209,11 +218,11 @@
 }
 
 .modal .seg button.on {
-  color: #fff;
+  color: var(--white);
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
   box-shadow:
-    0 4px 12px -4px rgba(217, 83, 10, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 4px 12px -4px rgba(var(--orange-2-rgb), 0.8),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.3);
 }
 
 /* Range sliders: an orange fill on a dark track. */
@@ -231,16 +240,16 @@
 }
 
 .modal .help-day .must {
-  color: #2a1d00;
+  color: var(--gold-24);
   background: var(--gold);
 }
 
 .modal .help-keys kbd {
-  color: #fff;
-  background: linear-gradient(180deg, #33435c, #243248);
+  color: var(--white);
+  background: linear-gradient(180deg, var(--blue-37), var(--dlg-top));
   box-shadow:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    inset 0 -2px 0 rgba(var(--black-rgb), 0.45),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.1);
 }
 
 /* ------------------------------------------------------------ saved games */
@@ -266,7 +275,7 @@
 }
 
 .modal .save-row.armed .save-main {
-  background: rgba(255, 119, 20, 0.14);
+  background: rgba(var(--orange-rgb), 0.14);
   box-shadow: inset 0 0 0 2px var(--orange);
 }
 
@@ -279,8 +288,8 @@
 }
 
 .modal .save-del.armed {
-  color: #fff;
-  background: #d9363e;
+  color: var(--white);
+  background: var(--dialogs-red-59);
   box-shadow: none;
 }
 
@@ -291,8 +300,8 @@
 }
 
 .modal .lessons-bar span {
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(var(--black-rgb), 0.5);
 }
 
 .modal .lesson-card {
@@ -308,10 +317,10 @@
 }
 
 .modal .lesson-card.next {
-  background: linear-gradient(90deg, rgba(255, 119, 20, 0.2), rgba(255, 119, 20, 0.06));
+  background: linear-gradient(90deg, rgba(var(--orange-rgb), 0.2), rgba(var(--orange-rgb), 0.06));
   box-shadow:
     inset 0 0 0 2px var(--orange),
-    0 8px 22px -12px rgba(255, 119, 20, 0.7);
+    0 8px 22px -12px rgba(var(--orange-rgb), 0.7);
 }
 
 .modal .lesson-num {
@@ -328,7 +337,7 @@
   background: var(--dlg-surface);
   box-shadow:
     inset 0 0 0 1px var(--dlg-line),
-    0 10px 24px -16px rgba(0, 0, 0, 0.8);
+    0 10px 24px -16px rgba(var(--black-rgb), 0.8);
 }
 
 .modal .prison-card:not(.locked):hover,
@@ -336,30 +345,30 @@
   background: var(--dlg-surface-hi);
   box-shadow:
     inset 0 0 0 1px var(--dlg-line),
-    0 18px 36px -16px rgba(0, 0, 0, 0.9),
-    0 0 28px -10px rgba(255, 119, 20, 0.45);
+    0 18px 36px -16px rgba(var(--black-rgb), 0.9),
+    0 0 28px -10px rgba(var(--orange-rgb), 0.45);
 }
 
 .modal .prison-list:hover .prison-card:focus-visible:not(:hover) {
   background: var(--dlg-surface);
   box-shadow:
     inset 0 0 0 1px var(--dlg-line),
-    0 10px 24px -16px rgba(0, 0, 0, 0.8);
+    0 10px 24px -16px rgba(var(--black-rgb), 0.8);
 }
 
 .modal .prison-card.locked:hover {
   box-shadow:
     inset 0 0 0 1px var(--dlg-line),
-    0 10px 24px -16px rgba(0, 0, 0, 0.8);
+    0 10px 24px -16px rgba(var(--black-rgb), 0.8);
 }
 
 /* The scene meets the card with a soft shadow, not a seam. */
 .modal .pc-scene {
-  box-shadow: inset 0 -20px 30px -24px rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 -20px 30px -24px rgba(var(--black-rgb), 0.55);
 }
 
 .modal .pc-head b {
-  color: #fff;
+  color: var(--white);
 }
 
 .modal .pc-sec {
@@ -368,16 +377,16 @@
 }
 
 .modal .pc-pitch {
-  color: #c9d6e6;
+  color: var(--slate-87);
 }
 
 .modal .pc-stars i {
-  color: rgba(255, 255, 255, 0.16);
+  color: rgba(var(--white-rgb), 0.16);
 }
 
 .modal .pc-stars i.on {
   color: var(--gold);
-  filter: drop-shadow(0 0 4px rgba(255, 194, 61, 0.45));
+  filter: drop-shadow(0 0 4px rgba(var(--gold-rgb), 0.45));
 }
 
 .modal .pc-pip {
@@ -387,8 +396,8 @@
 }
 
 .modal .pc-pip.found {
-  color: #fff;
-  box-shadow: 0 0 10px -2px rgba(63, 185, 80, 0.6);
+  color: var(--white);
+  box-shadow: 0 0 10px -2px rgba(var(--green-70-rgb), 0.6);
 }
 
 .modal .pc-foot small {
@@ -414,19 +423,19 @@
 }
 
 .modal .ask-card p {
-  color: #c9d6e6;
+  color: var(--slate-87);
 }
 
 /* ------------------------------------------------------------ the escape and the victory */
 .modal .v-sub {
-  color: #c9d6e6;
+  color: var(--slate-87);
 }
 
 .modal .v-method {
-  background: linear-gradient(135deg, #2b4a73, #1d3352);
+  background: linear-gradient(135deg, var(--dialogs-blue-41), var(--dialogs-blue-32));
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 12px 26px -12px rgba(0, 0, 0, 0.8);
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.1),
+    0 12px 26px -12px rgba(var(--black-rgb), 0.8);
 }
 
 .modal .v-stat {
@@ -435,11 +444,11 @@
 }
 
 .modal .v-stat .ic {
-  color: #8fb6e0;
+  color: var(--blue-76);
 }
 
 .modal .v-stat b {
-  color: #fff;
+  color: var(--white);
 }
 
 .modal .v-route {
@@ -449,26 +458,26 @@
 }
 
 .modal .v-route.found {
-  color: #fff;
-  box-shadow: 0 0 14px -2px rgba(255, 140, 50, 0.6);
+  color: var(--white);
+  box-shadow: 0 0 14px -2px rgba(var(--orange-75-rgb), 0.6);
 }
 
 .modal .v-unlock {
-  color: #d3e8ff;
-  background: linear-gradient(120deg, rgba(47, 120, 190, 0.28), rgba(47, 120, 190, 0.1));
-  box-shadow: inset 0 0 0 1px rgba(111, 170, 230, 0.35);
+  color: var(--dialogs-slate-92);
+  background: linear-gradient(120deg, rgba(var(--blue-56-rgb), 0.28), rgba(var(--blue-56-rgb), 0.1));
+  box-shadow: inset 0 0 0 1px rgba(var(--dialogs-blue-72-rgb), 0.35);
 }
 
 .modal .v-unlock .ic {
-  color: #7fbaf2;
+  color: var(--dialogs-blue-77);
 }
 
 .modal .v-unlock.campaign {
-  color: #ffe3a3;
-  background: linear-gradient(120deg, rgba(255, 194, 61, 0.24), rgba(255, 194, 61, 0.08));
+  color: var(--gold-92);
+  background: linear-gradient(120deg, rgba(var(--gold-rgb), 0.24), rgba(var(--gold-rgb), 0.08));
   box-shadow:
-    inset 0 0 0 1px rgba(255, 194, 61, 0.45),
-    0 0 24px -10px rgba(255, 194, 61, 0.6);
+    inset 0 0 0 1px rgba(var(--gold-rgb), 0.45),
+    0 0 24px -10px rgba(var(--gold-rgb), 0.6);
 }
 
 .modal .v-unlock.campaign .ic {
@@ -478,8 +487,8 @@
 /* Long lists fade out at their bottom edge rather than being cut off. */
 .modal .help-body,
 .modal .lessons-list {
-  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent);
-  mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent);
+  -webkit-mask-image: linear-gradient(180deg, var(--black) calc(100% - 26px), transparent);
+  mask-image: linear-gradient(180deg, var(--black) calc(100% - 26px), transparent);
   padding-bottom: 20px;
 }
 
@@ -487,7 +496,7 @@
 .modal .save-row.empty .save-main {
   background: transparent;
   box-shadow: none;
-  outline: 1.5px dashed rgba(255, 255, 255, 0.14);
+  outline: 1.5px dashed rgba(var(--white-rgb), 0.14);
   outline-offset: -1.5px;
 }
 
@@ -497,20 +506,20 @@
   outline: none;
   box-shadow:
     inset 0 0 0 2px var(--gold),
-    0 0 0 4px rgba(255, 194, 61, 0.16);
+    0 0 0 4px rgba(var(--gold-rgb), 0.16);
 }
 
 .modal .lesson-card.next:focus-visible,
 .modal .save-row:first-child .save-main:focus-visible {
   box-shadow:
     inset 0 0 0 2px var(--orange),
-    0 0 0 4px rgba(255, 119, 20, 0.22),
-    0 8px 22px -12px rgba(255, 119, 20, 0.7);
+    0 0 0 4px rgba(var(--orange-rgb), 0.22),
+    0 8px 22px -12px rgba(var(--orange-rgb), 0.7);
 }
 
 /* Ways out found keep their colors (the dark wells above are for the ones still to find). */
 .modal .pc-pip.found {
-  background: linear-gradient(150deg, #3fb950, #1f8a3a);
+  background: linear-gradient(150deg, var(--green-70), var(--green-56));
 }
 
 .modal .v-route.found {
@@ -530,11 +539,11 @@
   height: 54px;
   margin: 0 auto 4px;
   border-radius: 18px;
-  color: #fff;
+  color: var(--white);
   background: linear-gradient(150deg, var(--orange), var(--orange-2));
   box-shadow:
-    0 12px 26px -10px rgba(217, 83, 10, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 12px 26px -10px rgba(var(--orange-2-rgb), 0.9),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.3);
 }
 
 .modal .ask-card p {
@@ -547,11 +556,11 @@
   color: var(--dlg-text);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--tone) 26%, transparent), transparent 60%),
-    linear-gradient(180deg, rgba(34, 48, 71, 0.88), rgba(19, 28, 42, 0.9));
+    linear-gradient(180deg, rgba(var(--dlg-top-rgb), 0.88), rgba(var(--dlg-bottom-rgb), 0.9));
   box-shadow:
-    0 14px 30px -14px rgba(0, 0, 0, 0.8),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 14px 30px -14px rgba(var(--black-rgb), 0.8),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.09),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.1);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   transition:
@@ -562,9 +571,9 @@
 
 .title-screen .menu-btn:hover {
   box-shadow:
-    0 18px 34px -14px rgba(0, 0, 0, 0.85),
+    0 18px 34px -14px rgba(var(--black-rgb), 0.85),
     inset 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    inset 0 1px 0 rgba(var(--white-rgb), 0.14);
   filter: brightness(1.08);
 }
 
@@ -584,13 +593,13 @@
 .title-screen .menu-ic {
   box-shadow:
     0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    inset 0 1px 0 rgba(var(--white-rgb), 0.25);
 }
 
 .title-screen .title-foot {
   color: var(--dlg-soft);
-  background: rgba(19, 28, 42, 0.78);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: rgba(var(--dlg-bottom-rgb), 0.78);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.08);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -598,7 +607,7 @@
 .title-screen .title-version,
 .title-version {
   color: var(--dlg-soft);
-  background: rgba(19, 28, 42, 0.7);
+  background: rgba(var(--dlg-bottom-rgb), 0.7);
 }
 
 /* Pause: its three links on one row where there's room. */
@@ -619,30 +628,30 @@
 .modal.escaped h2 {
   color: var(--gold);
   text-shadow:
-    0 3px 0 rgba(120, 70, 0, 0.55),
-    0 0 30px rgba(255, 194, 61, 0.45);
+    0 3px 0 rgba(var(--dialogs-orange-44-rgb), 0.55),
+    0 0 30px rgba(var(--gold-rgb), 0.45);
 }
 
 .modal.escaped .escaped-icon {
   box-shadow:
-    0 0 0 6px rgba(255, 194, 61, 0.12),
-    0 12px 30px -6px rgba(224, 138, 18, 0.9);
+    0 0 0 6px rgba(var(--gold-rgb), 0.12),
+    0 12px 30px -6px rgba(var(--orange-71-rgb), 0.9);
 }
 
 /* ------------------------------------------------------------ in-game panels (desk, workbench, talk, job board, file): the dialogs' finish */
 .item-panel {
   background:
-    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
-    radial-gradient(120% 50% at 50% 0%, rgba(255, 140, 50, 0.08), transparent 60%),
-    linear-gradient(180deg, rgba(34, 48, 71, 0.96), rgba(19, 28, 42, 0.97));
+    linear-gradient(90deg, transparent 8%, rgba(var(--orange-77-rgb), 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    repeating-linear-gradient(135deg, rgba(var(--white-rgb), 0.012) 0 2px, transparent 2px 6px),
+    radial-gradient(120% 50% at 50% 0%, rgba(var(--orange-75-rgb), 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(var(--dlg-top-rgb), 0.96), rgba(var(--dlg-bottom-rgb), 0.97));
   box-shadow:
-    0 24px 56px -16px rgba(0, 0, 0, 0.8),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 24px 56px -16px rgba(var(--black-rgb), 0.8),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.08),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.12);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: rgba(var(--white-rgb), 0.18) transparent;
   scrollbar-width: thin;
 }
 
@@ -676,11 +685,11 @@
   border-radius: 18px;
   color: var(--dlg-text);
   background:
-    linear-gradient(90deg, transparent 10%, rgba(255, 150, 60, 0.85) 50%, transparent 90%) top / 100% 2px no-repeat,
-    linear-gradient(180deg, rgba(34, 48, 71, 0.97), rgba(19, 28, 42, 0.97));
+    linear-gradient(90deg, transparent 10%, rgba(var(--orange-77-rgb), 0.85) 50%, transparent 90%) top / 100% 2px no-repeat,
+    linear-gradient(180deg, rgba(var(--dlg-top-rgb), 0.97), rgba(var(--dlg-bottom-rgb), 0.97));
   box-shadow:
-    0 18px 40px -14px rgba(0, 0, 0, 0.75),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    0 18px 40px -14px rgba(var(--black-rgb), 0.75),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.08);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   transform: none;
@@ -694,11 +703,11 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  color: white;
+  color: var(--white);
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
   box-shadow:
-    0 6px 14px -6px rgba(217, 83, 10, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 6px 14px -6px rgba(var(--orange-2-rgb), 0.9),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.35);
 }
 
 .update-card .uc-text {
@@ -725,13 +734,13 @@
   height: 40px;
   padding: 0 14px;
   border-radius: 12px;
-  color: white;
+  color: var(--white);
   font: 700 14px var(--font-ui);
   white-space: nowrap;
   background: linear-gradient(180deg, var(--orange), var(--orange-2));
   box-shadow:
-    0 8px 18px -8px rgba(217, 83, 10, 0.85),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 8px 18px -8px rgba(var(--orange-2-rgb), 0.85),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.35);
   transition: transform 0.18s var(--spring);
 }
 
@@ -756,10 +765,10 @@
 /* An item toast over an open panel: a lighter steel than the panel, edged in orange. */
 .items-open .item-toast {
   color: var(--dlg-text);
-  background: linear-gradient(180deg, #34445e, #26344a);
+  background: linear-gradient(180deg, var(--blue-37), var(--dlg-top));
   box-shadow:
-    0 12px 26px -10px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1px rgba(255, 170, 90, 0.35);
+    0 12px 26px -10px rgba(var(--black-rgb), 0.7),
+    inset 0 0 0 1px rgba(var(--dialogs-orange-81-rgb), 0.35);
 }
 
 /* The round action button's verb: two short lines rather than cut off ("Fouiller les…"). */
@@ -778,7 +787,7 @@
 .item-panel .slot:focus-visible,
 .hotbar .slot:focus-visible,
 .help-tabs button:focus-visible {
-  outline: 2px solid #ffb05c;
+  outline: 2px solid var(--dialogs-orange-82);
   outline-offset: 2px;
 }
 
@@ -797,7 +806,7 @@ body:has(.title-screen:not(.hidden)) .update-card {
 
 .modal .share-scan {
   margin: 6px 0 14px;
-  color: #c9d6e6;
+  color: var(--slate-87);
   font-size: 14.5px;
   text-wrap: balance;
 }
@@ -808,10 +817,10 @@ body:has(.title-screen:not(.hidden)) .update-card {
   margin: 0 auto;
   padding: 6px;
   border-radius: 18px;
-  background: #fff;
+  background: var(--white);
   box-shadow:
-    0 0 0 4px rgba(255, 119, 20, 0.85),
-    0 14px 34px -10px rgba(255, 119, 20, 0.6);
+    0 0 0 4px rgba(var(--orange-rgb), 0.85),
+    0 14px 34px -10px rgba(var(--orange-rgb), 0.6);
 }
 
 .share-qr img {
@@ -889,12 +898,12 @@ body:has(.title-screen:not(.hidden)) .update-card {
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 20px -8px rgba(var(--black-rgb), 0.6);
 }
 
 .modal .install-lead {
   margin: 4px 0 0;
-  color: #c9d6e6;
+  color: var(--slate-87);
   font-size: 14px;
   text-wrap: pretty;
 }
@@ -916,13 +925,13 @@ body:has(.title-screen:not(.hidden)) .update-card {
   font-size: 14.5px;
   line-height: 1.45;
   color: var(--dlg-text);
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  background: rgba(var(--white-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.07);
 }
 
 .install-steps b {
   font-weight: 700;
-  color: #fff;
+  color: var(--white);
 }
 
 .install-n {
@@ -934,8 +943,8 @@ body:has(.title-screen:not(.hidden)) .update-card {
   margin-top: 0.5px;
   border-radius: 50%;
   font: 700 12.5px var(--font-ui);
-  color: #fff;
-  background: linear-gradient(#ff8a2e, #d9530a);
+  color: var(--white);
+  background: linear-gradient(var(--orange-75), var(--orange-2));
 }
 
 /* A browser's button named in a step, drawn the way it looks there. */
@@ -947,9 +956,9 @@ body:has(.title-screen:not(.hidden)) .update-card {
   margin: 0 2px;
   vertical-align: -6px;
   border-radius: 6px;
-  color: #4da3ff;
-  background: rgba(77, 163, 255, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(77, 163, 255, 0.3);
+  color: var(--dialogs-blue-70);
+  background: rgba(var(--dialogs-blue-70-rgb), 0.14);
+  box-shadow: inset 0 0 0 1px rgba(var(--dialogs-blue-70-rgb), 0.3);
 }
 
 .modal .install-note {
