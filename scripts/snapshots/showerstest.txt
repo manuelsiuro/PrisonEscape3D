@@ -3,6 +3,7 @@ stalag-flucht: 6 heads, each turned on from under it and from in front, lined up
 shankton: 8 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
 san-pancho: 4 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
 irongate: 5 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
+six-hunter: 6 heads, each turned on from under it and from in front, lined up facing its pipe, energy back
 washing, 5 s: +13 energy, heat down 6 where standing dry it falls 2
 traps: come for the soap, the next press searches; a head in use refused; off by a step, a blow, a lockdown, a knockout or the bell; standing still is nothing
 center-perks #41: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
@@ -20,6 +21,9 @@ san-pancho #43: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 29, s
 irongate #41: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 26, still waiting at the end 0
 irongate #42: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 irongate #43: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+six-hunter #41: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+six-hunter #42: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+six-hunter #43: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 center-perks, 0 minutes in: washing after 4.4 s of a 60 s block, 0 heads taken
 center-perks, 35 minutes in: washing after 1.0 s of a 60 s block, 0 heads taken
 stalag-flucht, 0 minutes in: washing after 3.5 s of a 60 s block, 0 heads taken
@@ -30,6 +34,8 @@ san-pancho, 0 minutes in: washing after 7.3 s of a 60 s block, 2 heads taken
 san-pancho, 35 minutes in: washing after 0.9 s of a 60 s block, 0 heads taken
 irongate, 0 minutes in: washing after 3.4 s of a 60 s block, 0 heads taken
 irongate, 35 minutes in: washing after 3.0 s of a 60 s block, 2 heads taken
+six-hunter, 0 minutes in: washing after 3.0 s of a 60 s block, 0 heads taken
+six-hunter, 35 minutes in: washing after 0.9 s of a 60 s block, 0 heads taken
 ambush: 1.5 s squaring up before it moves or lands a blow
 san-pancho, day 1, a player who stands there: knocked out in 9 of 12 blocks, 9 ambushes
 san-pancho, day 1, a player who hits back: knocked out in 6 of 12 blocks, 9 ambushes

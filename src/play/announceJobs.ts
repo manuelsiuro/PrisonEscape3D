@@ -13,7 +13,7 @@ import { play } from './game';
 import { coachOnce, seenInteract } from './tips';
 import { FEAST_ENERGY } from '../content/days';
 import { floatAt } from './floats';
-import { inmateName, jobName } from '../ui/names';
+import { guardWord, inmateName, jobName } from '../ui/names';
 import { nightTired } from './announceKit';
 
 /** Sitting at a canteen table at a meal with nothing to eat, and the counter serving. */
@@ -99,7 +99,11 @@ export function announceJobs(e: SimEvent, sim: Sim) {
         closeSocial();
         sound.whistle();
         buzz('missed');
-        banner.toast(t('toast.countCall', { name: t('guard.title', { name: sim.prison.guards[wardenOf(sim)]?.name ?? '' }) }), 'bad', 5000);
+        banner.toast(
+          t('toast.countCall', { name: guardWord(sim, 'guard.title', { name: sim.prison.guards[wardenOf(sim)]?.name ?? '' }) }),
+          'bad',
+          5000,
+        );
       } else if (e.what === 'answered') sound.pickup();
       else if (e.what === 'missed') {
         sound.sting();

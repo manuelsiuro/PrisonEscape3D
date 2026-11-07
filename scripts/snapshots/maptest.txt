@@ -38,6 +38,14 @@ walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, in
 guards: 10, 58 stops, 4 asleep at night
 delivery: helicopter, 16 tiles, tail 36,48, supervised by Doyle (4 stops), thorough 80%
 vents: 59 duct tiles, 2 grates, 1 ladder; roof tiles 1760
+== six-hunter · picture 74c3befa
+tiles: brick 532, concrete 378, dirt 319, door 43, electric 128, fence 35, grass 754, pier 2, reinforced 98, road 667, tiled 159, tower 36, water 292, wood 653
+zones: boathouse 48, canteen 180, cellBlock 88, corridor 115, garden 60, generator 56, guardQuarters 72, gym 45, infirmary 27, inmateCell 176, kennels 237, kitchen 60, laundry 36, library 36, none 673, outside 667, perimeter 1060, playerCell 16, rollCall 60, showers 36, smokehouse 45, solitary 16, sports 153, visitation 54, yard 80
+decor: 53 pieces
+walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, sports, visitation, yard
+guards: 6, 43 stops, 3 asleep at night
+delivery: truck, 10 tiles, tail 26,47, supervised by Quiller (4 stops), thorough 30%
+vents: 54 duct tiles, 2 grates, 1 ladder; roof tiles 1863
 == training · picture 26c0accb
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 9, electric 10, fence 185, grass 2217, road 1036, tiled 96, wood 144
 zones: canteen 110, corridor 78, garden 72, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, sports 240, woodshop 50, yard 511

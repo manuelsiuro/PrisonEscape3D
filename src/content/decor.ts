@@ -32,6 +32,9 @@ export const DECOR = {
   keyCabinet: { wall: true },
   // P12 (HMP Irongate): a life ring on the wall.
   lifebuoy: { wall: true },
+  /** 2.36 (The Six Hunter): the Hunters' tally board, six columns of strokes; a stag's head mounted on a plaque. */
+  tallyBoard: { wall: true },
+  antlers: { wall: true },
   // On the floor.
   plant: { wall: false },
   smallBin: { wall: false },

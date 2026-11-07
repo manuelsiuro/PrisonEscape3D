@@ -409,6 +409,8 @@ export interface SimState {
    * gang (0 never), the prison day they joined, the prison day they first spoke to a member].
    */
   gang?: number[];
+  /** 2.36 (The Six Hunter): the step the hounds called home by the recall horn go back to work (absent: never blown). */
+  recall?: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

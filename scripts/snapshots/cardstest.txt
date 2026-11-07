@@ -1,4 +1,4 @@
-data: center-perks Doc, spots 2.2/3.2/4/3.2/2.2 | stalag-flucht Badger, spots 2.2/3.2/4/3.2/2.2 | shankton Flint, spots 2.2/3.2/4/3.2/2.2 | san-pancho Lobo, spots 2.2/3.2/4/3.2/2.2 | irongate Barnacle, spots 2.2/3.2/4/3.2/2.2 | training Sparky, spots 2.2/3.2/4/3.2/2.2
+data: center-perks Doc, spots 2.2/3.2/4/3.2/2.2 | stalag-flucht Badger, spots 2.2/3.2/4/3.2/2.2 | shankton Flint, spots 2.2/3.2/4/3.2/2.2 | san-pancho Lobo, spots 2.2/3.2/4/3.2/2.2 | irongate Barnacle, spots 2.2/3.2/4/3.2/2.2 | six-hunter Badger, spots 2.2/3.2/4/3.2/2.2 | training Sparky, spots 2.2/3.2/4/3.2/2.2
 cheat in the game: the deal, 2 calls, lost; folded walking away; off in a lockdown; three a day
 cheat's clock: 1200 steps, then folded (or the call made); at the bell: off $100, lost $80, off $100
 cheat, the tell: Int 0: tell on 40% of 2836 lies, 20% of 97164 truths; Int 80: tell on 59% of 2836 lies, 20% of 97164 truths

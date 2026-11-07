@@ -41,6 +41,16 @@
   --campaign-blue-41-rgb: 28, 74, 128;
   --campaign-blue-33: #103468;
   --campaign-blue-33-rgb: 16, 52, 104;
+  /* 2.36: the Six Hunter's pine valley. */
+  --campaign-teal-82: #b4d2cc;
+  --campaign-teal-70: #8fb4ae;
+  --campaign-teal-45: #2f6662;
+  --campaign-pine-36: #24452f;
+  --campaign-pine-30: #1b3424;
+  --campaign-moss-52: #58703f;
+  --campaign-timber-40: #6a4630;
+  --campaign-timber-30: #3c2616;
+  --campaign-shake-48: #6e6052;
 }
 .prisons-card {
   width: min(460px, 100%);
@@ -248,6 +258,37 @@
   opacity: 1;
 }
 
+/* The Six Hunter: a misty teal valley at sunrise, a low gold sun behind two ranks of pines, moss. */
+.theme-forest .pc-scene {
+  background:
+    conic-gradient(from 155deg at 50% 0, var(--campaign-pine-30) 0 50deg, transparent 0) 4px 30% / 13px 22% repeat-x,
+    conic-gradient(from 160deg at 50% 0, var(--campaign-pine-36) 0 40deg, transparent 0) 0 22% / 9px 18% repeat-x,
+    radial-gradient(circle at 24% 22%, var(--campaign-gold-91) 0 7%, transparent 8%),
+    linear-gradient(180deg, var(--campaign-teal-82) 0 26%, var(--campaign-teal-70) 26% 50%, var(--campaign-moss-52) 50% 100%);
+}
+
+/* The lodge: board-and-batten timber under a roof of shakes. */
+.theme-forest .pc-scene::before {
+  bottom: 32%;
+  height: 26%;
+  border-radius: 2px 2px 0 0;
+  background:
+    repeating-linear-gradient(90deg, var(--campaign-timber-30) 0 1.5px, transparent 1.5px 6px),
+    linear-gradient(180deg, var(--campaign-shake-48) 0 20%, var(--campaign-timber-40) 20% 100%);
+}
+
+/* The river along the bottom, its ripples, the deer fence's posts and wire in front. */
+.theme-forest .pc-scene::after {
+  bottom: 6%;
+  height: 22%;
+  background:
+    repeating-linear-gradient(90deg, var(--campaign-timber-30) 0 2px, transparent 2px 14px) top / 100% 60% no-repeat,
+    repeating-linear-gradient(180deg, var(--grey-84) 0 1px, transparent 1px 4px) top / 100% 60% no-repeat,
+    repeating-linear-gradient(180deg, rgba(var(--campaign-grey-96-rgb), 0.45) 0 1px, transparent 1px 5px) bottom / 100% 40% no-repeat,
+    linear-gradient(var(--campaign-teal-45), var(--campaign-teal-45)) bottom / 100% 40% no-repeat;
+  opacity: 1;
+}
+
 .pc-level {
   position: absolute;
   z-index: 1;
@@ -275,13 +316,16 @@
 
 .pc-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0 8px;
 }
 
-/* A long name ("Pénitencier de Shankton") wraps rather than pushing the stars off the card. */
+/* A long name ("Pénitencier de Shankton") wraps rather than pushing the stars off the card; on a narrow card (six
+   stars, the interface scaled up) the stars go under the name rather than breaking its words. */
 .pc-head b {
+  flex: 1 1 9ch;
   min-width: 0;
   font: 600 18px/1.15 var(--font-display);
   overflow-wrap: anywhere;
@@ -338,6 +382,7 @@
 
 .pc-pips {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -549,12 +594,13 @@
 }
 
 /*
- * Wide screens: the campaign as a row of five posters, the prison's world on top, its card
- * below; every card the same height, the ways out lined up along the bottom.
+ * Wide screens: the campaign as a row of posters (six since 2.36: the Six Hunter past the five), the prison's world
+ * on top, its card below; every card the same height, the ways out lined up along the bottom (two rows of pips when
+ * a prison has many). Under 1180 px across, three to a row, two rows.
  */
 @media (min-width: 980px) and (min-height: 640px) {
   .prisons-card {
-    width: min(1180px, 100%);
+    width: min(1320px, 100%);
     padding: 26px 28px 28px;
   }
 
@@ -563,7 +609,7 @@
   }
 
   .prison-list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 14px;
   }
 
@@ -608,6 +654,7 @@
   }
 
   .pc-head b {
+    flex: none;
     font-size: 19px;
   }
 
@@ -629,4 +676,28 @@
     margin-top: auto;
     padding-top: 12px;
   }
+}
+
+@media (min-width: 980px) and (max-width: 1179px) and (min-height: 640px) {
+  .prisons-card {
+    width: min(900px, 100%);
+  }
+
+  .prison-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pc-scene {
+    height: 96px;
+  }
+}
+
+/* The sixth star, past the campaign's five (the Six Hunter): the Hunters' red, glowing as the gold ones do. */
+.pc-stars i.on.past,
+.modal .pc-stars i.on.past {
+  color: var(--red-58);
+  filter: drop-shadow(0 0 4px rgba(var(--red-58-rgb), 0.55));
+}
+.pc-level.past {
+  background: linear-gradient(150deg, var(--red-58), var(--red-53));
 }

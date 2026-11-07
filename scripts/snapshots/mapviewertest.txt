@@ -16,4 +16,7 @@ san-pancho: game, layout, people, outside, outsideGame
 irongate: game, layout, people, vents, roof, outside, outsideGame
   sheet: Ways out (7) (7); Rules (1); Power (2); Jobs (8); Inmates (17); Gangs (4); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Gull asks (3); Holidays (4)
   overlays: exit 18, restricted 858, snipers 1210, arches 3, turf 37, jobs 44, loot 75, meals 21, showers 5, rats 114; 10 routine blocks
+six-hunter: game, layout, people, vents, roof, outside, outsideGame
+  sheet: Ways out (7) (7); Rules (2); Power (1); Jobs (7); Inmates (15); Gangs (4); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Hare asks (3); Holidays (4)
+  overlays: exit 667, restricted 128, snipers 968, launch 231, arches 5, turf 40, jobs 43, loot 72, meals 30, showers 6, rats 240; 10 routine blocks
 map viewer in step with the game

@@ -17,6 +17,7 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 | Side games (dice, arm-wrestling, cards, hoops, checkers) | Not reviewed |
 | Long games (pruno, garden, rats) | Not reviewed |
 | Pay phone, kiosk and paperwork | Not reviewed |
+| The Six Hunter | Partly |
 
 ## 2. Checks only a person can do
 

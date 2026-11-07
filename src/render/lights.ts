@@ -4,7 +4,7 @@ import { LAMP_LIT } from '../sim/tuning';
 import { TILE_INFO } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { lampHead, lampSees } from '../sim/ai/light';
-import { LAMP_BULB_Y, lampHeads } from './props';
+import { LAMP_BULB_Y, LANTERN_GLASS, lampHeads } from './props';
 
 /** How far the cell block's lights go out at Lights Out (2.28): enough left to see by on a phone. */
 const NIGHT_LIGHT = 0.8;
@@ -110,9 +110,16 @@ export class Lights {
     const heads = lamps.flatMap((p) =>
       lampHeads(p.aim, p.heads).map((h) => ({ x: p.x + 0.5 + h.dx, z: p.z + 0.5 + h.dz, angle: h.angle })),
     );
-    const bulbs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.05, 0.22), this.bulbs, Math.max(1, heads.length));
+    // (2.36: the forest's lamps are iron lanterns, their glass a little box lit inside the frame.)
+    const lantern = world.def.theme === 'forest';
+    const g = LANTERN_GLASS;
+    const bulbs = new THREE.InstancedMesh(
+      lantern ? new THREE.BoxGeometry(g.w, g.h, g.w) : new THREE.BoxGeometry(0.18, 0.05, 0.22),
+      this.bulbs,
+      Math.max(1, heads.length),
+    );
     const m = new THREE.Matrix4();
-    heads.forEach((h, i) => bulbs.setMatrixAt(i, m.makeRotationY(h.angle).setPosition(h.x, LAMP_BULB_Y - 0.03, h.z)));
+    heads.forEach((h, i) => bulbs.setMatrixAt(i, m.makeRotationY(h.angle).setPosition(h.x, LAMP_BULB_Y - (lantern ? 0 : 0.03), h.z)));
     bulbs.count = heads.length;
     this.group.add(bulbs);
 

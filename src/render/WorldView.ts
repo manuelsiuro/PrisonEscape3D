@@ -9,7 +9,7 @@ import { chunked } from './chunks';
 import { Lights } from './lights';
 import { seeThrough } from './occlusion';
 import { lampParts, propGeometry } from './props';
-import { TEX } from './textures';
+import { stoneCap, TEX } from './textures';
 import { seeded } from './rand';
 import { isOutside } from '../sim/hunt/world';
 
@@ -233,7 +233,11 @@ export class WorldView {
     const geo = wallBlock();
     const brickTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
     // Reinforced concrete is concrete on top too: from above, the walls no tool chips read as such (San Pancho's sand all round them).
-    const concreteTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.reinforced(), color: 0xc4c4c4, roughness: 0.95 }));
+    // (2.36: the forest's fieldstone wears a cap of its own, its stones lit and shaded as every cap is since session 14.)
+    const forest = this.world.def.theme === 'forest';
+    const concreteTop = seeThrough(
+      new THREE.MeshStandardMaterial({ map: forest ? stoneCap() : TEX.reinforced(), color: forest ? 0xffffff : 0xc4c4c4, roughness: 0.95 }),
+    );
     for (const [kind, tex, roughness] of [
       [TILE.BRICK, TEX.brick(), 0.9],
       [TILE.REINFORCED, TEX.reinforced(), 0.95],
@@ -303,7 +307,11 @@ export class WorldView {
   private buildFences() {
     const fenceLike = (k: number) => isFence(k) || k === TILE.DOOR || k === TILE.TOWER;
     const h = 1.8;
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x7d858f, metalness: 0.6, roughness: 0.45 });
+    // (2.36: a deer fence's posts are round timber, not steel.)
+    const forest = this.world.def.theme === 'forest';
+    const postMat = forest
+      ? new THREE.MeshStandardMaterial({ color: 0x6a5038, roughness: 0.9 })
+      : new THREE.MeshStandardMaterial({ color: 0x7d858f, metalness: 0.6, roughness: 0.45 });
     for (const [kind, tint, emissive] of [
       [TILE.FENCE, 0xffffff, 0x000000],
       [TILE.ELECTRIC, 0xffeb8a, 0x2a2200],
@@ -323,7 +331,11 @@ export class WorldView {
         metalness: 0.5,
       });
       const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, h), mat, cells.length);
-      const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, h + 0.15, 0.09), postMat, cells.length / 2);
+      const posts = new THREE.InstancedMesh(
+        forest ? new THREE.CylinderGeometry(0.06, 0.07, h + 0.15, 6) : new THREE.BoxGeometry(0.09, h + 0.15, 0.09),
+        postMat,
+        cells.length / 2,
+      );
       let panels = 0;
       for (let i = 0; i < cells.length / 2; i++) {
         const x = cells[i * 2];
@@ -515,6 +527,7 @@ export class WorldView {
 
   /** The watchtowers, every one in four meshes (legs and decks, cabins, windows, roofs). */
   private buildTowers() {
+    const stand = this.world.def.theme === 'forest';
     const legs: THREE.BufferGeometry[] = [];
     const cabins: THREE.BufferGeometry[] = [];
     const panes: THREE.BufferGeometry[] = [];
@@ -527,6 +540,48 @@ export class WorldView {
         let d = 0;
         while (this.kindAt(x, z + d) === TILE.TOWER) d++;
         const H = 4.2;
+        if (stand) {
+          // A hunting stand (2.36, the forest): four round poles splayed a little, cross-braced, a ladder up the south side,
+          // a plank cabin open under its eaves, a roof of shakes.
+          for (const [sx, sz] of [
+            [0.25, 0.25],
+            [w - 0.25, 0.25],
+            [0.25, d - 0.25],
+            [w - 0.25, d - 0.25],
+          ]) {
+            const lean = new THREE.CylinderGeometry(0.1, 0.14, H, 6)
+              .rotateZ(((sx < w / 2 ? 1 : -1) * 0.06) / 1)
+              .rotateX((sz < d / 2 ? -1 : 1) * 0.06)
+              .translate(x + sx, H / 2, z + sz);
+            legs.push(lean);
+          }
+          for (const y of [1.2, 2.6]) {
+            legs.push(placedBox(w - 0.3, 0.09, 0.09, x + w / 2, y, z + 0.25), placedBox(0.09, 0.09, d - 0.3, x + 0.25, y + 0.5, z + d / 2));
+            legs.push(placedBox(0.09, 0.09, d - 0.3, x + w - 0.25, y + 0.5, z + d / 2));
+          }
+          legs.push(
+            placedBox(0.06, H, 0.06, x + w / 2 - 0.25, H / 2, z + d + 0.25),
+            placedBox(0.06, H, 0.06, x + w / 2 + 0.25, H / 2, z + d + 0.25),
+          );
+          for (let k = 0; k < 9; k++) legs.push(placedBox(0.5, 0.04, 0.05, x + w / 2, 0.35 + k * 0.45, z + d + 0.25));
+          legs.push(placedBox(w + 0.3, 0.15, d + 0.3, x + w / 2, H, z + d / 2));
+          // (A small seat on its wide deck, its roof no bigger than the seat: review of 2.36, a stand's roof the size of the
+          // tower hid the river's bend.)
+          const cw = w - 1.0;
+          const cd = d - 1.0;
+          cabins.push(placedBox(cw, 0.62, cd, x + w / 2, H + 0.38, z + d / 2));
+          for (const [cx, cz] of [
+            [-1, -1],
+            [1, -1],
+            [-1, 1],
+            [1, 1],
+          ])
+            cabins.push(placedBox(0.1, 1.15, 0.1, x + w / 2 + (cx * (cw - 0.1)) / 2, H + 0.98, z + d / 2 + (cz * (cd - 0.1)) / 2));
+          panes.push(placedBox(cw - 0.14, 0.4, cd - 0.14, x + w / 2, H + 1.0, z + d / 2));
+          const r = (Math.max(cw, cd) / 2 + 0.2) * Math.SQRT2;
+          roofs.push(new THREE.ConeGeometry(r, 0.7, 4).rotateY(Math.PI / 4).translate(x + w / 2, H + 1.9, z + d / 2));
+          continue;
+        }
         for (const [sx, sz] of [
           [0.3, 0.3],
           [w - 0.3, 0.3],
@@ -552,10 +607,10 @@ export class WorldView {
     });
     this.windows.push(glassMat);
     const parts: Array<[THREE.BufferGeometry[], THREE.Material, boolean]> = [
-      [legs, new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 }), true],
-      [cabins, new THREE.MeshStandardMaterial({ color: 0xc9b99a, roughness: 0.8 }), true],
+      [legs, new THREE.MeshStandardMaterial({ color: stand ? 0x5e4630 : 0x6b7280, roughness: stand ? 0.95 : 0.7 }), true],
+      [cabins, new THREE.MeshStandardMaterial({ color: stand ? 0x7d5c3e : 0xc9b99a, roughness: 0.8 }), true],
       [panes, glassMat, false],
-      [roofs, new THREE.MeshStandardMaterial({ color: 0x6e3328, roughness: 0.8 }), true],
+      [roofs, new THREE.MeshStandardMaterial({ color: stand ? 0x5b5044 : 0x6e3328, roughness: 0.8 }), true],
     ];
     for (const [list, mat, shadow] of parts) {
       const mesh = new THREE.Mesh(merge(list, false), mat);
@@ -618,7 +673,9 @@ export class WorldView {
               ? 0xa7a298
               : theme === 'desert'
                 ? 0xe8d2ae
-                : 0xa9bd98,
+                : theme === 'forest'
+                  ? 0xd2d8c4
+                  : 0xa9bd98,
         roughness: outside ? 0.95 : 1,
       }),
     );
@@ -631,11 +688,15 @@ export class WorldView {
     const rand = seeded(12345);
     const tree = sceneryTree(theme);
     const spots: Array<[number, number, number]> = [];
-    for (let k = 0; k < 1500 && spots.length < 280; k++) {
+    // (2.36: the pine forest stands thicker, its trees closer together, and clear of the river's course on beyond the map.)
+    const forest = theme === 'forest';
+    const river = riverBeyond(this.world);
+    for (let k = 0; k < (forest ? 3000 : 1500) && spots.length < (forest ? 420 : 280); k++) {
       const x = -24 + rand() * (MAP_W + 48);
       const z = -24 + rand() * (MAP_H + 48);
       if (x > -2 && x < MAP_W + 2 && z > -2 && z < MAP_H + 2) continue;
-      if (spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < 2.2)) continue;
+      if (spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < (forest ? 1.6 : 2.2))) continue;
+      if (river.some(([x0, z0, x1, z1]) => x > x0 - 1.2 && x < x1 + 1.2 && z > z0 - 1.2 && z < z1 + 1.2)) continue;
       spots.push([x, z, 0.8 + rand() * 0.9]);
     }
     const at = spots.map(([x, z, sc]) => {
@@ -709,6 +770,7 @@ export class WorldView {
  */
 export function sceneryTree(theme: string): THREE.BufferGeometry {
   const alpine = theme === 'alpine';
+  if (theme === 'forest') return pine();
   return theme === 'desert'
     ? merge([
         cyl(0.15, 1.5, 0x5f7f3d, 0, 0, 0, 8),
@@ -740,4 +802,68 @@ export function sceneryTree(theme: string): THREE.BufferGeometry {
             cyl(0.4, 0.7, 0x4c8c44, 0, 1.3, 0, 7),
             cyl(0.22, 0.5, 0x5a9c4f, 0, 1.85, 0, 6),
           ]);
+}
+
+/**
+ * A Scots pine of the Six Hunter's valley (2.36): a tall bare trunk, rust-red near the top, and tiers of dark needles
+ * (blue-green, a warmer green on top where the sun catches them), the lowest tier high enough to see under.
+ */
+export function pine(): THREE.BufferGeometry {
+  // (Tiers open underneath, seven-sided: the camera never sees under them, and a forest of 420 stays light.)
+  const tier = (r: number, h: number, color: number, y: number) =>
+    paint(new THREE.ConeGeometry(r, h, 7, 1, true).translate(0, y + h / 2, 0), color);
+  return merge([
+    cyl(0.1, 1.2, 0x5a3e2a, 0, 0, 0, 5),
+    cyl(0.07, 0.9, 0x9a5a36, 0, 1.2, 0, 5),
+    tier(0.7, 1.0, 0x23452f, 0.75),
+    tier(0.58, 0.9, 0x2a5236, 1.3),
+    tier(0.46, 0.8, 0x31603c, 1.8),
+    tier(0.32, 0.7, 0x3c6e42, 2.3),
+    tier(0.16, 0.45, 0x4a7c48, 2.75),
+  ]);
+}
+
+/**
+ * Where a prison's river runs on past the map's edge (2.36, the Six Hunter's Hollowrun), as [x0, z0, x1, z1] tiles: off
+ * each edge where the river ends at it, or at the road along it (the river under its bridge), straight out 40 tiles.
+ */
+export function riverBeyond(world: World): Array<[number, number, number, number]> {
+  if (world.def.theme === 'island' || isOutside(world.def)) return [];
+  const water = (x: number, z: number) => world.inside(x, z) && world.ground.base[z * MAP_W + x] === TILE.WATER;
+  const out: Array<[number, number, number, number]> = [];
+  const FAR = 40;
+  const runs = (along: (i: number) => boolean, n: number, put: (a: number, b: number) => void) => {
+    for (let i = 0; i < n; i++) {
+      if (!along(i)) continue;
+      let j = i;
+      while (j + 1 < n && along(j + 1)) j++;
+      put(i, j + 1);
+      i = j;
+    }
+  };
+  // The water nearest each edge, looking in past the road (up to 3 tiles).
+  const near = (edge: 'w' | 'e' | 'n' | 's', i: number) => {
+    for (let d = 0; d < 3; d++) {
+      const [x, z] = edge === 'w' ? [d, i] : edge === 'e' ? [MAP_W - 1 - d, i] : edge === 'n' ? [i, d] : [i, MAP_H - 1 - d];
+      if (water(x, z)) return d;
+    }
+    return -1;
+  };
+  for (const edge of ['w', 'e', 'n', 's'] as const) {
+    const n = edge === 'w' || edge === 'e' ? MAP_H : MAP_W;
+    runs(
+      (i) => near(edge, i) >= 0,
+      n,
+      (a, b) => {
+        // (Only where the river ends at the edge, a few tiles across: an arm running along the edge isn't leaving the map.)
+        if (b - a > 6) return;
+        const d = near(edge, a);
+        if (edge === 'w') out.push([-FAR, a, d, b]);
+        else if (edge === 'e') out.push([MAP_W - d, a, MAP_W + FAR, b]);
+        else if (edge === 'n') out.push([a, -FAR, b, d]);
+        else out.push([a, MAP_H - d, b, MAP_H + FAR]);
+      },
+    );
+  }
+  return out;
 }

@@ -1,38 +1,38 @@
-156266 places and moments in the sweep, 13726 different presses tried
-  answer: 5 did it
-  bed: 5 did it
-  climb: 80 did it
+185598 places and moments in the sweep, 16397 different presses tried
+  answer: 6 did it
+  bed: 6 did it
+  climb: 100 did it
   climbOut: 1 did it
-  cooler: 50 did it, 50 said why not
+  cooler: 60 did it, 60 said why not
   fileForm: 1 did it, 1 said why not
-  fixture:board: 100 did it
-  fixture:generator: 120 did it
+  fixture:board: 120 did it
+  fixture:generator: 140 did it
   fixture:helicopter: 0 did it, 20 said why not
-  fixture:mat: 140 did it
-  fixture:pullup: 100 did it
-  fixture:punchingBag: 100 did it
-  fixture:rest: 280 did it
-  fixture:sit: 3365 did it, 81 said why not
-  fixture:treadmill: 200 did it
+  fixture:mat: 160 did it
+  fixture:pullup: 120 did it
+  fixture:punchingBag: 120 did it
+  fixture:rest: 320 did it
+  fixture:sit: 4000 did it, 103 said why not
+  fixture:treadmill: 240 did it
   fixture:vending: 0 did it, 38 said why not
-  fixture:weights: 380 did it
-  flush: 580 did it
-  getUp: 50 did it
+  fixture:weights: 440 did it
+  flush: 700 did it
+  getUp: 60 did it
   menu: 6 did it
-  nothing: 100 did nothing
-  peel: 5 did it
-  pickUp: 50 did it
-  pockets: 843 did it
+  nothing: 120 did nothing
+  peel: 6 did it
+  pickUp: 60 did it
+  pockets: 1000 did it
   readOn: 4 did it
   report: 1 did it
-  search: 4982 did it
+  search: 6022 did it
   showId: 1 did it, 1 said why not
-  shower: 65 did it, 37 said why not
-  sleep: 10 did it
+  shower: 73 did it, 42 said why not
+  sleep: 12 did it
   stow: 3 did it
-  talk: 1684 did it
-  tray: 73 did it
+  talk: 2002 did it
+  tray: 92 did it
   underline: 4 did it
-  vend: 100 did it
-  work: 10 did it
+  vend: 120 did it
+  work: 12 did it
 every press does what its plan says (or says why not), and every kind does it somewhere; a press with no plan does nothing; the button shows it in English and French with its own verb, greyed as refused, and highlights what it acts on

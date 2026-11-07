@@ -28,6 +28,7 @@ const GUARD_OUTFIT = itemNumber('guard_outfit');
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const COSTUME = itemNumber('costume');
 const OWN_CLOTHES = itemNumber('own_clothes');
+const GHILLIE = itemNumber('ghillie_cloak');
 const OWN_JEANS = 0x4a6a96;
 /** How long the player keeps the towel round their neck after washing (s). */
 const PLAYER_DRY = 2.5;
@@ -96,6 +97,8 @@ export class PlayerView {
     if (outfit === OWN_CLOTHES) this.look = { ...this.look, trousers: OWN_JEANS };
     // (P42: the costume on costume night: a witch's robe and hat. It fools nobody.)
     if (outfit === COSTUME) this.look = { ...this.look, trousers: 0x2a1f36, hat: 13, hatColor: 0x2a1f36 };
+    // (2.36: the ghillie cloak over the vest, earth-brown trousers, its hood instead of any hat.)
+    if (outfit === GHILLIE) this.look = { ...this.look, trousers: 0x4a3e2c, hat: undefined, hatColor: undefined, ghillie: true };
     this.c = new Character(this.look);
     this.c.root.position.copy(old.root.position);
     this.c.root.rotation.copy(old.root.rotation);

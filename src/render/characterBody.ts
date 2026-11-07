@@ -60,6 +60,30 @@ export function ghostSkin(body: THREE.SkinnedMesh, material: THREE.Material): TH
   return copy;
 }
 
+/** A ghillie cloak's colours (2.36): moss, olive, bracken, earth. */
+const GHILLIE = [0x4f6a3a, 0x5f7a46, 0x7a6a4a, 0x3e5230, 0x6a5a3a];
+
+/** Tufts hanging on a surface: a ring of strips round x ±`hx`, from y0 to y1, on the face at z (its side), seeded by `k`. */
+function ghillieTufts(hx: number, _hz: number, y0: number, y1: number, z: number, k: number): Part[] {
+  const out: Part[] = [];
+  for (let i = 0; i < 9; i++) {
+    const t = (i * 0.618 + k * 0.29) % 1;
+    const u = (i * 0.414 + k * 0.17) % 1;
+    out.push(
+      part(
+        0.05 + u * 0.04,
+        0.12 + t * 0.1,
+        0.03,
+        GHILLIE[(i + k) % GHILLIE.length],
+        -hx + t * hx * 2,
+        y0 + u * (y1 - y0),
+        z + Math.sign(z) * 0.01,
+      ),
+    );
+  }
+  return out;
+}
+
 /** A character's pivots: the bones its body's parts are skinned to. */
 export interface Bones {
   body: THREE.Bone;
@@ -162,6 +186,20 @@ export function buildFigure(
     );
   }
 
+  // A ghillie cloak (2.36): tufts of burlap and net all over the body and the shoulders, a shaggy flap down the back.
+  if (look.ghillie) {
+    mesh(
+      [
+        ...ghillieTufts(0.27, 0.16, 0.42, 0.82, 0.16, 1),
+        ...ghillieTufts(0.27, 0.16, 0.42, 0.82, -0.16, 2),
+        part(0.5, 0.36, 0.05, GHILLIE[0], 0, 0.42, -0.18),
+        ...[-0.2, -0.07, 0.07, 0.2].map((x, k) => part(0.1, 0.12, 0.04, GHILLIE[(k + 2) % GHILLIE.length], x, 0.34, -0.185)),
+        part(0.6, 0.08, 0.36, GHILLIE[1], 0, 0.78, 0),
+      ],
+      b.body,
+    );
+  }
+
   // Arms: pivots at the shoulders; sleeves rolled up to the elbow.
   for (const [pivot, x] of [
     [b.armL, -0.34],
@@ -174,6 +212,9 @@ export function buildFigure(
         part(0.13, 0.15, 0.14, skin, 0, -0.27, 0),
         part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
         ...(trim !== undefined ? [part(0.156, 0.034, 0.166, trim, 0, -0.187, 0)] : []),
+        ...(look.ghillie
+          ? [part(0.18, 0.2, 0.19, GHILLIE[x < 0 ? 0 : 3], 0, -0.12, 0), ...ghillieTufts(0.09, 0.1, -0.25, -0.02, 0.1, x < 0 ? 3 : 4)]
+          : []),
         ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f, skin) : []),
         // (P29: those inked inside: the left forearm's front and outer side, the right's outer side.)
         ...inkedParts(look.inked ?? [], x < 0, skin),
@@ -243,7 +284,16 @@ export function buildFigure(
     const dy = look.hat === 3 ? 0 : (style === 2 ? 0.45 : style === 1 ? 0.475 : 0.52) - 0.52;
     face.push(...hatParts(look.hat!, look.hatColor ?? 0x8c3b2a).map((g) => g.translate(0, dy, 0)));
   }
-  if (look.riot) {
+  if (look.ghillie) {
+    // The cloak's hood: shaggy over the crown and down the back of the head, tufts falling over the brow.
+    face.push(
+      part(0.52, 0.16, 0.5, GHILLIE[0], 0, 0.46, -0.02),
+      part(0.52, 0.36, 0.08, GHILLIE[1], 0, 0.14, -0.23),
+      part(0.07, 0.3, 0.42, GHILLIE[2], -0.25, 0.2, -0.02),
+      part(0.07, 0.3, 0.42, GHILLIE[2], 0.25, 0.2, -0.02),
+      ...[-0.17, -0.06, 0.05, 0.16].map((x, k) => part(0.07, 0.09, 0.05, GHILLIE[(k + 1) % GHILLIE.length], x, 0.4, 0.23)),
+    );
+  } else if (look.riot) {
     // A riot helmet: the shell over the head, its visor down over the eyes, a chin guard.
     face.push(
       part(0.54, 0.24, 0.52, 0x1d2129, 0, 0.5, -0.01),

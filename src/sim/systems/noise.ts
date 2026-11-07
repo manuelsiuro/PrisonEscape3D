@@ -201,9 +201,18 @@ export function earshot(sim: SimContext, n: NoiseAt | null, out: number[] = []):
  * the player) go and look, unless one is already looking close by. A bang first wakes the
  * guards asleep within earshot, sends more of them, whoever is looking already, and keeps them
  * looking longer. (`send` and `look`, P20: how many guards a noise sends at most, and how long
- * they look; 0 as the kind says.)
+ * they look; 0 as the kind says. 2.36, `who`: only the guards it says are sent, the Six Hunter's drag line's handlers of a hound on shift.)
  */
-export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile: number, loud: number, send = 0, look = 0) {
+export function makeNoise(
+  sim: SimContext,
+  kind: NoiseKind,
+  layer: number,
+  tile: number,
+  loud: number,
+  send = 0,
+  look = 0,
+  who?: (guard: number) => boolean,
+) {
   if (tile < 0 || loud <= 0) return;
   spareFor(sim);
   // (P17: the rain, a storm, the film's soundtrack drown it.)
@@ -225,7 +234,7 @@ export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile:
     for (const k of heard) {
       if (sent.length >= (send || (bang ? BANG_GUARDS : NOISE_GUARDS))) break;
       const g = guards[k];
-      if (g.mode === GUARD.CHASE) continue;
+      if (g.mode === GUARD.CHASE || (who && !who(k))) continue;
       sendToLook(g, lookSpot(w, tileOfGuard(g)), look || (bang ? BANG_LOOK : NOISE_LOOK));
       sent.push(k);
     }
@@ -245,7 +254,8 @@ export function strikeNoise(layer: number, target: ToolTarget | null, held: numb
   const base = (STRIKE_NOISE as Record<string, number>)[target.action];
   if (!base) return null;
   const tool = held ? itemDef(held) : null;
-  const tier = tool?.tool ? (tool.id.startsWith('plastic_') ? -1 : tool.tool.tier >= 3 ? 1 : 0) : 0;
+  // (2.36: the Six Hunter's antler pick, bone, as quiet as plastic.)
+  const tier = tool?.tool ? (tool.id.startsWith('plastic_') || tool.id === 'antler_pick' ? -1 : tool.tool.tier >= 3 ? 1 : 0) : 0;
   const at = target.action === 'digUp' ? LAYER.GROUND : target.action === 'unscrew' ? layer : target.layer;
   return { layer: at, tile: target.tile, reach: base + tier };
 }

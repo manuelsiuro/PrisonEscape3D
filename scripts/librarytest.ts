@@ -1,6 +1,6 @@
 /**
  * The library (2.31): reading as its own game, the day's limit, subjects and what's next, readers, chairs and the
- * librarian, in all five prisons, walked by real commands. 2.34: the marker at half the speed, waiting at each key
+ * librarian, in every prison, walked by real commands. 2.34: the marker at half the speed, waiting at each key
  * word; slow readers measured. Old logs play as they did.
  */
 import {

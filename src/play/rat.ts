@@ -17,7 +17,7 @@ import { ratName, thingName } from './labels';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { inmateInCell } from '../sim/systems/inmates';
-import { inmateName } from '../ui/names';
+import { guardWord, inmateName } from '../ui/names';
 
 /**
  * The pet rat on screen (P20): its name, the panel's places and buttons, the HUD's pill, and
@@ -42,7 +42,7 @@ const KEY_CSS: Record<string, string> = Object.fromEntries(
 /** A place's name for the panel, capitalised: a guard by his title, an inmate by name, furniture by what it is and whose cell. */
 function placeName(sim: Sim, x: RatTarget): string {
   const n = sim.state.inmates.length;
-  if (x.who >= n) return t('guard.title', { name: sim.prison.guards[x.who - n]?.name ?? '' });
+  if (x.who >= n) return guardWord(sim, 'guard.title', { name: sim.prison.guards[x.who - n]?.name ?? '' });
   if (x.who >= 0) return inmateName(sim, x.who);
   return furnitureName(sim, x.container);
 }
@@ -192,7 +192,8 @@ function targetName(sim: Sim, container: number): string {
   if (container < 0) return '';
   const who = ownerOf(sim.world, container);
   const n = sim.state.inmates.length;
-  if (who >= n) return t('rat.pocketsGuard', { name: sim.prison.guards[who - n]?.name ?? '' });
+  if (who >= n)
+    return t('rat.pocketsGuard', { guard: guardWord(sim, 'guard.addressed', { name: sim.prison.guards[who - n]?.name ?? '' }) });
   if (who >= 0) return t('rat.pocketsInmate', { name: inmateName(sim, who) });
   return furnitureName(sim, container);
 }

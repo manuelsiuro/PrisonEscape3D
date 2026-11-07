@@ -43,6 +43,8 @@ const TAGS = [
   'hostile',
   'outdoors',
   'indoors',
+  // 2.36: the Six Hunter's pine forest.
+  'forest',
 ] as const;
 export type Tag = (typeof TAGS)[number];
 
