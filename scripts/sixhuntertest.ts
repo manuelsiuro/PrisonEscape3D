@@ -508,5 +508,48 @@ const NEW = [
     if (!tables.includes(name)) check(!t.items.some(([id]) => NEW.includes(id)), `the ${name} table stocks none of it`);
   console.log(`new: ${NEW.length} items, 4 recipes, 3 tables, only at the Six Hunter`);
 }
+// ------------------------------------------------------------------ its guards are Hunters, by name
+// (2.36: wherever a guard is named, the button, the roll call, the rat's panel, the odd jobs, the bubbles and rumours:
+// "Hunter Garrow", « le Veneur Garrow », never "Officer" or « gardien »; elsewhere as it was.)
+{
+  const { GlobalRegistrator } = await import('@happy-dom/global-registrator');
+  GlobalRegistrator.register({ url: 'http://localhost:5310/', width: 1440, height: 844 });
+  const { loadLang, setLang, t } = await import('../src/i18n');
+  const { guardWord } = await import('../src/ui/names');
+  const { guardFull } = await import('../src/i18n/barks/grammar');
+  await loadLang('fr');
+  const words = ['guard.title', 'guard.addressed', 'guard.subject', 'guard.the', 'combat.guardNamed'] as const;
+  const lines = (prison: typeof SIX_HUNTER, lang: 'en' | 'fr') => {
+    setLang(lang);
+    const at = { prison };
+    return prison.guards.flatMap((g) => {
+      const name = g.name ?? '';
+      const addressed = guardWord(at, 'guard.addressed', { name });
+      return [
+        ...words.map((k) => guardWord(at, k, { name, key: 'red' })),
+        guardFull(lang, name, prison.id),
+        t('rat.pocketsGuard', { guard: addressed }),
+        t('oddjob.ask.lift.whistle', { guard: addressed }),
+        t('oddjob.ask.lift.pocket_watch', { guard: guardWord(at, 'guard.subject', { name }) }),
+        t('oddjob.step.lift', { item: 'x', guard: addressed }),
+      ];
+    });
+  };
+  const officer = /Officer|gardien/i;
+  for (const lang of ['en', 'fr'] as const) {
+    const here = lines(SIX_HUNTER, lang);
+    check(
+      here.every((l) => !officer.test(l) && (lang === 'en' ? /Hunter/ : /Veneur/).test(l)),
+      `${lang}: every line naming one of the Six calls him ${lang === 'en' ? 'Hunter' : 'Veneur'} (${here.length})`,
+    );
+    const there = lines(PRISONS[0], lang);
+    check(
+      there.every((l) => officer.test(l)),
+      `${lang}: Center Perks' guards still officers (${there.length})`,
+    );
+  }
+  setLang('en');
+  console.log(`titles: ${lines(SIX_HUNTER, 'en').length} lines a language name the Six as Hunters`);
+}
 void Sim;
 void handlersOf;

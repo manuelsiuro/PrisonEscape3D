@@ -192,7 +192,8 @@ function targetName(sim: Sim, container: number): string {
   if (container < 0) return '';
   const who = ownerOf(sim.world, container);
   const n = sim.state.inmates.length;
-  if (who >= n) return t('rat.pocketsGuard', { name: sim.prison.guards[who - n]?.name ?? '' });
+  if (who >= n)
+    return t('rat.pocketsGuard', { guard: guardWord(sim, 'guard.addressed', { name: sim.prison.guards[who - n]?.name ?? '' }) });
   if (who >= 0) return t('rat.pocketsInmate', { name: inmateName(sim, who) });
   return furnitureName(sim, container);
 }

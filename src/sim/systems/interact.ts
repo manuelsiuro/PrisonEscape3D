@@ -5,6 +5,7 @@
  * Pure: it reads the state and changes nothing (the arrays it fills are the sim's scratch).
  */
 import type { SimContext } from '../context';
+import { DIR_X, DIR_Z } from '../command';
 import { LAYER, MAP_W } from '../world/World';
 import { UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
@@ -16,7 +17,7 @@ import type { Station } from './economy';
 import { atWindow, windowFirst } from './getaway';
 import type { Guard } from './guards';
 import { TRAY, type Inmate } from './inmates';
-import { interactTarget, itemOf, type Target } from './items';
+import { canTalkTo, interactTarget, itemOf, type Target } from './items';
 import { letterDue, station } from './jobs';
 import { menuOffer } from './menu';
 import type { Body } from './movement';
@@ -124,7 +125,12 @@ function arrowsTarget(sim: SimContext): Fixture | Extract<Reached, { kind: 'cont
   if (!alone) return null;
   const tile = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
   const places = placesOf(w);
-  if (alone.kind === 'fixture' && alone.use === 'board') return alone;
+  // (The board: from the four tiles its arrows end on, as the first day's guide has them.)
+  if (alone.kind === 'fixture' && alone.use === 'board') {
+    const b = w.props[alone.index];
+    const at = b.z * MAP_W + b.x;
+    return tile === at - 1 || tile === at + 1 || tile === at - MAP_W || tile === at + MAP_W ? alone : null;
+  }
   if (alone.kind === 'fixture' && alone.use === 'sit' && s.tray === TRAY.FULL && mealOn(sim) && places.seats.some((q) => q.tile === tile)) {
     // (Its spot free: sat on by nobody, the press would be refused.)
     const spot = seatSpot(w, alone.index, s.player);
@@ -136,6 +142,35 @@ function arrowsTarget(sim: SimContext): Fixture | Extract<Reached, { kind: 'cont
     return c.mine && c.prop.kind === 'desk' ? alone : null;
   }
   return null;
+}
+
+/**
+ * Someone the player looks squarely at and could talk to (Cast id, -1: nobody): within about 23° of the way they
+ * face (half of `interactTarget`'s 45°), so the one on the tile ahead, or on the diagonal faced diagonally; the
+ * nearest such.
+ */
+function faceToFace(sim: SimContext): number {
+  const s = sim.state;
+  const p = s.player;
+  const fx = DIR_X[p.facing] ?? 0;
+  const fz = DIR_Z[p.facing] ?? 0;
+  const all = people(sim);
+  let best = -1;
+  let bestD = Infinity;
+  for (let who = 0; who < all.length; who++) {
+    if (who >= s.inmates.length && !canChat(sim, who - s.inmates.length)) continue;
+    const o = all[who];
+    if (!canTalkTo(sim.world, p, o)) continue;
+    const dx = o.body.x - p.x;
+    const dz = o.body.z - p.z;
+    const ahead = fx * dx + fz * dz;
+    const d2 = dx * dx + dz * dz;
+    if (ahead > 0 && ahead * ahead * 25 >= d2 * 21 * 1024 * 1024 && d2 < bestD) {
+      best = who;
+      bestD = d2;
+    }
+  }
+  return best;
 }
 
 /** What a press of the action button does now; null: nothing (it does nothing). */
@@ -175,11 +210,16 @@ export function interactPlan(sim: SimContext): Plan | null {
   if (coolerOffer(sim)) return { do: 'cooler' };
   if (menuOffer(sim)) return { do: 'menu' };
   if (!target) return null;
-  // (2.36: at the end of the arrows, what they led there for, ahead of someone standing by.)
-  if (target.kind === 'person') {
+  // (2.36: at the end of the arrows, the one the player looks squarely at to talk to, else what the arrows led there
+  // for, ahead of anyone standing by: the press goes where the player's eyes or the arrows say, never to someone
+  // who merely happens to be at the edge of the way they face.)
+  if (target.kind === 'person' || target.kind === 'fixture' || target.kind === 'container') {
     const led = arrowsTarget(sim);
-    if (led?.kind === 'fixture') return { do: 'fixture', target: led };
-    if (led?.kind === 'container') return { do: 'search', target: led };
+    if (led) {
+      const who = faceToFace(sim);
+      if (who >= 0) return { do: 'talk', target: { kind: 'person', who } };
+      return led.kind === 'fixture' ? { do: 'fixture', target: led } : { do: 'search', target: led };
+    }
   }
   switch (target.kind) {
     case 'ground':

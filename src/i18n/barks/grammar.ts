@@ -228,5 +228,9 @@ export const NICKS: Record<Lang, Record<Nick, string>> = {
 };
 export type Nick = 'fish' | 'mole' | 'champ' | 'brains' | 'muscles' | 'moneybags' | 'kid';
 
-/** A guard by name: "Officer Pratt" / « le gardien Pratt ». */
-export const guardFull = (lang: Lang, name: string) => (lang === 'fr' ? `le gardien ${name}` : `Officer ${name}`);
+/** 2.36: a prison whose guards go by another title (the Six Hunter's Hunters). */
+const OWN_TITLE: Record<string, Record<Lang, string>> = { 'six-hunter': { en: 'Hunter', fr: 'le Veneur' } };
+
+/** A guard by name: "Officer Pratt" / « le gardien Pratt » ("Hunter Garrow" / « le Veneur Garrow » at the Six Hunter). */
+export const guardFull = (lang: Lang, name: string, prison = '') =>
+  `${OWN_TITLE[prison]?.[lang] ?? (lang === 'fr' ? 'le gardien' : 'Officer')} ${name}`;
