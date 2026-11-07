@@ -340,6 +340,14 @@ export const CENTER_PERKS: PrisonDef = {
   guards,
   names: ['Rusty', 'Tank', 'Mouse', 'Doc', 'Lefty', 'Bones', 'Slim'],
   merchants: [2, 6, 7],
+  // 2.36, gangs and turf: the Kitchen Crew at the table by the counter and the courtyard's north-west corner, the
+  // Lifers at the far table and its south-west corner, the Gym Rats at the table by the door and the north-east
+  // corner; Mouse, the librarian, keeps to himself.
+  gangs: [
+    { id: 'kitchen', boss: 2, members: [2, 5], table: [46, 8, 48, 10], corner: [24, 25, 27, 28] },
+    { id: 'lifers', boss: 6, members: [6, 8], table: [41, 17, 43, 19], corner: [24, 31, 27, 34] },
+    { id: 'gymRats', boss: 7, members: [7, 3], table: [46, 17, 48, 19], corner: [34, 25, 37, 28] },
+  ],
   crew: ['digger', 'muscle', 'lookout', 'digger', 'smuggler', 'muscle', 'lookout'],
   // The player starts in the laundry; the woodshop is open (Intellect 40, as the player starts).
   jobs: [

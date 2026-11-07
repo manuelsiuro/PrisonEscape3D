@@ -1,6 +1,8 @@
 import { prisonById } from '../content/prisons';
 import { Sim, type Snapshot } from '../sim/Sim';
-import type { RunLog } from '../sim/runlog';
+import { before236, type RunLog } from '../sim/runlog';
+import { DAY_BOOKS } from '../content/days';
+import { keepOldCards, planOf, prisonDay } from '../sim/systems/calendar';
 import { deleteLog, dropAllLogs, LOG_MAX, writeLog } from './logs';
 import { KEYS, readJSON, removeKey, writeJSON, type StorageKey } from './storage';
 import { type Rumor } from '../talk/gossip';
@@ -139,6 +141,12 @@ export function loadSave(f: SaveFile): Sim | null {
     // (A save from before 2.34 with a book open: its place on the page was at the old pace, so the page starts over.
     // Here, not in loadState: a log's start snapshot from then replays at the old pace.)
     const st = sim.state;
+    // (A save from before 2.36: the day it was made on and the next keep the card the gang war took the place of; the forecast may have named it.)
+    const book = DAY_BOOKS[prison.id];
+    if (before236(f.game) && book?.beforeGangs) {
+      const day = prisonDay(st.step);
+      keepOldCards(st, [day, day + 1], (d) => planOf(sim, d).event, { gangWar: book.beforeGangs });
+    }
     if ((f.snap.state as { readWait?: number }).readWait === undefined && st.book && st.train >= 0) {
       st.readFrom = st.step;
       st.repBeat = 0;

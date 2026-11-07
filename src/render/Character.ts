@@ -25,6 +25,13 @@ import { GRIP, GRIP_SCALE, gripOf, POLE_ONE_HAND, POLE_TWO_HANDS } from './chara
 import { hash01, seeded } from './rand';
 import { itemDef } from '../content/items';
 
+/** 2.36: the top of each haircut (characterBody.ts: short, buzz cut, bald, tall top, mohawk's shaved top, curls, ponytail), where a gang's head wrap sits. */
+const WRAP_TOP: readonly number[] = [0.52, 0.47, 0.445, 0.64, 0.47, 0.6, 0.52];
+
+/** A colour darkened (k < 1) for a knot's shadow side. */
+const shade = (c: number, k: number) =>
+  (Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k);
+
 /** Where a sleeper lies: the middle of the bed and the way its pillow points (radians). */
 export interface BedPose {
   x: number;
@@ -137,6 +144,8 @@ export class Character {
   /** Session 15: how it walks and stands (from its number), its own random numbers, where it was last frame (the stride follows the ground covered). */
   private readonly style: Style;
   private readonly guard: boolean;
+  /** 2.36: the top of the haircut, where a gang's head wrap sits (-1: under a hat, none). */
+  private readonly wrapTop: number;
   private readonly roll: () => number;
   /** (The fidgets' own: what a glance or a blink draws never changes which fidget comes next.) */
   private readonly fidgetRoll: () => number;
@@ -325,6 +334,9 @@ export class Character {
   /** `seed`: the character's own number (its place in the cast): how it walks and stands, the same every time. */
   constructor(look: Look, seed = 0) {
     this.guard = look.cap !== undefined;
+    // (2.36: where a gang's head wrap sits, over the haircut; none under a hat or a cap.)
+    const hatted = !!look.hat || look.cap !== undefined || !!look.riot;
+    this.wrapTop = hatted ? -1 : (WRAP_TOP[look.hairStyle ?? 0] ?? 0.52);
     this.style = styleFor(seed, this.guard);
     this.roll = seeded(Math.floor(hash01(seed + 7, 3) * 4294967296));
     this.fidgetRoll = seeded(Math.floor(hash01(seed + 7, 5) * 4294967296));
@@ -480,6 +492,65 @@ export class Character {
     }
     this.towelHead.visible = false;
     this.head.add(this.towelHead);
+  }
+
+  /** 2.36: the gang's colours worn (a bandana tied over the head; under a hat, round the neck), their colour; 0 none. */
+  private coloursOn = 0;
+  private bandana: THREE.Mesh | null = null;
+  private wrap: THREE.Mesh | null = null;
+
+  /**
+   * 2.36, gangs: the colours of a gang (0: none), one mesh: a bandana tied over the head (what the steep camera sees
+   * best), or under a hat round the neck. In the body's own material, as the towel (the player's see-through silhouette
+   * mustn't read it as a wall); made the first time, made again only when the colour changes.
+   */
+  colours(color: number) {
+    if (color === this.coloursOn) return;
+    this.coloursOn = color;
+    for (const m of [this.bandana, this.wrap]) {
+      m?.removeFromParent();
+      m?.geometry.dispose();
+    }
+    this.bandana = this.wrap = null;
+    if (!color) return;
+    const knot = shade(color, 0.72);
+    // A bandana tied over the head (what the steep camera sees best), its knot's tails at the back; under a hat, none.
+    if (this.wrapTop > 0) {
+      const top = this.wrapTop;
+      this.wrap = new THREE.Mesh(
+        merge(
+          [
+            part(0.5, 0.06, 0.49, color, 0, top + 0.03, -0.005),
+            part(0.5, 0.1, 0.03, color, 0, top - 0.03, 0.235),
+            part(0.03, 0.1, 0.49, color, -0.245, top - 0.03, -0.005),
+            part(0.03, 0.1, 0.49, color, 0.245, top - 0.03, -0.005),
+            part(0.14, 0.08, 0.05, knot, 0, top - 0.04, -0.26),
+            part(0.05, 0.16, 0.03, knot, -0.04, top - 0.14, -0.27),
+            part(0.05, 0.13, 0.03, knot, 0.04, top - 0.13, -0.27),
+          ],
+          false,
+        ),
+        this.material,
+      );
+      this.wrap.castShadow = true;
+      this.head.add(this.wrap);
+      return;
+    }
+    // (Under a hat: a bandana knotted round the neck instead, its point down the front.)
+    this.bandana = new THREE.Mesh(
+      merge(
+        [
+          part(0.4, 0.06, 0.3, color, 0, 0.83, 0),
+          part(0.24, 0.09, 0.03, color, 0, 0.75, 0.155),
+          part(0.12, 0.08, 0.03, color, 0, 0.67, 0.155),
+          part(0.08, 0.06, 0.05, knot, 0, 0.84, -0.16),
+        ],
+        false,
+      ),
+      this.material,
+    );
+    this.bandana.castShadow = true;
+    this.body.add(this.bandana);
   }
 
   /** Where this meal's tray is (TRAY_AT), and how much food is left on it (0–1): set before `pose`. */
@@ -1095,7 +1166,11 @@ export class Character {
     this.dressed.visible = !shorts;
     if (this.washBody) this.washBody.visible = shorts;
     this.towelNeck.visible = this.towel === 1;
+    // (2.36: a towel round the neck covers the bandana.)
+    if (this.bandana) this.bandana.visible = this.towel !== 1;
     this.towelHead.visible = this.towel === 2;
+    // (2.36: and the towel over the hair, the head wrap.)
+    if (this.wrap) this.wrap.visible = this.towel !== 2;
     if (this.clipboard) this.clipboard.visible = doing === DOING.COUNT && !moving && this.act > 0.2;
 
     // Blink every few seconds; eyes shut in bed.

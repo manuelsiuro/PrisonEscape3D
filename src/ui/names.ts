@@ -19,6 +19,12 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
   return t(`favor.${kind}` as Key, { item: lowerFirst(item), name: f.target >= 0 ? inmateName(sim, f.target) : '' });
 }
 
+/** A gang's name (2.36): "the Kitchen Crew" as a title, by its place in the prison's gangs. */
+export function gangName(sim: Sim, k: number): string {
+  const id = sim.prison.gangs?.[k]?.id;
+  return id ? t(`gang.${id}` as Key) : '';
+}
+
 /** A guard as the player addresses it: "Officer Pratt" (or "The guard" for one without a name). */
 export function guardTitle(sim: Sim, k: number): string {
   const d = sim.prison.guards[k];

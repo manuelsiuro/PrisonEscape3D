@@ -179,3 +179,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Talk, merchants and the crew (v2.36.0, not released yet)
 - Character animation (v2.36.0, not released yet)
 - The picture review (v2.36.0, not released yet)
+- Gangs and turf (v2.36.0, not released yet)

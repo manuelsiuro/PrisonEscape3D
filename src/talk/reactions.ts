@@ -183,6 +183,34 @@ export function react(d: Reactor, e: SimEvent, sim: Sim, now: number) {
     case 'ambush':
       d.queueUp(now, 're.ambush.in', [e.who], 5, 'ambush', 'shout');
       break;
+    // 2.36: gang business: a member's word on meeting the player, the boss's welcome, a turf's warning and its
+    // end, the gang turning on someone who hit one of their own, the war's rival.
+    case 'gang': {
+      const who = e.who ?? -1;
+      if (who < 0 || who >= n) break;
+      const bank =
+        e.what === 'met'
+          ? 're.gang.met'
+          : e.what === 'joined'
+            ? 're.gang.joined'
+            : e.what === 'warn'
+              ? 're.gang.warn'
+              : e.what === 'jumped' || e.what === 'warJump'
+                ? 're.gang.jumped'
+                : e.what === 'kicked'
+                  ? 're.gang.out'
+                  : null;
+      if (bank && who !== s.talk)
+        d.queueUp(
+          now,
+          bank,
+          [who],
+          e.what === 'met' ? 3 : 5,
+          `gang:${e.what}`,
+          e.what === 'met' || e.what === 'joined' ? undefined : 'shout',
+        );
+      break;
+    }
     case 'snooped':
       d.queueUp(now, 're.snooped.in', [e.who], 5, 'snooped', 'shout');
       break;
