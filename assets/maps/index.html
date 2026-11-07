@@ -192,6 +192,7 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
 .pips { display: inline-flex; gap: 2px; }
 .pip { width: 6px; height: 6px; border-radius: 2px; background: var(--line-strong); }
 .pip.on { background: var(--accent); }
+.pip.on.pip-six { background: var(--danger); }
 .badge {
   min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
   font: 700 11px var(--mono); display: grid; place-items: center;
@@ -506,7 +507,7 @@ button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 4
 
   <aside class="side" id="side">
     <div>
-      <div class="section-title">Prisons <span><kbd>1</kbd>–<kbd>6</kbd></span></div>
+      <div class="section-title">Prisons <span><kbd>1</kbd>–<kbd>7</kbd></span></div>
       <div class="prisons" id="prisons"></div>
     </div>
     <div>
@@ -600,7 +601,7 @@ button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 4
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <h2 id="helpTitle">Shortcuts</h2>
     <table>
-      <tr><td><kbd>1</kbd> – <kbd>6</kbd></td><td>Training Block, Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate</td></tr>
+      <tr><td><kbd>1</kbd> – <kbd>7</kbd></td><td>Training Block, Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate, The Six Hunter</td></tr>
       <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Previous / next prison</td></tr>
       <tr><td><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>R</kbd> <kbd>O</kbd> <kbd>U</kbd></td><td>In game · Layout · People &amp; places · Vents · Roof · Outside · Outside 3D</td></tr>
       <tr><td><kbd>Y</kbd></td><td>Overlays: exit line, restricted zones, sniper range, where to be at each hour, job stations, containers, rat traps</td></tr>
@@ -726,7 +727,7 @@ button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 4
         <span class="prison-num">${k + 1}</span>
         <span>
           <span class="prison-name">${esc(p.name)}</span>
-          <span class="prison-meta"><span class="pips">${[1, 2, 3, 4, 5].map((n) => `<i class="pip${n <= p.difficulty ? ' on' : ''}"></i>`).join('')}</span>${esc(p.theme)} · rev ${p.map}</span>
+          <span class="prison-meta"><span class="pips">${[1, 2, 3, 4, 5, ...(p.difficulty > 5 ? [6] : [])].map((n) => `<i class="pip${n <= p.difficulty ? ' on' : ''}${n > 5 ? ' pip-six' : ''}"></i>`).join('')}</span>${esc(p.theme)} · rev ${p.map}</span>
         </span>
         ${counts[k] ? `<span class="badge" title="${counts[k]} notes">${counts[k]}</span>` : '<span></span>'}
       </button>`).join('');
@@ -739,7 +740,7 @@ button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 4
       b.disabled = !hasView(p, b.dataset.view);
       b.setAttribute('aria-pressed', String(b.dataset.view === st.view));
     });
-    $('about').innerHTML = `<b>${esc(p.name)}</b>${p.difficulty ? ` · difficulty ${p.difficulty}/5` : ' · tutorial'}<br>${esc(p.info)}`;
+    $('about').innerHTML = `<b>${esc(p.name)}</b>${p.difficulty ? ` · difficulty ${p.difficulty}/${Math.max(...D.prisons.map((q) => q.difficulty || 0))}` : ' · tutorial'}<br>${esc(p.info)}`;
     $('guards').innerHTML = p.guards.map((g) => `
       <div class="guard"><i style="background:${g.color}"></i><span>${esc(g.name)}<small>${esc([`${g.key} key`, g.trait, ...g.tags].join(' · '))}</small></span></div>`).join('') || '<span class="about">No guards.</span>';
   }
