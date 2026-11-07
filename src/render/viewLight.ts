@@ -17,6 +17,25 @@ const DAYLIGHT: Array<[number, number, number, number, number]> = [
   [1440, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
 ];
 
+/**
+ * The pine forest's light (2.36, the Six Hunter): the same day, its colours a valley's: a low golden sun through the
+ * pines morning and evening, a misty teal sky and fill by day, moss in the bounce. [minute, sun color, sky color] at
+ * DAYLIGHT's minutes; the sun a touch softer (FOREST_SUN), so the light reads as under trees.
+ */
+const FOREST_DAY: Array<[number, number, number]> = [
+  [0, 0x8aa2ff, 0x0a1620],
+  [300, 0x8aa2ff, 0x0a1620],
+  [390, 0xffb46a, 0x6a96a0],
+  [480, 0xffe4b4, 0x94bcc0],
+  [1080, 0xffdca4, 0x94bcc0],
+  [1170, 0xff8a48, 0x5a6c88],
+  [1260, 0x8aa2ff, 0x0a1620],
+  [1440, 0x8aa2ff, 0x0a1620],
+];
+const FOREST_SKY_LIGHT = 0xd4ebe6;
+const FOREST_GROUND_LIGHT = 0x3e5434;
+const FOREST_SUN = 0.92;
+
 /** The ambient light's sky color. */
 const SKY_LIGHT = 0xdfe8ff;
 /** The ambient light's ground color (the bounce off the grass). */
@@ -64,6 +83,14 @@ export class Lighting {
   private readonly p = new THREE.Vector3();
   private readonly v = new THREE.Vector3();
 
+  /** The prison's look's light (the forest's colours; every other prison's as it always was). */
+  private forest = false;
+
+  /** The look of the prison now shown (2.36: the forest has its own light). */
+  setTheme(theme: string | undefined) {
+    this.forest = theme === 'forest';
+  }
+
   constructor() {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
@@ -95,8 +122,8 @@ export class Lighting {
     // Moonlight: the ambient blue and its bounce dark as the night falls, out in the open only (the
     // ground floor, the roofs): the vents and the tunnels keep their own light.
     const moon = layer === LAYER.VENTS || layer === LAYER.UNDER ? 0 : night;
-    this.skyLight.set(SKY_LIGHT).lerp(this.c1.set(MOON_SKY), moon);
-    this.ambient.groundColor.set(GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), moon);
+    this.skyLight.set(this.forest ? FOREST_SKY_LIGHT : SKY_LIGHT).lerp(this.c1.set(MOON_SKY), moon);
+    this.ambient.groundColor.set(this.forest ? FOREST_GROUND_LIGHT : GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), moon);
     this.ambient.intensity *= 1 + MOON_LIFT * moon;
     this.weatherLight(dt, reducedMotion);
     if (this.alarm > 0.001) {
@@ -131,7 +158,15 @@ export class Lighting {
     this.ambient.intensity = THREE.MathUtils.lerp(a[3], b[3], f);
     this.sky.copy(this.c1.set(a[4]).lerp(this.c2.set(b[4]), f));
     this.sun.shadow.intensity = 1;
-    return THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
+    const night = THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
+    if (this.forest) {
+      const fa = FOREST_DAY[k - 1];
+      const fb = FOREST_DAY[k];
+      this.sun.color.copy(this.c1.set(fa[1]).lerp(this.c2.set(fb[1]), f));
+      this.sky.copy(this.c1.set(fa[2]).lerp(this.c2.set(fb[2]), f));
+      this.sun.intensity *= FOREST_SUN;
+    }
+    return night;
   }
 
   /** Lockdown: the red light's share now, swinging in slow pulses like a rotating beacon (steady with reduced motion). */

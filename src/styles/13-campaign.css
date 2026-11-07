@@ -41,6 +41,16 @@
   --campaign-blue-41-rgb: 28, 74, 128;
   --campaign-blue-33: #103468;
   --campaign-blue-33-rgb: 16, 52, 104;
+  /* 2.36: the Six Hunter's pine valley. */
+  --campaign-teal-82: #b4d2cc;
+  --campaign-teal-70: #8fb4ae;
+  --campaign-teal-45: #2f6662;
+  --campaign-pine-36: #24452f;
+  --campaign-pine-30: #1b3424;
+  --campaign-moss-52: #58703f;
+  --campaign-timber-40: #6a4630;
+  --campaign-timber-30: #3c2616;
+  --campaign-shake-48: #6e6052;
 }
 .prisons-card {
   width: min(460px, 100%);
@@ -245,6 +255,37 @@
   bottom: 8%;
   height: 18%;
   background: repeating-linear-gradient(180deg, rgba(var(--campaign-grey-96-rgb), 0.55) 0 1.5px, transparent 1.5px 6px);
+  opacity: 1;
+}
+
+/* The Six Hunter: a misty teal valley at sunrise, a low gold sun behind two ranks of pines, moss. */
+.theme-forest .pc-scene {
+  background:
+    conic-gradient(from 155deg at 50% 0, var(--campaign-pine-30) 0 50deg, transparent 0) 4px 30% / 13px 22% repeat-x,
+    conic-gradient(from 160deg at 50% 0, var(--campaign-pine-36) 0 40deg, transparent 0) 0 22% / 9px 18% repeat-x,
+    radial-gradient(circle at 24% 22%, var(--campaign-gold-91) 0 7%, transparent 8%),
+    linear-gradient(180deg, var(--campaign-teal-82) 0 26%, var(--campaign-teal-70) 26% 50%, var(--campaign-moss-52) 50% 100%);
+}
+
+/* The lodge: board-and-batten timber under a roof of shakes. */
+.theme-forest .pc-scene::before {
+  bottom: 32%;
+  height: 26%;
+  border-radius: 2px 2px 0 0;
+  background:
+    repeating-linear-gradient(90deg, var(--campaign-timber-30) 0 1.5px, transparent 1.5px 6px),
+    linear-gradient(180deg, var(--campaign-shake-48) 0 20%, var(--campaign-timber-40) 20% 100%);
+}
+
+/* The river along the bottom, its ripples, the deer fence's posts and wire in front. */
+.theme-forest .pc-scene::after {
+  bottom: 6%;
+  height: 22%;
+  background:
+    repeating-linear-gradient(90deg, var(--campaign-timber-30) 0 2px, transparent 2px 14px) top / 100% 60% no-repeat,
+    repeating-linear-gradient(180deg, var(--grey-84) 0 1px, transparent 1px 4px) top / 100% 60% no-repeat,
+    repeating-linear-gradient(180deg, rgba(var(--campaign-grey-96-rgb), 0.45) 0 1px, transparent 1px 5px) bottom / 100% 40% no-repeat,
+    linear-gradient(var(--campaign-teal-45), var(--campaign-teal-45)) bottom / 100% 40% no-repeat;
   opacity: 1;
 }
 

@@ -34,9 +34,10 @@ const COATS: Record<DogCoat, { main: number; saddle: number | null; head: number
   mastiff: { main: 0x8c6239, saddle: 0x5e3d24, head: 0x7a5432, build: [1.6, 1.35, 1.35] },
   retriever: { main: 0xc9743b, saddle: null, head: 0xc9743b, build: [1.35, 1.25, 1.25] },
   collie: { main: 0xefebe3, saddle: 0x1f1c20, head: 0x24212a, build: [1.2, 1.2, 1.2] },
-  // 2.36 (The Six Hunter's pack; the look's pass may refine them): a tricolour foxhound, a liver-red bloodhound.
-  foxhound: { main: 0xefe6d6, saddle: 0x2a211b, head: 0xb8783e, build: [1.3, 1.3, 1.25] },
-  bloodhound: { main: 0x8a4a2a, saddle: null, head: 0x7a3f22, build: [1.45, 1.35, 1.35] },
+  // 2.36 (The Six Hunter's pack): a tricolour foxhound, white with a black saddle and a tan head, rangy; a black-and-tan
+  // bloodhound, its red coat under a black saddle, big and heavy-headed.
+  foxhound: { main: 0xf0e8da, saddle: 0x241c17, head: 0xb87436, build: [1.22, 1.32, 1.28] },
+  bloodhound: { main: 0xa45a2e, saddle: 0x2e2018, head: 0x96522a, build: [1.5, 1.38, 1.38] },
 };
 
 /** Paint values: the coat's own (1), a little darker underneath, the muzzle, the ears, the nose and eyes, the paws. */
@@ -60,7 +61,8 @@ const PRINT_Y = 0.021;
 const LIE_OUT = 0.5;
 /** A paw's front and back edges (along the leg's z): the lowest of them stays on the floor. */
 const PAW_EDGES = [-0.03, 0.05] as const;
-const MAX_DOGS = 4;
+/** (2.36: six, the Six Hunter's pack; four before.) */
+const MAX_DOGS = 6;
 const SCENT_AMBER = new THREE.Color(0xf0a030);
 const PAW_ORANGE = new THREE.Color(0xff7a3a);
 
@@ -147,11 +149,11 @@ export class Dogs {
         ],
         false,
       ),
-      4,
+      MAX_DOGS,
     );
     this.saddle = inst(
       merge([box(0.225, 0.07, 0.3, COAT, 0, HIP_Y + 0.09, -0.04), box(0.13, 0.05, 0.1, COAT, 0, HIP_Y + 0.14, 0.17)], false),
-      4,
+      MAX_DOGS,
     );
     this.head = inst(
       merge(
@@ -166,13 +168,13 @@ export class Dogs {
         ],
         false,
       ),
-      4,
+      MAX_DOGS,
     );
     this.legs = inst(
       merge([box(0.06, LEG_H - 0.035, 0.06, COAT, 0, -LEG_H + 0.035, 0), box(0.07, 0.035, 0.08, PAW, 0, -LEG_H, 0.01)], false),
-      16,
+      MAX_DOGS * 4,
     );
-    this.tail = inst(merge([box(0.045, 0.045, 0.22, COAT, 0, -0.02, -0.11)], false), 4);
+    this.tail = inst(merge([box(0.045, 0.045, 0.22, COAT, 0, -0.02, -0.11)], false), MAX_DOGS);
     // A kennel: plank walls, a pitched roof, the dark doorway (facing +z), a nameplate, a water bowl beside it.
     const wood = 0x9a6a3c;
     const roof = 0x8f3b2c;
@@ -202,7 +204,7 @@ export class Dogs {
         cyl(0.07, 0.04, 0x9aa2ad, 0.33, 0, 0.18, 12),
         cyl(0.055, 0.042, 0x5aa8d8, 0.33, 0.002, 0.18, 12),
       ]),
-      4,
+      MAX_DOGS,
     );
     this.kennels.castShadow = true;
     this.kennels.receiveShadow = true;
@@ -245,7 +247,7 @@ export class Dogs {
     this.pieces = [this.body, this.saddle, this.head, this.legs, this.tail];
     // Barking: sound rings over its head.
     const ringTex = barkTexture();
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < MAX_DOGS; k++) {
       const s = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: ringTex, transparent: true, depthWrite: false, depthTest: false, opacity: 0 }),
       );

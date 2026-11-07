@@ -41,7 +41,7 @@ vents: 59 duct tiles, 2 grates, 1 ladder; roof tiles 1760
 == six-hunter · picture 74c3befa
 tiles: brick 532, concrete 378, dirt 319, door 43, electric 128, fence 35, grass 754, pier 2, reinforced 98, road 667, tiled 159, tower 36, water 292, wood 653
 zones: boathouse 48, canteen 180, cellBlock 88, corridor 115, garden 60, generator 56, guardQuarters 72, gym 45, infirmary 27, inmateCell 176, kennels 237, kitchen 60, laundry 36, library 36, none 673, outside 667, perimeter 1060, playerCell 16, rollCall 60, showers 36, smokehouse 45, solitary 16, sports 153, visitation 54, yard 80
-decor: 50 pieces
+decor: 53 pieces
 walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, sports, visitation, yard
 guards: 6, 43 stops, 3 asleep at night
 delivery: truck, 10 tiles, tail 26,47, supervised by Quiller (4 stops), thorough 30%
