@@ -71,6 +71,8 @@ export class HuntView {
   /** The prison behind the wall, and the houses' windows (lit after dark). */
   private prison: PrisonBehind | null = null;
   private glass: THREE.MeshStandardMaterial | null = null;
+  /** The forest river's time (2.36), run each frame (still with reduced motion). */
+  private flow: { value: number } | null = null;
   /** Under the prison behind the wall (world tiles, past the edge too): no woods, roads or rivers of the outside's drawn there. */
   private readonly under = (x: number, z: number) => !!this.prison?.covers(x, z);
 
@@ -97,6 +99,7 @@ export class HuntView {
     const run = runOff(land, o, theme);
     scenery(land, o, theme, run);
     const wet = water(land, o, theme);
+    this.flow = land.flow ?? null;
     woods(land, theme, run.covered, wet);
     const town = buildHouses(o, theme);
     this.group.add(town.group);
@@ -292,7 +295,7 @@ export class HuntView {
   private safePoint(o: OutsideWorld) {
     const def = o.def;
     const g = new THREE.Group();
-    g.add(new THREE.Mesh(vehicleGeometry(def.safeKind), kitMaterial));
+    g.add(new THREE.Mesh(vehicleGeometry(def.safeKind, o.prison.theme), kitMaterial));
     g.children[0].castShadow = true;
     const t = spotTile(def.safeAt, o.ox, o.oz);
     g.position.set((t % MAP_W) + 0.5, 0, Math.floor(t / MAP_W) + 0.5);
@@ -413,6 +416,7 @@ export class HuntView {
 
   // ---------------------------------------------------------------- every frame
   update(f: HuntFrame, dt: number, time: number, night: number, motion: boolean) {
+    if (this.flow && motion) this.flow.value = time;
     // A faint glow at the player's feet after dark (their outline reads against the ground, in any clothes).
     if (!this.glow) {
       this.glowMat = new THREE.MeshBasicMaterial({

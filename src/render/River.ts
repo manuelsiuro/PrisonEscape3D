@@ -20,7 +20,13 @@ const DRIFT = 1.3;
  * The river's surface: dark peat-stained water lifting into soft green-grey ripples, a few glints of sky on them;
  * every wave whole cycles across the canvas, so it tiles without a seam.
  */
+let riverMap: THREE.CanvasTexture | null = null;
+/** (Made once and kept, as the lamps' glow is: shared by the prison's river and its valley's in the manhunt.) */
 function riverTexture(): THREE.CanvasTexture {
+  return (riverMap ??= drawRiver());
+}
+
+function drawRiver(): THREE.CanvasTexture {
   const n = 128;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = n;
@@ -91,6 +97,135 @@ function waterMaterial(map: THREE.Texture, time: { value: number }): THREE.MeshS
 }
 
 /**
+ * A river's surface (2.36; the Six Hunter's Hollowrun, and its valley's river in the manhunt): a quad a tile, at each
+ * corner how much of the four tiles round it is bank (the shallows' tint) and the flow (the mean of the water tiles'
+ * round it), so neighbouring tiles agree and nothing shows a seam. One draw call; `time` runs it.
+ */
+export function flowingWater(
+  tiles: ReadonlyArray<readonly [number, number]>,
+  wet: (x: number, z: number) => boolean,
+  flowTile: (x: number, z: number) => readonly [number, number],
+  time: { value: number },
+  y = WATER_Y,
+): THREE.Mesh {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const col: number[] = [];
+  const flow: number[] = [];
+  const idx: number[] = [];
+  const deep = new THREE.Color(0xd2e2e8);
+  const shallow = new THREE.Color(0xe8e8cc);
+  const c = new THREE.Color();
+  for (const [x, z] of tiles) {
+    const v0 = pos.length / 3;
+    for (const [dx, dz] of [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ]) {
+      const cx = x + dx;
+      const cz = z + dz;
+      let land = 0;
+      let fx = 0;
+      let fz = 0;
+      for (const [ox, oz] of [
+        [-1, -1],
+        [0, -1],
+        [-1, 0],
+        [0, 0],
+      ]) {
+        if (!wet(cx + ox, cz + oz)) land++;
+        else {
+          const [a, b] = flowTile(cx + ox, cz + oz);
+          fx += a;
+          fz += b;
+        }
+      }
+      const l = Math.hypot(fx, fz) || 1;
+      pos.push(cx, y, cz);
+      uv.push(cx / RIPPLE, cz / RIPPLE);
+      c.copy(deep).lerp(shallow, Math.min(1, land / 2));
+      col.push(c.r, c.g, c.b);
+      flow.push(fx / l, fz / l);
+    }
+    idx.push(v0, v0 + 3, v0 + 2, v0, v0 + 2, v0 + 1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  const normals = new Float32Array(pos.length);
+  for (let i = 1; i < normals.length; i += 3) normals[i] = 1;
+  geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setAttribute('aFlow', new THREE.Float32BufferAttribute(flow, 2));
+  geo.setIndex(idx);
+  const water = new THREE.Mesh(geo, waterMaterial(riverTexture(), time));
+  water.receiveShadow = true;
+  // (Under the floor decals and the fog veil, like the ground.)
+  water.renderOrder = -0.1;
+  return water;
+}
+
+/** Downstream along the longer run of water through a tile (east or south), both at a bend: `wet` says where water is. */
+export function flowAlongRuns(wet: (x: number, z: number) => boolean): (x: number, z: number) => [number, number] {
+  const run = (x: number, z: number, dx: number, dz: number) => {
+    let n = 0;
+    for (let k = 1; k < 8 && wet(x + dx * k, z + dz * k); k++) n++;
+    for (let k = 1; k < 8 && wet(x - dx * k, z - dz * k); k++) n++;
+    return n;
+  };
+  return (x, z) => {
+    const ax = run(x, z, 1, 0);
+    const az = run(x, z, 0, 1);
+    return ax > az + 1 ? [1, 0] : az > ax + 1 ? [0, 1] : [Math.SQRT1_2, Math.SQRT1_2];
+  };
+}
+
+/** The bank on land tile (x, z)'s edge facing (dx, dz) onto water: a lip of mud, now and then a stone and a clump of reeds (`i`: its own number). */
+export function bankParts(parts: Part[], x: number, z: number, dx: number, dz: number, i: number) {
+  const MUD = [0x5a4632, 0x4e3d2b, 0x65503a];
+  const REED = [0x7f8a4a, 0x8f9a56, 0x6f7a3e, 0xa69a62];
+  // The edge's middle, on the water's side of the land tile (x, z), facing (dx, dz).
+  const ex = x + 0.5 + dx * 0.5;
+  const ez = z + 0.5 + dz * 0.5;
+  const along = dz !== 0;
+  parts.push(box(along ? 1.02 : 0.24, 0.05, along ? 0.24 : 1.02, MUD[Math.floor(hash01(i, 1) * 3)], ex + dx * 0.04, -0.03, ez + dz * 0.04));
+  if (hash01(i, 2) < 0.45) {
+    const r = 0.09 + hash01(i, 3) * 0.12;
+    const s = (hash01(i, 4) - 0.5) * 0.8;
+    parts.push(
+      paint(
+        new THREE.DodecahedronGeometry(r, 0)
+          .scale(1, 0.55, 1)
+          .rotateY(hash01(i, 5) * 6)
+          .translate(ex + dx * 0.12 + (along ? s : 0), WATER_Y + r * 0.2, ez + dz * 0.12 + (along ? 0 : s)),
+        [0x7d7a72, 0x8e8a80, 0x6c6a64][Math.floor(hash01(i, 6) * 3)],
+      ),
+    );
+  }
+  if (hash01(i, 7) < 0.3) {
+    const s = (hash01(i, 8) - 0.5) * 0.7;
+    const rx = ex + dx * 0.22 + (along ? s : 0);
+    const rz = ez + dz * 0.22 + (along ? 0 : s);
+    for (let k = 0; k < 5; k++) {
+      const h = 0.28 + hash01(i * 7 + k, 9) * 0.3;
+      parts.push(
+        paint(
+          new THREE.ConeGeometry(0.025, h, 3)
+            .rotateZ((hash01(i * 7 + k, 10) - 0.5) * 0.5)
+            .rotateX((hash01(i * 7 + k, 11) - 0.5) * 0.5)
+            .translate(rx + (hash01(i * 7 + k, 12) - 0.5) * 0.2, h / 2 + WATER_Y, rz + (hash01(i * 7 + k, 13) - 0.5) * 0.2),
+          REED[(i + k) % REED.length],
+        ),
+      );
+    }
+    // A bulrush's brown head on the tallest.
+    parts.push(cyl(0.03, 0.09, 0x5a3a22, rx, 0.42 + WATER_Y, rz, 5));
+  }
+}
+
+/**
  * A river through a prison's grounds (2.36, the Six Hunter's Hollowrun; render only: the water tiles are the sim's):
  * the water running downstream over every water tile, and on past the map's edge under the road's timber bridges;
  * shallows paler at the banks; the banks a lip of mud with stones and reeds; the jetty's piles and a rowing boat tied
@@ -115,18 +250,8 @@ export class River {
     };
     // Each water tile's downstream direction: along the longer run of water through it (east or south, the way the
     // Hollowrun goes), both at a bend.
-    const run = (x: number, z: number, dx: number, dz: number) => {
-      let n = 0;
-      for (let k = 1; k < 8 && wet(x + dx * k, z + dz * k); k++) n++;
-      for (let k = 1; k < 8 && wet(x - dx * k, z - dz * k); k++) n++;
-      return n;
-    };
     this.flowAt = new Float32Array(MAP_W * MAP_H * 2);
-    const flowOf = (x: number, z: number): [number, number] => {
-      const ax = run(x, z, 1, 0);
-      const az = run(x, z, 0, 1);
-      return ax > az + 1 ? [1, 0] : az > ax + 1 ? [0, 1] : [Math.SQRT1_2, Math.SQRT1_2];
-    };
+    const flowOf = flowAlongRuns(wet);
     for (let z = 0; z < MAP_H; z++)
       for (let x = 0; x < MAP_W; x++) {
         if (!wet(x, z)) continue;
@@ -143,117 +268,17 @@ export class River {
       return r && r[2] - r[0] < r[3] - r[1] ? [0, 1] : [1, 0];
     };
 
-    // The surface: a quad a tile; at each corner, how much of the four tiles round it is bank (the shallows' tint) and the
-    // flow (the mean of the water tiles round it), so neighbouring tiles agree and nothing shows a seam.
     const tiles: Array<[number, number]> = [];
     for (let z = 0; z < MAP_H; z++)
       for (let x = 0; x < MAP_W; x++) if (tile(x, z) === TILE.WATER || tile(x, z) === TILE.PIER) tiles.push([x, z]);
     for (const [x0, z0, x1, z1] of this.beyond)
       for (let z = Math.floor(z0); z < z1; z++)
         for (let x = Math.floor(x0); x < x1; x++) if (!world.inside(x, z) || tile(x, z) !== TILE.WATER) tiles.push([x, z]);
-    const pos: number[] = [];
-    const uv: number[] = [];
-    const col: number[] = [];
-    const flow: number[] = [];
-    const idx: number[] = [];
-    const deep = new THREE.Color(0xd2e2e8);
-    const shallow = new THREE.Color(0xe8e8cc);
-    const c = new THREE.Color();
-    for (const [x, z] of tiles) {
-      const v0 = pos.length / 3;
-      for (const [dx, dz] of [
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1],
-      ]) {
-        const cx = x + dx;
-        const cz = z + dz;
-        let land = 0;
-        let fx = 0;
-        let fz = 0;
-        for (const [ox, oz] of [
-          [-1, -1],
-          [0, -1],
-          [-1, 0],
-          [0, 0],
-        ]) {
-          if (!wet(cx + ox, cz + oz)) land++;
-          else {
-            const [a, b] = flowTile(cx + ox, cz + oz);
-            fx += a;
-            fz += b;
-          }
-        }
-        const l = Math.hypot(fx, fz) || 1;
-        pos.push(cx, WATER_Y, cz);
-        uv.push(cx / RIPPLE, cz / RIPPLE);
-        c.copy(deep).lerp(shallow, Math.min(1, land / 2));
-        col.push(c.r, c.g, c.b);
-        flow.push(fx / l, fz / l);
-      }
-      idx.push(v0, v0 + 3, v0 + 2, v0, v0 + 2, v0 + 1);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    const normals = new Float32Array(pos.length);
-    for (let i = 1; i < normals.length; i += 3) normals[i] = 1;
-    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    geo.setAttribute('aFlow', new THREE.Float32BufferAttribute(flow, 2));
-    geo.setIndex(idx);
-    const water = new THREE.Mesh(geo, waterMaterial(riverTexture(), this.time));
-    water.receiveShadow = true;
-    // (Under the floor decals and the fog veil, like the ground.)
-    water.renderOrder = -0.1;
-    this.group.add(water);
+    this.group.add(flowingWater(tiles, wet, flowTile, this.time));
 
     // The banks: a lip of mud along every edge where land meets the water, stones at its foot, reeds in the shallows.
     const parts: Part[] = [];
-    const MUD = [0x5a4632, 0x4e3d2b, 0x65503a];
-    const REED = [0x7f8a4a, 0x8f9a56, 0x6f7a3e, 0xa69a62];
-    const bank = (x: number, z: number, dx: number, dz: number, i: number) => {
-      // The edge's middle, on the water's side of the land tile (x, z), facing (dx, dz).
-      const ex = x + 0.5 + dx * 0.5;
-      const ez = z + 0.5 + dz * 0.5;
-      const along = dz !== 0;
-      parts.push(
-        box(along ? 1.02 : 0.24, 0.05, along ? 0.24 : 1.02, MUD[Math.floor(hash01(i, 1) * 3)], ex + dx * 0.04, -0.03, ez + dz * 0.04),
-      );
-      if (hash01(i, 2) < 0.45) {
-        const r = 0.09 + hash01(i, 3) * 0.12;
-        const s = (hash01(i, 4) - 0.5) * 0.8;
-        parts.push(
-          paint(
-            new THREE.DodecahedronGeometry(r, 0)
-              .scale(1, 0.55, 1)
-              .rotateY(hash01(i, 5) * 6)
-              .translate(ex + dx * 0.12 + (along ? s : 0), WATER_Y + r * 0.2, ez + dz * 0.12 + (along ? 0 : s)),
-            [0x7d7a72, 0x8e8a80, 0x6c6a64][Math.floor(hash01(i, 6) * 3)],
-          ),
-        );
-      }
-      if (hash01(i, 7) < 0.3) {
-        const s = (hash01(i, 8) - 0.5) * 0.7;
-        const rx = ex + dx * 0.22 + (along ? s : 0);
-        const rz = ez + dz * 0.22 + (along ? 0 : s);
-        for (let k = 0; k < 5; k++) {
-          const h = 0.28 + hash01(i * 7 + k, 9) * 0.3;
-          parts.push(
-            paint(
-              new THREE.ConeGeometry(0.025, h, 3)
-                .rotateZ((hash01(i * 7 + k, 10) - 0.5) * 0.5)
-                .rotateX((hash01(i * 7 + k, 11) - 0.5) * 0.5)
-                .translate(rx + (hash01(i * 7 + k, 12) - 0.5) * 0.2, h / 2 + WATER_Y, rz + (hash01(i * 7 + k, 13) - 0.5) * 0.2),
-              REED[(i + k) % REED.length],
-            ),
-          );
-        }
-        // A bulrush's brown head on the tallest.
-        parts.push(cyl(0.03, 0.09, 0x5a3a22, rx, 0.42 + WATER_Y, rz, 5));
-      }
-    };
+    const bank = (x: number, z: number, dx: number, dz: number, i: number) => bankParts(parts, x, z, dx, dz, i);
     const N: Array<[number, number]> = [
       [1, 0],
       [-1, 0],
@@ -405,9 +430,9 @@ export class River {
     return out.set(this.raft.position.x, this.raft.position.y + 0.12, this.raft.position.z);
   }
 
-  /** Frees it all, its texture with it (drawn for this river alone). */
+  /** Frees it all but the water's shared texture. */
   dispose() {
-    disposeTree(this.group, () => true, new Set([kitMaterial]));
+    disposeTree(this.group, (t) => t !== riverMap, new Set([kitMaterial]));
   }
 }
 
