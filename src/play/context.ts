@@ -55,6 +55,9 @@ export const click = () => sound.click();
 // The stencil buffer lets the player's silhouette show through walls (Character.ts).
 export const renderer = new THREE.WebGLRenderer({ antialias: true, stencil: true, powerPreference: 'high-performance' });
 document.body.append(renderer.domElement);
+// (Review of 2.36: reading every program's log on its first use blocks until the driver has compiled it; a released
+// game has no shader to debug.)
+renderer.debug.checkShaderErrors = !import.meta.env.PROD;
 export const view = new View(renderer, TIERS[tierFor(settings.quality)]);
 // (Session 9: the interface scaled, the 3D drawn with as many of the screen's pixels as before.)
 view.setPixelScale(uiScale());

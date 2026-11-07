@@ -193,6 +193,8 @@ export class View {
   private underground: Underground | null = null;
   /** The last prison's parts, taken off screen and freed after the next frame (setWorld). */
   private readonly retired: Array<() => void> = [];
+  /** Frames until the scene is warmed again after a new prison (warmDay): 0 none due. */
+  private warmIn = 0;
   /** Frees something after the next frame (as a world change does). */
   private readonly later = (dispose: () => void) => void this.retired.push(dispose);
   /** The holiday behind the title (P42: the date's, as Settings have it; 0 none). */
@@ -455,6 +457,8 @@ export class View {
     // (Their last prison's parts freed after the next frame, as the rest.)
     this.pieces.setWorld(world, pitch, this.later);
     this.warmDay();
+    // (And once more at the frame after next, when what the pieces build after the first frame is in: the vending machine.)
+    this.warmIn = 2;
     this.lighting.newWorld();
     this.lighting.setTheme(world.def.theme);
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
@@ -1267,6 +1271,7 @@ export class View {
     this.blobs.update(stage);
     updateOcclusion(this.renderer, this.cam.camera, focus, dt);
     skipEmpty(this.scene);
+    if (this.warmIn > 0 && --this.warmIn === 0) this.warmDay(false);
     this.renderer.render(this.scene, this.cam.camera);
     // The last prison's meshes, now that the new one's shaders are in use (setWorld).
     if (this.retired.length) for (const dispose of this.retired.splice(0)) dispose();
@@ -1288,11 +1293,24 @@ export class View {
     return v;
   }
 
-  /** The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the middle of a food fight. */
-  private warmDay() {
-    const views = this.pieces.warming;
+  /**
+   * The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the
+   * middle of a food fight. (Review of 2.36: `compile` only starts a program; Chrome on ANGLE links it when three first
+   * looks at it, on its first draw, and that blocks, 70–150 ms a program: at the morning's first sight of the odd jobs
+   * board, lunch's of the menu board and the vending machine. So every program `compile` made is looked at here, its
+   * uniforms and attributes read, which links it now; nothing is drawn, no texture sent.)
+   */
+  private warmDay(effects = true) {
+    // (The day's effects shown for it only the first time: showing them again a frame into the game would start them afresh.)
+    const views = effects ? this.pieces.warming : [];
     for (const v of views) v.warm(true);
-    this.renderer.compile(this.scene, this.cam.camera);
+    const materials = this.renderer.compile(this.scene, this.cam.camera);
+    for (const m of materials) {
+      const program = (this.renderer.properties.get(m) as { currentProgram?: { getUniforms(): unknown; getAttributes(): unknown } })
+        .currentProgram;
+      program?.getUniforms();
+      program?.getAttributes();
+    }
     for (const v of views) v.warm(false);
   }
 
