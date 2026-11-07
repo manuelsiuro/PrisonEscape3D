@@ -22,6 +22,8 @@ const INSPECTORS: Look[] = [
   { outfit: 0x34383f, trousers: 0x2a2d33, skin: 0xe2ad84, hair: 0x8a8a8a, hairStyle: 0, hat: 8, hatColor: 0x1d1f24, size: 1.02 },
   { outfit: 0x7a6650, trousers: 0x4a3e32, skin: 0xa86e48, hair: 0x1d1612, hairStyle: 1, glasses: 1, glassesColor: 0x2a2a2e, size: 0.97 },
 ];
+/** Session 15: the inspectors' own numbers, for how they walk (characterMotion.ts). */
+const INSPECTOR_SEED = 3000;
 /** Food in the air: mash, peas, ketchup, stew, jelly. */
 const SEPIA = '#d6c49e';
 const FOOD = [0xf3e6c4, 0x7cbf4a, 0xd8332a, 0x8a5a32, 0xf07aa8];
@@ -58,6 +60,8 @@ export class DayEvents {
   }> = [];
   private throwClock = 0;
   private inspectors: Character[] = [];
+  /** Session 15: game seconds a real second (the frame's `speed`), for the inspectors' strides. */
+  timeScale = 1;
   private readonly trail = new Float32Array(TRAIL_SAMPLES * 2);
   private trailClock = 0;
   private readonly p0 = { x: 0, z: 0 };
@@ -216,7 +220,7 @@ export class DayEvents {
     if (!this.inspectors.length) {
       const clipboard = itemNumber('magazine');
       this.inspectors = INSPECTORS.map((look, k) => {
-        const c = new Character(look);
+        const c = new Character(look, INSPECTOR_SEED + k);
         if (k === 0) c.hold(clipboard, itemGeometry(itemDef(clipboard)));
         c.root.visible = false;
         this.group.add(c.root);
@@ -326,6 +330,7 @@ export class DayEvents {
           was.z = tz;
           was.set = true;
           c.root.visible = true;
+          c.timeScale = this.timeScale;
           c.pose(tx, tz, facing, moving, dt, time, motion);
           shown.push(c);
         }
