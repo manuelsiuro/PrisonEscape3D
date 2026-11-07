@@ -45,6 +45,7 @@ import { play, playNow } from './game';
 import { coachOnce } from './tips';
 import { hhmm } from '../sim/systems/clock';
 import { refusedText } from './refusals';
+import { guardWord } from '../ui/names';
 
 /**
  * The pay phone on screen (P34): its card (the dial, the queue, a call, Lou's line), filled from
@@ -108,7 +109,7 @@ export function payphoneNow(sim: Sim): PayphoneView | null {
       v.phase = 'lou';
       v.line = Math.min(2, call.at);
       const ear = call.ear >= 0 ? sim.prison.guards[call.ear] : null;
-      const name = ear ? t('guard.title', { name: ear.name ?? '' }) : '';
+      const name = ear ? guardWord(sim, 'guard.title', { name: ear.name ?? '' }) : '';
       v.ear = !ear
         ? t('phone.earNone')
         : talk.knows(`trait:${call.ear}`)

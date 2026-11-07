@@ -51,6 +51,7 @@ export const HOUSE_DINNER: Readonly<Record<string, Dish>> = {
   shankton: { id: 'meatballs', energy: 40, health: 5 },
   'san-pancho': { id: 'tacos', energy: 40, health: 5 },
   irongate: { id: 'pie', energy: 40, health: 5 },
+  'six-hunter': { id: 'venison', energy: 45, health: 5 },
 };
 
 /** A feast's dish on the board, by what feast it is (the day's event, or the holiday's). */

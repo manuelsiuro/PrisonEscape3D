@@ -1,4 +1,5 @@
 import type { Speciality } from '../crew';
+import type { GangDef } from '../gangs';
 import type { DecorPlacement } from '../decor';
 import type { JobId } from '../jobs';
 import type { PropPlacement } from '../props';
@@ -53,6 +54,8 @@ export interface GuardDef {
    * and it lets one slip on a chat now and then.
    */
   about?: { nick: string; home: string; team: string };
+  /** 2.36 (The Six Hunter): items on its belt besides its key, baton and uniform (the Huntmaster's recall horn): what a knockout or a rat lifts. */
+  kit?: readonly string[];
 }
 
 /**
@@ -72,8 +75,8 @@ export interface DogDef {
   coat: DogCoat;
 }
 
-/** How a dog looks: a black-and-tan shepherd, a brindle mastiff, a cinnamon retriever, a black-and-white collie. */
-export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie';
+/** How a dog looks: a black-and-tan shepherd, a brindle mastiff, a cinnamon retriever, a black-and-white collie; 2.36 (The Six Hunter's pack): a tricolour foxhound, a liver-red bloodhound. */
+export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie' | 'foxhound' | 'bloodhound';
 
 /** What a generator powers (GDD §5.5; HMP Irongate splits them between two, §4.5). */
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
@@ -267,10 +270,10 @@ export interface Court {
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */
 export interface PrisonDef {
   id: string;
-  /** 1 (minimum security) to 5 (supermax). */
+  /** 1 (minimum security) to 5 (supermax); 6, the Six Hunter's hunting grounds (2.36: past the campaign's five, out of the Daily's draw). */
   difficulty: number;
-  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island in the sea. */
-  theme?: 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island';
+  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island in the sea, the Six Hunter's pine forest. */
+  theme?: 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island' | 'forest';
   /** The ground floor picture (layer 0). */
   ground: string;
   /** The vents picture (layer +1): ducts, ceiling grates, the ladder to the roof. Roofs cover every building; tunnels are dug. */
@@ -345,6 +348,12 @@ export interface PrisonDef {
    * drink, in order. Without it, none.
    */
   cooler?: { x: number; z: number; spots: ReadonlyArray<{ x: number; z: number }> };
+  /**
+   * 2.36, gangs and turf (content/gangs.ts): two or three a prison, each with its boss (a merchant), its
+   * members by cell, its canteen table and its corner of the yard (rectangles of floor tiles: nothing on
+   * the map changes). Without it, none (the Training Block).
+   */
+  gangs?: readonly GangDef[];
   /**
    * The map's revision (P31: raised when the prison is rebuilt; none: 0). A save from an older
    * one starts the run again there (saves.ts rebuiltSince).

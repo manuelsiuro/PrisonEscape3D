@@ -3,6 +3,7 @@ stalag-flucht: strict Weber; lazy Huber; corrupt Lang; 3 steady
 shankton: strict Ortega; lazy Briggs; corrupt Gibbs; 5 steady
 san-pancho: strict Ríos; lazy Cruz; corrupt Molina, Paz; 4 steady
 irongate: strict Pike; lazy Penrose; corrupt Quill; 7 steady
+six-hunter: strict Fell; lazy Bracken; corrupt Harrow; 3 steady
 training: strict none; lazy none; corrupt none; 1 steady
 roll: 94863da4 5ba3c64d; salt of seed 1 514e28b7
 shakedowns, days 2–7: 3+4+5, 3+5+8, 1+2+5, 6+2+5, 8+3+4, 3+7+1

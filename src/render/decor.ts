@@ -3,6 +3,7 @@ import type { DecorKind, DecorPlacement } from '../content/decor';
 import { batched, disposeTree, type Piece } from './batch';
 import { box, cyl, disc, kitMaterial, merge, paint, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
+import { currentTheme } from './textures';
 
 /**
  * Decor models (P8+), in the props' style: a few boxes and cylinders colored by the vertices,
@@ -101,6 +102,73 @@ const BUILDERS: Record<DecorKind, Builder> = {
     const notes = [WHITE, 0xf6e27a, 0xbfe3f2, 0xf3c1c1, WHITE];
     for (let k = 0; k < Math.round(w * 2.5); k++)
       parts.push(box(0.16, 0.2, 0.01, notes[k % notes.length], -w / 2 + 0.35 + k * 0.32, 0.66 + (k % 2) * 0.16, z + 0.035));
+    return { parts };
+  },
+  /**
+   * The Hunters' tally (2.36, the Six Hunter): a varnished board under a painted header, six columns, each under its
+   * Hunter's colour, of strokes in fives (four down, one across): who brought back how many runners.
+   */
+  tallyBoard: (w, d) => {
+    const z = ON_WALL(d) + 0.025;
+    const parts: Part[] = [
+      box(w - 0.2, 0.74, 0.04, 0x4a3020, 0, 0.42, z),
+      box(w - 0.3, 0.62, 0.02, 0x8a6440, 0, 0.47, z + 0.02),
+      box(w - 0.24, 0.1, 0.03, 0x2a3a2a, 0, 1.12, z + 0.02),
+      box(w * 0.5, 0.03, 0.01, 0xe8d8a8, 0, 1.155, z + 0.037),
+    ];
+    // Each Hunter's colour (their keys': red, yellow, green, cyan, purple, cyan) and their count.
+    const colours = [0xd23f36, 0xe8b828, 0x36a447, 0x2fb6c8, 0x8e4fc4, 0x2fb6c8];
+    const counts = [12, 9, 3, 7, 10, 5];
+    const cw = (w - 0.4) / 6;
+    colours.forEach((col, k) => {
+      const x0 = -w / 2 + 0.2 + cw * k;
+      parts.push(box(cw - 0.04, 0.06, 0.012, col, x0 + cw / 2, 0.98, z + 0.035));
+      if (k) parts.push(box(0.01, 0.56, 0.012, 0x3a2414, x0, 0.42 + 0.06, z + 0.035));
+      for (let n = 0; n < counts[k]; n++) {
+        const g = Math.floor(n / 5);
+        const i = n % 5;
+        const gx = x0 + 0.04 + (g % 2) * (cw / 2);
+        const gy = 0.84 - Math.floor(g / 2) * 0.16;
+        if (i < 4) parts.push(box(0.008, 0.1, 0.01, 0xf2ead2, gx + i * 0.025, gy - 0.05, z + 0.036));
+        else
+          parts.push(
+            box(0.12, 0.008, 0.01, 0xf2ead2, gx + 0.04, gy, z + 0.037)
+              .rotateZ(0.5)
+              .translate(0, 0, 0),
+          );
+      }
+    });
+    return { parts };
+  },
+  /** A stag's head on a shield-shaped plaque (2.36, the Trophy Hall), its antlers spread over the wall. */
+  antlers: (_w, d) => {
+    const z = ON_WALL(d) + 0.03;
+    const BONE = 0xe2d6b8;
+    const HIDE = 0x8a5a36;
+    const parts: Part[] = [
+      box(0.34, 0.4, 0.04, 0x5a3a22, 0, 0.82, z),
+      box(0.16, 0.18, 0.2, HIDE, 0, 0.92, z + 0.1),
+      box(0.12, 0.1, 0.16, 0x7a4e2e, 0, 0.88, z + 0.24),
+      box(0.05, 0.04, 0.03, 0x141414, 0, 0.92, z + 0.32),
+      box(0.03, 0.03, 0.01, 0x141414, -0.05, 1.0, z + 0.2),
+      box(0.03, 0.03, 0.01, 0x141414, 0.05, 1.0, z + 0.2),
+      box(0.08, 0.05, 0.03, HIDE, -0.11, 1.06, z + 0.08),
+      box(0.08, 0.05, 0.03, HIDE, 0.11, 1.06, z + 0.08),
+    ];
+    for (const s of [-1, 1]) {
+      // (Each tine built upright at the origin, leant over about its foot, then set where it grows from.)
+      const tine = (len: number, r: number, lean: number, x: number, y: number) =>
+        box(r, len, r, BONE, 0, 0, 0)
+          .rotateZ(lean)
+          .translate(x, y, z + 0.1);
+      parts.push(
+        tine(0.2, 0.03, -s * 0.9, s * 0.06, 1.06),
+        tine(0.22, 0.026, -s * 0.2, s * 0.21, 1.17),
+        tine(0.1, 0.02, s * 0.5, s * 0.17, 1.22),
+        tine(0.1, 0.02, -s * 0.8, s * 0.24, 1.3),
+        tine(0.09, 0.018, s * 0.1, s * 0.25, 1.36),
+      );
+    }
     return { parts };
   },
   menuBoard: (w, d) => {
@@ -401,11 +469,36 @@ const BUILDERS: Record<DecorKind, Builder> = {
       box(0.8, 0.12, 0.025, WHITE, -0.42, 3.1, 0),
     ],
   }),
-  tree: () => ({
-    parts: [cyl(0.14, 1.2, 0x6e4a2b, 0, 0, 0, 8)],
-    canopy: CANOPY.map((c, k) => cyl(c.r, c.y1 - c.y0, [LEAF, GREEN, 0x5d9e46][k], c.x, c.y0, c.z, k === 2 ? 8 : 9)),
-  }),
-  bush: () => ({ parts: [cyl(0.42, 0.42, LEAF, 0, 0, 0, 8), cyl(0.3, 0.3, GREEN, 0.12, 0.32, 0.06, 7)] }),
+  tree: () =>
+    // (2.36: in the pine forest a Scots pine, its tiers within the leafy tree's canopy, so the shelter's fade fits it.)
+    currentTheme() === 'forest'
+      ? {
+          parts: [cyl(0.13, 1.3, 0x5a3e2a, 0, 0, 0, 7), cyl(0.09, 1.0, 0x9a5a36, 0, 1.3, 0, 7)],
+          canopy: [
+            [0.78, 0.9, 0.95, 0x23452f],
+            [0.64, 0.8, 1.45, 0x2a5236],
+            [0.5, 0.75, 1.95, 0x31603c],
+            [0.34, 0.6, 2.4, 0x3c6e42],
+            [0.18, 0.45, 2.8, 0x4a7c48],
+          ].map(([r, h, y, color]) => paint(new THREE.ConeGeometry(r, h, 8).translate(0, y + h / 2, 0), color)),
+        }
+      : {
+          parts: [cyl(0.14, 1.2, 0x6e4a2b, 0, 0, 0, 8)],
+          canopy: CANOPY.map((c, k) => cyl(c.r, c.y1 - c.y0, [LEAF, GREEN, 0x5d9e46][k], c.x, c.y0, c.z, k === 2 ? 8 : 9)),
+        },
+  bush: () =>
+    // (The forest's: a juniper, dark and pointed, a fern's fronds at its foot.)
+    currentTheme() === 'forest'
+      ? {
+          parts: [
+            paint(new THREE.ConeGeometry(0.34, 0.9, 7).translate(0, 0.45, 0), 0x2f5a40),
+            paint(new THREE.ConeGeometry(0.26, 0.6, 7).translate(0.24, 0.3, 0.12), 0x3a6a46),
+            ...[0, 1.3, 2.6, 3.9, 5.2].map((a) =>
+              box(0.42, 0.03, 0.1, 0x5f8a3e, 0, 0.06, 0).translate(0.18, 0, 0).rotateY(a).translate(-0.12, 0, 0.18),
+            ),
+          ],
+        }
+      : { parts: [cyl(0.42, 0.42, LEAF, 0, 0, 0, 8), cyl(0.3, 0.3, GREEN, 0.12, 0.32, 0.06, 7)] },
   cactus: () => ({
     parts: [
       cyl(0.13, 1.25, 0x5f7f3d, 0, 0, 0, 8),

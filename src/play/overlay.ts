@@ -9,7 +9,7 @@ import type { ItemState } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { lineOfSight } from '../sim/ai/sight';
 import { prisonDay } from '../sim/systems/clock';
-import { energyCost } from '../sim/systems/weather';
+import { planStrike } from '../sim/systems/actions';
 import { stowCard } from './day';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
@@ -79,6 +79,10 @@ const PEPPER = itemNumber('pepper');
 const upView: UpView = { fits: true, progress: 0, heard: false };
 const JERKY = itemNumber('jerky');
 const PILLS = itemNumber('sleeping_pills');
+/** 2.36 (The Six Hunter): a smoked trout (a treat as jerky is), the drag line, the Huntmaster's recall horn. */
+const TROUT = itemNumber('trout');
+const DRAG_LINE = itemNumber('drag_line');
+const HORN = itemNumber('recall_horn');
 import { chatterFrame } from './chatter';
 import { ratView } from './rat';
 import { phoneView, smuggleHints } from './smuggle';
@@ -232,7 +236,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
         dogName(sim, to.dog),
         to.tile,
         held === PEPPER,
-        held === JERKY && st.dogs[to.dog].fed === prisonDay(st.step),
+        (held === JERKY || held === TROUT) && st.dogs[to.dog].fed === prisonDay(st.step),
       );
   }
   // The dogs (P19): told about a dog's nose the first time one could smell the contraband, and about the trail the first time one is laid with a dog at work.
@@ -245,6 +249,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P19: what jerky, pepper and the pills are for, the first time one is in hand.)
   if (!busy && FOR_DOGS.has(held)) coachOnce('treatHeld', 'hint.treatHeld');
   if (!busy && held === PILLS) coachOnce('pills', 'hint.pills');
+  // (2.36, the Six Hunter: the drag line and the recall horn, the first time one is in hand.)
+  if (!busy && held === DRAG_LINE) coachOnce('dragLine', 'hint.dragLine');
+  if (!busy && held === HORN) coachOnce('horn', 'hint.horn');
   // (P20: a rat trap and a caught rat, the first time one is in hand.)
   if (!busy && held === RAT_TRAP) coachOnce('ratTrap', 'hint.ratTrap');
   if (!busy && held === CAUGHT_RAT) coachOnce('caughtRat', 'hint.caughtRat');
@@ -294,7 +301,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     tools.releaseUp();
   }
   if (up) {
-    upView.fits = up.fits && st.energy >= energyCost(sim, (held && itemDef(held).tool?.energy) || 0);
+    // (2.36: the sim's own answer, as the tool button's.)
+    upView.fits = up.fits && !planStrike(sim, up, held).why;
     upView.progress = Math.min(1, (st.wear[placeKey(up.layer, up.tile)] ?? 0) / up.hp);
     upView.heard = memo.upHeard;
   }

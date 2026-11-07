@@ -17,14 +17,51 @@ const DAYLIGHT: Array<[number, number, number, number, number]> = [
   [1440, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
 ];
 
+/**
+ * The pine forest's light (2.36, the Six Hunter): the same day, its colours a valley's: a low golden sun through the
+ * pines morning and evening, a misty teal sky and fill by day, moss in the bounce. [minute, sun color, sky color] at
+ * DAYLIGHT's minutes; the sun a touch softer (FOREST_SUN), so the light reads as under trees.
+ */
+const FOREST_DAY: Array<[number, number, number]> = [
+  [0, 0x8aa2ff, 0x0a1620],
+  [300, 0x8aa2ff, 0x0a1620],
+  [390, 0xffb46a, 0x6a96a0],
+  [480, 0xffe4b4, 0x94bcc0],
+  [1080, 0xffdca4, 0x94bcc0],
+  [1170, 0xff8a48, 0x5a6c88],
+  [1260, 0x8aa2ff, 0x0a1620],
+  [1440, 0x8aa2ff, 0x0a1620],
+];
+const FOREST_SKY_LIGHT = 0xd4ebe6;
+const FOREST_GROUND_LIGHT = 0x3e5434;
+const FOREST_SUN = 0.92;
+/** The forest's night lifted (review of 2.36: under the pines' dark moss it came out half as bright as the others'). */
+const FOREST_NIGHT_LIFT = 0.45;
+
 /** The ambient light's sky color. */
 const SKY_LIGHT = 0xdfe8ff;
+/** The ambient light's ground color (the bounce off the grass). */
+const GROUND_LIGHT = 0x4a5a3a;
+/**
+ * Moonlight (session 14, the picture review): at night the ambient's sky turns moon-blue and its bounce a
+ * dark slate, so the night reads as night (the grass no longer a dimmed noon green) and the warm lamp pools
+ * and the lit rooms stand out of it; MOON_LIFT keeps it about as bright as before, so nothing goes black.
+ */
+const MOON_SKY = 0xb8c8ff;
+const MOON_GROUND = 0x262c3c;
+const MOON_LIFT = 0.37;
+/** How much of the sun's shadow the rain's cloud takes away, a storm's more, the fog's (session 14). */
+const OVERCAST_SHADOW = 0.4;
+const STORM_SHADOW = 0.2;
+const FOG_SHADOW = 0.3;
+/** A heatwave's ambient: the day warmed and bleached (session 14). */
+const HEAT_LIGHT = 0xffd49a;
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 
 export class Lighting {
   readonly sun = new THREE.DirectionalLight(0xffffff, 2);
-  readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, 0x4a5a3a, 1);
+  readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, GROUND_LIGHT, 1);
   /** The scene's background. */
   readonly sky = new THREE.Color();
   /** 0 by day … 1 at night (the last frame's light). */
@@ -41,10 +78,20 @@ export class Lighting {
   private readonly c1 = new THREE.Color();
   private readonly c2 = new THREE.Color();
   private readonly red = new THREE.Color(0xff2a1a);
+  /** The ambient's sky color before the lockdown's red: day's, toward the moon's at night. */
+  private readonly skyLight = new THREE.Color();
   private readonly lightBasis = new THREE.Matrix4();
   private readonly lightInverse = new THREE.Matrix4();
   private readonly p = new THREE.Vector3();
   private readonly v = new THREE.Vector3();
+
+  /** The prison's look's light (the forest's colours; every other prison's as it always was). */
+  private forest = false;
+
+  /** The look of the prison now shown (2.36: the forest has its own light). */
+  setTheme(theme: string | undefined) {
+    this.forest = theme === 'forest';
+  }
 
   constructor() {
     this.sun.shadow.bias = -0.0006;
@@ -74,14 +121,20 @@ export class Lighting {
    */
   update(minute: number, dt: number, time: number, layer: number, reducedMotion: boolean): number {
     const night = (this.night = this.daylight(minute));
+    // Moonlight: the ambient blue and its bounce dark as the night falls, out in the open only (the
+    // ground floor, the roofs): the vents and the tunnels keep their own light.
+    const moon = layer === LAYER.VENTS || layer === LAYER.UNDER ? 0 : night;
+    this.skyLight.set(this.forest ? FOREST_SKY_LIGHT : SKY_LIGHT).lerp(this.c1.set(MOON_SKY), moon);
+    this.ambient.groundColor.set(this.forest ? FOREST_GROUND_LIGHT : GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), moon);
+    this.ambient.intensity *= 1 + (MOON_LIFT + (this.forest ? FOREST_NIGHT_LIFT : 0)) * moon;
     this.weatherLight(dt, reducedMotion);
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
       const a = this.alarmPulse(time, reducedMotion);
-      this.ambient.color.set(SKY_LIGHT).lerp(this.red, a);
+      this.ambient.color.copy(this.skyLight).lerp(this.red, a);
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
-    } else this.ambient.color.set(SKY_LIGHT);
+    } else this.ambient.color.copy(this.skyLight);
     // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
     if (layer === LAYER.VENTS) {
       this.sun.intensity *= 0.22;
@@ -106,7 +159,16 @@ export class Lighting {
     this.sun.color.copy(this.c1.set(a[2]).lerp(this.c2.set(b[2]), f));
     this.ambient.intensity = THREE.MathUtils.lerp(a[3], b[3], f);
     this.sky.copy(this.c1.set(a[4]).lerp(this.c2.set(b[4]), f));
-    return THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
+    this.sun.shadow.intensity = 1;
+    const night = THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
+    if (this.forest) {
+      const fa = FOREST_DAY[k - 1];
+      const fb = FOREST_DAY[k];
+      this.sun.color.copy(this.c1.set(fa[1]).lerp(this.c2.set(fb[1]), f));
+      this.sky.copy(this.c1.set(fa[2]).lerp(this.c2.set(fb[2]), f));
+      this.sun.intensity *= FOREST_SUN;
+    }
+    return night;
   }
 
   /** Lockdown: the red light's share now, swinging in slow pulses like a rotating beacon (steady with reduced motion). */
@@ -137,14 +199,20 @@ export class Lighting {
       this.ambient.intensity *= 1 - Math.min(1, rain) * 0.14 - g.storm * 0.14;
       this.sky.lerp(this.c1.set(0x4a5462), g.grey);
       this.sun.color.lerp(this.c1.set(0xc6d2e2), g.grey * 0.6);
+      // (Session 14: under cloud the sun's shadows go soft and faint, not noon-crisp in the rain.)
+      this.sun.shadow.intensity -= Math.min(1, rain) * OVERCAST_SHADOW + g.storm * STORM_SHADOW;
     }
     if (g.fog > 0.002) {
       this.sun.intensity *= 1 - 0.25 * g.fog;
+      this.sun.shadow.intensity -= FOG_SHADOW * g.fog;
       this.sky.lerp(this.c1.set(0x9aa6b2), 0.6 * g.fog * (1 - this.night));
     }
     if (g.heat > 0.002) {
       this.sun.intensity *= 1 + 0.08 * g.heat;
       this.sun.color.lerp(this.c1.set(0xffc27a), 0.4 * g.heat);
+      // (Session 14: the whole scene warmed and bleached, not only the sun and the sky the camera hardly sees.)
+      this.skyLight.lerp(this.c1.set(HEAT_LIGHT), 0.45 * g.heat);
+      this.ambient.intensity *= 1 + 0.12 * g.heat;
       this.sky.lerp(this.c1.set(0xe8c79a), 0.35 * g.heat);
     }
     if (this.flash > 0.001) {

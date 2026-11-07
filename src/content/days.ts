@@ -20,6 +20,8 @@ export const DAY_EVENTS = [
   'sports',
   'talent',
   'quiz',
+  // 2.36: the gang war (gangs.ts).
+  'gangWar',
 ] as const;
 export type DayEvent = (typeof DAY_EVENTS)[number];
 
@@ -52,6 +54,8 @@ export interface DayBook {
   beforeSports?: DayEvent;
   /** The cards talent night and quiz night (P30) took the places of, likewise. */
   beforeStage?: { talent: DayEvent; quiz: DayEvent };
+  /** The card the gang war (2.36) took the place of, likewise (a game saved, or a log played, before 2.36 keeps it). */
+  beforeGangs?: DayEvent;
 }
 
 /** prison → its days. */
@@ -59,8 +63,10 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   // Suburban and mild: a bit of everything, rarely too hot; families visit once a week, and the yard holds its sports day.
   // (P30: a talent night on the quiet day, a quiz night in place of the generator's service.)
   'center-perks': {
-    deck: ['talent', 'delivery', 'inspection', 'visiting', 'sports', 'drill', 'quiz'],
+    // (2.36: the gang war in place of the inspection; Stalag Flucht keeps one.)
+    deck: ['talent', 'delivery', 'gangWar', 'visiting', 'sports', 'drill', 'quiz'],
     climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
+    beforeGangs: 'inspection',
     before: 'none',
     beforeVisits: 'feast',
     beforeSports: 'movie',
@@ -70,8 +76,10 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   // (The Red Cross truck comes once a week; the camp's own Olympics too.)
   'stalag-flucht': {
     // (P30: the camp's cabaret in place of the generator's service, a quiz on the quiet day; the film still shows.)
-    deck: ['quiz', 'inspection', 'drill', 'delivery', 'sports', 'talent', 'movie'],
+    // (2.36: the huts' war in place of the fire drill; Center Perks keeps one.)
+    deck: ['quiz', 'inspection', 'gangWar', 'delivery', 'sports', 'talent', 'movie'],
     climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
+    beforeGangs: 'drill',
     before: 'drill',
     beforeSports: 'feast',
     beforeStage: { talent: 'maintenance', quiz: 'none' },
@@ -79,8 +87,10 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   // Industrial and grey: rain and smog, scuffles at meals; visiting day once a week, in the canteen; a sports day instead of a drill.
   shankton: {
     // (P30: a talent night where the film was, a quiz in place of the generator's service; a quiet day still.)
-    deck: ['none', 'inspection', 'foodFight', 'sports', 'quiz', 'talent', 'visiting'],
+    // (2.36: the gang war in place of the inspection; the quiet day stays.)
+    deck: ['none', 'gangWar', 'foodFight', 'sports', 'quiz', 'talent', 'visiting'],
     climate: { weights: [35, 20, 30, 15, 0], keep: 35, wind: 5 },
+    beforeGangs: 'inspection',
     beforeVisits: 'none',
     beforeSports: 'drill',
     beforeStage: { talent: 'movie', quiz: 'maintenance' },
@@ -88,8 +98,10 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week; sports day in the dust.
   'san-pancho': {
     // (P30: a talent night where the food fight was, a quiz in place of the inspection; the feast and a quiet day still.)
-    deck: ['none', 'talent', 'delivery', 'feast', 'visiting', 'quiz', 'sports'],
+    // (2.36: the gang war in place of the quiet day.)
+    deck: ['gangWar', 'talent', 'delivery', 'feast', 'visiting', 'quiz', 'sports'],
     climate: { weights: [45, 5, 0, 15, 35], keep: 40, wind: 2 },
+    beforeGangs: 'none',
     before: 'foodFight',
     beforeVisits: 'movie',
     beforeSports: 'drill',
@@ -99,12 +111,21 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   // (The supply helicopter by day once a week; families come over on the ferry once a week.)
   irongate: {
     // (P30: a talent night on the quiet day, a quiz in place of the drill.)
-    deck: ['talent', 'inspection', 'delivery', 'quiz', 'maintenance', 'visiting', 'sports'],
+    // (2.36: the gang war in place of the inspection; the generator's service stays.)
+    deck: ['talent', 'gangWar', 'delivery', 'quiz', 'maintenance', 'visiting', 'sports'],
     climate: { weights: [35, 30, 20, 15, 0], keep: 35, wind: 7 },
+    beforeGangs: 'inspection',
     before: 'inspection',
     beforeVisits: 'movie',
     beforeSports: 'foodFight',
     beforeStage: { talent: 'none', quiz: 'drill' },
+  },
+  // 2.36, the Six Hunter: valley fog (it blinds the Hunters, never their hounds), rain off the hills, the odd storm, never a heatwave;
+  // the wind down the valley from the west; the outfitter's truck once a week, visitors in the gatehouse, the estate's games,
+  // the gangs' war. (A new prison: no game was ever saved there before any of its cards, so no `before*`.)
+  'six-hunter': {
+    deck: ['delivery', 'gangWar', 'drill', 'visiting', 'sports', 'talent', 'quiz'],
+    climate: { weights: [25, 40, 25, 10, 0], keep: 40, wind: 6 },
   },
 };
 
@@ -147,6 +168,8 @@ export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | Reado
   // 19:00–21:00: talent night in the canteen, quiz night in the library (P30).
   talent: { at: 660, length: 120 },
   quiz: { at: 660, length: 120 },
+  // 15:05–15:45, the exercise hour: two gangs settle it at the first's corner of the yard (2.36).
+  gangWar: { at: 425, length: 40 },
 };
 
 /** The fire drill: minutes after the bell by which the player must be at roll call, and what missing it costs. */

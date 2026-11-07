@@ -13,7 +13,7 @@ import type { SimContext } from '../context';
 import { OPINION_LOW } from '../tuning';
 import { containersOf } from '../world/containers';
 import { prisonDay } from './clock';
-import { priceOf } from './economy';
+import { askOf } from './gangs';
 import { freeHotbar, HOTBAR, itemOf, slot } from './items';
 import { refuse } from './social';
 
@@ -71,7 +71,7 @@ export function buyStaple(sim: SimContext, who: number, k: number) {
   const m = s.inmates[who];
   if (!sim.shopsOpen) return refuse(sim, 'closed');
   if (m.opinion <= OPINION_LOW) return refuse(sim, 'grudge');
-  const price = priceOf(itemDef(item).value, m.opinion);
+  const price = askOf(sim, who, itemDef(item).value);
   if (s.cash < price) return refuse(sim, 'cash');
   const free = freeHotbar(s.items.inv);
   if (free < 0) return refuse(sim, 'room');

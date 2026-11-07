@@ -126,6 +126,8 @@ const STYLES: Record<string, Style> = {
     shed: true,
   },
   desert: { walls: [0xd8b088, 0xe0bf98, 0xcf9f78], roof: [0xc79c74], trim: 0x8a5a36, door: 0x6a3f24, pitch: 0 },
+  // 2.36 (the Six Hunter's valley): the sawmill and the woodcutters' hut in dark timber under cedar shakes.
+  forest: { walls: [0x6a4a32, 0x7a5638, 0x5e4230], roof: [0x5b5044, 0x4e463c], trim: 0xd8ccb0, door: 0x3e2a1c, pitch: 0.7 },
   island: {
     walls: [0xe9d8b8, 0xc8dbe6, 0xe6c6c0, 0xd4e2c6, 0xf1e7c9, 0xb9c9d8],
     roof: [0x4f5863, 0x5a5550, 0x46505a],

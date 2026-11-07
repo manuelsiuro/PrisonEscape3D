@@ -157,6 +157,7 @@ export function runHunt(
     sound.music('tension');
     sound.ambience(true);
     sound.setCoast(hunt.prison.theme === 'island');
+    sound.setForest(hunt.prison.theme === 'forest');
     sound.setScene(hunt.night ? 'outdoorNight' : 'outdoorDay');
     if (!run.lesson) {
       const goal = t(`manhunt.goal.${def.safeKind}` as Key);
@@ -316,7 +317,9 @@ export function huntFrame(g: Game, dt: number, now: number) {
   const night = h.night ? 1 : 0;
   // (Paused, the outside's moments hold still too: a vehicle pulling away, the arrival's.)
   huntView.update(huntFrameOf(run, a), g.paused ? 0 : dt, now / 1000, night, !settings.reducedMotion);
-  view.draw(frameOf(run, a, g.paused, huntPath, huntView.away), dt, now / 1000);
+  const f = frameOf(run, a, g.paused, huntPath, huntView.away);
+  f.speed = g.paused ? 1 : g.speed;
+  view.draw(f, dt, now / 1000);
   huntHud.update(hudOf(run));
   // (Nothing of the inside's tips out here.)
   if (hint.visible) hint.hide();

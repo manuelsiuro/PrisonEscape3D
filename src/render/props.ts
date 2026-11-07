@@ -1,7 +1,8 @@
 import type * as THREE from 'three';
-import { CylinderGeometry } from 'three';
+import { ConeGeometry, CylinderGeometry } from 'three';
 import type { PropKind } from '../content/props';
 import { box, cyl, disc, merge, paint as paintPart, rod, type Part } from './kit';
+import { currentTheme } from './textures';
 
 /**
  * Furniture models, built facing +z (south, toward the camera) and centered on the origin,
@@ -20,9 +21,41 @@ export const LAMP_BULB_Y = 2.2;
 
 /** A street lamp's pole and its arms: one reaching south, or a second reaching north too (2.34.1: `heads`). */
 export function lampParts(heads: number): Part[] {
+  if (currentTheme() === 'forest') return lanternParts(heads);
   const parts = [cyl(0.14, 0.12, DARK, 0, 0, 0, 8), cyl(0.05, 2.3, 0x59606b, 0, 0.1, 0, 8)];
   for (const s of heads === 2 ? [1, -1] : [1])
     parts.push(box(0.06, 0.06, 0.5, 0x59606b, 0, 2.3, s * 0.22), box(0.26, 0.1, 0.3, 0x2b3038, 0, 2.22, s * LAMP_ARM));
+  return parts;
+}
+
+/** The iron lantern's glass (2.36, the forest): its size, its middle at LAMP_BULB_Y (lights.ts draws it glowing). */
+export const LANTERN_GLASS = { w: 0.15, h: 0.2 };
+
+/**
+ * The forest's lamp (2.36, the Six Hunter): a timber post on a fieldstone foot, an iron bracket with its scroll brace,
+ * an iron lantern hanging from its end where a street lamp's head would be (the same place: the dark rule's lamp).
+ */
+function lanternParts(heads: number): Part[] {
+  const IRON = 0x2a2724;
+  const parts = [box(0.3, 0.16, 0.3, 0x7d7870, 0, 0, 0), cyl(0.075, 2.36, 0x5e4630, 0, 0.12, 0, 7), box(0.17, 0.1, 0.17, IRON, 0, 2.44, 0)];
+  const g = LANTERN_GLASS;
+  for (const s of heads === 2 ? [1, -1] : [1]) {
+    const z = s * LAMP_ARM;
+    parts.push(
+      box(0.05, 0.05, 0.48, IRON, 0, 2.44, s * 0.22),
+      box(0.03, 0.03, 0.3, IRON, 0, 2.3, s * 0.12).rotateX(s * 0.7),
+      box(0.012, 0.06, 0.012, IRON, 0, 2.38, z),
+      paintPart(new ConeGeometry(0.13, 0.1, 4).rotateY(Math.PI / 4).translate(0, LAMP_BULB_Y + g.h / 2 + 0.05, z), IRON),
+      box(g.w + 0.05, 0.03, g.w + 0.05, IRON, 0, LAMP_BULB_Y - g.h / 2 - 0.03, z),
+    );
+    for (const [dx, dz] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ])
+      parts.push(box(0.022, g.h, 0.022, IRON, (dx * g.w) / 2, LAMP_BULB_Y - g.h / 2, z + (dz * g.w) / 2));
+  }
   return parts;
 }
 
@@ -292,6 +325,71 @@ const BUILDERS: Record<PropKind, Builder> = {
       box(0.18, 0.06, 0.04, METAL, iw / 4 - 0.1, 0.98, id / 2 + 0.06),
       box(0.04, 0.8, 0.04, WOOD, iw / 4 + 0.15, 0.1, id / 2 + 0.06),
     ];
+  },
+  // 2.36 (The Six Hunter's work).
+  /** The kennels' feeding trough: a long timber trough on trestles, its galvanised liner, kibble heaped along it, a scoop on the end. */
+  trough: (w, d) => {
+    const parts: Part[] = [];
+    for (const x of [-(w - 0.5) / 2, (w - 0.5) / 2]) {
+      parts.push(
+        box(0.06, 0.26, 0.06, WOOD_DARK, x, 0, -d / 2 + 0.3).rotateX(0.18),
+        box(0.06, 0.26, 0.06, WOOD_DARK, x, 0, d / 2 - 0.3).rotateX(-0.18),
+      );
+      parts.push(box(0.06, 0.05, d - 0.4, WOOD_DARK, x, 0.2, 0));
+    }
+    parts.push(
+      box(w - 0.14, 0.06, d - 0.42, 0x7a5434, 0, 0.24, 0),
+      box(w - 0.14, 0.22, 0.05, 0x8a6040, 0, 0.26, -(d - 0.42) / 2),
+      box(w - 0.14, 0.22, 0.05, 0x8a6040, 0, 0.26, (d - 0.42) / 2),
+      box(0.05, 0.22, d - 0.42, 0x8a6040, -(w - 0.14) / 2, 0.26, 0),
+      box(0.05, 0.22, d - 0.42, 0x8a6040, (w - 0.14) / 2, 0.26, 0),
+      box(w - 0.26, 0.02, d - 0.52, 0xa9b1ba, 0, 0.3, 0),
+      box(w * 0.55, 0.06, d - 0.6, 0x9a6a3a, -w * 0.12, 0.32, 0),
+      box(w * 0.2, 0.05, d - 0.62, 0xb07c48, w * 0.22, 0.32, 0.02),
+      box(0.14, 0.05, 0.1, METAL, w / 2 - 0.24, 0.48, 0),
+      box(0.12, 0.03, 0.03, WOOD, w / 2 - 0.1, 0.5, 0),
+    );
+    return parts;
+  },
+  /**
+   * The smokehouse's smoker: a fieldstone firebox with its iron door, an iron cabinet over it (its racks of fish behind
+   * a slatted vent), a stovepipe up the back with its rain cap. (Its fire and smoke, while it runs, are WorkGear's.)
+   */
+  smoker: () => [
+    box(0.82, 0.36, 0.72, 0x77726a, 0, 0, -0.04),
+    box(0.84, 0.04, 0.74, 0x5d5a54, 0, 0.36, -0.04),
+    box(0.36, 0.22, 0.03, 0x1e1c1a, 0, 0.06, 0.32),
+    box(0.06, 0.04, 0.04, METAL, 0.14, 0.17, 0.34),
+    box(0.74, 0.62, 0.64, 0x2f2a26, 0, 0.4, -0.06),
+    box(0.62, 0.5, 0.02, 0x3a332d, 0, 0.46, 0.27),
+    ...[0.56, 0.66, 0.76, 0.86].map((y) => box(0.5, 0.025, 0.02, 0x1a1715, 0, y, 0.285)),
+    box(0.06, 0.2, 0.04, 0x8a7a64, 0.32, 0.6, 0.29),
+    box(0.78, 0.05, 0.68, 0x24201d, 0, 1.02, -0.06),
+    cyl(0.07, 0.75, 0x3a3532, 0.22, 1.05, -0.24, 8),
+    paintPart(new ConeGeometry(0.14, 0.08, 8).translate(0.22, 1.86, -0.24), 0x2a2724),
+  ],
+  /** The net frame: two timber posts and their rails, a net hung between them (its mesh in cord), a row of cork floats along the top, a stool before it. */
+  netFrame: (w, d) => {
+    const iw = w - 0.24;
+    const parts: Part[] = [
+      box(0.09, 1.3, 0.09, WOOD_DARK, -w / 2 + 0.12, 0, -0.05),
+      box(0.09, 1.3, 0.09, WOOD_DARK, w / 2 - 0.12, 0, -0.05),
+      box(0.3, 0.05, 0.3, WOOD_DARK, -w / 2 + 0.12, 0, -0.05),
+      box(0.3, 0.05, 0.3, WOOD_DARK, w / 2 - 0.12, 0, -0.05),
+      box(w - 0.12, 0.07, 0.07, WOOD, 0, 1.22, -0.05),
+      box(w - 0.12, 0.06, 0.06, WOOD, 0, 0.22, -0.05),
+    ];
+    // The net: cords across and down, a lattice a hand's width.
+    for (let k = 0; k <= 8; k++) parts.push(box(iw, 0.012, 0.012, 0x7a8a5a, 0, 0.28 + k * 0.11, -0.04));
+    for (let k = 0; k <= 12; k++) parts.push(box(0.012, 0.9, 0.012, 0x6f7f52, -iw / 2 + (k * iw) / 12, 0.28, -0.04));
+    for (let k = 0; k < 7; k++) parts.push(box(0.09, 0.06, 0.05, 0xc8a46a, -iw / 2 + 0.12 + (k * (iw - 0.24)) / 6, 1.14, -0.01));
+    // A heap of net at its foot, the stool.
+    parts.push(box(0.5, 0.1, 0.3, 0x5f7a4a, w / 4, 0, 0.12), box(0.34, 0.06, 0.22, 0x6f8a56, w / 4 + 0.05, 0.1, 0.1));
+    parts.push(
+      ...legs(0.3, 0.3, 0.32, WOOD_DARK, 0.04).map((p) => p.translate(-w / 6, 0, d / 2 - 0.25)),
+      box(0.34, 0.05, 0.34, WOOD, -w / 6, 0.32, d / 2 - 0.25),
+    );
+    return parts;
   },
   /** The produce crate: slatted timber, vegetables heaped in it. */
   crate: () => [

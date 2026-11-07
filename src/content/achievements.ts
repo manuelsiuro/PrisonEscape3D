@@ -305,4 +305,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'trickOrTreat', group: 'holidays', icon: 'pumpkin', gives: 'holWitch', run: (r) => f(r, 'laughs') >= 3 },
   { id: 'secretSanta', group: 'holidays', icon: 'gift', gives: 'holSanta', run: (r) => f(r, 'giftsGiven') >= 1 },
   { id: 'withABang', group: 'holidays', icon: 'sparkle', run: (r) => f(r, 'fireworkWork') >= 5 },
+  // 2.36 (The Six Hunter): away down the Hollowrun on a raft; clean away from the Six and their hounds, off their tally.
+  { id: 'downstream', group: 'out', icon: 'boat', escape: (e) => e.via === 'raft' && e.prison === 'six-hunter' },
+  { id: 'offTheTally', group: 'out', icon: 'paw', hunt: (h) => h.safe && h.prison === 'six-hunter' },
 ];

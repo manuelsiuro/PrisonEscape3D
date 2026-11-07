@@ -507,7 +507,7 @@
   background: linear-gradient(90deg, var(--green-62), var(--green-83));
 }
 
-/* The bands' edges (25 and 80): where grudges start and where recruiting does. */
+/* The bands' edges (OPINION_LOW and OPINION_HIGH, placed by the panel): where grudges start and where recruiting does. */
 .talk-meter .tick {
   position: absolute;
   top: -3px;
@@ -515,14 +515,6 @@
   width: 2px;
   border-radius: 2px;
   background: rgba(var(--white-rgb), 0.45);
-}
-
-.talk-meter .tick.low {
-  left: 25%;
-}
-
-.talk-meter .tick.high {
-  left: 80%;
 }
 
 .talk-opinion > b {
@@ -591,6 +583,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+/* 2.36: under the meter, what the next step up opens. */
+.talk-next {
+  margin: -4px 0 8px;
+  font: 600 12px/1.3 var(--font-ui);
+  color: rgba(var(--white-rgb), 0.62);
+}
+
+/* 2.36: a favor taken on, let go: a quiet row under it. */
+.talk-drop {
+  margin-top: 8px;
+}
+
+.talk-drop .talk-note {
+  margin: 0;
+}
+
+.talk-favor > .talk-note {
+  margin-top: 6px;
 }
 
 /* The tip and recruiting: one column of buttons as wide as the widest, the notes lined up

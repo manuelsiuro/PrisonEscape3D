@@ -10,7 +10,8 @@ record. Nothing was rewritten: rows and entries moved word for word.
 | What was decided about one part of the game, where the design document was overruled, what was accepted | [`decisions/`](decisions/), one file per area (the list is in `PLAN.md` §2) |
 | What a polish pass already did to an area, the user's choices, its known limits | [`POLISH.md`](POLISH.md) |
 | What one release changed, what its reviews found | [`HISTORY.md`](HISTORY.md), one line per release, then its range's file in [`history/`](history/) |
-| How a phase was planned and proved (P0–P42, the polish series) | [`phases/`](phases/), one file per roadmap (the list is in `PLAN.md` §4) |
+| How a phase was planned and proved (P0–P42, the polish series, the Six Hunter) | [`phases/`](phases/), one file per roadmap (the list is in `PLAN.md` §4) |
+| A review of the game's pictures or another part, with its findings and what was picked | [`reviews/`](reviews/) (`picture-review-2.36.md`: day and night, materials, light) |
 | What's open: areas not polished yet, checks only a person can do, parked ideas, the improvement queue (sessions picked by the user, in order) | [`BACKLOG.md`](BACKLOG.md) |
 | How the code is checked: types, lint, layout, the tests | [`PLAN.md`](PLAN.md) §6, [`.oxlintrc.json`](../.oxlintrc.json) (each rule turned off, why) |
 | What the game has, for players | [`FEATURES.md`](FEATURES.md) |

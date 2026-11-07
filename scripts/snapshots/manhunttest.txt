@@ -3,6 +3,7 @@ stalag-flucht: 60×56, 6 searchers (2 dogs), 2 roadblocks, 2 washing lines, 41 c
 shankton: 60×56, 6 searchers (2 dogs), 2 roadblocks, 3 washing lines, 92 cover tiles; to safety: wall 95 (Lou 47), gate 75 (Lou 27), glider 50 (Lou 52)
 san-pancho: 60×56, 6 searchers (2 dogs), 2 roadblocks, 3 washing lines, 55 cover tiles; to safety: wall 83 (Lou 23), gate 69 (Lou 37), van 58 (Lou 22)
 irongate: 60×56, 7 searchers (2 dogs), 3 roadblocks, 3 washing lines, 69 cover tiles; to safety: sea 65 (Lou 50), air 39 (Lou 24), gate 47 (Lou 29)
+six-hunter: 60×56, 6 searchers (2 dogs), 2 roadblocks, 2 washing lines, 125 cover tiles; to safety: sea 39 (Lou 36), wall 82 (Lou 31), glider 75 (Lou 12), van 51 (Lou 22), gate 72 (Lou 19)
 center-perks wall, salt 1: clean away in 79 s; spotted 2, hid 0, stones 0, lit 2 · 5e62796a
   0:10 the alarm
   0:12 roadblock 1 up
@@ -224,9 +225,54 @@ irongate air, salt 2: clean away in 37 s; spotted 0, hid 0, stones 0, lit 0 · e
   0:20 the helicopter up
   0:36 SAFE
 irongate sea, seen going, by day: salt 1 clean away in 59 s · 86975a84
+six-hunter wall, salt 1: clean away in 126 s; spotted 0, hid 1, stones 0, lit 0 · 1ddb30bf
+  0:10 the alarm
+  0:12 roadblock 1 up
+  0:13 roadblock 0 up
+  0:23 the helicopter up
+  0:33 dog 0 on the trail
+  0:46 clothes off the line
+  2:06 SAFE
+six-hunter gate, salt 1: clean away in 195 s; spotted 1, hid 2, stones 2, lit 0 · 51da0ed5
+  0:10 the alarm
+  0:12 roadblock 1 up
+  0:13 roadblock 0 up
+  0:14 dog 0 on the trail
+  0:23 the helicopter up
+  0:40 stone
+  0:44 spotted by Bracken
+  0:44 spotted by Larch
+  0:47 dog 1 on the trail
+  0:50 Bracken lost them
+  0:50 Larch lost them
+  1:03 dog 0 on the trail
+  1:08 clothes off the line
+  1:24 stone
+  3:14 SAFE
+six-hunter glider, salt 1: clean away in 62 s; spotted 0, hid 0, stones 0, lit 0 · 874ee603
+  0:10 the alarm
+  0:12 roadblock 1 up
+  0:13 roadblock 0 up
+  0:23 the helicopter up
+  1:02 SAFE
+six-hunter van, salt 1: clean away in 34 s; spotted 0, hid 0, stones 0, lit 0 · e996661f
+  0:10 the alarm
+  0:12 roadblock 1 up
+  0:13 roadblock 0 up
+  0:23 the helicopter up
+  0:26 dog 1 on the trail
+  0:34 SAFE
+six-hunter sea, salt 1: clean away in 31 s; spotted 0, hid 0, stones 0, lit 0 · 7c076cbc
+  0:10 the alarm
+  0:12 roadblock 1 up
+  0:13 roadblock 0 up
+  0:23 the helicopter up
+  0:28 dog 1 on the trail
+  0:30 SAFE
+six-hunter wall, seen going, by day: salt 1 clean away in 77 s · 9483f8c9
 head start: night 10 s, just before breakfast 5 s, afternoon 10 s, before the 04:00 bed check 10 s
 carry: fence → wall, Speed 52, outfit guard, kit 2, crew 1, Lou true, head start 10 s at 480
-starts: center-perks fence→wall tunnel→wall roof→wall takeover→gate stowaway→van bluff→gate glider→glider paperwork→legal parole→legal; stalag-flucht fence→wall tunnel→wall roof→wall takeover→gate stowaway→van glider→glider paperwork→legal parole→legal; shankton fence→wall tunnel→wall roof→wall takeover→gate bluff→gate glider→glider paperwork→legal parole→legal; san-pancho tunnel→wall gate→gate takeover→gate stowaway→van paperwork→legal parole→legal; irongate raft→sea helicopter→air takeover→gate stowaway→air bluff→gate paperwork→legal parole→legal
+starts: center-perks fence→wall tunnel→wall roof→wall takeover→gate stowaway→van bluff→gate glider→glider paperwork→legal parole→legal; stalag-flucht fence→wall tunnel→wall roof→wall takeover→gate stowaway→van glider→glider paperwork→legal parole→legal; shankton fence→wall tunnel→wall roof→wall takeover→gate bluff→gate glider→glider paperwork→legal parole→legal; san-pancho tunnel→wall gate→gate takeover→gate stowaway→van paperwork→legal parole→legal; irongate raft→sea helicopter→air takeover→gate stowaway→air bluff→gate paperwork→legal parole→legal; six-hunter raft→sea tunnel→wall glider→glider stowaway→van bluff→gate paperwork→legal parole→legal
 cover: hidden after 10 still steps, a searcher 3 tiles off looking right at the hedge sees nothing
 caught: spotted, then caught after 61 steps; 6% of the way
 dogs: track yes, point yes, caught yes (hidden true)

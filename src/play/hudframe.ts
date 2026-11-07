@@ -10,7 +10,15 @@ import { type NextWork, nextWork, workWarningAt } from '../sim/systems/jobs';
 import { itemName } from '../ui/items';
 import { inmateName } from '../ui/names';
 import { GUARD } from '../sim/systems/guards';
-import { COLD_STEPS, LAST_WARNING, LIGHTS_OUT_GRACE, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND } from '../sim/tuning';
+import {
+  COLD_STEPS,
+  LAST_WARNING,
+  LIGHTS_OUT_GRACE,
+  LOOK_AWAY_STEPS,
+  STEPS_PER_MINUTE,
+  STEPS_PER_SECOND,
+  TRESPASS_STEPS,
+} from '../sim/tuning';
 import { afterHours } from '../sim/systems/watch';
 import { lookingAway } from '../sim/systems/ways';
 import { clockAt, formatTime, hhmm } from '../sim/systems/clock';
@@ -32,6 +40,8 @@ import { orderHud } from './smuggle';
 import { cashShown } from './games';
 import { crewPill } from './crew';
 import { tipsyNow } from '../sim/systems/pruno';
+import { G, playerGang, warningLeft } from '../sim/systems/gangs';
+import { GANGS } from '../content/gangs';
 import { paroleChip } from './parole';
 import { jobHud } from './oddjobs';
 import { TIPSY_STEPS } from '../content/long';
@@ -71,6 +81,7 @@ export const hudState: HudState = {
   tipsy: null,
 };
 /** Tipsy (P28): the HUD's pill, refilled in place. */
+const turfHud = { text: '', left: 0, of: TRESPASS_STEPS / STEPS_PER_SECOND };
 const tipsyHud = { until: '', left: 0, of: TIPSY_STEPS / STEPS_PER_MINUTE };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
@@ -192,6 +203,16 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
     hudState.tipsy = tipsyHud;
   } else hudState.tipsy = null;
   document.body.classList.toggle('tipsy', tipsyNow(st));
+  // (2.36: the player's gang, and a warning off a rival's turf with its seconds.)
+  const mine = playerGang(sim);
+  hudState.gang = mine >= 0 ? (sim.prison.gangs?.[mine]?.id ?? null) : null;
+  const left = warningLeft(sim);
+  const whose = left >= 0 && st.gang ? GANGS[st.gang[G.TURF] - 1] : undefined;
+  if (whose) {
+    turfHud.text = t('hud.turf', { gang: t(`gangT.${whose}` as Key) });
+    turfHud.left = Math.ceil(left / STEPS_PER_SECOND);
+    hudState.turf = turfHud;
+  } else hudState.turf = null;
   document.body.classList.toggle('chilled', coldHud.bit && !coldHud.hot);
   document.body.classList.toggle('baked', coldHud.bit && coldHud.hot);
   // The day (P17): the weather by the clock, the event's chip, the drill.
@@ -239,7 +260,29 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   sound.setScene(
     st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor',
   );
+  // (2.36: the Six Hunter's morning: the Huntmaster's horn over the valley at 06:00, far off, muffled indoors.)
+  const minute = clock.minuteOfDay;
+  // (A game just loaded or begun starts afresh: a save loaded at 06:05 after one left at 05:55 sounds nothing. Review of 2.36.)
+  if (hornSim !== sim) {
+    hornSim = sim;
+    hornMinute = -1;
+  }
+  if (
+    sim.world.def.theme === 'forest' &&
+    hornMinute >= 0 &&
+    hornMinute < DAWN_HORN &&
+    minute >= DAWN_HORN &&
+    minute < DAWN_HORN + 10 &&
+    !g.paused
+  )
+    sound.huntHorn(outdoors ? 0.45 : 0.22);
+  hornMinute = minute;
 }
+
+/** The game and the minute of the last frame (the dawn horn sounds as its clock passes 06:00), and that minute. */
+let hornSim: unknown = null;
+let hornMinute = -1;
+const DAWN_HORN = 6 * 60;
 
 /** The look last photographed for the file's button (render/portrait.ts: a new WebGL context and shader, so in an idle moment if one comes within 2 s). */
 let faceLook: Look | null = null;

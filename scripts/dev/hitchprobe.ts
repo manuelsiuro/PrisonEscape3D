@@ -12,7 +12,8 @@ import * as THREE from 'three';
 import { renderer, view } from '../../src/play/context';
 import { at } from './playat';
 
-type Slow = { at: number; ms: number; programs: number; heapDrop: number; minute: number | null; scripts: string };
+/** A slow frame: `programs` made in it; `waited` ms blocked reading programs' logs (a shader compiled late: the driver finishes it on first use). */
+type Slow = { at: number; ms: number; programs: number; waited: number; heapDrop: number; minute: number | null; scripts: string };
 type Sample = { t: number; heapMB: number; geometries: number; textures: number; programs: number; nodes: number };
 
 const SLOW_MS = 34;
@@ -27,12 +28,36 @@ const loaf: Array<{ start: number; dur: number; scripts: string }> = [];
 function hook() {
   if (hooked) return;
   hooked = true;
+  // (Review of 2.36: Chrome/ANGLE finish a shader's compile on its first draw, and three reads its log then, blocking:
+  // a frame that waited there counts as a compile though no program was made in it.)
+  // (Whichever query comes first blocks: the program's link status or log, its uniforms' and attributes' lookups.)
+  const gl = renderer.getContext() as unknown as Record<string, (...a: unknown[]) => unknown>;
+  let waited = 0;
+  for (const name of [
+    'getProgramParameter',
+    'getProgramInfoLog',
+    'getShaderParameter',
+    'getShaderInfoLog',
+    'getActiveUniform',
+    'getUniformLocation',
+    'getActiveAttrib',
+    'getAttribLocation',
+  ]) {
+    const real = gl[name].bind(gl);
+    gl[name] = (...a: unknown[]) => {
+      const t = performance.now();
+      const out = real(...a);
+      waited += performance.now() - t;
+      return out;
+    };
+  }
   const raf = window.requestAnimationFrame.bind(window);
   let last = 0;
   window.requestAnimationFrame = (cb) =>
     raf((now) => {
       const p0 = programs();
       const h0 = heap();
+      waited = 0;
       cb(now);
       const r = rec;
       if (r && last) {
@@ -47,6 +72,7 @@ function hook() {
             at: Math.round(now),
             ms: Math.round(gap),
             programs: added,
+            waited: Math.round(waited),
             heapDrop: Math.round(drop / 1024),
             minute: play.game?.rec.sim.clock.minuteOfDay ?? null,
             scripts: '',
@@ -106,7 +132,7 @@ function report(samples: Sample[]) {
     gap50: pct(r.gaps, 0.5),
     gap99: pct(r.gaps, 0.99),
     slow: r.slow.length,
-    slowWithCompile: r.slow.filter((s) => s.programs > 0).length,
+    slowWithCompile: r.slow.filter((s) => s.programs > 0 || s.waited > 20).length,
     compiled: r.compiled,
     gcFrames: r.gcs,
     worst: [...r.slow].sort((a, b) => b.ms - a.ms).slice(0, 12),
@@ -164,7 +190,7 @@ export async function watch(seconds = 20) {
 /** Every prison staged `rounds` times over (as a long session moving between them does): what each round leaves. */
 export async function prisons(rounds = 3) {
   hook();
-  const list = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho'];
+  const list = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
   const t0 = performance.now();
   const out: Array<Sample & { round: number }> = [];
   rec = { gaps: [], slow: [], compiled: 0, gcs: 0 };

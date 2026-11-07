@@ -399,6 +399,18 @@ export interface SimState {
   readWait: number;
   /** 2.35: the step the player last held the block (fights.ts blocking). */
   blockAt: number;
+  /** 2.36: the layer the last strike (`struckAt`) was made on, when not the ground floor (absent: there): work in a tunnel or the vents is no guard's sight once the player is back on the floor. */
+  struckLayer?: number;
+  /**
+   * 2.36, gangs and turf (gangs.ts G): absent until the player first talks to a gang's member (so a run that
+   * never does hashes and plays as before); then [the gang joined (GANGS index + 1; 0 none), the step a warning off a
+   * rival's turf began (0 none), whose turf (its GANGS index + 1), the step a rival last squared up over
+   * it, the prison day a war's rival last came for the player, the prison day the player last left a
+   * gang (0 never), the prison day they joined, the prison day they first spoke to a member].
+   */
+  gang?: number[];
+  /** 2.36 (The Six Hunter): the step the hounds called home by the recall horn go back to work (absent: never blown). */
+  recall?: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

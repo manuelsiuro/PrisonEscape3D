@@ -32,6 +32,8 @@ export interface Frame {
   /** Radians, 0 = facing +z (south). */
   facing: number;
   moving: boolean;
+  /** Session 15: game seconds a real second (a replay's ×4, the night's sleep, a knockout's time-lapse): the strides read the ground covered in game time. */
+  speed: number;
   /** Game time of day in minutes, fractional (lighting). */
   minuteOfDay: number;
   /** Roll call is on or minutes off, or a fire drill musters there (P29: its paint over a football pitch shows only then). */
@@ -54,6 +56,10 @@ export interface Frame {
   /** The item in the player's hand and the outfit they wear (item numbers, 0 for none). */
   held: number;
   outfit: number;
+  /** 2.36: the colours of the player's gang (a 3D colour; 0 none). */
+  colours: number;
+  /** 2.36: the gangs' turf painted on the floor: 0 not at all (none here, or a replay from before them), 1 faint, 2 the tables held (dinner), 3 the corners (the evening). */
+  turf: number;
   /** Asleep in bed. */
   sleeping: boolean;
   /** 2.28: a bed dummy in the player's bed. */
@@ -203,6 +209,8 @@ export interface InmateFrame {
   attention: boolean;
   /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
   badge: BadgeKind;
+  /** 2.36: their gang's colours (a 3D colour; 0 none). */
+  colours?: number;
 }
 
 export interface Quality {
@@ -220,6 +228,7 @@ export function emptyFrame(): Frame {
     z: 0,
     facing: 0,
     moving: false,
+    speed: 1,
     minuteOfDay: 0,
     rollCall: false,
     surface: 0,
@@ -251,6 +260,8 @@ export function emptyFrame(): Frame {
     doing: 0,
     trayAt: 0,
     trayLeft: 1,
+    colours: 0,
+    turf: 0,
     trainAt: null,
     trainProp: -1,
     restBed: null,

@@ -50,6 +50,7 @@ import { attr, keepTraining, keepTurn, setCost, stopTraining, trainsOn } from '.
 import { laps } from './systems/grounds';
 import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
+import { gangs } from './systems/gangs';
 import { checkpointGates } from './systems/getaway';
 import { watch } from './systems/watch';
 import { tipsy, tipsyNow } from './systems/pruno';
@@ -78,7 +79,7 @@ export * from './events';
  * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → the holiday (P42) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
- * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → the cold → tipsy (P28) → showers → solitary →
+ * the takeover → talk, grudges, training, the side games (P22), the crew (P23), gangs (2.36), seats → energy and health → the cold → tipsy (P28) → showers → solitary →
  * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → the pay phone, the kiosk, the paperwork (P34–P36) → the parole board (P39) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
@@ -212,6 +213,8 @@ export class Sim {
   rules233 = false;
   /** Replaying a run from before 2.35: fights, stealth and heat as they were (seen meant sure at once, the dark hid nothing, heat cooled alike everywhere, nobody locked on by a blow, no block). Not state. */
   rules234 = false;
+  /** Replaying a run from before 2.36: tools and items as they were (a strike in a tunnel or the vents still counted as work a guard saw, for a moment after the player surfaced). Not state. */
+  rules235 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -296,6 +299,8 @@ export class Sim {
     games(this);
     // The crew (P23): lookouts' whistles, a brawl's course, the drop fetched, the night's company.
     crew(this);
+    // Gangs (2.36): a member told off a rival's turf, squared up to over it; the war's rival.
+    gangs(this);
     keepSeat(this);
     keepTray(this);
     noteCarried(this);

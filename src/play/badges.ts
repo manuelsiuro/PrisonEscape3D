@@ -1,8 +1,10 @@
 /** The badges over inmates' heads: what the player can do with them now. */
 import { itemNumber } from '../content/items';
 import type { Sim } from '../sim/Sim';
-import { FAVOR_STATE } from '../sim/systems/economy';
-import { HOTBAR, hotbarSlotOf, itemOf, usesOf } from '../sim/systems/items';
+import { FAVOR_STATE, fetchFavor } from '../sim/systems/economy';
+import { favorSlot } from '../sim/systems/gangs';
+import { OPINION_LOW } from '../sim/tuning';
+import { HOTBAR, itemOf, usesOf } from '../sim/systems/items';
 import type { BadgeKind } from '../render/characterSprites';
 
 const LETTER = itemNumber('letter');
@@ -29,14 +31,11 @@ function badgeNow(sim: Sim, who: number): BadgeKind {
   if (sim.onDuty && s.mail.includes(who) && s.items.inv.slice(0, HOTBAR).some((v) => itemOf(v) === LETTER && usesOf(v) - 1 === who))
     return 'mail';
   const f = s.favors.find((x) => x.by === who);
-  if (
-    f &&
-    (f.state === FAVOR_STATE.DONE ||
-      ((f.kind === 0 || f.kind === 1) && f.state === FAVOR_STATE.TAKEN && hotbarSlotOf(s.items.inv, f.item) >= 0))
-  )
+  if (f && (f.state === FAVOR_STATE.DONE || (fetchFavor(f.kind) && f.state === FAVOR_STATE.TAKEN && favorSlot(s.items.inv, f) >= 0)))
     return 'done';
   if (f?.state === FAVOR_STATE.OFFERED) return 'favor';
-  if (sim.shopsOpen && sim.merchantOf(who) >= 0 && s.shops[sim.merchantOf(who)].some((v) => v)) return 'shop';
+  // (2.36: open is open: its own stock sold out, a merchant still sells the staples and buys; but not to someone they despise.)
+  if (sim.shopsOpen && sim.merchantOf(who) >= 0 && m.opinion > OPINION_LOW) return 'shop';
   // (A follower's badge is the crew's chip now, P23: their line of work, ui/crew.ts.)
   return '';
 }

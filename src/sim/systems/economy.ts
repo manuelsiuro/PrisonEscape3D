@@ -2,7 +2,20 @@ import { itemNumber } from '../../content/items';
 import { JOBS, type JobDef } from '../../content/jobs';
 import { zoneIndex } from '../../content/zones';
 import { DIR_X, DIR_Z } from '../command';
-import { MAX_DISCOUNT, OPINION_START, UNIT } from '../tuning';
+import {
+  GANG_DISCOUNT,
+  GANG_MAX_DISCOUNT,
+  GANG_OPINION,
+  GOSSIP_OPINION,
+  MAX_DISCOUNT,
+  OPINION_HIGH,
+  OPINION_LOW,
+  OPINION_START,
+  TIP_OPINION,
+  UNIT,
+} from '../tuning';
+import { GAME_OPINION } from '../../content/games';
+import { NIGHT_OPINION } from '../../content/crew';
 import { MAP_W, type Prop, type World } from '../world/World';
 import { freeHotbar, hotbarSlotOf, itemOf } from './items';
 import { propReach } from './rest';
@@ -30,9 +43,14 @@ export interface Favor {
   state: number;
 }
 
-/** Favor kinds (GDD §10.4). Never renumber: saves store them. */
-export const FAVOR = { SCAVENGE: 0, RETRIEVE: 1, BEATDOWN: 2, DISTRACTION: 3 } as const;
-export const FAVOR_KINDS = ['scavenge', 'retrieve', 'beatdown', 'distraction'] as const;
+/**
+ * Favor kinds (GDD §10.4). Never renumber: saves store them. 2.36's INITIATION is a gang boss's (gangs.ts):
+ * asked for, never offered at 08:00; the item to bring is in a rival boss's desk (`target`).
+ */
+export const FAVOR = { SCAVENGE: 0, RETRIEVE: 1, BEATDOWN: 2, DISTRACTION: 3, INITIATION: 4 } as const;
+export const FAVOR_KINDS = ['scavenge', 'retrieve', 'beatdown', 'distraction', 'initiation'] as const;
+/** The favors done by bringing something (handed in from the hotbar). */
+export const fetchFavor = (kind: number) => kind === FAVOR.SCAVENGE || kind === FAVOR.RETRIEVE || kind === FAVOR.INITIATION;
 /** Offered (the "!" over their head), taken on, done (ready to hand in). */
 export const FAVOR_STATE = { OFFERED: 0, TAKEN: 1, DONE: 2 } as const;
 /** What favors ask to be found: everyday things from desks. */
@@ -202,15 +220,37 @@ function puddleAt(puddles: readonly number[], b: Body): number {
   return -1;
 }
 
-/** A merchant's discount (GDD §10.3): nothing at the starting opinion, up to 50% at 100. */
-export const discountOf = (opinion: number) => (Math.max(0, Math.min(100, opinion) - OPINION_START) / (100 - OPINION_START)) * MAX_DISCOUNT;
+/**
+ * A merchant's discount (GDD §10.3): nothing at the starting opinion, up to 50% at 100. 2.36: to a member of
+ * the merchant's own gang (gangs.ts `memberDeal`), GANG_DISCOUNT more, GANG_MAX_DISCOUNT at most.
+ */
+export const discountOf = (opinion: number, member = false) => {
+  const off = (Math.max(0, Math.min(100, opinion) - OPINION_START) / (100 - OPINION_START)) * MAX_DISCOUNT;
+  return member ? Math.min(GANG_MAX_DISCOUNT, off + GANG_DISCOUNT) : off;
+};
 
-/** What a merchant asks for an item worth `value` (whole dollars, at least 1). */
-export const priceOf = (value: number, opinion: number) => Math.max(1, Math.round(value * (1 - discountOf(opinion))));
+/** What a merchant asks for an item worth `value` (whole dollars, at least 1): the talk card and the till both ask this. */
+export const priceOf = (value: number, opinion: number, member = false) =>
+  Math.max(1, Math.round(value * (1 - discountOf(opinion, member))));
 
 /** How much a gift is worth to the one given it (opinion points): half its value, 2–15. */
 export const giftOpinion = (value: number) => Math.max(2, Math.min(15, Math.round(value / 2)));
 /** Cash given as a present: 3 points for $5, 6 for $10, 12 for $20. */
 export const cashOpinion = (dollars: number) => Math.round(dollars * 0.6);
+/**
+ * 2.36: what an inmate's opinion opens up, step by step, by the rules' own numbers (the talk panel's
+ * line under the meter, How to play's chips): above a grudge they deal with the player and leave them
+ * be, then side games, true rumors (src/talk/), a recipe tip a day, joining the crew, a night up.
+ */
+export const OPINION_LADDER: ReadonlyArray<readonly [number, 'deal' | 'games' | 'rumors' | 'tips' | 'gang' | 'recruit' | 'night']> = [
+  [OPINION_LOW + 1, 'deal'],
+  [GAME_OPINION, 'games'],
+  [GOSSIP_OPINION, 'rumors'],
+  [TIP_OPINION, 'tips'],
+  // (2.36: a gang's boss asks the player in.)
+  [GANG_OPINION, 'gang'],
+  [OPINION_HIGH, 'recruit'],
+  [NIGHT_OPINION, 'night'],
+];
 /** The amounts the talk panel offers to give. */
 export const CASH_GIFTS: readonly number[] = [5, 10, 20];

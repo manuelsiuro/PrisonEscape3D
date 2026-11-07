@@ -18,7 +18,7 @@ import { PhoneView } from './Phone';
 import { Rats } from './Rat';
 import { ReleaseView } from './Release';
 import { SmuggleView } from './Smuggling';
-import { Snowfall } from './Snow';
+import { LEAVES, Snowfall } from './Snow';
 import { TeamView } from './Team';
 import { VendingView } from './Vending';
 import { Weather } from './Weather';
@@ -28,6 +28,8 @@ import { Weather } from './Weather';
 
 export class DayPieces {
   readonly snow = new Snowfall();
+  /** The forest's needles and leaves drifting down (2.36). */
+  readonly leaves = new Snowfall(LEAVES);
   /** The day (P17): rain, ripples and fog; the movie screen, the food fight, the inspectors. */
   readonly weather = new Weather();
   readonly events = new DayEvents();

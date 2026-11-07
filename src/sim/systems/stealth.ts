@@ -25,7 +25,8 @@ import { afterHours } from './watch';
 export function darkNow(sim: SimContext): Dark | null {
   const s = sim.state;
   if (sim.rules234 || !nightAt(clockAt(s.step).minuteOfDay)) return null;
-  return { power: powered(sim.world, s, 'lights'), blockDark: !s.lockdown && afterHours(sim) };
+  // (2.36: a lamp's pool stops at walls; Sim.rules235 plays older runs with it lighting through them.)
+  return { power: powered(sim.world, s, 'lights'), blockDark: !s.lockdown && afterHours(sim), walls: !sim.rules235 };
 }
 
 /** What the player is doing that a guard would sound the alarm for, if sure. */

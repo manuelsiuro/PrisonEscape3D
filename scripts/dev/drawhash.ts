@@ -20,7 +20,7 @@ import { at } from './playat';
 
 /** [prison, day, minute]: waking, roll call, a job, lunch, the yard and gym, showers, night. */
 const MOMENTS = [7 * 60 + 50, 8 * 60 + 2, 9 * 60 + 30, 12 * 60 + 10, 15 * 60 + 5, 18 * 60 + 40, 23 * 60 + 30];
-const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho'];
+const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
 /**
  * What the frames are forced to, for what a model prisoner's first day never shows (each at Center
  * Perks' 12:10 and Stalag Flucht's 23:30): a storm, fog in a heatwave, snow, a lockdown, a takeover,

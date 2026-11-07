@@ -166,12 +166,12 @@ const step = (kind: number, variant: number, target: number, pay: number, perk: 
 });
 
 /**
- * The five stories. Center Perks: Doc the old-timer's lost watch (word from Mouse, the watch off a
+ * The six stories. Center Perks: Doc the old-timer's lost watch (word from Mouse, the watch off a
  * guard, a proper game). Stalag Flucht: Ferret's tunnel (sugar for the cook's spade, a lookout, the
  * camp snitch framed). Shankton: the Preacher's collection (won back at Cheat off Weasel, a parcel to Smokes,
  * Weasel's cell tipped off). San Pancho: Toro's birthday (sugar for the party, a cake through
  * visiting, the birthday arm-wrestle lost). Irongate: Gull's message ashore (a whistle for the
- * signal, a parcel in Kipper's desk, the old-timer kept busy at checkers).
+ * signal, a parcel in Kipper's desk, the old-timer kept busy at checkers). The Six Hunter (2.36): Hare's seventh Hunter.
  */
 export const CHAINS: Record<string, ChainDef> = {
   'center-perks': {
@@ -188,6 +188,12 @@ export const CHAINS: Record<string, ChainDef> = {
     steps: [step(KIND.ERRAND, 0, 3, 15), step(KIND.CAKE, 0, 0, 35), step(KIND.WRESTLE, 0, 7, 30, PERK.ITEM, 'screwdriver')],
   },
   irongate: { who: 3, steps: [step(KIND.LIFT, LIFT.WHISTLE, 0, 30), step(KIND.DROP, 0, 11, 35), step(KIND.CHECKERS, 0, 4, 30, PERK.DEBT)] },
+  // 2.36: the Six Hunter's "The seventh Hunter": Hare wants his name on the Hunters' tally (the Huntmaster's watch lifted, a
+  // lookout while he digs a hide, Boar beaten at arm-wrestling in front of everyone; a drag line for his trouble).
+  'six-hunter': {
+    who: 7,
+    steps: [step(KIND.LIFT, LIFT.KEEPSAKE, 0, 35), step(KIND.LOOKOUT, 0, 0, 30), step(KIND.WRESTLE, 1, 10, 35, PERK.ITEM, 'drag_line')],
+  },
 };
 
 /**
