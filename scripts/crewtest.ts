@@ -1063,6 +1063,27 @@ for (const def of PRISONS) {
   put(s.inmates[muscle].body, spot - 5 - MAP_W);
   const far = helpOf(sim, digger) === 'far' && digHelp(sim, 'chip', LAYER.GROUND, out) === 4;
   const farBack = helpOf(sim, muscle) === 'far' && backedBy(sim) < 0;
+  // Two tiles off with a wall between: close, but cut off (no help), and the word says he can't get there.
+  let cut = false;
+  search: for (let z = 2; z < MAP_H - 2; z++)
+    for (let x = 2; x < MAP_W - 2; x++) {
+      const w = sim.world;
+      if (
+        w.blocked(x, z) ||
+        w.blocked(x, z + 2) ||
+        !w.blocked(x, z + 1) ||
+        w.zoneAt(x, z) === 'outside' ||
+        w.zoneAt(x, z + 2) === 'outside'
+      )
+        continue;
+      put(s.player, z * MAP_W + x);
+      put(s.inmates[digger].body, (z + 2) * MAP_W + x);
+      if (lineOfSight(w, s.player.x, s.player.z, s.inmates[digger].body.x, s.inmates[digger].body.z)) continue;
+      cut = helpOf(sim, digger) === 'cut' && digHelp(sim, 'chip', LAYER.GROUND, out) === 4;
+      break search;
+    }
+  check(cut, `${def.id}: two tiles off through a wall: no help, and the word says he can't get there`);
+  put(s.player, spot);
   // Down a hole he didn't see: lost (no help); seen, beside the shaft: help.
   s.layer = LAYER.UNDER;
   const lost = helpOf(sim, digger) === 'lost' && digHelp(sim, 'dig', LAYER.UNDER, out) === 4;
@@ -1073,4 +1094,4 @@ for (const def of PRISONS) {
   s.inmates[digger].ko = 100;
   check(helpOf(sim, digger) === null, `${def.id}: out cold: no word of help (the status says out cold)`);
 }
-console.log("2.36: the crew's word on help, in all five prisons: close, too far, missed the way down, out cold");
+console.log("2.36: the crew's word on help, in all five prisons: close, too far, through a wall, missed the way down, out cold");

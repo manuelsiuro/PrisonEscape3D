@@ -98,7 +98,7 @@ function crewStatus(sim: Sim, who: number): string {
       if (help === 'lost') return t('crew.s.lost');
       if (shaftOf(s, who) >= 0) return t('crew.s.shaft');
       if (!about) return t('crew.s.waiting');
-      return help === 'far' ? t('crew.s.digFar', { n: DIG_REACH }) : t('crew.s.dig');
+      return help === 'far' ? t('crew.s.digFar', { n: DIG_REACH }) : help === 'cut' ? t('crew.s.digCut') : t('crew.s.dig');
     }
     case ORDER.BACK:
       if (!about) return t('crew.s.waiting');
