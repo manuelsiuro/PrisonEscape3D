@@ -82,6 +82,8 @@ export interface Scratch {
   };
   /** The foe each follower is after (Cast id, -1 none). */
   allyFoe: number[];
+  /** 2.36: the player's gang mates backing them this step (inmate indexes; gangs.ts gangTargets). */
+  backers: number[];
 }
 
 export function newScratch(): Scratch {
@@ -93,5 +95,6 @@ export function newScratch(): Scratch {
     workState: { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0, mail: [], owed: 0, pockets: true },
     social: { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], pace: [], face: [], off: [] },
     allyFoe: [],
+    backers: [],
   };
 }

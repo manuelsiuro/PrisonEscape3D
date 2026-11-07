@@ -159,9 +159,11 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           pic: true,
           lessons: ['talk', 'trade'],
           listIcons: ['coin', 'users', 'fist'],
-          see: ['crew', 'games'],
+          see: ['crew', 'gangs', 'games'],
         }),
         T('crew', 'users', '#ffa94d', { pic: true, lessons: ['crew'], listIcons: ['eye', 'pick', 'fist', 'drone'] }),
+        // 2.36: gangs and turf (pictured at Center Perks: the Kitchen Crew's corner of the courtyard, held in the evening).
+        T('gangs', 'fist', '#c0242c', { pic: true, listIcons: ['utensils', 'siren', 'check', 'flame'], see: ['inmates', 'crew', 'fight'] }),
         T('chatter', 'ear', '#d9a21b', { listIcons: ['chat', 'star'] }),
         T('fight', 'fist', '#c0392b', { pic: true, lessons: ['fight'] }),
       ],

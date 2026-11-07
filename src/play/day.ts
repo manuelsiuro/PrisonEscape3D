@@ -1,4 +1,6 @@
 import { vehicleName, vehicleThe } from './labels';
+import { warring } from '../sim/systems/gangs';
+import { gangName } from '../ui/names';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import {
@@ -66,6 +68,7 @@ const EVENT_ICON: Record<DayEvent, string> = {
   sports: 'trophy',
   talent: 'music',
   quiz: 'brain',
+  gangWar: 'fist',
 };
 export const EVENT_COLOR: Record<DayEvent, string> = {
   none: '#8aa0b8',
@@ -80,6 +83,7 @@ export const EVENT_COLOR: Record<DayEvent, string> = {
   sports: '#7ed957',
   talent: '#ff6fb5',
   quiz: '#5fb3ff',
+  gangWar: '#e0503c',
 };
 /** An event's icon here (P18: Irongate's delivery comes by helicopter). */
 export const eventIcon = (sim: Sim, e: DayEvent) =>
@@ -174,6 +178,11 @@ export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false):
         return t('day.eventD.sports', { n: SPORTS_WINS, prize: SPORTS_PRIZE });
       case 'delivery':
         return t('day.eventD.delivery', { guard: supervisorOf(sim), search: dayTime(searchMinute(p)), leave: dayTime(p.until) });
+      case 'gangWar': {
+        // (2.36: who's at war, and where: drawn from the day, so the forecast names them.)
+        const war = warring(sim, p.day);
+        return war ? t('day.eventD.gangWar', { a: gangName(sim, war[0]), b: gangName(sim, war[1]) }) : t('day.eventD.gangWarNone');
+      }
       default:
         return t(`day.eventD.${ev}` as Key);
     }
@@ -238,7 +247,10 @@ function morning(sim: Sim, first: boolean) {
   const p = today(sim);
   const id = sim.prison.id;
   const what = [
-    t(`pa.morning.${p.event}` as Key, { time: dayTime(p.at), from: dayTime(p.at), to: dayTime(p.until), vehicle: vehicleThe(sim) }),
+    // (2.36: a gang war's card on a holiday's own day is a truce: nothing said of it.)
+    p.event === 'gangWar' && !warring(sim)
+      ? ''
+      : t(`pa.morning.${p.event}` as Key, { time: dayTime(p.at), from: dayTime(p.at), to: dayTime(p.until), vehicle: vehicleThe(sim) }),
     holidayMorning(sim, p.day),
   ]
     .filter(Boolean)
@@ -323,7 +335,13 @@ export function dayStep(sim: Sim) {
     const sky = t(`weather.${weatherName(sim, next.weather)}` as Key).toLocaleLowerCase();
     announcePa(
       sim,
-      t('pa.forecast', { weather: sky, event: next.event === 'none' ? t('pa.forecastNone') : t(`pa.forecastEvent.${next.event}` as Key) }),
+      t('pa.forecast', {
+        weather: sky,
+        event:
+          next.event === 'none' || (next.event === 'gangWar' && !warring(sim, next.day))
+            ? t('pa.forecastNone')
+            : t(`pa.forecastEvent.${next.event}` as Key),
+      }),
     );
   }
   if (m === QUIP_AT && p.day > 1 && (p.event === 'none' || p.event === 'feast'))
@@ -345,6 +363,20 @@ export function dayEvent(e: SimEvent, sim: Sim) {
           sound.drillBell();
           buzz('lockdown');
           banner.show(t('banner.drill'), t('banner.drillSub', { n: MUSTER_MINUTES }), 'alarm', 4200);
+        } else if (e.event === 'gangWar') {
+          // (2.36: the gang war, at its ground.)
+          sound.crowd();
+          buzz('giveWay');
+          const war = warring(sim);
+          if (war) {
+            banner.show(
+              t('banner.gangWar'),
+              t('banner.gangWarSub', { a: gangName(sim, war[0]), b: gangName(sim, war[1]) }),
+              'routine',
+              4200,
+            );
+            announcePa(sim, t('pa.start.gangWar'));
+          }
         } else if (e.event === 'foodFight') {
           sound.crowd();
           buzz('giveWay');
@@ -352,7 +384,8 @@ export function dayEvent(e: SimEvent, sim: Sim) {
           announcePa(sim, t('pa.start.foodFight'));
         } else announcePa(sim, t(`pa.start.${e.event}` as Key, { time: dayTime(p.until), vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'end') {
-        if (e.event !== 'feast' && !sim.state.escaped) announcePa(sim, t(`pa.end.${e.event}` as Key, { vehicle: vehicleThe(sim) }));
+        if (e.event !== 'feast' && !sim.state.escaped && (e.event !== 'gangWar' || warring(sim)))
+          announcePa(sim, t(`pa.end.${e.event}` as Key, { vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'signOff') {
         announcePa(sim, t('pa.signOff', { vehicle: vehicleThe(sim), search: dayTime(searchMinute(p)), time: dayTime(p.until) }));
         // Waiting in the dark: the last minutes play out at their own pace.

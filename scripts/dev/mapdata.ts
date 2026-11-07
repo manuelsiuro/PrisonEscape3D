@@ -2,6 +2,7 @@
 // rules (never run): each prison's sheet (ways out, rules, power, jobs, people, days, its story), the
 // overlays drawn over its maps (exit, restricted zones, snipers, the routine, jobs, loot, rat traps)
 // and where a grapnel or a glider leaves its roofs. English only, like the rest of the viewer.
+import { TRIBUTE, type GangId } from '../../src/content/gangs';
 import { CHAINS, KIND } from '../../src/content/oddjobs';
 import { DAY_BOOKS, EVENT_TIMES } from '../../src/content/days';
 import { DRONE_HOURS } from '../../src/content/smuggling';
@@ -245,7 +246,10 @@ const EVENT_PLACE: Record<string, string> = {
   sports: 'Games in free time and the exercise hour.',
   talent: 'The stage in the canteen.',
   quiz: 'The quiz seats in the library.',
+  gangWar: "Two gangs brawl at the first's corner of the yard (Overlays: Gang turf); guards are drawn there.",
 };
+/** A gang's name in the viewer (English). */
+const GANG_TITLE: Record<GangId, string> = { kitchen: 'The Kitchen Crew', lifers: 'The Lifers', gymRats: 'The Gym Rats' };
 const EVENT_NAME: Record<string, string> = {
   inspection: 'Inspection',
   drill: 'Fire drill',
@@ -258,6 +262,7 @@ const EVENT_NAME: Record<string, string> = {
   sports: 'Sports day',
   talent: 'Talent night',
   quiz: 'Quiz night',
+  gangWar: 'Gang war',
 };
 
 function eventTime(id: keyof typeof EVENT_TIMES): string {
@@ -377,6 +382,30 @@ export function sheetOf(def: PrisonDef, w: World): SheetSection[] {
       at: [lib.x, lib.z],
     });
   if (people.length) out.push({ title: 'Inmates', rows: people });
+  // 2.36: the gangs, their boss, members and turf.
+  if (def.gangs?.length)
+    out.push({
+      title: 'Gangs',
+      rows: [
+        ...def.gangs.map((g) => ({
+          label: GANG_TITLE[g.id],
+          text: `Boss ${nameOfCell(def, g.boss)} (cell ${g.boss}, a merchant${g.boss === def.smuggling?.fixer ? ', the fixer' : ''}); ${g.members
+            .filter((c) => c !== g.boss)
+            .map((c) => `${nameOfCell(def, c)} (cell ${c})`)
+            .join(
+              ', ',
+            )}. Holds its table at dinner and its corner of the yard in the evening, from day 2 once the player has spoken to a gang member. Initiation: ${TRIBUTE[g.id]} from ${nameOfCell(def, def.gangs![(def.gangs!.indexOf(g) + 1) % def.gangs!.length].boss)}'s desk.`,
+          at: [g.corner[0], g.corner[1]] as const,
+        })),
+        {
+          label: 'No gang',
+          text: (() => {
+            const free = def.names.map((_, k) => k + 2).filter((c) => !def.gangs!.some((g) => g.members.includes(c)));
+            return free.length ? free.map((c) => `${nameOfCell(def, c)} (cell ${c})`).join(', ') : 'Nobody.';
+          })(),
+        },
+      ],
+    });
 
   const book = DAY_BOOKS[def.id];
   const smuggle: SheetRow[] = [];
@@ -536,6 +565,26 @@ export function layersOf(w: World): MapLayer[] {
     tip: 'A detector arch during visiting hours (10:00–12:00, visiting day).',
     tiles: arches,
   });
+
+  // 2.36: each gang's turf, its table and its corner of the yard.
+  if (w.def.gangs?.length) {
+    const tips: Record<number, string> = {};
+    for (const g of w.def.gangs) {
+      for (const [x, z] of rectTiles(g.table)) tips[z * MAP_W + x] = `${GANG_TITLE[g.id]}'s table: held at dinner, from day 2.`;
+      for (const [x, z] of rectTiles(g.corner)) tips[z * MAP_W + x] = `${GANG_TITLE[g.id]}'s corner: held in the evening, from day 2.`;
+    }
+    add({
+      id: 'turf',
+      group: 'People',
+      name: 'Gang turf',
+      color: '#c0242c',
+      about:
+        "Each gang's canteen table and corner of the yard. A member of a rival gang standing on it while it's held is told to get off (6 s), then one of them squares up; nobody minds someone in no gang.",
+      tip: 'Gang turf.',
+      tiles: Object.keys(tips).map(Number),
+      tips,
+    });
+  }
 
   const jobTips: Record<number, string> = {};
   const say = (i: number, s: string) => {

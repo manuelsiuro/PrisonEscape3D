@@ -1,0 +1,101 @@
+/* ------------------------------------------------------------ 2.36: gangs and turf */
+:root {
+  /* This file's own colours: each gang's (the 3D's bandanas, content/gangs.ts GANG_COLOR), and the HUD's warning off turf. */
+  --gang-kitchen: #c0242c;
+  --gang-kitchen-rgb: 192, 36, 44;
+  --gang-lifers: #2f5fd0;
+  --gang-lifers-rgb: 47, 95, 208;
+  --gang-gymRats: #3fa535;
+  --gang-gymRats-rgb: 63, 165, 53;
+  --gang-turf-bg: #781612;
+  --gang-turf-bg-rgb: 120, 22, 18;
+}
+
+/* A gang's chip on the talk card: a dot in its colour, its name, and Boss / Your gang / Rival. */
+.chip.gang {
+  --gang: var(--gang-kitchen);
+  background: rgba(var(--white-rgb), 0.1);
+}
+.chip.gang[data-gang='lifers'] {
+  --gang: var(--gang-lifers);
+}
+.chip.gang[data-gang='gymRats'] {
+  --gang: var(--gang-gymRats);
+}
+.chip.gang .gang-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gang);
+  box-shadow: 0 0 0 1.5px rgba(var(--white-rgb), 0.7);
+}
+.chip.gang em {
+  margin-left: 3px;
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.75;
+}
+.chip.gang[data-rel='rival'] em {
+  color: var(--red-81);
+  opacity: 1;
+}
+
+/* At a boss: the gang's section, rimmed in its colour. */
+.talk-gang {
+  padding: 8px 12px 4px;
+  border-radius: 14px;
+  background: rgba(var(--gang-kitchen-rgb), 0.1);
+  box-shadow: inset 0 0 0 1px rgba(var(--gang-kitchen-rgb), 0.45);
+}
+.talk-gang[data-gang='lifers'] {
+  background: rgba(var(--gang-lifers-rgb), 0.1);
+  box-shadow: inset 0 0 0 1px rgba(var(--gang-lifers-rgb), 0.45);
+}
+.talk-gang[data-gang='gymRats'] {
+  background: rgba(var(--gang-gymRats-rgb), 0.1);
+  box-shadow: inset 0 0 0 1px rgba(var(--gang-gymRats-rgb), 0.45);
+}
+.talk-gang .box-label .ic {
+  color: var(--gang-kitchen);
+}
+.talk-gang[data-gang='lifers'] .box-label .ic {
+  color: var(--gang-lifers);
+}
+.talk-gang[data-gang='gymRats'] .box-label .ic {
+  color: var(--gang-gymRats);
+}
+.talk-gang > .talk-note {
+  margin: 4px 0 6px;
+}
+
+/* The HUD: told off a rival's turf, the seconds to get off it (a red chip); the player's gang, a ring round their face. */
+.hud-alert.hud-turf {
+  max-width: calc(100vw - 24px);
+  background: rgba(var(--gang-turf-bg-rgb), 0.92);
+}
+.hud-alert.hud-turf > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-alert.hud-turf b {
+  color: var(--red-81);
+}
+.hud-alert.hud-turf .hud-alert-bar i {
+  background: var(--red-81);
+}
+.hud-cash[data-gang='kitchen'] .hud-face {
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 0 4px var(--gang-kitchen);
+}
+.hud-cash[data-gang='lifers'] .hud-face {
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 0 4px var(--gang-lifers);
+}
+.hud-cash[data-gang='gymRats'] .hud-face {
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 0 4px var(--gang-gymRats);
+}
