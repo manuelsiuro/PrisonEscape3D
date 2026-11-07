@@ -182,34 +182,34 @@
       "tris": 97427
     },
     "six-hunter d1 07:50": {
-      "calls": 87,
+      "calls": 88,
       "shadowCalls": 54,
-      "tris": 146035
+      "tris": 113167
     },
     "six-hunter d1 08:02": {
-      "calls": 89,
+      "calls": 91,
       "shadowCalls": 59,
-      "tris": 148377
+      "tris": 116959
     },
     "six-hunter d1 12:10": {
-      "calls": 82,
+      "calls": 84,
       "shadowCalls": 41,
-      "tris": 146284
+      "tris": 116002
     },
     "six-hunter d1 15:05": {
       "calls": 71,
       "shadowCalls": 56,
-      "tris": 147900
+      "tris": 113735
     },
     "six-hunter d1 18:40": {
-      "calls": 83,
+      "calls": 84,
       "shadowCalls": 41,
-      "tris": 146069
+      "tris": 113198
     },
     "six-hunter d1 23:30": {
-      "calls": 116,
+      "calls": 117,
       "shadowCalls": 64,
-      "tris": 150230
+      "tris": 117346
     }
   }
 }

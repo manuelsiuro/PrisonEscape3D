@@ -565,16 +565,21 @@ export class WorldView {
           );
           for (let k = 0; k < 9; k++) legs.push(placedBox(0.5, 0.04, 0.05, x + w / 2, 0.35 + k * 0.45, z + d + 0.25));
           legs.push(placedBox(w + 0.3, 0.15, d + 0.3, x + w / 2, H, z + d / 2));
-          cabins.push(placedBox(w - 0.1, 0.62, d - 0.1, x + w / 2, H + 0.38, z + d / 2));
+          // (A small seat on its wide deck, its roof no bigger than the seat: review of 2.36, a stand's roof the size of the
+          // tower hid the river's bend.)
+          const cw = w - 1.0;
+          const cd = d - 1.0;
+          cabins.push(placedBox(cw, 0.62, cd, x + w / 2, H + 0.38, z + d / 2));
           for (const [cx, cz] of [
-            [0.12, 0.12],
-            [w - 0.12, 0.12],
-            [0.12, d - 0.12],
-            [w - 0.12, d - 0.12],
+            [-1, -1],
+            [1, -1],
+            [-1, 1],
+            [1, 1],
           ])
-            cabins.push(placedBox(0.12, 1.4, 0.12, x + cx, H + 0.75, z + cz));
-          panes.push(placedBox(w - 0.24, 0.5, d - 0.24, x + w / 2, H + 0.95, z + d / 2));
-          roofs.push(new THREE.ConeGeometry(Math.max(w, d) * 0.86, 1.0, 4).rotateY(Math.PI / 4).translate(x + w / 2, H + 1.9, z + d / 2));
+            cabins.push(placedBox(0.1, 1.15, 0.1, x + w / 2 + (cx * (cw - 0.1)) / 2, H + 0.98, z + d / 2 + (cz * (cd - 0.1)) / 2));
+          panes.push(placedBox(cw - 0.14, 0.4, cd - 0.14, x + w / 2, H + 1.0, z + d / 2));
+          const r = (Math.max(cw, cd) / 2 + 0.2) * Math.SQRT2;
+          roofs.push(new THREE.ConeGeometry(r, 0.7, 4).rotateY(Math.PI / 4).translate(x + w / 2, H + 1.9, z + d / 2));
           continue;
         }
         for (const [sx, sz] of [
@@ -669,7 +674,7 @@ export class WorldView {
               : theme === 'desert'
                 ? 0xe8d2ae
                 : theme === 'forest'
-                  ? 0xb4bca6
+                  ? 0xd2d8c4
                   : 0xa9bd98,
         roughness: outside ? 0.95 : 1,
       }),
