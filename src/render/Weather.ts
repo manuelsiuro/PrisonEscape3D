@@ -230,6 +230,22 @@ export class Weather {
       const freeWall = (open(x - 1, z) && open(x + 1, z)) || (open(x, z - 1) && open(x, z + 1));
       data[i] = (TILE_INFO[world.ground.kind[i]].outdoor && !roofed) || freeWall ? 255 : 0;
     }
+    // (Session 14: blurred over the tiles round, so the veil thins over a wall rather than stopping at it in a hard bank.)
+    const sharp = data.slice();
+    for (let z = 0; z < MAP_H; z++)
+      for (let x = 0; x < MAP_W; x++) {
+        let sum = 0;
+        let n = 0;
+        for (let dz = -1; dz <= 1; dz++)
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            const zz = z + dz;
+            if (xx < 0 || zz < 0 || xx >= MAP_W || zz >= MAP_H) continue;
+            sum += sharp[zz * MAP_W + xx];
+            n++;
+          }
+        data[z * MAP_W + x] = Math.round(sum / n);
+      }
     const old = this.fogMat.uniforms.outdoor.value as THREE.Texture | null;
     old?.dispose();
     const tex = new THREE.DataTexture(data, MAP_W, MAP_H, THREE.RedFormat);
