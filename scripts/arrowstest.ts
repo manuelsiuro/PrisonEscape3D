@@ -5,9 +5,13 @@
  *   - the first day's desk (the player's own desk: search it),
  *   - the first day's job board (read it),
  *   - the job's next station in the Work Period (its step),
- * facing each of the four ways, with an inmate who'd talk on each tile round the player in reach,
- * the press must do what it does with nobody about. Before 2.36 (Sim.rules235) a bystander the player
- * happened to face took the press (the meal's seat, the desk), as old runs replay.
+ * facing each of the four ways, with an inmate who'd talk on each tile round the player in reach but
+ * the one on the tile ahead, the press must do what it does with nobody about; the one on the tile ahead,
+ * looked at squarely, is talked to (but at the job's station, whose step comes first, as since 2.34.2). Before 2.36 (Sim.rules235) a bystander at the edge of the way the
+ * player faced took the press (the meal's seat, the desk, the board), as old runs replay.
+ * And the other way round: from every floor tile of every prison, at breakfast with a tray and in free
+ * time, anyone round the player whom some way of facing (of the game's 16) let them talk to before still
+ * can be talked to: the arrows never wall someone off.
  */
 import { PRISONS } from '../src/content/prisons';
 import type { Sim } from '../src/sim/Sim';
@@ -18,6 +22,7 @@ import { seatSpot } from '../src/sim/systems/rest';
 import { UNIT } from '../src/sim/tuning';
 import { placesOf } from '../src/sim/ai/places';
 import { MAP_W } from '../src/sim/world/World';
+import { DIR_X, DIR_Z } from '../src/sim/command';
 import { check } from './assert';
 import { Bot, DIR } from './bots';
 
@@ -40,7 +45,7 @@ function clear(sim: Sim) {
  * On each tile, each way faced: the plan with nobody about, then with a talker on each tile round. Returns
  * [tiles, presses tried, presses taken by the bystander, an example].
  */
-function probe(sim: Sim, tiles: number[], expect: (p: Plan | null) => boolean): [number, number, number, string] {
+function probe(sim: Sim, tiles: number[], expect: (p: Plan | null) => boolean, aheadTalks = true): [number, number, number, string] {
   const s = sim.state;
   const p = s.player;
   const by = s.inmates[0];
@@ -70,6 +75,15 @@ function probe(sim: Sim, tiles: number[], expect: (p: Plan | null) => boolean): 
         put(by.body, n);
         by.ko = 0;
         by.angry = 0;
+        // (The one on the tile ahead, looked at squarely: talked to.)
+        if (aheadTalks && dx === Math.sign(DIR_X[f]) && dz === Math.sign(DIR_Z[f])) {
+          const got = interactPlan(sim);
+          if (what(got) !== 'talk:person') {
+            lost++;
+            example ||= `${t % MAP_W},${Math.floor(t / MAP_W)} facing ${f}, someone ahead: ${what(got)}`;
+          }
+          continue;
+        }
         tried++;
         const got = interactPlan(sim);
         if (what(got) !== what(alone)) {
@@ -80,6 +94,53 @@ function probe(sim: Sim, tiles: number[], expect: (p: Plan | null) => boolean): 
     }
   }
   return [used, tried, lost, example];
+}
+
+/**
+ * From every floor tile, someone on each tile round: whether some way of facing talks to them, now and before
+ * 2.36. Returns [pairs where the press changed, pairs that could be talked to before and can't now].
+ */
+function talkable(sim: Sim): [number, number, string] {
+  const s = sim.state;
+  const p = s.player;
+  const by = s.inmates[0];
+  const w = sim.world;
+  let changed = 0;
+  let walled = 0;
+  let example = '';
+  for (let t = 0; t < w.npcBlock.length; t++) {
+    if (w.npcBlock[t]) continue;
+    for (const [dx, dz] of ROUND) {
+      const n = t + dz * MAP_W + dx;
+      if (n < 0 || n >= w.npcBlock.length || w.npcBlock[n]) continue;
+      let now = false;
+      let before = false;
+      let diff = false;
+      for (let f = 1; f <= 16; f++) {
+        clear(sim);
+        put(p, t);
+        p.moving = false;
+        p.facing = f;
+        put(by.body, n);
+        by.ko = 0;
+        by.angry = 0;
+        sim.rules235 = false;
+        const a = what(interactPlan(sim));
+        sim.rules235 = true;
+        const b = what(interactPlan(sim));
+        sim.rules235 = false;
+        if (a === 'talk:person') now = true;
+        if (b === 'talk:person') before = true;
+        if (a !== b) diff = true;
+      }
+      if (diff) changed++;
+      if (before && !now) {
+        walled++;
+        example ||= `${t % MAP_W},${Math.floor(t / MAP_W)}, someone at ${dx},${dz}`;
+      }
+    }
+  }
+  return [changed, walled, example];
 }
 
 const results: string[] = [];
@@ -102,6 +163,11 @@ for (const def of PRISONS) {
     sim.rules235 = false;
     results.push(`  before 2.36: ${oldLost} taken`);
     check(oldLost > 0, `${def.id}: before 2.36, a bystander faced took the press (${oldLost})`);
+    const [changed, walled, wex] = talkable(sim);
+    results.push(
+      `  every tile, someone round: ${changed} pairs pressed otherwise, ${walled} no longer to be talked to${wex ? ` (${wex})` : ''}`,
+    );
+    check(walled === 0, `${def.id}: at breakfast with a tray, nobody walled off (${walled})`);
   }
   // Free time on day 1: the desk, the job board.
   {
@@ -119,6 +185,11 @@ for (const def of PRISONS) {
         }
       return out;
     };
+    const [changed, walled, wex] = talkable(sim);
+    results.push(
+      `${def.id} free time, every tile, someone round: ${changed} pairs pressed otherwise, ${walled} no longer to be talked to${wex ? ` (${wex})` : ''}`,
+    );
+    check(walled === 0, `${def.id}: in free time, nobody walled off (${walled})`);
     const desk = w.props.find((p) => p.kind === 'desk' && w.cellOf[p.z * MAP_W + p.x] === 1)!;
     const deskTiles = [placesOf(w).deskside[1]];
     const [dUsed, dTried, dLost, dEx] = probe(sim, deskTiles, (p) => p?.do === 'search');
@@ -146,7 +217,7 @@ for (const def of PRISONS) {
           const inside = x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d;
           if (!inside && !sim.world.npcBlock[z * MAP_W + x]) tiles.push(z * MAP_W + x);
         }
-      const [used, tried, lost, ex] = probe(sim, tiles, (q) => q?.do === 'work');
+      const [used, tried, lost, ex] = probe(sim, tiles, (q) => q?.do === 'work', false);
       results.push(`${def.id} job (${room.def.id}): ${used} ways at its take, ${tried} presses, ${lost} taken${ex ? ` (${ex})` : ''}`);
       check(lost === 0, `${def.id}: at the job's station, its step first (${lost} of ${tried})`);
     }

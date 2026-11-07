@@ -9,3 +9,4 @@ trout: thrown, hound 0 fed; eaten, +20 energy
 kennels: 4 bowls by day 1 12:57, $35, the pack fed (6)
 kennels over a week: trust 10, 20, 30, 40, 40, 40, 40; jerky on top, a friend in 3 days; a missed day -15
 new: 10 items, 4 recipes, 3 tables, only at the Six Hunter
+titles: 60 lines a language name the Six as Hunters

@@ -2,4 +2,5 @@ every link in the docs, the README, CLAUDE.md and the skills leads somewhere
 every history entry has its line in HISTORY.md, in order; the version in its range; no release left "not released yet"
 every file within its size; entries from 2.35 on wrapped
 the counts in PLAN.md, FEATURES.md and the README are the game's
+the code's size in FEATURES.md and the README within a twentieth of the real one
 BACKLOG.md's areas are POLISH.md's open ones

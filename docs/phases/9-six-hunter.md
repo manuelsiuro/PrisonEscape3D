@@ -176,7 +176,8 @@ look), hidden in the supply truck with nobody looking, away at 14:31, a gold med
 Hollowrun valley by keys. On a phone (412×915) the work period's HUD and line. What a person would trip on: at the feed
 bin and at a breakfast seat the arrows' last tile had an inmate in reach and the first press talked to him (every
 prison's rule); free time had no arrows back to the desk the guide asks for (as everywhere). Both fixed after, in
-every prison: where the arrows end, the press does what they led there for ahead of a bystander (`interact.ts`
-`arrowsTarget`, behind `Sim.rules235`; `arrowstest`: every seat with a tray, the desk, the job board and the job's take,
-each way faced, someone on each tile round: none taken now; at the seats 102–234 a prison before, the job's stations never); the desk step's arrows lead beside
-the desk (Claude's pick: arrows rather than a guide that waits).
+every prison: on the tiles the arrows end on, the press talks to someone looked at squarely, else does what the arrows
+led there for, never going to someone at the edge of the way faced (`interact.ts` `arrowsTarget`, `faceToFace`, behind
+`Sim.rules235`; `arrowstest`: every seat with a tray, the desk, the job board and the job's take, each way faced,
+someone on each tile round: none taken now, 55–138 a prison at the seats before, the job's stations never; and from
+every floor tile, nobody walled off from every way of facing). The desk step's arrows lead beside the desk (Claude's pick: arrows rather than a guide that waits).
