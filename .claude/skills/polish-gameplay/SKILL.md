@@ -83,6 +83,8 @@ line is something that was missed or broke at some point.
   so it faces up (tipped the other way it faces the floor and its back is culled). The card stays the readable version.
 - The player's see-through silhouette treats anything not drawn in the body's material as a wall.
 - Per-frame values must not accumulate; reduced motion must snap rather than vanish.
+- A new pose or held item: `scripts/dev/posesheet.ts` shows it frame by frame from the game's camera angle, from both
+  sides; `animtest` fails on a limb jumping at a change or a set-off, and on a pose left behind once it's over.
 
 ## 3. Look for traps in the rules
 

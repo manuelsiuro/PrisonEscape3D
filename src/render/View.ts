@@ -867,6 +867,7 @@ export class View {
       o.z = g.z;
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
+    this.pieces.events.timeScale = f.speed;
     this.inspecting = this.pieces.events.update(
       f.events,
       dt,
