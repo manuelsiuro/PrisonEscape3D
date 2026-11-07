@@ -368,3 +368,55 @@
   saved and loaded at day 1 21:04 (playerCell) resumes, day 2 07:32 (playerCell) resumes, day 2 09:38 (canteen) resumes, day 2 10:01 (canteen) resumes
   ledger: formsFiled 1, released 1; walked 526 tiles; days quiet / escaped
   → out day 2 10:09 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== six-hunter
+  raft: the river fence cut 7.0 s after the power went off
+== six-hunter: raft
+  day 1 23:27 power OFF (player)
+  day 1 23:35 ESCAPED (raft)
+  saved and loaded at day 1 15:47 (gym) resumes, day 1 22:01 (cellBlock) resumes, day 1 23:16 (cellBlock) resumes, day 1 23:30 (boathouse) resumes
+  ledger: powerCuts 1; walked 480 tiles; days escaped
+  → out day 1 23:35 by raft; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== six-hunter: tunnel
+  day 1 23:13 climbDown → layer 0
+  day 2 00:44 digUp → layer 1
+  day 2 00:44 ESCAPED (tunnel)
+  saved and loaded at day 1 16:22 (showers) resumes, day 1 23:04 (playerCell) resumes, day 2 00:24 (tunnels) resumes, day 2 00:39 (tunnels) resumes
+  ledger: nothing; walked 429 tiles; days quiet / escaped
+  → out day 2 00:44 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
+== six-hunter: glider
+  day 1 23:11 climbVent → layer 2
+  day 1 23:34 climbRoof → layer 3
+  day 1 23:37 glide → layer 1
+  day 1 23:37 off the roof on a glider: 7 tiles
+  day 1 23:37 ESCAPED (glider)
+  saved and loaded at day 1 15:48 (gym) resumes, day 1 22:03 (cellBlock) resumes, day 1 23:18 (vents) resumes, day 1 23:32 (vents) resumes
+  ledger: glides 1, glideFar 7; walked 473 tiles; days escaped
+  → out day 1 23:37 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  the wind from the west, strength 2: 7 tiles
+== six-hunter: stowaway
+  day 1 12:30 the delivery is in
+  day 1 12:45 into the vehicle
+  day 1 14:30 the vehicle waved through
+  day 1 14:31 the delivery leaves
+  day 1 14:31 ESCAPED (stowaway)
+  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (perimeter) resumes, day 1 14:23 (perimeter) resumes, day 1 14:29 (perimeter) resumes
+  ledger: stowed 1; walked 236 tiles; days escaped
+  → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  seed 68: the search a quick look
+== six-hunter: bluff
+  day 1 19:50 waved through the checkpoint
+  day 1 19:50 ESCAPED (bluff)
+  saved and loaded at day 1 13:55 (kennels) resumes, day 1 18:39 (playerCell) resumes, day 1 19:36 (perimeter) resumes, day 1 19:46 (perimeter) resumes
+  ledger: waved 1; walked 421 tiles; days escaped
+  → out day 1 19:50 by bluff; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== six-hunter: paperwork
+  day 1 18:32 form filed: on the release list for day 2
+  day 1 22:00 the records: the form passes
+  day 2 01:21 bed check: pass
+  day 2 04:47 bed check: pass
+  day 2 10:00 the name called
+  day 2 10:08 cleared at the desk
+  day 2 10:13 ESCAPED (paperwork)
+  saved and loaded at day 1 21:06 (playerCell) resumes, day 2 07:35 (playerCell) resumes, day 2 09:41 (canteen) resumes, day 2 10:05 (corridor) resumes
+  ledger: formsFiled 1, released 1; walked 666 tiles; days quiet / escaped
+  → out day 2 10:13 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0

@@ -121,10 +121,10 @@ export const DAY_BOOKS: Record<string, DayBook> = {
     beforeStage: { talent: 'none', quiz: 'drill' },
   },
   // 2.36, the Six Hunter: valley fog (it blinds the Hunters, never their hounds), rain off the hills, the odd storm, never a heatwave;
-  // the wind down the valley from the west; the outfitter's truck once a week, visitors in the gatehouse, the estate's games.
-  // (A new prison: no game was ever saved there before any of its cards, so no `before*`.)
+  // the wind down the valley from the west; the outfitter's truck once a week, visitors in the gatehouse, the estate's games,
+  // the gangs' war. (A new prison: no game was ever saved there before any of its cards, so no `before*`.)
   'six-hunter': {
-    deck: ['delivery', 'inspection', 'drill', 'visiting', 'sports', 'talent', 'quiz'],
+    deck: ['delivery', 'gangWar', 'drill', 'visiting', 'sports', 'talent', 'quiz'],
     climate: { weights: [25, 40, 25, 10, 0], keep: 40, wind: 6 },
   },
 };

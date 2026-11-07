@@ -139,6 +139,15 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.scrub();
       itemsUI.toast(t(outOfBounds(sim) ? 'toast.washedStill' : 'toast.washed'));
       break;
+    // 2.36 (The Six Hunter): the recall horn blown; a drag line landed (its own sounds are the look's pass: a bang, a scrub for now).
+    case 'horn':
+      sound.bang();
+      itemsUI.toast(t('toast.horn'));
+      break;
+    case 'dragLine':
+      sound.scrub();
+      itemsUI.toast(t(e.trail ? 'toast.dragLine' : 'toast.dragLineNone'));
+      break;
     case 'cantThrow': {
       const now = performance.now();
       if (now - cant.at < 600) break;

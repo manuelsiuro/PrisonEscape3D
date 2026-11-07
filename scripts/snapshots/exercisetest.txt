@@ -4,12 +4,14 @@ stalag-flucht: 10 machines, each with its tile, a set on each, the longest 4.8 s
 shankton: 9 machines, each with its tile, a set on each, the longest 4.9 s
 san-pancho: 8 machines, each with its tile, a set on each, the longest 4.8 s
 irongate: 9 machines, each with its tile, a set on each, the longest 4.9 s
+six-hunter: 8 machines, each with its tile, a set on each, the longest 4.9 s
 a set: on the beat 4.35 s, tapping every step 19.15 s, three times a second 12.2 s, every 1.5 s 18.05 s, every 5 s 45.05 s
 center-perks: on the machines in the hour: up to 3 at once, 5 machines used over 6 seeds, none shared
 stalag-flucht: on the machines in the hour: up to 5 at once, 9 machines used over 6 seeds, none shared
 shankton: on the machines in the hour: up to 4 at once, 7 machines used over 6 seeds, none shared
 san-pancho: on the machines in the hour: up to 8 at once, 8 machines used over 6 seeds, none shared
 irongate: on the machines in the hour: up to 5 at once, 9 machines used over 6 seeds, none shared
+six-hunter: on the machines in the hour: up to 4 at once, 6 machines used over 6 seeds, none shared
 giving way: asked in all five, on the machine in 2 s, they keep off it; in free time, off it in moments
 the bag and the mat in every gym, in nobody's way; a lap at 100 Speed says nothing
 center-perks: 212 looks round the bag and the mat: nothing faced lost to them
@@ -17,4 +19,5 @@ stalag-flucht: 232 looks round the bag and the mat: nothing faced lost to them
 shankton: 144 looks round the bag and the mat: nothing faced lost to them
 san-pancho: 92 looks round the bag and the mat: nothing faced lost to them
 irongate: 108 looks round the bag and the mat: nothing faced lost to them
+six-hunter: 136 looks round the bag and the mat: nothing faced lost to them
 saves: a turn asked for kept; from before, none. Logs: a 2.28 log replays by the old rules and is not carried on; today's is

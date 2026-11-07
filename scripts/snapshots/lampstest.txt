@@ -80,4 +80,18 @@ irongate
   8,27 sports — SE: open ground
   21,27 sports — SW: open ground
 
-69 lamps, 1 with two heads; aimed E 11, N 5, NE 8, NW 8, S 2, SE 11, SW 15, W 9
+six-hunter
+  24,54 sports — NW: open ground
+  15,22 yard — SE: open ground
+  28,22 yard — SW: open ground
+  28,31 yard — NW: open ground
+  38,54 kennels — NE: open ground
+  54,54 kennels — NW: open ground
+  6,20 perimeter — W: a wall at 3
+  6,44 perimeter — W: a wall at 3
+  56,20 perimeter — E: the fence at 3
+  56,44 perimeter — E: the fence at 3
+  20,7 perimeter — N: the fence at 2
+  40,7 perimeter — N: the fence at 2
+
+81 lamps, 1 with two heads; aimed E 13, N 7, NE 9, NW 11, S 2, SE 12, SW 16, W 11

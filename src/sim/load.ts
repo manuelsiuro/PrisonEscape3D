@@ -75,7 +75,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (2.36: optional, so not among a fresh state's keys: kept when there, last, in the order the run added them (the
   // hash reads the keys in order); checked below.)
   for (const k of Object.keys(st))
-    if ((k === 'struckLayer' || k === 'gang' || k === 'recall') && st[k] !== undefined) (s as unknown as Record<string, unknown>)[k] = st[k];
+    if ((k === 'struckLayer' || k === 'gang' || k === 'recall') && st[k] !== undefined)
+      (s as unknown as Record<string, unknown>)[k] = st[k];
   // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
   // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
   // cameras it has).

@@ -811,7 +811,7 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
     let gy = y + 10 + notes.length * 22 + 10;
     def.guards.forEach((gu, k) => {
       const color = GUARD_COLORS[k % GUARD_COLORS.length];
-      const label = `${gu.name ?? `guard ${k + 1}`} · ${gu.key} key · ${gu.trait ?? 'steady'}${gu.riot ? ' · riot' : ''}${gu.helipad ? ' · helipad' : ''}${gu.dog ? ` · dog ${gu.dog.name}` : ''}${gu.night ? '' : ' · sleeps at night'}`;
+      const label = `${gu.name ?? `guard ${k + 1}`} · ${gu.key} key · ${gu.trait ?? 'steady'}${gu.riot ? ' · riot' : ''}${gu.helipad ? ' · helipad' : ''}${gu.dog ? ` · dog ${gu.dog.name}` : ''}${gu.kit?.length ? ` · carries ${gu.kit.join(', ')}` : ''}${gu.night ? '' : ' · sleeps at night'}`;
       const wpx = label.length * 7.4 + 34;
       if (gx + wpx > W - M) {
         gx = M;
@@ -1299,6 +1299,7 @@ function tileData(def: PrisonDef, n: number) {
         gu.riot && 'riot',
         gu.helipad && 'helipad',
         gu.dog && `dog ${gu.dog.name}${gu.dog.night ? ' (nights too)' : ''}`,
+        gu.kit?.length && `carries ${gu.kit.map((id) => id.replace(/_/g, ' ')).join(', ')}`,
         !gu.night && 'sleeps at night',
         gu.duties?.includes('bedCheck') && 'bed checks',
         gu.duties?.includes('shakedown') && 'shakedowns',

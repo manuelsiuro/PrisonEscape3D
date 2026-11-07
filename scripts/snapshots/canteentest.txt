@@ -9,6 +9,7 @@ stalag-flucht: 5 places at the counter, 24 seats; the meal walked in 11 of its 6
 shankton: 5 places at the counter, 24 seats; the meal walked in 13 of its 60 minutes
 san-pancho: 5 places at the counter, 16 seats; the meal walked in 12 of its 60 minutes
 irongate: 5 places at the counter, 16 seats; the meal walked in 12 of its 60 minutes
+six-hunter: 6 places at the counter, 24 seats; the meal walked in 21 of its 60 minutes
 center-perks #41: of 7 inmates 7 fetched, 7 ate, 7 took it back, the last at 58 minutes; 0 steps two at one place, 5 pressed together
 center-perks #42: of 7 inmates 7 fetched, 7 ate, 7 took it back, the last at 54 minutes; 0 steps two at one place, 26 pressed together
 center-perks #43: of 7 inmates 7 fetched, 7 ate, 7 took it back, the last at 53 minutes; 0 steps two at one place, 3 pressed together
@@ -24,3 +25,6 @@ san-pancho #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 4
 irongate #41: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 45 minutes; 0 steps two at one place, 76 pressed together
 irongate #42: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 45 minutes; 0 steps two at one place, 109 pressed together
 irongate #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 42 minutes; 0 steps two at one place, 115 pressed together
+six-hunter #41: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 52 minutes; 0 steps two at one place, 26 pressed together
+six-hunter #42: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 51 minutes; 0 steps two at one place, 26 pressed together
+six-hunter #43: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 54 minutes; 0 steps two at one place, 13 pressed together

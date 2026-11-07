@@ -164,7 +164,7 @@ export async function watch(seconds = 20) {
 /** Every prison staged `rounds` times over (as a long session moving between them does): what each round leaves. */
 export async function prisons(rounds = 3) {
   hook();
-  const list = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho'];
+  const list = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
   const t0 = performance.now();
   const out: Array<Sample & { round: number }> = [];
   rec = { gaps: [], slow: [], compiled: 0, gcs: 0 };
