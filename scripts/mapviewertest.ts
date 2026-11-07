@@ -8,10 +8,14 @@
  * the sheet, or as having no place on a map: that's how the viewer has fallen behind before.
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { DECOR } from '../src/content/decor';
+import { ITEMS } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
 import { TRAINING } from '../src/content/prisons/training';
+import { PROPS } from '../src/content/props';
 import { MAP_H, MAP_W } from '../src/sim/world/World';
 import { viewerData } from './dev/mapimage';
+import { computeModelStats, getCatalog } from './dev/modelviewer/catalog';
 
 const OUT = 'assets/maps';
 let failures = 0;
@@ -111,6 +115,53 @@ for (const def of [TRAINING, ...PRISONS]) {
   unknown(def.id, def, KNOWN_PRISON);
   def.guards.forEach((g, k) => unknown(`${def.id}'s guard ${k + 1}`, g, KNOWN_GUARD));
   if (def.leisure) unknown(`${def.id}'s leisure`, def.leisure, KNOWN_LEISURE);
+}
+
+// 3D Models Viewer (assets/models/index.html + scripts/dev/modelviewer/catalog.ts):
+// every game prop, decor piece, item, and kit-library entry builds a valid 3D mesh.
+if (!existsSync('assets/models/index.html')) fail('assets/models/index.html missing');
+const catalog = getCatalog();
+const catalogIds = new Set<string>();
+for (const e of catalog) {
+  if (catalogIds.has(e.id)) fail(`models viewer: duplicate id ${e.id}`);
+  catalogIds.add(e.id);
+}
+for (const k of Object.keys(PROPS)) {
+  if (!catalogIds.has(`prop:${k}`)) fail(`models viewer: missing prop:${k}`);
+}
+for (const k of Object.keys(DECOR)) {
+  if (!catalogIds.has(`decor:${k}`)) fail(`models viewer: missing decor:${k}`);
+}
+for (const it of ITEMS) {
+  if (!catalogIds.has(`item:${it.id}`)) fail(`models viewer: missing item:${it.id}`);
+}
+// Minimal Node canvas stub for 2D canvas textures (Character sleep sprite, Pastimes, Games).
+const gDoc = globalThis as unknown as { document?: unknown };
+if (!gDoc.document) {
+  const noop = () => {};
+  const grad = { addColorStop: noop };
+  const ctx2d = new Proxy(
+    {
+      createLinearGradient: () => grad,
+      createRadialGradient: () => grad,
+      measureText: () => ({ width: 10 }),
+      getImageData: () => ({ data: new Uint8ClampedArray(16) }),
+    },
+    { get: (t, p) => (p in t ? t[p as keyof typeof t] : noop) },
+  );
+  gDoc.document = {
+    createElement: () => ({ width: 64, height: 64, getContext: () => ctx2d }),
+  };
+}
+for (const entry of catalog) {
+  const variants: Record<string, string | number | boolean> = {};
+  for (const v of entry.variants ?? []) variants[v.key] = v.defaultValue;
+  const built = entry.build({ variants, night: 0, power: 1 });
+  const stats = computeModelStats(built.root);
+  if (stats.meshes <= 0 || stats.vertices <= 0 || stats.triangles <= 0) {
+    fail(`models viewer: ${entry.id} built empty geometry (${stats.meshes} meshes, ${stats.vertices} verts)`);
+  }
+  built.dispose?.();
 }
 
 // What each prison offers, so that a change to any of it shows in the snapshot.

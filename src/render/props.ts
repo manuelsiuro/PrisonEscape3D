@@ -35,7 +35,7 @@ export const LANTERN_GLASS = { w: 0.15, h: 0.2 };
  * The forest's lamp (2.36, the Six Hunter): a timber post on a fieldstone foot, an iron bracket with its scroll brace,
  * an iron lantern hanging from its end where a street lamp's head would be (the same place: the dark rule's lamp).
  */
-function lanternParts(heads: number): Part[] {
+export function lanternParts(heads: number): Part[] {
   const IRON = 0x2a2724;
   const parts = [box(0.3, 0.16, 0.3, 0x7d7870, 0, 0, 0), cyl(0.075, 2.36, 0x5e4630, 0, 0.12, 0, 7), box(0.17, 0.1, 0.17, IRON, 0, 2.44, 0)];
   const g = LANTERN_GLASS;

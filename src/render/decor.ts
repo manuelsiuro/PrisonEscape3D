@@ -705,7 +705,7 @@ const BUILDERS: Record<DecorKind, Builder> = {
 };
 
 /** A decor model's geometries (the glow part and the canopy may be empty). */
-function geometryOf(
+export function decorGeometry(
   kind: DecorKind,
   w: number,
   d: number,
@@ -794,14 +794,14 @@ export class DecorView {
     const bases: Piece[] = [];
     const glows: Piece[] = [];
     // A model's geometries, built once per kind and size; the trees' leaves by kind and size too.
-    const built = new Map<string, ReturnType<typeof geometryOf>>();
+    const built = new Map<string, ReturnType<typeof decorGeometry>>();
     const leaves = new Map<string, DecorPlacement[]>();
     for (const p of list) {
       const w = p.w ?? 1;
       const d = p.d ?? 1;
       const turned = (p.rot ?? 0) % 2 === 1;
       const key = `${p.kind}:${turned ? d : w}x${turned ? w : d}`;
-      if (!built.has(key)) built.set(key, geometryOf(p.kind, turned ? d : w, turned ? w : d));
+      if (!built.has(key)) built.set(key, decorGeometry(p.kind, turned ? d : w, turned ? w : d));
       const g = built.get(key)!;
       const matrix = decorMatrix(p, new THREE.Matrix4());
       bases.push({ key, make: () => g.base, matrix });

@@ -59,7 +59,7 @@ export function visitorColors(
 const tint = { clothes: 0, skin: 0, hair: 0 };
 
 /** Its navigation lights, apart from the body (they alone glow and blink): red to port (+x, the nose along +z), green to starboard. */
-function lightsGeometry(): THREE.BufferGeometry {
+export function lightsGeometry(): THREE.BufferGeometry {
   return merge(
     [
       box(0.06, 0.05, 0.06, 0xff3b30, 0.34, 0.12, 0.34),
@@ -71,7 +71,7 @@ function lightsGeometry(): THREE.BufferGeometry {
 }
 
 /** The drone: a dark body, four arms, landing legs; rotors and lights are drawn apart. */
-function droneGeometry(): THREE.BufferGeometry {
+export function droneGeometry(): THREE.BufferGeometry {
   const parts: Part[] = [
     box(0.34, 0.12, 0.34, 0x2b3038, 0, 0, 0),
     box(0.2, 0.05, 0.2, 0x3d434d, 0, 0.12, 0),
@@ -96,13 +96,13 @@ function droneGeometry(): THREE.BufferGeometry {
 }
 
 /** A rotor: a pale blurred disc and its hub. */
-function rotorGeometry(): THREE.BufferGeometry {
+export function rotorGeometry(): THREE.BufferGeometry {
   const disc = new THREE.CylinderGeometry(0.17, 0.17, 0.008, 16);
   return merge([paint(disc, 0xcfd6de), box(0.03, 0.03, 0.03, 0x1b1e24, 0, -0.015, 0)], false);
 }
 
 /** The parcel it carries: a small taped box, and its sling. */
-function parcelGeometry(): THREE.BufferGeometry {
+export function parcelGeometry(): THREE.BufferGeometry {
   return merge(
     [
       box(0.24, 0.18, 0.24, 0xb88a52, 0, -0.18, 0),

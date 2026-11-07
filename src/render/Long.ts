@@ -39,7 +39,7 @@ const MAX_RACERS = 4;
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** A plant: a few leaves round a stem, unit size (scaled by its stage). */
-function plantGeometry(): THREE.BufferGeometry {
+export function plantGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [cyl(0.018, 0.22, 0x3f7a2c, 0, 0, 0, 6)];
   for (let k = 0; k < 5; k++) {
     const leaf = new THREE.SphereGeometry(1, 7, 5);
@@ -54,7 +54,7 @@ function plantGeometry(): THREE.BufferGeometry {
 }
 
 /** A crop showing on a ripe plant: three round fruit (or a vegetable's tops), unit size. */
-function cropGeometry(): THREE.BufferGeometry {
+export function cropGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
   for (let k = 0; k < 3; k++) {
     const g = new THREE.SphereGeometry(0.045, 8, 6);
@@ -66,7 +66,7 @@ function cropGeometry(): THREE.BufferGeometry {
 }
 
 /** The pet's home track: a little oval run of magazine pages (unit: a tile across). */
-function lapTrackGeometry(): THREE.BufferGeometry {
+export function lapTrackGeometry(): THREE.BufferGeometry {
   const ring = new THREE.RingGeometry(0.22, 0.34, 28);
   ring.rotateX(-Math.PI / 2);
   ring.scale(1.4, 1, 1);

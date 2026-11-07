@@ -26,7 +26,7 @@ const seg = (x0: number, z0: number, x1: number, z1: number, r: number, color: n
 /** A long stick along x: length, thickness, height of its middle. */
 const stick = (len: number, r: number, color: number | string, x = 0, y = r, z = 0) => rod(r, len, color, x, y, z, 8);
 
-const SHAPES: Record<string, Shape> = {
+export const ITEM_SHAPES: Record<string, Shape> = {
   comb: (c) => [
     box(0.42, 0.03, 0.08, c, 0, 0, -0.04),
     ...Array.from({ length: 9 }, (_, k) => box(0.025, 0.025, 0.1, c, -0.18 + k * 0.045, 0, 0.05)),
@@ -149,7 +149,7 @@ const SHAPES: Record<string, Shape> = {
     ...[-1, 0, 1].map((s) => turn(box(0.14, 0.03, 0.03, c), s * 0.7, 0.1 + 0.04, s * 0.04)),
     box(0.06, 0.04, 0.06, a, -0.2),
   ],
-  grapnel: (c, a) => [...SHAPES.hook(c, a), cyl(0.12, 0.04, a, -0.05, 0, 0.12, 14)],
+  grapnel: (c, a) => [...ITEM_SHAPES.hook(c, a), cyl(0.12, 0.04, a, -0.05, 0, 0.12, 14)],
   pack: (c, a) => [box(0.3, 0.06, 0.22, a), box(0.24, 0.07, 0.16, c, 0, 0.02), box(0.08, 0.072, 0.06, 0xf6c6c6, 0.05, 0.02, -0.02)],
   tray: (c, a) => [
     box(0.4, 0.03, 0.28, c),
@@ -515,7 +515,7 @@ const cache = new Map<string, THREE.BufferGeometry>();
 export function itemGeometry(d: ItemDef): THREE.BufferGeometry {
   let g = cache.get(d.id);
   if (!g) {
-    const shape = SHAPES[d.shape] ?? SHAPES.blob;
+    const shape = ITEM_SHAPES[d.shape] ?? ITEM_SHAPES.blob;
     g = merge(shape(d.color, d.accent ?? d.color), false);
     g.computeBoundingBox();
     cache.set(d.id, g);

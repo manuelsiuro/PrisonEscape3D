@@ -59,7 +59,7 @@ const STRETCH = 5;
 const FLAGS = [0xff5f6d, 0xffc145, 0x3fc79a, 0x5fa8e8, 0xa77bff, 0xff9ec7, 0xf2701c, 0xf4f4ef];
 
 /** The atlas: faces 1–6 in a 3 × 2 grid (white with dark pips, the one red). */
-function diceTexture(): THREE.CanvasTexture {
+export function diceTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 384;
   c.height = 256;
