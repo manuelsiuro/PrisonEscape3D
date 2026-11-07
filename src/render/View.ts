@@ -195,6 +195,8 @@ export class View {
   /** The cell block's lights out (2.28): 0 on … 1 out, and where it's heading. */
   private blockDark = 0;
   private blockDarkGoal = 0;
+  /** The lamps' pools stop at walls (2.36); a replay of an older run lights through them, as its rule does (session 14). */
+  private lampsWalled = true;
   /** The bed dummy in the player's bed (2.28). */
   private readonly dummy = bedDummyMesh();
   /** 2.29: the bars and the bags (what's pressed on them this frame, gathered). */
@@ -435,6 +437,7 @@ export class View {
     this.gear.build(world);
     this.workGear.build(world);
     this.blockDark = this.blockDarkGoal = 0;
+    this.lampsWalled = true;
     this.setCast(0);
     this.setGuards([]);
   }
@@ -1012,6 +1015,7 @@ export class View {
     this.gearUses.length = 0;
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.crowd.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
+    this.lampsWalled = f.dark?.walls !== false;
     this.pieces.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
   }
 
@@ -1176,6 +1180,7 @@ export class View {
       this.riot,
       this.security?.group.visible ? this.security.arches : 1,
       this.blockDark,
+      this.lampsWalled,
     );
     this.dust.update(dt);
     // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)

@@ -11,6 +11,7 @@
 import { PRISONS } from '../src/content/prisons';
 import { CELL_BLOCK, OPEN_AIR, RESTRICTED, ZONES, type ZoneId } from '../src/content/zones';
 import { TILE_INFO } from '../src/sim/world/tiles';
+import { poolTiles } from '../src/render/lights';
 import { darkReach, lampHead, litTile, seesInDark, type Dark } from '../src/sim/ai/light';
 import { canSee, lineOfSight, sightReach } from '../src/sim/ai/sight';
 import { command, EXT, OP } from '../src/sim/command';
@@ -282,6 +283,18 @@ for (const prison of PRISONS) {
   const was = fresh(prison, LATE, 5, night);
   was.rules235 = true;
   check(darkNow(was)?.walls === false, `${prison.id}: older runs' lamps light through walls`);
+  // Every tile but a wall's (doors too, any zone): lit by a lamp under the rule, then a pool is drawn on it
+  // (render/lights.ts poolTiles, the 3D's own list), under today's rules and the old alike.
+  for (const walled of [true, false]) {
+    const drawn = new Set(poolTiles(w, walled).map((t) => t.z * MAP_W + t.x));
+    let unpooled = 0;
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      const info = TILE_INFO[w.ground.base[i]];
+      if (info.solid && info.opaque) continue;
+      if (litTile(w, walled ? dark : old, i % MAP_W, Math.floor(i / MAP_W), false) && !drawn.has(i)) unpooled++;
+    }
+    check(unpooled === 0, `${prison.id}: ${unpooled} tiles lit by a lamp with no pool drawn (${walled ? "today's rules" : 'the old'})`);
+  }
   row.push(`${walledCells} cell tiles behind a wall from the lamps, dark`);
   // Out in the dark 6 tiles off: unseen; 3 tiles: seen.
   const g = sim.state.guards[night];

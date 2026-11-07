@@ -94,15 +94,25 @@ After both rounds:
   draw calls in each, about a thousand more triangles at night (Center Perks' 23:30 107k → 108k).
 - The map viewer's 3D photos retaken (all six and the five outsides: the caps are on every wall, the
   prison's wall behind the manhunt's outside too); `npm run maps` changed nothing else.
-- How to play: 30 pictures retaken, each compared with the old pixel by pixel and by eye, the same frame
-  and moment: bluff, cams, cheat, crew, delivery, dogs, fight, garden, glider, grounds, guards, hoops,
-  inmates, kiosk, layers, mines, night, paperwork, payphone, power, quiz, race, rat, shell, smuggling,
-  talent, tattoo, towers, ways, weather. Kept as they were (16): checkers, football, goal, holidays,
-  island, library, meals, menu, oddjobs, parole, rollcall, showers, train, vending and work, which the
-  current camera frames wider than they were taken (the subject smaller), and games, a live shot that
-  lost its arm-wrestle each time. They show the old caps and light; what they teach is unchanged.
-  The manhunt's picture didn't change.
+- How to play: 30 pictures retaken at 915×412, each compared with the old pixel by pixel and by eye, the
+  same frame and moment: bluff, cams, cheat, crew, delivery, dogs, fight, garden, glider, grounds,
+  guards, hoops, inmates, kiosk, layers, mines, night, paperwork, payphone, power, quiz, race, rat,
+  shell, smuggling, talent, tattoo, towers, ways, weather. After the review, the other 16 too, at
+  1440×844, each shot's zoom found by matching the old picture's scale (a search over crops, then by
+  eye) and written into `helpshot.ts`'s `SHOTS`: checkers, football, games (its `after` 10: the bout now
+  ends before step 40), goal, holidays, island, library, meals, menu, oddjobs, parole, rollcall,
+  showers, train, vending, work. Same frame and moment for most; showers and train show a different
+  moment (the crowd has moved since they were taken: who stands at which shower or machine), football,
+  goal and island a live play-on's own (the ball, the escape camera's turn, the raft's drift). The
+  manhunt's picture has no brick wall (its outside draws the prison's wall in concrete, unchanged).
 - The browser: desktop, 412×915 and 915×412, by day, at night, in fog and a storm; console clean. No
   text changed.
+- After the independent review: moonlight on the ground floor and roofs only (the tunnels and vents keep
+  their own light); door tiles in a lamp's pool drawn (the rule lit them; `poolTiles`, the 3D's list,
+  now skips only tiles both solid and opaque), `stealthtest` comparing every tile's lamp light with the
+  pool's tiles under both rules (it caught those doors when the old skip was put back: 1 at Center Perks,
+  2 at San Pancho, 1 at Irongate); an older run's replay draws the pools through walls as its rule
+  does, their mesh built the first time a frame asks. `perfprobe` again in budget (the auto quality
+  pinned to the phone's tier for the run: on a busy machine it had stepped down to no shadows).
 - `npm test`: every test green; `budgettest` counts one more shared texture in every prison (the
   pool's, made once and kept, as the glow's).

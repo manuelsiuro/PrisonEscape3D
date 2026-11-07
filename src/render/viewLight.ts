@@ -92,10 +92,12 @@ export class Lighting {
    */
   update(minute: number, dt: number, time: number, layer: number, reducedMotion: boolean): number {
     const night = (this.night = this.daylight(minute));
-    // Moonlight: the ambient blue and its bounce dark as the night falls.
-    this.skyLight.set(SKY_LIGHT).lerp(this.c1.set(MOON_SKY), night);
-    this.ambient.groundColor.set(GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), night);
-    this.ambient.intensity *= 1 + MOON_LIFT * night;
+    // Moonlight: the ambient blue and its bounce dark as the night falls, out in the open only (the
+    // ground floor, the roofs): the vents and the tunnels keep their own light.
+    const moon = layer === LAYER.VENTS || layer === LAYER.UNDER ? 0 : night;
+    this.skyLight.set(SKY_LIGHT).lerp(this.c1.set(MOON_SKY), moon);
+    this.ambient.groundColor.set(GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), moon);
+    this.ambient.intensity *= 1 + MOON_LIFT * moon;
     this.weatherLight(dt, reducedMotion);
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
