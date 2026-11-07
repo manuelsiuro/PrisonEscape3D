@@ -61,6 +61,8 @@ const KNOWN_PRISON = new Set([
   'vending',
   'menu',
   'cooler',
+  // 2.36: drawn on the People picture, an overlay, the sheet.
+  'gangs',
   // Drawn on the pictures, or under the cursor.
   'ground',
   'vents',

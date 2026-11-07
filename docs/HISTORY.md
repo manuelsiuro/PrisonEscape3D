@@ -1,6 +1,6 @@
 # PrisonEscape3D: History
 
-Every release, in order, one line each; the full entry (what changed, what the reviews found and fixed, what was found in the browser, what was accepted) is in its range's file in `docs/history/`, one file per ten minor versions. Moved there word for word on 2026-11-06 (v2.34.1). A new release: its entry at the end of the latest file (a new file from v2.40), and its line here. The plan itself is in [`PLAN.md`](PLAN.md).
+Every release, in order, one line each; the full entry (what changed, what the reviews found and fixed, what was found in the browser, what was accepted) is in its range's file in `docs/history/`, one file per ten minor versions (per five from v2.35). Moved there word for word on 2026-11-06 (v2.34.1). A new release: its entry at the end of the latest file (a new file from v2.40, then every five), and its line here. The plan itself is in [`PLAN.md`](PLAN.md).
 
 ## [v0.1 to v1.6](history/v0.1-v1.6.md)
 
@@ -155,7 +155,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Lights Out and sleep (v2.28.0)
 - Exercise and training (v2.29.0)
 
-## [v2.30 to v2.39](history/v2.30-v2.39.md)
+## [v2.30 to v2.34](history/v2.30-v2.34.md)
 
 - Jobs and the Work Period (v2.30.0)
 - The library and Intellect (v2.31.0)
@@ -169,6 +169,9 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The action button decided once (v2.34.2)
 - The giant modules split (v2.34.2)
 - A faster first load (v2.34.2)
+
+## [v2.35 to v2.39](history/v2.35-v2.39.md)
+
 - The phone performance pass (v2.35.0)
 - Hitches and memory (v2.35.0)
 - The design tokens (v2.35.0)
@@ -179,3 +182,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Talk, merchants and the crew (v2.36.0, not released yet)
 - Character animation (v2.36.0, not released yet)
 - The picture review (v2.36.0, not released yet)
+- Gangs and turf (v2.36.0, not released yet)

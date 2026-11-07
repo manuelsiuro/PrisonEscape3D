@@ -34,6 +34,7 @@ import { announceDay, nightNotChosen } from './announceDay';
 import { announceJobs } from './announceJobs';
 import { cant } from './announceKit';
 import { announcePeople } from './announcePeople';
+import { announceGang } from './gangs';
 import { announceWorks } from './announceWorks';
 
 /**
@@ -48,6 +49,7 @@ export function announce(e: SimEvent, sim: Sim) {
   announceWorks(e, sim);
   announcePeople(e, sim);
   announceJobs(e, sim);
+  announceGang(e, sim);
   switch (e.type) {
     case 'dog':
       announceDog(sim, e);

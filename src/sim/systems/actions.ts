@@ -3,6 +3,7 @@
  * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
  * showers, and energy and health coming back.
  */
+import { ownMate } from './gangs';
 import { handsUsed, serveTray } from './canteen';
 import { CAKE, eatCake, lineOp, say, startCall } from './phone';
 import { bookMove, hiddenIn, kioskOp, openBook } from './kiosk';
@@ -189,7 +190,7 @@ export function useItems(sim: SimContext, cmd: number) {
             ? lockCandidates(sim.world, s, s.player).includes(pick)
               ? pick
               : s.lock
-            : nextLock(sim.world, s, s.player, s.lock);
+            : nextLock(sim.world, s, s.player, s.lock, ownMate(sim));
       if (s.lock !== was) sim.events.push({ type: 'lock', who: s.lock });
       break;
     }

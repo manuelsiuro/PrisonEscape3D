@@ -55,6 +55,7 @@ import { raiseKeyAlarm, roomFor } from './keys';
 import { closeCard } from './vendState';
 import { closeMenu } from './menuState';
 import { sureOf } from './stealth';
+import { hitOwn } from './gangs';
 
 /** 2.35: the block held this step or the one before (a press of something else in between doesn't drop it). */
 const BLOCK_KEEP = 2;
@@ -107,6 +108,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     if (!sim.legacy) s.selfDefense = !isGuard(s, who) && freeBlow(sim, f as Inmate);
     sim.events.push(s.selfDefense && inFoodFight(sim) ? { type: 'thrown', who, free: true } : { type: 'thrown', who });
     knockOut(sim, who);
+    // (2.36: a throw at one of the player's own gang, as a blow: out, unless it's free.)
+    if (!isGuard(s, who) && !s.selfDefense) hitOwn(sim, who);
     return true;
   }
   if (s.step - s.swingAt < swingSteps(s.spd, wdef)) return true;
@@ -148,6 +151,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     // Nobody likes being hit; a follower hit stops following.
     changeOpinion(sim, who, -HIT_OPINION);
     dismiss(sim, who);
+    // (2.36: one of the player's own gang: they're out; not for a blow the game lets go, a food fight's.)
+    if (!s.selfDefense) hitOwn(sim, who);
     if (s.talk === who) endTalk(sim);
   }
   sim.events.push(
@@ -271,8 +276,8 @@ export function fight(sim: SimContext) {
     const g = s.guards[k];
     if (g.mode === GUARD.CHASE && awake(g)) blow(sim, g, s.inmates.length + k, GUARD_SWING_STEPS, BATON_ATTACK, defense);
   }
-  // Followers fight for the player (GDD §10.3).
-  for (const id of s.followers) {
+  // Followers fight for the player (GDD §10.3); 2.36: so do gang mates backing them.
+  for (const id of s.followers.length || sim.scratch.backers.length ? [...s.followers, ...sim.scratch.backers] : s.followers) {
     const m = s.inmates[id];
     const foe = sim.scratch.allyFoe[id] ?? -1;
     const f = foe >= 0 ? personOf(s, foe) : undefined;
