@@ -908,4 +908,6 @@ export type Refusal =
   | 'inGang'
   | 'leftToday'
   | 'favorFirst'
-  | 'gangOpinion';
+  | 'gangOpinion'
+  | 'initiating'
+  | 'notTribute';

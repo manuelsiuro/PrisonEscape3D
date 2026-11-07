@@ -58,7 +58,7 @@ export interface Frame {
   outfit: number;
   /** 2.36: the colours of the player's gang (a 3D colour; 0 none). */
   colours: number;
-  /** 2.36: the gangs' turf painted on the floor: 0 not at all (none here, or a replay from before them), 1 faint, 2 held now. */
+  /** 2.36: the gangs' turf painted on the floor: 0 not at all (none here, or a replay from before them), 1 faint, 2 the tables held (dinner), 3 the corners (the evening). */
   turf: number;
   /** Asleep in bed. */
   sleeping: boolean;

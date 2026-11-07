@@ -8,7 +8,7 @@ import { lookAwayPrice, lookingAway, paperPrice } from '../sim/systems/ways';
 import { STAPLES } from '../content/long';
 import { saleOf, stapleSlot } from '../sim/systems/pantry';
 import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_STATE, fetchFavor, giftOpinion, OPINION_LADDER } from '../sim/systems/economy';
-import { askOf, memberDeal } from '../sim/systems/gangs';
+import { askOf, favorSlot, gangOf, memberDeal } from '../sim/systems/gangs';
 import { gangChip, gangSection, gangView } from './gangs';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
@@ -38,7 +38,7 @@ import { librarianLine } from './reading';
 import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
 import { gamesSection, type GamesView } from './games';
 import { twist } from '../sim/systems/twists';
-import { favorText, guardTitle, inmateName } from './names';
+import { favorText, gangName, guardTitle, inmateName } from './names';
 
 /**
  * What odd jobs bring to a talk (P40, play/oddjobs.ts): the job held handed in to him (its words,
@@ -257,7 +257,7 @@ export class TalkPanel {
     // The favor: what they ask, what it pays, what can be done about it now.
     let favorHtml = '';
     if (favor) {
-      const carrying = favor.item ? inv.some((v) => itemOf(v) === favor.item) : false;
+      const carrying = favor.item ? favorSlot(inv, favor) >= 0 : false;
       const ready = favor.state === FAVOR_STATE.DONE || (fetchFavor(favor.kind) && favor.state === FAVOR_STATE.TAKEN && carrying);
       const offered = favor.state === FAVOR_STATE.OFFERED;
       // (A distraction's moment: the next roll call's time, or now.)
@@ -429,7 +429,7 @@ export class TalkPanel {
     const armed = this.el.querySelector<HTMLElement>('.armed[data-act]');
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
-      ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low" style="left:${OPINION_LOW}%"></i><i class="tick high" style="left:${OPINION_HIGH}%"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div><p class="talk-next">${esc(nextUnlock(m.opinion, gs?.boss ?? false))}</p>
+      ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low" style="left:${OPINION_LOW}%"></i><i class="tick high" style="left:${OPINION_HIGH}%"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div><p class="talk-next">${esc(gs?.boss && gs.rel === 'free' && gs.ask === '' ? t('talk.gang.next', { gang: gangName(sim, gangOf(sim, who)) }) : nextUnlock(m.opinion, !!gs?.boss && gs.rel === 'free'))}</p>
       ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${cv ? crewSection(cv) : ''}${gs ? gangSection(gs) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);

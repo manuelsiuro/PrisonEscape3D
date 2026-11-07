@@ -108,6 +108,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     if (!sim.legacy) s.selfDefense = !isGuard(s, who) && freeBlow(sim, f as Inmate);
     sim.events.push(s.selfDefense && inFoodFight(sim) ? { type: 'thrown', who, free: true } : { type: 'thrown', who });
     knockOut(sim, who);
+    // (2.36: a throw at one of the player's own gang, as a blow: out, unless it's free.)
+    if (!isGuard(s, who) && !s.selfDefense) hitOwn(sim, who);
     return true;
   }
   if (s.step - s.swingAt < swingSteps(s.spd, wdef)) return true;
@@ -149,8 +151,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     // Nobody likes being hit; a follower hit stops following.
     changeOpinion(sim, who, -HIT_OPINION);
     dismiss(sim, who);
-    // (2.36: one of the player's own gang: they're out.)
-    hitOwn(sim, who);
+    // (2.36: one of the player's own gang: they're out; not for a blow the game lets go, a food fight's.)
+    if (!s.selfDefense) hitOwn(sim, who);
     if (s.talk === who) endTalk(sim);
   }
   sim.events.push(

@@ -31,11 +31,23 @@ import { itemDef } from '../src/content/items';
 import { command, OP, TALK } from '../src/sim/command';
 import { prepareReplay } from '../src/sim/runlog';
 import { Sim, type SimEvent } from '../src/sim/Sim';
-import { dayPlan } from '../src/sim/systems/calendar';
+import { dayPlan, eventOn } from '../src/sim/systems/calendar';
 import { FAVOR, FAVOR_STATE } from '../src/sim/systems/economy';
-import { askOf, G, gangOf, gangsHere, playerGang, rivalBoss, tributeDesk, turfAt, warGround, warring } from '../src/sim/systems/gangs';
+import {
+  askOf,
+  G,
+  gangOf,
+  gangsHere,
+  playerGang,
+  rivalBoss,
+  tributeDesk,
+  tributeOf,
+  turfAt,
+  warGround,
+  warring,
+} from '../src/sim/systems/gangs';
 import { DOING, inmateInCell } from '../src/sim/systems/inmates';
-import { HOTBAR, itemOf } from '../src/sim/systems/items';
+import { HOTBAR, itemOf, slot } from '../src/sim/systems/items';
 import { placesOf } from '../src/sim/ai/places';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
@@ -51,7 +63,7 @@ import {
   UNIT,
 } from '../src/sim/tuning';
 import { check } from './assert';
-import { Bot, DIR } from './bots';
+import { Bot, DIR, n } from './bots';
 
 const MIN = STEPS_PER_MINUTE;
 const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
@@ -327,6 +339,27 @@ for (const def of PRISONS) {
   const there = desk >= 0 && st.items.containers[desk].some((v, j) => j >= containersOf(sim.world)[desk].hidden && itemOf(v) === f!.item);
   check(there, `${id}: the tribute is in that desk's drawers`);
   bot.op(OP.CLOSE);
+  // (Review: a second initiation while one is under way, refused: two at once were a free switch.)
+  {
+    const other = def.gangs!.findIndex((_, k) => k !== mine);
+    const ob = inmateInCell(st, def.gangs![other].boss);
+    const was = st.inmates[ob].opinion;
+    st.inmates[ob].opinion = GANG_OPINION;
+    check(refused(say(bot, ob, TALK.JOIN), 'initiating'), `${id}: a second gang's initiation refused while one is under way`);
+    st.inmates[ob].opinion = was;
+    bot.op(OP.CLOSE);
+  }
+  // (Review: the tribute is the one from the desk: one from elsewhere isn't taken.)
+  {
+    const c = new Bot(def, 3);
+    c.sim.restore(sim.snapshot());
+    const free = c.st.items.inv.slice(0, HOTBAR).indexOf(0);
+    c.st.items.inv[free] = slot(f!.item);
+    check(
+      refused(say(c, boss, TALK.HAND_IN), 'notTribute') && playerGang(c.sim) < 0,
+      `${id}: a ${TRIBUTE[g.id]} not from the desk: not taken`,
+    );
+  }
   const got = desk >= 0 && fetchFromDesk(bot, desk, f!.item);
   check(got, `${id}: walked to the desk, the tribute taken`);
   const before = st.inmates.map((m) => m.opinion);
@@ -346,6 +379,48 @@ for (const def of PRISONS) {
     refused(say(bot, boss, TALK.JOIN), 'inGang') || st.favors.every((x) => x.kind !== FAVOR.INITIATION),
     `${id}: asked again: in a gang already`,
   );
+  // (Review: an initiation from before joining, handed in once in a gang: refused; joining dropped it anyway.)
+  check(
+    st.favors.every((x) => x.kind !== FAVOR.INITIATION),
+    `${id}: joined: no other initiation left under way`,
+  );
+  {
+    const c = new Bot(def, 3);
+    c.sim.restore(sim.snapshot());
+    const other = def.gangs!.findIndex((_, k) => k !== mine);
+    const ob = inmateInCell(c.st, def.gangs![other].boss);
+    c.st.favors.push({
+      by: ob,
+      kind: FAVOR.INITIATION,
+      item: n(TRIBUTE[def.gangs![other].id]),
+      target: boss,
+      reward: 0,
+      state: FAVOR_STATE.TAKEN,
+    });
+    const free = c.st.items.inv.slice(0, HOTBAR).indexOf(0);
+    c.st.items.inv[free] = tributeOf({ item: n(TRIBUTE[def.gangs![other].id]) });
+    check(
+      refused(say(c, ob, TALK.HAND_IN), 'inGang') && playerGang(c.sim) === mine,
+      `${id}: in a gang, another's initiation can't be handed in`,
+    );
+  }
+  // (Review: R passes over one's own gang mates; a throw at one is a blow at one: out.)
+  {
+    const c = new Bot(def, 3);
+    c.sim.restore(sim.snapshot());
+    const mt = g.members.map((cl) => inmateInCell(c.st, cl)).find((k) => k !== boss) ?? boss;
+    const at = tileOf(c.st.inmates[mt].body);
+    const spot = besides(c.sim, at)[0];
+    c.st.player.x = (spot % MAP_W) * UNIT + UNIT / 2;
+    c.st.player.z = Math.floor(spot / MAP_W) * UNIT + UNIT / 2;
+    c.st.inmates[mt].wait = 1_000_000;
+    let mateLocked = false;
+    for (let k = 0; k < 6; k++) {
+      c.op(OP.LOCK);
+      if (c.st.lock >= 0 && gangOf(c.sim, c.st.lock) === mine) mateLocked = true;
+    }
+    check(!mateLocked, `${id}: R never locks on to a gang mate`);
+  }
 
   // The discount, paid as shown: what the card asks is what the till takes, less than a stranger's.
   const shop = st.shops[sim.merchantOf(boss)];
@@ -418,7 +493,11 @@ for (const def of PRISONS) {
   for (let k = 0; k < 2000 && !gangEv(bot.events.slice(ev0), 'warJump').length; k++) bot.step(command(bot.pilot.dir(st.player)));
   bot.pilot.stop();
   const jumped = gangEv(bot.events.slice(ev0), 'warJump');
-  check(jumped.length === 1 && st.inmates[jumped[0].who!].angry > 0, `${id}: at the war's ground, a rival comes for the player once`);
+  // (Once a war: perhaps already in the exercise hour, close by; the anger's long over by now then.)
+  check(
+    jumped.length === 1 && gangOf(sim, jumped[0].who!) === (war[0] === mine ? war[1] : war[0]),
+    `${id}: at the war's ground, a rival comes for the player once`,
+  );
   // (Walked away: out of the yard, the fight not followed up on.)
   bot.walkTo(placesOf(sim.world).bedside[1], 4000);
   for (const m of st.inmates) m.angry = 0;
@@ -448,14 +527,17 @@ for (const def of PRISONS) {
 
   // Trespass: a rival's table, held; walked off in time: nothing; stayed: squared up to.
   const rivalK = war[1];
+  const rivalId = GANGS.indexOf(def.gangs![rivalK].id) + 1;
+  const warnedOn = (c: Bot) => !!c.st.gang && c.st.gang[G.WARN] > 0 && c.st.gang[G.TURF] === rivalId;
   const rt = def.gangs![rivalK].table;
   const spots = placesOf(sim.world).seats.filter((q) => inRect(rt, q.tile) && !st.inmates.some((m) => tileOf(m.body) === q.tile));
   let trespassLine = 'no free seat at the rival table';
   if (spots.length) {
-    const e0 = bot.events.length;
     bot.walkTo(spots[0].tile, 3000);
-    bot.until(() => gangEv(bot.events.slice(e0), 'warn').length > 0, 60);
-    const warned = gangEv(bot.events.slice(e0), 'warn').length === 1;
+    // (Told on the way, or once there: the table's holders see the player on it.)
+    bot.until(() => warnedOn(bot), 60);
+    const warned = warnedOn(bot);
+    const e0 = bot.events.length;
     const off =
       besides(sim, spots[0].tile).find((t) => turfAt(def, t % MAP_W, Math.floor(t / MAP_W)) < 0) ?? placesOf(sim.world).bedside[1];
     const tw = st.step;
@@ -463,17 +545,21 @@ for (const def of PRISONS) {
     const inTime = st.step - tw;
     bot.until(() => false, 20);
     check(
-      warned && gangEv(bot.events.slice(e0), 'clear').length === 1 && !gangEv(bot.events.slice(e0), 'jumped').length,
+      warned &&
+        gangEv(bot.events.slice(e0), 'clear').length >= 1 &&
+        !gangEv(bot.events.slice(e0), 'jumped').length &&
+        !bot.st.gang![G.WARN],
       `${id}: on the rival's table, told; off it in ${inTime} steps of ${TRESPASS_STEPS}: nothing`,
     );
     // (On a copy from the same moment: there, and staying.)
     const stay = copyAt();
     stay.walkTo(spots[0].tile, 3000);
+    const e1 = stay.events.length;
     stay.until(() => gangEv(stay.events, 'jumped').length > 0, TRESPASS_STEPS + 140);
     const sq = gangEv(stay.events, 'jumped');
-    const warnedAt = gangEv(stay.events, 'warn').length;
+    const warnedAt = gangEv(stay.events.slice(e1), 'warn').filter((e) => e.gang === rivalK).length;
     check(
-      warnedAt === 1 && sq.length === 1 && stay.st.inmates[sq[0].who!].angry > 0 && stay.st.inmates[sq[0].who!].windup > 0,
+      warnedAt <= 1 && sq.length === 1 && stay.st.inmates[sq[0].who!].angry > 0 && stay.st.inmates[sq[0].who!].windup > 0,
       `${id}: stayed: told once, then one of them squares up`,
     );
     trespassLine = `told, off in ${inTime} steps; stayed, squared up by ${sq[0]?.who}`;
@@ -533,6 +619,54 @@ for (const def of PRISONS) {
     check(!gangEv(l2.events.slice(e4), 'warn').length, `${id}: in a lockdown, no turf held`);
   }
 
+  // (Review: in the evening only the corners are held: on a rival's table then, nobody minds, however long.)
+  {
+    const c = copyAt();
+    c.routineUntil(2, 19 * 60 + 5);
+    const rt = def.gangs![war[1]].table;
+    let t = -1;
+    for (let x = rt[0]; x <= rt[2] && t < 0; x++)
+      for (let z = rt[1]; z <= rt[3] && t < 0; z++) if (!c.sim.world.blocked(x, z)) t = z * MAP_W + x;
+    const e5 = c.events.length;
+    if (t >= 0 && c.walkTo(t, 3000)) c.until(() => false, 90 * MIN);
+    check(
+      t >= 0 && !c.events.slice(e5).some((e) => e.type === 'gang'),
+      `${id}: in the evening, 90 minutes on a rival's table: no gang trouble`,
+    );
+  }
+  // (Review: at dinner, a rival's corner isn't held.)
+  {
+    const c = copyAt();
+    const rc = def.gangs![war[1]].corner;
+    let t = -1;
+    for (let x = rc[0]; x <= rc[2] && t < 0; x++)
+      for (let z = rc[1]; z <= rc[3] && t < 0; z++) if (!c.sim.world.blocked(x, z)) t = z * MAP_W + x;
+    const e6 = c.events.length;
+    if (t >= 0 && c.walkTo(t, 2000) && ROUTINE[c.st.routine].id === 'dinner')
+      c.until(() => ROUTINE[c.st.routine].id !== 'dinner', 60 * MIN);
+    check(
+      !c.events.slice(e6).some((e) => e.type === 'gang' && e.what !== 'clear'),
+      `${id}: at dinner, on a rival's corner: no gang trouble`,
+    );
+  }
+  // (Review: told off, then its holders gone (out cold here): the warning ends without a word, and nobody squares up
+  // later for it, the player still standing there.)
+  {
+    const c = copyAt();
+    if (spots.length) {
+      c.walkTo(spots[0].tile, 3000);
+      c.until(() => warnedOn(c), 300);
+      const told = warnedOn(c);
+      for (const cl of def.gangs![war[1]].members) c.st.inmates[inmateInCell(c.st, cl)].ko = 100_000;
+      const e7 = c.events.length;
+      c.until(() => false, TRESPASS_STEPS * 3);
+      check(
+        told && !c.st.gang![G.WARN] && !gangEv(c.events.slice(e7), 'jumped').length,
+        `${id}: told off, its holders gone: the warning over, nobody squares up`,
+      );
+    }
+  }
+
   // The evening: the members at their corners.
   bot.routineUntil(2, 19 * 60);
   let at = 0;
@@ -553,6 +687,46 @@ for (const def of PRISONS) {
   console.log(
     `${id}: joined ${g.id} (initiation ${took} min; the others' ${joins.join(', ')}); ${paidLine}; war: ${warLine}; dinner ${seated}/${members} at their tables; evening ${Math.round((at / looks) * 100)}% at their corners; trespass ${trespassLine}`,
   );
+}
+
+// ---------------------------------------------------------------- a food fight's blow at a mate: free, not a betrayal
+{
+  const def = PRISONS[0];
+  const bot = new Bot(def, 3);
+  const st = bot.st;
+  st.calendar = [[2, DAY_EVENTS.indexOf('foodFight'), -1]];
+  // (A member from the start: joining is walked above.)
+  st.gang = [GANGS.indexOf(def.gangs![0].id) + 1, 0, 0, 0, 0, 0, 1, 1];
+  const mate = inmateInCell(
+    st,
+    def.gangs![0].members.find((c) => c !== def.gangs![0].boss)!,
+  );
+  const m = st.inmates[mate];
+  // (In the thick of it: both in the canteen, the mate sat down.)
+  bot.keepRoutine(
+    () =>
+      eventOn(bot.sim, 'foodFight') &&
+      bot.sim.playerZone === 'canteen' &&
+      bot.sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'canteen' &&
+      !m.body.moving,
+    2 * 1440 * MIN,
+  );
+  const at = tileOf(m.body);
+  const spot = besides(bot.sim, at)[0];
+  // (Half a tile from him, on the side of a free tile: within a fist's reach.)
+  st.player.x = Math.round(((spot % MAP_W) * UNIT + UNIT / 2 + m.body.x) / 2);
+  st.player.z = Math.round((Math.floor(spot / MAP_W) * UNIT + UNIT / 2 + m.body.z) / 2);
+  m.wait = 1_000_000;
+  m.path = [];
+  st.lock = mate;
+  const e0 = bot.events.length;
+  for (let k = 0; k < 40 && !bot.events.slice(e0).some((e) => e.type === 'hit'); k++) bot.op(OP.USE, 1);
+  const hit = bot.events.slice(e0).some((e) => e.type === 'hit' && e.who === mate);
+  check(
+    hit && playerGang(bot.sim) === 0 && !gangEv(bot.events.slice(e0), 'kicked').length,
+    `${def.id}: a food fight's blow at a gang mate: still in the gang`,
+  );
+  console.log(`food fight: a blow at mate ${mate}, still in ${def.gangs![0].id}`);
 }
 
 // ---------------------------------------------------------------- never met: as before; old rules

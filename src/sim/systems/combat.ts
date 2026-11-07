@@ -91,8 +91,9 @@ export function lockCandidates(w: World, c: Cast, p: Body, out: number[] = []): 
  * The next lock (R, the lock button): the next nearest after the current one, and past the
  * last, none (so with one person in range the button toggles).
  */
-export function nextLock(w: World, c: Cast, p: Body, current: number): number {
-  const list = lockCandidates(w, c, p);
+export function nextLock(w: World, c: Cast, p: Body, current: number, skip?: (id: number) => boolean): number {
+  // (2.36: past one's own gang mates: a tap on one still locks on.)
+  const list = skip ? lockCandidates(w, c, p).filter((id) => !skip(id)) : lockCandidates(w, c, p);
   if (!list.length) return -1;
   const at = list.indexOf(current);
   if (current >= 0 && at < 0) return list[0];

@@ -7,7 +7,8 @@
 import { buzz } from '../app/haptics';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { gangsHere, playerGang, turfAt, turfHeld } from '../sim/systems/gangs';
+import { gangsHere, heldPiece, playerGang, turfAt } from '../sim/systems/gangs';
+import { crowdPlan } from '../sim/systems/calendar';
 import { TRESPASS_STEPS, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { gangName, inmateName } from '../ui/names';
@@ -74,8 +75,9 @@ export function announceGang(e: SimEvent, sim: Sim) {
  */
 export function turfHint(sim: Sim) {
   const s = sim.state;
-  if (!s.gang || !gangsHere(sim) || playerGang(sim) >= 0 || s.layer !== LAYER.GROUND || !turfHeld(sim, s.routine)) return;
-  const k = turfAt(sim.world.def, Math.floor(s.player.x / UNIT), Math.floor(s.player.z / UNIT));
+  const piece = heldPiece(sim, crowdPlan(sim, s.routine));
+  if (!s.gang || !gangsHere(sim) || playerGang(sim) >= 0 || s.layer !== LAYER.GROUND || !piece) return;
+  const k = turfAt(sim.world.def, Math.floor(s.player.x / UNIT), Math.floor(s.player.z / UNIT), piece);
   if (k < 0) return;
   const def = sim.prison.gangs![k];
   const there = s.inmates.some((m) => def.members.includes(m.cell) && Math.hypot(m.body.x - s.player.x, m.body.z - s.player.z) < 3 * UNIT);

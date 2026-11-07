@@ -66,7 +66,8 @@ import { decorHoliday } from './holidays';
 import { tileAt } from '../sim/world/grid';
 import { emptyFrame, type Frame } from '../render/viewFrame';
 import { badgeOf } from './badges';
-import { gangOfCell, gangsHere, playerGang, turfHeld } from '../sim/systems/gangs';
+import { gangOfCell, gangsHere, heldPiece, playerGang } from '../sim/systems/gangs';
+import { crowdPlan } from '../sim/systems/calendar';
 import { GANG_COLOR } from '../content/gangs';
 import { turfHint } from './gangs';
 
@@ -562,7 +563,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // 2.36: the player's gang's colours, the turf's paint (held now, or faint), a word the first time on held turf.
   const mine = playerGang(sim);
   f.colours = mine >= 0 ? GANG_COLOR[sim.prison.gangs![mine].id] : 0;
-  f.turf = !gangsHere(sim) ? 0 : turfHeld(sim, st.routine) ? 2 : 1;
+  const piece = heldPiece(sim, crowdPlan(sim, st.routine));
+  f.turf = !gangsHere(sim) ? 0 : piece === 'table' ? 2 : piece === 'corner' ? 3 : 1;
   turfHint(sim);
   f.sleeping = st.sleeping;
   if (dummyMemo.sim !== sim || dummyMemo.rev !== it.rev) Object.assign(dummyMemo, { sim, rev: it.rev, there: dummyInBed(sim) });
