@@ -175,4 +175,8 @@ afternoon and evening blocks on to 22:30 at ×8. An escape by hand: the stowaway
 look), hidden in the supply truck with nobody looking, away at 14:31, a gold medal, then "Keep running" into the
 Hollowrun valley by keys. On a phone (412×915) the work period's HUD and line. What a person would trip on: at the feed
 bin and at a breakfast seat the arrows' last tile had an inmate in reach and the first press talked to him (every
-prison's rule, not changed here); free time has no arrows back to the desk the guide asks for (as everywhere).
+prison's rule); free time had no arrows back to the desk the guide asks for (as everywhere). Both fixed after, in
+every prison: where the arrows end, the press does what they led there for ahead of a bystander (`interact.ts`
+`arrowsTarget`, behind `Sim.rules235`; `arrowstest`: every seat with a tray, the desk, the job board and the job's take,
+each way faced, someone on each tile round: none taken now; at the seats 102–234 a prison before, the job's stations never); the desk step's arrows lead beside
+the desk (Claude's pick: arrows rather than a guide that waits).
