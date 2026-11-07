@@ -16,6 +16,7 @@ import { PROPS } from '../src/content/props';
 import { MAP_H, MAP_W } from '../src/sim/world/World';
 import { viewerData } from './dev/mapimage';
 import { computeModelStats, getCatalog } from './dev/modelviewer/catalog';
+import { MODEL_LIBRARY, compileModel, exportObj, mergedGeometry, validateBlueprint } from '../model-library';
 
 const OUT = 'assets/maps';
 let failures = 0;
@@ -162,6 +163,23 @@ for (const entry of catalog) {
     fail(`models viewer: ${entry.id} built empty geometry (${stats.meshes} meshes, ${stats.vertices} verts)`);
   }
   built.dispose?.();
+}
+
+// Standalone model-library blueprints: schema, merged geometry (1-draw-call), and OBJ export.
+for (const bp of MODEL_LIBRARY) {
+  const errs = validateBlueprint(bp);
+  if (errs.length > 0) fail(`model-library: ${bp.id} invalid: ${errs.join('; ')}`);
+  const geom = mergedGeometry(bp);
+  if (!geom || geom.getAttribute('position').count === 0) {
+    fail(`model-library: ${bp.id} mergedGeometry produced empty geometry`);
+  }
+  geom.dispose();
+  const compiled = compileModel(bp);
+  const obj = exportObj(compiled.root, bp.id);
+  if (!obj.startsWith('# Wavefront OBJ') || !obj.includes('\nv ') || !obj.includes('\nf ')) {
+    fail(`model-library: ${bp.id} exportObj produced invalid OBJ output`);
+  }
+  compiled.dispose();
 }
 
 // What each prison offers, so that a change to any of it shows in the snapshot.

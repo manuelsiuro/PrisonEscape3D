@@ -186,3 +186,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The Six Hunter (v2.36.0)
 - Gang initiation polish (v2.36.1)
 - The 3D objects viewer (v2.37.0, not released yet)
+- Procedural 3D model library (v2.37.0, not released yet)
