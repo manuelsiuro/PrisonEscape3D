@@ -103,7 +103,7 @@ const JOB_ICONS: Record<JobId, string> = {
   metalshop: 'gear',
   gardener: 'sprout',
   kennels: 'paw',
-  smokehouse: 'flame',
+  smokehouse: 'fish',
   nets: 'boat',
 };
 

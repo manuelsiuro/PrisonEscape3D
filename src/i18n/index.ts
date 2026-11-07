@@ -60,7 +60,22 @@ export const textStamp = () => `${lang}:${keysVersion()}`;
 
 export function t(key: Key, vars: Record<string, string | number> = {}): string {
   const s = TABLES[lang]?.[key] ?? en[key];
+  if (lang === 'fr') return withKeys(s.replace(FR_HOLE, (_, pre: string | undefined, k: string) => frFill(pre, String(vars[k] ?? `{${k}}`))));
   return withKeys(s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`)));
+}
+
+/** A hole, with the word before it when that's "de" or "à" (or any word: mid-sentence). */
+const FR_HOLE = /(?:(\p{L}+) )?\{(\w+)\}/gu;
+
+/**
+ * 2.36 (The Six Hunter, "Les Six Veneurs" in French): a name that comes with its article contracts after "de" and
+ * "à" ("évadé des Six Veneurs", "aux Six Veneurs") and is "les" mid-sentence ("Direction les Six Veneurs").
+ */
+function frFill(pre: string | undefined, v: string): string {
+  if (!pre || !v.startsWith('Les ')) return pre ? `${pre} ${v}` : v;
+  const rest = v.slice(4);
+  const contracted = { de: 'des', à: 'aux', De: 'Des', À: 'Aux' }[pre];
+  return contracted ? `${contracted} ${rest}` : `${pre} les ${rest}`;
 }
 
 /** A text mid-sentence: its first letter in lower case ("Bringing you a tube of glue"). */

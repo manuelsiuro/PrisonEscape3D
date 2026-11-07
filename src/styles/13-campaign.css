@@ -275,13 +275,16 @@
 
 .pc-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0 8px;
 }
 
-/* A long name ("Pénitencier de Shankton") wraps rather than pushing the stars off the card. */
+/* A long name ("Pénitencier de Shankton") wraps rather than pushing the stars off the card; on a narrow card (six
+   stars, the interface scaled up) the stars go under the name rather than breaking its words. */
 .pc-head b {
+  flex: 1 1 9ch;
   min-width: 0;
   font: 600 18px/1.15 var(--font-display);
   overflow-wrap: anywhere;
@@ -338,6 +341,7 @@
 
 .pc-pips {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -549,12 +553,13 @@
 }
 
 /*
- * Wide screens: the campaign as a row of five posters, the prison's world on top, its card
- * below; every card the same height, the ways out lined up along the bottom.
+ * Wide screens: the campaign as a row of posters (six since 2.36: the Six Hunter past the five), the prison's world
+ * on top, its card below; every card the same height, the ways out lined up along the bottom (two rows of pips when
+ * a prison has many). Under 1180 px across, three to a row, two rows.
  */
 @media (min-width: 980px) and (min-height: 640px) {
   .prisons-card {
-    width: min(1180px, 100%);
+    width: min(1320px, 100%);
     padding: 26px 28px 28px;
   }
 
@@ -563,7 +568,7 @@
   }
 
   .prison-list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 14px;
   }
 
@@ -608,6 +613,7 @@
   }
 
   .pc-head b {
+    flex: none;
     font-size: 19px;
   }
 
@@ -629,4 +635,28 @@
     margin-top: auto;
     padding-top: 12px;
   }
+}
+
+@media (min-width: 980px) and (max-width: 1179px) and (min-height: 640px) {
+  .prisons-card {
+    width: min(900px, 100%);
+  }
+
+  .prison-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pc-scene {
+    height: 96px;
+  }
+}
+
+/* The sixth star, past the campaign's five (the Six Hunter): the Hunters' red, glowing as the gold ones do. */
+.pc-stars i.on.past,
+.modal .pc-stars i.on.past {
+  color: var(--red-58);
+  filter: drop-shadow(0 0 4px rgba(var(--red-58-rgb), 0.55));
+}
+.pc-level.past {
+  background: linear-gradient(150deg, var(--red-58), var(--red-53));
 }
