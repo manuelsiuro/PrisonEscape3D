@@ -56,6 +56,33 @@ function poolTexture(): THREE.CanvasTexture {
 }
 
 /**
+ * The tiles a lamp's pool is drawn on, with the head over each (tiles): those its circle reaches, none under
+ * a wall (a door is drawn on: the rule lights it), and with `walled` (2.36) only those the head sees, as the
+ * dark rule's own `lampSees` says. Pure: `stealthtest` checks the rule against it.
+ */
+export function poolTiles(world: World, walled: boolean): Array<{ x: number; z: number; cx: number; cz: number }> {
+  const out = [];
+  const r = POOL / 2;
+  for (const p of world.props) {
+    if (p.kind !== 'lamp') continue;
+    const [hx, hz] = lampHead(p);
+    const cx = hx / 100;
+    const cz = hz / 100;
+    for (let z = Math.floor(cz - r); z <= Math.floor(cz + r); z++)
+      for (let x = Math.floor(cx - r); x <= Math.floor(cx + r); x++) {
+        if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
+        const nx = Math.max(x, Math.min(cx, x + 1)) - cx;
+        const nz = Math.max(z, Math.min(cz, z + 1)) - cz;
+        const info = TILE_INFO[world.ground.base[z * MAP_W + x]];
+        if (nx * nx + nz * nz >= r * r || (info.solid && info.opaque)) continue;
+        if (walled && !lampSees(world, hx, hz, x, z)) continue;
+        out.push({ x, z, cx, cz });
+      }
+  }
+  return out;
+}
+
+/**
  * Night lighting without dozens of real lights: lamp bulbs that glow, and light pools on the
  * ground (additive decals), warm sodium under the lamps, cool fluorescent in the rooms. Both
  * fade with `setNight` (0 day … 1 night).
@@ -69,8 +96,11 @@ export class Lights {
   private readonly block: THREE.MeshBasicMaterial | null;
   /** How bright the rooms' lights are drawn: more in the snow (session 14), where the moonlit ground outshone the lit rooms. */
   private readonly rooms: number;
+  /** The lamps' pools stopping at walls (2.36), and lighting through them (older runs' replays; built when first wanted). */
+  private walledPools: THREE.Mesh | null | undefined;
+  private openPools: THREE.Mesh | null | undefined;
 
-  constructor(world: World) {
+  constructor(private readonly world: World) {
     this.rooms = world.def.theme === 'alpine' ? SNOW_ROOMS : 1;
     const tex = glowTexture();
     const lamps = world.props.filter((p) => p.kind === 'lamp');
@@ -87,7 +117,17 @@ export class Lights {
     this.group.add(bulbs);
 
     // Warm pools under the lamps: one under the head, or round the pole of a lamp with two.
-    this.warm = this.addLampPools(world, lamps);
+    this.warm = lamps.length
+      ? new THREE.MeshBasicMaterial({
+          map: poolTexture(),
+          color: 0xffb35c,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        })
+      : null;
+    this.lampPools(true);
 
     // Cool pools in every room, about one per 5×5 tiles, only on walkable indoor floor.
     const spots: Array<[number, number, number]> = [];
@@ -113,57 +153,38 @@ export class Lights {
     this.block = this.addPools(block, 0xcfe6ff, tex);
   }
 
-  /**
-   * The lamps' pools (session 14): each drawn tile by tile, only on the tiles its head sees (`lampSees`, the
-   * dark rule's own test: no wall of the map as built between), so no pool shows through a wall into a cell
-   * and what's drawn lit is what the rule lights. One mesh for every lamp, a quad a tile.
-   */
-  private addLampPools(world: World, lamps: readonly World['props'][number][]): THREE.MeshBasicMaterial | null {
+  /** The lamps' pools as drawn: through walls too in a replay of an older run (built the first time one asks). */
+  private lampPools(walled: boolean): THREE.Mesh | null {
+    const have = walled ? this.walledPools : this.openPools;
+    if (have !== undefined || !this.warm) return have ?? null;
     const pos: number[] = [];
     const uv: number[] = [];
-    const r = POOL / 2;
-    for (const p of lamps) {
-      const [hx, hz] = lampHead(p);
-      const cx = hx / 100;
-      const cz = hz / 100;
-      for (let z = Math.floor(cz - r); z <= Math.floor(cz + r); z++)
-        for (let x = Math.floor(cx - r); x <= Math.floor(cx + r); x++) {
-          if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
-          // (Only tiles the circle reaches; none under a wall.)
-          const nx = Math.max(x, Math.min(cx, x + 1)) - cx;
-          const nz = Math.max(z, Math.min(cz, z + 1)) - cz;
-          if (nx * nx + nz * nz >= r * r || TILE_INFO[world.ground.base[z * MAP_W + x]].opaque) continue;
-          if (!lampSees(world, hx, hz, x, z)) continue;
-          for (const [dx, dz] of [
-            [0, 0],
-            [0, 1],
-            [1, 1],
-            [0, 0],
-            [1, 1],
-            [1, 0],
-          ]) {
-            pos.push(x + dx, 0.008, z + dz);
-            uv.push((x + dx - cx) / POOL + 0.5, (z + dz - cz) / POOL + 0.5);
-          }
-        }
+    for (const { x, z, cx, cz } of poolTiles(this.world, walled)) {
+      for (const [dx, dz] of [
+        [0, 0],
+        [0, 1],
+        [1, 1],
+        [0, 0],
+        [1, 1],
+        [1, 0],
+      ]) {
+        pos.push(x + dx, 0.008, z + dz);
+        uv.push((x + dx - cx) / POOL + 0.5, (z + dz - cz) / POOL + 0.5);
+      }
     }
-    if (!pos.length) return null;
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    const mat = new THREE.MeshBasicMaterial({
-      map: poolTexture(),
-      color: 0xffb35c,
-      transparent: true,
-      opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.renderOrder = 0.32;
-    mesh.frustumCulled = false;
-    this.group.add(mesh);
-    return mat;
+    let mesh: THREE.Mesh | null = null;
+    if (pos.length) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      mesh = new THREE.Mesh(geo, this.warm);
+      mesh.renderOrder = 0.32;
+      mesh.frustumCulled = false;
+      this.group.add(mesh);
+    }
+    if (walled) this.walledPools = mesh;
+    else this.openPools = mesh;
+    return mesh;
   }
 
   private addPools(spots: Array<[number, number, number]>, color: number, map: THREE.Texture): THREE.MeshBasicMaterial | null {
@@ -186,7 +207,12 @@ export class Lights {
   }
 
   /** 0 in daylight, 1 at night; `power` 0–1 (the generator off: every lamp and room light goes dark, GDD §5.5); `dark` 0–1: the cell block's lights out, but for a night light. */
-  setNight(night: number, power = 1, dark = 0) {
+  setNight(night: number, power = 1, dark = 0, walled = true) {
+    // (Session 14: an older run's replay lights through walls, as its rule does.)
+    const pools = this.lampPools(walled);
+    if (this.walledPools && this.walledPools !== pools) this.walledPools.visible = false;
+    if (this.openPools && this.openPools !== pools) this.openPools.visible = false;
+    if (pools) pools.visible = true;
     const lit = night * power;
     this.bulbs.color.setRGB(0.33 + lit * 0.67, 0.33 + lit * 0.55, 0.33 + lit * 0.2);
     night = lit;
