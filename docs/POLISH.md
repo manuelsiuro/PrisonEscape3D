@@ -42,3 +42,4 @@ and tested when it shipped, but no polish pass, so nothing is known either way.
 | Side games (dice, arm-wrestling, cards, hoops, checkers) | | Not reviewed | | |
 | Long games (pruno, garden, rats) | | Not reviewed | | |
 | Pay phone, kiosk and paperwork | | Not reviewed | | |
+| The Six Hunter | 2.36.0 | Partly | Claude's picks (the user's goal of 2026-11-07: the sessions run on their own): level 6, out of the Daily; the forest theme; six Hunters each with a hound, no takeover; the kennel hand first (the pack fed from the player's hands); ten items found or made only there; the recall horn an hour of game time. | The core only: the forest's look, the river's render, the models, sound, the select card's sixth star, How to play and the perf scenes are the next two members' (`phases/9-six-hunter.md`). The outside follows Stalag Flucht's valley, two hounds out. Not played by hand in the browser. |

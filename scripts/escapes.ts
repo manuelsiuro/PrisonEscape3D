@@ -134,6 +134,8 @@ export interface Plan {
   dock?: [number, number, number];
   pier?: [number, number, number];
   walkwayGuard?: number;
+  /** Raft (the Six Hunter): no guard up and about within this many tiles of the bank's fence before the power goes off (a Hunter walking the bank would see it cut). */
+  clearBank?: number;
   /** Helicopter (Irongate): the north roof's edge over the yard and the way across, the edge over the helipad court and the way down, the tile beside the pad (west of it). */
   chasm?: [number, number, number];
   court?: [number, number, number];
@@ -342,6 +344,7 @@ export const PLANS: Plan[] = [
     generatorFace: DIR.EAST,
     dock: [49, 6, DIR.NORTH],
     pier: [49, 3, DIR.NORTH],
+    clearBank: 20,
     desk: [11, 9],
     toilet: [8, 11],
     shovel: 'antler_pick',
@@ -362,7 +365,9 @@ export const PLANS: Plan[] = [
     ladder: [54, 15],
     glide: [55, 26, DIR.EAST],
     glideWind: [6, 2],
-    bluffKit: ['plastic_key_green', 'guard_outfit', 'fake_id'],
+    // (A pouch with the papers: a hound's nose finds a fake ID or a forged form, on a Dog Day Daily from day 1.)
+    bluffKit: ['plastic_key_green', 'guard_outfit', 'fake_id', 'pouch'],
+    paperKit: ['pouch'],
     gates: [26, 61],
   },
 ];
@@ -765,6 +770,15 @@ function raft(p: Plan, seed: number) {
     check(
       bot.until(() => g.body.x < 24 * UNIT, 20 * STEPS_PER_MINUTE),
       'the walkway guard at its west end',
+    );
+  }
+  if (p.clearBank !== undefined) {
+    const [dx, dz] = p.dock!;
+    const far = (g: (typeof bot.st.guards)[number]) =>
+      !awake(g) || Math.max(Math.abs(g.body.x / UNIT - dx), Math.abs(g.body.z / UNIT - dz)) > p.clearBank!;
+    check(
+      bot.until(() => bot.st.guards.every(far), 30 * STEPS_PER_MINUTE),
+      'no Hunter on the bank',
     );
   }
   bot.act();

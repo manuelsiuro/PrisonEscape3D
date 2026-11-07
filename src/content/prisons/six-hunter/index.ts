@@ -112,16 +112,16 @@ props.push(
   // The Hunters' quarters: four bunks, the table where the tally is kept.
   ...[30, 32, 34, 36].map((x) => ({ kind: 'bed', x, z: 48, d: 2 }) as const),
   { kind: 'table', x: 32, z: 52, w: 2 },
-  // The sports ground: a pull-up bar and weights in the corner by the drive's fence.
-  { kind: 'pullup', x: 23, z: 54, w: 2 },
+  // The sports ground: the weights corner by the drive's fence, a lamp over it; bleachers along the gym's wall.
   { kind: 'weights', x: 21, z: 54 },
+  { kind: 'pullup', x: 22, z: 54, w: 2 },
+  { kind: 'lamp', x: 24, z: 54, aim: AIM.NW },
+  { kind: 'bleachers', x: 20, z: 46, w: 3 },
   // Lamps: the yard's corners, the sports ground's, the drive's, the kennel run's, the hunting grounds'.
   ...[
     [15, 22, AIM.SE],
     [28, 22, AIM.SW],
     [28, 31, AIM.NW],
-    [8, 54, AIM.NE],
-    [24, 54, AIM.NW],
     [38, 54, AIM.NE],
     [54, 54, AIM.NW],
     [6, 20, AIM.W],
@@ -245,9 +245,9 @@ const guards: GuardDef[] = [
     ],
     night: [
       { x: 5, z: 30, wait: 4, face: 1 },
-      { x: 26, z: 57, wait: 4, face: 13 },
+      { x: 31, z: 57, wait: 4, face: 13 },
       { x: 57, z: 30, wait: 4, face: 9 },
-      { x: 26, z: 57, wait: 4, face: 13 },
+      { x: 31, z: 57, wait: 4, face: 13 },
     ],
     key: 'purple',
     dog: { name: 'Brutus', kennel: { x: 52, z: 47, face: 5 }, night: true, coat: 'mastiff' },
@@ -346,6 +346,13 @@ export const SIX_HUNTER: PrisonDef = {
   guards,
   names: ['Badger', 'Wren', 'Stoat', 'Otter', 'Moth', 'Hare', 'Toad', 'Crow', 'Boar', 'Lynx', 'Fox'],
   merchants: [3, 6, 9, 12],
+  // Gangs (2.36, session 16): the kitchen crew round Wren (the cook), the lifers round Moth (old Badger among them), the gym
+  // rats round Crow; their tables in the Trophy Hall at dinner, their corners of the yard and the sports ground of an evening.
+  gangs: [
+    { id: 'kitchen', boss: 3, members: [3, 5, 8], table: [40, 24, 42, 26], corner: [23, 29, 27, 29] },
+    { id: 'lifers', boss: 6, members: [6, 2, 11], table: [46, 28, 48, 30], corner: [15, 29, 16, 30] },
+    { id: 'gymRats', boss: 9, members: [9, 10, 4], table: [46, 24, 48, 26], corner: [20, 52, 21, 53] },
+  ],
   crew: ['muscle', 'lookout', 'digger', 'smuggler', 'muscle', 'lookout', 'digger', 'smuggler', 'muscle', 'lookout', 'digger'],
   // The player starts as the kennel hand (the pack fed from their hands); the boathouse's nets are open.
   jobs: [
@@ -436,8 +443,8 @@ export const SIX_HUNTER: PrisonDef = {
     oldTimer: 2,
     garden: { x: 8, z: 30, w: 6, d: 2 },
     race: { x: 12, z: 14, dir: 1, len: 6 },
-    pitch: pitch(9, 47, 9, 7),
-    track: { x: 8, z: 46, w: 11, d: 9 },
+    pitch: pitch(9, 47, 10, 7),
+    track: { x: 8, z: 46, w: 12, d: 9 },
     stage: stage(54, 28, 9),
     quiz: quizAt(13, [19, 42], [20, 42], [21, 42], [22, 42]),
     librarian: { cell: 8, x: 19, z: 40, face: 1 },

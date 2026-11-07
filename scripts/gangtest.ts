@@ -270,12 +270,14 @@ for (const def of PRISONS) {
   check(cut === 0, `${def.id}: every tile reachable without crossing turf (${cut} cut off)`);
   const book = DAY_BOOKS[def.id];
   check(
-    book.deck.filter((e) => e === 'gangWar').length === 1 && !!book.beforeGangs && !book.deck.includes(book.beforeGangs),
+    // (A prison built with the war in its deck, the Six Hunter: no card it took the place of.)
+    book.deck.filter((e) => e === 'gangWar').length === 1 &&
+      (def.difficulty > 5 ? !book.beforeGangs : !!book.beforeGangs && !book.deck.includes(book.beforeGangs)),
     `${def.id}: the gang war once a week, in place of ${book.beforeGangs}`,
   );
   const free = cells.filter((c) => !counted.has(c));
   console.log(
-    `${def.id}: ${gangs.map((g) => `${g.id} [${g.members.join(',')}] boss ${g.boss}`).join('; ')}; no gang: ${free.join(',') || 'none'}; ${turf.size} turf tiles; the war in place of ${book.beforeGangs}`,
+    `${def.id}: ${gangs.map((g) => `${g.id} [${g.members.join(',')}] boss ${g.boss}`).join('; ')}; no gang: ${free.join(',') || 'none'}; ${turf.size} turf tiles; the war in place of ${book.beforeGangs ?? 'nothing: built with it'}`,
   );
 }
 check(!TRAINING.gangs, 'the Training Block has no gangs');

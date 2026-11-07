@@ -4,7 +4,7 @@
 
 A 3D prison escape game in the spirit of *The Escapists*, for phones and desktops, right in the browser.
 Keep your head down through roll calls and work shifts while you secretly craft tools, dig, bribe, bluff and
-plot your way out of five prisons, each harder than the last. And once you're over the wall, keep running.
+plot your way out of five prisons, each harder than the last, then the Six Hunter, whose six Hunters keep hounds. And once you're over the wall, keep running.
 
 <p align="center">
   <a href="https://manuelsiuro.github.io/PrisonEscape3D/"><img src="docs/screenshots/play-button.png" alt="▶ Play it now" width="380"></a>
@@ -47,7 +47,7 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
 - **A living prison.** Inmates follow the routine, chat, gossip and hold grudges. The rumours you overhear are
   true, if you know how to read them. Every guard has a name and a temperament: some are lazy and doze off,
   some are strict and search cells, and a few can be bribed.
-- **Make your own tools.** 149 items to find, buy, steal or craft: from a toothbrush shiv and a wire
+- **Make your own tools.** 165 items to find, buy, steal or craft: from a toothbrush shiv and a wire
   lockpick to a bed dummy, a sheet rope, a grapnel and a glider. Intelligence opens harder recipes.
 - **Work and money.** Seven jobs, merchants among the inmates, favors to do for cash, a black market with a
   fixer, a burner phone, drone drops and visitors. A cork board in the canteen has odd jobs every day, and
@@ -60,7 +60,7 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
   food fights; fog, rain, storms, snow, blizzards and heatwaves. On the real date the prisons keep Easter,
   summer, Halloween, Christmas and New Year: an egg hunt, a water fight, costume night, fireworks.
 
-### 38 ways out
+### 45 ways out
 
 Cut the fence, tunnel under the wall, cross the roofs, knock out nearly every guard at once so the gates open, hide in the
 delivery truck, put on a guard's uniform and bluff your way through the gate, glide off a roof on the wind,
@@ -72,9 +72,10 @@ Over the wall, the manhunt begins: searchers, dogs, roadblocks and a helicopter 
 prison. Hide in hedges, wash your trail at a ford, steal clothes off a line, and reach safety for a clean
 getaway star by the medal.
 
-### Five prisons
+### Six prisons
 
-Escape one to open the next.
+Escape one to open the next. Past Irongate, the sixth: **the Six Hunter**, a hunting lodge in a pine valley, where six Hunters
+and their hounds follow every trail, a river floods every tunnel, and the kennel hand can win the pack over.
 
 <table>
   <tr>
@@ -100,7 +101,7 @@ Escape one to open the next.
         <li><b>How to play</b>: 66 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
-        <li><b>142 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
+        <li><b>144 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
         <li><b>Your own prisoner</b>: name, face, hair, beard, build, hat, glasses and tattoos.</li>
         <li>Three save slots plus the game in progress.</li>
       </ul>
