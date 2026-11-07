@@ -1,4 +1,4 @@
-66 topics in 14 groups: 66 laid out as pages (8225 words before the fine print), 0 still a paragraph (0 words); 48 pictures
+67 topics in 14 groups: 67 laid out as pages (8428 words before the fine print), 0 still a paragraph (0 words); 48 pictures
 every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there
   goal        78 words on the page,  45 folded; 4 steps, 1 chips, 1 lessons
   routine    120 words on the page,   0 folded; 4 steps, 0 chips, schedule, 2 lessons
@@ -28,7 +28,7 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   train      120 words on the page,  61 folded; 4 steps, 0 chips, 2 lessons
   vending    143 words on the page,  33 folded; 3 steps, 0 chips, 1 lessons
   library    179 words on the page,   0 folded; 4 steps, 0 chips, 1 lessons
-  grounds    130 words on the page,  59 folded; 0 steps, 0 chips, 2 lessons
+  grounds    130 words on the page,  75 folded; 0 steps, 0 chips, 2 lessons
   holidays   207 words on the page,  46 folded; 0 steps, 3 chips
   games      148 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
   cheat      136 words on the page,  50 folded; 4 steps, 0 chips, 1 lessons
@@ -52,10 +52,10 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   power       26 words on the page,   0 folded; 0 steps, 0 chips
   cams        33 words on the page,   0 folded; 0 steps, 0 chips, 1 recipes
   towers      32 words on the page,   0 folded; 0 steps, 0 chips
-  dogs       168 words on the page, 111 folded; 0 steps, 3 chips, 1 recipes, 1 lessons
+  dogs       168 words on the page, 119 folded; 0 steps, 3 chips, 1 recipes, 1 lessons
   ways        56 words on the page,  12 folded; 0 steps, 1 chips, 1 recipes, 2 lessons
-  delivery   102 words on the page,  67 folded; 3 steps, 0 chips, timeline, 1 lessons
-  bluff      114 words on the page,  21 folded; 4 steps, 0 chips, timeline, 1 recipes, 1 lessons
+  delivery   102 words on the page,  72 folded; 3 steps, 0 chips, timeline, 1 lessons
+  bluff      114 words on the page,  24 folded; 4 steps, 0 chips, timeline, 1 recipes, 1 lessons
   glider     100 words on the page,  52 folded; 4 steps, 4 chips, 2 recipes, 1 lessons
   paperwork  157 words on the page,  45 folded; 5 steps, 0 chips, timeline, 1 recipes, 2 lessons
   parole     210 words on the page,  75 folded; 5 steps, 3 chips, timeline, 1 lessons
@@ -66,3 +66,4 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   shell      104 words on the page,   0 folded; 0 steps, 0 chips, 1 recipes
   mines      130 words on the page,   0 folded; 0 steps, 1 chips
   island     137 words on the page,   0 folded; 3 steps, 0 chips, 1 recipes
+  hunters    203 words on the page,  81 folded; 0 steps, 4 chips, 4 recipes

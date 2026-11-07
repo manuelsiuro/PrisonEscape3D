@@ -136,3 +136,21 @@ retaken (`mapshot.ts`).
 `prison: 'six-hunter'`) and its picture (`helpshot.ts`); the drawhash, perfprobe and hitchprobe scenes and
 `perfbudget.json`; the README's screenshot; a lesson or first-day hints for the horn and the drag line if wanted;
 the screens swept at the eight sizes in both languages.
+
+## The finish as built
+
+Claude's picks (the user's goal of 2026-11-07), also in `POLISH.md`'s row:
+- **Level 6 shown as beyond the scale:** the Six Hunter's card has six stars, the sixth in the Hunters' red, and a red
+  level badge (`starsOf` in `prisons.ts`, shared with the Daily's card, which still never draws it); the other five
+  keep five.
+- **Six cards:** in a row of posters from 1180 px across (the card up to 1320), three to a row from 980 to 1179, two
+  to a row on a phone on its side (three rows: no odd one out), one on a phone upright; the ways out's pips wrap
+  at every size and the stars go under the name on a narrow card (the 130% interface on a 412 phone).
+- **How to play:** "Hounds and the river" (`hunters`, the prisons group, shown once the Six Hunter is open): the pack,
+  the kennel hand's trust and its cap, the four recipes, the fog, the river and the wall, the ways out as hints. The
+  delivery, bluff, grounds and dogs pages name the Six Hunter where they list prisons.
+- **The first day:** the pack fed by the quota said once (`toast.packFed`, the event's `pack`), with a hint the first
+  time on the cap (`hint.kennels`); a trout said as a trout; the drag line and the horn explained the first time
+  one is in hand; the smokehouse's job icon a fish; the "already fed" warning for a trout as for jerky.
+- **French:** a name that comes with its article contracts in `t()` ("évadé des Six Veneurs", "aux Six Veneurs",
+  "Direction les Six Veneurs"); the unlock line "Prison ouverte : {name}" (no agreement to get wrong).

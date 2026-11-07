@@ -301,7 +301,16 @@ export type SimEvent =
    * (a way down or up: found), sneezing at pepper, a treat eaten (its trust now), one refused
    * (it's had today's), won over for good (trust at its most), asleep after sleepy jerky, awake again. The player's scent washed off.
    */
-  | { type: 'dog'; dog: number; what: DogNews; trust?: number; trail?: boolean }
+  | {
+      type: 'dog';
+      dog: number;
+      what: DogNews;
+      trust?: number;
+      trail?: boolean;
+      /** 2.36: fed by the kennel hand's quota (the whole pack at once); a smoked trout taken rather than jerky. */
+      pack?: boolean;
+      trout?: boolean;
+    }
   | { type: 'washed' }
   /** 2.36 (The Six Hunter): the recall horn blown (where), a drag line landed (where, whether a trail was washed out). */
   | { type: 'horn'; tile: number }

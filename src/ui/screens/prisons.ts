@@ -14,6 +14,16 @@ export const prisonName = (def: PrisonDef) => t(`prison.${def.id}` as Key);
 export const securityOf = (def: PrisonDef) => t(`security.${def.difficulty}` as Key);
 
 /**
+ * A prison's level as stars: five, lit up to its difficulty; past the campaign's five (the Six Hunter, level 6), a
+ * star more, in the Hunters' red (`.past`), so the sixth reads as beyond the scale rather than one of six.
+ */
+export const starsOf = (def: PrisonDef, size: number) =>
+  Array.from(
+    { length: Math.max(5, def.difficulty) },
+    (_, i) => `<i class="${i < def.difficulty ? 'on' : ''}${i >= 5 ? ' past' : ''}">${icon('star', size)}</i>`,
+  ).join('');
+
+/**
  * The campaign (GDD §13.1): a card per prison, in order, with its security level, what makes
  * it what it is, and the ways out found there; the next one locked until the one before it is
  * escaped. Resolves with the prison picked, or null when closed.
@@ -24,7 +34,7 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
     const open = isOpen(k);
     const rec = recordOf(def.id);
     const routes = escapesOf(def);
-    const stars = Array.from({ length: 5 }, (_, i) => `<i class="${i < def.difficulty ? 'on' : ''}">${icon('star', 12)}</i>`).join('');
+    const stars = starsOf(def, 12);
     const pips = routes
       .map(
         (r) =>
@@ -36,7 +46,7 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
       : `<span class="pc-lock">${icon('lock', 14)}${t('prisons.locked', { name: prisonName(PRISONS[k - 1]) })}</span>`;
     // Locked cards stay focusable (aria-disabled), so a keyboard can reach what opens them.
     return `<button class="prison-card theme-${def.theme ?? 'suburban'}${open ? '' : ' locked'}" data-k="${k}" ${open ? '' : 'aria-disabled="true"'} style="--i:${k}">
-      <span class="pc-scene" aria-hidden="true"><span class="pc-level">${k + 1}</span></span>
+      <span class="pc-scene" aria-hidden="true"><span class="pc-level${def.difficulty > 5 ? ' past' : ''}">${k + 1}</span></span>
       <span class="pc-body">
         <span class="pc-head"><b>${prisonName(def)}</b><span class="pc-stars" aria-hidden="true">${stars}</span></span>
         <small class="pc-sec">${securityOf(def)}</small>

@@ -170,6 +170,10 @@ const P: Record<string, string> = {
   sparkle:
     '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
   tree: '<path d="M12 2.5 6.5 9h3L5 15h4l-3.5 4.5h13L15 15h4l-4.5-6h3Z"/><path d="M12 19.5V22"/>',
+  /** 2.36 (The Six Hunter): a stag's antlers (its How to play topic); a fish (the smokehouse). */
+  antler:
+    '<path d="M12 21v-6M12 15c-2.5 0-4-1.5-4.5-4M12 15c2.5 0 4-1.5 4.5-4"/><path d="M7.5 11 4 8M7.5 11 6.5 6M6.5 6 4.5 3M6.5 6l2-3"/><path d="M16.5 11 20 8M16.5 11l1-5M17.5 6l2-3M17.5 6l-2-3"/>',
+  fish: '<path d="M3 12c2.5-4 6-5.5 9.5-5.5 3.5 0 6 2.5 7.5 5.5-1.5 3-4 5.5-7.5 5.5S5.5 16 3 12Z"/><path d="M3 12 1 9M3 12l-2 3"/><circle cx="15.5" cy="10.8" r=".9" fill="currentColor" stroke="none"/><path d="M11 9.5c.8 1.6.8 3.4 0 5"/>',
   /** 2.33: a stick of chalk and its scrawl (the menu board scribbled on). */
   chalk:
     '<rect x="11" y="2.5" width="4.5" height="12" rx="1.2" transform="rotate(40 13.25 8.5)"/><path d="M3 20c2-2 3 1 5-1s3 1 5-1 3 1 5-1"/>',

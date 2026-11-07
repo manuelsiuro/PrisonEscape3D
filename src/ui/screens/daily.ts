@@ -8,7 +8,7 @@ import { h, TOUCH } from '../dom';
 import { icon } from '../icons';
 import { medalDisc, routeIcon } from './trophies';
 import { earnedRow } from './escaped';
-import { prisonName, securityOf } from './prisons';
+import { prisonName, securityOf, starsOf } from './prisons';
 
 /**
  * The Daily Escape's screens (P26): the day's card (the prison, the twists, the tries so far,
@@ -127,7 +127,7 @@ export function showDaily(info: DailyInfo, click: () => void): Promise<DailyChoi
     const d = dailyOf(n);
     const rec = info.record(n);
     const best = rec.best;
-    const stars = Array.from({ length: 5 }, (_, i) => `<i class="${i < d.prison.difficulty ? 'on' : ''}">${icon('star', 11)}</i>`).join('');
+    const stars = starsOf(d.prison, 11);
     const tabs = late
       ? `<div class="daily-tabs" role="tablist">${[info.today, yesterday]
           .map(

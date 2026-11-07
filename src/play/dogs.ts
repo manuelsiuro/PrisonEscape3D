@@ -8,6 +8,7 @@ import { dogDef, outOfBounds } from '../sim/systems/k9';
 import { coachOnce } from './tips';
 import { tileAt } from '../sim/world/grid';
 import { gainAt } from './loudness';
+import { KENNEL_TRUST_CAP, TRUST_IGNORE } from '../sim/tuning';
 
 /** When each dog's "on your trail" was last said (real ms), and whether it was (its "lost" follows only then). */
 const trackSaid: number[] = [];
@@ -60,11 +61,22 @@ export function announceDog(sim: Sim, e: Extract<SimEvent, { type: 'dog' }>) {
       itemsUI.toast(t(e.trail ? 'toast.dogDazed' : 'toast.dogSneeze', { dog }));
       trackShown[e.dog] = false;
       break;
-    case 'fed':
+    case 'fed': {
+      // 2.36 (The Six Hunter): the kennel hand's quota feeds the whole pack at once: said once, with the lowest trust.
+      if (e.pack) {
+        const pack = sim.events.filter((m): m is typeof e => m.type === 'dog' && m.what === 'fed' && !!m.pack);
+        if (pack[0] !== e) break;
+        sound.munch(false);
+        itemsUI.toast(t('toast.packFed', { n: Math.min(...pack.map((m) => m.trust ?? 0)) }));
+        coachOnce('kennels', 'hint.kennels', { n: KENNEL_TRUST_CAP, m: TRUST_IGNORE });
+        break;
+      }
       sound.munch(false);
-      if (!sim.events.some((m) => m.type === 'dog' && m.what === 'friend')) itemsUI.toast(t('toast.dogFed', { dog, n: e.trust ?? 0 }));
+      if (!sim.events.some((m) => m.type === 'dog' && m.what === 'friend'))
+        itemsUI.toast(t(e.trout ? 'toast.dogFedTrout' : 'toast.dogFed', { dog, n: e.trust ?? 0 }));
       coachOnce('treat', 'hint.treat');
       break;
+    }
     case 'friend':
       sound.munch(true);
       banner.toast(t('toast.dogFriend', { dog }), 'good');

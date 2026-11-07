@@ -620,7 +620,7 @@ export function catchTreat(sim: SimContext, thrown: number, tile: number): boole
     const was = d.trust;
     d.fed = day;
     d.trust = Math.min(TRUST_FRIEND, d.trust + TREAT_TRUST);
-    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust });
+    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust, ...(thrown === TROUT ? { trout: true } : {}) });
     if (was < TRUST_FRIEND && d.trust >= TRUST_FRIEND) sim.events.push({ type: 'dog', dog: k, what: 'friend', trust: d.trust });
     return true;
   }
@@ -656,7 +656,7 @@ export function kennelsFed(sim: SimContext) {
   s.dogs.forEach((d, k) => {
     if (d.trust >= KENNEL_TRUST_CAP) return;
     d.trust = Math.min(KENNEL_TRUST_CAP, d.trust + KENNEL_TRUST);
-    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust });
+    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust, pack: true });
   });
 }
 

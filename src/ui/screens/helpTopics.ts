@@ -344,6 +344,14 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           stepIcons: ['boat', 'heli', 'fist'],
           listIcons: ['camera', 'bolt'],
         }),
+        // 2.36: the Six Hunter (docs/phases/9-six-hunter.md): the pack, the kennel hand's trust, the Hunters' tricks.
+        T('hunters', 'antler', '#3f6b3a', {
+          prison: 'six-hunter',
+          recipes: ['drag_line', 'tar_soap', 'ghillie_cloak', 'antler_pick'],
+          listIcons: ['paw', 'item:trout', 'down'],
+          list2Icons: ['item:drag_line', 'item:tar_soap', 'item:ghillie_cloak', 'item:recall_horn'],
+          see: ['dogs', 'manhunt'],
+        }),
       ],
     },
   ],
