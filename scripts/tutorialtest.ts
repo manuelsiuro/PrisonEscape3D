@@ -12,7 +12,7 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
 import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
 import { questionNow } from '../src/sim/systems/quiz';
-import { dayMinute } from '../src/sim/systems/clock';
+import { DAY_STEPS, dayMinute } from '../src/sim/systems/clock';
 import { TRAINING } from '../src/content/prisons/training';
 import { BRIBE, command, dirFromVector, EXT, LINE, needleArgs, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { drillOn, prisonDay } from '../src/sim/systems/calendar';
@@ -1582,8 +1582,22 @@ function follow(id: string) {
   talkTo(bot, bot.st.inmates[0].body);
   bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
   bot.st.favors = [];
+  bot.st.step += DAY_STEPS;
   bot.step();
   check(!progress.done && why() === 'lesson.talk.lapsed', `talk: the favor gone ends the lesson (${why()}, step ${progress.k + 1})`);
+}
+{
+  // 2.36: taken on and let go from the talk panel the same morning: ended, saying so (not "lapsed overnight").
+  const { bot, progress, why } = follow('talk');
+  talkTo(bot, bot.st.inmates[0].body);
+  bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
+  bot.op(OP.TALK, TALK.ACCEPT);
+  bot.op(OP.TALK, TALK.DROP);
+  bot.step();
+  check(
+    !progress.done && why() === 'lesson.talk.dropped',
+    `talk: the favor let go ends the lesson, saying so (${why()}, step ${progress.k + 1})`,
+  );
 }
 {
   // Braced on every tile from the start (every brace gone soonest): still past the fence, and up outside it.

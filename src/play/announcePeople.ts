@@ -26,6 +26,9 @@ const THROW_FLIGHT_MS = 320;
 let lastFlight = 0;
 
 /** People (out of announce.ts, v2.34.2): blows, knockouts and wounds, cash, talk, opinion, gifts, favours, followers, ambushes, bribes, refusals, what's thrown and noise. */
+/** At most this many opinions moving in one step float over their heads (a crowd's cheer doesn't). */
+const OPINION_FLOATS = 3;
+
 export function announcePeople(e: SimEvent, sim: Sim) {
   switch (e.type) {
     case 'hit':
@@ -120,9 +123,17 @@ export function announcePeople(e: SimEvent, sim: Sim) {
         );
       }
       break;
-    case 'opinion':
+    case 'opinion': {
       if (e.by > 0) sound.opinionUp();
+      // (2.36: over their head, but where the talk panel shows it already, a blow's number or a laugh is there, or a crowd moves at once.)
+      const shown = sim.events.some(
+        (o) =>
+          (o.type === 'hit' && o.who === e.who) || ((o.type === 'menu' || o.type === 'holiday') && o.what === 'laugh' && o.who === e.who),
+      );
+      if (sim.state.talk !== e.who && !shown && sim.events.filter((o) => o.type === 'opinion').length <= OPINION_FLOATS)
+        floatAt(e.who, t('float.opinion', { n: `${e.by > 0 ? '+' : '−'}${Math.abs(e.by)}` }), e.by > 0 ? 'gain' : 'taken');
       break;
+    }
     case 'bought':
       sound.buy();
       buzz('bell');
@@ -147,6 +158,7 @@ export function announcePeople(e: SimEvent, sim: Sim) {
         buzz('attended');
         banner.toast(t('toast.favorDone', { name: inmateName(sim, e.who) }), 'good', 5000);
       } else if (e.state === 'paid') buzz('attended');
+      else if (e.state === 'dropped') banner.toast(t('toast.favorDropped', { name: inmateName(sim, e.who) }), 'info');
       break;
     case 'recruit':
       if (e.on) {

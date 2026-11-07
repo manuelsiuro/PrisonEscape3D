@@ -520,27 +520,50 @@ export function digHelp(sim: SimContext, action: string, layer: number, out: num
     if (e[ORD] !== ORDER.DIG) continue;
     const m = s.inmates[e[WHO]];
     if (!m || m.ko > 0) continue;
-    if (
-      ground &&
-      e[ARG] < 0 &&
-      cheb(m.body, s.player) <= DIG_REACH * UNIT &&
-      lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) &&
-      (sim.rules250 || onFoot(sim.world, m.body, s.player, DIG_REACH + 1))
-    ) {
+    if (ground && e[ARG] < 0 && besidePlayer(sim, m.body)) {
       out[0] = e[WHO];
       return DIG_HELP;
     }
-    if (
-      under &&
-      e[ARG] >= 0 &&
-      sim.world.ground.kind[e[ARG]] === TILE.SHAFT &&
-      cheb(m.body, { x: centerX(e[ARG]), z: centerZ(e[ARG]) }) <= SHAFT_REACH * UNIT
-    ) {
+    if (under && atShaft(sim, e, m.body)) {
       out[0] = e[WHO];
       return SHAFT_HELP;
     }
   }
   return 4;
+}
+
+/** A digger close enough to the player on the ground floor to help (DIG_REACH, in sight, a short walk away). */
+function besidePlayer(sim: SimContext, b: Body): boolean {
+  const p = sim.state.player;
+  return (
+    cheb(b, p) <= DIG_REACH * UNIT && lineOfSight(sim.world, b.x, b.z, p.x, p.z) && (sim.rules250 || onFoot(sim.world, b, p, DIG_REACH + 1))
+  );
+}
+
+/** A digger who saw where the player went down, waiting beside that shaft. */
+const atShaft = (sim: SimContext, e: CrewEntry, b: Body) =>
+  e[ARG] >= 0 && sim.world.ground.kind[e[ARG]] === TILE.SHAFT && cheb(b, { x: centerX(e[ARG]), z: centerZ(e[ARG]) }) <= SHAFT_REACH * UNIT;
+
+/**
+ * 2.36: whether a digger's or a muscle's order is doing anything right now, by the same rules as
+ * the help itself (digHelp, backedBy), so the crew's status never claims help that isn't given:
+ * 'ok', 'far' (too far from the player; a digger walking to the shaft), 'cut' (a digger close enough
+ * but with a wall or a fence between, not a short walk away), 'lost' (a digger who didn't see where the
+ * player went down), null (another order, out cold, or the player where a digger can't help: the
+ * vents, a roof).
+ */
+export function helpOf(sim: SimContext, who: number): 'ok' | 'far' | 'cut' | 'lost' | null {
+  const s = sim.state;
+  const e = crewEntry(s, who);
+  const m = s.inmates[who];
+  if (!e || !m || m.ko > 0) return null;
+  if (e[ORD] === ORDER.BACK) return backs(s, m) ? 'ok' : 'far';
+  if (e[ORD] !== ORDER.DIG) return null;
+  if (s.layer === LAYER.GROUND && !sim.away)
+    return besidePlayer(sim, m.body) ? 'ok' : cheb(m.body, s.player) <= DIG_REACH * UNIT ? 'cut' : 'far';
+  if (s.layer !== LAYER.UNDER) return null;
+  if (e[ARG] < 0) return 'lost';
+  return atShaft(sim, e, m.body) ? 'ok' : 'far';
 }
 
 /**
@@ -569,10 +592,14 @@ export function backedBy(sim: SimContext): number {
   for (const e of s.crew) {
     if (e[ORD] !== ORDER.BACK) continue;
     const m = s.inmates[e[WHO]];
-    if (m && m.ko <= 0 && m.angry <= 0 && cheb(m.body, s.player) <= BACK_REACH * UNIT) return e[WHO];
+    if (m && backs(s, m)) return e[WHO];
   }
   return -1;
 }
+
+/** A muscle up and about, close enough to the player to stop an ambush. */
+const backs = (s: { player: Body }, m: { body: Body; ko: number; angry: number }) =>
+  m.ko <= 0 && m.angry <= 0 && cheb(m.body, s.player) <= BACK_REACH * UNIT;
 
 /** A follower's blow, with a muscle watching the player's back half as hard again. */
 export const allyDamage = (s: { crew: number[][] }, who: number, dmg: number) =>

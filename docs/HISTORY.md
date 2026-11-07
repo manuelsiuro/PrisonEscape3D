@@ -176,4 +176,5 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The accessibility options (v2.35.0)
 - Fights, stealth and heat (v2.35.0)
 - Tools, items and looting (v2.36.0, not released yet)
+- Talk, merchants and the crew (v2.36.0, not released yet)
 - Character animation (v2.36.0, not released yet)
