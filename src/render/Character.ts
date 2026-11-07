@@ -8,6 +8,7 @@ import { activityPose, type Limbs, type Moves } from './characterPose';
 import { instrumentGeometry, instruments, part } from './characterParts';
 import { bodyMaterial, buildFigure, ghostSkin } from './characterBody';
 import {
+  cutOf,
   FIDGET,
   idlePose,
   type Idle,
@@ -77,6 +78,8 @@ const HELD_SWAP = 0.14;
  */
 const BLEND_RATE = 5;
 const BLEND_FAR = 1;
+/** Knocked out (session 15): the fall to the floor takes this long (s). */
+const KO_FALL = 0.4;
 /** Standing about this long (s) before settling into a stance. */
 const SETTLE = 1.2;
 /** At a blow or a strike, the arm takes over within this much of it, and gives back over the end. */
@@ -148,6 +151,9 @@ export class Character {
   private kioskOff = 0;
   /** 0 standing … 1 lying in bed; and how far into the current activity. */
   private lie = 0;
+  /** A knockout's fall (0 … 1 on the floor), and how far down they were when it began. */
+  private koFall = 0;
+  private koFrom = 0;
   /** Lying down, or still getting up (0 standing … 1 flat). */
   get lying(): number {
     return this.lie;
@@ -226,6 +232,8 @@ export class Character {
   private readonly offset: number;
   /** Walking pace against the player's: legs swing faster for faster walkers (guards running). */
   gait: number;
+  /** Session 15: game seconds a real second (the frame's `speed`: a replay's ×4, a knockout's time-lapse), set before `pose`. */
+  timeScale = 1;
   /** Props that come and go with what the character does. */
   private readonly blanket: THREE.Mesh;
   private readonly tray = new THREE.Group();
@@ -614,17 +622,21 @@ export class Character {
   /** A tool strike: one hard swing of the arm (the next frames play it). */
   strike() {
     this.hit = 1;
+    // (Session 15: someone trading blows isn't standing about: no stance between them.)
+    this.idle = 0;
   }
 
   /** A blow at someone: the arm thrown forward (a weapon in hand swings it). */
   punch() {
     this.jab = 1;
+    this.idle = 0;
   }
 
   /** Hit: a jolt back, and a white flash (2.35). */
   flinch() {
     this.recoil = 1;
     this.flash = 1;
+    this.idle = 0;
     if (!this.flashSprite) {
       const s = new THREE.Sprite(
         new THREE.SpriteMaterial({
@@ -667,7 +679,17 @@ export class Character {
     // Into bed and out of it: a short ease between standing beside it and lying in it.
     // Knocked out: down on the floor where they stand, quicker.
     const ko = doing === DOING.KNOCKED_OUT;
-    this.lie += (((doing === DOING.SLEEP && bed) || (doing === DOING.BENCH && bed) || ko ? 1 : 0) - this.lie) * k(ko ? 9 : 5);
+    // (Session 15: knocked out, a fall: eased from where they were down to the floor over KO_FALL, not an exponential
+    // drop; at once with reduced motion.)
+    if (ko) {
+      if (this.koFall === 0) this.koFrom = this.lie;
+      this.koFall = motion ? Math.min(1, this.koFall + dt / KO_FALL) : 1;
+      const e = this.koFall * this.koFall * (3 - 2 * this.koFall);
+      this.lie = this.koFrom + (1 - this.koFrom) * e;
+    } else {
+      this.koFall = 0;
+      this.lie += (((doing === DOING.SLEEP && bed) || (doing === DOING.BENCH && bed) ? 1 : 0) - this.lie) * k(5);
+    }
     // (2.29: on a mat, on hands and toes.)
     this.prone += ((doing === DOING.PUSHUP ? 1 : 0) - this.prone) * k(8);
     if (this.prone < 0.002) this.prone = 0;
@@ -715,13 +737,16 @@ export class Character {
     this.root.rotation.y += d * k(14);
     this.swing += ((moving ? 1 : 0) - this.swing) * k(10);
     let stepped = false;
-    // (Session 15: the ground covered this frame, for the stride and for a run.)
+    // (Session 15: the ground covered this frame, for the stride and for a run, in game time: at a replay's ×4 the
+    // legs go four times as fast, nobody breaks into a run.)
     const moved = Number.isFinite(this.lastX) ? Math.hypot(x - this.lastX, z - this.lastZ) : 0;
     this.lastX = x;
     this.lastZ = z;
+    const gameDt = dt * Math.max(0.05, this.timeScale);
+    const cut = cutOf(gameDt);
     // (Jogging, P31: running while it goes, quicker strides, a longer swing, more bounce; session 15: anyone going
     // well over a walk, a chase or a flight, runs too.)
-    const runTo = moving ? Math.max(doing === DOING.RUN ? 1 : 0, dt > 0 && moved < 0.5 ? runOf(moved / dt) : 0) : 0;
+    const runTo = moving ? Math.max(doing === DOING.RUN ? 1 : 0, gameDt > 0 && moved < cut ? runOf(moved / gameDt) : 0) : 0;
     this.runNow += (runTo - this.runNow) * (motion ? k(8) : 1);
     if (this.runNow < 0.002) this.runNow = 0;
     const running = this.runNow;
@@ -729,7 +754,7 @@ export class Character {
     if (moving) {
       const before = Math.floor(this.phase / Math.PI);
       // (Session 15: the stride follows the ground covered, so the feet keep up with it at any pace.)
-      this.phase += strideTurn(moved, amp, this.root.scale.x, dt * 11 * this.gait * (1 + 0.45 * running));
+      this.phase += strideTurn(moved, amp, this.root.scale.x, gameDt * 11 * this.gait * (1 + 0.45 * running), cut);
       stepped = Math.floor(this.phase / Math.PI) !== before;
     }
     const sty = this.style;
@@ -853,8 +878,10 @@ export class Character {
       this.trayAt === TRAY_AT.NONE &&
       !carrying &&
       !this.blocking &&
+      this.guardUp === 0 &&
       this.hit === 0 &&
-      this.jab === 0;
+      this.jab === 0 &&
+      this.recoil === 0;
     this.idle = moving ? 0 : this.idle + dt;
     this.rest += ((about && this.idle > SETTLE ? 1 : 0) - this.rest) * (motion ? k(about ? 2.5 : 8) : 1);
     if (this.rest < 0.002) this.rest = 0;
@@ -975,7 +1002,12 @@ export class Character {
     this.legR.rotation.set(l.legR, 0, l.legZ);
     this.armL.rotation.set(l.armLx, 0, l.armLz);
     this.armR.rotation.set(l.armRx, 0, l.armRz);
-    this.placeHeld(doing, dt, motion);
+    // (A blow or a strike swings what's in hand as a tool, a mop's handle too.)
+    const blow = Math.max(
+      this.hit > 0 ? Math.min(1, (1 - this.hit) / BLOW_IN, this.hit / BLOW_OUT) : 0,
+      this.jab > 0 ? Math.min(1, this.jab / BLOW_OUT) : 0,
+    );
+    this.placeHeld(doing, dt, motion, blow);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y =
       l.bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
@@ -1102,9 +1134,10 @@ export class Character {
   /**
    * The held item where its grip puts it (session 15), once the arms are set: out of the fist, upright in
    * it, by the handle at the side or in both hands at work, in both hands before the belly, by its edge at
-   * the side or open before the face to read. It grows into the hand; the last one shrinks away.
+   * the side or open before the face to read. It grows into the hand; the last one shrinks away. `blow`: how far a
+   * strike or a blow has the arm (a mop's handle swung out of the fist like a tool's meanwhile).
    */
-  private placeHeld(doing: number, dt: number, motion: boolean) {
+  private placeHeld(doing: number, dt: number, motion: boolean, blow: number) {
     const swap = motion ? dt / HELD_SWAP : 1;
     if (this.dropping) {
       this.dropLeft = Math.max(0, this.dropLeft - swap);
@@ -1131,6 +1164,8 @@ export class Character {
       HAND_L.copy(FIST).applyMatrix4(this.armL.matrix);
       HAND_R.copy(FIST).applyMatrix4(this.armR.matrix);
       GRIP_AT.addVectors(HAND_L, HAND_R).multiplyScalar(0.5);
+      // (Hands not before the body, a jumping jack's or one out cold: nothing to hold it on, so it isn't drawn sunk into the chest.)
+      m.visible = GRIP_AT.z > 0.2 && this.lie < 0.2 && this.crawl < 0.2 && this.prone < 0.2;
       if (g === GRIP.CARRY) {
         // Level on the hands, a little ahead of them.
         m.rotation.set(0, 0, 0);
@@ -1147,6 +1182,7 @@ export class Character {
       }
       return;
     }
+    m.visible = true;
     if (g === GRIP.UPRIGHT || doing === DOING.DRINK || doing === DOING.SNACK) {
       // (2.33: a cup or a can at the mouth, or a snack, stays upright in the fist whatever the arm does, tipped toward the
       // lips for a sip; session 15: a cup, a can or a bottle carried about too, not tipped over as the arm swings.)
@@ -1162,6 +1198,10 @@ export class Character {
       m.quaternion.copy(UPRIGHT).multiply(POLE_DOWN);
       HAND_L.set(POLE_ONE_HAND * m.scale.x, 0, 0).applyQuaternion(m.quaternion);
       m.position.copy(FIST).sub(HAND_L);
+      if (blow > 0) {
+        m.quaternion.slerp(TIP.setFromEuler(TIP_E.set(0, -Math.PI / 2, 0)), blow);
+        m.position.lerp(HAND_L.set(0, -0.44, 0.16), blow);
+      }
     } else if (g === GRIP.FLAT) {
       m.quaternion.copy(FLAT_SIDE);
       m.position.set(0, -0.5, 0.04);

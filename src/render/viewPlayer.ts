@@ -205,6 +205,8 @@ export class PlayerView {
     for (const r of f.rats) if (r.mode === 'shoulder') perchedRat = true;
     this.c.perched = perchedRat;
     this.c.blocking = f.blocking;
+    // (Session 15: the strides in game time: asleep or knocked out the clock runs fast.)
+    this.c.timeScale = f.speed;
     this.x = px;
     this.z = pz;
     return this.c.pose(px, pz, facing, f.moving, dt, time, !reduced, doing, f.restBed ?? this.lastRest ?? crowd.beds[1]);
