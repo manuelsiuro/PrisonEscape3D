@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Character } from '../../../src/render/Character';
 import { box, kitMaterial, merge } from '../../../src/render/kit';
+import { exportObj } from '../../../model-library';
 import { CATEGORIES, computeModelStats, getCatalog, LIBRARIES } from './catalog';
 import type { BuildContext, BuiltModel, CatalogLibraryId, ModelCategory, ModelEntry, ModelStats } from './types';
 
@@ -842,6 +843,18 @@ export function initModelViewer() {
     a.href = canvasEl.toDataURL('image/png');
     a.download = `${state.selectedId.replace(':', '-')}.png`;
     a.click();
+  });
+
+  document.getElementById('btn-export-obj')?.addEventListener('click', () => {
+    if (!activeBuilt) return;
+    const objText = exportObj(activeBuilt.root, state.selectedId);
+    const blob = new Blob([objText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${state.selectedId.replace(/[^a-zA-Z0-9_-]+/g, '_')}.obj`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 
   const themeBtn = document.getElementById('ui-theme-btn');

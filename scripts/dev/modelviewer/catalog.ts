@@ -51,6 +51,7 @@ import {
 import { currentTheme, setTheme, stoneCap, TEX, type Theme } from '../../../src/render/textures';
 import { BIN_PILES } from '../../../src/render/WorkGear';
 import { pine, sceneryTree, WALL_H, wallBlock } from '../../../src/render/WorldView';
+import { compileModel, MODEL_LIBRARY, type ModelBlueprint } from '../../../model-library';
 import type { BuildContext, BuiltModel, CatalogLibraryInfo, ModelCategory, ModelEntry, ModelStats } from './types';
 
 export const LIBRARIES: CatalogLibraryInfo[] = [
@@ -94,13 +95,6 @@ function humanize(id: string): string {
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function makeKitMesh(parts: Part[], ao = true, mat: THREE.Material = kitMaterial): THREE.Mesh {
-  const m = new THREE.Mesh(merge(parts, ao), mat);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  return m;
 }
 
 /** Default footprints and subcategories for all 39 PropKind models. */
@@ -2437,247 +2431,47 @@ function buildArchitectureEntries(): ModelEntry[] {
  * Version 2 Foundation: Procedural Kit Library (`kit-library`).
  * Demonstrates browsing a code-generated library of parametric 3D objects built with `src/render/kit.ts`.
  */
+/**
+ * Procedural Model Library (`model-library/`):
+ * Reusable, code-defined 3D low-poly models compiled from blueprints.
+ */
+function blueprintToModelEntry(bp: ModelBlueprint): ModelEntry {
+  return {
+    id: bp.id,
+    library: 'kit-library',
+    name: bp.name,
+    nameFr: bp.nameFr,
+    category: bp.category,
+    subcategory: bp.subcategory,
+    tags: bp.tags,
+    sourceFile: bp.sourceFile,
+    builderName: `compileModel(${bp.id.replace('lib:', '')})`,
+    description: bp.description,
+    footprint: bp.footprint,
+    wallMounted: bp.wallMounted,
+    variants: bp.params?.map((p) => ({
+      key: p.key,
+      label: p.label,
+      kind: p.kind,
+      options: p.options,
+      defaultValue: p.defaultValue,
+    })),
+    build: (ctx: BuildContext): BuiltModel => {
+      const compiled = compileModel(bp, ctx.variants);
+      return {
+        root: compiled.root,
+        animate: (t, _dt, c) => {
+          compiled.animate?.(t, { night: c.night, power: c.power });
+        },
+        dispose: () => compiled.dispose(),
+        recipe: bp.recipe,
+      };
+    },
+  };
+}
+
 function buildKitLibraryEntries(): ModelEntry[] {
-  return [
-    {
-      id: 'lib:guard_booth_modular',
-      library: 'kit-library',
-      name: 'Modular Security Booth (Parametric)',
-      category: 'architecture',
-      subcategory: 'V2 Procedural Kit Library',
-      tags: ['kit-library', 'parametric', 'security', 'building'],
-      sourceFile: 'src/render/kit.ts',
-      builderName: 'box() + cyl() + disc() + merge()',
-      description: 'Parametric security gatehouse built with kit.ts primitives: adjustable roof overhang, stripe color, and searchlight.',
-      footprint: [2, 2],
-      variants: [
-        {
-          key: 'accent',
-          label: 'Stripe Color',
-          kind: 'color',
-          defaultValue: '#2f6fd1',
-        },
-        {
-          key: 'searchlight',
-          label: 'Roof Searchlight',
-          kind: 'boolean',
-          defaultValue: true,
-        },
-      ],
-      build: (ctx: BuildContext): BuiltModel => {
-        const accent = parseInt(String(ctx.variants.accent ?? '#2f6fd1').replace('#', ''), 16);
-        const hasLight = ctx.variants.searchlight !== false;
-        const parts: Part[] = [
-          box(1.6, 0.1, 1.6, 0x59606b, 0, 0, 0),
-          box(1.4, 1.5, 1.4, 0xd8dde3, 0, 0.1, 0),
-          box(1.42, 0.18, 1.42, accent, 0, 0.55, 0),
-          box(1.1, 0.5, 1.44, 0x223040, 0, 0.88, 0),
-          box(1.44, 0.5, 1.1, 0x223040, 0, 0.88, 0),
-          box(1.75, 0.12, 1.75, 0x3b4048, 0, 1.6, 0),
-        ];
-        if (hasLight) {
-          parts.push(
-            cyl(0.12, 0.18, 0x2b3038, 0, 1.72, 0, 10),
-            cyl(0.18, 0.26, 0x8d949e, 0, 1.9, 0.05, 12),
-            disc(0.16, 0.04, 0xffe066, 0, 2.02, 0.18, 12),
-          );
-        }
-        const m = makeKitMesh(parts);
-        const g = new THREE.Group();
-        g.add(m);
-        return {
-          root: g,
-          recipe: [
-            'box(1.6, 0.1, 1.6, 0x59606b) // Concrete plinth',
-            'box(1.4, 1.5, 1.4, 0xd8dde3) // Cabin walls',
-            'box(1.42, 0.18, 1.42, accent) // Hazard band',
-            'box(1.75, 0.12, 1.75, 0x3b4048) // Overhang roof',
-          ],
-          dispose: () => m.geometry.dispose(),
-        };
-      },
-    },
-    {
-      id: 'lib:industrial_forklift',
-      library: 'kit-library',
-      name: 'Warehouse Forklift (Parametric)',
-      category: 'vehicles',
-      subcategory: 'V2 Procedural Kit Library',
-      tags: ['kit-library', 'parametric', 'vehicle', 'industrial'],
-      sourceFile: 'src/render/kit.ts',
-      builderName: 'box() + rod() + cyl() + merge()',
-      description: 'Code-generated warehouse forklift with adjustable mast fork height, pallet load, and body paint.',
-      footprint: [2, 2],
-      variants: [
-        {
-          key: 'liftHeight',
-          label: 'Fork Lift Height',
-          kind: 'select',
-          options: [
-            { value: 0.12, label: 'Lowered (0.12)' },
-            { value: 0.55, label: 'Mid Lift (0.55)' },
-            { value: 1.05, label: 'High Lift (1.05)' },
-          ],
-          defaultValue: 0.55,
-        },
-        {
-          key: 'pallet',
-          label: 'Loaded Crate on Forks',
-          kind: 'boolean',
-          defaultValue: true,
-        },
-        {
-          key: 'paint',
-          label: 'Body Paint',
-          kind: 'color',
-          defaultValue: '#e8b828',
-        },
-      ],
-      build: (ctx: BuildContext): BuiltModel => {
-        const bodyC = parseInt(String(ctx.variants.paint ?? '#e8b828').replace('#', ''), 16);
-        const fy = Number(ctx.variants.liftHeight ?? 0.55);
-        const hasPallet = ctx.variants.pallet !== false;
-        const parts: Part[] = [
-          box(0.95, 0.48, 1.35, bodyC, 0, 0.18, -0.15),
-          box(0.9, 0.35, 0.45, 0x3b4048, 0, 0.45, -0.6),
-          box(0.38, 0.12, 0.36, 0x1e2228, 0, 0.68, -0.15),
-          box(0.38, 0.32, 0.08, 0x1e2228, 0, 0.8, -0.31),
-          cyl(0.03, 0.36, 0x2b3038, 0, 0.66, 0.25, 8),
-          ...[-0.4, 0.4].flatMap((x) => [
-            box(0.05, 0.95, 0.05, 0x2b3038, x, 0.66, 0.35),
-            box(0.05, 0.95, 0.05, 0x2b3038, x, 0.66, -0.55),
-            box(0.05, 0.05, 0.95, 0x2b3038, x, 1.58, -0.1),
-          ]),
-          box(0.85, 0.04, 0.95, 0x2b3038, 0, 1.6, -0.1),
-          box(0.08, 1.55, 0.08, 0x3b4048, -0.28, 0.15, 0.58),
-          box(0.08, 1.55, 0.08, 0x3b4048, 0.28, 0.15, 0.58),
-          box(0.64, 0.22, 0.06, 0x59606b, 0, fy, 0.62),
-          box(0.1, 0.04, 0.75, 0x8d949e, -0.2, fy, 0.98),
-          box(0.1, 0.04, 0.75, 0x8d949e, 0.2, fy, 0.98),
-          rod(0.22, 0.18, 0x1a1c20, -0.46, 0.22, 0.3, 12),
-          rod(0.22, 0.18, 0x1a1c20, 0.46, 0.22, 0.3, 12),
-          rod(0.18, 0.16, 0x1a1c20, -0.44, 0.18, -0.58, 12),
-          rod(0.18, 0.16, 0x1a1c20, 0.44, 0.18, -0.58, 12),
-        ];
-        if (hasPallet) {
-          parts.push(
-            box(0.76, 0.08, 0.7, 0x8a5a2e, 0, fy + 0.04, 0.98),
-            box(0.68, 0.52, 0.62, 0xb8874e, 0, fy + 0.12, 0.98),
-            box(0.7, 0.04, 0.64, 0x8a5a2e, 0, fy + 0.36, 0.98),
-          );
-        }
-        const m = makeKitMesh(parts);
-        const g = new THREE.Group();
-        g.add(m);
-        return {
-          root: g,
-          recipe: [
-            'box(0.95, 0.48, 1.35, paint) // Counterweight chassis',
-            'box(0.08, 1.55, 0.08, 0x3b4048) × 2 // Twin hydraulic mast rails',
-            'box(0.1, 0.04, 0.75, 0x8d949e) × 2 // Steel forks at liftHeight',
-            'rod(0.22, 0.18, 0x1a1c20) × 4 // Axles & tires',
-          ],
-          dispose: () => m.geometry.dispose(),
-        };
-      },
-    },
-    {
-      id: 'lib:arcade_cabinet',
-      library: 'kit-library',
-      name: 'Retro Recreation Arcade Cabinet (Parametric)',
-      category: 'props',
-      subcategory: 'V2 Procedural Kit Library',
-      tags: ['kit-library', 'parametric', 'prop', 'electric', 'lit-at-night'],
-      sourceFile: 'src/render/kit.ts',
-      builderName: 'box() + cyl() + disc() + merge()',
-      description: 'Common-room upright arcade machine built from kit.ts primitives with customizable cabinet color and lit marquee.',
-      footprint: [1, 1],
-      variants: [
-        {
-          key: 'cabinet',
-          label: 'Cabinet Side Color',
-          kind: 'color',
-          defaultValue: '#2b3a67',
-        },
-      ],
-      build: (ctx: BuildContext): BuiltModel => {
-        const cab = parseInt(String(ctx.variants.cabinet ?? '#2b3a67').replace('#', ''), 16);
-        const parts: Part[] = [
-          box(0.68, 0.72, 0.62, cab, 0, 0, 0),
-          box(0.68, 0.64, 0.48, cab, 0, 0.72, -0.07),
-          box(0.7, 0.08, 0.66, 0x1e2228, 0, 0.68, 0.04),
-          cyl(0.015, 0.08, 0x9aa2ad, -0.16, 0.76, 0.22, 6),
-          disc(0.03, 0.03, 0xd23f36, -0.16, 0.83, 0.22, 8),
-          cyl(0.015, 0.08, 0x9aa2ad, 0.12, 0.76, 0.22, 6),
-          disc(0.03, 0.03, 0x3a8ed8, 0.12, 0.83, 0.22, 8),
-          box(0.54, 0.38, 0.04, 0x101824, 0, 0.8, 0.16),
-          box(0.46, 0.3, 0.045, 0x3fd4b0, 0, 0.84, 0.165),
-          box(0.68, 0.16, 0.56, cab, 0, 1.32, -0.03),
-          box(0.62, 0.12, 0.03, 0xffd166, 0, 1.34, 0.25),
-        ];
-        const m = makeKitMesh(parts);
-        const g = new THREE.Group();
-        g.add(m);
-        return {
-          root: g,
-          recipe: [
-            'box(0.68, 0.72, 0.62, cabinet) // Lower coin cabinet',
-            'box(0.7, 0.08, 0.66, 0x1e2228) // Control deck',
-            'box(0.46, 0.3, 0.045, 0x3fd4b0) // CRT screen bezel',
-            'box(0.62, 0.12, 0.03, 0xffd166) // Top marquee header',
-          ],
-          dispose: () => m.geometry.dispose(),
-        };
-      },
-    },
-    {
-      id: 'lib:water_tower',
-      library: 'kit-library',
-      name: 'Timber & Hooped Water Tower (Parametric)',
-      category: 'architecture',
-      subcategory: 'V2 Procedural Kit Library',
-      tags: ['kit-library', 'parametric', 'architecture', 'tower'],
-      sourceFile: 'src/render/kit.ts',
-      builderName: 'cyl() + box() + ConeGeometry + merge()',
-      description: 'Procedural wooden stave water tower on cross-braced timber stilts with iron hoops and conical roof.',
-      footprint: [2, 2],
-      variants: [
-        {
-          key: 'wood',
-          label: 'Timber Stain',
-          kind: 'color',
-          defaultValue: '#8a5a36',
-        },
-      ],
-      build: (ctx: BuildContext): BuiltModel => {
-        const wood = parseInt(String(ctx.variants.wood ?? '#8a5a36').replace('#', ''), 16);
-        const parts: Part[] = [
-          ...[-0.55, 0.55].flatMap((sx) => [-0.55, 0.55].map((sz) => cyl(0.08, 1.6, 0x5e422b, sx, 0, sz, 6))),
-          box(1.2, 0.07, 0.07, 0x5e422b, 0, 0.75, -0.55),
-          box(1.2, 0.07, 0.07, 0x5e422b, 0, 0.75, 0.55),
-          box(0.07, 0.07, 1.2, 0x5e422b, -0.55, 0.75, 0),
-          box(0.07, 0.07, 1.2, 0x5e422b, 0.55, 0.75, 0),
-          cyl(0.82, 0.1, 0x5e422b, 0, 1.55, 0, 14),
-          cyl(0.72, 1.25, wood, 0, 1.65, 0, 16),
-          ...[1.8, 2.2, 2.6].map((y) => cyl(0.74, 0.04, 0x2b3038, 0, y, 0, 16)),
-          paint(new THREE.ConeGeometry(0.84, 0.5, 16).translate(0, 3.15, 0), 0x4a515c),
-        ];
-        const m = makeKitMesh(parts);
-        const g = new THREE.Group();
-        g.add(m);
-        return {
-          root: g,
-          recipe: [
-            'cyl(0.08, 1.6, 0x5e422b) × 4 // Support stilts',
-            'cyl(0.72, 1.25, wood, 0, 1.65, 0, 16) // Stave barrel',
-            'cyl(0.74, 0.04, 0x2b3038) × 3 // Iron tension hoops',
-            'ConeGeometry(0.84, 0.5, 16) // Conical roof cap',
-          ],
-          dispose: () => m.geometry.dispose(),
-        };
-      },
-    },
-  ];
+  return MODEL_LIBRARY.map(blueprintToModelEntry);
 }
 
 let cachedCatalog: ModelEntry[] | null = null;
