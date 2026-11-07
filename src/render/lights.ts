@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CELL_BLOCK, OPEN_AIR } from '../content/zones';
+import { LAMP_LIT } from '../sim/tuning';
 import { TILE_INFO } from '../sim/world/tiles';
 import { MAP_W, type World } from '../sim/world/World';
 import { LAMP_BULB_Y, lampHeads } from './props';
@@ -25,6 +26,30 @@ function drawGlow(): THREE.CanvasTexture {
   c.fillStyle = g;
   c.fillRect(0, 0, n, n);
   return new THREE.CanvasTexture(canvas);
+}
+
+/**
+ * A lamp's pool (session 14, the picture review): evenly lit to the dark rule's reach and gone soon after
+ * (sim/ai/light.ts: a tile is lit within LAMP_LIT, 2.5 tiles, of the head), where the soft glow faded from
+ * the middle and showed no edge where a guard's sight stops. Drawn POOL tiles across: full to 0.55 of the
+ * radius, still most of it at 2.5 tiles (0.83), nothing at 3.
+ */
+const POOL = 6;
+let pool: THREE.CanvasTexture | null = null;
+function poolTexture(): THREE.CanvasTexture {
+  if (pool) return pool;
+  const n = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = n;
+  const c = canvas.getContext('2d')!;
+  const g = c.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.86)');
+  g.addColorStop(LAMP_LIT / 100 / (POOL / 2), 'rgba(255,255,255,0.5)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g;
+  c.fillRect(0, 0, n, n);
+  return (pool = new THREE.CanvasTexture(canvas));
 }
 
 /**
@@ -59,10 +84,10 @@ export class Lights {
     this.warm = this.addPools(
       lamps.map((p) => {
         const [h] = lampHeads(p.aim, 1);
-        return p.heads === 2 ? [p.x + 0.5, p.z + 0.5, 7.5] : [p.x + 0.5 + h.dx, p.z + 0.5 + h.dz, 7];
+        return p.heads === 2 ? [p.x + 0.5, p.z + 0.5, POOL] : [p.x + 0.5 + h.dx, p.z + 0.5 + h.dz, POOL];
       }),
       0xffb35c,
-      tex,
+      poolTexture(),
     );
 
     // Cool pools in every room, about one per 5×5 tiles, only on walkable indoor floor.

@@ -19,12 +19,26 @@ const DAYLIGHT: Array<[number, number, number, number, number]> = [
 
 /** The ambient light's sky color. */
 const SKY_LIGHT = 0xdfe8ff;
+/** The ambient light's ground color (the bounce off the grass). */
+const GROUND_LIGHT = 0x4a5a3a;
+/**
+ * Moonlight (session 14, the picture review): at night the ambient's sky turns moon-blue and its bounce a
+ * dark slate, so the night reads as night (the grass no longer a dimmed noon green) and the warm lamp pools
+ * and the lit rooms stand out of it; MOON_LIFT keeps it about as bright as before, so nothing goes black.
+ */
+const MOON_SKY = 0xb8c8ff;
+const MOON_GROUND = 0x262c3c;
+const MOON_LIFT = 0.37;
+/** How much of the sun's shadow the rain's cloud takes away, a storm's more, the fog's (session 14). */
+const OVERCAST_SHADOW = 0.4;
+const STORM_SHADOW = 0.2;
+const FOG_SHADOW = 0.3;
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 
 export class Lighting {
   readonly sun = new THREE.DirectionalLight(0xffffff, 2);
-  readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, 0x4a5a3a, 1);
+  readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, GROUND_LIGHT, 1);
   /** The scene's background. */
   readonly sky = new THREE.Color();
   /** 0 by day … 1 at night (the last frame's light). */
@@ -41,6 +55,8 @@ export class Lighting {
   private readonly c1 = new THREE.Color();
   private readonly c2 = new THREE.Color();
   private readonly red = new THREE.Color(0xff2a1a);
+  /** The ambient's sky color before the lockdown's red: day's, toward the moon's at night. */
+  private readonly skyLight = new THREE.Color();
   private readonly lightBasis = new THREE.Matrix4();
   private readonly lightInverse = new THREE.Matrix4();
   private readonly p = new THREE.Vector3();
@@ -74,14 +90,18 @@ export class Lighting {
    */
   update(minute: number, dt: number, time: number, layer: number, reducedMotion: boolean): number {
     const night = (this.night = this.daylight(minute));
+    // Moonlight: the ambient blue and its bounce dark as the night falls.
+    this.skyLight.set(SKY_LIGHT).lerp(this.c1.set(MOON_SKY), night);
+    this.ambient.groundColor.set(GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), night);
+    this.ambient.intensity *= 1 + MOON_LIFT * night;
     this.weatherLight(dt, reducedMotion);
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
       const a = this.alarmPulse(time, reducedMotion);
-      this.ambient.color.set(SKY_LIGHT).lerp(this.red, a);
+      this.ambient.color.copy(this.skyLight).lerp(this.red, a);
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
-    } else this.ambient.color.set(SKY_LIGHT);
+    } else this.ambient.color.copy(this.skyLight);
     // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
     if (layer === LAYER.VENTS) {
       this.sun.intensity *= 0.22;
@@ -106,6 +126,7 @@ export class Lighting {
     this.sun.color.copy(this.c1.set(a[2]).lerp(this.c2.set(b[2]), f));
     this.ambient.intensity = THREE.MathUtils.lerp(a[3], b[3], f);
     this.sky.copy(this.c1.set(a[4]).lerp(this.c2.set(b[4]), f));
+    this.sun.shadow.intensity = 1;
     return THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
   }
 
@@ -137,9 +158,12 @@ export class Lighting {
       this.ambient.intensity *= 1 - Math.min(1, rain) * 0.14 - g.storm * 0.14;
       this.sky.lerp(this.c1.set(0x4a5462), g.grey);
       this.sun.color.lerp(this.c1.set(0xc6d2e2), g.grey * 0.6);
+      // (Session 14: under cloud the sun's shadows go soft and faint, not noon-crisp in the rain.)
+      this.sun.shadow.intensity -= Math.min(1, rain) * OVERCAST_SHADOW + g.storm * STORM_SHADOW;
     }
     if (g.fog > 0.002) {
       this.sun.intensity *= 1 - 0.25 * g.fog;
+      this.sun.shadow.intensity -= FOG_SHADOW * g.fog;
       this.sky.lerp(this.c1.set(0x9aa6b2), 0.6 * g.fog * (1 - this.night));
     }
     if (g.heat > 0.002) {
