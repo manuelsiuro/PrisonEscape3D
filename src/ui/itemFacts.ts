@@ -65,6 +65,11 @@ export const OWN_LINE: readonly string[] = [
   'costume',
   'own_clothes',
   // 2.36 (The Six Hunter).
+  'pine_tar',
+  'fishing_net',
+  'aniseed',
+  'shed_antler',
+  'trout',
   'drag_line',
   'tar_soap',
   'ghillie_cloak',

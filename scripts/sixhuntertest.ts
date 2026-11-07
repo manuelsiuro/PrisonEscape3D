@@ -10,7 +10,8 @@
  * - the drag line (sock and aniseed): thrown, the trail washed out, the hounds pulled to where it lands; spent;
  * - tar soap washes twice; the ghillie cloak leaves no trail out in the open (indoors it does); a trout is a hound's
  *   treat as jerky is, and food;
- * - the kennel hand: the day's quota done, every hound fed from the player's hands (trust, once a day);
+ * - the kennel hand: the day's quota done, every hound fed from the player's hands (a little trust, never past
+ *   KENNEL_TRUST_CAP from the troughs: a week at the job leaves the pack sniffing and tracking; a day's quota missed, it fades);
  * - the three new jobs' rooms (take, machines, put) and a cycle of each; the antler pick digs, quieter than steel;
  * - what's new is the Six Hunter's alone: its items only in its own tables, its recipes usable nowhere else (no other
  *   prison's tips move).
@@ -28,11 +29,21 @@ import { loadState } from '../src/sim/load';
 import { Sim } from '../src/sim/Sim';
 import { jobRooms } from '../src/sim/systems/economy';
 import { guardKit, itemOf, slot, usesOf } from '../src/sim/systems/items';
-import { DOG, handlersOf, onShift, dogDef } from '../src/sim/systems/k9';
+import { DOG, handlersOf, onShift, dogDef, kennelsFed, kennelsSettle, catchTreat } from '../src/sim/systems/k9';
 import { obtainable, usableHere } from '../src/sim/systems/recipes';
 import { strikeNoise } from '../src/sim/systems/noise';
 import { toolTarget } from '../src/sim/systems/structure';
-import { RECALL_STEPS, STEPS_PER_MINUTE, TREAT_TRUST, UNIT } from '../src/sim/tuning';
+import {
+  KENNEL_FADE,
+  KENNEL_TRUST,
+  KENNEL_TRUST_CAP,
+  RECALL_STEPS,
+  STEPS_PER_MINUTE,
+  TREAT_TRUST,
+  TRUST_FRIEND,
+  TRUST_IGNORE,
+  UNIT,
+} from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { isTunnel, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_W, World } from '../src/sim/world/World';
@@ -253,29 +264,70 @@ const NEW = [
   const ev = bot.sim.events;
   // (Washed out: only the tile the player stands on is laid again, out of bounds still.)
   check(st.scent.length <= 1 && ev.some((e) => e.type === 'dragLine' && e.trail), 'the drag line lands: the trail washed out');
-  check(
-    ev.some((e) => e.type === 'noise' && e.kind === 'bark'),
-    'and the hounds’ noise where it landed',
-  );
+  // (23:30: no hound at work, day or night shift: nobody is pulled to it.)
+  const quiet = ev.find((e) => e.type === 'noise' && e.kind === 'bark');
+  check(!!quiet && quiet.type === 'noise' && quiet.sent.length === 0, 'no hound on shift (23:30): nobody pulled');
   check(bot.slotOf('drag_line') < 0 && !st.items.ground.some(([, v]) => itemOf(v) === n('drag_line')), 'spent');
-  // Tar soap: two washes.
-  bot.until(
-    () => false,
-    20,
-    () => command(DIR.WEST),
+  // 20:00, the hounds at work: only Hunters whose hound is on shift come, and the line is spent with no trail to take.
+  const eve = new Bot(SIX_HUNTER, 15);
+  runTo(eve, 2, 20 * 60);
+  place(eve, 20, 25);
+  // (The Huntmaster and his hound beside where it lands, in earshot even in the rain; Harrow too, his hound sneezing.)
+  for (const [g, x, z] of [
+    [0, 25, 28],
+    [3, 23, 28],
+  ] as const) {
+    eve.st.guards[g].body.x = x * UNIT + UNIT / 2;
+    eve.st.guards[g].body.z = z * UNIT + UNIT / 2;
+  }
+  eve.st.dogs[0].body.x = 26 * UNIT + UNIT / 2;
+  eve.st.dogs[0].body.z = 28 * UNIT + UNIT / 2;
+  eve.st.dogs[3].daze = eve.st.step + 600;
+  give(eve, 'drag_line');
+  eve.hold('drag_line');
+  const [ub, uc] = tossArgs(tileOf(24, 27));
+  eve.step(command(0, OP.EXT, EXT.THROW, ub, uc));
+  const pull = eve.sim.events.find((e) => e.type === 'noise' && e.kind === 'bark');
+  const handlers = handlersOf(eve.sim.world);
+  check(
+    eve.sim.events.some((e) => e.type === 'dragLine' && !e.trail) &&
+      !!pull &&
+      pull.type === 'noise' &&
+      pull.sent.length > 0 &&
+      pull.sent.every((g) => handlers.includes(g) && onShift(eve.sim, SIX_HUNTER.guards[g].dog!)) &&
+      pull.sent.includes(0) &&
+      !pull.sent.includes(3) &&
+      eve.slotOf('drag_line') < 0,
+    `20:00: the hounds on shift pull their Hunters there (${pull && pull.type === 'noise' ? pull.sent.map((g) => SIX_HUNTER.guards[g].name).join(', ') : 'none'}; Harrow's hound sneezing, he stays), the line spent with no trail to take`,
   );
+  console.log('scent: a drag line washes the trail and pulls the hounds on shift');
+}
+{
+  // Tar soap: two washes (a fresh night, nobody after the player).
+  const bot = new Bot(SIX_HUNTER, 16);
+  const st = bot.st;
+  runTo(bot, 2, 23 * 60 + 30);
+  const walk = (dir: number) => {
+    place(bot, 20, 25);
+    bot.until(
+      () => false,
+      10,
+      () => command(dir),
+    );
+  };
+  walk(DIR.EAST);
   give(bot, 'tar_soap');
   bot.hold('tar_soap');
+  const laid = st.scent.length;
   bot.use();
-  check(st.scent.length <= 1 && usesOf(st.items.inv[bot.slotOf('tar_soap')]) === 1, 'tar soap: washed, one wash left');
-  bot.until(
-    () => false,
-    20,
-    () => command(DIR.EAST),
+  check(
+    laid > 1 && st.scent.length <= 1 && usesOf(st.items.inv[bot.slotOf('tar_soap')]) === 1,
+    `tar soap: washed (${laid} tiles), one wash left`,
   );
+  walk(DIR.EAST);
   bot.use();
-  check(st.scent.length <= 1 && bot.slotOf('tar_soap') < 0, 'and the second: used up');
-  console.log('scent: a drag line washes the trail and draws the hounds; tar soap twice');
+  check(st.scent.length <= 1 && bot.slotOf('tar_soap') < 0 && st.ko === 0, 'and the second: used up');
+  console.log('scent: tar soap twice');
 }
 {
   // The ghillie cloak: no trail laid on open ground; in the corridor, as ever (a fresh night, nobody after the player).
@@ -375,10 +427,46 @@ const NEW = [
   check(st.quota === JOBS.kennels.quota && st.paid, `the quota done by hand (${st.quota} bowls in ${cycles} rounds), paid`);
   const fed = bot.events.filter((e) => e.type === 'dog' && e.what === 'fed').length;
   check(
-    fed === 6 && st.dogs.every((d) => d.trust === TREAT_TRUST && d.fed === 1),
-    `every hound fed from the player's hands (${fed}), trust ${TREAT_TRUST} each`,
+    fed === 6 && st.dogs.every((d) => d.trust === KENNEL_TRUST && d.fed === 0),
+    `every hound fed from the player's hands (${fed}), trust ${KENNEL_TRUST} each, a treat still welcome today`,
   );
   console.log(`kennels: ${st.quota} bowls by ${bot.time}, $${JOBS.kennels.wage}, the pack fed (${fed})`);
+}
+{
+  // A week at the troughs: the pack never past KENNEL_TRUST_CAP from the job alone (it still sniffs and tracks); a
+  // jerky a day on top is what wins one over; a missed quota and the trust fades.
+  const sim = new Sim(SIX_HUNTER, 9);
+  const s = sim.state;
+  const week: number[] = [];
+  for (let day = 1; day <= 7; day++) {
+    s.step = (day - 1) * 1440 * STEPS_PER_MINUTE + 5 * 60 * STEPS_PER_MINUTE;
+    kennelsFed(sim);
+    kennelsSettle(sim, true);
+    week.push(s.dogs[0].trust);
+  }
+  check(
+    s.dogs.every((d) => d.trust === KENNEL_TRUST_CAP) && KENNEL_TRUST_CAP < TRUST_IGNORE,
+    `seven days at the troughs alone: trust ${week.join(', ')} (capped at ${KENNEL_TRUST_CAP}, below the ${TRUST_IGNORE} that lets contraband by)`,
+  );
+  // Jerky thrown to hound 0 each day on top: a friend in a few days.
+  const d = s.dogs[0];
+  const k = dogDef(sim.world, 0).kennel;
+  let days = 0;
+  for (let day = 8; day <= 14 && d.trust < TRUST_FRIEND; day++) {
+    s.step = (day - 1) * 1440 * STEPS_PER_MINUTE + 5 * 60 * STEPS_PER_MINUTE;
+    d.body.x = k.x * UNIT + UNIT / 2;
+    d.body.z = k.z * UNIT + UNIT / 2;
+    catchTreat(sim, n('jerky'), k.z * MAP_W + k.x);
+    days++;
+  }
+  check(d.trust >= TRUST_FRIEND, `a jerky a day on top: a friend in ${days} days`);
+  const was = s.dogs[1].trust;
+  kennelsSettle(sim, false);
+  check(
+    s.dogs[1].trust === was - KENNEL_FADE && d.trust === TRUST_FRIEND - KENNEL_FADE,
+    `a quota missed: every hound's trust fades by ${KENNEL_FADE}`,
+  );
+  console.log(`kennels over a week: trust ${week.join(', ')}; jerky on top, a friend in ${days} days; a missed day -${KENNEL_FADE}`);
 }
 
 // ------------------------------------------------------------------ the antler pick
@@ -387,9 +475,12 @@ const NEW = [
   const steel = ITEMS.find((d) => d.id === 'sturdy_shovel')!;
   check(pick.tool?.kind === 'dig', 'the antler pick digs');
   const target = { action: 'dig' as const, layer: LAYER.UNDER, tile: 0, fits: true, hp: 1 };
+  const reach = (id: string) => strikeNoise(LAYER.UNDER, target, n(id))!.reach;
   check(
-    strikeNoise(LAYER.UNDER, target, n('antler_pick'))!.reach < strikeNoise(LAYER.UNDER, target, n('sturdy_shovel'))!.reach,
-    `bone digs quieter than steel (${pick.tool!.damage} a strike against ${steel.tool!.damage})`,
+    reach('antler_pick') < reach('light_shovel') &&
+      reach('light_shovel') < reach('sturdy_shovel') &&
+      reach('antler_pick') === reach('plastic_spoon'),
+    `bone digs quieter than any metal shovel, as quiet as plastic (heard ${reach('antler_pick')} tiles, a light shovel ${reach('light_shovel')}, a sturdy one ${reach('sturdy_shovel')}; ${pick.tool!.damage} a strike against ${steel.tool!.damage})`,
   );
 }
 

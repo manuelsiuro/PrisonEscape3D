@@ -1094,4 +1094,4 @@ for (const def of PRISONS) {
   s.inmates[digger].ko = 100;
   check(helpOf(sim, digger) === null, `${def.id}: out cold: no word of help (the status says out cold)`);
 }
-console.log("2.36: the crew's word on help, in all five prisons: close, too far, through a wall, missed the way down, out cold");
+console.log("2.36: the crew's word on help, in every prison: close, too far, through a wall, missed the way down, out cold");

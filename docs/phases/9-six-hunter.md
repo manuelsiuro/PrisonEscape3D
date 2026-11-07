@@ -53,7 +53,10 @@ most fragile: v1.5.2). Hounds work from prison day 2, as everywhere (`DOG_FIRST_
 
 **Jobs** (`content/jobs.ts`, zones `kennels`, `smokehouse`, `boathouse` appended):
 - **Kennel hand** (Int 20, $35, the player's at the start): feed bin → `trough` → bowl bin. The day's quota
-  done, **every hound is fed from the player's hands** (`k9.ts kennelsFed`: jerky's trust, once a day).
+  done, **every hound is fed from the player's hands**: +10 trust (`KENNEL_TRUST`), never past 40 from the troughs
+  (`KENNEL_TRUST_CAP`, below the 60 that lets contraband by): the pack stays a threat, and jerky or a trout thrown
+  still wins a hound over (a friend in about three days on top). A quota missed, every hound's trust fades by 15
+  (`KENNEL_FADE`). (2.36 review: it gave jerky's +20 a day before, and the pack was a friend for good by day 5.)
 - **Smokehouse** (Int 40, $50): freezer → `smoker` → counter.
 - **Net mender** (Int 50, $55, open): torn nets → `netFrame` → mended bin, by the river door.
 - Also the kitchen, laundry and gardener.
@@ -64,17 +67,18 @@ most fragile: v1.5.2). Hounds work from prison day 2, as everywhere (`DOG_FIRST_
 |---|---|---|
 | Pine tar, fishing net, aniseed, shed antler | the boathouse's, smokehouse's, kennels' bins | ingredients |
 | Smoked trout | the smokehouse's freezer | food (+20 energy); thrown to a hound, jerky's trust |
-| Drag line | sock + aniseed (Int 30) | thrown: the trail washed out, the hounds pull their Hunters to it (`DRAG_NOISE`), spent |
+| Drag line | sock + aniseed (Int 30) | thrown: the trail washed out, and only the Hunters whose hound is on shift, in earshot, are pulled to it (`DRAG_NOISE`); spent either way |
 | Tar soap | soap + pine tar (Int 20) | washes the scent, twice |
 | Ghillie cloak | net + bed sheet + pine tar (Int 50) | worn: no trail laid on open ground; other clothes in the manhunt |
-| Antler pick | antler + tool handle + duct tape (Int 40) | digs (tier 2: a tile quieter than steel) |
-| Recall horn | the Huntmaster's belt | blown: every hound home to its kennel for an hour of game time (`RECALL_STEPS`, `state.recall`), heard as a bang (`HORN_NOISE`) |
+| Antler pick | antler + tool handle + duct tape (Int 40) | digs; bone, heard as far as plastic (a tile less than a light shovel, two less than a sturdy one) |
+| Recall horn | the Huntmaster's belt | blown: every hound home to its kennel for an hour of game time (`RECALL_STEPS`, `state.recall`); the Hunters within 12 walking tiles hear it, a bang's noise (`HORN_NOISE`) |
 
 Every new recipe needs something found only here, so no other prison's handbook, tips or Intellect marks
 move (`sixhuntertest`). The day: fog 40, clear 25, rain 25, storm 10, the west wind; the deck delivery,
 gang war, drill, visiting, sports, talent, quiz (no `before*`: no game was saved there before them). The house
 dinner: venison stew. The odd jobs story: **"The seventh Hunter"** (Hare wants his name on the tally: the
-Huntmaster's watch, a lookout while he digs a hide, Boar beaten at arm-wrestling; a drag line for it). Medals
+a Hunter's watch (any but the Huntmaster and the strict one, whose pockets are full), a lookout while he digs a hide,
+Boar beaten at arm-wrestling; a drag line for it). Medals
 for every way out; achievements **Downstream** (away on the raft) and **Off the Tally** (clean away in the
 manhunt). Gangs: the kitchen crew (Wren), the lifers (Moth, old Badger), the gym rats (Crow).
 
@@ -90,9 +94,19 @@ manhunt). Gangs: the kitchen crew (Wren), the lifers (Moth, old Badger), the gym
 | Paperwork | the forged form at the gatehouse's release desk | out day 2 10:13 |
 | Parole | `paroletest`'s model prisoner | |
 
-The same routes run under every holiday (`holidaybotstest`) and every twist (`dailytest`). The outside
-(`content/outside/six-hunter.ts`): the wooded valley, starts for the wall, the gate, the glider, the van and
-the raft's landing (`sea`); the expert bot gets away from every start (`hunttest`).
+The same routes run under every holiday (`holidaybotstest`) and every twist (`dailytest`).
+
+**The outside** (`content/outside/six-hunter.ts`, final for the look's pass; redrawn after the review, which found
+the first a copy of Stalag Flucht's): the wooded valley of the Hollowrun. The logging road runs north from the gate
+over the river's bridge, through the sawmill's deer fence, to the siding where the timber train is loading (safety:
+the whole yard by the rails). The river bends across the valley, a ford in each reach (wading washes the trail),
+culverts under the road where the gullies cross, the woodcutters' track west and north to the hut, two wicket gates
+in the fence, thickets along the banks. The Six as searchers: Harrow patrolling the fence's road gate and the east
+wicket, Quiller the fence's west half; after the alarm Garrow with Duchess and Fell from the gate, Bracken and Larch
+with Brutus from the siding; roadblocks at the bridge and below the fence; the county's helicopter late (12 s).
+`hunttest`: the expert gets away from every start in every condition; the careful bot is caught 36% of the time in
+all (wall 67%, sea 42%, glider 33%, van 25%, gate 13%), at the hard end of the outsides' range (San Pancho's gate
+75%, Stalag Flucht's glider and Shankton's gate 67%).
 
 **Snapshots accepted** (2.36, read line by line): every change is a line added for the Six Hunter or a total that
 now counts it (`buttontest`'s presses, `hunttest`'s and `gossiptest`'s sums, the counts of items, recipes,

@@ -2,8 +2,10 @@ valley: the river north and east, the deer fence 100 tiles, the wall 98, the jet
 flood: dug north under the river from the cell wing, the tunnel and its entrance lost
 pack: Garrow and Duchess (bloodhound, nights); Fell and Rascal (foxhound); Bracken and Pudding (retriever, nights); Harrow and Tinker (collie); Larch and Brutus (mastiff, nights); Quiller and Smudge (shepherd)
 horn: blown at day 2 11:00, the pack home 6/6 within 60 minutes, back after
-scent: a drag line washes the trail and draws the hounds; tar soap twice
+scent: a drag line washes the trail and pulls the hounds on shift
+scent: tar soap twice
 scent: the ghillie cloak hides the trail outdoors only
 trout: thrown, hound 0 fed; eaten, +20 energy
 kennels: 4 bowls by day 1 12:57, $35, the pack fed (6)
+kennels over a week: trust 10, 20, 30, 40, 40, 40, 40; jerky on top, a friend in 3 days; a missed day -15
 new: 10 items, 4 recipes, 3 tables, only at the Six Hunter
