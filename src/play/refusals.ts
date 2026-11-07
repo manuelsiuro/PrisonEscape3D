@@ -2,6 +2,7 @@
 import { NIGHT_OPINION } from '../content/crew';
 import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { APPLY_DAY } from '../content/parole';
+import { PHONE_OPINION } from '../content/smuggling';
 import { FRIEND_INK, INK_OPINION } from '../content/team';
 import { t, type Key } from '../i18n';
 import type { Sim } from '../sim/Sim';
@@ -15,6 +16,7 @@ const REFUSAL_N: Record<string, (sim: Sim) => number> = {
   played: () => GAMES_A_DAY,
   nightOpinion: () => NIGHT_OPINION,
   opinion: () => OPINION_HIGH,
+  phoneOpinion: () => PHONE_OPINION,
   followers: () => MAX_FOLLOWERS,
   favors: () => FAVORS_TAKEN,
   elderOpinion: () => ELDER_OPINION,
