@@ -2,6 +2,7 @@
 import { itemNumber } from '../content/items';
 import type { Sim } from '../sim/Sim';
 import { FAVOR_STATE } from '../sim/systems/economy';
+import { OPINION_LOW } from '../sim/tuning';
 import { HOTBAR, hotbarSlotOf, itemOf, usesOf } from '../sim/systems/items';
 import type { BadgeKind } from '../render/characterSprites';
 
@@ -36,7 +37,8 @@ function badgeNow(sim: Sim, who: number): BadgeKind {
   )
     return 'done';
   if (f?.state === FAVOR_STATE.OFFERED) return 'favor';
-  if (sim.shopsOpen && sim.merchantOf(who) >= 0 && s.shops[sim.merchantOf(who)].some((v) => v)) return 'shop';
+  // (2.36: open is open: its own stock sold out, a merchant still sells the staples and buys; but not to someone they despise.)
+  if (sim.shopsOpen && sim.merchantOf(who) >= 0 && m.opinion > OPINION_LOW) return 'shop';
   // (A follower's badge is the crew's chip now, P23: their line of work, ui/crew.ts.)
   return '';
 }

@@ -12,6 +12,7 @@ import { releaseToday } from './paperwork';
 import { placesOf } from '../ai/places';
 import { twist } from './twists';
 import { RAT } from './rats';
+import { containersOf } from '../world/containers';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { lineOfSight } from '../ai/sight';
@@ -28,6 +29,7 @@ import {
   BUY_OPINION,
   CHASE_HEAT,
   FAVOR_OFFERS,
+  FAVOR_DROP_OPINION,
   FAVOR_OPINION,
   FAVORS_TAKEN,
   FOLLOW_GAP,
@@ -232,6 +234,8 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
         const k = pockets.indexOf(0);
         pockets[k >= 0 ? k : pockets.length - 1] = slot(f.item);
       }
+      // (2.36: and what's asked for is in someone's desk, as the asker says.)
+      if (f.kind === FAVOR.SCAVENGE && !sim.rules235) inSomeDesk(sim, f);
       sim.events.push({ type: 'favor', who, kind: f.kind, state: 'taken' });
       return;
     }
@@ -248,6 +252,15 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       sim.events.push({ type: 'favor', who, kind: f.kind, state: 'paid' }, { type: 'cash', n: f.reward, why: 'favor' });
       s.tally[3] += f.reward;
       changeOpinion(sim, who, FAVOR_OPINION);
+      return;
+    }
+    case TALK.DROP: {
+      // (2.36: a favor taken on and not yet done, let go: it frees its place, and they think a little less of the player.)
+      const f = s.favors.find((x) => x.by === who && x.state === FAVOR_STATE.TAKEN);
+      if (!f) return;
+      s.favors.splice(s.favors.indexOf(f), 1);
+      sim.events.push({ type: 'favor', who, kind: f.kind, state: 'dropped' });
+      changeOpinion(sim, who, -FAVOR_DROP_OPINION);
       return;
     }
     case TALK.RECRUIT:
@@ -379,6 +392,35 @@ export function offerFavors(sim: SimContext) {
     const item = kind === FAVOR.SCAVENGE || kind === FAVOR.RETRIEVE ? itemNumber(FAVOR_ITEMS[randomInt(s, FAVOR_ITEMS.length)]) : 0;
     s.favors.push({ by, kind, item, target, reward: 20 + randomInt(s, 31), state: FAVOR_STATE.OFFERED });
     sim.events.push({ type: 'favor', who: by, kind, state: 'offered' });
+  }
+}
+
+/**
+ * 2.36: a scavenge favor taken on ("find me a … from someone's desk"): when no inmate's desk shows
+ * one in its drawers (desks fill up and then stay as they are, so a talcum or a battery may be in
+ * none for days), one turns up in the drawers of a desk not the asker's, the first with room counted
+ * on from the asker. No draw: the same favor, the same desk.
+ */
+function inSomeDesk(sim: SimContext, f: Favor) {
+  const s = sim.state;
+  const w = sim.world;
+  const list = containersOf(w);
+  const desks: number[] = [];
+  list.forEach((c, i) => {
+    if (c.table === 'inmateDesk') desks.push(i);
+  });
+  const own = s.inmates[f.by]?.cell ?? -1;
+  const theirs = (i: number) => w.cellOf[list[i].prop.z * MAP_W + list[i].prop.x] === own;
+  if (desks.some((i) => !theirs(i) && s.items.containers[i].some((v, j) => j >= list[i].hidden && itemOf(v) === f.item))) return;
+  for (let k = 0; k < desks.length; k++) {
+    const i = desks[(f.by + k) % desks.length];
+    if (theirs(i)) continue;
+    const box = s.items.containers[i];
+    const free = box.indexOf(0, list[i].hidden);
+    if (free < 0) continue;
+    box[free] = slot(f.item);
+    s.items.rev++;
+    return;
   }
 }
 

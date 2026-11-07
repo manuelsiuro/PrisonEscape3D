@@ -11,7 +11,7 @@ import { awake } from '../sim/systems/guards';
 import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { DIR_X, DIR_Z, ORDER } from '../sim/command';
-import { OPINION_HIGH, OPINION_LOW, UNIT } from '../sim/tuning';
+import { GOSSIP_OPINION, OPINION_HIGH, OPINION_LOW, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { fill, nameOf, type FillContext } from './fill';
 import { react, type Reactor } from './reactions';
@@ -640,7 +640,8 @@ export class Director {
     }
     const calm = mood.intensity < 0.9 && mood.style === 'say';
     // A friend close by has something true to tell.
-    if (calm && m.opinion >= 55 && d <= 3 && now >= this.gossipNext && this.random() < 0.6 && this.gossip(sim, stage, id)) return;
+    if (calm && m.opinion >= GOSSIP_OPINION && d <= 3 && now >= this.gossipNext && this.random() < 0.6 && this.gossip(sim, stage, id))
+      return;
     // Two idle inmates side by side: a line and its reply.
     if (calm && this.random() < 0.25 && this.exchange(sim, stage, id)) return;
     // Its own catchphrase, once a day.
@@ -755,9 +756,11 @@ export class Director {
       case 'gift':
         return 're.gift.in';
       case 'opinion':
+        // (2.36: a favor let go says its own line, not "what was that for?")
+        if (sim.events.some((o) => o.type === 'favor' && o.state === 'dropped' && o.who === e.who)) return null;
         return e.by < 0 && (sim.state.inmates[e.who]?.angry ?? 0) <= 0 ? 're.opinionDown.in' : null;
       case 'favor':
-        return e.state === 'paid' ? 're.favorDone.in' : null;
+        return e.state === 'paid' ? 're.favorDone.in' : e.state === 'dropped' ? 're.favorDropped.in' : null;
       // (P40: an odd job taken from him, handed in, failed.)
       case 'oddjob':
         return e.what === 'paid'

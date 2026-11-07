@@ -2,7 +2,9 @@ import { itemNumber } from '../../content/items';
 import { JOBS, type JobDef } from '../../content/jobs';
 import { zoneIndex } from '../../content/zones';
 import { DIR_X, DIR_Z } from '../command';
-import { MAX_DISCOUNT, OPINION_START, UNIT } from '../tuning';
+import { GOSSIP_OPINION, MAX_DISCOUNT, OPINION_HIGH, OPINION_LOW, OPINION_START, TIP_OPINION, UNIT } from '../tuning';
+import { GAME_OPINION } from '../../content/games';
+import { NIGHT_OPINION } from '../../content/crew';
 import { MAP_W, type Prop, type World } from '../world/World';
 import { freeHotbar, hotbarSlotOf, itemOf } from './items';
 import { propReach } from './rest';
@@ -212,5 +214,18 @@ export const priceOf = (value: number, opinion: number) => Math.max(1, Math.roun
 export const giftOpinion = (value: number) => Math.max(2, Math.min(15, Math.round(value / 2)));
 /** Cash given as a present: 3 points for $5, 6 for $10, 12 for $20. */
 export const cashOpinion = (dollars: number) => Math.round(dollars * 0.6);
+/**
+ * 2.36: what an inmate's opinion opens up, step by step, by the rules' own numbers (the talk panel's
+ * line under the meter, How to play's chips): above a grudge they deal with the player and leave them
+ * be, then side games, true rumors (src/talk/), a recipe tip a day, joining the crew, a night up.
+ */
+export const OPINION_LADDER: ReadonlyArray<readonly [number, 'deal' | 'games' | 'rumors' | 'tips' | 'recruit' | 'night']> = [
+  [OPINION_LOW + 1, 'deal'],
+  [GAME_OPINION, 'games'],
+  [GOSSIP_OPINION, 'rumors'],
+  [TIP_OPINION, 'tips'],
+  [OPINION_HIGH, 'recruit'],
+  [NIGHT_OPINION, 'night'],
+];
 /** The amounts the talk panel offers to give. */
 export const CASH_GIFTS: readonly number[] = [5, 10, 20];

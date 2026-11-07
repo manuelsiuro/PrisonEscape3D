@@ -48,6 +48,7 @@ import {
   crewEscape,
   crewEntry,
   digHelp,
+  helpOf,
   orderOf,
   postable,
   postOf,
@@ -1017,3 +1018,59 @@ function chipSpot(sim: Sim): number {
   t.state.step = at(1, 18, 50);
   check(performersTonight(t).length === tonight(t).length && brawlWith(t, CP.muscle) !== next.who, 'nor any act called before 19:00');
 }
+
+/** A tile of open floor with five free tiles to each side along its row and the row above (in the yard, else anywhere inside). */
+function openSpot(sim: Sim): number {
+  const w = sim.world;
+  const free = (x: number, z: number) => !w.blocked(x, z) && w.zoneAt(x, z) !== 'outside';
+  let any = -1;
+  for (let z = 3; z < MAP_H - 3; z++)
+    for (let x = 6; x < MAP_W - 6; x++) {
+      let ok = true;
+      for (let dx = -5; dx <= 5 && ok; dx++) ok = free(x + dx, z) && free(x + dx, z - 1);
+      if (ok && w.zoneAt(x, z) === 'yard') return z * MAP_W + x;
+      if (ok && any < 0) any = z * MAP_W + x;
+    }
+  return any;
+}
+
+// ------------------------------------------------------------------ 2.36: help said only where it's given
+// In every prison, a digger and a muscle with their orders: the crew's word for them (helpOf, what the
+// status line and the pill say) agrees with the help itself: digging ×1.5 and nobody jumping the
+// player only close by; too far, it says so; down a hole the digger didn't see, it says that.
+for (const def of PRISONS) {
+  const sim = new Sim(def, 5);
+  const s = sim.state;
+  s.step = at(1, 10, 5);
+  s.routine = ROUTINE.findIndex((r) => r.id === 'freeTime');
+  const spot = openSpot(sim);
+  const lineOf = (sp: string) => s.inmates.findIndex((m, k) => specialityOf(sim.world, k, m.cell) === sp);
+  const digger = lineOf('digger');
+  const muscle = lineOf('muscle');
+  s.followers = [digger, muscle];
+  s.crew = [
+    [digger, ORDER.DIG, -1, -1, 0],
+    [muscle, ORDER.BACK, s.routine, 0, 0],
+  ];
+  put(s.player, spot);
+  put(s.inmates[digger].body, spot + 1);
+  put(s.inmates[muscle].body, spot - MAP_W);
+  const out = [-1];
+  const close = helpOf(sim, digger) === 'ok' && digHelp(sim, 'chip', LAYER.GROUND, out) === DIG_HELP && out[0] === digger;
+  const backed = helpOf(sim, muscle) === 'ok' && backedBy(sim) === muscle;
+  // Five tiles off, in plain sight: too far for either.
+  put(s.inmates[digger].body, spot + 5);
+  put(s.inmates[muscle].body, spot - 5 - MAP_W);
+  const far = helpOf(sim, digger) === 'far' && digHelp(sim, 'chip', LAYER.GROUND, out) === 4;
+  const farBack = helpOf(sim, muscle) === 'far' && backedBy(sim) < 0;
+  // Down a hole he didn't see: lost (no help); seen, beside the shaft: help.
+  s.layer = LAYER.UNDER;
+  const lost = helpOf(sim, digger) === 'lost' && digHelp(sim, 'dig', LAYER.UNDER, out) === 4;
+  s.layer = LAYER.GROUND;
+  check(close && backed, `${def.id}: digger and muscle close by: help, and the crew's word says so`);
+  check(far && farBack, `${def.id}: five tiles off: no help, and the word says too far`);
+  check(lost, `${def.id}: down a hole the digger didn't see: no help, the word says he missed it`);
+  s.inmates[digger].ko = 100;
+  check(helpOf(sim, digger) === null, `${def.id}: out cold: no word of help (the status says out cold)`);
+}
+console.log("2.36: the crew's word on help, in all five prisons: close, too far, missed the way down, out cold");
