@@ -451,6 +451,7 @@ export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
   hud.el.inert = true;
   sound.ambience(true);
   sound.setCoast(sim.world.def.theme === 'island');
+  sound.setForest(sim.world.def.theme === 'forest');
   document.body.classList.add('is-playing', 'is-replay');
 
   const scout = runScout(log, (p) => {

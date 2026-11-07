@@ -10,6 +10,7 @@ import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { TEX } from './textures';
 import { sceneryTree } from './WorldView';
+import { bankParts, flowAlongRuns, flowingWater } from './River';
 import { hash01, seeded } from './rand';
 
 /** How far the picture's roads, tracks and railway lines run on past its edge (tiles), and how far the woods go round past the world's. */
@@ -29,6 +30,8 @@ export interface Land {
   group: THREE.Group;
   m: THREE.Matrix4;
   under: (x: number, z: number) => boolean;
+  /** The forest's river running (2.36): its time, the view's to advance. */
+  flow?: { value: number };
 }
 
 /**
@@ -181,11 +184,13 @@ export function scenery(land: Land, o: OutsideWorld, theme: string, run: RunOff)
     put(m, t, 0.2, 0.8 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2),
   );
   // Rocks: a boulder or two, grey (sandstone in the desert, snow-capped in the Alps).
-  const rockColor = theme === 'desert' ? 0xb48a62 : theme === 'industrial' ? 0x7c7a72 : 0x8d9096;
+  const rockColor = theme === 'desert' ? 0xb48a62 : theme === 'industrial' ? 0x7c7a72 : theme === 'forest' ? 0x7f8478 : 0x8d9096;
   const rock = merge([
     paint(new THREE.DodecahedronGeometry(0.42, 0).scale(1.1, 0.75, 1).translate(0, 0.28, 0), rockColor),
     paint(new THREE.DodecahedronGeometry(0.24, 0).translate(0.3, 0.16, 0.18), rockColor),
     ...(theme === 'alpine' ? [paint(new THREE.DodecahedronGeometry(0.3, 0).scale(1.1, 0.35, 1).translate(0, 0.55, 0), 0xf2f6fb)] : []),
+    // (The forest's: moss on its top.)
+    ...(theme === 'forest' ? [paint(new THREE.DodecahedronGeometry(0.3, 0).scale(1.1, 0.3, 1).translate(-0.04, 0.53, 0), 0x5a7a40)] : []),
   ]);
   instanced(rock, at[DECO.ROCK], tall, (t, _k, m) => put(m, t, 0.2, 0.9 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
   // Crates and containers stacked in the yards (a rusty wreck or a wagon reads the same from up here).
@@ -195,22 +200,43 @@ export function scenery(land: Land, o: OutsideWorld, theme: string, run: RunOff)
     box(0.7, 0.62, 0.7, 0x9a7a4e, 0.05, 0.9, 0.04),
   ]);
   const container = merge([box(0.96, 1.1, 0.96, 0x9c3b2e), ...[-0.3, 0, 0.3].map((x) => box(0.04, 1.0, 0.98, 0x7e2f25, x, 0.05))]);
+  // (2.36: the forest's yards stack timber: logs, their cut ends pale, not crates and containers.)
+  const forest = theme === 'forest';
+  const logs = (bark: number) =>
+    merge([
+      ...[
+        [-0.27, 0.17],
+        [0, 0.17],
+        [0.27, 0.17],
+        [-0.135, 0.44],
+        [0.135, 0.44],
+        [0, 0.7],
+      ].flatMap(([x, y]) => [
+        paint(new THREE.CylinderGeometry(0.15, 0.15, 0.94, 8).rotateX(Math.PI / 2).translate(x, y, 0), bark),
+        paint(new THREE.CylinderGeometry(0.11, 0.11, 0.95, 8).rotateX(Math.PI / 2).translate(x, y, 0), 0xd8b888),
+      ]),
+      box(0.06, 0.6, 0.06, 0x4a3a2c, -0.46, 0, 0),
+      box(0.06, 0.6, 0.06, 0x4a3a2c, 0.46, 0, 0),
+    ]);
   const crates = at[DECO.CRATES] ?? [];
   instanced(
-    crate,
+    forest ? logs(0x6e5236) : crate,
     crates.filter((t) => hash01(t, 9) < 0.5),
     tall,
     (t, _k, m) => put(m, t, 0.06, 1, Math.floor(hash01(t, 5) * 4) * (Math.PI / 2)),
   );
   instanced(
-    container,
+    forest ? logs(0x5a4430) : container,
     crates.filter((t) => hash01(t, 9) >= 0.5),
     tall,
     (t, _k, m) => put(m, t, 0, 1, 0),
   );
   // Hedges and thickets (cover): dense low bushes filling the tile.
-  const leaf = theme === 'alpine' ? 0x3d6650 : theme === 'desert' ? 0x8a8a4e : theme === 'industrial' ? 0x5f6b45 : 0x3f7a3a;
-  const leaf2 = theme === 'alpine' ? 0xe8eef4 : theme === 'desert' ? 0x9c9a5a : theme === 'industrial' ? 0x6e7a50 : 0x4f8f45;
+  // (The forest's thickets: bramble and bracken, darker and browner than a hedge.)
+  const leaf =
+    theme === 'alpine' ? 0x3d6650 : theme === 'desert' ? 0x8a8a4e : theme === 'industrial' ? 0x5f6b45 : forest ? 0x3a5a34 : 0x3f7a3a;
+  const leaf2 =
+    theme === 'alpine' ? 0xe8eef4 : theme === 'desert' ? 0x9c9a5a : theme === 'industrial' ? 0x6e7a50 : forest ? 0x58703c : 0x4f8f45;
   const hedge = merge([
     cyl(0.5, 0.62, leaf, 0, 0, 0, 7),
     cyl(0.36, 0.3, leaf2, 0.1, 0.55, -0.05, 7),
@@ -347,9 +373,69 @@ export function water(land: Land, o: OutsideWorld, theme: string): Set<number> {
     mesh.receiveShadow = true;
     land.group.add(mesh);
   };
+  if (theme === 'forest') {
+    forestRiver(land, o, deep, ford, wet);
+    // The ford's skin of water over its stony bed.
+    lay(ford, 0x9cbcb4, 0.024, 0.5);
+    return wet;
+  }
   // (Over the ground round the map, which lies a touch lower.)
   lay(deep, theme === 'alpine' ? 0x35607e : 0x3e7090, -0.008, 1);
   // A ford: the stream bed showing through.
   lay(ford, theme === 'alpine' ? 0x7fa8bf : 0x7aa4b4, 0.004, 0.85);
   return wet;
+}
+
+/**
+ * The Six Hunter's valley river (2.36): the prison's own Hollowrun water, running (`land.flow`), its banks of mud, stones
+ * and reeds; a ford a shallow riffle over a stony bed, stepping stones across it.
+ */
+function forestRiver(land: Land, o: OutsideWorld, deep: Array<[number, number]>, ford: Array<[number, number]>, wet: Set<number>) {
+  const kinds = o.world.ground.kind;
+  const inside = (x: number, z: number) => x >= 0 && z >= 0 && x < MAP_W && z < MAP_H;
+  const water = (x: number, z: number) => (inside(x, z) ? kinds[z * MAP_W + x] === TILE.WATER : wet.has(key(x, z)));
+  const bridge = (x: number, z: number) => inside(x, z) && kinds[z * MAP_W + x] === TILE.PIER;
+  const isWet = (x: number, z: number) => water(x, z) || bridge(x, z);
+  land.flow = { value: 0 };
+  land.group.add(flowingWater(deep, isWet, flowAlongRuns(isWet), land.flow, -0.008));
+  const parts: Part[] = [];
+  const seen = new Set<number>();
+  for (const [x, z] of [...deep, ...ford])
+    for (const [dx, dz] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
+      const lx = x + dx;
+      const lz = z + dz;
+      if (isWet(lx, lz) || land.under(lx, lz)) continue;
+      const k = key(lx, lz) * 4 + (dx > 0 ? 0 : dx < 0 ? 1 : dz > 0 ? 2 : 3);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      bankParts(parts, lx, lz, -dx, -dz, k);
+    }
+  // The fords: a paler, stony bed under a skin of water, a line of stepping stones across.
+  for (const [x, z] of ford) {
+    const i = key(x, z);
+    const across = isWet(x - 1, z) && isWet(x + 1, z) ? 'z' : 'x';
+    parts.push(box(0.96, 0.02, 0.96, 0x8a8a74, x + 0.5, -0.004, z + 0.5));
+    for (let k = 0; k < 2; k++) {
+      const t = 0.28 + k * 0.44 + (hash01(i, 20 + k) - 0.5) * 0.1;
+      const r = 0.13 + hash01(i, 22 + k) * 0.05;
+      parts.push(
+        paint(
+          new THREE.DodecahedronGeometry(r, 0)
+            .scale(1, 0.45, 1)
+            .rotateY(hash01(i, 24 + k) * 6)
+            .translate(across === 'z' ? x + 0.5 : x + t, 0.01, across === 'z' ? z + t : z + 0.5),
+          [0x9a968a, 0x8a877c][k],
+        ),
+      );
+    }
+  }
+  if (!parts.length) return;
+  const banks = new THREE.Mesh(merge(parts), kitMaterial);
+  banks.castShadow = banks.receiveShadow = true;
+  land.group.add(banks);
 }

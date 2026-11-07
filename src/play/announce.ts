@@ -26,6 +26,7 @@ import { LAYER } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { itemsUI, sound } from './context';
 import { outOfBounds } from '../sim/systems/k9';
+import { gainAt } from './loudness';
 import { coachOnce } from './tips';
 
 import { announceOddJob } from './oddjobs';
@@ -139,13 +140,13 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.scrub();
       itemsUI.toast(t(outOfBounds(sim) ? 'toast.washedStill' : 'toast.washed'));
       break;
-    // 2.36 (The Six Hunter): the recall horn blown; a drag line landed (its own sounds are the look's pass: a bang, a scrub for now).
+    // 2.36 (The Six Hunter): the recall horn blown (its call); a drag line landed (the cord's whip, the sock's slap).
     case 'horn':
-      sound.bang();
+      sound.huntHorn(gainAt(sim, e.tile));
       itemsUI.toast(t('toast.horn'));
       break;
     case 'dragLine':
-      sound.scrub();
+      sound.dragLine(gainAt(sim, e.tile));
       itemsUI.toast(t(e.trail ? 'toast.dragLine' : 'toast.dragLineNone'));
       break;
     case 'cantThrow': {

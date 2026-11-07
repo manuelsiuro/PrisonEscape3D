@@ -3,6 +3,9 @@ import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 import { seeded } from './rand';
 
+/** The fog's colour; the forest's valley mist (2.36). */
+const FOG = 0xc9d2db;
+const FOREST_FOG = 0xc2d6d0;
 /** Rain drops in the box of air round the player (a storm uses them all). */
 const DROPS = 900;
 const SPAN = 40;
@@ -124,7 +127,7 @@ export class Weather {
       transparent: true,
       depthWrite: false,
       uniforms: {
-        color: { value: new THREE.Color(0xc9d2db) },
+        color: { value: new THREE.Color(FOG) },
         density: { value: 0 },
         center: { value: new THREE.Vector2() },
         clear: { value: new THREE.Vector2(3.2, 9) },
@@ -220,6 +223,8 @@ export class Weather {
 
   /** A prison: where its ground is out in the open (the fog's mask). */
   setWorld(world: World) {
+    // (2.36: the forest's valley fog is a teal-white mist, every other prison's the grey it was.)
+    (this.fogMat.uniforms.color.value as THREE.Color).set(world.def.theme === 'forest' ? FOREST_FOG : FOG);
     const data = new Uint8Array(MAP_W * MAP_H);
     const open = (x: number, z: number) => world.inside(x, z) && TILE_INFO[world.ground.kind[z * MAP_W + x]].outdoor;
     for (let i = 0; i < data.length; i++) {

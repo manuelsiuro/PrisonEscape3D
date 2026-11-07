@@ -77,6 +77,16 @@ const BY_SHAPE: Record<string, number> = {
   formBlank: GRIP.FLAT,
   packet: GRIP.FLAT,
   poster: GRIP.FLAT,
+  // 2.36 (The Six Hunter's).
+  tarPot: GRIP.UPRIGHT,
+  bowl: GRIP.UPRIGHT,
+  net: GRIP.CARRY,
+  ghillie: GRIP.CARRY,
+  seeds: GRIP.SMALL,
+  fish: GRIP.SMALL,
+  dragLine: GRIP.SMALL,
+  soapCake: GRIP.SMALL,
+  horn: GRIP.SMALL,
 };
 
 /** How an item of this model is held. */

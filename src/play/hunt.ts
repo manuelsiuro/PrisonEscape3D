@@ -157,6 +157,7 @@ export function runHunt(
     sound.music('tension');
     sound.ambience(true);
     sound.setCoast(hunt.prison.theme === 'island');
+    sound.setForest(hunt.prison.theme === 'forest');
     sound.setScene(hunt.night ? 'outdoorNight' : 'outdoorDay');
     if (!run.lesson) {
       const goal = t(`manhunt.goal.${def.safeKind}` as Key);

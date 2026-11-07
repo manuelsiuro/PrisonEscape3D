@@ -260,7 +260,23 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   sound.setScene(
     st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor',
   );
+  // (2.36: the Six Hunter's morning: the Huntmaster's horn over the valley at 06:00, far off, muffled indoors.)
+  const minute = clock.minuteOfDay;
+  if (
+    sim.world.def.theme === 'forest' &&
+    hornMinute >= 0 &&
+    hornMinute < DAWN_HORN &&
+    minute >= DAWN_HORN &&
+    minute < DAWN_HORN + 10 &&
+    !g.paused
+  )
+    sound.huntHorn(outdoors ? 0.45 : 0.22);
+  hornMinute = minute;
 }
+
+/** The minute of the last frame (the dawn horn sounds as the clock passes 06:00), and that minute. */
+let hornMinute = -1;
+const DAWN_HORN = 6 * 60;
 
 /** The look last photographed for the file's button (render/portrait.ts: a new WebGL context and shader, so in an idle moment if one comes within 2 s). */
 let faceLook: Look | null = null;
