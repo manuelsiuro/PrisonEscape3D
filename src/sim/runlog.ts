@@ -204,9 +204,9 @@ export class RunRecorder {
       // (Nor one from before the vending machine worked, 2.32: the same.)
       // (Nor one from before the menu's dishes and the water cooler, 2.33.0, or the booth standing in the way, 2.33.2.)
       // (Nor one from before the reading marker slowed down and waited, 2.34.)
-      // (Nor one from before noticing, the dark, lying low and the block, 2.35.)
-      // (Every one of those versions comes before 2.35.0, the latest gate: one test covers them all.)
-      const stale = beforeStealth(log?.game ?? '');
+      // (Nor one from before noticing, the dark, lying low and the block, 2.35; nor the 2.36 passes, tools and items the first.)
+      // (Every one of those versions comes before 2.36.0, the latest gate: one test covers them all.)
+      const stale = before236(log?.game ?? '');
       const runs =
         log && log.prison === sim.prison.id && log.from + log.steps === from && !stale
           ? decodeRuns(fromBase64(log.data) ?? new Uint8Array())
@@ -347,6 +347,8 @@ const beforeSolidBooth = (game: string) => versionBefore(game, 2, 33, 2);
 const beforeSlowReading = (game: string) => versionBefore(game, 2, 34);
 /** Before guards took a moment to notice, the dark hid the player, lying low cooled heat, a blow locked on and the block (2.35.0). Sim.rules234 plays it as it was. */
 const beforeStealth = (game: string) => versionBefore(game, 2, 35);
+/** Before the 2.36 passes (tools and items, the first of them): Sim.rules235 plays it as it was. */
+const before236 = (game: string) => versionBefore(game, 2, 36);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -417,6 +419,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeSlowReading(log.game)) sim.rules233 = true;
   // Played before noticing, the dark, lying low and the block: as it was.
   if (beforeStealth(log.game)) sim.rules234 = true;
+  // Played before 2.36: as it was.
+  if (before236(log.game)) sim.rules235 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

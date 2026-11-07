@@ -85,19 +85,20 @@ export function wakeUp(sim: SimContext) {
   const s = sim.state;
   const places = placesOf(sim.world);
   const it = s.items;
-  let taken = 0;
+  // (2.36: what was taken, by name, for the banner.)
+  const items: number[] = [];
   // (P39: cutters, a shovel or the multitool (it digs) among them: caught plotting, for the parole board.)
   let plot = false;
   for (let k = 0; k <= SLOT.WEAPON; k++) {
     if (it.inv[k] && itemDef(itemOf(it.inv[k])).contraband) {
       const kind = itemDef(itemOf(it.inv[k])).tool?.kind;
       if (kind === 'dig' || kind === 'cut' || kind === 'multi') plot = true;
+      items.push(itemOf(it.inv[k]));
       it.inv[k] = 0;
-      taken++;
     }
   }
   if (itemOf(it.inv[SLOT.OUTFIT]) !== INMATE_OUTFIT) {
-    if (it.inv[SLOT.OUTFIT] && itemDef(itemOf(it.inv[SLOT.OUTFIT])).contraband) taken++;
+    if (it.inv[SLOT.OUTFIT] && itemDef(itemOf(it.inv[SLOT.OUTFIT])).contraband) items.push(itemOf(it.inv[SLOT.OUTFIT]));
     it.inv[SLOT.OUTFIT] = slot(INMATE_OUTFIT);
   }
   it.rev++;
@@ -110,16 +111,18 @@ export function wakeUp(sim: SimContext) {
   repair(sim);
   const lightsOut = ROUTINE[s.routine].id === 'lightsOut';
   if (s.wake === WAKE.SOLITARY && places.solitary >= 0) {
-    taken += search(sim, 1);
+    search(sim, 1, items);
     // (P34: the lawyer on a retainer gets the stretch halved.)
     s.solitary = retained(s) ? SOLITARY_STEPS / 2 : SOLITARY_STEPS;
     s.peeled = 0;
     place(sim, places.solitary);
-    sim.events.push(plot ? { type: 'solitary', on: true, taken, plot } : { type: 'solitary', on: true, taken });
+    const taken = items.length;
+    sim.events.push(plot ? { type: 'solitary', on: true, taken, plot, items } : { type: 'solitary', on: true, taken, items });
   } else {
     // The infirmary (at night, straight back to the cell).
     place(sim, lightsOut || places.infirmary < 0 ? places.bedside[1] : places.infirmary);
-    sim.events.push(plot ? { type: 'infirmary', taken, plot } : { type: 'infirmary', taken });
+    const taken = items.length;
+    sim.events.push(plot ? { type: 'infirmary', taken, plot, items } : { type: 'infirmary', taken, items });
   }
   s.wake = WAKE.NONE;
 }
@@ -259,8 +262,9 @@ export function report(sim: SimContext, r: GuardReport) {
     return;
   }
   if (r.kind === 'search') {
-    const taken = search(sim, r.cell);
-    sim.events.push({ type: 'searched', cell: r.cell, taken });
+    const items: number[] = [];
+    const taken = search(sim, r.cell, items);
+    sim.events.push({ type: 'searched', cell: r.cell, taken, items });
     return;
   }
   if (r.cell !== 1 || ROUTINE[s.routine].id !== 'lightsOut') return;
@@ -291,9 +295,10 @@ export function dummyInBed(sim: SimContext): boolean {
 
 /**
  * Searches a cell: contraband in the desk's standard drawers and in the bed goes (the
- * hidden compartment is never found, GDD §6.2). Returns how many items were taken.
+ * hidden compartment is never found, GDD §6.2). Returns how many items were taken (2.36: and
+ * adds them to `items`, by name for the toast).
  */
-function search(sim: SimContext, cell: number): number {
+function search(sim: SimContext, cell: number, items: number[]): number {
   const it = sim.state.items;
   let taken = 0;
   containersOf(sim.world).forEach((c, i) => {
@@ -301,6 +306,7 @@ function search(sim: SimContext, cell: number): number {
     const box = it.containers[i];
     for (let k = c.hidden; k < box.length; k++) {
       if (box[k] && itemDef(itemOf(box[k])).contraband) {
+        items.push(itemOf(box[k]));
         box[k] = 0;
         taken++;
       }
