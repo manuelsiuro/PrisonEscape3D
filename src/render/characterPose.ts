@@ -24,7 +24,7 @@ export interface Moves {
   dt: number;
   /** The time with the character's own offset. */
   t: number;
-  /** How far into the activity (0 with reduced motion). */
+  /** How far into the activity (session 15: with reduced motion too, where every move below holds still: a pose never vanishes). */
   a: number;
   motion: boolean;
   moving: boolean;
@@ -55,24 +55,25 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
   const { t, a, motion, ko, moving } = m;
   const k = (rate: number) => Math.min(1, m.dt * rate);
   if (doing === DOING.EAT) {
-    // Spoon to mouth, bite by bite, the head down to meet it; the other hand on the tray.
-    const lift = Math.max(0, Math.sin(t * 2.6)) ** 2;
+    // Spoon to mouth, bite by bite, the head down to meet it; the other hand on the tray. (Held still with reduced motion: the spoon on its way up.)
+    const lift = motion ? Math.max(0, Math.sin(t * 2.6)) ** 2 : 0.3;
     l.armRx += (-0.75 - lift * 1.55) * a;
     l.armRz += -0.22 * a;
     l.armLx += -0.75 * a;
     l.armLz += 0.18 * a;
     l.bend = (0.05 + lift * 0.07) * a;
   } else if (doing === DOING.EXERCISE) {
-    // Jumping jacks.
-    const j = (Math.sin(t * 6) + 1) / 2;
+    // Jumping jacks. (Held still with reduced motion: arms and legs out.)
+    const j = motion ? (Math.sin(t * 6) + 1) / 2 : 0.6;
     l.armLz -= j * 2.5 * a;
     l.armRz += j * 2.5 * a;
     l.legZ = j * 0.28 * a;
-    l.bob += Math.abs(Math.sin(t * 6)) * 0.08 * a;
+    l.bob += (motion ? Math.abs(Math.sin(t * 6)) * 0.08 : 0) * a;
   } else if (doing === DOING.SEARCH) {
     // Rummaging through a desk: bent over, hands digging in turn.
-    l.armLx += (-1.3 + Math.sin(t * 7) * 0.35) * a;
-    l.armRx += (-1.3 + Math.cos(t * 7) * 0.35) * a;
+    const dig = motion ? 0.35 : 0;
+    l.armLx += (-1.3 + Math.sin(t * 7) * dig) * a;
+    l.armRx += (-1.3 + Math.cos(t * 7) * dig) * a;
     l.bob -= 0.03 * a;
   } else if (doing === DOING.DIG) {
     // Digging under the bed (P40, the odd jobs' lookout): crouched low, both hands scraping at the
@@ -102,16 +103,18 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.bob = 0;
   } else if (doing === DOING.WORK) {
     // At work: hands busy at waist height, a little bent.
-    l.armLx += (-0.9 + Math.sin(t * 5) * 0.3) * a;
-    l.armRx += (-0.9 + Math.cos(t * 5) * 0.3) * a;
+    const busy = motion ? 0.3 : 0;
+    l.armLx += (-0.9 + Math.sin(t * 5) * busy) * a;
+    l.armRx += (-0.9 + Math.cos(t * 5) * busy) * a;
     l.bob -= 0.015 * a;
   } else if (doing === DOING.MOP) {
     // Mopping (2.30): the handle in both hands, swept from side to side, the body going with it.
+    // (Session 15: the hands in together on the handle, one over the other; they were a shoulder's width apart.)
     const sweep = motion ? Math.sin(t * 3.2) : 0;
     l.armLx += (-1.05 + sweep * 0.12) * a;
     l.armRx += (-1.05 - sweep * 0.12) * a;
-    l.armLz -= sweep * 0.22 * a;
-    l.armRz -= sweep * 0.22 * a;
+    l.armLz += (0.3 - sweep * 0.22) * a;
+    l.armRz += (-0.3 - sweep * 0.22) * a;
     l.bob -= 0.02 * a;
   } else if (doing === DOING.LIFT) {
     // Pressing a weight overhead: up on each rep, slowly down between.
@@ -149,13 +152,13 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.armLz += 0.35 * a;
     l.armRz -= 0.35 * a;
   } else if (doing === DOING.RUN) {
-    // Running in place on the belt: quicker with each rep.
-    const r = Math.sin(t * (9 + m.pumped * 5)) * 0.8 * a;
+    // Running in place on the belt: quicker with each rep. (Held still with reduced motion: mid-stride.)
+    const r = (motion ? Math.sin(t * (9 + m.pumped * 5)) : 0.6) * 0.8 * a;
     l.legL += r;
     l.legR -= r;
     l.armLx -= r * 0.9;
     l.armRx += r * 0.9;
-    l.bob += Math.abs(Math.cos(t * (9 + m.pumped * 5))) * 0.05 * a;
+    l.bob += (motion ? Math.abs(Math.cos(t * (9 + m.pumped * 5))) * 0.05 : 0) * a;
   } else if (doing === DOING.SIT) {
     // Sitting back: hands on the knees.
     l.armLx += -0.75 * a;
@@ -371,7 +374,9 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     // Something from the machine: a hand up to the mouth now and then, the other at the side.
     const ga = m.act;
     // (2.33: in toward the middle of the face, as at the water cooler, not out to the side.)
-    const up = motion ? (Math.sin(t * 1.5) > 0.2 ? 1 : 0.55) : 0.8;
+    // (Session 15: eased up and down: it jumped between the two.)
+    const rise = Math.max(0, Math.min(1, (Math.sin(t * 1.5) + 0.1) / 0.6));
+    const up = motion ? 0.55 + 0.45 * rise * rise * (3 - 2 * rise) : 0.8;
     l.armRx += -1.8 * up * ga;
     l.armRz -= 0.4 * up * ga;
   } else if (doing === DOING.DRINK) {
