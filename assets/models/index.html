@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prison Escape 3D — 3D Objects Studio</title>
+  <style>
+    :root,
+    [data-theme="dark"] {
+      --bg: #0c0e13;
+      --panel: #131720;
+      --panel-alt: #171c27;
+      --card: #1b2130;
+      --card-hover: #232b3e;
+      --border: #252d3d;
+      --border-strong: #354159;
+      --text: #e9edf5;
+      --muted: #8b95a7;
+      --accent: #f6b73c;
+      --accent-soft: rgba(246, 183, 60, 0.14);
+      --blue: #4b6bfb;
+      --blue-soft: rgba(75, 107, 251, 0.16);
+      --purple: #9b6bff;
+      --purple-soft: rgba(155, 107, 255, 0.18);
+      --danger: #e5534b;
+      --stage-top: #151b28;
+      --stage-bottom: #0b0e15;
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    }
+
+    [data-theme="light"] {
+      --bg: #eef1f6;
+      --panel: #ffffff;
+      --panel-alt: #f6f8fb;
+      --card: #f1f4f9;
+      --card-hover: #e5eaf3;
+      --border: #d7deea;
+      --border-strong: #b8c4d8;
+      --text: #161b26;
+      --muted: #5a6578;
+      --accent: #b87300;
+      --accent-soft: rgba(184, 115, 0, 0.12);
+      --blue: #2f54eb;
+      --blue-soft: rgba(47, 84, 235, 0.12);
+      --purple: #6b3fd8;
+      --purple-soft: rgba(107, 63, 216, 0.12);
+      --danger: #cf222e;
+      --stage-top: #dde4f0;
+      --stage-bottom: #c5d0e3;
+      --shadow: 0 8px 24px rgba(16, 24, 40, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    code,
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    /* App Shell Layout */
+    .studio-shell {
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      grid-template-columns: 310px 1fr 330px;
+      height: 100vh;
+    }
+
+    /* Top Bar */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+       gap: 12px;
+      padding: 0 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .brand-cube {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), #e07b1a);
+      color: #111;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .brand-sub {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 380px;
+      margin-left: 8px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 7px 30px 7px 12px;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-kbd {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 1px 6px;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .top-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .seg-group {
+      display: inline-flex;
+      background: var(--card);
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+    }
+
+    .seg-btn,
+    .tool-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.12s;
+    }
+
+    .tool-btn {
+      background: var(--card);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .seg-btn:hover,
+    .tool-btn:hover {
+      color: var(--text);
+      background: var(--card-hover);
+    }
+
+    .seg-btn.active,
+    .tool-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Left Browser Panel */
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sidebar-block {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .block-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .lib-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+
+    .lib-tab {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 5px 6px;
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .lib-tab:hover {
+      background: var(--card-hover);
+      color: var(--text);
+    }
+
+    .lib-tab.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .lib-tab-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .lib-tab-count {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .category-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .cat-btn {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 6px;
+      padding: 5px 7px;
+      background: var(--card);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--text);
+      font: inherit;
+      font-size: 11.5px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .cat-btn:hover {
+      background: var(--card-hover);
+    }
+
+    .cat-btn.active {
+      background: var(--blue-soft);
+      border-color: var(--blue);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .cat-icon {
+      font-size: 13px;
+    }
+
+    .cat-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cat-count {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-height: 68px;
+      overflow-y: auto;
+    }
+
+    .tag-pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 99px;
+      padding: 2px 8px;
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .tag-pill:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+    }
+
+    .tag-pill.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .model-list-header {
+      padding: 8px 12px 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .model-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 8px 14px;
+    }
+
+    .subcat-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 6px 3px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .model-row {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      margin-bottom: 2px;
+    }
+
+    .model-row:hover {
+      background: var(--card);
+    }
+
+    .model-row.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .model-row-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 12.5px;
+    }
+
+    .model-row-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .model-row-meta {
+      font-size: 10.5px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .badge-v2 {
+      background: var(--purple-soft);
+      color: var(--purple);
+      border: 1px solid var(--purple);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 0 5px;
+      border-radius: 4px;
+    }
+
+    .dot-contra {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--danger);
+      display: inline-block;
+    }
+
+    /* Center 3D Stage & Grid View */
+    .stage-area {
+      position: relative;
+      background: radial-gradient(circle at 50% 38%, var(--stage-top), var(--stage-bottom));
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #stage-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #stage-canvas:active {
+      cursor: grabbing;
+    }
+
+    .stage-hud-top {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      gap: 12px;
+    }
+
+    .hud-card {
+      background: rgba(19, 23, 32, 0.82);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 8px 13px;
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+    }
+
+    [data-theme="light"] .hud-card {
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .hud-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+
+    .hud-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .hud-dims {
+      font-size: 11.5px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    .stage-hud-bottom {
+      position: absolute;
+      bottom: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .hud-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(19, 23, 32, 0.86);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: 9px;
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+    }
+
+    [data-theme="light"] .hud-bar {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .hud-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 5px 9px;
+      border-radius: 6px;
+      font: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .hud-btn:hover {
+      color: var(--text);
+      background: var(--card-hover);
+    }
+
+    .hud-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .hud-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+      margin: 0 2px;
+    }
+
+    /* Visual Catalog Grid Overlay */
+    .catalog-grid-view {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      overflow-y: auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      grid-auto-rows: max-content;
+      gap: 12px;
+      align-content: start;
+      z-index: 5;
+    }
+
+    .catalog-grid-view[hidden] {
+      display: none !important;
+    }
+
+    .grid-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0;
+      min-height: 196px;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      font: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.12s, border-color 0.12s;
+    }
+
+    .grid-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
+    }
+
+    .grid-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .grid-thumb-wrap {
+      position: relative;
+      width: 100%;
+      height: 140px;
+      min-height: 140px;
+      flex-shrink: 0;
+      background: radial-gradient(circle at 50% 45%, var(--stage-top), var(--stage-bottom));
+      display: grid;
+      place-items: center;
+    }
+
+    .grid-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .grid-badge-v2 {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--purple-soft);
+      color: var(--purple);
+      border: 1px solid var(--purple);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .grid-card-body {
+      padding: 9px 11px;
+      border-top: 1px solid var(--border);
+    }
+
+    .grid-card-title {
+      font-weight: 700;
+      font-size: 12.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .grid-card-meta {
+      font-size: 10.5px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Right Inspector Panel */
+    .inspector {
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 14px;
+    }
+
+    .insp-section {
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .insp-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .insp-badges {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .insp-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .insp-badge.game {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .insp-badge.v2 {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .insp-badge.cat {
+      background: var(--card);
+      color: var(--muted);
+    }
+
+    .insp-title {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .insp-fr {
+      font-size: 11.5px;
+      color: var(--accent);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .insp-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    .insp-sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 9px;
+    }
+
+    .insp-reset-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 10.5px;
+      cursor: pointer;
+    }
+
+    .insp-reset-btn:hover {
+      color: var(--text);
+    }
+
+    .insp-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ctrl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      padding: 7px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+    }
+
+    .ctrl-label {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .ctrl-select {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 5px;
+      padding: 4px 8px;
+      font: inherit;
+      font-size: 12px;
+      max-width: 165px;
+    }
+
+    .ctrl-color {
+      width: 36px;
+      height: 24px;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-lbl {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    .dims-bar {
+      display: flex;
+      justify-content: space-between;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .dims-bar b {
+      color: var(--text);
+    }
+
+    .swatch-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      cursor: pointer;
+    }
+
+    .code-meta {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: 11.5px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .meta-k {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .insp-recipe-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--purple);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 8px 0 4px;
+    }
+
+    .insp-code {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 11px;
+      color: var(--text);
+      overflow-x: auto;
+      margin: 0 0 8px;
+    }
+
+    .insp-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .empty-state {
+      padding: 24px 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1100px) {
+      .studio-shell {
+        grid-template-columns: 260px 1fr 270px;
+      }
+      .brand-sub {
+        display: none;
+      }
+    }
+
+    @media (max-width: 820px) {
+      html,
+      body {
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      .studio-shell {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto 390px auto auto;
+        height: auto;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+      .topbar {
+        flex-wrap: wrap;
+        padding: 8px 12px;
+      }
+      .search-box {
+        flex: 1 1 100%;
+        order: 3;
+      }
+      .top-actions {
+        flex-wrap: wrap;
+      }
+      .stage-area {
+        order: 1;
+        height: 390px;
+      }
+      .sidebar {
+        order: 2;
+        max-height: 440px;
+      }
+      .inspector {
+        order: 3;
+      }
+      .stage-hud-top,
+      .stage-hud-bottom {
+        left: 8px;
+        right: 8px;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .hud-bar {
+        flex-wrap: wrap;
+      }
+      .sidebar,
+      .inspector {
+        border: none;
+        border-top: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-shell">
+    <!-- Top Studio Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-cube">3D</div>
+        <span>Prison Escape 3D · Objects Studio</span>
+        <span class="brand-sub">Procedural Kit &amp; Game Model Library</span>
+      </div>
+
+      <div class="search-box">
+        <input id="search-input" type="search" placeholder="Search 326 models by name, FR, shape, #tag…" aria-label="Search 3D models" />
+        <span class="search-kbd">/</span>
+      </div>
+
+      <div class="top-actions">
+        <div class="seg-group" role="group" aria-label="View Mode">
+          <button type="button" class="seg-btn active" id="mode-stage-btn">3D Stage</button>
+          <button type="button" class="seg-btn" id="mode-grid-btn">Catalog Grid</button>
+        </div>
+        <button type="button" class="tool-btn" id="btn-snapshot" title="Download PNG snapshot of current 3D object">Snapshot PNG</button>
+        <a class="tool-btn" href="../maps/index.html" title="Open 2D Prison Map Viewer">Map Viewer ↗</a>
+        <button type="button" class="tool-btn" id="ui-theme-btn" title="Toggle Dark / Light Studio Theme">Theme</button>
+      </div>
+    </header>
+
+    <!-- Left Browser Sidebar -->
+    <aside class="sidebar" aria-label="Model Catalog Browser">
+      <div class="sidebar-block">
+        <div class="block-title"><span>Library Source</span></div>
+        <div class="lib-tabs" id="library-tabs"></div>
+      </div>
+
+      <div class="sidebar-block">
+        <div class="block-title"><span>Categories</span></div>
+        <div class="category-list" id="category-list"></div>
+      </div>
+
+      <div class="sidebar-block">
+        <div class="block-title"><span>Filter by Tag</span></div>
+        <div class="tag-cloud" id="tag-cloud"></div>
+      </div>
+
+      <div class="model-list-header">
+        <span>Objects</span>
+        <span id="result-count">0 objects</span>
+      </div>
+      <div class="model-list" id="model-list"></div>
+    </aside>
+
+    <!-- Center 3D Viewport & Visual Catalog Grid -->
+    <main class="stage-area" id="stage-viewport">
+      <canvas id="stage-canvas"></canvas>
+
+      <div class="stage-hud-top">
+        <div class="hud-card">
+          <div class="hud-title" id="hud-title">Loading…</div>
+          <div class="hud-sub" id="hud-sub"></div>
+          <div class="hud-dims" id="hud-dims"></div>
+        </div>
+
+        <div class="hud-bar" role="group" aria-label="Camera Presets">
+          <button type="button" class="hud-btn active" id="cam-studio">3/4 Studio</button>
+          <button type="button" class="hud-btn" id="cam-iso" title="In-game steep isometric camera angle">Game Iso</button>
+          <button type="button" class="hud-btn" id="cam-front">Front</button>
+          <button type="button" class="hud-btn" id="cam-side">Side</button>
+          <button type="button" class="hud-btn" id="cam-top">Top</button>
+          <div class="hud-sep"></div>
+          <button type="button" class="hud-btn" id="btn-fit" title="Frame object in view (F)">Fit [F]</button>
+        </div>
+      </div>
+
+      <div class="stage-hud-bottom">
+        <div class="hud-bar" role="group" aria-label="Stage Aids">
+          <button type="button" class="hud-btn" id="btn-turntable" title="Auto-rotate turntable (Space)">Turntable</button>
+          <button type="button" class="hud-btn active" id="btn-play" title="Play / Pause model animation">Animate</button>
+          <div class="hud-sep"></div>
+          <button type="button" class="hud-btn active" id="btn-grid" title="Toggle 1x1 tile floor grid (G)">Grid [G]</button>
+          <button type="button" class="hud-btn" id="btn-wall" title="Toggle reference north wall (W)">Wall [W]</button>
+          <button type="button" class="hud-btn" id="btn-mannequin" title="Toggle reference inmate scale figure (M)">Scale [M]</button>
+          <button type="button" class="hud-btn" id="btn-bounds" title="Toggle 3D bounding box (B)">Bounds [B]</button>
+          <button type="button" class="hud-btn" id="btn-wireframe" title="Toggle wireframe overlay (X)">Wire [X]</button>
+        </div>
+
+        <div class="hud-bar" role="group" aria-label="Lighting Modes">
+          <button type="button" class="hud-btn active" id="light-day">Daylight</button>
+          <button type="button" class="hud-btn" id="light-night">Night &amp; Glow</button>
+          <button type="button" class="hud-btn" id="light-clay">Clay</button>
+        </div>
+      </div>
+
+      <!-- Visual Catalog Grid Mode -->
+      <div class="catalog-grid-view" id="catalog-grid-view" hidden></div>
+    </main>
+
+    <!-- Right Object Inspector -->
+    <aside class="inspector" aria-label="Object Inspector">
+      <div id="inspector-content"></div>
+    </aside>
+  </div>
+
+  <script type="module" src="../../scripts/dev/modelviewer/main.ts"></script>
+</body>
+</html>

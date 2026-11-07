@@ -66,7 +66,7 @@ export function wingGeometry(): THREE.BufferGeometry {
 }
 
 /** The gatekeeper (seated behind his hatch, facing +z): shoulders, a head, a guard's cap. */
-function keeperGeometry(): THREE.BufferGeometry {
+export function keeperGeometry(): THREE.BufferGeometry {
   return merge(
     [
       box(0.42, 0.34, 0.24, 0x3a5a8c, 0, 0, 0),

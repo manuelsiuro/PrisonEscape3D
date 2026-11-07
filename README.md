@@ -164,7 +164,7 @@ On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows
 
 Vite + TypeScript + Three.js, with **no models, textures or sound files**: the prisons, characters and
 items are built in code, and the music and sound effects are synthesized. About 122,000 lines of TypeScript
-in 437 files (formatted by Prettier), and 48,000 more in the tests and tools.
+in 437 files (formatted by Prettier), and 51,000 more in the tests and tools.
 
 ### Running it
 

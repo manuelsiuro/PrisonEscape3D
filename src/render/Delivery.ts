@@ -95,7 +95,7 @@ export class Delivery {
       const z = Math.floor(i / MAP_W) + 0.5;
       if (this.distToRoad(x, z) <= 1.1) this.gates.push({ tile: i, x, z });
     }
-    const built = MODELS[d.vehicle]();
+    const built = DELIVERY_MODELS[d.vehicle]();
     this.gateKind = built.gate;
     // Its own material: it fades to see the player and the guards behind it (the camera looks north, over its far side).
     this.mat = kitMaterial.clone();
@@ -427,7 +427,7 @@ function crates(z0: number, w: number, y: number, colors: readonly number[]): Pa
  * The vehicles, nose toward +z, tail at -z, built from kit parts (units: tiles; a bay two
  * tiles wide and five long for the trucks, two by three for the produce truck).
  */
-const MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model> = {
+export const DELIVERY_MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model> = {
   // Center Perks: a white box truck in the suppliers' blue, an orange stripe, a roller door.
   truck: () => {
     const W = 1.76;

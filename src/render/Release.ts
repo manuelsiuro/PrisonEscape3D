@@ -29,7 +29,7 @@ const GREEN = new THREE.Color(0x5fe08a);
  * few forms in, and a navy sign on a post over it with a sheet and an arrow (no words: the same in
  * every language), its lamp on top.
  */
-function deskParts() {
+export function releaseDeskParts() {
   return [
     // The podium.
     box(0.34, 0.06, 0.28, STEEL_DARK, 0, 0.03, 0),
@@ -111,7 +111,7 @@ export class ReleaseView {
     const at = deskSpot(world);
     if (!at) return;
     const g = new THREE.Group();
-    const body = new THREE.Mesh(merge(deskParts()), this.mat);
+    const body = new THREE.Mesh(merge(releaseDeskParts()), this.mat);
     body.castShadow = true;
     body.receiveShadow = true;
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 10), this.lampMat);

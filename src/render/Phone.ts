@@ -42,7 +42,7 @@ const CHROME = 0xc9d0d8;
  * box's right (+x, the side of the caller's raised hand), a black handset on it, its coiled
  * cord looping down from the box.
  */
-function phoneParts(): { body: Part[]; handset: Part[]; out: Part[] } {
+export function phoneParts(): { body: Part[]; handset: Part[]; out: Part[] } {
   const body: Part[] = [
     // The back plate and the hood.
     box(0.58, 0.66, 0.02, STEEL_DARK, 0, 0.7, 0.01),

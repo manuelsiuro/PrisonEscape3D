@@ -13,7 +13,7 @@ const METAL = 0xa8b0ba;
 const PLATE = 0xf2d23c;
 
 /** What lies in a job's bin, by the item it holds: on top of the bin's rim (0.5 up), so that one bin's told from the other. */
-const PILES: Partial<Record<string, () => THREE.BufferGeometry[]>> = {
+export const BIN_PILES: Partial<Record<string, () => THREE.BufferGeometry[]>> = {
   dirty_laundry: () => [
     box(0.42, 0.14, 0.34, ORANGE, -0.06, 0.5, -0.04),
     box(0.3, 0.14, 0.3, GREY, 0.1, 0.56, 0.08),
@@ -124,7 +124,7 @@ export class WorkGear {
 
   /** What's in a bin, for a job that has one (the freezer, the counter and the shed show for themselves). */
   private pile(p: Prop | undefined, item: string | undefined) {
-    const parts = item ? PILES[item] : undefined;
+    const parts = item ? BIN_PILES[item] : undefined;
     if (!p || p.kind !== 'bin' || !parts) return;
     this.place(this.mesh(parts()), p);
   }
@@ -176,7 +176,7 @@ export class WorkGear {
       }
       case 'workbench': {
         // The stool coming together on the bench.
-        const stool = this.mesh(PILES.furniture!());
+        const stool = this.mesh(BIN_PILES.furniture!());
         stool.position.set(0.1, 0.15, 0);
         stool.scale.set(0.8, 0.8, 0.8);
         root.add(stool);

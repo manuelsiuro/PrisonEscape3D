@@ -54,7 +54,7 @@ const BOARD = 0.62;
 const PIECE_R = 0.03;
 
 /** The ball's leather: orange with dark seams. */
-function ballTexture(): THREE.CanvasTexture {
+export function ballTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 128;
   c.height = 64;
@@ -75,7 +75,7 @@ function ballTexture(): THREE.CanvasTexture {
 }
 
 /** The cards' atlas: a back, then a King, a Queen, an Ace and a Joker (5 across). */
-function cardTexture(): THREE.CanvasTexture {
+export function cardTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 320;
   c.height = 96;
@@ -101,7 +101,7 @@ function cardTexture(): THREE.CanvasTexture {
 }
 
 /** A card's quad, its UVs on a cell of the atlas. */
-function cardGeometry(cell: number): THREE.BufferGeometry {
+export function cardGeometry(cell: number): THREE.BufferGeometry {
   const g = new THREE.PlaneGeometry(CARD_W, CARD_H).rotateX(-Math.PI / 2);
   const uv = g.getAttribute('uv') as THREE.BufferAttribute;
   for (let i = 0; i < uv.count; i++) uv.setX(i, (cell + uv.getX(i)) / 5);
@@ -110,7 +110,7 @@ function cardGeometry(cell: number): THREE.BufferGeometry {
 }
 
 /** The checkers board's squares: light and dark, with a wooden rim. */
-function boardTexture(): THREE.CanvasTexture {
+export function boardTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 136;
   c.height = 136;

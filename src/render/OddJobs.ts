@@ -37,7 +37,7 @@ const Y0 = 0.5;
 const CORK_Z = 0.06;
 
 /** The cards: the three jobs across the left, the story's (manila, bigger) on the right; middle, height, tilt, paper colour, pin colour. */
-const CARDS: ReadonlyArray<{ x: number; y: number; w: number; h: number; tilt: number; paper: number; pin: number }> = [
+export const ODD_JOBS_CARDS: ReadonlyArray<{ x: number; y: number; w: number; h: number; tilt: number; paper: number; pin: number }> = [
   { x: -0.37, y: Y0 + 0.35, w: 0.2, h: 0.26, tilt: 0.06, paper: 0xf6f3ea, pin: PIN_RED },
   { x: -0.13, y: Y0 + 0.32, w: 0.2, h: 0.26, tilt: -0.04, paper: 0xf6e9a0, pin: PIN_BLUE },
   { x: 0.11, y: Y0 + 0.36, w: 0.2, h: 0.26, tilt: 0.03, paper: 0xd9ecf4, pin: PIN_YELLOW },
@@ -45,7 +45,7 @@ const CARDS: ReadonlyArray<{ x: number; y: number; w: number; h: number; tilt: n
 ];
 
 /** A card at the origin (facing +z): the paper, a heading and a few lines of writing. */
-function cardParts(c: (typeof CARDS)[number]): Part[] {
+export function oddJobsCardParts(c: (typeof ODD_JOBS_CARDS)[number]): Part[] {
   const parts: Part[] = [box(c.w, c.h, 0.004, c.paper, 0, -c.h / 2, 0)];
   parts.push(box(c.w * 0.62, 0.022, 0.002, INK, 0, c.h / 2 - 0.075, 0.003));
   for (let k = 0; k < 4; k++)
@@ -54,7 +54,7 @@ function cardParts(c: (typeof CARDS)[number]): Part[] {
 }
 
 /** The board on its wall, in its own terms: the wall's face at z = 0, the room toward +z, the floor at y = 0. */
-function boardParts(): Part[] {
+export function oddJobsBoardParts(): Part[] {
   const parts: Part[] = [
     // The frame and the cork in it.
     box(W, H, 0.04, WOOD_DARK, 0, Y0, 0.02),
@@ -64,12 +64,12 @@ function boardParts(): Part[] {
     box(0.46, 0.022, 0.004, CREAM, 0, Y0 + H - 0.096, CORK_Z + 0.006),
   ];
   // The pins stay in the cork when a card is taken down.
-  for (const c of CARDS) parts.push(disc(0.018, 0.014, c.pin, c.x, c.y + c.h / 2 - 0.028, CORK_Z + 0.014, 10));
+  for (const c of ODD_JOBS_CARDS) parts.push(disc(0.018, 0.014, c.pin, c.x, c.y + c.h / 2 - 0.028, CORK_Z + 0.014, 10));
   return parts;
 }
 
 /** The red tag a job held hangs from the header's right end. */
-function tagParts(): Part[] {
+export function oddJobsTagParts(): Part[] {
   return [
     box(0.07, 0.1, 0.004, TAG, W / 2 - 0.12, Y0 + H - 0.24, CORK_Z + 0.004),
     disc(0.014, 0.012, CREAM, W / 2 - 0.12, Y0 + H - 0.15, CORK_Z + 0.012, 8),
@@ -102,19 +102,19 @@ export class OddJobsView {
     const b = boardOf({ world });
     if (!b) return;
     const g = new THREE.Group();
-    const body = new THREE.Mesh(merge(boardParts()), this.mat);
+    const body = new THREE.Mesh(merge(oddJobsBoardParts()), this.mat);
     body.castShadow = true;
     body.receiveShadow = true;
     g.add(body);
-    for (const c of CARDS) {
-      const card = new THREE.Mesh(merge(cardParts(c), false), this.mat);
+    for (const c of ODD_JOBS_CARDS) {
+      const card = new THREE.Mesh(merge(oddJobsCardParts(c), false), this.mat);
       card.position.set(c.x, c.y, CORK_Z + 0.004);
       card.rotation.z = c.tilt;
       card.receiveShadow = true;
       g.add(card);
       this.cards.push(card);
     }
-    this.tag = new THREE.Mesh(merge(tagParts(), false), this.mat);
+    this.tag = new THREE.Mesh(merge(oddJobsTagParts(), false), this.mat);
     this.tag.visible = false;
     g.add(this.tag);
     // On the wall the player faces: half a tile from their tile's middle that way, its front turned back to them.

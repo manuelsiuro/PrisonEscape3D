@@ -63,7 +63,7 @@ const CHROME = 0xc9d0d8;
  * shoulders are at 0.78), a dark keyboard on it with its rows of keys and a trackball; over it, the
  * plate up to the screen head (built apart: `headParts`).
  */
-function bodyParts(): Part[] {
+export function kioskBodyParts(): Part[] {
   return [
     // The back plate, bolted to the wall at its corners.
     box(0.5, 1.26, 0.02, STEEL_DARK, 0, 0.08, 0.01),
@@ -92,7 +92,7 @@ function bodyParts(): Part[] {
  * network's teal band along the top with its light (no hood over the screen: from the camera's
  * height it would hide the screen's top).
  */
-function headParts(): Part[] {
+export function kioskHeadParts(): Part[] {
   const h = HEAD_Y1 - HEAD_Y0;
   const front = HEAD_D;
   return [
@@ -355,7 +355,7 @@ export class KioskView {
     }
     if (!k) return;
     const g = new THREE.Group();
-    const body = new THREE.Mesh(merge(bodyParts()), this.kioskMat);
+    const body = new THREE.Mesh(merge(kioskBodyParts()), this.kioskMat);
     body.castShadow = true;
     body.receiveShadow = true;
     // The head: swung toward the camera about its south edge on a side wall, tipped back about its middle
@@ -368,7 +368,7 @@ export class KioskView {
     const tilt = new THREE.Group();
     tilt.position.set((-side * HEAD_W) / 2, (HEAD_Y1 - HEAD_Y0) / 2, 0);
     tilt.rotation.x = -TILT;
-    const head = new THREE.Mesh(merge(headParts(), false), this.kioskMat);
+    const head = new THREE.Mesh(merge(kioskHeadParts(), false), this.kioskMat);
     head.castShadow = true;
     head.position.y = -(HEAD_Y1 - HEAD_Y0) / 2;
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(SCREEN_W, SCREEN_H), this.screenMat);
