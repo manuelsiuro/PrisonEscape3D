@@ -768,6 +768,7 @@ export type Refusal =
   | 'room'
   | 'grudge'
   | 'opinion'
+  | 'phoneOpinion'
   | 'followers'
   | 'int'
   | 'taken'

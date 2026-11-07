@@ -547,18 +547,20 @@ const atShaft = (sim: SimContext, e: CrewEntry, b: Body) =>
 /**
  * 2.36: whether a digger's or a muscle's order is doing anything right now, by the same rules as
  * the help itself (digHelp, backedBy), so the crew's status never claims help that isn't given:
- * 'ok', 'far' (too far from the player, or out of sight; a digger walking to the shaft), 'lost' (a
- * digger who didn't see where the player went down), null (another order, out cold, or the player
- * where a digger can't help: the vents, a roof).
+ * 'ok', 'far' (too far from the player; a digger walking to the shaft), 'cut' (a digger close enough
+ * but with a wall or a fence between, not a short walk away), 'lost' (a digger who didn't see where the
+ * player went down), null (another order, out cold, or the player where a digger can't help: the
+ * vents, a roof).
  */
-export function helpOf(sim: SimContext, who: number): 'ok' | 'far' | 'lost' | null {
+export function helpOf(sim: SimContext, who: number): 'ok' | 'far' | 'cut' | 'lost' | null {
   const s = sim.state;
   const e = crewEntry(s, who);
   const m = s.inmates[who];
   if (!e || !m || m.ko > 0) return null;
   if (e[ORD] === ORDER.BACK) return backs(s, m) ? 'ok' : 'far';
   if (e[ORD] !== ORDER.DIG) return null;
-  if (s.layer === LAYER.GROUND && !sim.away) return besidePlayer(sim, m.body) ? 'ok' : 'far';
+  if (s.layer === LAYER.GROUND && !sim.away)
+    return besidePlayer(sim, m.body) ? 'ok' : cheb(m.body, s.player) <= DIG_REACH * UNIT ? 'cut' : 'far';
   if (s.layer !== LAYER.UNDER) return null;
   if (e[ARG] < 0) return 'lost';
   return atShaft(sim, e, m.body) ? 'ok' : 'far';

@@ -286,7 +286,8 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       // A burner phone (P21), from the fixer only, in the merchants' hours, to a friend; one at a time.
       if (who !== fixerOf(sim)) return;
       if (!sim.fixerOpen) return refuse(sim, 'closed');
-      if (m.opinion < PHONE_OPINION) return refuse(sim, 'opinion');
+      // (2.36: its own reason, which names the phone's 60, not recruiting's 80.)
+      if (m.opinion < PHONE_OPINION) return refuse(sim, 'phoneOpinion');
       if (it.inv.slice(0, HOTBAR).some((v) => itemOf(v) === PHONE)) return refuse(sim, 'havePhone');
       if (s.cash < PHONE_PRICE) return refuse(sim, 'cash');
       if (free < 0) return refuse(sim, 'room');

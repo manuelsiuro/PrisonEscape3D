@@ -24,7 +24,7 @@ import {
   TIP_OPINION,
 } from '../sim/tuning';
 import { ROUTINE } from '../content/routine';
-import { clockAt, formatTime } from '../sim/systems/clock';
+import { clockAt, formatTime, hhmm } from '../sim/systems/clock';
 import { itemIcons } from '../render/itemIcons';
 import { t, textStamp, type Key } from '../i18n';
 import { confirmed, esc, h, type Send } from './dom';
@@ -71,7 +71,7 @@ function nextRollCall(sim: Sim): string {
   const now = sim.clock.minuteOfDay;
   const starts = ROUTINE.filter((r) => r.id === 'rollCall' || r.id === 'eveningRollCall').map((r) => r.start);
   const at = starts.find((m) => m > now) ?? starts[0];
-  return `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`;
+  return hhmm(at);
 }
 
 /**
@@ -226,6 +226,8 @@ export class TalkPanel {
       s.items.known.length,
       s.items.int,
       sim.clock.day,
+      // (2.36: a block's change redraws it: a distraction's "roll call now" ends with the roll call.)
+      s.routine,
       textStamp(),
       this.greeting,
     ].join('|');
