@@ -46,7 +46,7 @@ scratchpad. A script longer than two minutes is fine (`eval` waits up to ten).
 ```js
 // in a file, then: npx tsx scripts/dev/phone.ts eval that-file.js
 const pp = await import('/scripts/dev/perfprobe.ts');
-const rows = await pp.scenes(undefined, 3);   // 36 scenes, about 4 minutes
+const rows = await pp.scenes(undefined, 3);   // 42 scenes, about 5 minutes
 return rows.map((r) => [r.scene, r.fps, r.gap95, r.frame, r.frame95, r.render, r.calls, r.shadowCalls, r.tris].join(' | '));
 ```
 

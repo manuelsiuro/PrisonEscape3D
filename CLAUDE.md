@@ -53,10 +53,10 @@ Rules that matter every time:
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
   prison and moment and drives it by real keys. A render change meant to draw nothing new (a refactor,
-  a speed-up): `scripts/dev/drawhash.ts` fingerprints 258 frames (every prison and moment, forced
+  a speed-up): `scripts/dev/drawhash.ts` fingerprints 279 frames (every prison and moment, forced
   weather, layers, stances, effects, the cameras, the manhunt), its baseline taken on the old code first.
   A change to what's drawn: `scripts/dev/perfprobe.ts`'s `check()` in a phone's profile (draw calls and
-  triangles of 36 scenes against `perfbudget.json`; `record()` after a change meant to draw more); slow
+  triangles of 42 scenes against `perfbudget.json`; `record()` after a change meant to draw more); slow
   frames, shader compiles and memory over a long game: `scripts/dev/hitchprobe.ts`.
 - **The real phone** (an Android phone on USB, adb): testing, measuring or playing by touch on it, the
   `real-phone` skill (`scripts/dev/phone.ts`).

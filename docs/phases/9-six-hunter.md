@@ -5,8 +5,8 @@ completed you should create a new prison 'The six hunter' with new items, jobs a
 creatif to add an amazing new level prison"). The user was not available for questions: every choice
 below is Claude's pick (the user's goal of 2026-11-07: the sessions run on their own), recorded in
 `POLISH.md`'s row. Built by a team in three parts: **the core** (this file's first part: the prison,
-its rules, its text and the proofs), **the look** and **the player-facing finish** (what they still owe is
-the checklist at the end).
+its rules, its text and the proofs), **the look** and **the player-facing finish** (each part's record is
+at the end).
 
 ## The prison as built
 
@@ -114,7 +114,7 @@ achievements, keys, lamps, small items, the drone's nights); no older prison's l
 Daily and economy bots byte-identical. Shared code changed only behind what the Six Hunter alone has (`kit`,
 `state.recall`, its items, its job ids); `liftGuards` skips a guard whose kit fills his pockets (none elsewhere).
 
-## Checklist: what the look and the finish still owe
+## The look and the finish, as built
 
 Done in the core: the definition and folder, zones (append-only) and light rules (`kennels`, `smokehouse`,
 `boathouse` lit indoors), the 3 jobs and props, the 10 items, 4 recipes and 3 tables, the behaviours in `k9.ts`,
