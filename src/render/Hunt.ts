@@ -13,6 +13,7 @@ import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { carParts } from './Phone';
 import { pool } from './Security';
 import { runOff, scenery, water, woods, type Land } from './huntLand';
+import { nightWater } from './River';
 import { heliModel, vanGeometry, vehicleGeometry } from './huntModels';
 
 /** What the outside's own pieces need each frame (P41): the helicopter (tiles), roadblocks up and washing lines used (a bit each), whether Lou waits, how it ended. */
@@ -73,6 +74,7 @@ export class HuntView {
   private glass: THREE.MeshStandardMaterial | null = null;
   /** The forest river's time (2.36), run each frame (still with reduced motion). */
   private flow: { value: number } | null = null;
+  private water: THREE.MeshStandardMaterial | null = null;
   /** Under the prison behind the wall (world tiles, past the edge too): no woods, roads or rivers of the outside's drawn there. */
   private readonly under = (x: number, z: number) => !!this.prison?.covers(x, z);
 
@@ -100,6 +102,7 @@ export class HuntView {
     scenery(land, o, theme, run);
     const wet = water(land, o, theme);
     this.flow = land.flow ?? null;
+    this.water = land.water ?? null;
     woods(land, theme, run.covered, wet);
     const town = buildHouses(o, theme);
     this.group.add(town.group);
@@ -417,6 +420,7 @@ export class HuntView {
   // ---------------------------------------------------------------- every frame
   update(f: HuntFrame, dt: number, time: number, night: number, motion: boolean) {
     if (this.flow && motion) this.flow.value = time;
+    if (this.water) nightWater(this.water, night);
     // A faint glow at the player's feet after dark (their outline reads against the ground, in any clothes).
     if (!this.glow) {
       this.glowMat = new THREE.MeshBasicMaterial({

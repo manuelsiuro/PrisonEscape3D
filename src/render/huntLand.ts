@@ -10,7 +10,7 @@ import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { TEX } from './textures';
 import { sceneryTree } from './WorldView';
-import { bankParts, flowAlongRuns, flowingWater } from './River';
+import { Banks, flowAlongRuns, flowingWater } from './River';
 import { hash01, seeded } from './rand';
 
 /** How far the picture's roads, tracks and railway lines run on past its edge (tiles), and how far the woods go round past the world's. */
@@ -30,8 +30,9 @@ export interface Land {
   group: THREE.Group;
   m: THREE.Matrix4;
   under: (x: number, z: number) => boolean;
-  /** The forest's river running (2.36): its time, the view's to advance. */
+  /** The forest's river running (2.36): its time, the view's to advance; its water, dark by night. */
   flow?: { value: number };
+  water?: THREE.MeshStandardMaterial;
 }
 
 /**
@@ -397,8 +398,11 @@ function forestRiver(land: Land, o: OutsideWorld, deep: Array<[number, number]>,
   const bridge = (x: number, z: number) => inside(x, z) && kinds[z * MAP_W + x] === TILE.PIER;
   const isWet = (x: number, z: number) => water(x, z) || bridge(x, z);
   land.flow = { value: 0 };
-  land.group.add(flowingWater(deep, isWet, flowAlongRuns(isWet), land.flow, -0.008));
-  const parts: Part[] = [];
+  const surface = flowingWater(deep, isWet, flowAlongRuns(isWet), land.flow, -0.008);
+  land.water = surface.material as THREE.MeshStandardMaterial;
+  land.group.add(surface);
+  // (In squares the camera skips, no shadows: review of 2.36.)
+  const banks = new Banks();
   const seen = new Set<number>();
   for (const [x, z] of [...deep, ...ford])
     for (const [dx, dz] of [
@@ -413,17 +417,19 @@ function forestRiver(land: Land, o: OutsideWorld, deep: Array<[number, number]>,
       const k = key(lx, lz) * 4 + (dx > 0 ? 0 : dx < 0 ? 1 : dz > 0 ? 2 : 3);
       if (seen.has(k)) continue;
       seen.add(k);
-      bankParts(parts, lx, lz, -dx, -dz, k);
+      banks.add(lx, lz, -dx, -dz, k);
     }
   // The fords: a paler, stony bed under a skin of water, a line of stepping stones across.
   for (const [x, z] of ford) {
     const i = key(x, z);
     const across = isWet(x - 1, z) && isWet(x + 1, z) ? 'z' : 'x';
-    parts.push(box(0.96, 0.02, 0.96, 0x8a8a74, x + 0.5, -0.004, z + 0.5));
+    banks.push(x, z, box(0.96, 0.02, 0.96, 0x8a8a74, x + 0.5, -0.004, z + 0.5));
     for (let k = 0; k < 2; k++) {
       const t = 0.28 + k * 0.44 + (hash01(i, 20 + k) - 0.5) * 0.1;
       const r = 0.13 + hash01(i, 22 + k) * 0.05;
-      parts.push(
+      banks.push(
+        x,
+        z,
         paint(
           new THREE.DodecahedronGeometry(r, 0)
             .scale(1, 0.45, 1)
@@ -434,8 +440,6 @@ function forestRiver(land: Land, o: OutsideWorld, deep: Array<[number, number]>,
       );
     }
   }
-  if (!parts.length) return;
-  const banks = new THREE.Mesh(merge(parts), kitMaterial);
-  banks.castShadow = banks.receiveShadow = true;
-  land.group.add(banks);
+  const meshes = banks.meshes();
+  if (meshes.length) land.group.add(...meshes);
 }
