@@ -141,11 +141,8 @@ Huntmaster's horn at 06:00, the recall horn's call and the drag line's whip and 
 running with banks, stony fords with stepping stones, bramble thickets, mossy rocks, timber houses under shakes, log
 stacks, the sawmill's timber train. The select card's art (`.theme-forest .pc-scene`).
 
-**The finish** (owes): the prison select's sixth card and its stars (`ui/screens/prisons.ts`, `daily.ts` draw 5;
-`13-campaign.css` lays out 5); a How to play topic (`helpTopics.ts`,
-`prison: 'six-hunter'`) and its picture (`helpshot.ts`); the README's screenshot (the drawhash, perfprobe and
-hitchprobe scenes were there already; `perfbudget.json`'s six recorded by the look); a lesson or first-day hints for the horn and the drag line if wanted;
-the screens swept at the eight sizes in both languages.
+**The finish** (done, below): the sixth card and its stars, How to play's topic and picture, the README's screenshots,
+the first-day hints, the screens swept, a first day and an escape played in the browser.
 
 ## The finish as built
 
@@ -162,5 +159,20 @@ Claude's picks (the user's goal of 2026-11-07), also in `POLISH.md`'s row:
 - **The first day:** the pack fed by the quota said once (`toast.packFed`, the event's `pack`), with a hint the first
   time on the cap (`hint.kennels`); a trout said as a trout; the drag line and the horn explained the first time
   one is in hand; the smokehouse's job icon a fish; the "already fed" warning for a trout as for jerky.
+- **The Hunters by name:** a guard's title as the prison has it (`guardWord` in `ui/names.ts`: `<key>.<prison>` first):
+  "Hunter Garrow" ("Veneur Garrow") on the button, the roll call's call, the delivery's supervisor, the rat's panel.
+- **Pictures:** `public/help/hunters.webp` (`SHOTS.hunters`: the kennel hand at the trough on day 1, Larch watching,
+  the six hounds by their kennels, the river; at 1440×844, through a private shot sink); the README's
+  `map-six-hunter.webp` (the map viewer's "In game" photo cropped to the others' frame) and `prisons.webp` with six cards.
 - **French:** a name that comes with its article contracts in `t()` ("évadé des Six Veneurs", "aux Six Veneurs",
   "Direction les Six Veneurs"); the unlock line "Prison ouverte : {name}" (no agreement to get wrong).
+
+**Played in the browser** (2026-11-07, dev build, desktop 1280×720, the first day from the title with a fresh
+profile): roll call followed by the arrows (click-to-walk) and counted, "Hunter Garrow" on the button; breakfast's tray
+taken; the desk, another desk, crafting and the job board ticked off the guide; the kennels' quota done by the work
+arrows and the action key (the cap's hint and "The pack is fed from your hands" once, trust 10 each, $35); the
+afternoon and evening blocks on to 22:30 at ×8. An escape by hand: the stowaway on delivery day 1 (seed 62, a quick
+look), hidden in the supply truck with nobody looking, away at 14:31, a gold medal, then "Keep running" into the
+Hollowrun valley by keys. On a phone (412×915) the work period's HUD and line. What a person would trip on: at the feed
+bin and at a breakfast seat the arrows' last tile had an inmate in reach and the first press talked to him (every
+prison's rule, not changed here); free time has no arrows back to the desk the guide asks for (as everywhere).

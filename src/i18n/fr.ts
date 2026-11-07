@@ -3872,7 +3872,7 @@ export const fr: Partial<Strings> = {
   "help.delivery.steps": "Mets-toi à l’arrière (l’anneau vert) quand aucun gardien ne regarde.\nUtilise le bouton d’action pour monter : caché, personne ne te voit, mais l’emploi du temps continue sans toi.\nUn coup d’œil à 14:30 et tu pars avec ; une fouille complète te trouve, et c’est l’isolement.",
   "help.delivery.tip": "Si personne n’est là pour fouiller (assommé, attiré ailleurs par un bruit, soudoyé pour regarder ailleurs), il n’y a pas de fouille du tout.",
   "help.delivery.warn": "Pendant un confinement, rien ne sort sans fouille, et des dégâts trouvés pendant que tu te caches en déclenchent un.",
-  "help.delivery.more": "Chaque prison sauf Shankton en a un : un camion de ravitaillement, celui de la Croix-Rouge, un camion de primeurs, l’hélicoptère d’Irongate, le camion du fournisseur des Six Veneurs.\nTant qu’il est là, il bloque le passage et la vue, et son surveillant en fait le tour.\nLa minutie de la fouille dépend de la prison et du jour ; les rumeurs le savent.\nUn gardien strict regarde toujours bien, et tout le monde pendant deux semaines après qu’un passager clandestin a été pris.",
+  "help.delivery.more": "Chaque prison sauf Shankton en a un : un camion de ravitaillement (à Center Perks et aux Six Veneurs), celui de la Croix-Rouge, un camion de primeurs, l’hélicoptère d’Irongate.\nTant qu’il est là, il bloque le passage et la vue, et son surveillant en fait le tour.\nLa minutie de la fouille dépend de la prison et du jour ; les rumeurs le savent.\nUn gardien strict regarde toujours bien, et tout le monde pendant deux semaines après qu’un passager clandestin a été pris.",
   "help.bluff.hook": "Une fausse carte au changement d’équipe",
   "help.bluff.sum": "Au changement d’équipe du soir, le nouveau gardien du portail ne connaît encore personne : montre une fausse carte et sors.",
   "help.bluff.tl": "19:50|Le portail change d’équipe\n20:10|Le changement est fini",
@@ -5100,5 +5100,11 @@ export const fr: Partial<Strings> = {
   "help.hunters.list2": "Un leurre à l’anis, lancé, emporte ta piste : les chiens de service à portée y traînent leurs Veneurs.\nLe savon au goudron efface ton odeur, deux fois.\nUne cape de camouflage, portée, ne laisse aucune piste à découvert.\nLe maître d’équipage porte le cor de rappel : sonné, chaque chien rentre au chenil pour une heure, et les Veneurs alentour l’entendent.",
   "help.hunters.warn": "La rivière inonde tout tunnel creusé dessous, et du granit s’étend sous l’angle nord-ouest.\nLe mur de pierres sèches ne s’entame pas, et la clôture à cerfs est électrifiée.",
   "help.hunters.tip": "Dans le brouillard, épais le matin et dès 19:00, un Veneur dehors ne voit qu’à 4 cases.",
-  "help.hunters.more": "Pas de mutinerie ici : six Veneurs et leurs chiens, c’est trop pour les mettre tous à terre.\nSept façons de sortir : par la rivière, sous le mur, par-dessus au gré du vent, dans le camion du fournisseur, par le portail au culot, sur faux papiers, ou en liberté conditionnelle.\nLes chiens travaillent dès le jour 2, comme partout ; trois d’entre eux travaillent aussi la nuit.\nPassé le mur, la vallée de la Hollowrun : les gués effacent ta piste, et les Six te poursuivent avec leurs chiens.",
+  "help.hunters.more": "Pas de mutinerie ici : six Veneurs et leurs chiens, c’est trop pour les mettre tous à terre.\nSept façons de sortir : par la rivière, sous le mur, par-dessus au gré du vent, dans le camion de ravitaillement, par le portail au culot, sur faux papiers, ou en liberté conditionnelle.\nLes chiens travaillent dès le jour 2, comme partout ; trois d’entre eux travaillent aussi la nuit.\nPassé le mur, la vallée de la Hollowrun : les gués effacent ta piste, et les Six te poursuivent avec leurs chiens.",
+  // 2.36: the Six Hunter's guards are Hunters (ui/names.ts guardWord: `<key>.<prison>` first).
+  "guard.title.six-hunter": "Veneur {name}",
+  "guard.addressed.six-hunter": "Veneur {name}",
+  "guard.subject.six-hunter": "Le Veneur {name}",
+  "guard.the.six-hunter": "le Veneur {name}",
+  "combat.guardNamed.six-hunter": "Veneur {name} · clé {key}",
 };

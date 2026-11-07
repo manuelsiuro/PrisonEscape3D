@@ -40,6 +40,7 @@ import { cardUp, RACE_ENTER, raceCard } from '../../src/sim/systems/races';
 import { tonight, turnFrom } from '../../src/sim/systems/talent';
 import { pointAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
+import { SIX_HUNTER } from '../../src/content/prisons/six-hunter';
 import { HEARINGS } from '../../src/content/parole';
 import { HOLIDAY } from '../../src/content/holidays';
 import { prisonDay } from '../../src/sim/systems/calendar';
@@ -778,6 +779,22 @@ export const SHOTS: Record<string, Shot> = {
   shell: { prison: 'shankton', route: 'rooftop', when: (_s, k, n) => k >= n - 60, zoom: 1.5, dz: 2.5, light: 1050 },
   mines: { prison: 'san-pancho', route: 'gate', when: (_s, k, n) => k >= n - 40, zoom: 1.3, light: 1050 },
   island: { prison: 'irongate', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 0.98, dx: -2 },
+  // 2.36: the kennel hand at the Six Hunter on day 1, a bowl of feed at the trough, the six hounds lying by their
+  // kennels in the run beyond (they work from day 2), each in its own coat, Larch watching, the river to the east.
+  // Taken at 1440×844 (ratio 1).
+  hunters: {
+    make: () => {
+      const bot = new Bot(SIX_HUNTER, 7);
+      bot.routineUntil(1, 12 * 60 + 5);
+      const room = jobRooms(bot.sim.world)[0];
+      useProp(bot, room.take);
+      useProp(bot, room.machines[1]);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 1,
+    dz: 2.4,
+  },
 };
 
 const view = () => (window as unknown as { __view: View }).__view;

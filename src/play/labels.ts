@@ -33,7 +33,7 @@ import { trackCheck } from '../sim/systems/races';
 import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
 import { planOf } from '../sim/systems/calendar';
-import { inmateName } from '../ui/names';
+import { guardWord, inmateName } from '../ui/names';
 
 /**
  * The words on the buttons and cards: who someone is, what a container is called, what the
@@ -159,7 +159,7 @@ function personName(sim: Sim, id: number): string {
   if (!isGuard(s, id)) return t('combat.inmateNamed', { name: inmateName(sim, id), n: s.inmates[id]?.cell ?? 0 });
   const d = sim.prison.guards[id - s.inmates.length];
   const key = t(`keyColor.${d.key}` as Key);
-  return d.name ? t('combat.guardNamed', { name: d.name, key }) : t('combat.guard', { key });
+  return d.name ? guardWord(sim, 'combat.guardNamed', { name: d.name, key }) : t('combat.guard', { key });
 }
 
 /** What a container is called ("your desk", "bookshelf", someone's pockets). */
@@ -310,7 +310,7 @@ export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionW
       // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
       const guard = who >= n ? sim.prison.guards[who - n] : undefined;
       return say(`person:${who}:${mail}:${lang}`, mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk', () =>
-        !guard ? inmateName(sim, who) : guard.name ? t('guard.addressed', { name: guard.name }) : t('guard.addressedNameless'),
+        !guard ? inmateName(sim, who) : guard.name ? guardWord(sim, 'guard.addressed', { name: guard.name }) : t('guard.addressedNameless'),
       );
     }
     case 'fixture':

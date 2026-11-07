@@ -86,7 +86,10 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
   <tr>
     <td width="33%" align="center"><img src="docs/screenshots/map-san-pancho.webp" alt="San Pancho from above"><br><b>San Pancho</b><br>maximum security<br><em>A desert compound: a minefield between two walls and snipers who never sleep.</em></td>
     <td width="33%" align="center"><img src="docs/screenshots/map-irongate.webp" alt="HMP Irongate from above"><br><b>HMP Irongate</b><br>supermax<br><em>A fortress on a rock in the sea: tunnels flood, and the only ways off are by sea or by air.</em></td>
-    <td width="33%" align="center"><img src="docs/screenshots/prisons.webp" alt="Choosing a prison"><br><b>Choose a prison</b><br><em>With the ways out you've found and your best time in each.</em></td>
+    <td width="33%" align="center"><img src="docs/screenshots/map-six-hunter.webp" alt="The Six Hunter from above"><br><b>The Six Hunter</b><br>hunting grounds<br><em>A hunting lodge in a pine valley: six Hunters with their hounds, a river that floods tunnels, a fieldstone wall.</em></td>
+  </tr>
+  <tr>
+    <td colspan="3" align="center"><img src="docs/screenshots/prisons.webp" alt="Choosing a prison" width="720"><br><b>Choose a prison</b><br><em>With the ways out you've found and your best time in each.</em></td>
   </tr>
 </table>
 
