@@ -666,12 +666,12 @@ const human = (react: number, old = false) => {
   const prev = new RunRecorder(was230, { seed: 24, game: '2.30.0' });
   for (let k = 0; k < 4800; k++) prev.step(0);
   check(!!replayLog(prev.toLog(), CENTER_PERKS)?.ok, 'a 2.30 log replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.35.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.35.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.35.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.36.0' });
   for (let k = 0; k < 4800; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.35.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.36.1' }).toLog().seed === 24, 'and is carried on');
   // A save with a book in hand comes back with it; a mid-page one too.
   const s = reader();
   s.read(0);
@@ -681,7 +681,7 @@ const human = (react: number, old = false) => {
   check(back.state.book === 1 && back.state.readFrom === s.st.readFrom && back.state.train === s.st.train, 'a save mid-page');
   // A save from before 2.34 mid-page: its place was at the old pace, so the book opens at its first page again; one from now keeps its place.
   s.set(() => s.st.repBeat >= 8);
-  const file: SaveFile = saveFileOf(s.sim, 0, '2.35.0');
+  const file: SaveFile = saveFileOf(s.sim, 0, '2.36.0');
   const kept = loadSave(file)!;
   check(kept.state.readFrom === s.st.readFrom && kept.state.repBeat === s.st.repBeat, 'a save from 2.34 mid-page keeps its place');
   const oldSnap = JSON.parse(JSON.stringify(file.snap));

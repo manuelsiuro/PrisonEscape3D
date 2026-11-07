@@ -90,13 +90,13 @@ export type SimEvent =
   /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
   | { type: 'caught'; solitary: boolean }
   /** Into solitary (with how many contraband items were taken) and out again. */
-  | { type: 'solitary'; on: boolean; taken: number; plot?: boolean }
-  | { type: 'infirmary'; taken: number; plot?: boolean }
+  | { type: 'solitary'; on: boolean; taken: number; plot?: boolean; items?: number[] }
+  | { type: 'infirmary'; taken: number; plot?: boolean; items?: number[] }
   /** A press on the potato; `done` when a whole potato is peeled (10 minutes off). */
   | { type: 'peel'; done: boolean }
   /** 08:00: the cells to be searched this morning; a guard has searched one. */
   | { type: 'shakedown'; cells: number[] }
-  | { type: 'searched'; cell: number; taken: number }
+  | { type: 'searched'; cell: number; taken: number; items?: number[] }
   /** The night bed check begins, and how it went at the player's cell. */
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean; awake?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
@@ -109,6 +109,8 @@ export type SimEvent =
     }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
+  /** 2.36: a tool or a plastic key down to its last few uses (WORN_WARN), as it gets there. */
+  | { type: 'worn'; item: number; left: number }
   /** A live electric fence: knocked out (GDD §9.1). */
   | { type: 'shocked' }
   /** A tunnel roof came down on the player (GDD §9.2). */

@@ -4,6 +4,7 @@ import { buzz } from '../app/haptics';
 import { hostile } from '../sim/systems/social';
 import { ROUTINE, type RoutineId } from '../content/routine';
 import { type Key, listOf, t } from '../i18n';
+import { itemsText } from '../ui/itemFacts';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
 import { traysHere } from '../sim/systems/canteen';
@@ -44,6 +45,10 @@ function arrivedAt(sim: Sim, id: RoutineId) {
 }
 
 /** The day and the guards (out of announce.ts, v2.34.2): the routine's bells, roll call and the count, lockdowns, being spotted, caught and carried off, searches, sleep and the bed dummy. */
+/** A banner's line for what a capture took: by name when the sim says (2.36), else how many. */
+const takenText = (items: readonly number[] | undefined, n: number) =>
+  items?.length ? t('banner.takenItems', { items: itemsText(items) }) : t('banner.taken', { n });
+
 export function announceDay(e: SimEvent, sim: Sim) {
   switch (e.type) {
     case 'routine': {
@@ -165,7 +170,7 @@ export function announceDay(e: SimEvent, sim: Sim) {
     case 'solitary':
       if (e.on) {
         sound.lockClank();
-        banner.show(t('banner.solitary'), e.taken ? t('banner.taken', { n: e.taken }) : t('banner.nothingTaken'), 'alarm', 4500);
+        banner.show(t('banner.solitary'), e.taken ? takenText(e.items, e.taken) : t('banner.nothingTaken'), 'alarm', 4500);
       } else {
         sound.chime();
         banner.toast(t('toast.released'), 'good');
@@ -173,7 +178,7 @@ export function announceDay(e: SimEvent, sim: Sim) {
       break;
     case 'infirmary':
       sound.chime();
-      banner.show(t('banner.infirmary'), e.taken ? t('banner.taken', { n: e.taken }) : t('banner.nothingTaken'), 'routine', 4500);
+      banner.show(t('banner.infirmary'), e.taken ? takenText(e.items, e.taken) : t('banner.nothingTaken'), 'routine', 4500);
       break;
     case 'peel':
       seenInteract();
@@ -193,7 +198,12 @@ export function announceDay(e: SimEvent, sim: Sim) {
       if (e.cell !== 1) break;
       if (e.taken) {
         sound.sting();
-        banner.toast(t('toast.searchedYou', { n: e.taken }), 'bad', 4500);
+        // (2.36: what they took, by name.)
+        banner.toast(
+          e.items?.length ? t('toast.searchedItems', { items: itemsText(e.items) }) : t('toast.searchedYou', { n: e.taken }),
+          'bad',
+          5500,
+        );
       } else banner.toast(t('toast.searchedClean'), 'good');
       break;
     case 'bedCheck':

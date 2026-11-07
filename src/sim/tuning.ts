@@ -69,6 +69,8 @@ export const INMATE_REACTION = 6 * STEPS_PER_SECOND;
 // ---------------------------------------------------------------- layers and destruction (P4, GDD §9)
 /** A tool strike at most this often (a swing takes a moment; holding the button repeats it). */
 export const STRIKE_STEPS = 9;
+/** 2.36: a tool (or a plastic key) with this many uses left is said to be nearly worn out, once, as it gets there. */
+export const WORN_WARN = 2;
 /** Hit points: brick walls and chain-link fences 100, electric fences 120, vent grates 60 (GDD §9.1). */
 export const WALL_HP = 100;
 export const FENCE_HP = 100;

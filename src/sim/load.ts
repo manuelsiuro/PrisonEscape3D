@@ -39,7 +39,7 @@ import { freshParole, hearingOk, SCORE_MAX, SCORE_MIN } from './systems/parole';
 import { HOLIDAYS } from '../content/holidays';
 import { GUARD_STR, OPINION_START, START_STR, UNIT, MEAL_STEPS, MEAL_STEPS_224 } from './tuning';
 import { containersOf } from './world/containers';
-import { MAP_H, MAP_W, type World } from './world/World';
+import { LAYER, MAP_H, MAP_W, type World } from './world/World';
 import { freshState, type Call, type SimState } from './state';
 
 /** An array of n whole numbers (a save's field checked before it's trusted). */
@@ -462,6 +462,12 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // 2.34: the marker not stopped (it stops again at once if it's on a key word).
   if (!Number.isInteger(s.readWait) || s.readWait < 0) s.readWait = 0;
   if (!Number.isInteger(s.blockAt) || s.blockAt > s.step) s.blockAt = -1000;
+  // 2.36: absent, or a layer off the ground floor (else on it, as every strike counted then).
+  if (
+    s.struckLayer !== undefined &&
+    (!Number.isInteger(s.struckLayer) || s.struckLayer < LAYER.UNDER || s.struckLayer > LAYER.ROOF || s.struckLayer === LAYER.GROUND)
+  )
+    delete s.struckLayer;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];
