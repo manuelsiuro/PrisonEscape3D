@@ -53,7 +53,7 @@ import { closeBox, itemOf, slot, usesOf } from './items';
 import { makeNoise } from './noise';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
-import { addHeat } from './watch';
+import { addHeat, strikeLayer } from './watch';
 import { lookingAway } from './ways';
 import { energyCost } from './weather';
 import { keepCheat } from './cards';
@@ -393,6 +393,7 @@ function setPin(sim: SimContext) {
   const was = markerAt(k - 1);
   const hit = (at >= spot[0] && at <= spot[1]) || (was >= spot[0] && was <= spot[1]);
   s.struckAt = s.step;
+  strikeLayer(s);
   it.rev++;
   if (hit) {
     s.pick[1] = set + 1;

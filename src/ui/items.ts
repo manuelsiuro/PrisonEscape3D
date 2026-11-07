@@ -2,7 +2,8 @@ import { itemDef, ITEMS } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { EXT, OP, SLOT } from '../sim/command';
 import { ingredientOptions } from '../sim/systems/recipes';
-import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
+import { benchCheck, canCraft, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
+import { itemFacts } from './itemFacts';
 import { ALARM_CLOCK, HOLLOW_BOOK } from '../sim/systems/structure';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
 import { itemIcons } from '../render/itemIcons';
@@ -395,6 +396,17 @@ export class ItemsUI {
       this.uiRev++;
       return;
     }
+    // 2.36: a recipe made straight from the handbook (everything for it carried): one tap, from the slots it would lay out.
+    const now = target.closest<HTMLElement>('[data-make-recipe]');
+    if (now) {
+      this.click();
+      const k = Number(now.dataset.makeRecipe);
+      const used = ingredientSlots(v.items, k);
+      if (used && canCraft(v.items, k) === 'ok') this.send(OP.CRAFT, maskOf(used), k + 1);
+      else this.toast(t('craft.nothing'));
+      this.uiRev++;
+      return;
+    }
     const make = target.closest<HTMLElement>('[data-make]');
     if (make) {
       this.click();
@@ -591,7 +603,17 @@ export class ItemsUI {
       const have = !!ingredientSlots(it, k);
       // Each ingredient as the player knows it (the toothbrush they carried, not the comb).
       const ings = rec.ingredients.map((_, j) => `<img src="${icons[seen(k, j) || ingredientOptions(k, j)[0]]}" alt="">`).join('');
-      return `<button class="book-row${have ? '' : ' missing'}" data-recipe="${k}"><img src="${icons[res]}" alt=""><span><b>${itemName(res)}${tip ? `<i class="book-tag">${t('craft.tip')}</i>` : ''}</b><em>${ings}</em></span><small>${t('craft.int', { n: rec.int })}</small></button>`;
+      // (2.36: everything carried and Intellect enough: a Craft button on the row, one tap.)
+      const ready = have && canCraft(it, k) === 'ok';
+      const make = ready
+        ? `<button class="big-btn primary small book-make" data-make-recipe="${k}" aria-label="${t('craft.make', { item: itemName(res) })}">${icon('hammer', 16)}${t('craft.open')}</button>`
+        : '';
+      return `<div class="book-line"><button class="book-row${have ? '' : ' missing'}" data-recipe="${k}"><img src="${icons[res]}" alt=""><span><b>${itemName(res)}${tip ? `<i class="book-tag">${t('craft.tip')}</i>` : ''}</b><em>${ings}</em></span>${ready ? '' : `<small>${t('craft.int', { n: rec.int })}</small>`}</button>${make}</div>`;
+    };
+    // (2.36: what can be made now first, each list in its own order.)
+    const readyFirst = (list: readonly number[]) => {
+      const ok = (k: number) => !!ingredientSlots(it, k) && canCraft(it, k) === 'ok';
+      return [...list.filter(ok), ...list.filter((k) => !ok(k))];
     };
     const tips = v.tips.filter((k) => !it.known.includes(k));
     const mysteries = RECIPES.map((rec, k) => ({ rec, k, n: rec.ingredients.filter((_, j) => seen(k, j)).length }))
@@ -607,8 +629,8 @@ export class ItemsUI {
       });
     const locked = RECIPES.filter((rec, k) => rec.int > it.int && !it.known.includes(k) && !tips.includes(k) && v.usable(k)).length;
     return [
-      ...it.known.map((k) => row(k, false)),
-      ...tips.map((k) => row(k, true)),
+      ...readyFirst(it.known).map((k) => row(k, false)),
+      ...readyFirst(tips).map((k) => row(k, true)),
       mysteries.length
         ? `<div class="box-label book-head">${icon('help', 14)}<span>${t('craft.mysteries')}</span><em>${t('craft.mysteriesNote')}</em></div>`
         : '',
@@ -672,7 +694,11 @@ export class ItemsUI {
       if (addr === it.hand) buttons.push(`<button data-do="throw" data-addr="${addr}">${icon('toss', 14)}${t('items.throw')}</button>`);
       buttons.push(`<button data-do="drop" data-addr="${addr}">${t('items.drop')}</button>`);
     }
-    this.info.innerHTML = `<img src="${itemIcons()[n]}" alt=""><div><b>${itemName(n)}</b><span>${tags}</span></div>${buttons.join('')}`;
+    // (2.36: what it does, from its data.)
+    const facts = itemFacts(n)
+      .map((f) => `<i>${esc(f)}</i>`)
+      .join('');
+    this.info.innerHTML = `<img src="${itemIcons()[n]}" alt=""><div><b>${itemName(n)}</b><span>${tags}</span>${facts ? `<p class="item-facts">${facts}</p>` : ''}</div>${buttons.join('')}`;
     // A clock's line counts down in place (see tickClocks).
     this.cardClock = this.info.querySelector('em.clock');
     this.cardAddr = addr;

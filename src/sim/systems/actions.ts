@@ -29,6 +29,7 @@ import {
   STRIKE_STEPS,
   TOILET_CLOG_STEPS,
   TOILET_LOADS,
+  WORN_WARN,
 } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE } from '../world/tiles';
@@ -86,7 +87,7 @@ import { COOLER } from '../../content/cooler';
 import { menuOp } from './menu';
 import { coolerOp } from './cooler';
 import { onReadChair, readOn, rep, stopTraining, study, useMachine } from './training';
-import { addHeat, setTile } from './watch';
+import { addHeat, setTile, strikeLayer } from './watch';
 import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
 import { placeOrder } from './smuggling';
@@ -471,34 +472,14 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
     return;
   }
   const key = placeKey(target.layer, target.tile);
-  // (An empty hand has no tool: nothing to strike with.)
-  const tool0 = held ? itemDef(held).tool : undefined;
-  // The last blow on the ground floor with full pockets would leave the chunk or the dirt at
-  // the player's feet, in plain view: not until there's room.
-  const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
-  // (P23: a digger in the crew at the player's side, or at the top of the shaft, speeds it up and takes what it yields.)
-  const help = digHelp(sim, target.action, target.layer, helper);
-  const dmg = tool0 ? Math.floor((tool0.damage * help) / 4) : 0;
-  const digger = helper[0];
-  const full = yields && digger < 0 && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + dmg >= target.hp && !hasRoom(it);
-  const cost = tool0 ? energyCost(sim, tool0.energy) : 0;
-  const why =
-    target.hp === 0
-      ? target.layer === LAYER.UNDER
-        ? 'boulder'
-        : 'reinforced'
-      : !target.fits || !tool0
-        ? 'tool'
-        : s.energy < cost
-          ? 'tired'
-          : full
-            ? 'full'
-            : null;
+  const plan = planStrike(sim, target, held);
+  const { why, dmg, cost, digger } = plan;
   if (why) {
     sim.events.push({ type: 'cantStrike', why, action: target.action });
     return;
   }
   s.struckAt = s.step;
+  strikeLayer(s);
   s.energy -= cost;
   it.rev++;
   // Face what is struck (the grate overhead keeps the heading).
@@ -508,12 +489,15 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
     if (dx || dz) p.facing = nearestDir(dx, dz);
   }
   p.moving = false;
-  // The tool wears.
+  // The tool wears (2.36: told as it nears its end, so it never breaks unannounced).
   const left = usesOf(it.inv[it.hand]) - 1;
   if (left <= 0) {
     it.inv[it.hand] = 0;
     sim.events.push({ type: 'broke', item: held });
-  } else it.inv[it.hand] = slot(held, left);
+  } else {
+    it.inv[it.hand] = slot(held, left);
+    if (left === WORN_WARN) sim.events.push({ type: 'worn', item: held, left });
+  }
   // A live fence: knocked flat (GDD §9.1).
   if (target.action === 'cut' && w.ground.kind[target.tile] === TILE.ELECTRIC && powered(w, s, 'fence')) {
     shock(sim);
@@ -591,6 +575,55 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
 
 /** The digger helping (P23) takes the dirt or the rubble off the player's hands; with nobody helping it's theirs (at their feet without room). */
 const helper = [-1];
+
+/** Why a strike can't land now (`cantStrike`'s reasons for a strike). */
+export type StrikeWhy = 'boulder' | 'reinforced' | 'tool' | 'tired' | 'full';
+
+/** What a strike at a target would do now: why it's refused (null: it lands), the damage, the energy, the crew's digger helping (-1). */
+export interface StrikePlan {
+  why: StrikeWhy | null;
+  dmg: number;
+  cost: number;
+  digger: number;
+}
+const planned: StrikePlan = { why: null, dmg: 0, cost: 0, digger: -1 };
+
+/**
+ * A strike weighed up (GDD §9, §7.2), the one answer the sim and the tool button share (2.36: the
+ * button worked it out apart, and greyed the last blow a crew digger would have taken off full
+ * pockets): reinforced concrete or a boulder, the wrong tool or none, too tired, or the last blow on
+ * the ground floor with full pockets (the chunk or the dirt would land at the player's feet, in
+ * plain view: not until there's room). Refilled in place: read it before the next call.
+ */
+export function planStrike(sim: SimContext, target: ToolTarget, held: number): StrikePlan {
+  const s = sim.state;
+  // (An empty hand has no tool: nothing to strike with.)
+  const tool0 = held ? itemDef(held).tool : undefined;
+  const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
+  // (P23: a digger in the crew at the player's side, or at the top of the shaft, speeds it up and takes what it yields.)
+  const help = digHelp(sim, target.action, target.layer, helper);
+  const dmg = tool0 ? Math.floor((tool0.damage * help) / 4) : 0;
+  const digger = helper[0];
+  const worn = s.wear[placeKey(target.layer, target.tile)] ?? 0;
+  const full = yields && digger < 0 && s.layer === LAYER.GROUND && !!tool0 && worn + dmg >= target.hp && !hasRoom(s.items);
+  const cost = tool0 ? energyCost(sim, tool0.energy) : 0;
+  planned.why =
+    target.hp === 0
+      ? target.layer === LAYER.UNDER
+        ? 'boulder'
+        : 'reinforced'
+      : !target.fits || !tool0
+        ? 'tool'
+        : s.energy < cost
+          ? 'tired'
+          : full
+            ? 'full'
+            : null;
+  planned.dmg = dmg;
+  planned.cost = cost;
+  planned.digger = digger;
+  return planned;
+}
 function yieldTo(sim: SimContext, digger: number, item: number) {
   const s = sim.state;
   if (digger >= 0) sim.events.push({ type: 'crew', what: 'dirt', who: digger, item });
@@ -621,6 +654,7 @@ function sharpen(sim: SimContext, target: ToolTarget, held: number) {
   const v = it.inv[it.hand];
   const item = itemOf(v);
   s.struckAt = s.step;
+  strikeLayer(s);
   const noise = strikeNoise(s.layer, target, held);
   if (noise) makeNoise(sim, 'strike', noise.layer, noise.tile, noise.reach);
   p.moving = false;
@@ -696,6 +730,7 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
       if (k >= 0) {
         s.cams[k] = s.step + CAMERA_BLIND_STEPS;
         s.struckAt = s.step;
+        strikeLayer(s);
         sim.events.push({ type: 'camera', index: k, blind: true });
       }
       break;

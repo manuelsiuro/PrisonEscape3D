@@ -13,6 +13,7 @@ import { DOING } from './inmates';
 import { guardKit, HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
 import { type Body, tileOfBody } from './movement';
 import { addHeat } from './watch';
+import { WORN_WARN } from '../tuning';
 
 /** Bit k: the player carries a key (real or plastic) for door color k (keys work from the hotbar). */
 export function keysCarried(sim: SimContext): number {
@@ -64,6 +65,8 @@ function wearKey(sim: SimContext, color: number) {
   it.inv[plastic] = left > 0 ? slot(item, left) : 0;
   it.rev++;
   if (left <= 0) sim.events.push({ type: 'broke', item });
+  // (2.36: told as it nears its end.)
+  else if (left === WORN_WARN) sim.events.push({ type: 'worn', item, left });
 }
 
 /** The guards asleep (in bed, or dozing at a nap stop) and not out cold, a bit each (P20: those who wake without their key). */

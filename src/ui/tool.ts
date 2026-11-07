@@ -30,7 +30,13 @@ export interface ToolView {
   confirm?: boolean;
   /** The first press made, waiting for the second (the button says "Drink it?" and glows). */
   armed?: boolean;
+  /** 2.36, a strike: the tool's uses left (null: not a tool's strike), and whether they're too few to get through what's left of it. */
+  uses?: number | null;
+  short?: boolean;
 }
+
+/** 2.36: a tool's uses left show on its button from this many down (or whenever they're too few to get through). */
+const USES_SHOWN = 5;
 
 /** Dig up, in a tunnel: whether the tool in hand digs, how far the floor overhead has given way, and a guard in earshot. */
 export interface UpView {
@@ -202,20 +208,32 @@ export class ToolControls {
     document.body.classList.toggle('tool-up', on);
     if (!on) this.release();
     if (on && v) {
-      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}|${!!v.armed}|${textStamp()}`;
+      // (2.36: a tool's uses left, once few, or too few to get through: a count on the button, words on the prompt.)
+      const uses = v.uses !== null && v.uses !== undefined && (v.short || v.uses <= USES_SHOWN) ? v.uses : -1;
+      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}|${!!v.armed}|${uses}|${!!v.short}|${textStamp()}`;
       if (key !== this.shown) {
         this.shown = key;
         // Within a guard's earshot (P14): an ear says so, on the button or the prompt.
         const ear = v.heard ? `<i class="tool-ear" title="${t('tool.heard')}">${icon('ear', TOUCH ? 13 : 14)}</i>` : '';
+        const usesText = uses < 0 ? '' : t(v.short ? 'tool.usesShort' : uses === 1 ? 'tool.useLeft' : 'tool.usesLeft', { n: uses });
+        const worn =
+          uses < 0
+            ? ''
+            : TOUCH
+              ? `<i class="tool-uses${v.short ? ' short' : ''}" title="${usesText}">${uses}</i>`
+              : `<em class="tool-uses${v.short ? ' short' : ''}">${usesText}</em>`;
         if (TOUCH) {
-          this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>${ear}${v.caption && v.what ? '<b class="tool-what"></b>' : ''}`;
+          this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>${ear}${worn}${v.caption && v.what ? '<b class="tool-what"></b>' : ''}`;
           if (v.caption && v.what) this.btn.querySelector('b')!.textContent = v.what;
           // (A treat for a dog, P19: the dog's name says it all on the round button.)
           this.btn.querySelector('span')!.textContent = (v.tossTo ?? -1) >= 0 ? v.what : v.verb;
           this.ring = this.btn.querySelector('.tool-ring');
-          this.btn.setAttribute('aria-label', `${v.verb} ${v.what}${v.heard ? `. ${t('tool.heard')}` : ''}`);
+          this.btn.setAttribute(
+            'aria-label',
+            `${v.verb} ${v.what}${v.heard ? `. ${t('tool.heard')}` : ''}${usesText ? `. ${usesText}` : ''}`,
+          );
         } else {
-          this.prompt.innerHTML = `<kbd class="wide">${keyLabel('Space')}</kbd><span></span><b></b>${ear}${v.progress === null ? '' : '<i class="tool-bar"><i></i></i>'}`;
+          this.prompt.innerHTML = `<kbd class="wide">${keyLabel('Space')}</kbd><span></span><b></b>${ear}${v.progress === null ? '' : '<i class="tool-bar"><i></i></i>'}${worn}`;
           this.prompt.querySelector('span')!.textContent = v.verb;
           this.prompt.querySelector('b')!.textContent = v.what;
           this.bar = this.prompt.querySelector('.tool-bar i');
