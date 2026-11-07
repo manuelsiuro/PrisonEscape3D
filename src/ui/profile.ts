@@ -5,7 +5,8 @@ import { ROUTINE } from '../content/routine';
 import { dogDef, dogsFrom } from '../sim/systems/k9';
 import { prisonDay } from '../sim/systems/clock';
 import { ATTR_MAX, ATTR_MIN, ATTR_START, TRUST_FRIEND } from '../sim/tuning';
-import { FAVOR, FAVOR_STATE, jobRooms } from '../sim/systems/economy';
+import { FAVOR, FAVOR_STATE, fetchFavor, jobRooms } from '../sim/systems/economy';
+import { favorSlot } from '../sim/systems/gangs';
 import { ATTRS, type Sim } from '../sim/Sim';
 import { t, textStamp, type Key } from '../i18n';
 import { esc, h } from './dom';
@@ -101,7 +102,8 @@ export class ProfilePanel {
   private newsKeys(sim: Sim): string[] {
     const s = sim.state;
     const keys = this.notebook().map((r) => `r:${r.text}`);
-    for (const f of s.favors) if (f.state !== FAVOR_STATE.OFFERED) keys.push(`f:${f.by}:${f.kind}:${f.state}`);
+    for (const f of s.favors)
+      if (f.state !== FAVOR_STATE.OFFERED) keys.push(`f:${f.by}:${f.kind}:${f.state}:${favorSlot(s.items.inv, f) >= 0 ? 1 : 0}`);
     if (sim.playerJob >= 0) keys.push(`j:${sim.playerJob}`);
     const day = this.day();
     if (day?.tomorrow) keys.push(`w:${day.day}`);
@@ -141,7 +143,7 @@ export class ProfilePanel {
       s.quota,
       s.paid,
       s.followers.join(','),
-      favors.map((f) => `${f.by}:${f.state}`).join(','),
+      favors.map((f) => `${f.by}:${f.state}:${favorSlot(s.items.inv, f) >= 0}`).join(','),
       sim.today,
       textStamp(),
       PLAYER.name,
@@ -229,12 +231,14 @@ export class ProfilePanel {
     const favorList = favors.length
       ? `<div class="file-list">${favors
           .map((f) => {
-            const ready = f.state === FAVOR_STATE.DONE;
-            const bring = f.kind === FAVOR.SCAVENGE || f.kind === FAVOR.RETRIEVE;
+            const init = f.kind === FAVOR.INITIATION;
+            const bring = fetchFavor(f.kind);
+            const carrying = f.item ? favorSlot(s.items.inv, f) >= 0 : false;
+            const ready = f.state === FAVOR_STATE.DONE || (bring && f.state === FAVOR_STATE.TAKEN && carrying);
             return fileRow('chat', '#3fb07a', esc(inmateName(sim, f.by)), esc(favorText(sim, f)), {
               quote: true,
-              tag: `$${f.reward}`,
-              tagCls: 'cash',
+              tag: init ? `${icon('users', 12)}${esc(t('talk.gang.initiation'))}` : `$${f.reward}`,
+              tagCls: init ? '' : 'cash',
               state: ready ? t('profile.favorReady') : bring ? t('talk.bringIt') : t('talk.underWay'),
               stateCls: ready ? 'ok' : '',
               cls: ready ? 'ready' : '',

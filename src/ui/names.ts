@@ -16,7 +16,12 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
   const kind = FAVOR_KINDS[f.kind];
   // Mid-sentence, the item's name in lower case ("stole my magazine").
   const item = f.item ? itemName(f.item) : '';
-  return t(`favor.${kind}` as Key, { item: lowerFirst(item), name: f.target >= 0 ? inmateName(sim, f.target) : '' });
+  const target = f.target >= 0 ? sim.state.inmates[f.target] : undefined;
+  return t(`favor.${kind}` as Key, {
+    item: lowerFirst(item),
+    name: f.target >= 0 ? inmateName(sim, f.target) : '',
+    cell: target?.cell ?? 0,
+  });
 }
 
 /** A gang's name (2.36): "the Kitchen Crew" as a title, by its place in the prison's gangs. */

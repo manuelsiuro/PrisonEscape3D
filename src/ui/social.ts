@@ -8,9 +8,9 @@ import { lookAwayPrice, lookingAway, paperPrice } from '../sim/systems/ways';
 import { STAPLES } from '../content/long';
 import { saleOf, stapleSlot } from '../sim/systems/pantry';
 import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_STATE, fetchFavor, giftOpinion, OPINION_LADDER } from '../sim/systems/economy';
-import { askOf, favorSlot, gangOf, memberDeal } from '../sim/systems/gangs';
+import { askOf, favorSlot, gangOf, isTribute, memberDeal } from '../sim/systems/gangs';
 import { gangChip, gangSection, gangView } from './gangs';
-import { HOTBAR, itemOf } from '../sim/systems/items';
+import { HOTBAR, hotbarSlotOf, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
 import { nextTip } from '../sim/systems/recipes';
 import {
@@ -258,14 +258,16 @@ export class TalkPanel {
     let favorHtml = '';
     if (favor) {
       const carrying = favor.item ? favorSlot(inv, favor) >= 0 : false;
+      const wrongTribute =
+        favor.kind === FAVOR.INITIATION && favor.state === FAVOR_STATE.TAKEN && !carrying && hotbarSlotOf(inv, favor.item) >= 0;
       const ready = favor.state === FAVOR_STATE.DONE || (fetchFavor(favor.kind) && favor.state === FAVOR_STATE.TAKEN && carrying);
       const offered = favor.state === FAVOR_STATE.OFFERED;
       // (A distraction's moment: the next roll call's time, or now.)
       const call = favor.kind === FAVOR.DISTRACTION ? nextRollCall(sim) : '';
       const status = offered
         ? `<button class="big-btn primary small" data-act="${TALK.ACCEPT}">${icon('check', 16)}<span>${t('talk.accept')}</span></button>`
-        : ready
-          ? `<button class="big-btn primary small" data-act="${TALK.HAND_IN}">${icon('coin', 16)}<span>${t('talk.handIn')}</span></button>`
+        : ready || wrongTribute
+          ? `<button class="big-btn ${ready ? 'primary' : 'ghost'} small" data-act="${TALK.HAND_IN}">${icon('coin', 16)}<span>${t('talk.handIn')}</span></button>`
           : `<span class="talk-status">${
               fetchFavor(favor.kind)
                 ? t('talk.bringIt')
@@ -280,7 +282,7 @@ export class TalkPanel {
       const foot = offered
         ? `<p class="talk-note">${t('talk.offerLapses')}</p>`
         : !ready
-          ? `<div class="talk-row talk-drop"><span class="talk-note">${t('talk.dropNote', { n: FAVOR_DROP_OPINION })}</span><button class="big-btn ghost small" data-act="${TALK.DROP}" data-confirm="${esc(t('talk.dropSure'))}">${icon('close', 16)}<span>${t('talk.drop')}</span></button></div>`
+          ? `${wrongTribute ? `<p class="talk-note">${esc(t('refused.notTribute'))}</p>` : ''}<div class="talk-row talk-drop"><span class="talk-note">${t('talk.dropNote', { n: FAVOR_DROP_OPINION })}</span><button class="big-btn ghost small" data-act="${TALK.DROP}" data-confirm="${esc(t('talk.dropSure'))}">${icon('close', 16)}<span>${t('talk.drop')}</span></button></div>`
           : '';
       favorHtml = `<section class="talk-favor" data-state="${favor.state}"><div class="box-label">${icon('chat', 14)}<span>${t('talk.favor')}</span></div>
         <p class="talk-quote">${esc(favorText(sim, favor))}</p>
@@ -379,14 +381,16 @@ export class TalkPanel {
     const gamesHtml = gv ? gamesSection(gv, this.diceMask, now) : '';
     // Gifts: anything worth something from the hotbar, or a little cash.
     const full = m.opinion >= 100;
+    const fSlot = favor && fetchFavor(favor.kind) && favor.state === FAVOR_STATE.TAKEN ? favorSlot(inv, favor) : -1;
     const gifts = inv
       .map((v, k) => {
         if (!v) return '';
         const n = itemOf(v);
         const value = itemDef(n).value;
         if (value <= 0) return '';
-        // (A delivery's parcel: handed over from its own row above, not as a gift.)
-        if (oj?.give && oj.give.slot === k) return '';
+        // (A delivery's parcel or a favor's item: handed over from its own row above, not as a gift; never a gang's tribute.)
+        if ((oj?.give && oj.give.slot === k) || k === fSlot || isTribute(v)) return '';
+        if (favor && fetchFavor(favor.kind) && favor.state === FAVOR_STATE.TAKEN && n === favor.item) return '';
         return `<button class="slot gift" data-act="${TALK.GIFT}" data-arg="${k}" data-confirm="${esc(t('talk.confirmGive'))}" aria-label="${esc(t('talk.giveItem', { item: itemName(n) }))}" ${full ? 'disabled' : ''}><img src="${itemIcons()[n]}" alt="" draggable="false"><i class="gift-gain">+${gainOf(m.opinion, giftOpinion(value))}</i></button>`;
       })
       .join('');

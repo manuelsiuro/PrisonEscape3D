@@ -517,7 +517,15 @@ export function ingredientSlots(s: ItemState, recipe: number): number[] | null {
   for (const ing of RECIPES[recipe].ingredients) {
     const ok = choices(ing).map(itemNumber);
     let found = -1;
-    for (let k = 0; k < s.inv.length && found < 0; k++) if (!used.includes(k) && ok.includes(itemOf(s.inv[k]))) found = k;
+    // (An unmarked item before a gang's tribute (uses 77), so crafting never spends the tribute when another is carried.)
+    for (let k = 0; k < s.inv.length; k++) {
+      if (used.includes(k) || !ok.includes(itemOf(s.inv[k]))) continue;
+      if (usesOf(s.inv[k]) !== 77) {
+        found = k;
+        break;
+      }
+      if (found < 0) found = k;
+    }
     if (found < 0) return null;
     used.push(found);
   }
