@@ -3,7 +3,7 @@
  * and settling, the job board, a new day's vacancies, and loose change in desks and pockets.
  */
 import { gardenDelivered } from './grounds';
-import { kennelsFed } from './k9';
+import { kennelsFed, kennelsSettle } from './k9';
 import { twist } from './twists';
 import { itemDef, itemNumber } from '../../content/items';
 import { type JobDef, WORK_ITEMS } from '../../content/jobs';
@@ -221,6 +221,8 @@ export function settleWork(sim: SimContext) {
   const it = s.items;
   const job = sim.jobActive();
   // A lockdown (or the player out cold) excuses the block: nobody loses a job over it.
+  // (2.36, the Six Hunter: the kennel hand who leaves the pack unfed (the quota missed, not let off), its trust fades. No other prison has kennels.)
+  if (job >= 0 && jobRooms(sim.world)[job].def.id === 'kennels') kennelsSettle(sim, s.paid || s.excused);
   if (job >= 0 && !s.paid && !s.excused) vacate(sim, job, HOLDER.PLAYER, 'fired');
   // (The day's card: paid, fired, or let off.)
   if (job >= 0) s.blocks[s.routine] = s.paid ? BLOCK.ATTENDED : s.excused ? BLOCK.EXCUSED : BLOCK.MISSED;

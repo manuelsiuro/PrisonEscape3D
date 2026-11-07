@@ -12,7 +12,7 @@ shankton: on the machines in the hour: up to 4 at once, 7 machines used over 6 s
 san-pancho: on the machines in the hour: up to 8 at once, 8 machines used over 6 seeds, none shared
 irongate: on the machines in the hour: up to 5 at once, 9 machines used over 6 seeds, none shared
 six-hunter: on the machines in the hour: up to 4 at once, 6 machines used over 6 seeds, none shared
-giving way: asked in all five, on the machine in 2 s, they keep off it; in free time, off it in moments
+giving way: asked in every prison, on the machine in 2 s, they keep off it; in free time, off it in moments
 the bag and the mat in every gym, in nobody's way; a lap at 100 Speed says nothing
 center-perks: 212 looks round the bag and the mat: nothing faced lost to them
 stalag-flucht: 232 looks round the bag and the mat: nothing faced lost to them

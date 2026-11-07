@@ -1,5 +1,5 @@
 /**
- * Talking, favors and opinion (2.36's polish pass), in all five prisons, by real commands:
+ * Talking, favors and opinion (2.36's polish pass), in every prison, by real commands:
  * - **a favor walked through:** taken on in free time, what's asked for found in someone's desk (walked
  *   to, opened, taken), walked back and handed in: the pay and the opinion, and the time it took
  *   against the free time there is;

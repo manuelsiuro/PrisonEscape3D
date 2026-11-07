@@ -1,110 +1,117 @@
 import type { OutsideDef } from './types';
 
 /**
- * The Six Hunter (2.36): the wooded valley past the wall. Pines and thickets, the Hollowrun with its road bridge and a
- * ford upstream, the logging tracks and the woodcutter's hut, the sawmill's deer fence across the valley; beyond it the
- * siding where the night's timber train is loading (safety). The Six come out after the player, two of them with
- * their hounds (Fell's foxhound stays home: two hounds out, as in the valley the bots know). A raft comes ashore on the river's south bank below the bridge. (Its first layout follows Stalag
- * Flucht's valley, which the getaway bots know; the look's pass draws it as a forest.)
+ * The Six Hunter (2.36): the wooded valley of the Hollowrun past the wall. The logging road runs north from the gate,
+ * over the river on its bridge and through the sawmill's deer fence to the siding, where the night's timber train is
+ * loading (safety, the whole yard by the rails). The river bends across the valley, a ford in each reach (wading
+ * washes the trail); culverts under the road where the gullies cross; the woodcutters' track west along the clearings,
+ * up to the west ford, and north of the river to the hut; thickets along the banks and in the gullies; pines all
+ * through. The Six come out after the player, the Huntmaster's bloodhound and Larch's mastiff with them; roadblocks at
+ * the bridge and below the fence; the county's helicopter late.
  */
 export const SIX_HUNTER_OUTSIDE: OutsideDef = {
   prison: 'six-hunter',
   map: `
-T.....TT..T...T..T.........................T,,.....T....T..T
-rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr,,rrrrrrrrrrrrrr
-T.T...T...cccccc....T..TT.cccccc..TT.T.....T,,.........T...T
-TTT...T...T.....T.T......T.................T,,.T.T...T.....T
-TTTTTT...TT..........T.T...T.....T..TT...T..,,.......TT...TT
-TTT......TT.............TTT.........TT......,,..T..TT...T.TT
-............................................,,.####.......TT
-............................................,,.####.......T.
-FFFFFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,,F####FFFFFFFFF
-............................................,,.####.......TT
-TT..TT..T.T.........T....TT....T....TT...T..,,...T....T.T.TT
-TT...............T...T.....T.....T.T.....T..,,.....T....T.TT
-.TT...hhhhh....T..T.......T.......hhhT..T...,,T.T.........TT
-TTTTT..T......T.......T..T....T.............,,.....TT.....TT
-TT..T.....TT...TT..TT..T..dTT.TTT.T..T..T..T,,.TT.hT.TTT..TT
-TTT...TT.T...T..TT........dTTTT.T.T....TT..T,,TT..h...T...TT
-T.........T..T..........TTd..T.....TTT...T..,,TT..h...T...TT
-TT...T..T.TT....T...#####.dT......T.T..TT...,,....hTT.T..TTT
-TT.TT......T....T...#####.d.TT.............T,,.............T
-.TT..TT.TTTTT..TT...#####.dT.TT....TT.....T.,,.T.T...T..T.TT
-TT...T...T...TTTT........TdT.....T.....TT.TT,,.T......TTTTTT
-TT.T.T....T..T.T.......T.Td...TT..T..T....TT,,.....TTTT..TTT
-TTT.T.....T..........T.T..dddddddddddddddddd,,..........T.TT
-TTT............T..T.T.T..TT...........TT....,,.T.......TTTTT
-TT.........TT..TT.TT.T.....T..T.T..T........,,..T.........TT
-T.......TT............TT.......T.T.TTT.T...T,,...T...T....TT
-TTT.TTT..T.TT.hhhhh...TTT.....hhhhh.....T...,,..TT.TT..TT..T
-TT...T.T.............TT....T.....T..T.TT.T..,,....T..T....TT
-~~~~~~~~~~ff~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PP~~~~~~~~~~~~~~
-~~~~~~~~~~ff~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PP~~~~~~~~~~~~~~
-~~~~~~~~~~ff~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PP~~~~~~~~~~~~~~
-~~~~~~~~~~ff~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PP~~~~~~~~~~~~~~
-............................................,,............T.
-TT..TT..TT.T.T..T..ThhhhhT.....T.TTTTT....TT,,............TT
-TTT.T.....T..T.T.T.....TT.T.........hhh....T,,..T......TT.TT
-TT.T.T..T...T......T..TT...........T...T....,,...T..TT..TTTT
-TTTT.T.TTT.T..TT.....T.............T.T......,,...T.....T.TTT
-T.T....TT.......TT.TTT.......T.T.......T...T,,T...T...T...TT
-TT...T...TTTTT.T.TT....T...T...TT......TT...uuTTTT...TT..TT.
-TT...T.T..TT.T.TT........T.T.T.T...TT.T....T,,..T..T..T...TT
-TT..T.T..T...TT..T...T...T.....T........TT..,,.T.TTThh..T.T.
-TT.TTTT...T.T.....T..TT..T.T...T..TT.......T,,TT....T.TT.TTT
-TTT.......TTT..T...T..TT..T......T...TT...T.,,....TT.TTTTTTT
-TT.....T.T..T.....T...TTTTTTT....TT..T.T....,,TT..T.T.T..T.T
-T.............T....Tdddddddddddddddddddddddd,,.TT.T.T.TT..TT
-TT...TT..T....TT...Td...T.T..T...T..T.T.....,,T.T.....TTT.T.
-TTT....Thh.TT....T..d.T....TT.T..T....TT....,,T.....T.T.T.T.
-TT.TT..ThhT..T.T...Td.........T....T...T.T..,,.T.T.T.....TTT
-.T.T.TTTT...T.T.T..Td.TTT....T.T..T.T....T..,,..T.TTT..T.TTT
-TTT.......T.TT..T...d.TT....T.TTTTTT....T.TT,,....TT.TT...T.
-T.T..T......T.....T.d.......TThhh..........T,,..T.T.......TT
-TT..T...........T....T.TTT.T......T.....T.T.,,.T..T....T..TT
-TT......TT............TTTT......T.......T..T,,T..TT.T.T.T.TT
-TT......T....T.T......T..T.TT..TT...T.......,,T....T......TT
-TT..........................................,,............TT
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@,,@@@@@@@@@@@@@@
+............................................................
+rrrrrrrrccccccrrrrrrrrccccccrrrrrrrrrrrrrrrrrrccccccrrrrrrrr
+gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+..########.cc........T.T.T..T.T.T.T.....,,.T..TTTT..........
+..########.cc........T..T....TTT....T...,,......TT....T.T..T
+..########.cc.............T.T...TT.T....,,.T.T....TTTTTT.T.T
+..########...........T...TT..........T..,,......T...TT.....T
+..TTT....T..........TTT.T.T....T........,,...T....T..T.....T
+FFFFFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,,FFFFFFFFFFFFF.FFFF
+T.........TT...TT.T......T...T.....TTT..,,.....TTTT......T.T
+.T........T........T.T.........T.T......,,.........T.T.....T
+..........T..T..T...T.TTT.hhhh..TTT.T...,,...T....T......T..
+T.........TT...T..T...T..Thhhh.T.TT.T.T.,,........T.......T.
+T.........T.....................T.T.....,,.T..............T.
+..T.........T.T.....#####TT.....TTTT..T.,,.T.........T......
+................T.T.#####......T........,,...........T.TTT..
+.T..T..TT...T.T....T#####..T.T.T........uu...........TTT..T.
+T..TT...T...............................,,............TTT...
+.T..T.T......ddddddddddddddddddddddddddd,,.T.........T.T..T.
+....TT...T...d..........................,,............T.T.T.
+...hhhh..T...d.....T..T......T.T......T.,,...T...T..T....T..
+..Thhhh......d..........TT....TTT.......,,...............T.T
+..T.TT..T....d....T.T......TT...T..T....,,.T.T..TT..TT......
+.................................TT..TT.,,.T..T.....TT...T..
+~~~~~~~~~~~ff~~~~~~~~~~~~~~~~~TTThhhh...,,....hhhh.....T....
+~~~~~~~~~~~ff~~~~~~~~~~~~~~~~~...hhhh.T.,,..T.hhhh.TTT...TTT
+~~~~~~~~~~~ff~~~~~~~~~~~~~~~~~..........,,..................
+~~~~~~~~~~~ff~~~~~~~~~~~~~~~~~~~~~~~~~~~PP~~~~~~~~~~ff~~~~~~
+..............................~~~~~~~~~~PP~~~~~~~~~~ff~~~~~~
+...T.T.......dd.......hhhh....~~~~~~~~~~PP~~~~~~~~~~ff~~~~~~
+.T..T.hhhh...Td...T...hhhh.TTT~~~~~~~~~~PP~~~~~~~~~~ff~~~~~~
+.T.T..hhhh...Td.TT...TT......TT.........,,..................
+T..TTT.......Td........T..T.T...T.......,,...T.T..TT........
+...T.....T.T..d........TTT...T.TT..hhh..,,.....Thhhh......T.
+T.......T.....d...........TTT..T.TThhh..,,.....Thhhh......T.
+..............d........TT..T..T..T....T.,,...T.............T
+T.....T.TT....d.........hhTT..TT.T.T....,,............TTTT..
+TT..TT.T......d.........hh...T..........uu..TT....T.T.T.T...
+TTT..TT..T....d..T.......h.T............,,....TT....T.TT.TT.
+T.Thhhh......Td...T.......Thhh.....TT...,,.T...T..T....TT...
+..Thhhh.T.T...d..T.T.......hhhT.TTTT.T..,,.T.T.........T..T.
+.T...TT...T..Td...T.......T.............,,..hhhh.TT.........
+.T.T.T.TT..T..d.........................,,.ThhhhT....T..T...
+.........TT...dddddddddddddddddddddddddd,,..TT....TT......T.
+..........T.T...........................,,..T.....T..T.T..T.
+T.TT.T............T......T.........T....,,.T..T.TT..hhhhTT.T
+T..T.TT.T......T.Thhhh.T.T........TT.T..,,..TT.....ThhhhTTTT
+T...TT.TTT....T..Thhhh............hhhT..,,....T.TT..TTTT....
+T.T.T....hhh..TTT..T..............hhh.T.,,..T.T.T..T.T.T..TT
+......TT.hhh......TT....T.........T.....,,..T........TTT....
+.TTTT..T.T.TTTT...T..T..T..T..T....T....,,.....T.T....T.T...
+.T..T...........TT.....T.....Thhhh......,,...TT.......T..TT.
+T...TT............T.TTT.T.T...T..TT.....,,.......T.T........
+........................................,,..................
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@,,@@@@@@@@@@@@@@@@@@
 `,
   starts: {
-    wall: { x: 12, z: 53, face: 13 },
-    gate: { x: 44, z: 53, face: 13 },
-    van: { x: 46, z: 35, face: 13 },
-    glider: { x: 26, z: 24, face: 13 },
-    sea: { x: 38, z: 32, face: 13 },
+    wall: { x: 8, z: 53, face: 13 },
+    gate: { x: 40, z: 53, face: 13 },
+    van: { x: 43, z: 35, face: 13 },
+    glider: { x: 22, z: 40, face: 13 },
+    sea: { x: 54, z: 32, face: 13 },
   },
-  safe: [0, 0, 59, 5],
+  safe: [0, 1, 59, 3],
   safeKind: 'train',
-  safeAt: { x: 22, z: 1, face: 1 },
+  safeAt: { x: 30, z: 1, face: 1 },
   lou: { x: 30, z: 44, face: 1 },
   lines: [
-    { x: 18, z: 18, face: 5 },
-    { x: 40, z: 50, face: 1 },
+    { x: 22, z: 18, face: 1 },
+    { x: 30, z: 47, face: 1 },
   ],
   roadblocks: [
-    { area: [44, 27, 45, 27], post: { x: 46, z: 27, face: 9 }, at: 2 },
-    { area: [44, 16, 45, 16], post: { x: 43, z: 16, face: 1 }, at: 5 },
+    { area: [40, 27, 41, 27], post: { x: 42, z: 27, face: 9 }, at: 2 },
+    { area: [40, 15, 41, 15], post: { x: 39, z: 15, face: 1 }, at: 5 },
   ],
   searchers: [
-    { name: 'Harrow', beat: [{ x: 43, z: 9, face: 5 }], at: -1 },
+    {
+      name: 'Harrow',
+      beat: [
+        { x: 43, z: 10, face: 5 },
+        { x: 54, z: 10, face: 5 },
+      ],
+      at: -1,
+    },
     {
       name: 'Quiller',
       beat: [
-        { x: 4, z: 9 },
-        { x: 40, z: 9 },
+        { x: 22, z: 10 },
+        { x: 38, z: 10 },
       ],
       at: -1,
     },
     {
       name: 'Garrow',
+      from: { x: 41, z: 54 },
       beat: [
-        { x: 44, z: 54 },
+        { x: 41, z: 50 },
         { x: 36, z: 44 },
-        { x: 20, z: 44 },
-        { x: 20, z: 50 },
-        { x: 10, z: 46 },
-        { x: 20, z: 44 },
+        { x: 48, z: 37 },
         { x: 36, z: 44 },
       ],
       at: 0,
@@ -112,54 +119,51 @@ TT..........................................,,............TT
     },
     {
       name: 'Fell',
-      from: { x: 45, z: 54 },
+      from: { x: 40, z: 54 },
       beat: [
-        { x: 43, z: 32 },
-        { x: 26, z: 33 },
-        { x: 12, z: 32 },
-        { x: 26, z: 33 },
+        { x: 39, z: 34 },
+        { x: 21, z: 36 },
+        { x: 15, z: 33 },
+        { x: 21, z: 36 },
       ],
       at: 0,
     },
     {
       name: 'Bracken',
-      from: { x: 44, z: 0 },
+      from: { x: 40, z: 0 },
       beat: [
-        { x: 45, z: 27 },
-        { x: 38, z: 22 },
-        { x: 26, z: 22 },
-        { x: 26, z: 14 },
-        { x: 26, z: 22 },
+        { x: 39, z: 24 },
+        { x: 47, z: 21 },
+        { x: 55, z: 23 },
+        { x: 47, z: 21 },
       ],
       at: 5,
     },
     {
       name: 'Larch',
-      from: { x: 45, z: 0 },
+      from: { x: 41, z: 0 },
       beat: [
-        { x: 45, z: 20 },
-        { x: 38, z: 13 },
-        { x: 20, z: 12 },
-        { x: 8, z: 14 },
-        { x: 20, z: 12 },
-        { x: 38, z: 13 },
+        { x: 41, z: 13 },
+        { x: 48, z: 12 },
+        { x: 55, z: 12 },
+        { x: 48, z: 12 },
       ],
       at: 8,
       dog: { name: 'Brutus', coat: 'mastiff' },
     },
   ],
   heli: {
-    at: 10,
+    at: 12,
     route: [
       { x: 10, z: 50 },
       { x: 50, z: 50 },
-      { x: 50, z: 36 },
-      { x: 10, z: 36 },
-      { x: 10, z: 24 },
-      { x: 50, z: 24 },
+      { x: 50, z: 38 },
+      { x: 10, z: 38 },
+      { x: 10, z: 22 },
+      { x: 50, z: 22 },
       { x: 50, z: 12 },
       { x: 10, z: 12 },
     ],
   },
-  lookout: { x: 30, z: 36, face: 5 },
+  lookout: { x: 18, z: 35, face: 5 },
 };
