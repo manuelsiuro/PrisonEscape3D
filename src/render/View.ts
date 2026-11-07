@@ -15,7 +15,7 @@ import { Island } from './Island';
 import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
 import { rollCallLayer } from './ground';
-import { showTurf, turfLayer } from './Turf';
+import { disposeTurf, showTurf, turfLayer } from './Turf';
 import { Minefield } from './Minefield';
 import { Guide } from './Guide';
 import type { Prisoner } from '../content/prisoner';
@@ -173,8 +173,8 @@ export class View {
   /** The roll call's paint over a football pitch (P29), and how far it's faded in (0 … 1). */
   private rollCallPaint: THREE.Mesh | null = null;
   /** 2.36: the gangs' turf painted on the floor, and how strongly it shows now. */
-  private turfPaint: THREE.Mesh | null = null;
-  private turfShown = 0;
+  private turfPaint: THREE.Group | null = null;
+  private readonly turfShown = [0, 0];
   private rollCallShown = 0;
   private structure: Structure | null = null;
   private security: Security | null = null;
@@ -377,12 +377,7 @@ export class View {
     }
     if (this.turfPaint) {
       const old = this.turfPaint;
-      retire([old], () => {
-        old.geometry.dispose();
-        const m = old.material as THREE.MeshBasicMaterial;
-        m.map?.dispose();
-        m.dispose();
-      });
+      retire([old], () => disposeTurf(old));
       this.turfPaint = null;
     }
     if (this.minefield) {
@@ -411,7 +406,7 @@ export class View {
     this.rollCallShown = 0;
     if (this.rollCallPaint) this.scene.add(this.rollCallPaint);
     this.turfPaint = turfLayer(world);
-    this.turfShown = 0;
+    this.turfShown.fill(0);
     if (this.turfPaint) this.scene.add(this.turfPaint);
     this.minefield = new Minefield(world);
     this.scene.add(this.minefield.group);
@@ -1010,16 +1005,9 @@ export class View {
       (this.rollCallPaint.material as THREE.MeshBasicMaterial).opacity = this.rollCallShown;
       this.rollCallPaint.visible = this.rollCallShown > 0 && f.layer !== LAYER.UNDER;
     }
-    // 2.36: the gangs' turf, faint all day, bright while it's held.
+    // 2.36: the gangs' turf, faint all day, the tables bright at dinner, the corners in the evening.
     if (this.turfPaint)
-      this.turfShown = showTurf(
-        this.turfPaint,
-        f.turf,
-        this.turfShown,
-        dt,
-        this.reducedMotion,
-        f.layer === LAYER.GROUND || f.layer === LAYER.ROOF,
-      );
+      showTurf(this.turfPaint, f.turf, this.turfShown, dt, this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
     this.meAt.x = f.x;
     this.meAt.z = f.z;

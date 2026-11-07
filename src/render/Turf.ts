@@ -1,8 +1,8 @@
 /**
  * Gangs' turf painted on the floor (2.36, PrisonDef.gangs): each gang's canteen table and corner of the yard
  * outlined in its colour, dashed like a spray can's, with its tag (the Kitchen Crew's ladle, the Lifers' crown,
- * the Gym Rats' dumbbell) in a corner. Faint all day, bright while the gangs hold their turf (dinner and the
- * evening, once the player knows them: gangs.ts turfHeld). One flat layer over the ground, its own material.
+ * the Gym Rats' dumbbell) in a corner. Faint all day; the tables bright at dinner, the corners in the evening, while
+ * the gangs hold them (once the player knows them: gangs.ts heldPiece). Two flat layers over the ground, their own material.
  */
 import * as THREE from 'three';
 import { GANG_COLOR, type GangDef, type GangId } from '../content/gangs';
@@ -78,17 +78,15 @@ function paint(c: CanvasRenderingContext2D, g: GangDef, r: GangDef['table'], wit
   }
 }
 
-/** The turf's layer for a prison (null without gangs). */
-export function turfLayer(world: World): THREE.Mesh | null {
-  const gangs = world.def.gangs;
-  if (!gangs?.length) return null;
+/** One piece of every gang's turf (the tables, or the corners) on a layer of its own over the ground. */
+function pieceLayer(world: World, piece: 'table' | 'corner'): THREE.Mesh {
   const canvas = document.createElement('canvas');
   canvas.width = MAP_W * RES;
   canvas.height = MAP_H * RES;
   const c = canvas.getContext('2d')!;
-  for (const g of gangs) {
-    paint(c, g, g.table, false, 6);
-    paint(c, g, g.corner, true);
+  for (const g of world.def.gangs ?? []) {
+    if (piece === 'table') paint(c, g, g.table, false, 6);
+    else paint(c, g, g.corner, true);
   }
   const material = new THREE.MeshBasicMaterial({
     map: canvasTexture(canvas, 'sharp'),
@@ -106,12 +104,37 @@ export function turfLayer(world: World): THREE.Mesh | null {
   return mesh;
 }
 
-/** Shows the turf (0: not at all, a replay from before the gangs; 1 faint; 2 held), easing between. Returns the opacity now. */
-export function showTurf(mesh: THREE.Mesh, state: number, shown: number, dt: number, reduced: boolean, ground: boolean): number {
-  const goal = state === 2 ? HELD : state === 1 ? FAINT : 0;
-  let now = shown + (goal - shown) * (reduced ? 1 : Math.min(1, dt * 2));
-  if (Math.abs(goal - now) < 0.01) now = goal;
-  (mesh.material as THREE.MeshBasicMaterial).opacity = now;
-  mesh.visible = now > 0 && ground;
-  return now;
+/** The turf's layers for a prison (null without gangs): the tables', then the corners'. */
+export function turfLayer(world: World): THREE.Group | null {
+  if (!world.def.gangs?.length) return null;
+  const group = new THREE.Group();
+  group.add(pieceLayer(world, 'table'), pieceLayer(world, 'corner'));
+  return group;
+}
+
+/**
+ * Shows the turf (`state`: 0 not at all, a replay from before the gangs; 1 faint; 2 the tables held, at dinner; 3 the
+ * corners, in the evening), each piece easing on its own. `shown`: each piece's opacity now, updated.
+ */
+export function showTurf(group: THREE.Group, state: number, shown: number[], dt: number, reduced: boolean, ground: boolean) {
+  group.children.forEach((child, k) => {
+    const mesh = child as THREE.Mesh;
+    const goal = state === 0 ? 0 : state === 2 + k ? HELD : FAINT;
+    let now = shown[k] + (goal - shown[k]) * (reduced ? 1 : Math.min(1, dt * 2));
+    if (Math.abs(goal - now) < 0.01) now = goal;
+    shown[k] = now;
+    (mesh.material as THREE.MeshBasicMaterial).opacity = now;
+    mesh.visible = now > 0 && ground;
+  });
+}
+
+/** Every piece's layer disposed of. */
+export function disposeTurf(group: THREE.Group) {
+  for (const child of group.children) {
+    const m = child as THREE.Mesh;
+    m.geometry.dispose();
+    const mat = m.material as THREE.MeshBasicMaterial;
+    mat.map?.dispose();
+    mat.dispose();
+  }
 }

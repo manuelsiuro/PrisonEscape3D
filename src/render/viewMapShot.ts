@@ -32,7 +32,7 @@ export interface MapShotParts {
   pitch: Pitch | null;
   world: World | null;
   /** 2.36: the gangs' turf painted on the floor (Turf.ts), faint in the photo. */
-  turf: THREE.Mesh | null;
+  turf: THREE.Group | null;
   /** The drawing size and the camera put back as the window has them. */
   resize(): void;
 }
@@ -176,9 +176,9 @@ function dressForMap(v: MapShotParts): () => void {
   // (Its one piece never otherwise moved behind the title: up, as in a day's play; the helicopter away at 10:00.)
   v.island?.update(100, 0, 600, false, false);
   // (2.36: the gangs' turf, painted there every day: faint, as at 10:00.)
-  if (v.turf) showTurf(v.turf, 1, 1, 0, true, true);
+  if (v.turf) showTurf(v.turf, 1, [1, 1], 0, true, true);
   return () => {
-    if (v.turf) v.turf.visible = false;
+    if (v.turf) for (const m of v.turf.children) m.visible = false;
     if (sec) sec.group.visible = false;
     v.pieces.teamView.update(null, [], 0, false);
     v.pieces.longView.update(null, 0, false, false);

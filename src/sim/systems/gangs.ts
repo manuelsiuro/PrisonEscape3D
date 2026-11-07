@@ -44,11 +44,11 @@ import { containersOf } from '../world/containers';
 import { centerX, centerZ } from '../world/grid';
 import { LAYER, MAP_W, type World } from '../world/World';
 import { prisonDay } from './clock';
-import { eventOn, planOf, today } from './calendar';
+import { crowdPlan, eventOn, planOf, today } from './calendar';
 import { dist2 } from './combat';
 import { type Favor, FAVOR, FAVOR_STATE, priceOf } from './economy';
 import { DOING, type Inmate, inmateInCell } from './inmates';
-import { slot } from './items';
+import { HOTBAR, slot } from './items';
 import type { Body } from './movement';
 import { bodyAt } from './movement';
 import { hearingToday } from './parole';
@@ -88,11 +88,15 @@ export function playerGang(sim: Pick<SimContext, 'world' | 'state'>): number {
 const inRect = (r: GangDef['table'], x: number, z: number, pad = 0) =>
   x >= r[0] - pad && x <= r[2] + pad && z >= r[1] - pad && z <= r[3] + pad;
 
-/** The gang whose turf a ground tile is (its table or its corner), -1 none. */
-export function turfAt(def: World['def'], x: number, z: number): number {
+/** A piece of turf: a gang's canteen table, or its corner of the yard. */
+export type TurfPiece = 'table' | 'corner';
+
+/** The gang whose turf a ground tile is (its table or its corner; one piece if given), -1 none. */
+export function turfAt(def: World['def'], x: number, z: number, piece?: TurfPiece): number {
   const list = def.gangs;
   if (!list) return -1;
-  for (let k = 0; k < list.length; k++) if (inRect(list[k].table, x, z) || inRect(list[k].corner, x, z)) return k;
+  for (let k = 0; k < list.length; k++)
+    if ((piece !== 'corner' && inRect(list[k].table, x, z)) || (piece !== 'table' && inRect(list[k].corner, x, z))) return k;
   return -1;
 }
 
@@ -103,9 +107,18 @@ export function turfAt(def: World['def'], x: number, z: number): number {
  * member, every bot's, plays as before 2.36.)
  */
 export function turfHeld(sim: Pick<SimContext, 'rules235' | 'world' | 'state'>, plan: number): boolean {
-  if (!gangsHere(sim) || !sim.state.gang || sim.state.lockdown || prisonDay(sim.state.step) < GANG_FROM_DAY || plan < 0) return false;
+  return heldPiece(sim, plan) !== null;
+}
+
+/**
+ * Which piece of turf is held now (the inmates' plan: `crowdPlan`, a film or talent night's dinner too): the
+ * tables at dinner, the corners in the evening's free time; null neither (the rule the talk card and How to play
+ * say, and the paint shows).
+ */
+export function heldPiece(sim: Pick<SimContext, 'rules235' | 'world' | 'state'>, plan: number): TurfPiece | null {
+  if (!gangsHere(sim) || !sim.state.gang || sim.state.lockdown || prisonDay(sim.state.step) < GANG_FROM_DAY || plan < 0) return null;
   const id = ROUTINE[plan]?.id;
-  return id === 'dinner' || id === 'eveningFreeTime';
+  return id === 'dinner' ? 'table' : id === 'eveningFreeTime' ? 'corner' : null;
 }
 
 /** The first word with a gang member (social.ts approach): the gangs' record begins (MET: that prison day). */
@@ -146,7 +159,7 @@ export function rivalBoss(sim: Pick<SimContext, 'world' | 'state'>, gang: number
 export function joinRefusal(
   sim: SimContext,
   who: number,
-): '' | 'gangHere' | 'gangOpinion' | 'inGang' | 'leftToday' | 'favors' | 'favorFirst' | 'loneWolf' {
+): '' | 'gangHere' | 'gangOpinion' | 'inGang' | 'leftToday' | 'favors' | 'favorFirst' | 'loneWolf' | 'initiating' {
   const s = sim.state;
   const k = bossOf(sim, who);
   if (!gangsHere(sim) || k < 0 || rivalBoss(sim, k) < 0) return 'gangHere';
@@ -154,6 +167,8 @@ export function joinRefusal(
   if (twist(s, 'loneWolf')) return 'loneWolf';
   if (s.gang && s.gang[G.LEFT] === prisonDay(s.step)) return 'leftToday';
   if (s.inmates[who].opinion < GANG_OPINION) return 'gangOpinion';
+  // (One initiation at a time: proving oneself to two gangs at once would be a way to switch for free.)
+  if (s.favors.some((x) => x.kind === FAVOR.INITIATION && x.by !== who)) return 'initiating';
   const f = s.favors.find((x) => x.by === who);
   if (f && f.state !== FAVOR_STATE.OFFERED) return f.kind === FAVOR.INITIATION ? 'gangHere' : 'favorFirst';
   if (s.favors.filter((x) => x.state !== FAVOR_STATE.OFFERED).length >= FAVORS_TAKEN) return 'favors';
@@ -189,10 +204,33 @@ function plantTribute(sim: SimContext, f: Favor) {
   const i = list.findIndex((c) => c.table === 'inmateDesk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
   if (i < 0) return;
   const box = s.items.containers[i];
-  if (box.some((v, j) => j >= list[i].hidden && (v & 255) === f.item)) return;
-  const free = box.indexOf(0, list[i].hidden);
-  box[free >= 0 ? free : box.length - 1] = slot(f.item);
+  // (Any of the kind already in its drawers is the boss's own, so the tribute: whichever the player takes from there counts.)
+  let there = false;
+  for (let j = list[i].hidden; j < box.length; j++)
+    if ((box[j] & 255) === f.item) {
+      box[j] = tributeOf(f);
+      there = true;
+    }
+  if (!there) {
+    const free = box.indexOf(0, list[i].hidden);
+    box[free >= 0 ? free : box.length - 1] = tributeOf(f);
+  }
   s.items.rev++;
+}
+
+/**
+ * The tribute as it lies in the rival boss's desk: the item with a mark of its own in its uses (none of the three
+ * has uses), so that only it is taken for the initiation, not one bought, found or picked up elsewhere.
+ */
+export const TRIBUTE_MARK = 77;
+export const tributeOf = (f: Pick<Favor, 'item'>) => slot(f.item, TRIBUTE_MARK);
+/** The hotbar slot holding what a favor asks for (an initiation: its tribute only), -1 none. */
+export function favorSlot(inv: readonly number[], f: Pick<Favor, 'kind' | 'item'>): number {
+  for (let k = 0; k < HOTBAR; k++) {
+    const v = inv[k];
+    if (f.kind === FAVOR.INITIATION ? v === tributeOf(f) : (v & 255) === f.item && v !== 0) return k;
+  }
+  return -1;
 }
 
 /** The rival boss's desk (its container index), where an initiation's tribute is: -1 none (the map viewer, the arrows). */
@@ -202,9 +240,18 @@ export function tributeDesk(sim: Pick<SimContext, 'world' | 'state'>, f: Favor):
   return containersOf(w).findIndex((c) => c.table === 'inmateDesk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
 }
 
-/** The initiation handed in: the player is in. The gang thinks more of them, every rival less. */
+/** Why an initiation can't be handed in now ('' it can): already in a gang, or one was left today. */
+export function handInRefusal(sim: SimContext): '' | 'inGang' | 'leftToday' {
+  const s = sim.state;
+  if (playerGang(sim) >= 0) return 'inGang';
+  if (s.gang && s.gang[G.LEFT] === prisonDay(s.step)) return 'leftToday';
+  return '';
+}
+
+/** The initiation handed in: the player is in. The gang thinks more of them, every rival less; any other initiation lapses. */
 export function joinGang(sim: SimContext, gang: number) {
   const s = sim.state;
+  s.favors = s.favors.filter((f) => f.kind !== FAVOR.INITIATION);
   const def = sim.world.def.gangs![gang];
   const day = prisonDay(s.step);
   const was = s.gang;
@@ -222,6 +269,13 @@ export function leaveGang(sim: SimContext, who: number) {
   const g = playerGang(sim);
   if (g < 0 || bossOf(sim, who) !== g) return;
   out(sim, g, 'left', who);
+}
+
+/** For R's next lock: a member's own gang mates passed over (undefined: in no gang, nothing passed over). */
+export function ownMate(sim: SimContext): ((id: number) => boolean) | undefined {
+  const g = playerGang(sim);
+  if (g < 0 || !gangsHere(sim)) return undefined;
+  return (id) => id < sim.state.inmates.length && gangOf(sim, id) === g;
 }
 
 /** A blow at one of the player's own gang: thrown out (social.ts warns of it on the talk card, How to play says so). */
@@ -289,8 +343,8 @@ function clearWarning(sim: SimContext, said: boolean) {
   if (said) sim.events.push({ type: 'gang', what: 'clear', gang: sim.world.def.gangs!.findIndex((d) => d.id === GANGS[turf]) });
 }
 
-/** Rival members holding a gang's turf now (on it or a tile off it, up and about), nearest the player first. */
-function holders(sim: SimContext, gang: number): number[] {
+/** Rival members holding a piece of a gang's turf now (on it or a tile off it, up and about), nearest the player first. */
+function holders(sim: SimContext, gang: number, piece: TurfPiece): number[] {
   const s = sim.state;
   const def = sim.world.def.gangs![gang];
   const p = s.player;
@@ -299,35 +353,49 @@ function holders(sim: SimContext, gang: number): number[] {
     if (!def.members.includes(m.cell) || !about(sim, m, who)) return;
     const x = Math.floor(m.body.x / UNIT);
     const z = Math.floor(m.body.z / UNIT);
-    if (inRect(def.table, x, z, 1) || inRect(def.corner, x, z, 1)) out.push(who);
+    if (inRect(def[piece], x, z, 1)) out.push(who);
   });
   return out.sort((a, b) => dist2(s.inmates[a].body, p) - dist2(s.inmates[b].body, p) || a - b);
 }
 
+/**
+ * A member on a rival's held turf (the piece held now: the table at dinner, the corner in the evening), its holders
+ * there: told by one who sees them, TRESPASS_STEPS to get off, then the nearest who sees them squares up. Out of all
+ * their sight the countdown waits (it never runs out unseen); the holders gone, or the player off it, it's over.
+ */
 function trespass(sim: SimContext, mine: number) {
   const s = sim.state;
   const g = s.gang!;
   const p = s.player;
   const x = Math.floor(p.x / UNIT);
   const z = Math.floor(p.z / UNIT);
-  const t = turfHeld(sim, s.routine) ? turfAt(sim.world.def, x, z) : -1;
-  const there = t >= 0 && t !== mine ? holders(sim, t) : [];
+  const piece = heldPiece(sim, crowdPlan(sim, s.routine));
+  const t = piece ? turfAt(sim.world.def, x, z, piece) : -1;
+  const rival = t >= 0 && t !== mine;
+  const there = rival ? holders(sim, t, piece!) : [];
   if (!there.length) {
-    if (g[G.WARN]) clearWarning(sim, true);
+    // (Off it: said so. Still on it, its holders gone: over without a word.)
+    if (g[G.WARN]) clearWarning(sim, !rival);
     return;
   }
   if (s.step - g[G.JUMPED] < TRESPASS_COOLDOWN && g[G.JUMPED] > 0) return;
+  const seeing = there.filter((k) => lineOfSight(sim.world, s.inmates[k].body.x, s.inmates[k].body.z, p.x, p.z));
   const id = GANGS.indexOf(sim.world.def.gangs![t].id) + 1;
   if (!g[G.WARN] || g[G.TURF] !== id) {
+    if (!seeing.length) return;
     g[G.WARN] = s.step;
     g[G.TURF] = id;
-    sim.events.push({ type: 'gang', what: 'warn', gang: t, who: there[0] });
+    sim.events.push({ type: 'gang', what: 'warn', gang: t, who: seeing[0] });
+    return;
+  }
+  // (Nobody of them sees the player just now: the countdown waits.)
+  if (!seeing.length) {
+    g[G.WARN] = Math.min(s.step, g[G.WARN] + 1);
     return;
   }
   if (s.step - g[G.WARN] < TRESPASS_STEPS) return;
   // (Time's up: the nearest who can see the player squares up.)
-  const who = there.find((k) => lineOfSight(sim.world, s.inmates[k].body.x, s.inmates[k].body.z, p.x, p.z));
-  if (who === undefined) return;
+  const who = seeing[0];
   squareUp(sim, who);
   g[G.WARN] = 0;
   g[G.TURF] = 0;

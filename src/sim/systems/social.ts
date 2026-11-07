@@ -44,7 +44,20 @@ import {
 import { LAYER, MAP_W } from '../world/World';
 import { dist2, type Fighter, personOf } from './combat';
 import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, fetchFavor, giftOpinion, jobRooms } from './economy';
-import { askOf, askToJoin, bossOf, gangsHere, gangTargets, joinGang, leaveGang, mateClose, metGangs, turfHeld } from './gangs';
+import {
+  askOf,
+  askToJoin,
+  bossOf,
+  favorSlot,
+  gangsHere,
+  gangTargets,
+  handInRefusal,
+  joinGang,
+  leaveGang,
+  mateClose,
+  metGangs,
+  turfHeld,
+} from './gangs';
 import { awake, GUARD } from './guards';
 import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmates';
 import { closeBox, freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, usesOf } from './items';
@@ -245,9 +258,15 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
     case TALK.HAND_IN: {
       const f = s.favors.find((x) => x.by === who && x.state !== FAVOR_STATE.OFFERED);
       if (!f) return;
+      // (2.36: an initiation, never while in a gang or the day one was left: no switching for free.)
+      if (f.kind === FAVOR.INITIATION) {
+        const why = handInRefusal(sim);
+        if (why) return refuse(sim, why);
+      }
       if (fetchFavor(f.kind)) {
-        const k = hotbarSlotOf(it.inv, f.item);
-        if (k < 0) return refuse(sim, 'missing');
+        // (2.36: an initiation's tribute is the one from the rival boss's desk, nothing else.)
+        const k = favorSlot(it.inv, f);
+        if (k < 0) return refuse(sim, f.kind === FAVOR.INITIATION && hotbarSlotOf(it.inv, f.item) >= 0 ? 'notTribute' : 'missing');
         it.inv[k] = 0;
       } else if (f.state !== FAVOR_STATE.DONE) return refuse(sim, 'notDone');
       s.favors.splice(s.favors.indexOf(f), 1);
