@@ -12,34 +12,72 @@ const HIGH = 9;
  * down and sideways and wrapping round, so the weather follows wherever they go. Hidden
  * indoors-below (tunnels, vents) and with reduced motion. No allocation per frame.
  */
+/**
+ * What falls (2.36: the forest's needles and leaves too): how many, their colours (each its own, from the list), their size in
+ * pixels, how fast they come down and how far they sway.
+ */
+export interface Fall {
+  count: number;
+  colors: readonly number[];
+  size: number;
+  speed: number;
+  sway: number;
+  opacity: number;
+}
+const SNOW: Fall = { count: FLAKES, colors: [0xffffff], size: 3.2, speed: 1, sway: 1, opacity: 0.85 };
+/** Pine needles and the odd birch leaf drifting down through the Six Hunter's woods, slow and turning. */
+export const LEAVES: Fall = {
+  count: 90,
+  colors: [0xc8862e, 0xa8642a, 0xd8a43a, 0x8a5a2a, 0xe0b850],
+  size: 3.6,
+  speed: 0.4,
+  sway: 2.2,
+  opacity: 0.95,
+};
+
 export class Snowfall {
   readonly points: THREE.Points;
   private readonly pos: Float32Array;
-  private readonly speed = new Float32Array(FLAKES);
-  private readonly phase = new Float32Array(FLAKES);
+  private readonly speed: Float32Array;
+  private readonly phase: Float32Array;
   /** Where each flake is drawn (its place, or under the ground over a building). */
-  private readonly drawn = new Float32Array(FLAKES * 3);
+  private readonly drawn: Float32Array;
+  private readonly n: number;
+  private readonly sway: number;
 
-  constructor() {
-    this.pos = new Float32Array(FLAKES * 3);
+  constructor(fall: Fall = SNOW) {
+    const n = (this.n = fall.count);
+    this.sway = fall.sway;
+    this.speed = new Float32Array(n);
+    this.phase = new Float32Array(n);
+    this.drawn = new Float32Array(n * 3);
+    this.pos = new Float32Array(n * 3);
     // A fixed seed: the same snow every time.
     const rand = seeded(4242);
-    for (let i = 0; i < FLAKES; i++) {
+    for (let i = 0; i < n; i++) {
       this.pos[i * 3] = rand() * SPAN;
       this.pos[i * 3 + 1] = rand() * HIGH;
       this.pos[i * 3 + 2] = rand() * SPAN;
-      this.speed[i] = 0.7 + rand() * 0.9;
+      this.speed[i] = (0.7 + rand() * 0.9) * fall.speed;
       this.phase[i] = rand() * Math.PI * 2;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(this.drawn, 3).setUsage(THREE.DynamicDrawUsage));
+    const many = fall.colors.length > 1;
+    if (many) {
+      const c = new THREE.Color();
+      const colors = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) c.set(fall.colors[i % fall.colors.length]).toArray(colors, i * 3);
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    }
     // The camera is orthographic: point sizes are in screen pixels.
     const mat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 3.2 * Math.min(2, globalThis.devicePixelRatio || 1),
+      color: many ? 0xffffff : fall.colors[0],
+      vertexColors: many,
+      size: fall.size * Math.min(2, globalThis.devicePixelRatio || 1),
       sizeAttenuation: false,
       transparent: true,
-      opacity: 0.85,
+      opacity: fall.opacity,
       depthWrite: false,
       map: flake(),
       alphaTest: 0.05,
@@ -49,6 +87,11 @@ export class Snowfall {
     this.points.visible = false;
     // Over the fog veil (P17), like the rain: flakes fall in front of it.
     this.points.renderOrder = 6;
+  }
+
+  /** How lit they're drawn (points take no light: the forest's leaves dim with the dusk, 1 by day). */
+  shade(v: number) {
+    (this.points.material as THREE.PointsMaterial).color.setScalar(v);
   }
 
   /**
@@ -75,11 +118,12 @@ export class Snowfall {
     const fall = 1 + wind * 0.3;
     const gx = Math.cos(windAngle) * wind * 0.9;
     const gz = Math.sin(windAngle) * wind * 0.9;
-    for (let i = 0; i < FLAKES; i++) {
+    const sway = this.sway;
+    for (let i = 0; i < this.n; i++) {
       const k = i * 3;
       p[k + 1] -= this.speed[i] * fall * dt;
-      p[k] += (0.25 + gx + Math.sin(time * 0.8 + this.phase[i]) * 0.3) * dt;
-      p[k + 2] += (gz + Math.cos(time * 0.6 + this.phase[i]) * 0.15) * dt;
+      p[k] += (0.25 + gx + Math.sin(time * 0.8 * sway + this.phase[i]) * 0.3 * sway) * dt;
+      p[k + 2] += (gz + Math.cos(time * 0.6 * sway + this.phase[i]) * 0.15 * sway) * dt;
       if (p[k + 1] < 0) p[k + 1] += HIGH;
       // Wrapped into the box round the player (it moves with them).
       p[k] = x0 + ((((p[k] - x0) % SPAN) + SPAN) % SPAN);

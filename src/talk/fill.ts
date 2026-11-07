@@ -205,7 +205,7 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
     case 'guard': {
       const k = fact?.guard ?? Number(pick(ctx, 'guard', sim.prison.guards.map((g, i) => (g.name ? String(i) : '')).filter(Boolean)) ?? -1);
       const n = sim.prison.guards[k]?.name;
-      v = n ? (form === 'full' ? guardFull(lang, n) : n) : null;
+      v = n ? (form === 'full' ? guardFull(lang, n, sim.prison.id) : n) : null;
       break;
     }
     case 'here': {

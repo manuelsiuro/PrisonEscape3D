@@ -75,7 +75,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (2.36: optional, so not among a fresh state's keys: kept when there, last, in the order the run added them (the
   // hash reads the keys in order); checked below.)
   for (const k of Object.keys(st))
-    if ((k === 'struckLayer' || k === 'gang') && st[k] !== undefined) (s as unknown as Record<string, unknown>)[k] = st[k];
+    if ((k === 'struckLayer' || k === 'gang' || k === 'recall') && st[k] !== undefined)
+      (s as unknown as Record<string, unknown>)[k] = st[k];
   // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
   // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
   // cameras it has).
@@ -491,6 +492,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     delete s.struckLayer;
   // 2.36: the gangs' record, whole numbers in range, or none (gangs.ts G).
   if (s.gang !== undefined && !gangOk(s.gang, s.step)) delete s.gang;
+  // 2.36: absent, or a step (the hounds back at work then).
+  if (s.recall !== undefined && (!Number.isInteger(s.recall) || s.recall < 0)) delete s.recall;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];

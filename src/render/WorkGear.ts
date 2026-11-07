@@ -46,6 +46,31 @@ const PILES: Partial<Record<string, () => THREE.BufferGeometry[]>> = {
     box(0.36, 0.03, 0.2, PLATE, 0.02, 0.53, 0.08),
     box(0.36, 0.03, 0.2, 0xe8c52e, -0.02, 0.56, 0),
   ],
+  // 2.36 (The Six Hunter's): sacks of feed, the dogs' bowls stacked, torn and mended nets.
+  feed_sack: () => [
+    box(0.3, 0.2, 0.22, 0xc8ac78, -0.1, 0.5, -0.05),
+    box(0.3, 0.2, 0.22, 0xb89a68, 0.12, 0.5, 0.08),
+    box(0.28, 0.18, 0.2, 0xd2b884, 0, 0.68, 0),
+    box(0.12, 0.04, 0.12, 0x6a4a2a, 0, 0.86, 0),
+  ],
+  dog_bowl: () => [
+    cyl(0.14, 0.06, 0x8d949e, -0.12, 0.5, 0, 12),
+    cyl(0.14, 0.06, 0xa8b0ba, -0.12, 0.56, 0, 12),
+    cyl(0.14, 0.06, 0x8d949e, 0.14, 0.5, 0.06, 12),
+    cyl(0.11, 0.02, 0xb5653a, 0.14, 0.56, 0.06, 12),
+  ],
+  torn_net: () => [
+    box(0.44, 0.12, 0.36, 0x5f7a4a, 0, 0.5, 0),
+    box(0.3, 0.1, 0.26, 0x9a8f78, 0.06, 0.6, -0.02),
+    box(0.1, 0.04, 0.4, 0x4f6a3e, -0.15, 0.7, 0),
+  ],
+  mended_net: () => [
+    box(0.44, 0.06, 0.34, 0x5f7a4a, 0, 0.5, 0),
+    box(0.44, 0.06, 0.34, 0x6a8452, 0, 0.56, 0),
+    box(0.44, 0.06, 0.34, 0x5f7a4a, 0, 0.62, 0),
+    box(0.08, 0.05, 0.05, 0xc8a46a, -0.16, 0.68, 0),
+    box(0.08, 0.05, 0.05, 0xc8a46a, 0.1, 0.68, 0),
+  ],
 };
 
 /** One machine's moving part. */
@@ -163,6 +188,44 @@ export class WorkGear {
         root.add(letter);
         break;
       }
+      case 'smoker': {
+        // 2.36: the fire behind the firebox's door, and smoke curling up out of the stovepipe.
+        const fire = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.3, 0.16),
+          new THREE.MeshBasicMaterial({ color: 0xff7a24, transparent: true, opacity: 0.9 }),
+        );
+        this.owned.push(fire.geometry);
+        this.lit.push(fire.material);
+        fire.position.set(0, 0.16, 0.345);
+        root.add(fire);
+        const smoke = new THREE.MeshBasicMaterial({ color: 0xb8b4ac, transparent: true, opacity: 0.45, depthWrite: false });
+        this.lit.push(smoke);
+        const puff = new THREE.IcosahedronGeometry(0.11, 0);
+        this.owned.push(puff);
+        for (let k = 0; k < 4; k++) {
+          const m = new THREE.Mesh(puff, smoke);
+          m.position.set(0.22, 1.95 + k * 0.3, -0.24);
+          fire.add(m);
+        }
+        break;
+      }
+      case 'trough': {
+        // 2.36: the scoop going from the sack to the trough, the kibble heaping up along it.
+        const heap = this.mesh([box(p.w * 0.6, 0.05, 0.3, 0xb07c48, 0, 0, 0)]);
+        heap.position.set(-p.w * 0.1, 0.36, 0);
+        root.add(heap);
+        heap.add(this.mesh([box(0.14, 0.06, 0.1, METAL, 0, 0.14, 0), box(0.12, 0.03, 0.03, WOOD, 0.12, 0.16, 0)]));
+        break;
+      }
+      case 'netFrame': {
+        // 2.36: the netting needle going along the torn row, the mended cord behind it.
+        const row = this.mesh([box(1, 0.02, 0.02, 0xd8c890, 0.5, 0, 0)]);
+        rest = -(p.w - 0.24) / 2;
+        row.position.set(rest, 0.72, 0.0);
+        root.add(row);
+        row.add(this.mesh([box(0.14, 0.03, 0.02, 0xe8dcb0, 0, 0, 0.02)]));
+        break;
+      }
       default:
         return;
     }
@@ -195,6 +258,33 @@ export class WorkGear {
         case 'workbench':
           m.node.scale.y = 0.8 * (motion ? Math.max(0.15, done) : 1);
           break;
+        case 'smoker': {
+          const fire = m.node as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+          fire.material.opacity = motion ? 0.75 + Math.sin(time * 9 + i) * 0.15 : 0.9;
+          // Each puff rises from the pipe, swells and thins away, one after another.
+          fire.children.forEach((c, k) => {
+            const t = motion ? (time * 0.45 + k / 4 + i * 0.37) % 1 : k / 4;
+            c.position.set(0.22 + t * 0.25, 1.9 + t * 1.2 - 0.16, -0.24 - 0.02 * k);
+            c.scale.setScalar(0.6 + t * 1.6);
+          });
+          break;
+        }
+        case 'trough': {
+          m.node.scale.x = Math.max(0.1, done);
+          const scoop = m.node.children[0];
+          scoop.position.x = motion ? Math.sin(time * 3 + i) * 0.4 : 0;
+          scoop.scale.x = 1 / Math.max(0.1, done);
+          break;
+        }
+        case 'netFrame': {
+          const w = -m.rest * 2;
+          // The mended cord grows with the job; the needle at its end, bobbing in and out of the mesh.
+          m.node.scale.x = Math.max(0.02, done * w);
+          const needle = m.node.children[0];
+          needle.position.set(1, motion ? Math.sin(time * 6 + i) * 0.04 : 0, 0);
+          needle.scale.x = 1 / Math.max(0.02, done * w);
+          break;
+        }
         case 'sortingDesk':
           m.node.position.x = motion ? Math.sin(time * 2.4 + i) * 0.3 : 0;
           break;

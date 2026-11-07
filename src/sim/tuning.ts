@@ -396,6 +396,23 @@ export const TRUST_IGNORE = 60;
 export const TRUST_FRIEND = 100;
 export const DAZE_STEPS = 10 * STEPS_PER_SECOND;
 export const DOG_SLEEP_STEPS = 120 * STEPS_PER_MINUTE;
+/**
+ * 2.36 (The Six Hunter): the Huntmaster's recall horn, blown: every hound off to its kennel this long (an hour of game time),
+ * and heard this far (walking tiles, a bang's: it wakes the Hunters asleep in earshot). A drag line landing: the trail
+ * gone, and a noise this far (the hounds pulling their Hunters to it), drawing this many to look.
+ */
+export const RECALL_STEPS = 60 * STEPS_PER_MINUTE;
+export const HORN_NOISE = 12;
+export const DRAG_NOISE = 9;
+export const DRAG_GUARDS = 2;
+/**
+ * 2.36 (The Six Hunter): the kennel hand's quota done, every hound trusts the player this much more, but never past
+ * KENNEL_TRUST_CAP from the troughs alone (below TRUST_IGNORE: a treat from the hand is what wins one over). A day the
+ * kennel hand leaves the pack unfed (the quota missed), every hound's trust fades this much.
+ */
+export const KENNEL_TRUST = 10;
+export const KENNEL_TRUST_CAP = 40;
+export const KENNEL_FADE = 15;
 
 // The pet rat (P20).
 /** A rat trap left on the floor at 04:00 catches a rat this often (percent): in a kitchen, canteen or storeroom; down a tunnel; anywhere else none. */

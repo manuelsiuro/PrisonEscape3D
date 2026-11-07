@@ -1,6 +1,6 @@
 import { vehicleName, vehicleThe } from './labels';
 import { warring } from '../sim/systems/gangs';
-import { gangName } from '../ui/names';
+import { gangName, guardWord } from '../ui/names';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import {
@@ -92,7 +92,7 @@ export const eventIcon = (sim: Sim, e: DayEvent) =>
 /** Delivery day (P18): who supervises the vehicle (its name: labels.ts's vehicleName, vehicleThe). */
 const supervisorOf = (sim: Sim) => {
   const name = sim.prison.guards[sim.prison.delivery?.supervisor ?? -1]?.name;
-  return name ? t('guard.the', { name }) : t('guard.nameless');
+  return name ? guardWord(sim, 'guard.the', { name }) : t('guard.nameless');
 };
 /** The weather as it's named and drawn: in the snow (Stalag Flucht) a clear day snows, a storm is a blizzard. */
 type WeatherName = Weather | 'snow' | 'blizzard';

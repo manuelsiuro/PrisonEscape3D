@@ -58,6 +58,13 @@ export const PROPS = {
   vending: { solid: true },
   /** 2.33: the canteen's water cooler (decoration before; solid only for runs from then on: World.plainCooler). */
   cooler: { solid: true },
+  // The Six Hunter's work: the kennels' feeding trough, the smokehouse's smoker, the boathouse's net frame.
+  /** A feeding trough in the kennels: the kennel hand's machine (a sack of feed in, a bowl out). */
+  trough: { solid: true },
+  /** A smoker in the smokehouse: fish in, smoked fish out. */
+  smoker: { solid: true },
+  /** A net frame in the boathouse: a torn net stretched on it, mended. */
+  netFrame: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

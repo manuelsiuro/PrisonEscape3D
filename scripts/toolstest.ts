@@ -1,5 +1,5 @@
 /**
- * Tools, items and searches (2.36, the improvement queue's session 12), in all five prisons, by real commands:
+ * Tools, items and searches (2.36, the improvement queue's session 12), in every prison, by real commands:
  * - **tools:** every tool at its job (a brick wall of the player's cell, a fence, a vent grate, a floor), struck
  *   until it gives way: the strikes and the tools it takes are what its card says; a tool is said to be nearly worn
  *   out (WORN_WARN uses left) before it ever breaks; before each strike the button greys exactly when the sim

@@ -60,6 +60,16 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
     paperwork: [9, 13, 17],
     parole: [14, 18, 23],
   },
+  // 2.36: the Six Hunter (the hounds from day 2, the river, the granite: a step slower than Irongate's).
+  'six-hunter': {
+    raft: [7, 10, 14],
+    tunnel: [6, 9, 13],
+    glider: [7, 11, 15],
+    stowaway: [8, 15, 22],
+    bluff: [7, 11, 15],
+    paperwork: [9, 13, 17],
+    parole: [14, 18, 23],
+  },
 };
 
 /** The medal an escape on `day` earns (null: too slow for bronze, or no medals there). */

@@ -67,7 +67,8 @@ export type ToolAction =
   | 'water'
   | 'harvest'
   | 'unbook'
-  | 'carve';
+  | 'carve'
+  | 'blow';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -158,6 +159,9 @@ const RAFT = itemNumber('raft');
 export const ALARM_CLOCK = itemNumber('alarm_clock');
 export const FIRECRACKER = itemNumber('firecracker');
 const SOAP = itemNumber('soap');
+/** 2.36 (The Six Hunter): tar soap (washes, twice), the recall horn (blown). */
+export const TAR_SOAP = itemNumber('tar_soap');
+const RECALL_HORN = itemNumber('recall_horn');
 /** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
 const RAT_TRAP = itemNumber('rat_trap');
 const CAUGHT_RAT = itemNumber('caught_rat');
@@ -383,7 +387,9 @@ export function toolTarget(
   if (held === HOLLOW_BOOK) return { action: 'unbook', layer, tile: -1, fits: inside > 0, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   // A bar of soap (P19): the player's scent rubbed off.
-  if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
+  if ((held === SOAP || held === TAR_SOAP) && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
+  // 2.36: the recall horn blown (where there are hounds to call).
+  if (held === RECALL_HORN) return { action: 'blow', layer, tile: -1, fits: handlersOf(w).length > 0, hp: 0 };
   // A caught rat (P20): fed the first bait in the hotbar. A rat trap: set down where the player stands (`tile`).
   if (held === CAUGHT_RAT) return { action: 'feed', layer, tile: -1, fits: pockets.some((v, k) => k < 6 && BAIT.includes(v & 255)), hp: 0 };
   if (held === RAT_TRAP) return { action: 'setTrap', layer, tile: tileAt(b.x, b.z), fits: true, hp: 0 };

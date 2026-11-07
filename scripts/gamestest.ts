@@ -213,12 +213,15 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   for (const p of PRISONS) {
     const b = DAY_BOOKS[p.id];
     check(
-      b.deck.length === 7 && b.deck.filter((e) => e === 'sports').length === 1 && !!b.beforeSports && b.beforeSports !== 'sports',
-      `${p.id}: sports day once a week (in place of ${b.beforeSports})`,
+      // (2.36: a prison built after sports day, the Six Hunter, has no card it replaced: no game was ever saved there before it.)
+      b.deck.length === 7 &&
+        b.deck.filter((e) => e === 'sports').length === 1 &&
+        (p.difficulty > 5 ? !b.beforeSports : !!b.beforeSports && b.beforeSports !== 'sports'),
+      `${p.id}: sports day once a week (in place of ${b.beforeSports ?? 'nothing: built with it'})`,
     );
   }
   console.log(
-    `data: the lockpick (wire + nail file, Int 40, $35 on the phone, 12 uses); sports day in place of ${PRISONS.map((p) => `${p.id} ${DAY_BOOKS[p.id].beforeSports}`).join(', ')}`,
+    `data: the lockpick (wire + nail file, Int 40, $35 on the phone, 12 uses); sports day in place of ${PRISONS.map((p) => `${p.id} ${DAY_BOOKS[p.id].beforeSports ?? '(built with it)'}`).join(', ')}`,
   );
 }
 

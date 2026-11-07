@@ -15,7 +15,8 @@ import { itemOf, PILE } from './items';
 import { tileOfBody } from './movement';
 import { changeOpinion } from './social';
 import { FIRECRACKER } from './structure';
-import { catchTreat } from './k9';
+import { catchTreat, dragLine } from './k9';
+import { itemNumber } from '../../content/items';
 import { CAUGHT_RAT, throwRat } from './rats';
 import { makeNoise } from './noise';
 
@@ -111,6 +112,9 @@ export function aimToss(sim: SimContext, dx: number, dz: number, out: TossAim = 
   return out;
 }
 
+/** 2.36: the drag line (a sock soaked in aniseed). */
+const DRAG_LINE = itemNumber('drag_line');
+
 const aim: TossAim = { why: null, to: -1 };
 
 /**
@@ -140,6 +144,8 @@ export function throwItem(sim: SimContext, tile: number) {
   if (item === FIRECRACKER) s.fuses.push([placeKey(LAYER.GROUND, to), s.step + FUSE_STEPS]);
   // (P20: a caught rat lands loose and runs.)
   else if (item === CAUGHT_RAT) throwRat(sim, to);
+  // (2.36, the Six Hunter: a drag line's aniseed takes the trail, and the hounds, with it; it's spent.)
+  else if (item === DRAG_LINE) dragLine(sim, to);
   // (P19: a treat or pepper landing by a dog is the dog's.)
   else if (!catchTreat(sim, item, to)) it.ground.push([placeKey(LAYER.GROUND, to), v]);
   const hit = s.inmates.findIndex((m) => tileAt(m.body.x, m.body.z) === to);

@@ -55,12 +55,51 @@ export function setLang(l: Lang | 'auto') {
 }
 
 export const currentLang = () => lang;
+/** Whether a key exists (a prison's own wording, looked for before the usual one). */
+export const hasKey = (k: string): k is Key => k in en;
 /** What text drawn earlier depends on: the language and the player's keys (session 9). A cache keyed on it redraws after either changes. */
 export const textStamp = () => `${lang}:${keysVersion()}`;
 
 export function t(key: Key, vars: Record<string, string | number> = {}): string {
   const s = TABLES[lang]?.[key] ?? en[key];
-  return withKeys(s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`)));
+  if (lang === 'fr') return withKeys(s.replace(FR_HOLE, (_, pre: string | undefined, k: string) => frFill(pre, String(vars[k] ?? `{${k}}`))));
+  return withKeys(s.replace(/\{(\w+)\}/g, (_, k: string, at: number) => enFill(s, at, String(vars[k] ?? `{${k}}`))));
+}
+
+/**
+ * 2.36 (The Six Hunter): a prison's name that comes with its article takes a small "the" after a word ("You broke out
+ * of the Six Hunter", "On to the Six Hunter"); at a sentence's start, after a colon or a dot, it keeps its capital.
+ * Only a prison's name (`articled`): nothing else that starts with "The".
+ */
+function enFill(s: string, at: number, v: string): string {
+  if (at < 2 || !v.startsWith('The ') || !/\p{L} $/u.test(s.slice(at - 2, at)) || !articled('en').has(v)) return v;
+  return `the ${v.slice(4)}`;
+}
+
+/** The prisons' names that come with their article ("The Six Hunter", « Les Six Veneurs »), per language: the only values contracted. */
+const ARTICLED: Partial<Record<Lang, Set<string>>> = {};
+function articled(l: Lang): Set<string> {
+  const table = TABLES[l];
+  if (!table) return new Set();
+  return (ARTICLED[l] ??= new Set(
+    Object.entries(table)
+      .filter(([k, v]) => k.startsWith('prison.') && typeof v === 'string' && /^(The|Les) /.test(v))
+      .map(([, v]) => v as string),
+  ));
+}
+
+/** A hole, with the word before it when that's "de" or "à" (or any word: mid-sentence). */
+const FR_HOLE = /(?:(\p{L}+) )?\{(\w+)\}/gu;
+
+/**
+ * 2.36 (The Six Hunter, "Les Six Veneurs" in French): a name that comes with its article contracts after "de" and
+ * "à" ("évadé des Six Veneurs", "aux Six Veneurs") and is "les" mid-sentence ("Direction les Six Veneurs").
+ */
+function frFill(pre: string | undefined, v: string): string {
+  if (!pre || !v.startsWith('Les ') || !articled('fr').has(v)) return pre ? `${pre} ${v}` : v;
+  const rest = v.slice(4);
+  const contracted = { de: 'des', à: 'aux', De: 'Des', À: 'Aux' }[pre];
+  return contracted ? `${contracted} ${rest}` : `${pre} les ${rest}`;
 }
 
 /** A text mid-sentence: its first letter in lower case ("Bringing you a tube of glue"). */

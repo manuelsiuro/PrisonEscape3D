@@ -113,8 +113,9 @@ console.log(
   `  twists: ${TWIST_IDS.map((id) => `${id} ${tally.get(id) ?? 0}`).join(', ')}; days dealt fewer than their rhythm ${tally.get('short hand') ?? 0}`,
 );
 check(
-  PRISONS.every((p) => (tally.get(p.id) ?? 0) > 50),
-  'every prison comes up',
+  // (2.36: the Six Hunter, level 6, is past the Daily's rhythm of levels 1–5: never drawn, so no older Daily changes.)
+  PRISONS.every((p) => (p.difficulty > 5 ? !tally.get(p.id) : (tally.get(p.id) ?? 0) > 50)),
+  'every prison of the campaign’s five comes up, the Six Hunter never',
 );
 check(
   TWIST_IDS.every((id) => (tally.get(id) ?? 0) > 20),

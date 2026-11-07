@@ -183,6 +183,11 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
     const job = jobGoal(sim);
     if (job) return job;
   }
+  // (2.36: the first day's guide asks for the desk in the player's own time: to beside it, where the button searches it.)
+  if ((!zones.length || s.attended) && firstDay.step === 'desk' && places.deskside[1] >= 0) {
+    const side = places.deskside[1];
+    return (i) => i === side;
+  }
   // Nowhere the routine wants the player: the first day's guide may point to the job board.
   if ((!zones.length || s.attended) && firstDay.step === 'board') {
     const b = w.props.find((q) => q.kind === 'jobBoard');

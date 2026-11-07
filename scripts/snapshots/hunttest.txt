@@ -16,8 +16,13 @@ the careful bot (12-tile view), 3 salts; caught per start, then by night/day × 
   irongate gate         caught 12/24  50% [2 2 0 0 3 3 1 1]  away in 45 s (34–52)
   irongate sea          caught  4/24  17% [0 0 1 1 0 0 1 1]  away in 53 s (41–77)
   irongate air          caught  4/24  17% [0 0 0 0 1 1 1 1]  away in 34 s (29–43)
-all: caught 111/408 (27%), away in 51 s on average (22–87); nobody came on in sight (0 did)
-the expert bot (it sees everything): away from 136/136, 33 of them not with the first salt:
+  six-hunter wall       caught 16/24  67% [2 2 2 2 2 2 2 2]  away in 86 s (65–119)
+  six-hunter gate       caught  3/24  13% [1 2 0 0 0 0 0 0]  away in 58 s (52–65)
+  six-hunter glider     caught  8/24  33% [0 0 2 2 0 0 2 2]  away in 61 s (59–64)
+  six-hunter van        caught  6/24  25% [1 1 0 0 1 1 1 1]  away in 40 s (34–47)
+  six-hunter sea        caught 10/24  42% [1 0 1 1 1 1 2 3]  away in 34 s (32–45)
+all: caught 154/528 (29%), away in 51 s on average (22–119); nobody came on in sight (0 did)
+the expert bot (it sees everything): away from 176/176, 41 of them not with the first salt:
   center-perks gate night seen going jumpsuit: away with salt 2
   center-perks gate night seen going uniform: away with salt 2
   center-perks gate day head start jumpsuit: away with salt 2
@@ -51,9 +56,18 @@ the expert bot (it sees everything): away from 136/136, 33 of them not with the 
   irongate sea night seen going uniform: away with salt 4
   irongate air night head start jumpsuit: away with salt 2
   irongate air night head start uniform: away with salt 2
-by condition: night, head start, jumpsuit 25%; night, head start, uniform 24%; night, seen going, jumpsuit 24%; night, seen going, uniform 24%; day, head start, jumpsuit 24%; day, head start, uniform 24%; day, seen going, jumpsuit 39%; day, seen going, uniform 35%
+  six-hunter gate day head start jumpsuit: away with salt 6
+  six-hunter gate day head start uniform: away with salt 6
+  six-hunter gate day seen going jumpsuit: away with salt 4
+  six-hunter gate day seen going uniform: away with salt 4
+  six-hunter glider night seen going jumpsuit: away with salt 2
+  six-hunter glider night seen going uniform: away with salt 2
+  six-hunter sea day seen going jumpsuit: away with salt 2
+  six-hunter sea day seen going uniform: away with salt 2
+by condition: night, head start, jumpsuit 27%; night, head start, uniform 26%; night, seen going, jumpsuit 26%; night, seen going, uniform 26%; day, head start, jumpsuit 24%; day, head start, uniform 24%; day, seen going, jumpsuit 41%; day, seen going, uniform 39%
 keeping still, center-perks: day: in cover 7 tiles from safety caught at 190 s, in the open at the start 40 s (in a guard's uniform 42 s); night: in cover 7 tiles from safety caught at 190 s, in the open at the start 42 s (in a guard's uniform 42 s)
 keeping still, stalag-flucht: day: in cover 7 tiles from safety caught at 125 s, in the open at the start 128 s (in a guard's uniform 128 s); night: in cover 7 tiles from safety caught at 125 s, in the open at the start 128 s (in a guard's uniform 128 s)
 keeping still, shankton: day: in cover 19 tiles from safety caught at 480 s, in the open at the start 79 s (in a guard's uniform 79 s); night: in cover 19 tiles from safety caught at 480 s, in the open at the start 79 s (in a guard's uniform 79 s)
 keeping still, san-pancho: day: in cover 9 tiles from safety caught at 124 s, in the open at the start 212 s (in a guard's uniform 212 s); night: in cover 9 tiles from safety caught at 124 s, in the open at the start 212 s (in a guard's uniform 212 s)
 keeping still, irongate: day: in cover 10 tiles from safety caught at 69 s, in the open at the start 131 s (in a guard's uniform 131 s); night: in cover 10 tiles from safety caught at 69 s, in the open at the start 131 s (in a guard's uniform 131 s)
+keeping still, six-hunter: day: in cover 9 tiles from safety caught at 122 s, in the open at the start 86 s (in a guard's uniform 86 s); night: in cover 9 tiles from safety caught at 122 s, in the open at the start 86 s (in a guard's uniform 86 s)

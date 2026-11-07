@@ -1,6 +1,6 @@
 ---
 name: polish-gameplay
-description: "The steps for reworking, polishing, rebalancing or reviewing a game mechanic in Prison Escape 3D so that nothing is forgotten and the quality holds: what's already been done, every place a mechanic reaches, rule traps, proof in all five prisons, playing it in the browser, an independent review, and finishing with evidence. Use it whenever the user wants a part of the gameplay improved, changed or checked (the canteen, showers, roll call, jobs, fights, guards, a minigame, an animation, a rule, a cost), asks for a full or AAA review of a feature, or says something 'should be polished', even if they don't say 'skill' or 'polish'. Use it before writing code."
+description: "The steps for reworking, polishing, rebalancing or reviewing a game mechanic in Prison Escape 3D so that nothing is forgotten and the quality holds: what's already been done, every place a mechanic reaches, rule traps, proof in all six prisons, playing it in the browser, an independent review, and finishing with evidence. Use it whenever the user wants a part of the gameplay improved, changed or checked (the canteen, showers, roll call, jobs, fights, guards, a minigame, an animation, a rule, a cost), asks for a full or AAA review of a feature, or says something 'should be polished', even if they don't say 'skill' or 'polish'. Use it before writing code."
 ---
 
 # Polishing a mechanic
@@ -70,7 +70,7 @@ line is something that was missed or broke at some point.
   no-break space (U+202F) before `:` `;` `!` `?` and `%`, and inside « ».
 
 **The world**
-- Props and decor in all five prisons: is what the rule assumes actually there, and the same everywhere?
+- Props and decor in all six prisons: is what the rule assumes actually there, and the same everywhere?
   Tray decor was only on Center Perks' counter.
 - The map viewer (`mapimage.ts`, `mapdata.ts`, overlays, routine notes, photos). `mapshot.send()` rewrites
   every photo: `git checkout` the ones nothing changed in.
@@ -106,7 +106,7 @@ through `t()` in both languages, tuning numbers in `tuning.ts`. New draws from t
 bot, so avoid them. Runs recorded in tests under the new rules are labelled with the coming version, or
 they replay under the old ones. Decide patch or minor now: the flag's gate needs the version it ships in.
 
-## 5. Prove it in all five prisons
+## 5. Prove it in all six prisons
 
 Write `scripts/<area>test.ts` with its snapshot:
 
@@ -140,7 +140,7 @@ await p.to(50, 12); await p.press('KeyE');      // real keys
 p.freeze(); p.zoom(3);                          // held still and enlarged for a close look
 ```
 
-Cover: all five prisons; desktop, 412×915 and 915×412; keyboard and touch; English and French; every lesson
+Cover: all six prisons; desktop, 412×915 and 915×412; keyboard and touch; English and French; every lesson
 from the Tutorial menu, start to finish; light and reduced motion where it matters.
 
 What will trip you up:
@@ -170,7 +170,7 @@ seen and where), or "not checked". Never tick a line from memory.
 | Check | Proof |
 |---|---|
 | `npm run build` and `npm run check` (types, lint, layout, tests: exit codes, clean re-run) | |
-| Works in all five prisons | |
+| Works in all six prisons | |
 | Lesson played from the menu; first-day guide | |
 | How to play page and picture; other pages that mention it | |
 | English and French read through, on screen on a phone | |

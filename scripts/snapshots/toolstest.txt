@@ -1,27 +1,32 @@
-cards: 147 of 149 items say what they do (silent: broom, bleach)
-center-perks tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3
-stalag-flucht tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file -, screwdriver -, powered_screwdriver -, multitool 3
-shankton tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3
-san-pancho tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file -, screwdriver -, powered_screwdriver -, multitool 3
-irongate tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3
+cards: 163 of 165 items say what they do (silent: broom, bleach)
+center-perks tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3, antler_pick 2
+stalag-flucht tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file -, screwdriver -, powered_screwdriver -, multitool 3, antler_pick 2
+shankton tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3, antler_pick 2
+san-pancho tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file -, screwdriver -, powered_screwdriver -, multitool 3, antler_pick 2
+irongate tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3, antler_pick 2
+six-hunter tools: plastic_spoon 10, trowel 4, flimsy_shovel 4, light_shovel 3, sturdy_shovel 2, plastic_fork 25×3, flimsy_pickaxe 10, light_pickaxe 6, sturdy_pickaxe 4, plastic_knife 25×3, flimsy_cutters 10, light_cutters 6, sturdy_cutters 4, nail_file 5, screwdriver 3, powered_screwdriver 2, multitool 3, antler_pick 2
 center-perks last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 stalag-flucht last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 shankton last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 san-pancho last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 irongate last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
+six-hunter last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 center-perks: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
 stalag-flucht: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
 shankton: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
 san-pancho: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
 irongate: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
+six-hunter: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
 center-perks out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
 stalag-flucht out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
 shankton out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
 san-pancho out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
 irongate out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
-crafting: 60 of 60 recipes made in one go from the handbook; 60 refused a point short of their Intellect
+six-hunter out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
+crafting: 64 of 64 recipes made in one go from the handbook; 64 refused a point short of their Intellect
 center-perks search: 29 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 5 guards' pockets full
 stalag-flucht search: 25 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 6 guards' pockets full
 shankton search: 13 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 8 guards' pockets full
 san-pancho search: 8 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 8 guards' pockets full
 irongate search: 10 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 10 guards' pockets full
+six-hunter search: 12 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 6 guards' pockets full

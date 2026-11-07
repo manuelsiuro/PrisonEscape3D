@@ -33,7 +33,7 @@ what: [`docs/README.md`](README.md).
 
 Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the GDD wins unless a row says why not), one file per area in `docs/decisions/` (moved there word for word on 2026-11-06):
 
-- [The campaign and the five prisons](decisions/prisons.md): what each prison has and where: maps, rooms, themes, the grounds (21 rows)
+- [The campaign and the six prisons](decisions/prisons.md): what each prison has and where: maps, rooms, themes, the grounds (21 rows)
 - [The daily routine](decisions/routine.md): the clock, roll call, meals, showers, Lights Out and sleep, lockdowns, sitting, the day's events (18 rows)
 - [Guards and security](decisions/guards.md): seeing and being caught, solitary, shakedowns, the generator, cameras, detectors, searchlights, snipers, guard dogs, noise (23 rows)
 - [Damage, tunnels and the layers](decisions/digging.md): chipping, digging, covers, the vents and the roofs, cave-ins (9 rows)
@@ -143,6 +143,7 @@ Every phase is built and released. The plans, phase by phase with what each ship
 - [Phone and kiosk (P34–P36, v2.10–v2.12)](phases/5-phone-kiosk.md): P34 The pay phone, P35 The internet kiosk, P36 The paperwork escape
 - [How to play, laid out again (P37–P38, v2.13–v2.17)](phases/6-how-to-play.md): P37 How to play, laid out again, P38 How to play II, The day's card, easier games, Share
 - [Parole, odd jobs, the manhunt, holidays (P39–P42, v2.18–v2.21)](phases/7-after-hours.md): P39 The parole board, P40 The odd jobs board, P41 The manhunt, P42 Holidays
+- [The Six Hunter (v2.36)](phases/9-six-hunter.md): the sixth prison past the five, its pack of six, jobs, items, ways out and what the look and the finish still owe
 - [Reviews and the gameplay polish series (v2.21.1 on)](phases/8-polish.md): Reviews and Install, Code review, The tattoo drawn by hand, The guards keep watch, The stats laid out, The library and Intellect, The vending machine, The menu board and the water cooler, The checkpoint's booth, Reading made playable, Street lamps, Jobs and the Work Period, Exercise and training, Lights Out and sleep, Roll call, Showers, Meals at the counter
 
 ## 5. Mapping the GDD to phases
@@ -199,9 +200,9 @@ feel) and the known limits. A phase that touches a map also brings the map viewe
 **Status (2026-11-07): v2.35.0.** Every planned phase is built and released: the five-prison
 campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports grounds (P31–P33),
 the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
-its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), the tattoo drawn by hand (v2.22.0), the guards keeping watch over the routine and the cells (v2.23.0), the stats laid out (v2.24.0) and meals at the serving counter (v2.25.0), the showers turned on and taken in turns (v2.26.0), roll call on your own square with the guard walking the line (v2.27.0), the night's rules, with energy only asleep and the lights really going out (v2.28.0), sets in time with a beat, with inmates on the machines (v2.29.0), jobs made clear and alive, with inmates at their stations and guards minding work rooms (v2.30.0), the library, with reading as a game of its own, a daily limit, subjects and a librarian (v2.31.0), a working vending machine in every canteen, with snacks that do something, jams thumped free and inmates queueing at it (v2.32.0), and the menu board and water cooler, with a dish of the day, a scribble for a laugh and gossip overheard at the cooler (v2.33.0). In numbers: 5 prisons and the Training Block,
-38 ways out, 149 items, 60 recipes, 142 achievements, 55 lessons in 4 chapters, 66 help topics,
-5,000 text keys in English and French, 76 test scripts.
+its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), the tattoo drawn by hand (v2.22.0), the guards keeping watch over the routine and the cells (v2.23.0), the stats laid out (v2.24.0) and meals at the serving counter (v2.25.0), the showers turned on and taken in turns (v2.26.0), roll call on your own square with the guard walking the line (v2.27.0), the night's rules, with energy only asleep and the lights really going out (v2.28.0), sets in time with a beat, with inmates on the machines (v2.29.0), jobs made clear and alive, with inmates at their stations and guards minding work rooms (v2.30.0), the library, with reading as a game of its own, a daily limit, subjects and a librarian (v2.31.0), a working vending machine in every canteen, with snacks that do something, jams thumped free and inmates queueing at it (v2.32.0), and the menu board and water cooler, with a dish of the day, a scribble for a laugh and gossip overheard at the cooler (v2.33.0). Since 2.36 (not released yet): a sixth prison past the five, the Six Hunter ([`phases/9-six-hunter.md`](phases/9-six-hunter.md)). In numbers: 6 prisons and the Training Block,
+45 ways out, 165 items, 64 recipes, 144 achievements, 55 lessons in 4 chapters, 67 help topics,
+5,087 text keys in English and French, 78 test scripts.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

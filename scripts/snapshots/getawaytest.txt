@@ -1,4 +1,4 @@
-data: checkpoints at center-perks, shankton, irongate; gliders out of center-perks, stalag-flucht, shankton; the card $80, the ID Int 50, the frame Int 60, the glider Int 80
+data: checkpoints at center-perks, shankton, irongate, six-hunter; gliders out of center-perks, stalag-flucht, shankton, six-hunter; the card $80, the ID Int 50, the frame Int 60, the glider Int 80
 bluff: 19:49 notShift, 19:50 waved, 20:09 waved, 20:10 notShift; orange notGuard, heat 40 papersHot, heat 39 waved, wanted hunted, lockdown hunted; the gates for the player alone, 60 s, never shut on them, at once when wanted; out by bluff
 checkpoints: Irongate's drawbridge for the player alone, out over it, never shut on the rock past it; Shankton's three gates, its gatehouse held open
 glide reach (tailwind, quarter tail, cross, quarter head, head, quarter head, cross, quarter tail):

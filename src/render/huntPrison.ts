@@ -4,7 +4,7 @@ import { LAYER, MAP_H, MAP_W, parseRows, World } from '../sim/world/World';
 import { seeThrough } from './occlusion';
 import { Island } from './Island';
 import { Structure } from './Structure';
-import { TEX } from './textures';
+import { stoneCap, TEX } from './textures';
 import { WALL_H, wallBlock, WorldView } from './WorldView';
 
 /** Over the outside's floors (the same height would flicker), under anyone's feet. */
@@ -70,7 +70,15 @@ export class PrisonBehind {
         map.repeat.set(1, WALL_H);
         map.needsUpdate = true;
         const side = seeThrough(new THREE.MeshStandardMaterial({ map, roughness: 0.95 }));
-        const top = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.reinforced(), color: 0xc4c4c4, roughness: 0.95 }));
+        // (2.36: the forest's fieldstone has a cap of its own, as WorldView draws it.)
+        const forest = o.prison.theme === 'forest';
+        const top = seeThrough(
+          new THREE.MeshStandardMaterial({
+            map: forest ? stoneCap() : TEX.reinforced(),
+            color: forest ? 0xffffff : 0xc4c4c4,
+            roughness: 0.95,
+          }),
+        );
         const geo = wallBlock();
         const mesh = new THREE.InstancedMesh(geo, [side, top], this.wallOn.length);
         const m = new THREE.Matrix4();

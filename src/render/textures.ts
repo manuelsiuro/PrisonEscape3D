@@ -294,8 +294,8 @@ const BASE = {
     }),
 };
 
-/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island. */
-export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island';
+/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island, the Six Hunter's pine forest. */
+export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island' | 'forest';
 let theme: Theme = 'suburban';
 
 /** The look the next textures are drawn in (set as a world is shown; textures already made keep theirs). */
@@ -582,6 +582,185 @@ const ISLAND: Partial<typeof BASE> = {
     }),
 };
 
+/** Pine needles strewn over a texture: short rust-brown strokes, some diagonal. */
+function needles(c: CanvasRenderingContext2D, n: number, rand: () => number, count: number, colors: readonly string[]) {
+  for (let k = 0; k < count; k++) {
+    c.fillStyle = colors[k % colors.length];
+    const x = Math.floor(rand() * n);
+    const y = Math.floor(rand() * n);
+    const way = Math.floor(rand() * 3);
+    if (way === 0) c.fillRect(x, y, 2, 1);
+    else if (way === 1) c.fillRect(x, y, 1, 2);
+    else {
+      c.fillRect(x, y, 1, 1);
+      c.fillRect((x + 1) % n, (y + 1) % n, 1, 1);
+    }
+  }
+}
+
+/** Rounded fieldstones laid in dark mortar (the forest's walls no tool chips, and their caps). */
+function fieldstones(c: CanvasRenderingContext2D, n: number, rand: () => number, mortar: string) {
+  c.fillStyle = mortar;
+  c.fillRect(0, 0, n, n);
+  const tones = [
+    [138, 132, 120],
+    [154, 146, 132],
+    [122, 117, 108],
+    [143, 128, 104],
+    [112, 116, 112],
+  ];
+  // Three courses of stones of uneven length, each stone's corners knocked off, lit on top.
+  for (const [y0, h] of [
+    [0, 5],
+    [5, 6],
+    [11, 5],
+  ]) {
+    let x = -Math.floor(rand() * 4);
+    while (x < n) {
+      const w = 4 + Math.floor(rand() * 4);
+      const [r, g, b] = tones[Math.floor(rand() * tones.length)];
+      const shade = 0.9 + rand() * 0.18;
+      c.fillStyle = `rgb(${Math.round(r * shade)},${Math.round(g * shade)},${Math.round(b * shade)})`;
+      c.fillRect(x + 1, y0 + 1, w - 1, h - 1);
+      c.fillStyle = mortar;
+      c.fillRect(x + 1, y0 + 1, 1, 1);
+      c.fillRect(x + w - 1, y0 + 1, 1, 1);
+      c.fillRect(x + 1, y0 + h - 1, 1, 1);
+      c.fillRect(x + w - 1, y0 + h - 1, 1, 1);
+      c.fillStyle = 'rgba(255,248,230,0.22)';
+      c.fillRect(x + 2, y0 + 1, w - 3, 1);
+      c.fillStyle = 'rgba(30,26,20,0.25)';
+      c.fillRect(x + 2, y0 + h - 2, w - 3, 1);
+      // (A stone off the canvas's east edge wraps onto its west, so the tiles meet without a seam.)
+      if (x + w > n) {
+        c.fillStyle = `rgb(${Math.round(r * shade)},${Math.round(g * shade)},${Math.round(b * shade)})`;
+        c.fillRect(0, y0 + 1, x + w - n - 1, h - 1);
+      }
+      x += w;
+    }
+  }
+  // Lichen, here and there.
+  c.fillStyle = 'rgba(170,180,120,0.45)';
+  for (let k = 0; k < 4; k++) c.fillRect(Math.floor(rand() * n), Math.floor(rand() * n), 2, 1);
+}
+
+/**
+ * The pine forest (2.36, The Six Hunter): pine-needle loam and moss underfoot, packed earth with needles in it, a muddy
+ * track with its ruts and puddles, the lodge's board-and-batten timber under a cedar plate, fieldstone for the walls no
+ * tool chips, flagstone floors, cedar-shake roofs, a deer fence of graduated woven wire.
+ */
+const FOREST: Partial<typeof BASE> = {
+  grass: () =>
+    texture('forestFloor', 16, (c, n, r) => {
+      // (A quarter lighter than first drawn: review of 2.36, its night came out half as bright as the other prisons'.)
+      speckle(c, n, r, '#6d8a4e', '#5f7b44', '#7b985a', 0.34);
+      // Moss cushions, then the needles over them.
+      c.fillStyle = '#89a85e';
+      for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * (n - 2)), Math.floor(r() * (n - 2)), 2, 2);
+      needles(c, n, r, 16, ['#94703f', '#a47e48', '#836038', '#b08c58']);
+    }),
+  trail: () =>
+    texture('forestTrail', 16, (c, n, r) => {
+      speckle(c, n, r, '#8c7254', '#7b6248', '#9c8262', 0.36);
+      needles(c, n, r, 8, ['#6a4c2e', '#a07c4e']);
+      c.fillStyle = 'rgba(70,52,34,0.35)';
+      for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+  road: () =>
+    texture('forestTrack', 16, (c, n, r) => {
+      // (No ruts: the ring turns corners and a texture doesn't turn with it.) Wet mud in blotches, gravel, a puddle's glint.
+      speckle(c, n, r, '#66533f', '#5a4834', '#725e48', 0.36);
+      c.fillStyle = '#4c3c2c';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * (n - 3)), Math.floor(r() * (n - 2)), 3, 2);
+      c.fillStyle = '#8a8478';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+      c.fillStyle = 'rgba(170,192,204,0.4)';
+      c.fillRect(Math.floor(r() * (n - 3)), Math.floor(r() * n), 2, 1);
+    }),
+  /** Flagstones: big worn slabs of grey-brown stone, their joints a shade darker, not a grid of bricks. */
+  concrete: () =>
+    texture('flagstones', 16, (c, n, r) => {
+      c.fillStyle = '#7a746a';
+      c.fillRect(0, 0, n, n);
+      for (const [x, y, w, h] of [
+        [0, 0, 10, 7],
+        [10, 0, 6, 7],
+        [0, 7, 6, 9],
+        [6, 7, 10, 9],
+      ]) {
+        const shade = 0.94 + r() * 0.1;
+        c.fillStyle = `rgb(${Math.round(156 * shade)},${Math.round(150 * shade)},${Math.round(138 * shade)})`;
+        c.fillRect(x + 1, y + 1, w - 1, h - 1);
+      }
+      speckle(c, n, () => (r() < 0.75 ? 1 : r()), 'rgba(0,0,0,0)', 'rgba(90,84,74,0.35)', 'rgba(232,226,212,0.3)', 0.25);
+    }),
+  /** Board-and-batten: dark-stained vertical boards, a lighter batten over each joint, the grain running up. */
+  brick: () =>
+    texture('battens', 16, (c, n, r) => {
+      for (let x = 0; x < n; x += 4) {
+        const shade = 0.9 + r() * 0.14;
+        c.fillStyle = `rgb(${Math.round(112 * shade)},${Math.round(76 * shade)},${Math.round(50 * shade)})`;
+        c.fillRect(x, 0, 4, n);
+        c.fillStyle = 'rgba(50,30,16,0.35)';
+        for (let k = 0; k < 3; k++) c.fillRect(x + 1 + Math.floor(r() * 2), Math.floor(r() * n), 1, 3);
+      }
+      for (let x = 0; x < n; x += 4) {
+        c.fillStyle = '#8a6040';
+        c.fillRect(x, 0, 1, n);
+        c.fillStyle = '#3c2616';
+        c.fillRect(x + 1, 0, 1, n);
+      }
+    }),
+  reinforced: () => texture('fieldstone', 16, (c, n, r) => fieldstones(c, n, r, '#4a463e')),
+  /** The lodge walls' cap: a cedar plate weathered dark, a plate a tile (dark against the floors and the moss, as the caps are elsewhere). */
+  wallTop: () =>
+    texture('lodgeCap', 16, (c, n, r) => {
+      speckle(c, n, r, '#4f463d', '#473f37', '#585046', 0.26);
+      c.fillStyle = 'rgba(30,24,18,0.3)';
+      for (let k = 0; k < 4; k++) c.fillRect(1 + Math.floor(r() * (n - 3)), 1 + Math.floor(r() * (n - 2)), 2, 1);
+      capEdges(c, n, '#71655a', '#2a221b');
+    }),
+  /** Cedar shakes: split shingles in staggered rows, silvered by the weather, each row's shadow under it. */
+  gravel: () =>
+    texture('shakes', 16, (c, n, r) => {
+      c.fillStyle = '#3e3328';
+      c.fillRect(0, 0, n, n);
+      for (let y = 0; y < n; y += 4) {
+        const off = (y / 4) % 2 ? 2 : 0;
+        for (let x = -off; x < n; x += 3 + ((x + y) % 2)) {
+          const shade = 0.85 + r() * 0.25;
+          c.fillStyle = `rgb(${Math.round(132 * shade)},${Math.round(110 * shade)},${Math.round(88 * shade)})`;
+          c.fillRect(x, y, 3, 3);
+        }
+        c.fillStyle = 'rgba(30,22,14,0.4)';
+        c.fillRect(0, y + 3, n, 1);
+      }
+    }),
+  /** A deer fence: galvanised woven wire, its rows closer near the ground, a tension wire along the top. */
+  fence: () =>
+    texture('deerFence', 32, (c, n) => {
+      c.clearRect(0, 0, n, n);
+      c.fillStyle = '#c4cad0';
+      for (let x = 0; x < n; x += 4) c.fillRect(x, 3, 1, n - 3);
+      for (const y of [3, 9, 14, 18, 22, 25, 28, 30]) c.fillRect(0, y, n, 1);
+      c.fillStyle = '#dde2e6';
+      c.fillRect(0, 0, n, 1);
+    }),
+};
+
+/** The fieldstone wall's cap (the forest's walls no tool chips, from above): stones in mortar, lit and shaded like every cap. */
+export function stoneCap(): THREE.CanvasTexture {
+  return texture('fieldstoneCap', 16, (c, n, r) => {
+    fieldstones(c, n, r, '#56514a');
+    capEdges(c, n, '#b4ad9e', '#3a362f');
+  });
+}
+
+/** The look textures are being drawn in now (render-only choices that follow the theme: the forest's lamps, trees, towers). */
+export function currentTheme(): Theme {
+  return theme;
+}
+
 /** The textures, in the current theme's look. */
 const THEMES: Record<Theme, Partial<typeof BASE>> = {
   suburban: {},
@@ -589,6 +768,7 @@ const THEMES: Record<Theme, Partial<typeof BASE>> = {
   industrial: INDUSTRIAL,
   desert: DESERT,
   island: ISLAND,
+  forest: FOREST,
 };
 export const TEX = Object.fromEntries(
   (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => (THEMES[theme][k] || BASE[k])(...(a as [string]))]),
