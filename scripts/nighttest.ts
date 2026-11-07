@@ -321,7 +321,7 @@ for (const def of PRISONS) {
   old.act();
   check(old.st.sleeping && !dummyInBed(old.sim), 'the old rules: the bed only sleeps');
   console.log(
-    'the bed: Tuck in, Take out, then Sleep in all five; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever',
+    'the bed: Tuck in, Take out, then Sleep in every prison; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever',
   );
 }
 

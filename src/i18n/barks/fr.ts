@@ -440,7 +440,7 @@ export const frBarks: Barks = {
   'in.pines': [
     'Des pins, des pins, des pins. J’ai commencé à leur donner des noms.',
     'T’entends ? Les chiens. Quelque part. Toujours quelque part.',
-    'Les bois sont beaux, sombres et pleins de Chasseurs.',
+    'Les bois sont beaux, sombres et pleins de Veneurs.',
     'Ça sent Noël. On dirait lundi.',
     'Quelqu’un nous compte sur ce tableau des prises. Je le sens.',
     'Ici, chaque brindille claque comme un coup de fusil.',
@@ -739,7 +739,7 @@ export const frBarks: Barks = {
     'Tu sens ? Le pin et la peur. Mes deux préférés.',
     'Les chiens sont en forme aujourd’hui.',
     'Cours si tu veux. On adore quand ils courent.',
-    'Six de nous, six chiens. Personne n’a jamais été le septième.',
+    'Nous sommes six, eux aussi. Personne n’a jamais été le septième.',
     'Gare aux racines. Gare à la rivière. Gare à moi.',
   ],
   'sl.gu': [
