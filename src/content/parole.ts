@@ -165,4 +165,15 @@ export const HEARINGS: Record<string, HearingPlace> = {
     face: 5,
     seat: { x: 31, z: 31 },
   },
+  // The gatehouse's visiting counter: the board on its north stools.
+  'six-hunter': {
+    zone: 'visitation',
+    board: [
+      { x: 25, z: 39 },
+      { x: 26, z: 39 },
+      { x: 27, z: 39 },
+    ],
+    face: 5,
+    seat: { x: 26, z: 41 },
+  },
 };

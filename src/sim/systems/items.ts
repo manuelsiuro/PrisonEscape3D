@@ -93,10 +93,12 @@ export const pocketOf = (w: World, id: number) => containersOf(w).length + id;
 /** Whose pockets a container index is (-1: furniture, not a person). */
 export const ownerOf = (w: World, index: number) => (index >= containersOf(w).length ? index - containersOf(w).length : -1);
 
-/** What a guard always has on it (GDD §10.2): its key, a baton, its uniform; P36: the strict one (the shakedown's), a blank release form too. */
+/** What a guard always has on it (GDD §10.2): its key, a baton, its uniform; P36: the strict one (the shakedown's), a blank release form too; 2.36: its `kit`. */
 export function guardKit(w: World, k: number): number[] {
   const kit = [itemNumber(`key_${w.def.guards[k].key}`), itemNumber('baton'), itemNumber('guard_outfit')];
   if (w.def.comms && w.def.guards[k].duties?.includes('shakedown')) kit.push(itemNumber('release_form'));
+  // (2.36: the Six Hunter's Huntmaster, his recall horn. No other prison's guard has a `kit`.)
+  for (const id of w.def.guards[k].kit ?? []) kit.push(itemNumber(id));
   return kit;
 }
 

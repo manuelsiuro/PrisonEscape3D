@@ -396,6 +396,15 @@ export const TRUST_IGNORE = 60;
 export const TRUST_FRIEND = 100;
 export const DAZE_STEPS = 10 * STEPS_PER_SECOND;
 export const DOG_SLEEP_STEPS = 120 * STEPS_PER_MINUTE;
+/**
+ * 2.36 (The Six Hunter): the Huntmaster's recall horn, blown: every hound off to its kennel this long (an hour of game time),
+ * and heard this far (walking tiles, a bang's: it wakes the Hunters asleep in earshot). A drag line landing: the trail
+ * gone, and a noise this far (the hounds pulling their Hunters to it), drawing this many to look.
+ */
+export const RECALL_STEPS = 60 * STEPS_PER_MINUTE;
+export const HORN_NOISE = 12;
+export const DRAG_NOISE = 9;
+export const DRAG_GUARDS = 2;
 
 // The pet rat (P20).
 /** A rat trap left on the floor at 04:00 catches a rat this often (percent): in a kitchen, canteen or storeroom; down a tunnel; anywhere else none. */

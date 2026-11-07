@@ -34,6 +34,8 @@ export type { Walker } from './common';
 
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 const OWN_CLOTHES = itemNumber('own_clothes');
+/** 2.36 (The Six Hunter): a ghillie cloak passes for other clothes out there, as your own do. */
+const GHILLIE = itemNumber('ghillie_cloak');
 const TREATS = [itemNumber('jerky'), itemNumber('pepper'), itemNumber('sleepy_jerky')];
 /** Crunching gravel is heard at most this often (steps). */
 const CRUNCH_EVERY = 10;
@@ -151,7 +153,7 @@ export class Hunt {
     const due = [...this.outAt, ...this.blockAt, this.heliAt].filter((v) => Number.isFinite(v));
     this.rampAt = opts.ramp === false || !full ? Infinity : Math.max(0, ...due);
     const h0 = def.heli.route[0];
-    const clothes = carry.outfit === GUARD_OUTFIT ? 1 : carry.outfit === OWN_CLOTHES ? 2 : 0;
+    const clothes = carry.outfit === GUARD_OUTFIT ? 1 : carry.outfit === OWN_CLOTHES || carry.outfit === GHILLIE ? 2 : 0;
     this.state = {
       step: 0,
       salt,

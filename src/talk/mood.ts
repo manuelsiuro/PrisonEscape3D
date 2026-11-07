@@ -93,6 +93,7 @@ function weatherBank(sim: Sim, b: Body, guard: boolean): BankId | null {
   if (theme === 'alpine') return guard ? 'gu.cold' : 'in.cold';
   if (theme === 'desert') return guard ? 'gu.hot' : 'in.hot';
   if (theme === 'island') return guard ? 'gu.sea' : 'in.sea';
+  if (theme === 'forest') return guard ? 'gu.pines' : 'in.pines';
   return null;
 }
 
@@ -178,7 +179,7 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (block === 'lightsOut' || block === 'eveningRollCall') return mood('in.sleepy', 0.5, 'say', ['in.idle']);
   if (block === 'rollCall' || (minute >= 16 * 60 + 30 && minute < 17 * 60) || (minute >= 8 * 60 + 30 && minute < 9 * 60))
     return mood('in.hungry', 0.5, 'say', some('in.idle', weather));
-  if (weather) return mood(weather, weather === 'in.sea' ? 0.35 : 0.5, 'say', ['in.idle', 'in.bored']);
+  if (weather) return mood(weather, weather === 'in.sea' || weather === 'in.pines' ? 0.35 : 0.5, 'say', ['in.idle', 'in.bored']);
   if (block === 'eveningFreeTime' && (id + sim.clock.hour) % 3 === 0) return mood('in.homesick', 0.3, 'say', ['in.idle']);
   if (block === 'freeTime' || block === 'eveningFreeTime' || block === 'work')
     return mood('in.bored', 0.4, 'say', some('in.idle', block === 'eveningFreeTime' && 'in.homesick'));

@@ -12,7 +12,8 @@ import type { ZoneId } from './zones';
  * - 'mail': sort a letter at a `machine`, then hand it to the inmate it's addressed to.
  * - 'mop': take a mop from `take`, then mop up the puddles left in the corridors.
  */
-export type JobId = 'laundry' | 'janitor' | 'kitchen' | 'woodshop' | 'mailman' | 'metalshop' | 'gardener';
+export type JobId =
+  'laundry' | 'janitor' | 'kitchen' | 'woodshop' | 'mailman' | 'metalshop' | 'gardener' | 'kennels' | 'smokehouse' | 'nets';
 
 export interface JobDef {
   id: JobId;
@@ -110,6 +111,51 @@ export const JOBS: Record<JobId, JobDef> = {
     done: 'produce',
     cycle: 6,
   },
+  // The Six Hunter: the kennel hand (a sack of feed from the bin into a trough, a bowl of it out to the run's bin; a day's
+  // quota done, every hound has had its share from the player's hands: systems/jobs.ts kennelsFed); the smokehouse (fish
+  // from the freezer over the smoker, onto the counter); the net mender in the boathouse, by the river door.
+  kennels: {
+    id: 'kennels',
+    zone: 'kennels',
+    int: 20,
+    wage: 35,
+    quota: 4,
+    flow: 'machine',
+    take: 'bin',
+    machine: 'trough',
+    put: 'bin',
+    raw: 'feed_sack',
+    done: 'dog_bowl',
+    cycle: 4,
+  },
+  smokehouse: {
+    id: 'smokehouse',
+    zone: 'smokehouse',
+    int: 40,
+    wage: 50,
+    quota: 4,
+    flow: 'machine',
+    take: 'freezer',
+    machine: 'smoker',
+    put: 'counter',
+    raw: 'raw_fish',
+    done: 'smoked_fish',
+    cycle: 6,
+  },
+  nets: {
+    id: 'nets',
+    zone: 'boathouse',
+    int: 50,
+    wage: 55,
+    quota: 3,
+    flow: 'machine',
+    take: 'bin',
+    machine: 'netFrame',
+    put: 'bin',
+    raw: 'torn_net',
+    done: 'mended_net',
+    cycle: 5,
+  },
 };
 
 /** Job items that belong to the work (handed back at 15:00, worth nothing elsewhere). */
@@ -123,4 +169,10 @@ export const WORK_ITEMS: readonly string[] = [
   'license_plate',
   'seedlings',
   'produce',
+  'feed_sack',
+  'dog_bowl',
+  'raw_fish',
+  'smoked_fish',
+  'torn_net',
+  'mended_net',
 ];

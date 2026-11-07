@@ -43,6 +43,9 @@ const EN_PLACES: Partial<Record<ZoneId, PlaceWords>> = {
   dock: { at: 'on the dock', the: 'the dock' },
   sports: { at: 'out on the sports ground', the: 'the sports ground' },
   garden: { at: 'in the vegetable garden', the: 'the vegetable garden' },
+  kennels: { at: 'down at the kennels', the: 'the kennels' },
+  smokehouse: { at: 'in the smokehouse', the: 'the smokehouse' },
+  boathouse: { at: 'in the boathouse', the: 'the boathouse' },
   perimeter: { at: 'out by the fence', the: 'the fence' },
   playerCell: { at: 'in your cell', the: 'your cell' },
   inmateCell: { at: 'in my cell', the: 'my cell' },
@@ -76,13 +79,16 @@ const FR_PLACES: Partial<Record<ZoneId, PlaceWords>> = {
   dock: { at: 'sur le quai', the: 'le quai' },
   sports: { at: 'sur le terrain de sport', the: 'le terrain de sport' },
   garden: { at: 'au potager', the: 'le potager' },
+  kennels: { at: 'au chenil', the: 'le chenil' },
+  smokehouse: { at: 'au fumoir', the: 'le fumoir' },
+  boathouse: { at: 'au hangar à bateaux', the: 'le hangar à bateaux' },
   perimeter: { at: 'près du grillage', the: 'le grillage' },
   playerCell: { at: 'dans ta cellule', the: 'ta cellule' },
   inmateCell: { at: 'dans ma cellule', the: 'ma cellule' },
 };
 
 /** Where a random {place} may be: rooms everyone knows (a prison without one never names it). */
-export const PUBLIC_PLACES: readonly ZoneId[] = ['canteen', 'yard', 'gym', 'showers', 'library', 'laundry', 'kitchen', 'woodshop', 'metalshop', 'mailroom', 'infirmary', 'rollCall', 'corridor', 'cellBlock', 'sports', 'garden'];
+export const PUBLIC_PLACES: readonly ZoneId[] = ['canteen', 'yard', 'gym', 'showers', 'library', 'laundry', 'kitchen', 'woodshop', 'metalshop', 'mailroom', 'infirmary', 'rollCall', 'corridor', 'cellBlock', 'sports', 'garden', 'kennels', 'smokehouse', 'boathouse'];
 
 /** An item as people say it: English "a" or "an"; French gender (feminine) and elision (vowel first). */
 interface ItemWords {

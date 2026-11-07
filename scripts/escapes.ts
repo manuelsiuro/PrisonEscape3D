@@ -21,6 +21,7 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { IRONGATE } from '../src/content/prisons/irongate';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { SHANKTON } from '../src/content/prisons/shankton';
+import { SIX_HUNTER } from '../src/content/prisons/six-hunter';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { placesOf } from '../src/sim/ai/places';
@@ -123,11 +124,12 @@ export interface Plan {
   inner?: [number, number, number];
   /** Detector arches on the way (Shankton): a contraband pouch in the kit. */
   pouch?: boolean;
-  /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug. */
+  /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug; what digs it (default the sturdy shovel). */
   desk?: [number, number];
+  shovel?: string;
   toilet?: [number, number];
   dig?: Array<[number, number, number]>;
-  /** Raft (Irongate): where to stand at GEN-2 and which way, the dock fence to cut from and which way, the pier's end and the sea's way; the walkway guard to let go by first (its night round's west end). */
+  /** Raft (Irongate; 2.36 the Six Hunter, on its one generator: `generator`): where to stand at GEN-2 and which way, the dock fence to cut from and which way, the pier's end and the sea's way; the walkway guard to let go by first (its night round's west end). */
   power2?: [number, number, number];
   dock?: [number, number, number];
   pier?: [number, number, number];
@@ -323,6 +325,46 @@ export const PLANS: Plan[] = [
     pouch: true,
     gates: [30, 59],
   },
+  // The Six Hunter (2.36): no takeover (six Hunters and their hounds), the fieldstone wall not to be chipped. The raft: a
+  // guard's uniform and cloned keys (yellow out of the cell, purple into the generator room, cyan into the boathouse, red
+  // through its river door); the power off, the deer fence cut on the bank, the raft launched off the jetty's end. The
+  // tunnel: from the desk, south round the granite ledge (north, the river floods it), west under the wall to the road,
+  // dug with an antler pick. The glider: the vents to the generator room's ladder, across the roofs to the Trophy Hall's
+  // east gable, off it on the west wind over the river. The stowaway on the outfitter's truck, the bluff at the foot of
+  // the drive, the paperwork at the gatehouse. (The hounds work from day 2: every bot here goes on day 1.)
+  {
+    def: SIX_HUNTER,
+    seed: 61,
+    name: (r) => `${SIX_HUNTER.id}: ${r}`,
+    routes: ['raft', 'tunnel', 'glider', 'stowaway', 'bluff', 'paperwork'],
+    keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_cyan', 'plastic_key_red'],
+    generator: [47, 16],
+    generatorFace: DIR.EAST,
+    dock: [49, 6, DIR.NORTH],
+    pier: [49, 3, DIR.NORTH],
+    desk: [11, 9],
+    toilet: [8, 11],
+    shovel: 'antler_pick',
+    dig: [
+      [10, 9, DIR.WEST],
+      [10, 10, DIR.SOUTH],
+      [10, 11, DIR.SOUTH],
+      [9, 11, DIR.WEST],
+      [8, 11, DIR.WEST],
+      [7, 11, DIR.WEST],
+      [6, 11, DIR.WEST],
+      [5, 11, DIR.WEST],
+      [4, 11, DIR.WEST],
+      [3, 11, DIR.WEST],
+      [2, 11, DIR.WEST],
+    ],
+    grate: [10, 11],
+    ladder: [54, 15],
+    glide: [55, 26, DIR.EAST],
+    glideWind: [6, 2],
+    bluffKit: ['plastic_key_green', 'guard_outfit', 'fake_id'],
+    gates: [26, 61],
+  },
 ];
 
 // ------------------------------------------------------------------ 1. the perimeter cutout
@@ -368,9 +410,12 @@ function cutout(p: Plan) {
 }
 
 // ------------------------------------------------------------------ 2. the tunnel
+/** The way back along a tunnel from the way its last tile was dug. */
+const BACK: Record<number, number> = { [DIR.NORTH]: DIR.SOUTH, [DIR.SOUTH]: DIR.NORTH, [DIR.EAST]: DIR.WEST, [DIR.WEST]: DIR.EAST };
 function tunnel(p: Plan) {
   const bot = new Bot(p.def, p.seed + 1);
-  bot.stash('sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace', 'bed_dummy');
+  const shovel = p.shovel ?? 'sturdy_shovel';
+  bot.stash(shovel, 'timber_brace', 'timber_brace', 'timber_brace', 'bed_dummy');
   nightfall(bot, 5);
   const places = placesOf(bot.sim.world);
   const st = bot.st;
@@ -379,7 +424,7 @@ function tunnel(p: Plan) {
   bot.face(DIR.EAST);
   const desk = tileOf(...p.desk!);
   check(
-    bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT),
+    bot.strikeUntil(shovel, () => bot.sim.world.ground.kind[desk] === TILE.SHAFT),
     'the entrance under the desk',
   );
   // Its dirt down the toilet.
@@ -402,16 +447,16 @@ function tunnel(p: Plan) {
     }
     bot.face(face);
     const ok = bot.strikeUntil(
-      'sturdy_shovel',
+      shovel,
       () => bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL || bot.sim.events.some((e) => e.type === 'caveIn'),
     );
     check(ok && bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL, `tile ${p.def === CENTER_PERKS ? z : `${x},${z}`} dug`);
     check(bot.walkTo(tileOf(x, z), 400), `along to ${p.def === CENTER_PERKS ? z : `${x},${z}`}`);
   });
-  // Facing back along it, up through the road.
-  bot.face(DIR.SOUTH);
+  // Facing back along it (the way the last tile was dug from), up through the road.
+  bot.face(BACK[p.dig![p.dig!.length - 1][2]]);
   check(
-    bot.strikeUntil('sturdy_shovel', () => bot.done || st.layer === LAYER.GROUND),
+    bot.strikeUntil(shovel, () => bot.done || st.layer === LAYER.GROUND),
     'dug up',
   );
   report(p.name('tunnel'), bot);
@@ -707,30 +752,40 @@ function nightfallBig(bot: Bot, kit: string[]) {
  */
 function raft(p: Plan, seed: number) {
   const bot = new Bot(p.def, seed);
-  nightfallBig(bot, [...p.keys, 'pouch', 'sturdy_cutters', 'raft']);
+  nightfallBig(bot, [...p.keys, ...(p.pouch ? ['pouch'] : []), 'sturdy_cutters', 'raft']);
   bot.hold(p.keys[0]);
-  const [gx, gz, gface] = p.power2!;
-  check(bot.walkTo(tileOf(gx, gz), 3000), 'at GEN-2');
+  // (Irongate: GEN-2, which runs the dock's fence; the Six Hunter: its one generator.)
+  const two = !!p.power2;
+  const [gx, gz, gface] = p.power2 ?? [...p.generator!, p.generatorFace!];
+  check(bot.walkTo(tileOf(gx, gz), 3000), two ? 'at GEN-2' : 'at the generator');
   bot.face(gface);
   // The south walkway's guard at the far end of its round, walking away from the way out.
-  const g = bot.st.guards[p.walkwayGuard!];
-  check(
-    bot.until(() => g.body.x < 24 * UNIT, 20 * STEPS_PER_MINUTE),
-    'the walkway guard at its west end',
-  );
+  if (p.walkwayGuard !== undefined) {
+    const g = bot.st.guards[p.walkwayGuard];
+    check(
+      bot.until(() => g.body.x < 24 * UNIT, 20 * STEPS_PER_MINUTE),
+      'the walkway guard at its west end',
+    );
+  }
   bot.act();
-  check(bot.st.powerOff2 > 0 && bot.st.powerOff === 0, 'GEN-2 off (GEN-1 still running)');
+  const off = () => (two ? bot.st.powerOff2 > 0 : !bot.sim.power);
+  check(two ? bot.st.powerOff2 > 0 && bot.st.powerOff === 0 : off(), two ? 'GEN-2 off (GEN-1 still running)' : 'the power is off');
   const offAt = bot.st.step;
   const [fx, fz, face] = p.dock!;
   check(bot.walkTo(tileOf(fx, fz), 3000), 'at the dock fence');
   bot.face(face);
-  const wire = tileOf(fx + 1, fz);
+  const wire = tileOf(
+    fx + (face === DIR.EAST ? 1 : face === DIR.WEST ? -1 : 0),
+    fz + (face === DIR.SOUTH ? 1 : face === DIR.NORTH ? -1 : 0),
+  );
   check(bot.sim.world.ground.kind[wire] === TILE.ELECTRIC, 'facing the electric fence');
   check(
-    bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && bot.st.powerOff2 > 0,
-    'cut through before GEN-2 came back',
+    bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && off(),
+    two ? 'cut through before GEN-2 came back' : 'cut through before the power came back',
   );
-  console.log(`  raft: the dock fence cut ${((bot.st.step - offAt) / 20).toFixed(1)} s after GEN-2 went off`);
+  console.log(
+    `  raft: the ${two ? 'dock' : 'river'} fence cut ${((bot.st.step - offAt) / 20).toFixed(1)} s after ${two ? 'GEN-2' : 'the power'} went off`,
+  );
   const [px, pz, pface] = p.pier!;
   check(bot.walkTo(tileOf(px, pz), 200), 'at the pier’s end');
   bot.face(pface);

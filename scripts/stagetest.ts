@@ -164,12 +164,15 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
       book.deck.filter((e) => e === 'talent').length === 1 && book.deck.filter((e) => e === 'quiz').length === 1 && book.deck.length === 7,
       `${p.id}: a talent night and a quiz night once a week`,
     );
+    // (2.36: a prison built with them, the Six Hunter, took no card's place.)
     check(
-      !!book.beforeStage && !book.deck.includes(book.beforeStage.talent) && !book.deck.includes(book.beforeStage.quiz),
+      p.difficulty > 5
+        ? !book.beforeStage
+        : !!book.beforeStage && !book.deck.includes(book.beforeStage.talent) && !book.deck.includes(book.beforeStage.quiz),
       `${p.id}: the cards they took the places of are gone from the deck`,
     );
     lines.push(
-      `${p.id}: stage ${st.x},${st.z} facing ${st.face}; quiz ${pl.spots.map((q) => `${q.x},${q.z}`).join(' ')}; was ${book.beforeStage!.talent}/${book.beforeStage!.quiz}`,
+      `${p.id}: stage ${st.x},${st.z} facing ${st.face}; quiz ${pl.spots.map((q) => `${q.x},${q.z}`).join(' ')}; was ${book.beforeStage ? `${book.beforeStage.talent}/${book.beforeStage.quiz}` : 'nothing: built with them'}`,
     );
   }
   check(!TRAINING.leisure?.stage && !TRAINING.leisure?.quiz, 'the Training Block has neither (no day cards)');

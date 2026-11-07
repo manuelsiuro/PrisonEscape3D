@@ -295,7 +295,7 @@ const BASE = {
 };
 
 /** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island. */
-export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island';
+export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island' | 'forest';
 let theme: Theme = 'suburban';
 
 /** The look the next textures are drawn in (set as a world is shown; textures already made keep theirs). */
@@ -589,6 +589,8 @@ const THEMES: Record<Theme, Partial<typeof BASE>> = {
   industrial: INDUSTRIAL,
   desert: DESERT,
   island: ISLAND,
+  // 2.36 (The Six Hunter): the suburban textures until the look's pass gives the pine forest its own.
+  forest: {},
 };
 export const TEX = Object.fromEntries(
   (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => (THEMES[theme][k] || BASE[k])(...(a as [string]))]),

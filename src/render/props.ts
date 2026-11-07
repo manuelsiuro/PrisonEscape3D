@@ -293,6 +293,28 @@ const BUILDERS: Record<PropKind, Builder> = {
       box(0.04, 0.8, 0.04, WOOD, iw / 4 + 0.15, 0.1, id / 2 + 0.06),
     ];
   },
+  // 2.36 (The Six Hunter's work; first models, the look's pass refines them).
+  /** A feeding trough on short legs: galvanised, a lip of feed in it. */
+  trough: (w, d) => [
+    ...legs(w - 0.2, d - 0.3, 0.14, DARK),
+    box(w - 0.12, 0.26, d - 0.3, 0x9aa3ad, 0, 0.14, 0),
+    box(w - 0.24, 0.02, d - 0.42, 0x8a6a3a, 0, 0.38, 0),
+  ],
+  /** A smoker: a squat iron box on a fire, its chimney up the back. */
+  smoker: () => [
+    box(0.8, 0.9, 0.7, 0x2b2622, 0, 0, -0.05),
+    box(0.6, 0.3, 0.02, 0x5a3a20, 0, 0.35, 0.31),
+    cyl(0.09, 0.8, 0x3a3532, 0.2, 0.9, -0.2),
+  ],
+  /** A net frame: two timber posts and rails, a net stretched between them. */
+  netFrame: (w, d) => [
+    box(0.08, 1.2, 0.08, WOOD_DARK, -w / 2 + 0.1, 0, 0),
+    box(0.08, 1.2, 0.08, WOOD_DARK, w / 2 - 0.1, 0, 0),
+    box(w - 0.12, 0.06, 0.06, WOOD, 0, 1.15, 0),
+    box(w - 0.12, 0.06, 0.06, WOOD, 0, 0.25, 0),
+    box(w - 0.3, 0.86, 0.02, 0x5f7a4a, 0, 0.3, 0),
+    box(0.5, 0.2, d - 0.5, 0x8a7a5a, 0, 0, 0.2),
+  ],
   /** The produce crate: slatted timber, vegetables heaped in it. */
   crate: () => [
     box(0.72, 0.42, 0.56, 0xb07a45, 0, 0, 0),
