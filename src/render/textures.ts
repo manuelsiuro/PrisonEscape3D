@@ -42,6 +42,21 @@ function speckle(c: CanvasRenderingContext2D, n: number, rand: () => number, bas
   }
 }
 
+/**
+ * A wall's cap stone, one a tile (session 14, the picture review: the caps were one flat speckle, the largest
+ * surface on screen): a lit edge to the west and south, where the sun comes from, a shaded one north and
+ * east, so each cap reads raised and a run of them as coping with its joints. (The texture's top row is
+ * the tile's north, its left column the west.)
+ */
+function capEdges(c: CanvasRenderingContext2D, n: number, lit: string, shade: string) {
+  c.fillStyle = lit;
+  c.fillRect(0, n - 1, n, 1);
+  c.fillRect(0, 0, 1, n);
+  c.fillStyle = shade;
+  c.fillRect(0, 0, n, 1);
+  c.fillRect(n - 1, 0, 1, n);
+}
+
 const BASE = {
   grass: () =>
     texture('grass', 16, (c, n, r) => {
@@ -157,6 +172,7 @@ const BASE = {
   wallTop: () =>
     texture('wallTop', 16, (c, n, r) => {
       speckle(c, n, r, '#5e646e', '#585e67', '#656b75', 0.22);
+      capEdges(c, n, '#7b828d', '#43474f');
     }),
   /** Inside a wall, seen through a cut: dark rubble-grey core. */
   wallCore: () =>
@@ -332,7 +348,11 @@ const ALPINE: Partial<typeof BASE> = {
     }),
   wallTop: () =>
     texture('snowTop', 16, (c, n, r) => {
-      speckle(c, n, r, '#ccd6e2', '#c3cedb', '#d5dee9', 0.25);
+      // Snow on stone coping, a shade greyer than the snow on the ground, its edges lit and shaded so the walls stand out of the white.
+      speckle(c, n, r, '#ccd5e0', '#c1cbd7', '#d8e0ea', 0.3);
+      c.fillStyle = '#b3bdca';
+      for (let k = 0; k < 6; k++) c.fillRect(1 + Math.floor(r() * (n - 3)), 1 + Math.floor(r() * (n - 2)), 2, 1);
+      capEdges(c, n, '#e6edf5', '#7d8896');
     }),
   /** Snow lying on the flat roofs. */
   gravel: () =>
@@ -417,8 +437,9 @@ const DESERT: Partial<typeof BASE> = {
     }),
   trail: () =>
     texture('redEarth', 16, (c, n, r) => {
-      speckle(c, n, r, '#b98257', '#a8744b', '#c79265', 0.38);
-      c.fillStyle = 'rgba(90,52,28,0.3)';
+      // (Session 14: a sun-faded brown, no longer the orange of the jumpsuits standing on it.)
+      speckle(c, n, r, '#a98b70', '#9a7d63', '#b79a7f', 0.38);
+      c.fillStyle = 'rgba(90,60,38,0.3)';
       for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 3, 1);
     }),
   /** Adobe: mud bricks under a lime-washed plaster, worn through in patches. */
@@ -453,7 +474,9 @@ const DESERT: Partial<typeof BASE> = {
     }),
   wallTop: () =>
     texture('adobeTop', 16, (c, n, r) => {
-      speckle(c, n, r, '#a87e56', '#9a714b', '#b58b62', 0.25);
+      // Fired-clay coping, darker than the earth and sand round it (it was the plaza's own colour).
+      speckle(c, n, r, '#8e5b3d', '#814f34', '#9b6747', 0.3);
+      capEdges(c, n, '#b47c56', '#64402a');
     }),
   /** Flat clay roofs. */
   gravel: () =>
@@ -541,6 +564,7 @@ const ISLAND: Partial<typeof BASE> = {
   wallTop: () =>
     texture('graniteCap', 16, (c, n, r) => {
       speckle(c, n, r, '#6b727b', '#656c75', '#737a83', 0.25);
+      capEdges(c, n, '#8b929b', '#4c5259');
     }),
   /** Slate roofs: dark blue-grey tiles in overlapping rows. */
   gravel: () =>
