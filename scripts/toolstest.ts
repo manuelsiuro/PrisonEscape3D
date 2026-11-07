@@ -22,6 +22,7 @@ import { choices, RECIPES } from '../src/content/recipes';
 import { command, OP, ORDER } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { planStrike } from '../src/sim/systems/actions';
+import { lockAt, markerAt, sweetSpot } from '../src/sim/systems/games';
 import { GUARD, assign } from '../src/sim/systems/guards';
 import { canCraft, ingredientSlots, itemOf, maskOf, pocketOf, slot, usesOf } from '../src/sim/systems/items';
 import { caught } from '../src/sim/systems/justice';
@@ -280,6 +281,70 @@ for (const def of PRISONS) {
   );
 }
 
+// ------------------------------------------------------------------ the wrong tool counts no uses; the lockpick warns before it breaks
+for (const def of PRISONS) {
+  const sim = new Sim(quiet(def), 3);
+  const s = sim.state;
+  const w = sim.world;
+  const sp = spotFor(sim, 'chip')!;
+  // Tools that can't chip, at a brick wall: grey, and no uses counted (they'd do nothing there).
+  const wrong = ['flimsy_cutters', 'nail_file', 'light_shovel'].filter((id) => {
+    carry(sim, id);
+    stand(sim, sp.stand, sp.facing);
+    const v = describeTool(sim, targetOf(sim), held(sim));
+    return v && !v.fits && v.uses === null && !v.short;
+  });
+  check(wrong.length === 3, `${def.id}: cutters, a nail file, a shovel at a wall: grey, no uses counted (${wrong.join(', ')})`);
+  // A keyed door the player can stand at, which stays locked while it's picked (some open by the routine's clock).
+  let door = -1;
+  let from = -1;
+  let facing = 0;
+  s.items.hand = 0;
+  for (let i = 0; i < MAP_W * MAP_H && door < 0; i++) {
+    if (lockAt(w, i) !== 'lock') continue;
+    for (const [dx, dz, f] of SIDES) {
+      const j = tileOf(xOf(i) - dx, zOf(i) - dz);
+      if (w.blocked(xOf(j), zOf(j)) || w.ground.kind[j] === TILE.DOOR) continue;
+      stand(sim, j, f);
+      const tt = toolTarget(w, LAYER.GROUND, s.player, n('lockpick'), []);
+      if (tt?.action !== 'pick' || tt.tile !== i || !tt.fits) continue;
+      s.items.inv[0] = slot(n('lockpick'), WORN_WARN + 1);
+      sim.step(command(0, OP.USE, 1));
+      for (let k = 0; k < 3; k++) {
+        stand(sim, j, f);
+        sim.step(command(0));
+      }
+      if (s.pick.length && s.pick[0] === i) {
+        [door, from, facing] = [i, j, f];
+        break;
+      }
+    }
+  }
+  check(door >= 0, `${def.id}: a keyed door to pick`);
+  const order: string[] = [];
+  const spot: [number, number] = [0, 0];
+  const inZone = (k: number) => {
+    sweetSpot(s.salt, door, s.pick[1], s.items.int, spot);
+    const m = markerAt(k);
+    return m >= spot[0] && m <= spot[1];
+  };
+  for (let k = 0; k < 2000 && order.at(-1) !== 'broke'; k++) {
+    stand(sim, from, facing);
+    // A press with the marker out of the green (now and a step ago): a slip.
+    const slipNow = s.pick.length > 0 && !inZone(s.step + 1 - s.pick[2]) && !inZone(s.step - s.pick[2]);
+    sim.step(command(0, OP.USE, s.pick.length === 0 || slipNow ? 1 : 0));
+    for (const e of sim.events as SimEvent[]) {
+      if (e.type === 'worn' && e.item === n('lockpick')) order.push(`worn ${e.left}`);
+      if (e.type === 'broke' && e.item === n('lockpick')) order.push('broke');
+    }
+  }
+  check(
+    order.join(',') === `worn ${WORN_WARN},broke`,
+    `${def.id}: the lockpick is said to be nearly worn out before it breaks (${order.join(', ')})`,
+  );
+  console.log(`${def.id}: wrong tools at a wall grey, uncounted; the lockpick: ${order.join(', then ')}`);
+}
+
 // ------------------------------------------------------------------ out of sight: work in a tunnel isn't seen from the floor
 /** A guard put two tiles off the player, looking at them, standing still; the steps it saw them and the most its "?" filled. */
 function watched(sim: Sim, steps = 12): { saw: number; most: number; spotted: string[] } {
@@ -321,7 +386,7 @@ function watched(sim: Sim, steps = 12): { saw: number; most: number; spotted: st
   return { saw, most, spotted };
 }
 for (const def of PRISONS) {
-  const run = (old: boolean, underground: boolean) => {
+  const run = (old: boolean, underground: boolean, restored = false) => {
     const sim = new Sim(def, 3);
     sim.rules235 = old;
     const s = sim.state;
@@ -339,9 +404,11 @@ for (const def of PRISONS) {
       s.energy = 100;
       sim.step(command(0, OP.USE, 1));
       const struck = (sim.events as SimEvent[]).some((e) => e.type === 'strike');
+      // (Saved and loaded in between, as a save, a keyframe or the replay's seek does: the strike's layer kept.)
+      if (restored) sim.restore(sim.snapshot());
       // Straight back up.
       sim.step(command(0, OP.INTERACT));
-      return { struck, up: s.layer === LAYER.GROUND, ...watched(sim) };
+      return { struck, up: sim.state.layer === LAYER.GROUND, ...watched(sim) };
     }
     const sp = spotFor(sim, 'chip')!;
     carry(sim, 'sturdy_pickaxe');
@@ -354,14 +421,19 @@ for (const def of PRISONS) {
   const now = run(false, true);
   const was = run(true, true);
   const floor = run(false, false);
+  const loaded = run(false, true, true);
   check(
     now.struck && now.up && now.saw > 0 && now.most === 0,
     `${def.id}: up from a tunnel strike into a guard's sight: no "?" (saw ${now.saw}, ${now.most})`,
   );
+  check(
+    loaded.struck && loaded.up && loaded.saw > 0 && loaded.most === 0 && !loaded.spotted.includes('tampering'),
+    `${def.id}: the same with a save and a load between the strike and the climb (${loaded.most}, ${loaded.spotted.join(',')})`,
+  );
   check(was.struck && was.up && was.saw > 0 && was.most > 0, `${def.id}: under the old rules, the "?" filled (${was.most})`);
   check(floor.struck && floor.saw > 0 && floor.most > 0, `${def.id}: a strike on the floor in sight still fills it (${floor.most})`);
   console.log(
-    `${def.id} out of sight: up from the tunnel "?" ${now.most} (old rules ${was.most}); on the floor ${floor.most}${floor.spotted.length ? ` then ${floor.spotted.join(',')}` : ''}`,
+    `${def.id} out of sight: up from the tunnel "?" ${now.most} (saved and loaded between ${loaded.most}; old rules ${was.most}); on the floor ${floor.most}${floor.spotted.length ? ` then ${floor.spotted.join(',')}` : ''}`,
   );
 }
 

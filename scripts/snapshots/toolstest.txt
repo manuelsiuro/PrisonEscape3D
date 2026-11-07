@@ -9,11 +9,16 @@ stalag-flucht last blow: full pockets grey true, refused true; a digger beside: 
 shankton last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 san-pancho last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
 irongate last blow: full pockets grey true, refused true; a digger beside: lit true, through true, his true
-center-perks out of sight: up from the tunnel "?" 0 (old rules 6); on the floor 6 then contraband,tampering
-stalag-flucht out of sight: up from the tunnel "?" 0 (old rules 6); on the floor 6 then contraband,tampering
-shankton out of sight: up from the tunnel "?" 0 (old rules 6); on the floor 6 then contraband,tampering
-san-pancho out of sight: up from the tunnel "?" 0 (old rules 6); on the floor 6 then contraband,tampering
-irongate out of sight: up from the tunnel "?" 0 (old rules 6); on the floor 6 then contraband,tampering
+center-perks: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
+stalag-flucht: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
+shankton: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
+san-pancho: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
+irongate: wrong tools at a wall grey, uncounted; the lockpick: worn 2, then broke
+center-perks out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
+stalag-flucht out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
+shankton out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
+san-pancho out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
+irongate out of sight: up from the tunnel "?" 0 (saved and loaded between 0; old rules 6); on the floor 6 then contraband,tampering
 crafting: 60 of 60 recipes made in one go from the handbook; 60 refused a point short of their Intellect
 center-perks search: 29 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 5 guards' pockets full
 stalag-flucht search: 25 s to get there; took bed dummy and roll of duct tape ×2 / mannequin de lit et rouleau de chatterton ×2; caught: lightweight cutters, comb shiv and guard uniform; 6 guards' pockets full
