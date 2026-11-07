@@ -650,9 +650,9 @@ export class WorldView {
    * Per frame: doors slide toward their state (open too where a guard walks through, or the
    * player with a key, in `open`); lights follow the time of day (0 day … 1 night).
    */
-  update(dt: number, night: number, open?: ReadonlySet<number>, power = 1, riot = false, arches = power, dark = 0) {
+  update(dt: number, night: number, open?: ReadonlySet<number>, power = 1, riot = false, arches = power, dark = 0, walled = true) {
     this.moveDoors(dt, open, riot);
-    this.lights.setNight(night, power, dark);
+    this.lights.setNight(night, power, dark, walled);
     // Lit from inside after dark (the tower cabins, the doors' windows); dark with the power out.
     for (const m of this.windows) m.emissiveIntensity = night * power * 0.85;
     // Detector arches: green while powered, a red flash when one trips, dark with the power out.

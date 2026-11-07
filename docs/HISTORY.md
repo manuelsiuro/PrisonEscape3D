@@ -178,3 +178,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Tools, items and looting (v2.36.0, not released yet)
 - Talk, merchants and the crew (v2.36.0, not released yet)
 - Character animation (v2.36.0, not released yet)
+- The picture review (v2.36.0, not released yet)

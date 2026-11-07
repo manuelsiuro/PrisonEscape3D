@@ -4,6 +4,7 @@
  * Out, past the walk home) and the street lamps' pools, with the power on. What the 3D draws lit is lit
  * here: the same zones (content/zones.ts OPEN_AIR, CELL_BLOCK) and the lamps' pools. Pure, integer
  * math; the cones (render/Cones.ts) cut their rays with the same samples, so what's drawn is the rule.
+ * From 2.36 (session 14) a lamp lights only what its head sees (`lampSees`); older runs through walls.
  */
 import { CELL_BLOCK, OPEN_AIR, ZONES } from '../../content/zones';
 import { DARK_SIGHT, LAMP_LIT, NIGHT_FROM, NIGHT_TO, UNIT } from '../tuning';
@@ -17,6 +18,8 @@ export interface Dark {
   power: boolean;
   /** The cell block's lights are out (Lights Out, past the walk home, no lockdown). */
   blockDark: boolean;
+  /** 2.36 (session 14): a lamp lights only what its head sees, no wall between (false under `Sim.rules235`: through walls). */
+  walls?: boolean;
 }
 
 /** The hours drawn dark (render/viewLight.ts DAYLIGHT: the sun at its lowest). */
@@ -26,7 +29,9 @@ export const nightAt = (minuteOfDay: number) => minuteOfDay >= NIGHT_FROM || min
 const ROOM = 1;
 const BLOCK = 2;
 const LAMP = 4;
+/** Per world, the mask with lamps lighting through walls (before 2.36) and with walls stopping them. */
 const masks = new WeakMap<World, Uint8Array>();
+const walled = new WeakMap<World, Uint8Array>();
 
 /** A lamp head's offset from its pole (hundredths of a tile; the 3D's LAMP_ARM, 0.42), by its aim in eighth turns. */
 const ARM: ReadonlyArray<readonly [number, number]> = [
@@ -40,8 +45,31 @@ const ARM: ReadonlyArray<readonly [number, number]> = [
   [-30, 30],
 ];
 
-function maskOf(w: World): Uint8Array {
-  let m = masks.get(w);
+/**
+ * Whether a lamp's head at (cx, cz) (hundredths of a tile) sees the middle of tile (x, z): no tile of the map as
+ * built that stops sight (a wall; a fence doesn't) between them, sampled every eighth of a tile (integer math; render/lights.ts draws by it).
+ */
+export function lampSees(w: World, cx: number, cz: number, x: number, z: number): boolean {
+  const tx = x * 100 + 50;
+  const tz = z * 100 + 50;
+  const n = Math.max(1, Math.ceil(Math.max(Math.abs(tx - cx), Math.abs(tz - cz)) / 12));
+  const own = Math.floor(cz / 100) * MAP_W + Math.floor(cx / 100);
+  for (let k = 1; k < n; k++) {
+    const i = Math.floor((cz + Math.trunc(((tz - cz) * k) / n)) / 100) * MAP_W + Math.floor((cx + Math.trunc(((tx - cx) * k) / n)) / 100);
+    if (i !== own && i !== z * MAP_W + x && TILE_INFO[w.ground.base[i]].opaque) return false;
+  }
+  return true;
+}
+
+/** A lamp's head (hundredths of a tile): under the head of a lamp with one, at the pole of a lamp with two. */
+export function lampHead(p: { x: number; z: number; aim: number; heads?: number }): [number, number] {
+  const [ax, az] = p.heads === 2 ? [0, 0] : ARM[((p.aim % 8) + 8) % 8];
+  return [p.x * 100 + 50 + ax, p.z * 100 + 50 + az];
+}
+
+function maskOf(w: World, walls: boolean): Uint8Array {
+  const cache = walls ? walled : masks;
+  let m = cache.get(w);
   if (m) return m;
   m = new Uint8Array(MAP_W * MAP_H);
   // (Indoors only: a walkway, a dock or a minefield is open sky, whatever its zone. Read off the map as built
@@ -53,24 +81,23 @@ function maskOf(w: World): Uint8Array {
   // The pools: under the head of a lamp with one, round the pole of a lamp with two (as render/lights.ts draws them).
   for (const p of w.props) {
     if (p.kind !== 'lamp') continue;
-    const [ax, az] = p.heads === 2 ? [0, 0] : ARM[((p.aim % 8) + 8) % 8];
-    const cx = p.x * 100 + 50 + ax;
-    const cz = p.z * 100 + 50 + az;
+    const [cx, cz] = lampHead(p);
     const r = Math.ceil(LAMP_LIT / 100);
     for (let z = p.z - r; z <= p.z + r; z++)
       for (let x = p.x - r; x <= p.x + r; x++) {
         if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
-        if ((x * 100 + 50 - cx) ** 2 + (z * 100 + 50 - cz) ** 2 <= LAMP_LIT * LAMP_LIT) m[z * MAP_W + x] |= LAMP;
+        if ((x * 100 + 50 - cx) ** 2 + (z * 100 + 50 - cz) ** 2 > LAMP_LIT * LAMP_LIT) continue;
+        if (!walls || lampSees(w, cx, cz, x, z)) m[z * MAP_W + x] |= LAMP;
       }
   }
-  masks.set(w, m);
+  cache.set(w, m);
   return m;
 }
 
 /** Whether a tile is lit at night: off the ground floor (a roof), only a lamp's pool. */
 export function litTile(w: World, dark: Dark, x: number, z: number, ground = true): boolean {
   if (!dark.power || x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return false;
-  const m = maskOf(w)[z * MAP_W + x];
+  const m = maskOf(w, !!dark.walls)[z * MAP_W + x];
   if (m & LAMP) return true;
   if (!ground) return false;
   return !!(m & ROOM) || (!!(m & BLOCK) && !dark.blockDark);

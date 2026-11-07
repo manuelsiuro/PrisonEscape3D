@@ -556,6 +556,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   if (dark) {
     darkFrame.power = dark.power;
     darkFrame.blockDark = dark.blockDark;
+    darkFrame.walls = dark.walls;
   }
   f.dark = dark ? darkFrame : null;
   f.blocking = blocking(sim);

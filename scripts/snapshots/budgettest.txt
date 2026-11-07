@@ -1,7 +1,7 @@
-center-perks: world 36 calls, decor 3; freed 65 of 78 (4 own textures, 12 shared)
-stalag-flucht: world 35 calls, decor 2; freed 64 of 76 (4 own textures, 11 shared)
-shankton: world 36 calls, decor 2; freed 66 of 79 (5 own textures, 12 shared)
-san-pancho: world 37 calls, decor 2; freed 65 of 80 (4 own textures, 14 shared)
-irongate: world 37 calls, decor 2; freed 66 of 79 (4 own textures, 13 shared)
-training: world 30 calls, decor 3; freed 53 of 66 (4 own textures, 12 shared)
+center-perks: world 36 calls, decor 3; freed 65 of 79 (4 own textures, 13 shared)
+stalag-flucht: world 35 calls, decor 2; freed 64 of 77 (4 own textures, 12 shared)
+shankton: world 36 calls, decor 2; freed 66 of 80 (5 own textures, 13 shared)
+san-pancho: world 37 calls, decor 2; freed 65 of 81 (4 own textures, 15 shared)
+irongate: world 37 calls, decor 2; freed 66 of 80 (4 own textures, 14 shared)
+training: world 30 calls, decor 3; freed 53 of 67 (4 own textures, 13 shared)
 a character: 1 call, 2 with its silhouette
