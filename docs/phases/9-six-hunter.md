@@ -122,17 +122,27 @@ Done in the core: the definition and folder, zones (append-only) and light rules
 achievements, gangs, the outside's data, the `forest` theme in every `Record<Theme>` (placeholders), the text in
 English and French, the bots and tests, the map viewer's pictures and a first "In game" photo.
 
-**The look** (owes): the forest theme's textures (`render/textures.ts`, `forest: {}` for now), its scenery trees,
-ground, dust, lights and holiday pieces (`WorldView`, `View`, `ground.ts`, `Holidays.ts`); **the river's render**
-(inland water draws as grass: only `Island.ts` draws water today), the jetty; models for the `trough`, `smoker`
-and `netFrame` (first boxes in `render/props.ts`), the new items' shapes (stand-ins in `items.ts`), the hound
-coats' look (`render/Dog.ts`), the kennels, the tally board (a notice board for now), hunting stands; sound
-(`soundAmbience.ts`: pines, owls, a horn at dawn, hounds), the horn's and the drag line's events (`horn`,
-`dragLine`) in the view; the manhunt outside's 3D as a forest (`huntTown.ts`, `huntLand.ts`); the map photos
-retaken (`mapshot.ts`).
+**The look** (done, 2.36): the `forest` textures (`textures.ts` `FOREST`: pine-needle loam and moss, packed earth,
+a muddy track with no road paint, flagstones, board-and-batten timber under a dark cedar cap, fieldstone and its own
+`stoneCap` (session 14's lit and shaded edges; the roofs' copings too), cedar shakes, a deer fence of graduated wire on
+round timber posts); Scots pines round the prison (`pine()`, 420, chunked) and in the grounds (`decor.ts`' tree and a
+juniper by theme); hunting stands for the towers; iron lanterns on timber posts where the lamps stand (no lamp moved:
+the dark rule is the same); the forest's light (`viewLight.ts` `FOREST_DAY`: a low gold sun, a misty teal sky and fill,
+moss in the bounce), a teal-white valley mist (`Weather.ts`), needles drifting down (`Snow.ts` `LEAVES`, off with
+reduced motion, dimmed at night), needle dust underfoot. **The river** (`render/River.ts`): every water tile and the
+river on past the map under the road's two timber bridges, one mesh, a flow map running it downstream (east, round the
+bend, south; still with reduced motion), paler at the banks, the banks a lip of mud with stones and reeds; the jetty's
+piles, a rowing boat, the raft drifting away downstream on a raft escape. The trough, smoker and net frame modelled,
+the smoker's fire and smoke, the scoop and the mending needle at work (`WorkGear.ts`); the ten items' and the six job
+items' models (`itemModels.ts`) and grips; the ghillie cloak worn (tufts and a hood: `Look.ghillie`); six hounds drawn
+(`Dog.ts` held four), the foxhound's and bloodhound's coats; the Hunters' tally board and stags' heads in the Trophy
+Hall. Sound: wind in the pines, woodpecker, wood pigeon and finch by day, a tawny owl and far hounds at night, the
+Huntmaster's horn at 06:00, the recall horn's call and the drag line's whip and slap. The manhunt's valley: its river
+running with banks, stony fords with stepping stones, bramble thickets, mossy rocks, timber houses under shakes, log
+stacks, the sawmill's timber train. The select card's art (`.theme-forest .pc-scene`).
 
 **The finish** (owes): the prison select's sixth card and its stars (`ui/screens/prisons.ts`, `daily.ts` draw 5;
-`13-campaign.css` lays out 5), the card art (`.theme-forest .pc-scene`); a How to play topic (`helpTopics.ts`,
-`prison: 'six-hunter'`) and its picture (`helpshot.ts`); the drawhash, perfprobe and hitchprobe scenes and
-`perfbudget.json`; the README's screenshot; a lesson or first-day hints for the horn and the drag line if wanted;
+`13-campaign.css` lays out 5); a How to play topic (`helpTopics.ts`,
+`prison: 'six-hunter'`) and its picture (`helpshot.ts`); the README's screenshot (the drawhash, perfprobe and
+hitchprobe scenes were there already; `perfbudget.json`'s six recorded by the look); a lesson or first-day hints for the horn and the drag line if wanted;
 the screens swept at the eight sizes in both languages.
