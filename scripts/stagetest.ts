@@ -485,7 +485,7 @@ function playSong(
         }
       }
   check(now === total, `every performer on the boards in his slot (${now}/${total})`);
-  console.log(`acts on the boards, 5 prisons × 4 nights: ${now}/${total} (2.5.0: ${was}/${total})`);
+  console.log(`acts on the boards, ${PRISONS.length} prisons × 4 nights: ${now}/${total} (2.5.0: ${was}/${total})`);
 }
 
 // ------------------------------------------------------------------ quiz night: the questions

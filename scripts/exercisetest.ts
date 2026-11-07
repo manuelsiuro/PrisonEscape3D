@@ -387,7 +387,7 @@ for (const def of PRISONS) {
   bot!.until(() => m.goal !== tile && tileAt(m.body.x, m.body.z) !== tile, 200);
   check(tileAt(m.body.x, m.body.z) !== tile, `${def.id}: free time: off it soon after (${(bot!.st.step - from) / 20} s)`);
 }
-console.log('giving way: asked in all five, on the machine in 2 s, they keep off it; in free time, off it in moments');
+console.log('giving way: asked in every prison, on the machine in 2 s, they keep off it; in free time, off it in moments');
 {
   // Called off by a step away; not asked twice by a second press; nothing asked of them when too tired or as good as it gets.
   const walk = someoneOn();

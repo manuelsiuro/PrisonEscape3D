@@ -62,6 +62,8 @@ const safeSecs: number[] = [];
 const byCond = new Map<string, [number, number]>();
 const lines: string[] = [];
 for (const def of OUTSIDES) {
+  // (ONLY=<prison id> plays one prison's outside, while working on it.)
+  if (process.env.ONLY && def.prison !== process.env.ONLY) continue;
   const prison = PRISONS.find((p) => p.id === def.prison)!;
   for (const kind of START_KINDS) {
     if (!def.starts[kind]) continue;
@@ -140,6 +142,8 @@ check(caught / runs >= 0.15 && caught / runs <= 0.45, `the careful bot caught ${
 
 // Keeping still: in the cover nearest safety (no trail, the alarm up), and in the open where they came out. The search finds them in the end.
 for (const def of OUTSIDES) {
+  // (ONLY=<prison id> plays one prison's outside, while working on it.)
+  if (process.env.ONLY && def.prison !== process.env.ONLY) continue;
   const prison = PRISONS.find((p) => p.id === def.prison)!;
   const kind = START_KINDS.find((k) => def.starts[k])!;
   const out: string[] = [];

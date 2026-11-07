@@ -1,5 +1,5 @@
 /**
- * Fights, stealth and heat (2.35, the user's picks; `Sim.rules234` for older logs), in all five prisons:
+ * Fights, stealth and heat (2.35, the user's picks; `Sim.rules234` for older logs), in every prison:
  * - noticing: a guard who sees the player somewhere staff only takes a moment to be sure (sooner close up);
  *   out of its sight before then, no heat, and it comes to look where it last saw them; a guard hit knows at
  *   once; under the old rules, sure at once;

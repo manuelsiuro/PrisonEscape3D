@@ -1,5 +1,5 @@
 /**
- * Gangs and turf (2.36, session 16), in all five prisons, by real commands:
+ * Gangs and turf (2.36, session 16), in every prison, by real commands:
  * - **the data:** two or three gangs a prison (none at the Training Block), each inmate in one at most, every
  *   boss a merchant and a member; every turf tile open floor of its zone, clear of everything used (counters,
  *   machines, the vending machine and the cooler and their queues, the menu board, the phone, the stage, the

@@ -405,6 +405,14 @@ export const RECALL_STEPS = 60 * STEPS_PER_MINUTE;
 export const HORN_NOISE = 12;
 export const DRAG_NOISE = 9;
 export const DRAG_GUARDS = 2;
+/**
+ * 2.36 (The Six Hunter): the kennel hand's quota done, every hound trusts the player this much more, but never past
+ * KENNEL_TRUST_CAP from the troughs alone (below TRUST_IGNORE: a treat from the hand is what wins one over). A day the
+ * kennel hand leaves the pack unfed (the quota missed), every hound's trust fades this much.
+ */
+export const KENNEL_TRUST = 10;
+export const KENNEL_TRUST_CAP = 40;
+export const KENNEL_FADE = 15;
 
 // The pet rat (P20).
 /** A rat trap left on the floor at 04:00 catches a rat this often (percent): in a kitchen, canteen or storeroom; down a tunnel; anywhere else none. */

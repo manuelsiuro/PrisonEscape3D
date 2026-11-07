@@ -47,6 +47,9 @@ import {
   DRAG_GUARDS,
   DRAG_NOISE,
   HORN_NOISE,
+  KENNEL_FADE,
+  KENNEL_TRUST,
+  KENNEL_TRUST_CAP,
   POINT_STEPS,
   RECALL_STEPS,
   SCENT_STEPS,
@@ -644,21 +647,26 @@ const TREATS: ReadonlySet<number> = new Set([JERKY, PEPPER, PILLS]);
 export const FOR_DOGS: ReadonlySet<number> = new Set([JERKY, PEPPER, SLEEPY, TROUT]);
 
 /**
- * 2.36 (The Six Hunter): the kennel hand's quota done. Every hound that hasn't had its share today has it from the
- * player's hands, as a jerky thrown to it would give (TREAT_TRUST, once a day): a week at the troughs and the pack
- * never tracks them.
+ * 2.36 (The Six Hunter): the kennel hand's quota done: every hound has been fed from the player's hands and trusts
+ * them a little more (KENNEL_TRUST), never past KENNEL_TRUST_CAP from the troughs alone: the pack stays a threat, and
+ * jerky or a trout thrown (its `fed`, untouched here) is still what wins a hound over.
  */
 export function kennelsFed(sim: SimContext) {
   const s = sim.state;
-  const day = prisonDay(s.step);
   s.dogs.forEach((d, k) => {
-    if (d.fed === day) return;
-    const was = d.trust;
-    d.fed = day;
-    d.trust = Math.min(TRUST_FRIEND, d.trust + TREAT_TRUST);
+    if (d.trust >= KENNEL_TRUST_CAP) return;
+    d.trust = Math.min(KENNEL_TRUST_CAP, d.trust + KENNEL_TRUST);
     sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust });
-    if (was < TRUST_FRIEND && d.trust >= TRUST_FRIEND) sim.events.push({ type: 'dog', dog: k, what: 'friend', trust: d.trust });
   });
+}
+
+/**
+ * 2.36 (The Six Hunter): the kennel hand's work settled at 15:00: a day they left the pack unfed (the quota missed,
+ * not let off by a lockdown), every hound's trust fades by KENNEL_FADE, whatever won it.
+ */
+export function kennelsSettle(sim: SimContext, fed: boolean) {
+  if (fed) return;
+  for (const d of sim.state.dogs) d.trust = Math.max(0, d.trust - KENNEL_FADE);
 }
 
 /**
@@ -683,12 +691,20 @@ export function blowHorn(sim: SimContext) {
 
 /**
  * 2.36 (The Six Hunter): a drag line landed (a sock soaked in aniseed): the player's trail is lost under its smell, and
- * the hounds within earshot pull their Hunters over to it (a noise that sends DRAG_GUARDS to look). It's left there.
+ * the hounds on shift within earshot pull their Hunters over to it (DRAG_GUARDS of them at most; a Hunter whose hound
+ * is off duty, asleep or sneezing isn't pulled anywhere). It's spent either way.
  */
 export function dragLine(sim: SimContext, tile: number) {
+  const s = sim.state;
   const trail = washScent(sim, true);
   sim.events.push({ type: 'dragLine', tile, trail });
-  makeNoise(sim, 'bark', LAYER.GROUND, tile, DRAG_NOISE, DRAG_GUARDS);
+  const handlers = handlersOf(sim.world);
+  const pulled = (guard: number) => {
+    const k = handlers.indexOf(guard);
+    const d = s.dogs[k];
+    return k >= 0 && !!d && onShift(sim, dogDef(sim.world, k)) && !dogAsleep(d, s.step) && !dogDazed(d, s.step);
+  };
+  makeNoise(sim, 'bark', LAYER.GROUND, tile, DRAG_NOISE, DRAG_GUARDS, 0, pulled);
 }
 
 const treatAim: TossAim = { why: null, to: -1 };

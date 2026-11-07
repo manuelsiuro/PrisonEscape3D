@@ -1,5 +1,5 @@
 /**
- * Merchants and money (2.36's polish pass), in all five prisons, by real commands:
+ * Merchants and money (2.36's polish pass), in every prison, by real commands:
  * - **every merchant:** an inmate of the prison with 2 to 4 things of the merchant table on day 1,
  *   walked up to in free time; each thing bought at the price the talk panel shows (priceOf, the one
  *   function both use), the cash and the event saying the same, +2 opinion; the staples at the same
