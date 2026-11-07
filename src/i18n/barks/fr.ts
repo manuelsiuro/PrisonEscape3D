@@ -1123,6 +1123,14 @@ export const frBarks: Barks = {
     'Malpoli.',
     'T’as un problème avec moi ?',
   ],
+  're.favorDropped.in': [
+    'Bon. Je trouverai quelqu’un d’autre.',
+    'Je croyais pouvoir compter sur toi.',
+    'Oublie ce que j’ai demandé, {you}.',
+    'Toujours pareil : des promesses, et rien.',
+    'Bon. Laisse tomber, alors.',
+    { t: 'C’est noté. Dans mon petit carnet.', v: ['grump', 'conspiracist'] },
+  ],
   're.favorDone.in': [
     'T’as réussi ! T’es une légende.',
     'Je savais que je pouvais compter sur toi.',

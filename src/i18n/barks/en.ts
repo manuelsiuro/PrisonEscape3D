@@ -1125,6 +1125,14 @@ export const enBarks = {
     'Rude.',
     "You've got a problem with me?",
   ],
+  're.favorDropped.in': [
+    "Fine. I'll find someone who can.",
+    'Thought you were good for it.',
+    "Forget I asked, {you}.",
+    "Typical. Big talk, no delivery.",
+    'Right. Never mind, then.',
+    { t: 'Noted. In my little book.', v: ['grump', 'conspiracist'] },
+  ],
   're.favorDone.in': [
     "You did it! You're a legend.",
     'I knew I could count on you.',

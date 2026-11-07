@@ -125,7 +125,8 @@ export const LINE = { JOIN: 0, LEAVE: 1, CUT: 2 } as const;
  * the hotbar slot sold to a merchant; BUY's b past the shop's slots, a staple; P29's FOOTBALL, a match captained by the inmate;
  * TATTOO, b = the design inked on him; INK_ME, b = the design he inks on the player; P34's SWAP,
  * his place in the pay phone's queue bought; P40's ODD_JOB, the fixer's own odd job taken; JOB_IN, the odd job held
- * handed in to the one who asked; CALL_IN, the debt he owes the player called in: a tool). Never renumber.
+ * handed in to the one who asked; CALL_IN, the debt he owes the player called in: a tool; 2.36's DROP, the
+ * favor taken on for him let go). Never renumber.
  */
 export const TALK = {
   BUY: 1,
@@ -156,6 +157,7 @@ export const TALK = {
   ODD_JOB: 28,
   JOB_IN: 29,
   CALL_IN: 30,
+  DROP: 31,
 } as const;
 
 /**
