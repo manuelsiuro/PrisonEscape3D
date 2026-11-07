@@ -7,6 +7,7 @@
 // the wall, where the manhunt is run. Drawn as SVG, turned into PNG by rsvg-convert (brew install
 // librsvg). data.js also holds each prison's sheet and overlays (mapdata.ts); mapviewertest.ts
 // fails when it no longer matches the game.
+import { GANG_COLOR } from '../../src/content/gangs';
 import { HEARINGS } from '../../src/content/parole';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -323,6 +324,26 @@ function drawVending(g: Svg, def: PrisonDef) {
   });
   g.pill(cx(m.x), cz(m.z) - S * 0.62, 'VENDING', 9, red);
 }
+
+/** 2.36: each gang's turf, its table and its corner, outlined dashed in its colour with its name. */
+function drawTurf(g: Svg, def: PrisonDef) {
+  for (const gang of def.gangs ?? []) {
+    const col = `#${GANG_COLOR[gang.id].toString(16).padStart(6, '0')}`;
+    for (const r of [gang.table, gang.corner]) {
+      g.rect(
+        px(r[0]) + 2,
+        pz(r[1]) + 2,
+        (r[2] - r[0] + 1) * S - 4,
+        (r[3] - r[1] + 1) * S - 4,
+        `rx="4" fill="${col}" fill-opacity="0.14" stroke="${col}" stroke-width="2" stroke-dasharray="5 3"`,
+      );
+    }
+    const c = gang.corner;
+    g.pill(px(c[0]) + ((c[2] - c[0] + 1) * S) / 2, pz(c[1]) + 2, TURF_NAME[gang.id], 8, col);
+  }
+}
+const TURF_NAME: Record<string, string> = { kitchen: 'KITCHEN CREW', lifers: 'LIFERS', gymRats: 'GYM RATS' };
+// (Drawn under the people: the gangs' turf is a place, the guards' rounds go over it.)
 
 /** The menu board and the water cooler (2.33): the board's tiles along its wall, the places beside the cooler where inmates drink, d1 and d2. */
 function drawCanteen(g: Svg, def: PrisonDef) {
@@ -759,6 +780,11 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
             ...(def.vending ? ["The vending machine (red, VENDING): where it's used from and its queue, 1…"] : []),
+            ...(def.gangs?.length
+              ? [
+                  "Gangs (2.36): each gang's canteen table and corner of the yard, dashed in its colour (Kitchen Crew red, Lifers blue, Gym Rats green), held at dinner and in the evening from day 2, once the player has spoken to a gang member.",
+                ]
+              : []),
             ...(def.menu
               ? [
                   'The menu board (green, MENU) along its wall, read from the tiles in front; the water cooler (cooler) and where inmates stand at it to drink, d1 and d2 (blue).',
@@ -1022,6 +1048,7 @@ function picture(def: PrisonDef, kind: PictureKind): string {
     drawZones(g, w, true);
   } else if (kind === 'people') {
     drawZones(g, w, false);
+    drawTurf(g, def);
     drawPeople(g, def);
     drawComms(g, def, true);
     drawBoard(g, def);
@@ -1110,6 +1137,12 @@ function tileData(def: PrisonDef, n: number) {
   // (2.33: in every prison with a canteen, the Training Block's common room too.)
   if (def.menu) for (let x = def.menu.x; x < def.menu.x + def.menu.w; x++) mark(x, def.menu.z, 'in front of the menu board (read it here)');
   def.cooler?.spots.forEach((q, k) => mark(q.x, q.z, `where an inmate drinks at the water cooler (d${k + 1})`));
+  // (2.36: the gangs' turf.)
+  for (const gang of def.gangs ?? []) {
+    for (const [x, z] of rectTiles(gang.table)) mark(x, z, `${TURF_NAME[gang.id].toLowerCase()}'s table (gang turf, held at dinner)`);
+    for (const [x, z] of rectTiles(gang.corner))
+      mark(x, z, `${TURF_NAME[gang.id].toLowerCase()}'s corner (gang turf, held in the evening)`);
+  }
   if (def.delivery) mark(def.delivery.tail.x, def.delivery.tail.z, 'delivery tail (stowaway climbs in)');
   for (const q of def.checkpoint?.window ?? []) mark(q.x, q.z, 'checkpoint ID window');
   if (def.checkpoint) mark(def.checkpoint.booth.x, def.checkpoint.booth.z, 'checkpoint booth');

@@ -15,6 +15,7 @@ import { Island } from './Island';
 import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
 import { rollCallLayer } from './ground';
+import { showTurf, turfLayer } from './Turf';
 import { Minefield } from './Minefield';
 import { Guide } from './Guide';
 import type { Prisoner } from '../content/prisoner';
@@ -171,6 +172,9 @@ export class View {
   private decor: DecorView | null = null;
   /** The roll call's paint over a football pitch (P29), and how far it's faded in (0 … 1). */
   private rollCallPaint: THREE.Mesh | null = null;
+  /** 2.36: the gangs' turf painted on the floor, and how strongly it shows now. */
+  private turfPaint: THREE.Mesh | null = null;
+  private turfShown = 0;
   private rollCallShown = 0;
   private structure: Structure | null = null;
   private security: Security | null = null;
@@ -371,6 +375,16 @@ export class View {
       });
       this.rollCallPaint = null;
     }
+    if (this.turfPaint) {
+      const old = this.turfPaint;
+      retire([old], () => {
+        old.geometry.dispose();
+        const m = old.material as THREE.MeshBasicMaterial;
+        m.map?.dispose();
+        m.dispose();
+      });
+      this.turfPaint = null;
+    }
     if (this.minefield) {
       const old = this.minefield;
       retire([old.group], () => old.dispose());
@@ -396,6 +410,9 @@ export class View {
     this.rollCallPaint = rollCallLayer(world, pitch);
     this.rollCallShown = 0;
     if (this.rollCallPaint) this.scene.add(this.rollCallPaint);
+    this.turfPaint = turfLayer(world);
+    this.turfShown = 0;
+    if (this.turfPaint) this.scene.add(this.turfPaint);
     this.minefield = new Minefield(world);
     this.scene.add(this.minefield.group);
     // An island's sea and shore, the drawbridge, the helicopter (P12).
@@ -648,6 +665,8 @@ export class View {
   draw(f: Frame, dt: number, time: number) {
     this.noiseFx.group.visible = true;
     this.me.dress(f.outfit, f.inked);
+    // (2.36: the player's gang's colours.)
+    this.player.colours(f.colours);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)
     this.showLayer(this.pieces.getaway.aloft ? LAYER.ROOF : f.layer);
     this.redrawTiles(f);
@@ -991,6 +1010,16 @@ export class View {
       (this.rollCallPaint.material as THREE.MeshBasicMaterial).opacity = this.rollCallShown;
       this.rollCallPaint.visible = this.rollCallShown > 0 && f.layer !== LAYER.UNDER;
     }
+    // 2.36: the gangs' turf, faint all day, bright while it's held.
+    if (this.turfPaint)
+      this.turfShown = showTurf(
+        this.turfPaint,
+        f.turf,
+        this.turfShown,
+        dt,
+        this.reducedMotion,
+        f.layer === LAYER.GROUND || f.layer === LAYER.ROOF,
+      );
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
     this.meAt.x = f.x;
     this.meAt.z = f.z;
@@ -1157,6 +1186,7 @@ export class View {
         security: this.security,
         pitch: this.pitch,
         world: this.world,
+        turf: this.turfPaint,
         resize: () => this.resize(),
       },
       px,

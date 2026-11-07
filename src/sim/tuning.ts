@@ -445,3 +445,26 @@ export const LAMP_LIT = 250;
 export const LOW_COOL = 2;
 /** Blocking: a blow on the player does this share (halves, rounded up) and the player walks at this share (percent). */
 export const BLOCK_WALK = 50;
+
+// Gangs and turf (2.36, session 16; Sim.rules235 for older logs).
+/** A gang's boss asks the player in from this opinion of them (the initiation favor). */
+export const GANG_OPINION = 65;
+/** A member's discount at their own gang's merchant, on top of opinion's (a share), and the most it all comes to. */
+export const GANG_DISCOUNT = 0.2;
+export const GANG_MAX_DISCOUNT = 0.6;
+/** Joining: the gang thinks this much more of the player, every rival member this much less; leaving (or thrown out), the gang this much less. */
+export const GANG_JOIN_OPINION = 10;
+export const GANG_RIVAL_OPINION = 10;
+export const GANG_LEAVE_OPINION = 15;
+/** A member on a rival gang's turf while it's held: told to clear off, this long to do it (steps: 6 s), then one of them squares up; then nothing more for this long (steps). */
+export const TRESPASS_STEPS = 120;
+export const TRESPASS_COOLDOWN = 1200;
+/** Gang mates back a member in a fight from this close (tiles), where they can see the one after them. */
+export const GANG_BACKUP_RANGE = 6;
+/** The gang war (the day card): a member this close to the war's ground (tiles), in sight of a rival, is gone for once a war; brawlers square up within this of it. */
+export const GANG_WAR_REACH = 6;
+export const GANG_WAR_GROUND = 3;
+/** The guards the gang war draws to its ground. */
+export const GANG_WAR_GUARDS = 2;
+/** The gangs hold their turf from this prison day (day 1 is the newcomer's: nobody minds who sits where). */
+export const GANG_FROM_DAY = 2;

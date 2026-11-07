@@ -97,7 +97,7 @@ Escape one to open the next.
     <td width="72%">
       <ul>
         <li><b>A tutorial of 55 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
-        <li><b>How to play</b>: 65 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
+        <li><b>How to play</b>: 66 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
         <li><b>142 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
@@ -167,7 +167,7 @@ in 374 files (formatted by Prettier), and 41,000 more in the tests and tools.
 ```sh
 npm ci
 npm run dev       # dev server on port 5310 (also on your network, to test on a phone)
-npm test          # 75 headless tests (npm test -- -u accepts new snapshots)
+npm test          # 76 headless tests (npm test -- -u accepts new snapshots)
 npm run build     # type-check and build to dist/
 npm run lint      # oxlint, with type-aware rules
 npm run format    # Prettier (npm run format:check only checks)

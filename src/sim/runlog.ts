@@ -348,7 +348,7 @@ const beforeSlowReading = (game: string) => versionBefore(game, 2, 34);
 /** Before guards took a moment to notice, the dark hid the player, lying low cooled heat, a blow locked on and the block (2.35.0). Sim.rules234 plays it as it was. */
 const beforeStealth = (game: string) => versionBefore(game, 2, 35);
 /** Before the 2.36 passes (tools and items, the first of them): Sim.rules235 plays it as it was. */
-const before236 = (game: string) => versionBefore(game, 2, 36);
+export const before236 = (game: string) => versionBefore(game, 2, 36);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -385,6 +385,9 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeSports(log.game) && !beforeDays(log.game)) keepOldCards(sim.state, logDays, logPlan, { sports: book?.beforeSports ?? 'none' });
   // Played before stage nights (P30): likewise, for both.
   if (beforeStage(log.game) && !beforeDays(log.game) && book?.beforeStage) keepOldCards(sim.state, logDays, logPlan, book.beforeStage);
+  // Played before the gang war (2.36): likewise.
+  if (before236(log.game) && !beforeDays(log.game) && book?.beforeGangs)
+    keepOldCards(sim.state, logDays, logPlan, { gangWar: book.beforeGangs });
   // Played before the P23–P30 fixes (2.5.1): those rules as they were.
   if (beforeFixes(log.game)) sim.rules250 = true;
   // Played before the pay phone (P34): nobody queued for it.

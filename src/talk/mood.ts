@@ -14,6 +14,8 @@ import { dayMinute, drillOn, eventOn, feastNow, sunBites, today, weatherNow } fr
 import type { ZoneId } from '../content/zones';
 import { HOLIDAY } from '../content/holidays';
 import { holidayDays, holidayOf, soaked } from '../sim/systems/holiday';
+import { gangOf, warGround, warOn, warring } from '../sim/systems/gangs';
+import { centerX, centerZ } from '../sim/world/grid';
 
 /**
  * Moods (P13): what someone feels right now, read from the game (never stored): the bank a
@@ -22,6 +24,16 @@ import { holidayDays, holidayOf, soaked } from '../sim/systems/holiday';
  * the food on the way to the canteen, grumble when bumped; guards shout when they chase,
  * wonder aloud when they investigate, yawn on night duty, gloat after a catch.
  */
+/** 2.36: what the war has someone say: a brawler of either side at it, a bystander close to its ground; null neither. */
+function gangWarMood(sim: Sim, id: number, b: { x: number; z: number }): 're.gang.war' | 'in.day.gangWar' | null {
+  const war = warOn(sim) ? warring(sim) : null;
+  if (!war) return null;
+  const g = gangOf(sim, id);
+  if ((g === war[0] || g === war[1]) && sim.state.inmates[id].doing === DOING.BRAWL) return 're.gang.war';
+  const t = warGround(sim.world, war[0]);
+  return Math.hypot(b.x - centerX(t), b.z - centerZ(t)) < 8 * UNIT ? 'in.day.gangWar' : null;
+}
+
 export interface Mood {
   bank: BankId;
   intensity: number;
@@ -117,6 +129,10 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   // The day's event (P17): a food fight in the canteen, the drill out at roll call.
   if (eventOn(sim, 'foodFight') && inZone(sim, b, 'canteen')) return mood('in.day.foodFight', 0.95, 'shout');
   if (drillOn(sim)) return mood('in.day.drill', 0.65, 'say', ['in.lineup']);
+  // (2.36: a gang mate backing the player; the war: its brawlers, and anyone near its ground.)
+  if (sim.scratch.backers.includes(id)) return mood('re.gang.backup', 0.95, 'shout');
+  const war = gangWarMood(sim, id, b);
+  if (war) return mood(war, war === 're.gang.war' ? 0.95 : 0.7, war === 're.gang.war' ? 'shout' : 'say');
   if (s.followers.includes(id)) return mood('in.loyal', 0.6, 'say', ['in.idle', 'in.friendly']);
   const block = ROUTINE[s.routine].id;
   const minute = sim.clock.minuteOfDay;

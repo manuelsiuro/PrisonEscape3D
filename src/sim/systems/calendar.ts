@@ -39,7 +39,7 @@ import { floorOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { roll, rollInt, SALT } from '../rng';
 import type { SimState } from '../state';
-import { POWER_OFF_STEPS, STEPS_PER_MINUTE, UNIT } from '../tuning';
+import { GANG_WAR_GUARDS, POWER_OFF_STEPS, STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';
 import type { Guard } from './guards';
@@ -51,6 +51,7 @@ import { musicOn } from './talent';
 import { EAGLE_SIGHT, twist } from './twists';
 import { FIREWORK_NOISE, HOLIDAY, SUMMER_HEAT } from '../../content/holidays';
 import { fireworksOn, holidayFeast, soaked, WET_SIGHT } from './holiday';
+import { warStarts } from './gangs';
 
 const HEATWAVE = WEATHERS.indexOf('heatwave');
 
@@ -422,6 +423,8 @@ function startEvent(sim: SimContext, p: DayPlan) {
     const mid = canteenMiddle(sim);
     if (mid >= 0) summon(sim, mid, FIGHT_GUARDS, (p.until - p.at) * STEPS_PER_MINUTE);
   }
+  // (2.36: the gang war's ground draws the guards nearest it for as long as it lasts.)
+  if (p.event === 'gangWar') warStarts(sim, p.until - p.at, GANG_WAR_GUARDS, (tile, n, look) => summon(sim, tile, n, look));
   if (p.event === 'drill') {
     if (sim.away || sim.state.lockdown || atHearing(sim.state)) sim.state.eventFlags |= TODAY.EXCUSED;
     else if (musterHere(sim)) muster(sim);

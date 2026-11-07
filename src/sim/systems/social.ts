@@ -43,7 +43,8 @@ import {
 } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { dist2, type Fighter, personOf } from './combat';
-import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
+import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, fetchFavor, giftOpinion, jobRooms } from './economy';
+import { askOf, askToJoin, bossOf, gangsHere, gangTargets, joinGang, leaveGang, mateClose, metGangs, turfHeld } from './gangs';
 import { awake, GUARD } from './guards';
 import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmates';
 import { closeBox, freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, usesOf } from './items';
@@ -103,6 +104,8 @@ export function approach(sim: SimContext, who: number) {
     s.talk = who;
     sim.events.push({ type: 'talk', who });
   }
+  // (2.36: the first word with a gang's member: the player knows the gangs, and they keep to their turf from now on.)
+  metGangs(sim, who);
 }
 
 /** Whether the player can go on talking to someone (Cast id): an inmate up and calm, a guard who'd talk (P15); close, nothing between. */
@@ -189,7 +192,7 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       if (!sim.shopsOpen) return refuse(sim, 'closed');
       if (m.opinion <= OPINION_LOW) return refuse(sim, 'grudge');
       const item = itemOf(v);
-      const price = priceOf(itemDef(item).value, m.opinion);
+      const price = askOf(sim, who, itemDef(item).value);
       if (s.cash < price) return refuse(sim, 'cash');
       if (free < 0) return refuse(sim, 'room');
       shop[b] = 0;
@@ -242,12 +245,19 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
     case TALK.HAND_IN: {
       const f = s.favors.find((x) => x.by === who && x.state !== FAVOR_STATE.OFFERED);
       if (!f) return;
-      if (f.kind === FAVOR.SCAVENGE || f.kind === FAVOR.RETRIEVE) {
+      if (fetchFavor(f.kind)) {
         const k = hotbarSlotOf(it.inv, f.item);
         if (k < 0) return refuse(sim, 'missing');
         it.inv[k] = 0;
       } else if (f.state !== FAVOR_STATE.DONE) return refuse(sim, 'notDone');
       s.favors.splice(s.favors.indexOf(f), 1);
+      // (2.36: an initiation handed in: the player is in the gang, no money.)
+      if (f.kind === FAVOR.INITIATION) {
+        sim.events.push({ type: 'favor', who, kind: f.kind, state: 'paid' });
+        const k = bossOf(sim, who);
+        if (k >= 0 && gangsHere(sim)) joinGang(sim, k);
+        return;
+      }
       s.cash += f.reward;
       sim.events.push({ type: 'favor', who, kind: f.kind, state: 'paid' }, { type: 'cash', n: f.reward, why: 'favor' });
       s.tally[3] += f.reward;
@@ -281,6 +291,13 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       return;
     case TALK.DISMISS:
       dismiss(sim, who);
+      return;
+    // 2.36: a gang's boss asked in (the initiation favor); the player's own gang left.
+    case TALK.JOIN:
+      askToJoin(sim, who);
+      return;
+    case TALK.LEAVE:
+      leaveGang(sim, who);
       return;
     case TALK.PHONE: {
       // A burner phone (P21), from the fixer only, in the merchants' hours, to a friend; one at a time.
@@ -471,6 +488,8 @@ export function grudges(sim: SimContext) {
     if (lawlessHoldsOff(sim)) return;
     // (P23: a muscle watching the player's back close by: they think better of it.)
     if (stopAmbush(sim, who)) return;
+    // (2.36: nor with one of the player's gang close by.)
+    if (mateClose(sim)) return;
     m.angry = ANGRY_STEPS;
     m.doing = DOING.NOTHING;
     m.wait = 0;
@@ -494,6 +513,11 @@ export function socialNow(sim: SimContext): Social {
   // (Not at the Training Block: its lessons ask for a machine or an inmate by name, and shouldn't find one taking up the other.)
   so.machines = !sim.rules228 && !sim.world.def.rules?.relaxed;
   so.reads = !sim.rules230 && !sim.world.def.rules?.relaxed;
+  // (2.36: the gangs hold their tables at dinner and their corners in the evening, from day 2.)
+  so.gangs = turfHeld(
+    sim,
+    ROUTINE.findIndex((r) => r.id === 'dinner'),
+  );
   // (Nor there either, for the same reason, working its stations.)
   const jobOf = (so.jobOf ??= []);
   jobOf.length = sim.rules229 || sim.world.def.rules?.relaxed ? 0 : n;
@@ -538,6 +562,8 @@ export function socialNow(sim: SimContext): Social {
     const on = placesOf(sim.world).machines.find((q) => q.prop === s.train);
     if (on) so.off.push(on.tile);
   }
+  // (2.36: gang business: the war's brawlers, a member's gang mates backing them.)
+  gangTargets(sim, so, sim.scratch.allyFoe, sim.scratch.backers);
   if (!about) return so;
   // A shootout's partner (P27) keeps near the player at the court.
   const partner = hoopsPartner(s);
