@@ -14,6 +14,9 @@ import type { Frame } from './viewFrame';
 
 /** The old-timer's hair (P27): white with age. */
 const ELDER_HAIR = 0xd8d3c8;
+/** Session 15: the numbers a character's walk and stance come from (characterMotion.ts): an inmate's from its cell, a guard's from its place (the player's is 0). */
+const INMATE_SEED = 100;
+const GUARD_SEED = 1000;
 
 export class Crowd {
   /** The inmates' characters (by inmate), and the guards' (by guard). */
@@ -51,7 +54,8 @@ export class Crowd {
   /** The guards: one character each (its key's color on the belt, riot gear where the prison has it), and the bed each sleeps in at night (if any). */
   setGuards(beds: Array<BedPose | undefined>, keys: number[], riot: (k: number) => boolean) {
     for (const c of this.guardCast) this.retire(c);
-    this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k], riot(k))));
+    // (Session 15: each its own number, for how it walks and stands.)
+    this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k], riot(k)), GUARD_SEED + k));
     this.guardBeds = beds;
     for (const c of this.guardCast) this.add(c);
   }
@@ -61,7 +65,11 @@ export class Crowd {
     for (const c of this.cast) this.retire(c);
     this.cast = cast
       ? cast.map(
-          (c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait }),
+          (c) =>
+            new Character(
+              { ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait },
+              INMATE_SEED + c.cell,
+            ),
         )
       : [];
     for (const c of this.cast) this.add(c);
@@ -84,6 +92,8 @@ export class Crowd {
       const tile = Math.floor(m.z) * MAP_W + Math.floor(m.x);
       if (m.doing === DOING.SHOWER && this.showers[tile] === 1) this.running.add(tile);
       c.undressed = m.bare;
+      // (Session 15: the strides in game time.)
+      c.timeScale = f.speed;
       c.towel = m.towel;
       c.attention = m.attention;
       c.trayPose(m.trayAt, m.trayLeft);
@@ -163,6 +173,7 @@ export class Crowd {
       if (!c) return;
       c.root.visible = f.layer !== LAYER.UNDER;
       c.gait = g.pace;
+      c.timeScale = f.speed;
       c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !reduced, g.doing, this.guardBeds[k]);
       // "$" pops over a guard as it takes the money (and again once it's calm, still paid).

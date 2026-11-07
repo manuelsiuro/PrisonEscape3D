@@ -32,6 +32,8 @@ export interface Frame {
   /** Radians, 0 = facing +z (south). */
   facing: number;
   moving: boolean;
+  /** Session 15: game seconds a real second (a replay's ×4, the night's sleep, a knockout's time-lapse): the strides read the ground covered in game time. */
+  speed: number;
   /** Game time of day in minutes, fractional (lighting). */
   minuteOfDay: number;
   /** Roll call is on or minutes off, or a fire drill musters there (P29: its paint over a football pitch shows only then). */
@@ -220,6 +222,7 @@ export function emptyFrame(): Frame {
     z: 0,
     facing: 0,
     moving: false,
+    speed: 1,
     minuteOfDay: 0,
     rollCall: false,
     surface: 0,
