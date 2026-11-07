@@ -652,11 +652,12 @@ function fieldstones(c: CanvasRenderingContext2D, n: number, rand: () => number,
 const FOREST: Partial<typeof BASE> = {
   grass: () =>
     texture('forestFloor', 16, (c, n, r) => {
-      speckle(c, n, r, '#58703f', '#4c6336', '#647d48', 0.34);
+      // (A quarter lighter than first drawn: review of 2.36, its night came out half as bright as the other prisons'.)
+      speckle(c, n, r, '#6d8a4e', '#5f7b44', '#7b985a', 0.34);
       // Moss cushions, then the needles over them.
-      c.fillStyle = '#6f8c4c';
+      c.fillStyle = '#89a85e';
       for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * (n - 2)), Math.floor(r() * (n - 2)), 2, 2);
-      needles(c, n, r, 16, ['#7a5a36', '#8a663c', '#6a4c2e', '#94744a']);
+      needles(c, n, r, 16, ['#94703f', '#a47e48', '#836038', '#b08c58']);
     }),
   trail: () =>
     texture('forestTrail', 16, (c, n, r) => {

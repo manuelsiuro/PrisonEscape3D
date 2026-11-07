@@ -35,6 +35,8 @@ const FOREST_DAY: Array<[number, number, number]> = [
 const FOREST_SKY_LIGHT = 0xd4ebe6;
 const FOREST_GROUND_LIGHT = 0x3e5434;
 const FOREST_SUN = 0.92;
+/** The forest's night lifted (review of 2.36: under the pines' dark moss it came out half as bright as the others'). */
+const FOREST_NIGHT_LIFT = 0.45;
 
 /** The ambient light's sky color. */
 const SKY_LIGHT = 0xdfe8ff;
@@ -124,7 +126,7 @@ export class Lighting {
     const moon = layer === LAYER.VENTS || layer === LAYER.UNDER ? 0 : night;
     this.skyLight.set(this.forest ? FOREST_SKY_LIGHT : SKY_LIGHT).lerp(this.c1.set(MOON_SKY), moon);
     this.ambient.groundColor.set(this.forest ? FOREST_GROUND_LIGHT : GROUND_LIGHT).lerp(this.c1.set(MOON_GROUND), moon);
-    this.ambient.intensity *= 1 + MOON_LIFT * moon;
+    this.ambient.intensity *= 1 + (MOON_LIFT + (this.forest ? FOREST_NIGHT_LIFT : 0)) * moon;
     this.weatherLight(dt, reducedMotion);
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
