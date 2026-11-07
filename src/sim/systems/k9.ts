@@ -44,7 +44,14 @@ import {
   DOG_RUN_SPEED,
   DOG_SLEEP_STEPS,
   DOG_TRACK_SPEED,
+  DRAG_GUARDS,
+  DRAG_NOISE,
+  HORN_NOISE,
+  KENNEL_FADE,
+  KENNEL_TRUST,
+  KENNEL_TRUST_CAP,
   POINT_STEPS,
+  RECALL_STEPS,
   SCENT_STEPS,
   SCENT_TILES,
   SNEEZE_NOISE,
@@ -62,7 +69,8 @@ import {
 /** Having lost a trail, a dog takes this long before it picks one up again. */
 const TRAIL_REST = 10 * STEPS_PER_SECOND;
 import { containersOf } from '../world/containers';
-import { TILE } from '../world/tiles';
+import { TILE, TILE_INFO } from '../world/tiles';
+import { SLOT } from '../command';
 import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import { clockAt, prisonDay } from './clock';
 import { awake, GUARD, sendToLook, type Guard } from './guards';
@@ -115,6 +123,9 @@ const PEPPER = itemNumber('pepper');
 const SLEEPY = itemNumber('sleepy_jerky');
 const PILLS = itemNumber('sleeping_pills');
 const POUCH = itemNumber('pouch');
+/** 2.36 (The Six Hunter): a trout (a treat as jerky is), the ghillie cloak (worn: no trail on open ground). */
+const TROUT = itemNumber('trout');
+const GHILLIE = itemNumber('ghillie_cloak');
 const NOBODY: readonly Body[] = [];
 
 const handlersCache = new WeakMap<World, number[]>();
@@ -165,6 +176,8 @@ export const dogDazed = (d: Dog, step: number) => d.daze > step;
 export function onShift(sim: SimContext, def: DogDef): boolean {
   const s = sim.state;
   if (sim.noDogs || prisonDay(s.step) < dogsFrom(s)) return false;
+  // (2.36: called home by the recall horn, lockdown or not.)
+  if (s.recall !== undefined && s.step < s.recall) return false;
   if (s.lockdown) return true;
   const m = clockAt(s.step).minuteOfDay;
   return (m >= DOG_DAY_FROM && m < DOG_DAY_TO) || (!!def.night && m >= DOG_NIGHT_FROM && m < DOG_NIGHT_TO);
@@ -259,6 +272,8 @@ function layScent(sim: SimContext) {
   // (Under a running shower nothing is laid: it washes off as it would be.)
   if (!playerAbout(sim) || !outOfBounds(sim) || underShower(sim)) return;
   const here = tileAt(s.player.x, s.player.z);
+  // (2.36: in a ghillie cloak, its pine tar hides the scent out in the open.)
+  if (itemOf(s.items.inv[SLOT.OUTFIT]) === GHILLIE && TILE_INFO[sim.world.ground.kind[here]].outdoor) return;
   const last = s.scent[s.scent.length - 1];
   if (last && last[0] === here) return;
   s.scent.push([here, s.step]);
@@ -574,7 +589,9 @@ function point(sim: SimContext, k: number, g: Guard, what: 'sniff' | 'point' | '
  * (and its sneezing loses the trail), sleepy jerky puts it to sleep. Returns whether the dog
  * took it (it's gone).
  */
-export function catchTreat(sim: SimContext, item: number, tile: number): boolean {
+export function catchTreat(sim: SimContext, thrown: number, tile: number): boolean {
+  // (2.36: a trout is taken as jerky is.)
+  const item = thrown === TROUT ? JERKY : thrown;
   if ((item !== JERKY && item !== PEPPER && item !== SLEEPY) || sim.noDogs) return false;
   const s = sim.state;
   const x = centerX(tile);
@@ -603,7 +620,7 @@ export function catchTreat(sim: SimContext, item: number, tile: number): boolean
     const was = d.trust;
     d.fed = day;
     d.trust = Math.min(TRUST_FRIEND, d.trust + TREAT_TRUST);
-    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust });
+    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust, ...(thrown === TROUT ? { trout: true } : {}) });
     if (was < TRUST_FRIEND && d.trust >= TRUST_FRIEND) sim.events.push({ type: 'dog', dog: k, what: 'friend', trust: d.trust });
     return true;
   }
@@ -626,8 +643,69 @@ export function catchTreat(sim: SimContext, item: number, tile: number): boolean
 
 const TREATS: ReadonlySet<number> = new Set([JERKY, PEPPER, PILLS]);
 
-/** What's for throwing to a dog: jerky, pepper, sleepy jerky. */
-export const FOR_DOGS: ReadonlySet<number> = new Set([JERKY, PEPPER, SLEEPY]);
+/** What's for throwing to a dog: jerky, pepper, sleepy jerky (2.36: a trout). */
+export const FOR_DOGS: ReadonlySet<number> = new Set([JERKY, PEPPER, SLEEPY, TROUT]);
+
+/**
+ * 2.36 (The Six Hunter): the kennel hand's quota done: every hound has been fed from the player's hands and trusts
+ * them a little more (KENNEL_TRUST), never past KENNEL_TRUST_CAP from the troughs alone: the pack stays a threat, and
+ * jerky or a trout thrown (its `fed`, untouched here) is still what wins a hound over.
+ */
+export function kennelsFed(sim: SimContext) {
+  const s = sim.state;
+  s.dogs.forEach((d, k) => {
+    if (d.trust >= KENNEL_TRUST_CAP) return;
+    d.trust = Math.min(KENNEL_TRUST_CAP, d.trust + KENNEL_TRUST);
+    sim.events.push({ type: 'dog', dog: k, what: 'fed', trust: d.trust, pack: true });
+  });
+}
+
+/**
+ * 2.36 (The Six Hunter): the kennel hand's work settled at 15:00: a day they left the pack unfed (the quota missed,
+ * not let off by a lockdown), every hound's trust fades by KENNEL_FADE, whatever won it.
+ */
+export function kennelsSettle(sim: SimContext, fed: boolean) {
+  if (fed) return;
+  for (const d of sim.state.dogs) d.trust = Math.max(0, d.trust - KENNEL_FADE);
+}
+
+/**
+ * 2.36 (The Six Hunter): the recall horn blown. Every hound drops what it's doing and goes home to its kennel for
+ * RECALL_STEPS (a lockdown's too), and the horn is heard far and wide, a bang's noise: it wakes the Hunters asleep in
+ * earshot and sends them to look.
+ */
+export function blowHorn(sim: SimContext) {
+  const s = sim.state;
+  const tile = tileAt(s.player.x, s.player.z);
+  s.recall = s.step + RECALL_STEPS;
+  s.dogs.forEach((d, k) => {
+    if (d.mode === DOG.KENNEL) return;
+    d.mode = DOG.KENNEL;
+    d.goal = -1;
+    d.path = [];
+    sim.events.push({ type: 'dog', dog: k, what: 'recalled' });
+  });
+  sim.events.push({ type: 'horn', tile });
+  makeNoise(sim, 'bang', s.layer, tile, HORN_NOISE);
+}
+
+/**
+ * 2.36 (The Six Hunter): a drag line landed (a sock soaked in aniseed): the player's trail is lost under its smell, and
+ * the hounds on shift within earshot pull their Hunters over to it (DRAG_GUARDS of them at most; a Hunter whose hound
+ * is off duty, asleep or sneezing isn't pulled anywhere). It's spent either way.
+ */
+export function dragLine(sim: SimContext, tile: number) {
+  const s = sim.state;
+  const trail = washScent(sim, true);
+  sim.events.push({ type: 'dragLine', tile, trail });
+  const handlers = handlersOf(sim.world);
+  const pulled = (guard: number) => {
+    const k = handlers.indexOf(guard);
+    const d = s.dogs[k];
+    return k >= 0 && !!d && onShift(sim, dogDef(sim.world, k)) && !dogAsleep(d, s.step) && !dogDazed(d, s.step);
+  };
+  makeNoise(sim, 'bark', LAYER.GROUND, tile, DRAG_NOISE, DRAG_GUARDS, 0, pulled);
+}
 
 const treatAim: TossAim = { why: null, to: -1 };
 

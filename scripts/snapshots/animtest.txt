@@ -1,0 +1,17 @@
+every change of activity (a knockout a fall): 2256 pairs, 0 jumping (the most a frame 0.32 rad, KNOCKED_OUT→CRAWL)
+setting off from each activity and stopping again: 48 activities, 0 jumping (the most a frame 0.24 rad)
+never stuck: 1316 runs (each activity, holding each way, a tray, blows, a wash), 0 left in a pose 6 s after
+reduced motion: 45 activities still posed (SLEEP EAT EXERCISE SHOWER SEARCH KNOCKED_OUT CRAWL WORK LIFT RUN READ SIT SIT_READ DOZE WRESTLE PICK DICE BRAWL LOOKOUT CARDS SHOOT BOARD FOOTBALL TATTOO DRUMS GUITAR QUIZ PHONE QUEUE KIOSK DIG SERVE SHOWER_WAIT TOWEL COUNT BENCH PULLUP PUSHUP BAG MOP VEND THUMP SNACK DRINK SCRIBBLE); stood as they are: NOTHING LINE_UP JOG
+a planted foot's slide against the ground at the stride's middle: a slow walker 1%, the walk 1%, a chase 1%, catching up 2%, a jog 2%, a flight 2%
+a fight, arms folded before it, a blow every 0.8 s: back in the stance at most 0.00 between blows; the most a frame 0.07 rad, the punch's own move aside
+in hand at a blow: a mop swung out of the fist (0.00 rad off a tool's grip), upright again after; a bundle: NOTHING shown, WORK shown, EXERCISE hidden, KNOCKED_OUT hidden
+a walk's stride, radians a game second, steady and never a run: ×1 at 60 fps 11.4, ×1 at 30 fps 11.4, ×4 at 60 fps 11.4, ×4 at 30 fps 7.5, ×16 at 60 fps 3.7, ×16 at 30 fps 1.9
+a crowd of 24 setting off together: 47 of 276 pairs in step; standing about: at the sides 14, hands behind 4, arms folded 6; 6 of 12 guards with their hands behind their backs; one number moves alike every time; Math.random never drawn
+twenty minutes of everything (600 turns, items swapped, blows): 34 parts as at the start, standing as one that only walked
+training: a day (28801 steps), 2 people, 75 changes of what they do: 0 jumps; 295 times standing about with nothing to do, 0 left in a pose
+center-perks: a day (28801 steps), 12 people, 515 changes of what they do: 0 jumps; 1309 times standing about with nothing to do, 0 left in a pose
+stalag-flucht: a day (28801 steps), 15 people, 858 changes of what they do: 0 jumps; 1514 times standing about with nothing to do, 0 left in a pose
+shankton: a day (28801 steps), 19 people, 1094 changes of what they do: 0 jumps; 1802 times standing about with nothing to do, 0 left in a pose
+san-pancho: a day (28801 steps), 21 people, 1281 changes of what they do: 0 jumps; 3466 times standing about with nothing to do, 0 left in a pose
+irongate: a day (28801 steps), 23 people, 1125 changes of what they do: 0 jumps; 3931 times standing about with nothing to do, 0 left in a pose
+six-hunter: a day (28801 steps), 17 people, 1096 changes of what they do: 0 jumps; 1883 times standing about with nothing to do, 0 left in a pose

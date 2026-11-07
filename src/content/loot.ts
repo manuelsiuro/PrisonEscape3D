@@ -155,6 +155,36 @@ export const LOOT: Record<string, LootTable> = {
       ['screwdriver', 2],
     ],
   },
+  // The Six Hunter's own (never added to the tables above: their rolls are in every older run). What the hounds chew in
+  // the kennels' bins; the smokehouse's freezer; the boathouse's bins (tar, nets, rope and cork floats).
+  kennelBin: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['shed_antler', 3],
+      ['jerky', 2],
+      ['sock', 1],
+    ],
+  },
+  smokehouseFreezer: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['trout', 3],
+      ['aniseed', 2],
+      ['foil', 1],
+    ],
+  },
+  boathouseBin: {
+    rolls: [1, 2],
+    max: 3,
+    items: [
+      ['pine_tar', 3],
+      ['fishing_net', 2],
+      ['rope', 1],
+      ['balsa', 1],
+    ],
+  },
 };
 
 /** Slots in a merchant's stock. */
@@ -203,9 +233,13 @@ export function lootTableFor(kind: PropKind, zone: ZoneId, playerCell: boolean):
             ? 'janitorBin'
             : zone === 'metalshop'
               ? 'metalshopBin'
-              : null;
+              : zone === 'kennels'
+                ? 'kennelBin'
+                : zone === 'boathouse'
+                  ? 'boathouseBin'
+                  : null;
     case 'freezer':
-      return zone === 'kitchen' ? 'kitchenFreezer' : null;
+      return zone === 'kitchen' ? 'kitchenFreezer' : zone === 'smokehouse' ? 'smokehouseFreezer' : null;
     default:
       return null;
   }

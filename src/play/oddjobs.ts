@@ -54,7 +54,7 @@ import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { tileAt } from '../sim/world/grid';
 import { refusedText } from './refusals';
-import { guardSubject, inmateName } from '../ui/names';
+import { guardSubject, guardWord, inmateName } from '../ui/names';
 
 /**
  * The odd jobs board on screen (P40): its card at the board (and the job's own card, from its
@@ -79,15 +79,23 @@ const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
 /** The icon of each kind. */
 const KIND_ICON: readonly string[] = ['hand', 'box', 'search', 'arm', 'cards', 'checkers', 'rat', 'cookie', 'eye', 'gift', 'phone', 'cart'];
 
-/** A guard's name for a job's words (his name alone; one without: "the guard"). */
-const guardName = (sim: Sim, k: number) => sim.prison.guards[k]?.name ?? t('oddjob.someGuard');
+/**
+ * A guard as a job's words name him: by his title, as this prison has it ("Officer Pratt", "Hunter Garrow"; `subject`
+ * to open a sentence: "Le gardien Pratt"), one without a name "a guard".
+ */
+const guardName = (sim: Sim, k: number, form: 'guard.addressed' | 'guard.subject' = 'guard.addressed') => {
+  const name = sim.prison.guards[k]?.name;
+  return name ? guardWord(sim, form, { name }) : t('oddjob.someGuard');
+};
 
 /** The words a job's card asks in: who it's about, what's lifted. */
 function askOf(sim: Sim, d: { kind: number; variant: number; giver: number; target: number }): string {
   const kind = KINDS[d.kind];
   const name = d.target >= 0 && d.kind !== KIND.LIFT ? inmateName(sim, d.target) : '';
   if (d.kind === KIND.LIFT)
-    return t(`oddjob.ask.lift.${LIFTS[d.variant] ?? 'whistle'}` as Key, { guard: d.target >= 0 ? guardName(sim, d.target) : '' });
+    return t(`oddjob.ask.lift.${LIFTS[d.variant] ?? 'whistle'}` as Key, {
+      guard: d.target >= 0 ? guardName(sim, d.target, LIFTS[d.variant] === 'pocket_watch' ? 'guard.subject' : 'guard.addressed') : '',
+    });
   if (d.kind === KIND.WRESTLE || d.kind === KIND.CHEAT || d.kind === KIND.CHECKERS)
     return t(`oddjob.ask.${kind}.${d.variant ? 'win' : 'lose'}` as Key, { name });
   if (d.kind === KIND.CAKE) return t(smugglingOf(sim)?.visits ? 'oddjob.ask.cake' : 'oddjob.ask.cakeParcel');

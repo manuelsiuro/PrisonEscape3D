@@ -343,6 +343,13 @@ export const SHANKTON: PrisonDef = {
   guards,
   names: ['Rivet', 'Hammer', 'Smokes', 'Knuckles', 'Deacon', 'Flint', 'Sparky', 'Moose', 'Weasel', 'Preacher', 'Lugnut'],
   merchants: [2, 6, 9, 11],
+  // 2.36, gangs and turf: the tables in the mess hall, the yard's benches south of the roll call lines and the
+  // sports ground's strip below the track. Smokes and Deacon (the fixer) keep to themselves.
+  gangs: [
+    { id: 'kitchen', boss: 2, members: [2, 3, 8], table: [33, 15, 35, 17], corner: [50, 22, 54, 22] },
+    { id: 'lifers', boss: 11, members: [11, 7, 10], table: [26, 19, 28, 21], corner: [34, 35, 36, 35] },
+    { id: 'gymRats', boss: 9, members: [9, 5, 12], table: [33, 19, 35, 21], corner: [37, 35, 39, 35] },
+  ],
   crew: ['digger', 'muscle', 'smuggler', 'muscle', 'smuggler', 'digger', 'lookout', 'muscle', 'lookout', 'lookout', 'digger'],
   // The player starts in the metalshop (GDD §4.3); every job is on offer, the woodshop open.
   jobs: [

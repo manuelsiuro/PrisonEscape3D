@@ -26,6 +26,7 @@ import { LAYER } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { itemsUI, sound } from './context';
 import { outOfBounds } from '../sim/systems/k9';
+import { gainAt } from './loudness';
 import { coachOnce } from './tips';
 
 import { announceOddJob } from './oddjobs';
@@ -34,6 +35,7 @@ import { announceDay, nightNotChosen } from './announceDay';
 import { announceJobs } from './announceJobs';
 import { cant } from './announceKit';
 import { announcePeople } from './announcePeople';
+import { announceGang } from './gangs';
 import { announceWorks } from './announceWorks';
 
 /**
@@ -48,6 +50,7 @@ export function announce(e: SimEvent, sim: Sim) {
   announceWorks(e, sim);
   announcePeople(e, sim);
   announceJobs(e, sim);
+  announceGang(e, sim);
   switch (e.type) {
     case 'dog':
       announceDog(sim, e);
@@ -136,6 +139,15 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'washed':
       sound.scrub();
       itemsUI.toast(t(outOfBounds(sim) ? 'toast.washedStill' : 'toast.washed'));
+      break;
+    // 2.36 (The Six Hunter): the recall horn blown (its call); a drag line landed (the cord's whip, the sock's slap).
+    case 'horn':
+      sound.huntHorn(gainAt(sim, e.tile));
+      itemsUI.toast(t('toast.horn'));
+      break;
+    case 'dragLine':
+      sound.dragLine(gainAt(sim, e.tile));
+      itemsUI.toast(t(e.trail ? 'toast.dragLine' : 'toast.dragLineNone'));
       break;
     case 'cantThrow': {
       const now = performance.now();

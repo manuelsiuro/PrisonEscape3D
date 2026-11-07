@@ -17,7 +17,7 @@ import { at } from './playat';
 import budget from './perfbudget.json';
 
 const MOMENTS = [7 * 60 + 50, 8 * 60 + 2, 12 * 60 + 10, 15 * 60 + 5, 18 * 60 + 40, 23 * 60 + 30];
-const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho'];
+const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
 
 type Acc = { frames: number; total: number[]; view: number[]; render: number[]; gaps: number[]; gpu: number[] };
 let acc: Acc | null = null;

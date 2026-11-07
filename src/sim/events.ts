@@ -90,13 +90,13 @@ export type SimEvent =
   /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
   | { type: 'caught'; solitary: boolean }
   /** Into solitary (with how many contraband items were taken) and out again. */
-  | { type: 'solitary'; on: boolean; taken: number; plot?: boolean }
-  | { type: 'infirmary'; taken: number; plot?: boolean }
+  | { type: 'solitary'; on: boolean; taken: number; plot?: boolean; items?: number[] }
+  | { type: 'infirmary'; taken: number; plot?: boolean; items?: number[] }
   /** A press on the potato; `done` when a whole potato is peeled (10 minutes off). */
   | { type: 'peel'; done: boolean }
   /** 08:00: the cells to be searched this morning; a guard has searched one. */
   | { type: 'shakedown'; cells: number[] }
-  | { type: 'searched'; cell: number; taken: number }
+  | { type: 'searched'; cell: number; taken: number; items?: number[] }
   /** The night bed check begins, and how it went at the player's cell. */
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean; awake?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
@@ -109,6 +109,8 @@ export type SimEvent =
     }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
+  /** 2.36: a tool or a plastic key down to its last few uses (WORN_WARN), as it gets there. */
+  | { type: 'worn'; item: number; left: number }
   /** A live electric fence: knocked out (GDD §9.1). */
   | { type: 'shocked' }
   /** A tunnel roof came down on the player (GDD §9.2). */
@@ -235,11 +237,17 @@ export type SimEvent =
   /** P28: something sold to a merchant (ripe pruno, a vegetable). */
   | { type: 'sold'; who: number; item: number; price: number }
   | { type: 'gift'; who: number; item: number; cash: number }
-  | { type: 'favor'; who: number; kind: number; state: 'offered' | 'taken' | 'done' | 'paid' }
+  | { type: 'favor'; who: number; kind: number; state: 'offered' | 'taken' | 'done' | 'paid' | 'dropped' }
   | { type: 'recruit'; who: number; on: boolean }
   | { type: 'delivered'; who: number }
   /** An inmate with a grudge jumps the player (GDD §10.3); a follower lands a blow on someone. */
   | { type: 'ambush'; who: number }
+  /**
+   * 2.36, gangs and turf (gangs.ts): the player joined a gang (who: its boss), left it or was thrown out (who: the
+   * boss left at, or the mate hit); told off a rival's turf, off it in time, a rival squaring up over it; a war's
+   * rival coming for them. `gang`: its place in the prison's gangs.
+   */
+  | { type: 'gang'; what: GangNews; gang: number; who?: number }
   /** 2.23: an inmate saw the player going through the things in their cell (snoop.ts): thinks less of them, and with a grudge left, fights. */
   | { type: 'snooped'; who: number; fights: boolean }
   /** 2.30: a guard tells the player to get out of a work room not theirs. Not being spotted at anything, yet. */
@@ -293,8 +301,20 @@ export type SimEvent =
    * (a way down or up: found), sneezing at pepper, a treat eaten (its trust now), one refused
    * (it's had today's), won over for good (trust at its most), asleep after sleepy jerky, awake again. The player's scent washed off.
    */
-  | { type: 'dog'; dog: number; what: DogNews; trust?: number; trail?: boolean }
+  | {
+      type: 'dog';
+      dog: number;
+      what: DogNews;
+      trust?: number;
+      trail?: boolean;
+      /** 2.36: fed by the kennel hand's quota (the whole pack at once); a smoked trout taken rather than jerky. */
+      pack?: boolean;
+      trout?: boolean;
+    }
   | { type: 'washed' }
+  /** 2.36 (The Six Hunter): the recall horn blown (where), a drag line landed (where, whether a trail was washed out). */
+  | { type: 'horn'; tile: number }
+  | { type: 'dragLine'; tile: number; trail: boolean }
   /**
    * The pet rat (P20, rats.ts): what a rat did or why it couldn't (`why`): a trap caught one
    * (`at`: its placeKey), a caught rat fed (`item` the bait, `n` its meals so far), tamed, or
@@ -702,7 +722,8 @@ type RatNews =
   | 'refused';
 
 /** What a dog did (P19, the 'dog' event). */
-type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew';
+type DogNews =
+  'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew' | 'recalled';
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
 type BribeKind = 'look' | 'paper' | 'over';
@@ -741,6 +762,9 @@ export type NoiseKind = 'thump' | 'strike' | 'thud' | 'bang' | 'ring' | 'bark' |
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
+/** What happened in gang business (2.36). */
+export type GangNews = 'met' | 'joined' | 'left' | 'kicked' | 'warn' | 'clear' | 'jumped' | 'warJump';
+
 /** The three attributes (GDD §3.2). */
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
@@ -766,6 +790,7 @@ export type Refusal =
   | 'room'
   | 'grudge'
   | 'opinion'
+  | 'phoneOpinion'
   | 'followers'
   | 'int'
   | 'taken'
@@ -892,4 +917,10 @@ export type Refusal =
   | 'notOwed'
   | 'notHisJob'
   | 'notLookout'
-  | 'liftFull';
+  | 'liftFull'
+  | 'inGang'
+  | 'leftToday'
+  | 'favorFirst'
+  | 'gangOpinion'
+  | 'initiating'
+  | 'notTribute';

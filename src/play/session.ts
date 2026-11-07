@@ -207,6 +207,7 @@ export function startGame(
   sound.ambience(true);
   // Irongate's surf and gulls (P12).
   sound.setCoast(sim.world.def.theme === 'island');
+  sound.setForest(sim.world.def.theme === 'forest');
   fadeIn();
   // (The loading veil, if the start put one up: ui/loading.ts.)
   hideLoading();

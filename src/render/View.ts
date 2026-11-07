@@ -12,9 +12,11 @@ import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
 import { Island } from './Island';
+import { hasRiver, River } from './River';
 import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
 import { rollCallLayer } from './ground';
+import { disposeTurf, showTurf, turfLayer } from './Turf';
 import { Minefield } from './Minefield';
 import { Guide } from './Guide';
 import type { Prisoner } from '../content/prisoner';
@@ -68,6 +70,12 @@ const SAND_DUST: Record<number, number> = {
   [TILE.DIRT]: 0xb98257,
   [TILE.ROAD]: 0xb7a07a,
   [TILE.ASPHALT]: 0xb7a07a,
+};
+/** In the pine forest (2.36): needles and loam kicked up, the track's mud. */
+const FOREST_DUST: Record<number, number> = {
+  [TILE.GRASS]: 0x7a6a44,
+  [TILE.DIRT]: 0x957a58,
+  [TILE.ROAD]: 0x6a5642,
 };
 const SNOW_DUST: Record<number, number> = {
   [TILE.GRASS]: 0xf4f8fc,
@@ -171,15 +179,22 @@ export class View {
   private decor: DecorView | null = null;
   /** The roll call's paint over a football pitch (P29), and how far it's faded in (0 … 1). */
   private rollCallPaint: THREE.Mesh | null = null;
+  /** 2.36: the gangs' turf painted on the floor, and how strongly it shows now. */
+  private turfPaint: THREE.Group | null = null;
+  private readonly turfShown = [0, 0];
   private rollCallShown = 0;
   private structure: Structure | null = null;
   private security: Security | null = null;
   private minefield: Minefield | null = null;
   private island: Island | null = null;
+  /** A river through the grounds (2.36, the Six Hunter's), its jetty and bridges. */
+  private river: River | null = null;
   private riot = false;
   private underground: Underground | null = null;
   /** The last prison's parts, taken off screen and freed after the next frame (setWorld). */
   private readonly retired: Array<() => void> = [];
+  /** Frames until the scene is warmed again after a new prison (warmDay): 0 none due. */
+  private warmIn = 0;
   /** Frees something after the next frame (as a world change does). */
   private readonly later = (dispose: () => void) => void this.retired.push(dispose);
   /** The holiday behind the title (P42: the date's, as Settings have it; 0 none). */
@@ -195,6 +210,8 @@ export class View {
   /** The cell block's lights out (2.28): 0 on … 1 out, and where it's heading. */
   private blockDark = 0;
   private blockDarkGoal = 0;
+  /** The lamps' pools stop at walls (2.36); a replay of an older run lights through them, as its rule does (session 14). */
+  private lampsWalled = true;
   /** The bed dummy in the player's bed (2.28). */
   private readonly dummy = bedDummyMesh();
   /** 2.29: the bars and the bags (what's pressed on them this frame, gathered). */
@@ -255,6 +272,7 @@ export class View {
       this.dust.mesh,
       this.showerWater.group,
       this.pieces.snow.points,
+      this.pieces.leaves.points,
       this.sparks.mesh,
       this.snores.group,
       this.guide.group,
@@ -369,6 +387,11 @@ export class View {
       });
       this.rollCallPaint = null;
     }
+    if (this.turfPaint) {
+      const old = this.turfPaint;
+      retire([old], () => disposeTurf(old));
+      this.turfPaint = null;
+    }
     if (this.minefield) {
       const old = this.minefield;
       retire([old.group], () => old.dispose());
@@ -377,6 +400,11 @@ export class View {
       const old = this.island;
       retire([old.group], () => old.dispose());
       this.island = null;
+    }
+    if (this.river) {
+      const old = this.river;
+      retire([old.group], () => old.dispose());
+      this.river = null;
     }
     // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
     setTheme(world.def.theme ?? 'suburban');
@@ -394,12 +422,19 @@ export class View {
     this.rollCallPaint = rollCallLayer(world, pitch);
     this.rollCallShown = 0;
     if (this.rollCallPaint) this.scene.add(this.rollCallPaint);
+    this.turfPaint = turfLayer(world);
+    this.turfShown.fill(0);
+    if (this.turfPaint) this.scene.add(this.turfPaint);
     this.minefield = new Minefield(world);
     this.scene.add(this.minefield.group);
     // An island's sea and shore, the drawbridge, the helicopter (P12).
     if (world.def.theme === 'island') {
       this.island = new Island(world);
       this.scene.add(this.island.group);
+    }
+    if (hasRiver(world)) {
+      this.river = new River(world);
+      this.scene.add(this.river.group);
     }
     this.scene.add(this.security.group);
     if (same) {
@@ -422,7 +457,10 @@ export class View {
     // (Their last prison's parts freed after the next frame, as the rest.)
     this.pieces.setWorld(world, pitch, this.later);
     this.warmDay();
+    // (And once more at the frame after next, when what the pieces build after the first frame is in: the vending machine.)
+    this.warmIn = 2;
     this.lighting.newWorld();
+    this.lighting.setTheme(world.def.theme);
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
     this.me.newWorld();
     this.crowd.showers.fill(0);
@@ -435,6 +473,7 @@ export class View {
     this.gear.build(world);
     this.workGear.build(world);
     this.blockDark = this.blockDarkGoal = 0;
+    this.lampsWalled = true;
     this.setCast(0);
     this.setGuards([]);
   }
@@ -645,6 +684,8 @@ export class View {
   draw(f: Frame, dt: number, time: number) {
     this.noiseFx.group.visible = true;
     this.me.dress(f.outfit, f.inked);
+    // (2.36: the player's gang's colours.)
+    this.player.colours(f.colours);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)
     this.showLayer(this.pieces.getaway.aloft ? LAYER.ROOF : f.layer);
     this.redrawTiles(f);
@@ -660,7 +701,7 @@ export class View {
             : f.doing;
     if (this.me.draw(f, dt, time, doing, this.reducedMotion)) {
       const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
-      const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : DUST;
+      const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : theme === 'forest' ? FOREST_DUST : DUST;
       if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER))
         this.dust.puff(f.x, f.z, dust[f.surface], 2);
       this.onStep(f.surface);
@@ -834,6 +875,18 @@ export class View {
       wx.rain >= 2 ? 3 : wx.windForce,
       wx.windAngle,
     );
+    // The pine forest's needles and leaves (2.36), out in the open, blown by the wind; not in a snowfall; held still in the air with reduced motion.
+    this.pieces.leaves.shade(1 - 0.75 * this.lighting.night);
+    this.pieces.leaves.update(
+      this.reducedMotion ? 0 : dt,
+      time,
+      f.x,
+      f.z,
+      !snowing && this.world?.def.theme === 'forest' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF),
+      f.layer === LAYER.ROOF ? undefined : this.openSky,
+      wx.rain >= 2 ? 3 : wx.windForce,
+      wx.windAngle,
+    );
     // The weather (P17): no rain in the snow (a storm there is a blizzard of it, above).
     this.lighting.weather = wx;
     let wxNow = wx;
@@ -867,6 +920,7 @@ export class View {
       o.z = g.z;
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
+    this.pieces.events.timeScale = f.speed;
     this.inspecting = this.pieces.events.update(
       f.events,
       dt,
@@ -932,6 +986,17 @@ export class View {
       }
       this.player.root.visible = !this.island.aboard && this.player.root.visible;
     }
+    // Away on the river (2.36): the raft drifting downstream, the camera with it.
+    if (this.river) {
+      this.river.group.visible = f.layer !== LAYER.UNDER;
+      this.river.update(dt, time, !this.reducedMotion, this.lighting.night);
+      const on = this.river.carry(this.carried);
+      if (on) {
+        this.carrying = true;
+        this.player.root.position.copy(on);
+        this.cam.target.lerp(this.v.set(on.x, on.y * 0.6, on.z), Math.min(1, dt * 3));
+      }
+    }
     // Away in the delivery's truck (P18): the camera follows it out.
     const ride = this.pieces.delivery.carry(this.carried);
     if (ride) {
@@ -987,6 +1052,9 @@ export class View {
       (this.rollCallPaint.material as THREE.MeshBasicMaterial).opacity = this.rollCallShown;
       this.rollCallPaint.visible = this.rollCallShown > 0 && f.layer !== LAYER.UNDER;
     }
+    // 2.36: the gangs' turf, faint all day, the tables bright at dinner, the corners in the evening.
+    if (this.turfPaint)
+      showTurf(this.turfPaint, f.turf, this.turfShown, dt, this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
     this.meAt.x = f.x;
     this.meAt.z = f.z;
@@ -1012,6 +1080,7 @@ export class View {
     this.gearUses.length = 0;
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.crowd.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
+    this.lampsWalled = f.dark?.walls !== false;
     this.pieces.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
   }
 
@@ -1035,6 +1104,7 @@ export class View {
       return;
     }
     this.island?.depart(kind, p.x, p.z);
+    if (kind === 'raft') this.river?.depart(p.x, p.z);
   }
 
   /** Lou's car pulls away with the player in it (P34, the phone's 'wheels' event): along its facing, fading out. */
@@ -1113,6 +1183,14 @@ export class View {
       !this.reducedMotion && this.world?.def.theme === 'alpine',
       this.openSky,
     );
+    this.pieces.leaves.update(
+      this.reducedMotion ? 0 : dt,
+      time,
+      this.cam.target.x,
+      this.cam.target.z,
+      this.world?.def.theme === 'forest',
+      this.openSky,
+    );
     this.lighting.weather = null;
     this.pieces.weather.update(
       NO_WEATHER,
@@ -1149,9 +1227,11 @@ export class View {
         guide: this.guide,
         showerWater: this.showerWater,
         island: this.island,
+        river: this.river,
         security: this.security,
         pitch: this.pitch,
         world: this.world,
+        turf: this.turfPaint,
         resize: () => this.resize(),
       },
       px,
@@ -1176,6 +1256,7 @@ export class View {
       this.riot,
       this.security?.group.visible ? this.security.arches : 1,
       this.blockDark,
+      this.lampsWalled,
     );
     this.dust.update(dt);
     // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)
@@ -1190,6 +1271,7 @@ export class View {
     this.blobs.update(stage);
     updateOcclusion(this.renderer, this.cam.camera, focus, dt);
     skipEmpty(this.scene);
+    if (this.warmIn > 0 && --this.warmIn === 0) this.warmDay(false);
     this.renderer.render(this.scene, this.cam.camera);
     // The last prison's meshes, now that the new one's shaders are in use (setWorld).
     if (this.retired.length) for (const dispose of this.retired.splice(0)) dispose();
@@ -1211,11 +1293,24 @@ export class View {
     return v;
   }
 
-  /** The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the middle of a food fight. */
-  private warmDay() {
-    const views = this.pieces.warming;
+  /**
+   * The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the
+   * middle of a food fight. (Review of 2.36: `compile` only starts a program; Chrome on ANGLE links it when three first
+   * looks at it, on its first draw, and that blocks, 70–150 ms a program: at the morning's first sight of the odd jobs
+   * board, lunch's of the menu board and the vending machine. So every program `compile` made is looked at here, its
+   * uniforms and attributes read, which links it now; nothing is drawn, no texture sent.)
+   */
+  private warmDay(effects = true) {
+    // (The day's effects shown for it only the first time: showing them again a frame into the game would start them afresh.)
+    const views = effects ? this.pieces.warming : [];
     for (const v of views) v.warm(true);
-    this.renderer.compile(this.scene, this.cam.camera);
+    const materials = this.renderer.compile(this.scene, this.cam.camera);
+    for (const m of materials) {
+      const program = (this.renderer.properties.get(m) as { currentProgram?: { getUniforms(): unknown; getAttributes(): unknown } })
+        .currentProgram;
+      program?.getUniforms();
+      program?.getAttributes();
+    }
     for (const v of views) v.warm(false);
   }
 

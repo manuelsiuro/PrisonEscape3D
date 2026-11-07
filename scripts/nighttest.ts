@@ -321,7 +321,7 @@ for (const def of PRISONS) {
   old.act();
   check(old.st.sleeping && !dummyInBed(old.sim), 'the old rules: the bed only sleeps');
   console.log(
-    'the bed: Tuck in, Take out, then Sleep in all five; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever',
+    'the bed: Tuck in, Take out, then Sleep in every prison; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever',
   );
 }
 
@@ -414,12 +414,12 @@ for (const def of PRISONS) {
     !!replayed?.ok && replayed.sim.rules227 === true && replayed.sim.state.heat > 0,
     'a 2.27 log through the night replays whole under the old rules',
   );
-  check(!replayLog({ ...prev.toLog(), game: '2.35.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.35.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = logOf('2.35.0', false);
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = logOf('2.36.0', false);
   const again = replayLog(now.toLog(), stalag);
   check(!!again?.ok && again.sim.rules227 === false, "a log of today's replays under today's rules");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.35.1' }).toLog().seed === 3, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.36.1' }).toLog().seed === 3, 'and is carried on');
   console.log('older runs: a 2.27 log replays as it was and is not carried on; a new one is');
 }
 

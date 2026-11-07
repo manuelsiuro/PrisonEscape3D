@@ -795,10 +795,11 @@ for (const p of PRISONS) {
       const n = (what: string) => plan.filter((d) => d.what === what).length;
       check(n('garland') > 0, `${p.id} ${HOLIDAYS[h]}: the canteen dressed`);
       if (h === HOLIDAY.CHRISTMAS) check(n('tree') === 1 && n('snowman') === 1, `${p.id}: a Christmas tree and a snowman`);
-      // (San Pancho's sports ground has room for one parasol off its ways in.)
+      // (San Pancho's sports ground has room for one parasol off its ways in; the Six Hunter's, its track round the pitch and
+      // the court beside it, for one hose: the look's pass may find it a second.)
       if (h === HOLIDAY.SUMMER)
         check(
-          n('parasol') >= (p.id === 'san-pancho' ? 1 : 2) && n('barbecue') === 1 && n('hose') === 2,
+          n('parasol') >= (p.id === 'san-pancho' ? 1 : 2) && n('barbecue') === 1 && n('hose') === (p.id === 'six-hunter' ? 1 : 2),
           `${p.id}: parasols, the barbecue, two hoses on the sports ground`,
         );
       // Every table in the canteen dressed (Center Perks' eight, not the first six).

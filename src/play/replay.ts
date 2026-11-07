@@ -318,7 +318,10 @@ export function replayFrame(g: Game, dt: number, now: number) {
   const a = g.paused ? 1 : Math.min(1, play.acc * STEPS_PER_SECOND);
   const tile = tileOfBody(st.player);
   const busy = st.sleeping || st.ko > 0 || st.solitary > 0 || st.stowed;
-  view.draw(buildFrame(g, a, tile, busy, itemOf(st.items.inv[st.items.hand])), dt, now / 1000);
+  const f = buildFrame(g, a, tile, busy, itemOf(st.items.inv[st.items.hand]));
+  // (Session 15: at ×4 or ×64 the strides read the ground covered in game time: nobody breaks into a run.)
+  f.speed = view.gliding || g.paused ? 1 : Math.max(0.1, r.pace);
+  view.draw(f, dt, now / 1000);
   hudFrame(g, a, tile, busy);
   // Asleep or out cold, in solitary: as the player saw it.
   sleepVeil.querySelector('span')!.textContent = t(st.ko > 0 ? 'sleep.knockedOut' : 'replay.asleep');
@@ -448,6 +451,7 @@ export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
   hud.el.inert = true;
   sound.ambience(true);
   sound.setCoast(sim.world.def.theme === 'island');
+  sound.setForest(sim.world.def.theme === 'forest');
   document.body.classList.add('is-playing', 'is-replay');
 
   const scout = runScout(log, (p) => {

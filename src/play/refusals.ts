@@ -2,11 +2,12 @@
 import { NIGHT_OPINION } from '../content/crew';
 import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { APPLY_DAY } from '../content/parole';
+import { PHONE_OPINION } from '../content/smuggling';
 import { FRIEND_INK, INK_OPINION } from '../content/team';
 import { t, type Key } from '../i18n';
 import type { Sim } from '../sim/Sim';
 import { P } from '../sim/systems/parole';
-import { BRIBE_REPORT_HEAT } from '../sim/tuning';
+import { BRIBE_REPORT_HEAT, FAVORS_TAKEN, GANG_OPINION, MAX_FOLLOWERS, OPINION_HIGH } from '../sim/tuning';
 
 /** The number a refusal's line names ({n}): the opinion a game, a night out, the old-timer or a tattoo needs, the games a day, parole's first day and the day to apply again, a reported bribe's heat. */
 const REFUSAL_N: Record<string, (sim: Sim) => number> = {
@@ -14,6 +15,11 @@ const REFUSAL_N: Record<string, (sim: Sim) => number> = {
   gameOpinion: () => GAME_OPINION,
   played: () => GAMES_A_DAY,
   nightOpinion: () => NIGHT_OPINION,
+  opinion: () => OPINION_HIGH,
+  phoneOpinion: () => PHONE_OPINION,
+  gangOpinion: () => GANG_OPINION,
+  followers: () => MAX_FOLLOWERS,
+  favors: () => FAVORS_TAKEN,
   elderOpinion: () => ELDER_OPINION,
   inkOpinion: () => INK_OPINION,
   inkFriend: () => FRIEND_INK,

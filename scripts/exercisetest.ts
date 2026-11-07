@@ -387,7 +387,7 @@ for (const def of PRISONS) {
   bot!.until(() => m.goal !== tile && tileAt(m.body.x, m.body.z) !== tile, 200);
   check(tileAt(m.body.x, m.body.z) !== tile, `${def.id}: free time: off it soon after (${(bot!.st.step - from) / 20} s)`);
 }
-console.log('giving way: asked in all five, on the machine in 2 s, they keep off it; in free time, off it in moments');
+console.log('giving way: asked in every prison, on the machine in 2 s, they keep off it; in free time, off it in moments');
 {
   // Called off by a step away; not asked twice by a second press; nothing asked of them when too tired or as good as it gets.
   const walk = someoneOn();
@@ -692,12 +692,12 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   check(!prev.sim.state.inmates.some((m) => ON_MACHINE.includes(m.doing)), 'the old rules: nobody on the machines');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules228 === true, 'a 2.28 log through the hour replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.35.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.35.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.35.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.36.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.35.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.36.1' }).toLog().seed === 24, 'and is carried on');
   // The old set: fast presses, a bar that drains, the bag no use at all.
   const o = new Bot(CENTER_PERKS, 3);
   o.sim.rules228 = true;

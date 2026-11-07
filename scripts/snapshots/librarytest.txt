@@ -1,13 +1,14 @@
-recipes by subject: tools 19, locks 23, weapons 9, everyday 9
+recipes by subject: tools 20, locks 24, weapons 9, everyday 11
 center-perks: shelf to a set done 9.7 s, 4 chairs, 6 shelf tiles, librarian in cell 4
 stalag-flucht: shelf to a set done 8.9 s, 4 chairs, 6 shelf tiles, librarian in cell 6
 shankton: shelf to a set done 9.1 s, 4 chairs, 6 shelf tiles, librarian in cell 4
 san-pancho: shelf to a set done 9.2 s, 2 chairs, 3 shelf tiles, librarian in cell 7
 irongate: shelf to a set done 9.4 s, 3 chairs, 2 shelf tiles, librarian in cell 8
+six-hunter: shelf to a set done 8.8 s, 2 chairs, 4 shelf tiles, librarian in cell 8
 a set: 19.9 s untouched, 7.8 s kept up with, a hit worth 20%
 pressing after a word lights: 0.5 s → 7.8 s a set, 0 missed; 1 s → 7.8 s a set, 0 missed; 2 s → 10.5 s a set, 0 missed; 4 s → 19.9 s a set, 3 missed
 pressing blind every … (the best start): 0.5 s 19.9, 1 s 15.8, 1.5 s 11.8, 2 s 11.8, 2.5 s 7.8, 3 s 7.8, 3.5 s 8.0, 4 s 9.1, 4.5 s 10.2, 5 s 11.8, 5.5 s 11.8, 6 s 11.8 s a set
 a set on a chair, energy lost: 6 kept up with
 a set on a chair, energy lost: 0 untouched
-free time: center-perks 2.0 in the library (most 5), 1.7 reading, librarian at the desk 93%; stalag-flucht 2.4 in the library (most 4), 2.0 reading, librarian at the desk 92%; shankton 2.4 in the library (most 4), 2.0 reading, librarian at the desk 99%; san-pancho 2.9 in the library (most 5), 2.1 reading, librarian at the desk 98%; irongate 2.1 in the library (most 4), 1.8 reading, librarian at the desk 100%
+free time: center-perks 2.0 in the library (most 5), 1.7 reading, librarian at the desk 93%; stalag-flucht 2.4 in the library (most 4), 2.0 reading, librarian at the desk 92%; shankton 2.4 in the library (most 4), 2.0 reading, librarian at the desk 99%; san-pancho 2.9 in the library (most 5), 2.1 reading, librarian at the desk 98%; irongate 2.2 in the library (most 4), 1.8 reading, librarian at the desk 100%; six-hunter 1.5 in the library (most 4), 1.3 reading, librarian at the desk 95%
 library ok

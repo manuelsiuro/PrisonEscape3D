@@ -12,6 +12,7 @@ import { releaseToday } from './paperwork';
 import { placesOf } from '../ai/places';
 import { twist } from './twists';
 import { RAT } from './rats';
+import { containersOf } from '../world/containers';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { lineOfSight } from '../ai/sight';
@@ -28,6 +29,7 @@ import {
   BUY_OPINION,
   CHASE_HEAT,
   FAVOR_OFFERS,
+  FAVOR_DROP_OPINION,
   FAVOR_OPINION,
   FAVORS_TAKEN,
   FOLLOW_GAP,
@@ -41,7 +43,21 @@ import {
 } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { dist2, type Fighter, personOf } from './combat';
-import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
+import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, fetchFavor, giftOpinion, jobRooms } from './economy';
+import {
+  askOf,
+  askToJoin,
+  bossOf,
+  favorSlot,
+  gangsHere,
+  gangTargets,
+  handInRefusal,
+  joinGang,
+  leaveGang,
+  mateClose,
+  metGangs,
+  turfHeld,
+} from './gangs';
 import { awake, GUARD } from './guards';
 import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmates';
 import { closeBox, freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, usesOf } from './items';
@@ -101,6 +117,8 @@ export function approach(sim: SimContext, who: number) {
     s.talk = who;
     sim.events.push({ type: 'talk', who });
   }
+  // (2.36: the first word with a gang's member: the player knows the gangs, and they keep to their turf from now on.)
+  metGangs(sim, who);
 }
 
 /** Whether the player can go on talking to someone (Cast id): an inmate up and calm, a guard who'd talk (P15); close, nothing between. */
@@ -187,7 +205,7 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       if (!sim.shopsOpen) return refuse(sim, 'closed');
       if (m.opinion <= OPINION_LOW) return refuse(sim, 'grudge');
       const item = itemOf(v);
-      const price = priceOf(itemDef(item).value, m.opinion);
+      const price = askOf(sim, who, itemDef(item).value);
       if (s.cash < price) return refuse(sim, 'cash');
       if (free < 0) return refuse(sim, 'room');
       shop[b] = 0;
@@ -232,22 +250,46 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
         const k = pockets.indexOf(0);
         pockets[k >= 0 ? k : pockets.length - 1] = slot(f.item);
       }
+      // (2.36: and what's asked for is in someone's desk, as the asker says.)
+      if (f.kind === FAVOR.SCAVENGE && !sim.rules235) inSomeDesk(sim, f);
       sim.events.push({ type: 'favor', who, kind: f.kind, state: 'taken' });
       return;
     }
     case TALK.HAND_IN: {
       const f = s.favors.find((x) => x.by === who && x.state !== FAVOR_STATE.OFFERED);
       if (!f) return;
-      if (f.kind === FAVOR.SCAVENGE || f.kind === FAVOR.RETRIEVE) {
-        const k = hotbarSlotOf(it.inv, f.item);
-        if (k < 0) return refuse(sim, 'missing');
+      // (2.36: an initiation, never while in a gang or the day one was left: no switching for free.)
+      if (f.kind === FAVOR.INITIATION) {
+        const why = handInRefusal(sim);
+        if (why) return refuse(sim, why);
+      }
+      if (fetchFavor(f.kind)) {
+        // (2.36: an initiation's tribute is the one from the rival boss's desk, nothing else.)
+        const k = favorSlot(it.inv, f);
+        if (k < 0) return refuse(sim, f.kind === FAVOR.INITIATION && hotbarSlotOf(it.inv, f.item) >= 0 ? 'notTribute' : 'missing');
         it.inv[k] = 0;
       } else if (f.state !== FAVOR_STATE.DONE) return refuse(sim, 'notDone');
       s.favors.splice(s.favors.indexOf(f), 1);
+      // (2.36: an initiation handed in: the player is in the gang, no money.)
+      if (f.kind === FAVOR.INITIATION) {
+        sim.events.push({ type: 'favor', who, kind: f.kind, state: 'paid' });
+        const k = bossOf(sim, who);
+        if (k >= 0 && gangsHere(sim)) joinGang(sim, k);
+        return;
+      }
       s.cash += f.reward;
       sim.events.push({ type: 'favor', who, kind: f.kind, state: 'paid' }, { type: 'cash', n: f.reward, why: 'favor' });
       s.tally[3] += f.reward;
       changeOpinion(sim, who, FAVOR_OPINION);
+      return;
+    }
+    case TALK.DROP: {
+      // (2.36: a favor taken on and not yet done, let go: it frees its place, and they think a little less of the player.)
+      const f = s.favors.find((x) => x.by === who && x.state === FAVOR_STATE.TAKEN);
+      if (!f) return;
+      s.favors.splice(s.favors.indexOf(f), 1);
+      sim.events.push({ type: 'favor', who, kind: f.kind, state: 'dropped' });
+      changeOpinion(sim, who, -FAVOR_DROP_OPINION);
       return;
     }
     case TALK.RECRUIT:
@@ -269,11 +311,19 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
     case TALK.DISMISS:
       dismiss(sim, who);
       return;
+    // 2.36: a gang's boss asked in (the initiation favor); the player's own gang left.
+    case TALK.JOIN:
+      askToJoin(sim, who);
+      return;
+    case TALK.LEAVE:
+      leaveGang(sim, who);
+      return;
     case TALK.PHONE: {
       // A burner phone (P21), from the fixer only, in the merchants' hours, to a friend; one at a time.
       if (who !== fixerOf(sim)) return;
       if (!sim.fixerOpen) return refuse(sim, 'closed');
-      if (m.opinion < PHONE_OPINION) return refuse(sim, 'opinion');
+      // (2.36: its own reason, which names the phone's 60, not recruiting's 80.)
+      if (m.opinion < PHONE_OPINION) return refuse(sim, 'phoneOpinion');
       if (it.inv.slice(0, HOTBAR).some((v) => itemOf(v) === PHONE)) return refuse(sim, 'havePhone');
       if (s.cash < PHONE_PRICE) return refuse(sim, 'cash');
       if (free < 0) return refuse(sim, 'room');
@@ -382,6 +432,35 @@ export function offerFavors(sim: SimContext) {
   }
 }
 
+/**
+ * 2.36: a scavenge favor taken on ("find me a … from someone's desk"): when no inmate's desk shows
+ * one in its drawers (desks fill up and then stay as they are, so a talcum or a battery may be in
+ * none for days), one turns up in the drawers of a desk not the asker's, the first with room counted
+ * on from the asker. No draw: the same favor, the same desk.
+ */
+function inSomeDesk(sim: SimContext, f: Favor) {
+  const s = sim.state;
+  const w = sim.world;
+  const list = containersOf(w);
+  const desks: number[] = [];
+  list.forEach((c, i) => {
+    if (c.table === 'inmateDesk') desks.push(i);
+  });
+  const own = s.inmates[f.by]?.cell ?? -1;
+  const theirs = (i: number) => w.cellOf[list[i].prop.z * MAP_W + list[i].prop.x] === own;
+  if (desks.some((i) => !theirs(i) && s.items.containers[i].some((v, j) => j >= list[i].hidden && itemOf(v) === f.item))) return;
+  for (let k = 0; k < desks.length; k++) {
+    const i = desks[(f.by + k) % desks.length];
+    if (theirs(i)) continue;
+    const box = s.items.containers[i];
+    const free = box.indexOf(0, list[i].hidden);
+    if (free < 0) continue;
+    box[free] = slot(f.item);
+    s.items.rev++;
+    return;
+  }
+}
+
 /** A favor done (it's handed in next time they talk). */
 export function favorDone(sim: SimContext, f: Favor) {
   f.state = FAVOR_STATE.DONE;
@@ -428,6 +507,8 @@ export function grudges(sim: SimContext) {
     if (lawlessHoldsOff(sim)) return;
     // (P23: a muscle watching the player's back close by: they think better of it.)
     if (stopAmbush(sim, who)) return;
+    // (2.36: nor with one of the player's gang close by.)
+    if (mateClose(sim)) return;
     m.angry = ANGRY_STEPS;
     m.doing = DOING.NOTHING;
     m.wait = 0;
@@ -451,6 +532,11 @@ export function socialNow(sim: SimContext): Social {
   // (Not at the Training Block: its lessons ask for a machine or an inmate by name, and shouldn't find one taking up the other.)
   so.machines = !sim.rules228 && !sim.world.def.rules?.relaxed;
   so.reads = !sim.rules230 && !sim.world.def.rules?.relaxed;
+  // (2.36: the gangs hold their tables at dinner and their corners in the evening, from day 2.)
+  so.gangs = turfHeld(
+    sim,
+    ROUTINE.findIndex((r) => r.id === 'dinner'),
+  );
   // (Nor there either, for the same reason, working its stations.)
   const jobOf = (so.jobOf ??= []);
   jobOf.length = sim.rules229 || sim.world.def.rules?.relaxed ? 0 : n;
@@ -495,6 +581,8 @@ export function socialNow(sim: SimContext): Social {
     const on = placesOf(sim.world).machines.find((q) => q.prop === s.train);
     if (on) so.off.push(on.tile);
   }
+  // (2.36: gang business: the war's brawlers, a member's gang mates backing them.)
+  gangTargets(sim, so, sim.scratch.allyFoe, sim.scratch.backers);
   if (!about) return so;
   // A shootout's partner (P27) keeps near the player at the court.
   const partner = hoopsPartner(s);

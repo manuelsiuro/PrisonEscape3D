@@ -69,6 +69,8 @@ export const INMATE_REACTION = 6 * STEPS_PER_SECOND;
 // ---------------------------------------------------------------- layers and destruction (P4, GDD §9)
 /** A tool strike at most this often (a swing takes a moment; holding the button repeats it). */
 export const STRIKE_STEPS = 9;
+/** 2.36: a tool (or a plastic key) with this many uses left is said to be nearly worn out, once, as it gets there. */
+export const WORN_WARN = 2;
 /** Hit points: brick walls and chain-link fences 100, electric fences 120, vent grates 60 (GDD §9.1). */
 export const WALL_HP = 100;
 export const FENCE_HP = 100;
@@ -252,6 +254,10 @@ export const TIP_OPINION = 60;
 /** Studying tells the player a recipe each time Intellect passes a multiple of this. */
 export const STUDY_TIP_EVERY = 5;
 export const FAVOR_OPINION = 15;
+/** 2.36: a favor taken on and let go (TALK.DROP): the asker thinks this much less of the player. */
+export const FAVOR_DROP_OPINION = 5;
+/** Friends this close in opinion and up tell the player true rumors (src/talk/, presentation only). */
+export const GOSSIP_OPINION = 55;
 export const HIT_OPINION = 8;
 export const KO_OPINION = 15;
 export const BUY_OPINION = 2;
@@ -390,6 +396,23 @@ export const TRUST_IGNORE = 60;
 export const TRUST_FRIEND = 100;
 export const DAZE_STEPS = 10 * STEPS_PER_SECOND;
 export const DOG_SLEEP_STEPS = 120 * STEPS_PER_MINUTE;
+/**
+ * 2.36 (The Six Hunter): the Huntmaster's recall horn, blown: every hound off to its kennel this long (an hour of game time),
+ * and heard this far (walking tiles, a bang's: it wakes the Hunters asleep in earshot). A drag line landing: the trail
+ * gone, and a noise this far (the hounds pulling their Hunters to it), drawing this many to look.
+ */
+export const RECALL_STEPS = 60 * STEPS_PER_MINUTE;
+export const HORN_NOISE = 12;
+export const DRAG_NOISE = 9;
+export const DRAG_GUARDS = 2;
+/**
+ * 2.36 (The Six Hunter): the kennel hand's quota done, every hound trusts the player this much more, but never past
+ * KENNEL_TRUST_CAP from the troughs alone (below TRUST_IGNORE: a treat from the hand is what wins one over). A day the
+ * kennel hand leaves the pack unfed (the quota missed), every hound's trust fades this much.
+ */
+export const KENNEL_TRUST = 10;
+export const KENNEL_TRUST_CAP = 40;
+export const KENNEL_FADE = 15;
 
 // The pet rat (P20).
 /** A rat trap left on the floor at 04:00 catches a rat this often (percent): in a kitchen, canteen or storeroom; down a tunnel; anywhere else none. */
@@ -439,3 +462,26 @@ export const LAMP_LIT = 250;
 export const LOW_COOL = 2;
 /** Blocking: a blow on the player does this share (halves, rounded up) and the player walks at this share (percent). */
 export const BLOCK_WALK = 50;
+
+// Gangs and turf (2.36, session 16; Sim.rules235 for older logs).
+/** A gang's boss asks the player in from this opinion of them (the initiation favor). */
+export const GANG_OPINION = 65;
+/** A member's discount at their own gang's merchant, on top of opinion's (a share), and the most it all comes to. */
+export const GANG_DISCOUNT = 0.2;
+export const GANG_MAX_DISCOUNT = 0.6;
+/** Joining: the gang thinks this much more of the player, every rival member this much less; leaving (or thrown out), the gang this much less. */
+export const GANG_JOIN_OPINION = 10;
+export const GANG_RIVAL_OPINION = 10;
+export const GANG_LEAVE_OPINION = 15;
+/** A member on a rival gang's turf while it's held: told to clear off, this long to do it (steps: 6 s), then one of them squares up; then nothing more for this long (steps). */
+export const TRESPASS_STEPS = 120;
+export const TRESPASS_COOLDOWN = 1200;
+/** Gang mates back a member in a fight from this close (tiles), where they can see the one after them. */
+export const GANG_BACKUP_RANGE = 6;
+/** The gang war (the day card): a member this close to the war's ground (tiles), in sight of a rival, is gone for once a war; brawlers square up within this of it. */
+export const GANG_WAR_REACH = 6;
+export const GANG_WAR_GROUND = 3;
+/** The guards the gang war draws to its ground. */
+export const GANG_WAR_GUARDS = 2;
+/** The gangs hold their turf from this prison day (day 1 is the newcomer's: nobody minds who sits where). */
+export const GANG_FROM_DAY = 2;

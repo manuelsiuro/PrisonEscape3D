@@ -44,6 +44,10 @@ export const ZONES = [
   // P31 (sports grounds & gardens): the fenced sports ground, the vegetable garden.
   'sports',
   'garden',
+  // The Six Hunter: the kennels (and their run), the smokehouse, the boathouse on the river.
+  'kennels',
+  'smokehouse',
+  'boathouse',
 ] as const;
 
 export type ZoneId = (typeof ZONES)[number];

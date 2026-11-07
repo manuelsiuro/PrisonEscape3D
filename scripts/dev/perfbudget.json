@@ -1,5 +1,5 @@
 {
-  "note": "perfprobe.ts check(): each scene's draw calls, shadow-pass calls and triangles (both passes) on a phone held upright (412x915, the phone's quality tier), measured 2026-11-06 (v2.35.0). A scene over by more than a sixth (and 3) fails; after a change meant to draw more, pp.record() gives this file's new text.",
+  "note": "perfprobe.ts check(): each scene's draw calls, shadow-pass calls and triangles (both passes) on a phone held upright (412x915, the phone's quality tier), measured 2026-11-06 (v2.35.0; the Six Hunter's six 2026-11-07, v2.36.0). A scene over by more than a sixth (and 3) fails; after a change meant to draw more, pp.record() gives this file's new text.",
   "scenes": {
     "training d1 07:50": {
       "calls": 57,
@@ -180,6 +180,36 @@
       "calls": 103,
       "shadowCalls": 49,
       "tris": 97427
+    },
+    "six-hunter d1 07:50": {
+      "calls": 88,
+      "shadowCalls": 54,
+      "tris": 113167
+    },
+    "six-hunter d1 08:02": {
+      "calls": 91,
+      "shadowCalls": 59,
+      "tris": 116959
+    },
+    "six-hunter d1 12:10": {
+      "calls": 84,
+      "shadowCalls": 41,
+      "tris": 116002
+    },
+    "six-hunter d1 15:05": {
+      "calls": 71,
+      "shadowCalls": 56,
+      "tris": 113735
+    },
+    "six-hunter d1 18:40": {
+      "calls": 84,
+      "shadowCalls": 41,
+      "tris": 113198
+    },
+    "six-hunter d1 23:30": {
+      "calls": 117,
+      "shadowCalls": 64,
+      "tris": 117346
     }
   }
 }

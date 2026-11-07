@@ -103,7 +103,13 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           listIcons: ['clock', 'eye', 'lock', 'briefcase'],
           list2Icons: ['eye', 'moon', 'down'],
         }),
-        T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
+        T('items', 'briefcase', '#8e5a2b', {
+          diagram: 'pockets',
+          lessons: ['search', 'stash'],
+          // (2.36: where things are.)
+          listIcons: ['item:toothbrush', 'item:plastic_spoon', 'item:timber', 'coin', 'item:key_yellow', 'clock'],
+          see: ['craft', 'searches'],
+        }),
       ],
     },
     {
@@ -137,7 +143,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           see: ['guardWays', 'caught'],
         }),
         T('guardWays', 'shield', '#5b6fa8', { lessons: ['guards'], listIcons: ['book', 'moon', 'eye', 'coin'] }),
-        T('caught', 'siren', '#e5484d', { listIcons: ['hammer'], see: ['heat'] }),
+        T('caught', 'siren', '#e5484d', { listIcons: ['hammer', 'fist'], see: ['heat'] }),
         T('searches', 'bell', '#d9930a', {
           recipes: ['bed_dummy'],
           lessons: ['stash', 'night'],
@@ -153,9 +159,11 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           pic: true,
           lessons: ['talk', 'trade'],
           listIcons: ['coin', 'users', 'fist'],
-          see: ['crew', 'games'],
+          see: ['crew', 'gangs', 'games'],
         }),
         T('crew', 'users', '#ffa94d', { pic: true, lessons: ['crew'], listIcons: ['eye', 'pick', 'fist', 'drone'] }),
+        // 2.36: gangs and turf (pictured at Center Perks: the Kitchen Crew's corner of the courtyard, held in the evening).
+        T('gangs', 'fist', '#c0242c', { pic: true, listIcons: ['utensils', 'siren', 'check', 'flame'], see: ['inmates', 'crew', 'fight'] }),
         T('chatter', 'ear', '#d9a21b', { listIcons: ['chat', 'star'] }),
         T('fight', 'fist', '#c0392b', { pic: true, lessons: ['fight'] }),
       ],
@@ -251,7 +259,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('tools', 'pick', '#6f93b8', {
           lessons: ['dig'],
           see: ['noise', 'layers', 'cover'],
-          listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel'],
+          listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel', 'item:plastic_fork'],
         }),
         T('lockpick', 'lockpick', '#8d949e', { diagram: 'pins', recipes: ['lockpick'], lessons: ['lockpick'] }),
         T('noise', 'ear', '#e8963a', { diagram: 'bars', lessons: ['noise'], listIcons: ['lock', 'ear'] }),
@@ -335,6 +343,16 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           recipes: ['raft'],
           stepIcons: ['boat', 'heli', 'fist'],
           listIcons: ['camera', 'bolt'],
+        }),
+        // 2.36: the Six Hunter (docs/phases/9-six-hunter.md): the pack, the kennel hand's trust, the Hunters' tricks.
+        T('hunters', 'antler', '#3f6b3a', {
+          prison: 'six-hunter',
+          pic: true,
+          picAt: '50% 72%',
+          recipes: ['drag_line', 'tar_soap', 'ghillie_cloak', 'antler_pick'],
+          listIcons: ['paw', 'item:trout', 'down'],
+          list2Icons: ['item:drag_line', 'item:tar_soap', 'item:ghillie_cloak', 'item:recall_horn'],
+          see: ['dogs', 'manhunt'],
         }),
       ],
     },

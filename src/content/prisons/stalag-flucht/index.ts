@@ -338,6 +338,13 @@ export const STALAG_FLUCHT: PrisonDef = {
   guards,
   names: ['Ferret', 'Kipper', 'Biscuit', 'Badger', 'Ginger', 'Taffy', 'Chalky', 'Scraps', 'Nobby'],
   merchants: [3, 7, 9],
+  // 2.36, gangs and turf: three huts' cliques; their tables in the mess hut (the bench by the menu board stays everyone's), their corners of the parade ground
+  // south of the roll call lines. Ginger keeps to himself.
+  gangs: [
+    { id: 'kitchen', boss: 3, members: [3, 4, 8], table: [14, 33, 16, 35], corner: [3, 27, 9, 28] },
+    { id: 'lifers', boss: 9, members: [9, 5, 2], table: [6, 33, 8, 35], corner: [33, 27, 38, 28] },
+    { id: 'gymRats', boss: 7, members: [7, 10], table: [14, 31, 16, 32], corner: [23, 27, 27, 28] },
+  ],
   crew: ['digger', 'lookout', 'smuggler', 'digger', 'lookout', 'muscle', 'digger', 'smuggler', 'muscle'],
   // The player starts in the kitchen (GDD §4.2); the woodshop is open (Intellect 40, as the player starts).
   jobs: [

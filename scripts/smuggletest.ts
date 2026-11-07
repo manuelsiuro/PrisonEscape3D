@@ -201,7 +201,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   check(!s.items.inv.some((v) => itemOf(v) === PHONE), 'nobody but the fixer sells a phone');
   s.inmates[fixer].opinion = PHONE_OPINION - 1;
   buy(fixer);
-  check(refused(seen).includes('opinion'), 'the fixer sells only to a friend (opinion 60)');
+  check(refused(seen).includes('phoneOpinion'), 'the fixer sells only to a friend (opinion 60)');
   s.inmates[fixer].opinion = PHONE_OPINION;
   s.cash = PHONE_PRICE - 1;
   buy(fixer);

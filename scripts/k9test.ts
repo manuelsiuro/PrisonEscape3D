@@ -67,6 +67,7 @@ const DOGS: Record<string, string[]> = {
   shankton: ['Brutus'],
   'san-pancho': ['Canela', 'Bandido'],
   irongate: ['Admiral'],
+  'six-hunter': ['Duchess', 'Rascal', 'Pudding', 'Tinker', 'Brutus', 'Smudge'],
   training: ['Biscuit'],
 };
 const n = (id: string) => itemNumber(id);

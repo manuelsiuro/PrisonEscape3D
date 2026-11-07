@@ -4,7 +4,7 @@ import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey, type World } from '../sim/w
 import { underMyDesk } from '../sim/systems/structure';
 import { box, kitMaterial, merge, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
-import { TEX } from './textures';
+import { stoneCap, TEX } from './textures';
 import { WALL_H, type WorldView } from './WorldView';
 import { FLOOR_HP, WALL_HP } from '../sim/tuning';
 
@@ -208,7 +208,11 @@ export class Structure {
     });
     const coping = new THREE.InstancedMesh(
       new THREE.BoxGeometry(1, 0.07, 1),
-      (this.mats.coping = new THREE.MeshStandardMaterial({ color: 0xa8a39a, roughness: 0.9 })),
+      // (2.36: the forest's are its fieldstone caps.)
+      (this.mats.coping =
+        this.world.def.theme === 'forest'
+          ? new THREE.MeshStandardMaterial({ map: stoneCap(), roughness: 0.9 })
+          : new THREE.MeshStandardMaterial({ color: 0xa8a39a, roughness: 0.9 })),
       Math.max(1, walls.length),
     );
     walls.forEach((i, k) => coping.setMatrixAt(k, m.makeTranslation((i % MAP_W) + 0.5, ROOF_Y + 0.035, Math.floor(i / MAP_W) + 0.5)));

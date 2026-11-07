@@ -66,10 +66,12 @@ entries.forEach((e, k) => {
   const want = t.length <= 110 ? t : t.slice(0, 107);
   check(!!lines[k] && lines[k].startsWith(`- ${want}`), `HISTORY.md line ${k + 1} is "${want.slice(0, 50)}" (${e.f})`);
 });
-// The game's version in the latest range: a file per ten minor versions.
+// The game's version in the latest range: a file per ten minor versions, per five from 2.35 (when
+// v2.30-v2.39 reached its 80 KB and was split in two).
 const [maj, min] = version.split('.').map(Number);
-const lo = Math.floor(min / 10) * 10;
-const latest = `docs/history/v${maj}.${lo}-v${maj}.${lo + 9}.md`;
+const span = maj > 2 || min >= 35 ? 5 : 10;
+const lo = Math.floor(min / span) * span;
+const latest = `docs/history/v${maj}.${lo}-v${maj}.${lo + span - 1}.md`;
 check(ranges.at(-1) === latest || ranges.includes(latest), `the history of ${version} goes in ${latest}`);
 // A "not released yet" may stand only for the version being released.
 for (const f of [...ranges, 'docs/HISTORY.md', 'docs/POLISH.md']) {
@@ -154,6 +156,8 @@ const WRITTEN: Array<[string, RegExp, keyof typeof COUNT]> = [
   ['README.md', /(\d+) items to find/, 'items'],
   ['README.md', /<b>(\d+) achievements<\/b>/, 'achievements'],
   ['README.md', /The (\d+) lessons/, 'lessons'],
+  ['docs/FEATURES.md', /(\d+) automated test scripts/, 'test scripts'],
+  ['README.md', /(\d+) test scripts/, 'test scripts'],
 ];
 for (const [f, re, what] of WRITTEN) {
   const m = read(f).match(re);
@@ -161,6 +165,27 @@ for (const [f, re, what] of WRITTEN) {
   if (m) check(Number(m[1].replace(/,/g, '')) === COUNT[what], `${f}: ${m[1]} ${what}, the game has ${COUNT[what]}`);
 }
 console.log("the counts in PLAN.md, FEATURES.md and the README are the game's");
+
+// The code's size, as FEATURES.md and the README give it: a rough figure, so within a twentieth of the real one
+// (it isn't bumped every commit, only when it drifts that far).
+const tsFiles = (dir: string) =>
+  (readdirSync(dir, { recursive: true }) as string[]).filter((f) => f.endsWith('.ts')).map((f) => join(dir, f));
+const linesIn = (files: string[]) => files.reduce((n, f) => n + (readFileSync(f, 'utf8').match(/\n/g)?.length ?? 0), 0);
+const SIZE: Array<[string, RegExp, number]> = [
+  ['docs/FEATURES.md', /About ([\d,]+) lines of TypeScript/, linesIn(tsFiles('src'))],
+  ['README.md', /About ([\d,]+) lines of TypeScript/, linesIn(tsFiles('src'))],
+  ['README.md', /in (\d+) files \(formatted/, tsFiles('src').length],
+  ['README.md', /and ([\d,]+) more in the tests and tools/, linesIn(tsFiles('scripts'))],
+];
+for (const [f, re, real] of SIZE) {
+  const m = read(f).match(re);
+  check(!!m, `${f} gives the code's size (${re.source})`);
+  if (m) {
+    const said = Number(m[1].replace(/,/g, ''));
+    check(Math.abs(said - real) <= real / 20, `${f}: ${m[1]} (${re.source}), the code has ${real}`);
+  }
+}
+console.log("the code's size in FEATURES.md and the README within a twentieth of the real one");
 
 // ------------------------------------------------------------------ the backlog
 // Its first table is POLISH.md's areas not done (Not reviewed, Partly): one list, kept in step.

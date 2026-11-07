@@ -14,15 +14,10 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 |---|---|
 | Quiz, football, rat races | Partly |
 | Free time | Not reviewed |
-| Items and crafting | Not reviewed |
-| Searching and looting | Not reviewed |
-| Tools, digging, vents and roofs | Not reviewed |
-| Talking, favors and opinion | Not reviewed |
-| Merchants and money | Not reviewed |
-| Crew | Not reviewed |
 | Side games (dice, arm-wrestling, cards, hoops, checkers) | Not reviewed |
 | Long games (pruno, garden, rats) | Not reviewed |
 | Pay phone, kiosk and paperwork | Not reviewed |
+| The Six Hunter | Partly |
 
 ## 2. Checks only a person can do
 
@@ -42,18 +37,13 @@ date and version here when one is done.
 ## 3. Ideas the user parked
 
 Not planned; offered again when the user asks what's next (moved here from the project memory,
-2026-11-06). Gangs and the riot change how inmates behave: protect the escape bots (off on day 1, or
-measured and re-tuned, as the sports grounds were).
+2026-11-06). The riot changes how inmates behave: protect the escape bots (off on day 1, or measured and
+re-tuned, as the sports grounds were; gangs, 2.36, start once the player meets them).
 
-- **Gangs and turf** (2026-10-21, Claude's first recommendation): 2 or 3 cliques a prison (the
-  Kitchen Crew, the Lifers, the Gym Rats), each owning a canteen table, a yard corner and a
-  merchant. Trespass starts trouble; an initiation favour to join, then discounts, protection in
-  fights and colours to wear; rivals pick fights; a gang war day card. Turf as zone data, no map
-  edits; built on opinion, favours, fights, the crew, merchants and the day deck.
 - **The riot** (2026-10-21): a grievance meter (bad meals, heatwaves, harsh shakedowns, lockdowns,
   grumbling barks) the player can spark (a canteen food fight, a yard brawl). Guards fall back to
   hold doors, some doors jam, storerooms are looted: an escape window. Then the riot squad, a full
-  shakedown, a lockdown day. Better after gangs (a gang war can tip into a riot).
+  shakedown, a lockdown day. Built on the gangs (2.36): a gang war can tip into a riot.
 - **Gamepad support** (session 10 of the queue, moved here by the user on 2026-11-06): no controller input
   (`getGamepads` nowhere); it would build on the actions table of 2.35.0 (`input/bindings.ts`), the block
   of 2.35 included.
@@ -68,16 +58,10 @@ fixes, and polished systems before the feature built on them; the user may reord
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
 4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
-7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 9's colour-blind palette was
+7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 12, tools, digging, items and looting, 13, talk, merchants and the crew, 14, the picture review, 15, character animation, and 16, gangs and turf, in v2.36.0; 9's colour-blind palette was
 left out by the user; 10, gamepad support, was moved to §3 by the user).
 
-| # | Session | Why now, what it found |
-|---|---|---|
-| 12 | Tools, digging, items, looting | §1: tools, digging, vents and roofs; items and crafting; searching and looting |
-| 13 | Talk, merchants, crew | §1: talking, favours and opinion; merchants and money; the crew |
-| 14 | Picture review of every prison | Day and night, materials, shadows, light: a report first, then the fixes picked (as the lamps) |
-| 15 | Character animation polish | Blends between poses, idle and walk variety, hands and what they hold |
-| 16 | Gangs and turf | §3; built on 11 and 13 (fights, opinion, merchants, the crew) once they're polished |
+Every session is done, or moved by the user (2026-11-07).
 
 ## 5. Upkeep
 
@@ -89,3 +73,8 @@ left out by the user; 10, gamepad support, was moved to §3 by the user).
   push soon. A rewrite gives every commit and tag a new id, so it needs his work in first and a
   fresh clone on his side after; never without the user's go. Before it: a `git clone --mirror`
   backup; after it: build, tests, every tag, the site and CI checked.
+- **Shader programs first made mid-play** (found 2026-11-07, v2.36.0): `View.warmDay` now links every
+  program at load (the worst frames 934 → 250 ms), but a few things are first built mid-play and still
+  stall about 80 ms once each (the shower water, a night mesh, a holiday piece's shadow, the team view).
+  Drawing them at load would change pixels; warming their materials on a hidden mesh would not.
+  `scripts/dev/hitchprobe.ts` now counts these (`waited`).

@@ -1,4 +1,4 @@
-wages $laundry 30, $janitor 35, $kitchen 40, $woodshop 50, $mailman 55, $metalshop 65, $gardener 35; merchant prices $12–40 (at 100 opinion $20)
+wages $laundry 30, $janitor 35, $kitchen 40, $woodshop 50, $mailman 55, $metalshop 65, $gardener 35, $kennels 35, $smokehouse 50, $nets 55; merchant prices $12–40 (at 100 opinion $20)
 worker bot (laundry, 3 days):
   day 1 12:13 quota 1/4
   day 1 12:13 quota 2/4
@@ -48,6 +48,12 @@ irongate metalshop: day 1 12:26 +$65 (wage)
 irongate janitor: day 1 12:16 +$35 (wage)
 irongate mailman: day 1 12:40 +$55 (wage)
 irongate gardener: day 1 12:25 +$35 (wage)
+six-hunter kennels: day 1 12:22 +$35 (wage)
+six-hunter kitchen: day 1 12:34 +$40 (wage)
+six-hunter laundry: day 1 12:20 +$30 (wage)
+six-hunter smokehouse: day 1 12:20 +$50 (wage)
+six-hunter nets: day 1 12:19 +$55 (wage)
+six-hunter gardener: day 1 12:42 +$35 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 5 hired: laundry
@@ -57,4 +63,4 @@ speed: 3.59 tiles a second at SPD 40, 4.30 at 100
 merchant: sold foil at $15, $8 to a friend
 follower: at most 1.8 tiles behind on a walk down the corridor
 recipes: studying told sheet_rope, an inmate told poster
-inmates at work at 14:59 on day 1: center-perks 4, stalag-flucht 4, shankton 5, san-pancho 5, irongate 5
+inmates at work at 14:59 on day 1: center-perks 4, stalag-flucht 4, shankton 5, san-pancho 5, irongate 5, six-hunter 4

@@ -69,7 +69,8 @@ the measurements go in the history entry.
 `docstest` fails over these: `PLAN.md` 30 KB, `HISTORY.md` 24 KB, a `decisions/` file 40 KB, a `history/` file
 80 KB, a `phases/` file 60 KB, `POLISH.md` 40 KB, `BACKLOG.md` 16 KB, `CLAUDE.md` 10 KB, `docs/README.md` 8 KB.
 
-- A history file: the next range starts every ten minor versions (`v2.40-v2.49.md` from 2.40). `docstest` names
+- A history file: the next range starts every five minor versions from 2.35 (`v2.40-v2.44.md` from 2.40; ten before
+  2.35, when `v2.30-v2.39.md` outgrew its size and was split). `docstest` names
   the file the version belongs in. List it in `HISTORY.md` under its own heading.
 - A decisions area: split it in two by subject, list both in `PLAN.md` §2 and in `docs/README.md` if named there.
 - `POLISH.md` or `PLAN.md`: say less. The detail has a home in §1's table.

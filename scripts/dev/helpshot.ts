@@ -10,7 +10,10 @@
 // Run it in an isolated browser profile: each shot is a game started, so its escapes, stats and
 // trophies land in that profile's storage.
 // Retake a picture at the viewport it was taken in, or its framing changes: most were taken at 915×412
-// (landscape emulation, device pixel ratio 2), night.webp at 1440×844 (ratio 1). Compare old and new
+// (landscape emulation, device pixel ratio 2), night.webp at 1440×844 (ratio 1). Session 14 retook these at
+// 1440×844 with their zoom set to match the old frame (today's camera framed them otherwise): bluff, checkers,
+// football, games, goal, holidays, island, library, meals, menu, night, oddjobs, parole, rollcall, showers, train,
+// vending, work. Compare old and new
 // pixel by pixel. A shot's zoom: set `zoom` and call `applyZoom()` (an equal zoom never re-applies);
 // past 1.9 is fine here. Offset the camera by steering `view.target`, not the camera in a render hook
 // (the see-through cut lands on a wall as a dark patch). Fake daylight must null `security.beams` too;
@@ -37,6 +40,7 @@ import { cardUp, RACE_ENTER, raceCard } from '../../src/sim/systems/races';
 import { tonight, turnFrom } from '../../src/sim/systems/talent';
 import { pointAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
+import { SIX_HUNTER } from '../../src/content/prisons/six-hunter';
 import { HEARINGS } from '../../src/content/parole';
 import { HOLIDAY } from '../../src/content/holidays';
 import { prisonDay } from '../../src/sim/systems/calendar';
@@ -55,6 +59,7 @@ import { MENU } from '../../src/content/menu';
 import { twoAtCooler } from '../../src/sim/systems/cooler';
 import { UNIT } from '../../src/sim/tuning';
 import { holidayDecor } from '../../src/render/holidayDecor';
+import { tributeDesk } from '../../src/sim/systems/gangs';
 
 quiet.on = true;
 
@@ -222,8 +227,57 @@ export const SHOTS: Record<string, Shot> = {
       useProp(bot, room.machines[0]);
     },
     when: at(0.99),
-    zoom: 2.2,
+    zoom: 2.55,
     dx: 1,
+  },
+  // 2.36: in the Kitchen Crew's colours at Center Perks, the evening: its members holding their corner of the
+  // courtyard, the turf painted bright; the initiation done by real commands on day 1.
+  gangs: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 41);
+      const st = bot.st;
+      const boss = st.inmates.findIndex((m) => m.cell === CENTER_PERKS.gangs![0].boss);
+      // (Set before the first step, so the replay starts from it: a boss who already rates the player. Only commands after.)
+      st.inmates[boss].opinion = 70;
+      bot.routineUntil(1, 10 * 60 + 2);
+      talkTo(bot, st.inmates[boss].body);
+      bot.op(OP.TALK, TALK.JOIN);
+      bot.op(OP.CLOSE);
+      const f = st.favors.find((x) => x.by === boss)!;
+      const desk = tributeDesk(bot.sim, f);
+      const c = containersOf(bot.sim.world)[desk];
+      const at = c.prop.z * MAP_W + c.prop.x;
+      for (const side of [at + 1, at - 1, at + MAP_W, at - MAP_W]) {
+        if (bot.sim.world.blocked(side % MAP_W, Math.floor(side / MAP_W)) || !bot.walkTo(side)) continue;
+        bot.face(side === at + 1 ? DIR.WEST : side === at - 1 ? DIR.EAST : side === at + MAP_W ? DIR.NORTH : DIR.SOUTH);
+        if (!bot.open(desk)) continue;
+        const k = st.items.containers[desk].findIndex((v, j) => j >= c.hidden && (v & 255) === f.item);
+        bot.op(OP.MOVE, 8 + k, st.items.inv.slice(0, 6).indexOf(0));
+        bot.close();
+        break;
+      }
+      talkTo(bot, st.inmates[boss].body);
+      bot.op(OP.TALK, TALK.HAND_IN);
+      bot.op(OP.CLOSE);
+      bot.routineUntil(2, 18 * 60 + 20);
+      const corner = CENTER_PERKS.gangs![0].corner;
+      bot.walkTo((corner[3] - 1) * MAP_W + corner[2] + 2);
+      bot.face(DIR.WEST);
+      // (Until both of the crew hold their corner, standing about.)
+      const there = () =>
+        CENTER_PERKS.gangs![0].members.every((c) => {
+          const m = st.inmates.find((q) => q.cell === c)!;
+          const x = Math.floor(m.body.x / UNIT);
+          const z = Math.floor(m.body.z / UNIT);
+          return !m.body.moving && x >= corner[0] && x <= corner[2] && z >= corner[1] && z <= corner[3];
+        });
+      bot.until(there, 3000);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.6,
+    dx: -1.5,
+    dz: -1.2,
   },
   // 2.31: on a library chair at Center Perks with a book, a page half read, the readers and the librarian about.
   library: {
@@ -241,7 +295,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.5,
     dz: -1,
   },
   // 2.32: something just bought from Center Perks' vending machine, seen from the front.
@@ -260,7 +314,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.35,
     dz: -1,
   },
   // 2.33: Center Perks' menu board just scribbled on, two inmates having a word at the water cooler beside it.
@@ -281,7 +335,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.15,
     dx: 4,
     dz: -1,
   },
@@ -302,7 +356,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.35,
     dx: 1.5,
     dz: -1,
   },
@@ -328,8 +382,8 @@ export const SHOTS: Record<string, Shot> = {
       for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(command(0, OP.TRAIN, 1 + (k % 2)));
     },
     when: (s) => s.state.bout.length > 0,
-    after: 40,
-    zoom: 2.6,
+    after: 10,
+    zoom: 2.05,
   },
   cheat: {
     lesson: 'cards',
@@ -383,7 +437,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.until(() => false, 40);
     },
     when: at(0.98),
-    zoom: 3.6,
+    zoom: 2.84,
     dz: 0.5,
   },
   football: {
@@ -416,7 +470,7 @@ export const SHOTS: Record<string, Shot> = {
     },
     when: (s) => !!s.state.match,
     after: 300,
-    zoom: 1.6,
+    zoom: 1.2,
   },
   race: {
     lesson: 'ratRace',
@@ -570,7 +624,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.until(() => false, 60);
     },
     when: at(0.98),
-    zoom: 3.4,
+    zoom: 3.54,
     dx: -0.6,
     dz: -1.2,
   },
@@ -585,7 +639,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.until(() => false, 20);
     },
     when: at(0.99),
-    zoom: 2.4,
+    zoom: 2.5,
     dz: -1,
   },
 
@@ -619,7 +673,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.17,
     dx: 2,
     dz: 1,
   },
@@ -651,7 +705,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 3,
+    zoom: 2.94,
     dx: 1,
     dz: 1,
   },
@@ -673,7 +727,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: at(0.999),
-    zoom: 1.5,
+    zoom: 1.66,
     dx: -3.5,
     dz: -2,
   },
@@ -685,7 +739,7 @@ export const SHOTS: Record<string, Shot> = {
   bluff: { prison: 'center-perks', route: 'bluff', when: on('bluff'), after: -4, zoom: 2.2 },
   glider: { prison: 'center-perks', route: 'glider', when: on('glide'), after: -3, zoom: 1.8, dz: -1, light: 600, live: 0.5 },
   // (Out of the tunnel onto the road, the escape camera turning on the prison behind.)
-  goal: { prison: 'center-perks', route: 'tunnel', when: (_s, k, n) => k >= n - 2, zoom: 1.4, light: 600, live: 2 },
+  goal: { prison: 'center-perks', route: 'tunnel', when: (_s, k, n) => k >= n - 2, zoom: 0.74, light: 600, live: 2 },
   // (Cleared, in their own clothes, out through the doors by the desk: its lamp green.)
   paperwork: { prison: 'center-perks', route: 'paperwork', when: (s) => s.state.release[1] > 0, after: 6, zoom: 2.2, dz: -1.2 },
   power: { prison: 'center-perks', route: 'cutout', when: on('power'), after: 4, zoom: 2.2, dx: -1, dz: 1.5, light: 600 },
@@ -724,7 +778,23 @@ export const SHOTS: Record<string, Shot> = {
   weather: { prison: 'stalag-flucht', route: 'tunnel', when: (_s, k, n) => k >= n - 30, zoom: 2.2, dz: -0.5 },
   shell: { prison: 'shankton', route: 'rooftop', when: (_s, k, n) => k >= n - 60, zoom: 1.5, dz: 2.5, light: 1050 },
   mines: { prison: 'san-pancho', route: 'gate', when: (_s, k, n) => k >= n - 40, zoom: 1.3, light: 1050 },
-  island: { prison: 'irongate', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 2, dx: -2 },
+  island: { prison: 'irongate', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 0.98, dx: -2 },
+  // 2.36: the kennel hand at the Six Hunter on day 1, a bowl of feed at the trough, the six hounds lying by their
+  // kennels in the run beyond (they work from day 2), each in its own coat, Larch watching, the river to the east.
+  // Taken at 1440×844 (ratio 1).
+  hunters: {
+    make: () => {
+      const bot = new Bot(SIX_HUNTER, 7);
+      bot.routineUntil(1, 12 * 60 + 5);
+      const room = jobRooms(bot.sim.world)[0];
+      useProp(bot, room.take);
+      useProp(bot, room.machines[1]);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 1,
+    dz: 2.4,
+  },
 };
 
 const view = () => (window as unknown as { __view: View }).__view;
@@ -842,7 +912,7 @@ export function hideUi(on: boolean) {
 }
 
 /** The next frame drawn, cropped to the picture's shape (the middle of the screen, `dx`/`dz` tiles off). */
-function grabFrame(): Promise<HTMLCanvasElement> {
+export function grabFrame(): Promise<HTMLCanvasElement> {
   const v = view();
   const r = v.renderer;
   const draw = r.render.bind(r);

@@ -56,7 +56,7 @@ import {
 } from '../../content/oddjobs';
 import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
-import { LOOT } from '../../content/loot';
+import { LOOT, POCKET_SLOTS } from '../../content/loot';
 import { PARCEL_MINUTE } from '../../content/smuggling';
 import { lineOfSight } from '../ai/sight';
 import { isFloor, placesOf } from '../ai/places';
@@ -73,7 +73,7 @@ import { elderOf } from './checkers';
 import { playedToday } from './games';
 import { assign, awake, GUARD } from './guards';
 import { DOING, inmateInCell } from './inmates';
-import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot } from './items';
+import { freeHotbar, guardKit, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { commsOf, searcher } from './phone';
 import { changeOpinion, refuse } from './social';
@@ -146,7 +146,10 @@ export const freezerOf = (sim: Pick<SimContext, 'world'>) => containersOf(sim.wo
  */
 function liftGuards(sim: Pick<SimContext, 'world'>): number[] {
   const defs = sim.world.def.guards;
-  const pool = defs.map((d, k) => (d.duties?.includes('shakedown') ? -1 : k)).filter((k) => k >= 0);
+  // (2.36: nor one whose pockets its kit fills, the Six Hunter's Huntmaster with his horn: no room for what's planted.)
+  const pool = defs
+    .map((d, k) => (d.duties?.includes('shakedown') || guardKit(sim.world, k).length >= POCKET_SLOTS ? -1 : k))
+    .filter((k) => k >= 0);
   return pool.length ? pool : defs.map((_, k) => k);
 }
 

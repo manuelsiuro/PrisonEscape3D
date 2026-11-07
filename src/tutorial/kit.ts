@@ -272,8 +272,9 @@ export function talkFail(c: LessonCtx): Key | null {
     it.containers.some((box, k) => box.some((v) => itemOf(v) === mag) && containersOf(c.sim.world)[k]?.mine) ||
     it.ground.some(([, v]) => itemOf(v) === mag);
   if (favorPaid(c.sim)) return null;
-  // (Left untaken overnight, his favor lapses: something else asked for, or nothing.)
-  if (!magazineFavor(c.sim)) return 'lesson.talk.lapsed';
+  // (Left untaken overnight, his favor lapses: something else asked for, or nothing. 2.36: gone the same
+  // day, it was let go from the talk panel.)
+  if (!magazineFavor(c.sim)) return prisonDay(c.sim.state.step) > 1 ? 'lesson.talk.lapsed' : 'lesson.talk.dropped';
   return !somewhere ? 'lesson.talk.lost' : null;
 }
 /** Sparky's favor in the talk lesson: a magazine, while it's still on. */

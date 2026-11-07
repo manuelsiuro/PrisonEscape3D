@@ -353,6 +353,14 @@ export const SAN_PANCHO: PrisonDef = {
   guards,
   names: ['Chuy', 'Flaco', 'Tigre', 'Lobo', 'Chato', 'Toro', 'Nacho', 'Primo', 'Rata', 'Diablo', 'Zorro', 'Paco', 'Gallo'],
   merchants: [3, 6, 9, 12],
+  // 2.36, gangs and turf: three cliques in a lawless prison; their tables (the north benches by the menu
+  // board stay everyone's), the yard's benches either end of its north side, the sports ground's south edge.
+  // Chuy, Nacho, Primo (the fixer) and Gallo keep to themselves.
+  gangs: [
+    { id: 'kitchen', boss: 3, members: [3, 7, 10], table: [19, 36, 20, 38], corner: [27, 23, 29, 24] },
+    { id: 'lifers', boss: 6, members: [6, 5, 13], table: [22, 36, 23, 38], corner: [33, 45, 37, 46] },
+    { id: 'gymRats', boss: 12, members: [12, 4, 11], table: [22, 33, 23, 34], corner: [34, 23, 36, 24] },
+  ],
   crew: [
     'lookout',
     'lookout',
