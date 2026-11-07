@@ -92,6 +92,8 @@ export class Crowd {
       const tile = Math.floor(m.z) * MAP_W + Math.floor(m.x);
       if (m.doing === DOING.SHOWER && this.showers[tile] === 1) this.running.add(tile);
       c.undressed = m.bare;
+      // (Session 15: the strides in game time.)
+      c.timeScale = f.speed;
       c.towel = m.towel;
       c.attention = m.attention;
       c.trayPose(m.trayAt, m.trayLeft);
@@ -171,6 +173,7 @@ export class Crowd {
       if (!c) return;
       c.root.visible = f.layer !== LAYER.UNDER;
       c.gait = g.pace;
+      c.timeScale = f.speed;
       c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !reduced, g.doing, this.guardBeds[k]);
       // "$" pops over a guard as it takes the money (and again once it's calm, still paid).

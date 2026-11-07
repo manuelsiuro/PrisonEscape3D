@@ -60,6 +60,8 @@ export class DayEvents {
   }> = [];
   private throwClock = 0;
   private inspectors: Character[] = [];
+  /** Session 15: game seconds a real second (the frame's `speed`), for the inspectors' strides. */
+  timeScale = 1;
   private readonly trail = new Float32Array(TRAIL_SAMPLES * 2);
   private trailClock = 0;
   private readonly p0 = { x: 0, z: 0 };
@@ -328,6 +330,7 @@ export class DayEvents {
           was.z = tz;
           was.set = true;
           c.root.visible = true;
+          c.timeScale = this.timeScale;
           c.pose(tx, tz, facing, moving, dt, time, motion);
           shown.push(c);
         }

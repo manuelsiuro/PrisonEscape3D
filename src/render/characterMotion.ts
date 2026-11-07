@@ -16,8 +16,14 @@ export const SWING_RUN = 0.3;
 /** Faster than the walk by this much, a run starts showing, and by this much it's a full run. */
 const RUN_FROM = 1.15;
 const RUN_FULL = 1.45;
-/** A jump of more than this in a frame is a move, not a step (put somewhere, a bed, a cut): the legs don't race it. */
+/**
+ * A move this much more than the quickest run could cover in the frame is a cut (put somewhere, a bed), not steps: the legs
+ * fade to their own pace over as much again, rather than race it. Never more than this turn of the stride in a frame: at
+ * ×16 or on a slow device the legs blur rather than strobe.
+ */
 const JUMP = 0.5;
+const JUMP_PACE = 3;
+const MOST_A_FRAME = 1;
 
 /** How a character walks and stands, fixed for it. */
 export interface Style {
@@ -74,15 +80,21 @@ export function styleFor(seed: number, guard: boolean): Style {
   };
 }
 
+/** The most a frame's move can be and still be steps (tiles), for a frame of `gameDt` game seconds. */
+export function cutOf(gameDt: number): number {
+  return JUMP + JUMP_PACE * WALK_TILES * gameDt;
+}
+
 /**
  * How far the stride turns for a frame's walk (radians): the ground covered over what a planted foot
  * covers at the swing's middle (its leg's length, the swing, the character's size), so the feet keep up
- * with the ground at any pace. Stuck against something (nothing covered), or jumped, the legs keep their
- * own pace (`fallback`).
+ * with the ground at any pace. Stuck against something (nothing covered), the legs keep their own pace
+ * (`fallback`); past a cut (`cutOf`) they fade to it.
  */
-export function strideTurn(moved: number, amp: number, size: number, fallback: number): number {
-  if (moved <= 1e-5 || moved > JUMP) return fallback;
-  return moved / (LEG * amp * size);
+export function strideTurn(moved: number, amp: number, size: number, fallback: number, cut: number): number {
+  if (moved <= 1e-5) return Math.min(MOST_A_FRAME, fallback);
+  const w = Math.max(0, Math.min(1, (moved - cut) / cut));
+  return Math.min(MOST_A_FRAME, (moved / (LEG * amp * size)) * (1 - w) + fallback * w);
 }
 
 /** How much of a run (0–1) a pace (tiles a second) is. */

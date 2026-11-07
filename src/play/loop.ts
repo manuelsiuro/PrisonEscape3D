@@ -41,13 +41,18 @@ let pickedUp = false;
 /** Real seconds to the next look at the run's achievements (P16). */
 let trophyCheck = 1;
 
+/** Game seconds a real second: asleep, the night runs fast (about 13 s from 23:00 to 07:55); knocked out, waiting hidden, the dev's ×30. */
+function simSpeed(g: Game): number {
+  const st = g.rec.sim.state;
+  return st.sleeping ? SLEEP_SPEED : st.ko > 0 ? KO_SPEED : g.waiting ? Math.max(WAIT_SPEED, g.speed) : g.speed;
+}
+
 /** Runs the simulation's fixed steps for the time that passed (the simulation never sees the frame time). */
 function stepSim(g: Game, dt: number) {
   const sim = g.rec.sim;
   const p = sim.state.player;
-  // Asleep, the night runs fast (about 13 s from 23:00 to 07:55).
   if (g.waiting && !sim.state.stowed) g.waiting = false;
-  const speed = sim.state.sleeping ? SLEEP_SPEED : sim.state.ko > 0 ? KO_SPEED : g.waiting ? Math.max(WAIT_SPEED, g.speed) : g.speed;
+  const speed = simSpeed(g);
   play.acc += dt * speed;
   let steps = 0;
   while (play.acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * speed) {
@@ -207,7 +212,10 @@ function frameWork(now: number) {
   // (P27: and a hand of Cheat's card, the old-timer's board, on a phone.)
   keepPlayerClear((panel || document.body.classList.contains('seated-game')) && !g.paused);
   updateTargets(sim, busy, panel, held);
-  view.draw(buildFrame(g, a, tile, busy, held), dt, now / 1000);
+  const f = buildFrame(g, a, tile, busy, held);
+  // (Session 15: the strides read the ground covered in game time.)
+  f.speed = g.paused ? 1 : simSpeed(g);
+  view.draw(f, dt, now / 1000);
   dayFrame(g, dt, g.over || st.ko > 0 || st.solitary > 0);
   updateOverlay(g, a, tile, busy, held, panel);
   // The first day's guide: what the player has done, read from the game.

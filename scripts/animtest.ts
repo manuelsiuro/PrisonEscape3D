@@ -121,8 +121,7 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
   const pops: string[] = [];
   for (const a of ALL)
     for (const b of ALL) {
-      // (Knocked out is meant to be sudden: down where they stood, as a blow given or taken is.)
-      if (a === b || b === DOING.KNOCKED_OUT) continue;
+      if (a === b) continue;
       pairs++;
       const c = new Character(LOOK, 5);
       let t = 0;
@@ -147,7 +146,7 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
     `changes of activity that jump: ${pops.slice(0, 12).join(', ')}${pops.length > 12 ? ` and ${pops.length - 12} more` : ''}`,
   );
   console.log(
-    `every change of activity (but a knockout, sudden): ${pairs} pairs, ${pops.length} jumping (the most a frame ${worst.toFixed(2)} rad, ${worstAt})`,
+    `every change of activity (a knockout a fall): ${pairs} pairs, ${pops.length} jumping (the most a frame ${worst.toFixed(2)} rad, ${worstAt})`,
   );
 }
 
@@ -308,6 +307,122 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
     c.dispose();
   }
   console.log(`a planted foot's slide against the ground at the stride's middle: ${lines.join(', ')}`);
+}
+
+// ------------------------------------------------------------------ a fight
+{
+  // Someone with arms folded standing about, then trading blows every 0.8 s (a punch, then one taken): no stance between them.
+  const { styleFor } = await import('../src/render/characterMotion');
+  let seed = 100;
+  while (styleFor(seed, false).stance !== STANCE.FOLDED) seed++;
+  const c = new Character(LOOK, seed);
+  let t = 0;
+  for (let k = 0; k < 5 * FPS; k++, t += DT) c.pose(0, 0, 0, false, DT, t, true, DOING.NOTHING);
+  const settled = (c as unknown as { rest: number }).rest;
+  let most = 0;
+  let last = bones(c);
+  let worst = 0;
+  for (let k = 0; k < 10 * FPS; k++, t += DT) {
+    if (k % 48 === 0) c.punch();
+    if (k % 48 === 24) c.flinch();
+    c.pose(0, 0, 0, false, DT, t, true, DOING.NOTHING);
+    if (k > 1.5 * FPS) most = Math.max(most, (c as unknown as { rest: number }).rest);
+    const now = bones(c);
+    // (A punch's own quick out and back, as it always was, aside: what's measured is what the stance and the flinch add.)
+    if ((c as unknown as { jab: number }).jab === 0) worst = Math.max(worst, jump(last, now));
+    last = now;
+  }
+  check(
+    settled > 0.99 && most < 0.01,
+    `a fight: settled ${settled.toFixed(2)} before, back in the stance up to ${most.toFixed(2)} between blows`,
+  );
+  check(worst < POP, `a fight: the most a frame ${worst.toFixed(2)} rad, the punch's own move aside`);
+  console.log(
+    `a fight, arms folded before it, a blow every 0.8 s: back in the stance at most ${most.toFixed(2)} between blows; the most a frame ${worst.toFixed(2)} rad, the punch's own move aside`,
+  );
+  c.dispose();
+}
+
+// ------------------------------------------------------------------ what's in hand at a blow, and with no hands for it
+{
+  type Held = { held: THREE.Mesh | null };
+  // A mop swung at a blow as a tool is (out of the fist), upright again after.
+  const c = new Character(LOOK, 13);
+  held(c, 'mop');
+  let t = 0;
+  for (let k = 0; k < FPS; k++, t += DT) c.pose(0, 0, 0, false, DT, t, true, DOING.NOTHING);
+  const fist = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0));
+  const upright = (c as unknown as Held).held!.quaternion.angleTo(fist);
+  c.strike();
+  for (let k = 0; k < 0.12 * FPS; k++, t += DT) c.pose(0, 0, 0, false, DT, t, true, DOING.NOTHING);
+  const swung = (c as unknown as Held).held!.quaternion.angleTo(fist);
+  for (let k = 0; k < FPS; k++, t += DT) c.pose(0, 0, 0, false, DT, t, true, DOING.NOTHING);
+  const after = (c as unknown as Held).held!.quaternion.angleTo(fist);
+  check(
+    swung < 0.1 && upright > 1 && Math.abs(after - upright) < 0.05,
+    `a mop at a strike: ${swung.toFixed(2)} rad off a tool's grip (${upright.toFixed(2)} held at the side, ${after.toFixed(2)} after)`,
+  );
+  // A bundle carried in both hands isn't drawn sunk into the chest when the hands go elsewhere (jumping jacks, out cold).
+  const shown: string[] = [];
+  for (const d of [DOING.NOTHING, DOING.WORK, DOING.EXERCISE, DOING.KNOCKED_OUT]) {
+    const b = new Character(LOOK, 14);
+    held(b, 'dirty_laundry');
+    for (let k = 0; k < 2 * FPS; k++) b.pose(0, 0, 0, false, DT, k * DT, true, d, BED);
+    shown.push(`${NAMES[d]} ${(b as unknown as Held).held!.visible ? 'shown' : 'hidden'}`);
+    b.dispose();
+  }
+  check(shown.join() === 'NOTHING shown,WORK shown,EXERCISE hidden,KNOCKED_OUT hidden', `a bundle in both hands: ${shown.join(', ')}`);
+  console.log(
+    `in hand at a blow: a mop swung out of the fist (${swung.toFixed(2)} rad off a tool's grip), upright again after; a bundle: ${shown.join(', ')}`,
+  );
+  c.dispose();
+}
+
+// ------------------------------------------------------------------ fast-forward and slow devices
+{
+  // A replay at ×4 or ×16, a knockout's time-lapse, a phone at 30 frames a second, each frame a little longer or
+  // shorter than the last: the stride turns steadily (no stutter), nobody runs at a walk.
+  const lines: string[] = [];
+  for (const [fps, speed] of [
+    [60, 1],
+    [30, 1],
+    [60, 4],
+    [30, 4],
+    [60, 16],
+    [30, 16],
+  ] as const) {
+    const c = new Character(LOOK, 12);
+    c.timeScale = speed;
+    const raw = c as unknown as { phase: number; runNow: number };
+    let x = 0;
+    let t = 0;
+    let s = 1;
+    const turns: number[] = [];
+    let run = 0;
+    for (let k = 0; k < 4 * fps; k++) {
+      s = (s * 16807) % 2147483647;
+      const dt = (1 / fps) * (0.94 + 0.12 * (s / 2147483647));
+      x += WALK_TILES * speed * dt;
+      t += dt;
+      const before = raw.phase;
+      c.pose(x, 0, Math.PI / 2, true, dt, t, true);
+      if (k > fps) {
+        turns.push((raw.phase - before) / dt);
+        run = Math.max(run, raw.runNow);
+      }
+    }
+    const sorted = [...turns].sort((a, b) => a - b);
+    const mid = sorted[sorted.length >> 1];
+    const steady = turns.every((v) => Math.abs(v - mid) <= mid * 0.25);
+    check(
+      steady,
+      `×${speed} at ${fps} fps: the stride turns unevenly (${sorted[0].toFixed(1)}–${sorted[sorted.length - 1].toFixed(1)} rad/s)`,
+    );
+    check(run < 0.05, `×${speed} at ${fps} fps: a walk shown as a run (${run.toFixed(2)})`);
+    lines.push(`×${speed} at ${fps} fps ${(mid / speed).toFixed(1)}`);
+    c.dispose();
+  }
+  console.log(`a walk's stride, radians a game second, steady and never a run: ${lines.join(', ')}`);
 }
 
 // ------------------------------------------------------------------ a crowd
