@@ -385,23 +385,23 @@ export const ITEMS: readonly ItemDef[] = [
   // line (a sock soaked in aniseed, thrown: the trail washed out and the hounds pulled to where it lands), tar soap (washes
   // the scent off twice), a ghillie cloak (worn: no trail laid on open ground), an antler pick (digs, quietly). The
   // Huntmaster's recall horn (blown: every hound back to its kennel a while, and loud). Shapes stand in until the look's pass.
-  m('pine_tar', false, 8, 'jar', 0x3a2414, ['estate'], 0xc89a4a),
-  m('fishing_net', false, 10, 'cloth', 0x5f7a4a, ['estate'], 0xc8b98a),
-  m('aniseed', false, 6, 'packet', 0x8a6a3a, ['estate'], 0xe8dcc0),
-  m('shed_antler', false, 8, 'handle', 0xe2d6b8, ['estate'], 0xb8a27a),
-  { ...m('trout', false, 6, 'jerky', 0xa8b8a0, ['estate'], 0xd8806a), food: { energy: 20 } },
-  m('drag_line', false, 14, 'sock', 0xb8925a, [], 0x3a2414),
-  { ...m('tar_soap', false, 10, 'bar', 0x6a4a2a, [], 0xc89a4a), uses: 2 },
-  outfit('ghillie_cloak', 5, true, 0x4f6a3a, 0x7a6a4a),
-  tool('antler_pick', 'dig', 2, 50, 20, 5, true, 'pickaxe', 0xe2d6b8, 0x8a5a2e),
-  { ...gear('recall_horn', 45, 'lighter', 0xc8a86a, 0x5a3a20), from: ['guard'] },
+  m('pine_tar', false, 8, 'tarPot', 0x3a2414, ['estate'], 0xc89a4a),
+  m('fishing_net', false, 10, 'net', 0x5f7a4a, ['estate'], 0xc8b98a),
+  m('aniseed', false, 6, 'seeds', 0x8a6a3a, ['estate'], 0xe8dcc0),
+  m('shed_antler', false, 8, 'antler', 0xe2d6b8, ['estate'], 0xb8a27a),
+  { ...m('trout', false, 6, 'fish', 0xa8b8a0, ['estate'], 0xd8806a), food: { energy: 20 } },
+  m('drag_line', false, 14, 'dragLine', 0xb8925a, [], 0x3a2414),
+  { ...m('tar_soap', false, 10, 'soapCake', 0x6a4a2a, [], 0xc89a4a), uses: 2 },
+  { ...outfit('ghillie_cloak', 5, true, 0x4f6a3a, 0x7a6a4a), shape: 'ghillie' },
+  tool('antler_pick', 'dig', 2, 50, 20, 5, true, 'antlerPick', 0xe2d6b8, 0x8a5a2e),
+  { ...gear('recall_horn', 45, 'horn', 0xc8a86a, 0x5a3a20), from: ['guard'] },
   // The Six Hunter's work (worth nothing outside it): feed for the troughs and a bowl for the run, fish for the smoker, nets for the frame.
   work('feed_sack', 'sack', 0xb89a6a, 0x6a4a2a),
-  work('dog_bowl', 'cup', 0x8d949e, 0xb5653a),
+  work('dog_bowl', 'bowl', 0x8d949e, 0xb5653a),
   work('raw_fish', 'pack', 0xa8b8a0, 0xd8806a),
   work('smoked_fish', 'pack', 0xc8823a, 0x6a3f22),
-  work('torn_net', 'cloth', 0x5f7a4a, 0x9a8f78),
-  work('mended_net', 'cloth', 0x5f7a4a, 0xc8b98a),
+  work('torn_net', 'net', 0x5f7a4a, 0x9a8f78),
+  work('mended_net', 'net', 0x5f7a4a, 0xc8b98a),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

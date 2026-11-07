@@ -11,7 +11,7 @@ const cells: DecorPlacement[] = [
   ),
 ];
 
-/** The hunting grounds between the lodge and the wall: pines (the look's pass gives the forest its own trees). */
+/** The hunting grounds between the lodge and the wall: pines (the forest's trees and junipers: render/decor.ts). */
 const woods: DecorPlacement[] = [
   ...[12, 18, 26, 34, 40, 50].map((z) => ({ kind: 'tree', x: 4, z }) as const),
   ...[14, 24, 30, 38, 48].map((z) => ({ kind: 'tree', x: 58, z }) as const),
@@ -20,8 +20,8 @@ const woods: DecorPlacement[] = [
 ];
 
 /**
- * The Six Hunter dressed (a first pass: the look's adds the lodge's own pieces): the cells' posters, the hall's clock and
- * speakers, the Trophy Hall's menu and trays (the tally board stands in as a notice board by the door), the kitchen's
+ * The Six Hunter dressed (2.36): the cells' posters, the hall's clock and
+ * speakers, the Trophy Hall's menu and trays, the Hunters' tally by the door and the stags' heads on its walls, the kitchen's
  * pans, the gym's dumbbells, the library's globe, the boathouse's rope and life ring, the kennels' sacks; the yard's
  * flagpole, the sports ground's hoop, the garden's water butt; pines in the hunting grounds.
  */
@@ -40,7 +40,11 @@ export const SIX_HUNTER_DECOR: readonly DecorPlacement[] = [
   // The Trophy Hall: the menu (its dishes drawn from the def's `menu`), trays on the serving counter, the Hunters' tally by the door.
   { kind: 'menuBoard', x: 49, z: 22, w: 3 },
   { kind: 'trays', x: 37, z: 24, d: 4, rot: 1, y: COUNTER },
-  { kind: 'noticeBoard', x: 39, z: 22, w: 2 },
+  { kind: 'tallyBoard', x: 39, z: 22, w: 2 },
+  // The hall's trophies: stags' heads on the walls.
+  { kind: 'antlers', x: 43, z: 22 },
+  { kind: 'antlers', x: 46, z: 22 },
+  { kind: 'antlers', x: 53, z: 22 },
   // The kitchen: pans on the wall, a sack of potatoes.
   { kind: 'panRack', x: 34, z: 22 },
   { kind: 'potatoes', x: 31, z: 30 },

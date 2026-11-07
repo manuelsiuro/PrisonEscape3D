@@ -7,6 +7,7 @@ import { skipEmpty } from './batch';
 import type { Dust } from './Dust';
 import type { Guide } from './Guide';
 import type { Island } from './Island';
+import type { River } from './River';
 import type { Security } from './Security';
 import type { ShowerWater } from './ShowerWater';
 import { CAMERA_OFFSET, type CameraRig } from './viewCamera';
@@ -28,6 +29,7 @@ export interface MapShotParts {
   guide: Guide;
   showerWater: ShowerWater;
   island: Island | null;
+  river: River | null;
   security: Security | null;
   pitch: Pitch | null;
   world: World | null;
@@ -80,6 +82,7 @@ export function mapShot(v: MapShotParts, px = 40, ss = 2, dress = false): { canv
   // (P42: nor a holiday's decor: the map viewer's pictures never depend on the date.)
   const hidden = [
     v.pieces.snow.points,
+    v.pieces.leaves.points,
     v.pieces.weather.group,
     v.dust.mesh,
     v.showerWater.group,
@@ -175,6 +178,7 @@ function dressForMap(v: MapShotParts): () => void {
   }
   // (Its one piece never otherwise moved behind the title: up, as in a day's play; the helicopter away at 10:00.)
   v.island?.update(100, 0, 600, false, false);
+  v.river?.update(0, 0, false);
   // (2.36: the gangs' turf, painted there every day: faint, as at 10:00.)
   if (v.turf) showTurf(v.turf, 1, [1, 1], 0, true, true);
   return () => {

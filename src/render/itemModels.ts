@@ -18,6 +18,11 @@ const ring = (r: number, tube: number, color: number, y: number) =>
 
 /** A part rotated about y (radians), then moved. */
 const turn = (p: Part, angle: number, x = 0, z = 0) => p.rotateY(angle).translate(x, 0, z);
+/** A stick lying flat from (x0, z0) to (x1, z1), r thick (its middle at height r). */
+const seg = (x0: number, z0: number, x1: number, z1: number, r: number, color: number) =>
+  rod(r, Math.hypot(x1 - x0, z1 - z0) + r, color, 0, r, 0, 6)
+    .rotateY(-Math.atan2(z1 - z0, x1 - x0))
+    .translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
 /** A long stick along x: length, thickness, height of its middle. */
 const stick = (len: number, r: number, color: number | string, x = 0, y = r, z = 0) => rod(r, len, color, x, y, z, 8);
 
@@ -397,6 +402,101 @@ const SHAPES: Record<string, Shape> = {
     box(0.06, 0.05, 0.12, a, -0.03, 0.2, 0),
     box(0.06, 0.05, 0.12, a, 0.03, 0.2, 0),
   ],
+  // 2.36 (The Six Hunter's).
+  /** Pine tar: a squat tin, its lid off beside it, black tar run down the side. */
+  tarPot: (c, a) => [
+    cyl(0.09, 0.13, a, -0.04, 0, 0, 12),
+    cyl(0.092, 0.015, 0x6a5a40, -0.04, 0.13, 0, 12),
+    cyl(0.078, 0.01, c, -0.04, 0.14, 0, 12),
+    box(0.022, 0.09, 0.012, c, 0.01, 0.045, 0.085),
+    box(0.02, 0.06, 0.012, c, -0.08, 0.075, 0.08),
+    cyl(0.085, 0.015, 0x6a5a40, 0.14, 0, 0.06, 12),
+    cyl(0.04, 0.01, c, 0.14, 0.015, 0.06, 8),
+  ],
+  /** A net bundled up: folds of green cord, its lattice showing, a cork float or two. */
+  net: (c, a) => [
+    box(0.38, 0.07, 0.26, c),
+    box(0.3, 0.06, 0.2, c, 0.03, 0.06, -0.02),
+    ...[-0.12, -0.04, 0.04, 0.12].map((x) => box(0.012, 0.012, 0.26, a, x, 0.13, -0.02)),
+    ...[-0.08, 0, 0.08].map((z) => box(0.3, 0.012, 0.012, a, 0.03, 0.13, z - 0.02)),
+    box(0.07, 0.06, 0.05, 0xc8a46a, -0.17, 0.02, 0.1),
+    box(0.07, 0.06, 0.05, 0xc8a46a, 0.16, 0.04, -0.12),
+  ],
+  /** Aniseed: a twist of cloth tied at the neck, star anise spilling from it. */
+  seeds: (c, a) => [
+    box(0.16, 0.1, 0.14, a, -0.04, 0, 0),
+    box(0.06, 0.06, 0.06, a, -0.04, 0.1, 0),
+    box(0.07, 0.015, 0.07, 0x8a3a2a, -0.04, 0.1, 0),
+    ...[
+      [0.12, 0.04],
+      [0.18, -0.05],
+      [0.08, -0.08],
+    ].flatMap(([x, z]) => [
+      box(0.08, 0.025, 0.02, c, x, 0, z),
+      box(0.02, 0.025, 0.08, c, x, 0, z),
+      turn(box(0.08, 0.026, 0.02, c, 0, 0, 0), Math.PI / 4, x, z),
+    ]),
+  ],
+  /** A shed antler lying flat: the burr at its base, the beam curving along, three tines off it, a fork at its end. */
+  antler: (c, a) => [
+    cyl(0.045, 0.05, a, -0.21, 0, 0, 8),
+    seg(-0.2, 0, 0.0, 0.03, 0.026, c),
+    seg(0.0, 0.03, 0.17, 0.09, 0.022, c),
+    seg(-0.13, 0.01, -0.1, 0.13, 0.018, c),
+    seg(-0.03, 0.025, 0.02, 0.15, 0.017, c),
+    seg(0.17, 0.09, 0.24, 0.16, 0.015, c),
+    seg(0.17, 0.09, 0.25, 0.04, 0.015, c),
+  ],
+  /** The antler pick: a tool handle, a heavy tine lashed across its head with grey tape. */
+  antlerPick: (c, a) => [
+    stick(0.42, 0.025, a),
+    box(0.07, 0.07, 0.07, 0xa8acb0, 0.19, 0, 0),
+    turn(stick(0.34, 0.024, c, 0, 0.05, 0), Math.PI / 2, 0.19, 0.02),
+    turn(stick(0.08, 0.016, c, 0, 0.05, 0), 0.6, 0.22, -0.12),
+  ],
+  /** A trout: spotted silver-green, a pink stripe along its flank, its tail fin. */
+  fish: (c, a) => [
+    paint(new THREE.SphereGeometry(0.07, 10, 8).scale(2.6, 0.75, 1).translate(0, 0.05, 0), c),
+    box(0.3, 0.012, 0.03, a, -0.01, 0.06, 0.062),
+    paint(
+      new THREE.ConeGeometry(0.06, 0.1, 4)
+        .rotateZ(Math.PI / 2)
+        .scale(1, 1, 0.3)
+        .translate(-0.22, 0.05, 0),
+      c,
+    ),
+    ...[-0.08, -0.02, 0.05, 0.1].map((x, k) => box(0.012, 0.012, 0.012, 0x2a3a2a, x, 0.09 - (k % 2) * 0.012, 0.03)),
+    box(0.012, 0.016, 0.016, 0x101010, 0.15, 0.07, 0.04),
+  ],
+  /** A drag line: a sock soaked dark in aniseed on a coil of cord. */
+  dragLine: (c, a) => [
+    ring(0.12, 0.012, 0xc8b88a, 0.012),
+    ring(0.105, 0.012, 0xc8b88a, 0.036),
+    box(0.09, 0.06, 0.22, c, 0.18, 0, 0.02),
+    box(0.14, 0.06, 0.08, c, 0.21, 0, 0.14),
+    box(0.095, 0.065, 0.04, a, 0.18, 0, -0.09),
+    stick(0.1, 0.008, 0xc8b88a, 0.11, 0.03, -0.06),
+  ],
+  /** Tar soap: a dark bar wrapped in brown paper round its middle, tied with twine. */
+  soapCake: (c, a) => [box(0.22, 0.07, 0.13, c), box(0.1, 0.074, 0.134, 0xb89a6a, 0, 0, 0), box(0.012, 0.076, 0.136, a, 0, 0, 0)],
+  /** A ghillie cloak folded: a bundle of netting with tufts of burlap and leaf sewn on. */
+  ghillie: (c, a) => [
+    box(0.34, 0.07, 0.28, c),
+    ...Array.from({ length: 10 }, (_, k) =>
+      box(0.07, 0.04, 0.05, [a, c, 0x3e5230, 0x8a7a54][k % 4], -0.14 + ((k * 0.37) % 1) * 0.28, 0.07, -0.11 + ((k * 0.61) % 1) * 0.22),
+    ),
+  ],
+  /** The recall horn: a coiled brass hunting horn, its bell flaring, the mouthpiece and a leather baldric. */
+  horn: (c, a) => [
+    paint(new THREE.TorusGeometry(0.11, 0.016, 6, 20).rotateX(Math.PI / 2).translate(0, 0.03, 0), c),
+    paint(new THREE.TorusGeometry(0.075, 0.014, 6, 18).rotateX(Math.PI / 2).translate(0, 0.06, 0), c),
+    paint(new THREE.ConeGeometry(0.075, 0.14, 12, 1, true).rotateZ(Math.PI / 2).translate(0.17, 0.05, 0.04), c),
+    stick(0.06, 0.012, c, -0.13, 0.03, -0.02),
+    box(0.03, 0.03, 0.03, 0xe8d0a0, -0.17, 0.02, -0.02),
+    box(0.04, 0.012, 0.3, a, 0, 0.0, 0.0),
+  ],
+  /** A dog's bowl: low, wide, steel, a ring of kibble. */
+  bowl: (c, a) => [cyl(0.13, 0.06, c, 0, 0, 0, 14), cyl(0.1, 0.02, a, 0, 0.05, 0, 14)],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),
