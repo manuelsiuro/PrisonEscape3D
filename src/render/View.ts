@@ -871,14 +871,14 @@ export class View {
       wx.rain >= 2 ? 3 : wx.windForce,
       wx.windAngle,
     );
-    // The pine forest's needles and leaves (2.36), out in the open, blown by the wind; not in a snowfall, nor with reduced motion.
+    // The pine forest's needles and leaves (2.36), out in the open, blown by the wind; not in a snowfall; held still in the air with reduced motion.
     this.pieces.leaves.shade(1 - 0.75 * this.lighting.night);
     this.pieces.leaves.update(
-      dt,
+      this.reducedMotion ? 0 : dt,
       time,
       f.x,
       f.z,
-      !this.reducedMotion && !snowing && this.world?.def.theme === 'forest' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF),
+      !snowing && this.world?.def.theme === 'forest' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF),
       f.layer === LAYER.ROOF ? undefined : this.openSky,
       wx.rain >= 2 ? 3 : wx.windForce,
       wx.windAngle,
@@ -985,7 +985,7 @@ export class View {
     // Away on the river (2.36): the raft drifting downstream, the camera with it.
     if (this.river) {
       this.river.group.visible = f.layer !== LAYER.UNDER;
-      this.river.update(dt, time, !this.reducedMotion);
+      this.river.update(dt, time, !this.reducedMotion, this.lighting.night);
       const on = this.river.carry(this.carried);
       if (on) {
         this.carrying = true;
@@ -1180,11 +1180,11 @@ export class View {
       this.openSky,
     );
     this.pieces.leaves.update(
-      dt,
+      this.reducedMotion ? 0 : dt,
       time,
       this.cam.target.x,
       this.cam.target.z,
-      !this.reducedMotion && this.world?.def.theme === 'forest',
+      this.world?.def.theme === 'forest',
       this.openSky,
     );
     this.lighting.weather = null;

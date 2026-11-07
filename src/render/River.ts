@@ -5,6 +5,7 @@ import { disposeTree } from './batch';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { hash01 } from './rand';
 import { canvasTexture } from './canvas';
+import { CHUNK } from './chunks';
 import { riverBeyond } from './WorldView';
 import { isOutside } from '../sim/hunt/world';
 
@@ -182,6 +183,40 @@ export function flowAlongRuns(wet: (x: number, z: number) => boolean): (x: numbe
   };
 }
 
+/**
+ * The river by night (review of 2.36: under the moon's blue it was the most saturated thing on screen): its colour eased
+ * toward a dark peat grey, so the water reads darker than the banks, not bright teal.
+ */
+const PEAT = new THREE.Color(0x6e675c);
+export function nightWater(mat: THREE.MeshStandardMaterial, night: number) {
+  mat.color.setRGB(1, 1, 1).lerp(PEAT, night);
+}
+
+/** Banks gathered by the squares of `CHUNK` tiles they lie in, a mesh a square: the camera skips those out of sight; no shadows (a lip, a reed). */
+export class Banks {
+  private readonly squares = new Map<string, Part[]>();
+  add(x: number, z: number, dx: number, dz: number, i: number) {
+    const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
+    let list = this.squares.get(key);
+    if (!list) this.squares.set(key, (list = []));
+    bankParts(list, x, z, dx, dz, i);
+  }
+  /** Extra parts (a ford's stones) in the square of (x, z). */
+  push(x: number, z: number, ...parts: Part[]) {
+    const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
+    let list = this.squares.get(key);
+    if (!list) this.squares.set(key, (list = []));
+    list.push(...parts);
+  }
+  meshes(): THREE.Mesh[] {
+    return [...this.squares.values()].map((list) => {
+      const mesh = new THREE.Mesh(merge(list), kitMaterial);
+      mesh.receiveShadow = true;
+      return mesh;
+    });
+  }
+}
+
 /** The bank on land tile (x, z)'s edge facing (dx, dz) onto water: a lip of mud, now and then a stone and a clump of reeds (`i`: its own number). */
 export function bankParts(parts: Part[], x: number, z: number, dx: number, dz: number, i: number) {
   const MUD = [0x5a4632, 0x4e3d2b, 0x65503a];
@@ -238,6 +273,7 @@ export class River {
   private readonly beyond: Array<[number, number, number, number]>;
   private leaving: { t: number; x: number; z: number } | null = null;
   private raft: THREE.Mesh | null = null;
+  private readonly water: THREE.Mesh;
 
   constructor(world: World) {
     const base = world.ground.base;
@@ -274,18 +310,22 @@ export class River {
     for (const [x0, z0, x1, z1] of this.beyond)
       for (let z = Math.floor(z0); z < z1; z++)
         for (let x = Math.floor(x0); x < x1; x++) if (!world.inside(x, z) || tile(x, z) !== TILE.WATER) tiles.push([x, z]);
-    this.group.add(flowingWater(tiles, wet, flowTile, this.time));
+    this.water = flowingWater(tiles, wet, flowTile, this.time);
+    this.group.add(this.water);
 
-    // The banks: a lip of mud along every edge where land meets the water, stones at its foot, reeds in the shallows.
+    // The banks: a lip of mud along every edge where land meets the water, stones at its foot, reeds in the shallows
+    // (in squares the camera skips out of sight, casting no shadow: review of 2.36, they were drawn whole in both passes).
+    const banks = new Banks();
+    const bank = (x: number, z: number, dx: number, dz: number, i: number) => banks.add(x, z, dx, dz, i);
     const parts: Part[] = [];
-    const bank = (x: number, z: number, dx: number, dz: number, i: number) => bankParts(parts, x, z, dx, dz, i);
     const N: Array<[number, number]> = [
       [1, 0],
       [-1, 0],
       [0, 1],
       [0, -1],
     ];
-    const M = 44;
+    // (A dozen tiles past the edge: the camera, held over the map, sees no further.)
+    const M = 12;
     for (let z = -M; z < MAP_H + M; z++)
       for (let x = -M; x < MAP_W + M; x++) {
         if (wet(x, z)) continue;
@@ -370,15 +410,18 @@ export class River {
       );
     }
     if (parts.length) {
-      const banks = new THREE.Mesh(merge(parts), kitMaterial);
-      banks.castShadow = banks.receiveShadow = true;
-      this.group.add(banks);
+      const built = new THREE.Mesh(merge(parts), kitMaterial);
+      built.castShadow = built.receiveShadow = true;
+      this.group.add(built);
     }
+    const lips = banks.meshes();
+    if (lips.length) this.group.add(...lips);
   }
 
-  /** Per frame: the water running (held still with reduced motion), a raft drifting downstream. */
-  update(dt: number, time: number, motion: boolean) {
+  /** Per frame: the water running (held still with reduced motion), dark peat by night (`night` 0–1), a raft drifting downstream. */
+  update(dt: number, time: number, motion: boolean, night = 0) {
     if (motion) this.time.value = time;
+    nightWater(this.water.material as THREE.MeshStandardMaterial, night);
     if (this.leaving && this.raft) {
       this.leaving.t += dt;
       const xi = Math.floor(this.leaving.x);

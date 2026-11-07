@@ -262,6 +262,11 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   );
   // (2.36: the Six Hunter's morning: the Huntmaster's horn over the valley at 06:00, far off, muffled indoors.)
   const minute = clock.minuteOfDay;
+  // (A game just loaded or begun starts afresh: a save loaded at 06:05 after one left at 05:55 sounds nothing. Review of 2.36.)
+  if (hornSim !== sim) {
+    hornSim = sim;
+    hornMinute = -1;
+  }
   if (
     sim.world.def.theme === 'forest' &&
     hornMinute >= 0 &&
@@ -274,7 +279,8 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   hornMinute = minute;
 }
 
-/** The minute of the last frame (the dawn horn sounds as the clock passes 06:00), and that minute. */
+/** The game and the minute of the last frame (the dawn horn sounds as its clock passes 06:00), and that minute. */
+let hornSim: unknown = null;
 let hornMinute = -1;
 const DAWN_HORN = 6 * 60;
 
