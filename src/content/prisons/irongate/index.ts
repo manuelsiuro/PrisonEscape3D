@@ -413,6 +413,13 @@ export const IRONGATE: PrisonDef = {
   guards,
   names: ['Brick', 'Gull', 'Barnacle', 'Fog', 'Anchor', 'Tide', 'Crab', 'Mutton', 'Bosun', 'Kipper', 'Shanty', 'Rook', 'Granite'],
   merchants: [2, 6, 9, 13],
+  // 2.36, gangs and turf: their tables in the mess, the yard's strip south of the roll call lines either side of
+  // the canteen's door, the sports ground's south edge. Fog, Tide, Kipper and Rook (the fixer) keep to themselves.
+  gangs: [
+    { id: 'kitchen', boss: 2, members: [2, 3, 10], table: [30, 33, 31, 35], corner: [23, 26, 27, 26] },
+    { id: 'lifers', boss: 6, members: [6, 4, 12], table: [30, 29, 31, 31], corner: [33, 26, 36, 26] },
+    { id: 'gymRats', boss: 9, members: [9, 8, 14], table: [33, 33, 34, 35], corner: [10, 36, 14, 37] },
+  ],
   crew: [
     'muscle',
     'lookout',

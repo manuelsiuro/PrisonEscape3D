@@ -126,7 +126,7 @@ export const LINE = { JOIN: 0, LEAVE: 1, CUT: 2 } as const;
  * TATTOO, b = the design inked on him; INK_ME, b = the design he inks on the player; P34's SWAP,
  * his place in the pay phone's queue bought; P40's ODD_JOB, the fixer's own odd job taken; JOB_IN, the odd job held
  * handed in to the one who asked; CALL_IN, the debt he owes the player called in: a tool; 2.36's DROP, the
- * favor taken on for him let go). Never renumber.
+ * favor taken on for him let go; 2.36's JOIN, his gang asked in, LEAVE, the player's gang left). Never renumber.
  */
 export const TALK = {
   BUY: 1,
@@ -158,6 +158,9 @@ export const TALK = {
   JOB_IN: 29,
   CALL_IN: 30,
   DROP: 31,
+  /** 2.36: asking a gang's boss in (the initiation favor), and leaving one's gang (at its boss). */
+  JOIN: 32,
+  LEAVE: 33,
 } as const;
 
 /**

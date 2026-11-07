@@ -66,6 +66,16 @@ import { decorHoliday } from './holidays';
 import { tileAt } from '../sim/world/grid';
 import { emptyFrame, type Frame } from '../render/viewFrame';
 import { badgeOf } from './badges';
+import { gangOfCell, gangsHere, heldPiece, playerGang } from '../sim/systems/gangs';
+import { crowdPlan } from '../sim/systems/calendar';
+import { GANG_COLOR } from '../content/gangs';
+import { turfHint } from './gangs';
+
+/** A cell's inmate's gang colours (0: in no gang). */
+const coloursOf = (sim: Sim, cell: number) => {
+  const k = gangOfCell(sim.world.def, cell);
+  return k >= 0 ? GANG_COLOR[sim.prison.gangs![k].id] : 0;
+};
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -178,6 +188,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   running.clear();
   const grow = f.planters as Map<number, number>;
   grow.clear();
+  const gangsOn = gangsHere(sim);
   const atWork = !sim.rules229 && !sim.world.def.rules?.relaxed && !st.lockdown && ROUTINE[st.routine].id === 'work';
   st.inmates.forEach((m, k) => {
     const o = (f.inmates[k] ??= {
@@ -221,6 +232,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.cell = m.cell;
     o.angry = m.angry > 0;
     o.badge = badgeOf(sim, k);
+    // (2.36: their gang's colours, where the gangs are.)
+    o.colours = gangsOn ? coloursOf(sim, m.cell) : 0;
     // Its tray: in front of it at the table, eaten as its time runs out; else in its hands.
     // (Replaying an older run, or a prison with no counter: there at the table, no more.)
     const atTable = o.doing === DOING.EAT;
@@ -547,6 +560,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.held = st.show || st.quiz ? 0 : st.book > 0 ? BOOK : trainKind === 'shelf' ? MAGAZINE : f.doing === DOING.DRINK ? CUP : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
+  // 2.36: the player's gang's colours, the turf's paint (held now, or faint), a word the first time on held turf.
+  const mine = playerGang(sim);
+  f.colours = mine >= 0 ? GANG_COLOR[sim.prison.gangs![mine].id] : 0;
+  const piece = heldPiece(sim, crowdPlan(sim, st.routine));
+  f.turf = !gangsHere(sim) ? 0 : piece === 'table' ? 2 : piece === 'corner' ? 3 : 1;
+  turfHint(sim);
   f.sleeping = st.sleeping;
   if (dummyMemo.sim !== sim || dummyMemo.rev !== it.rev) Object.assign(dummyMemo, { sim, rev: it.rev, there: dummyInBed(sim) });
   f.bedDummy = dummyMemo.there;

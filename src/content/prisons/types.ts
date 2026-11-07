@@ -1,4 +1,5 @@
 import type { Speciality } from '../crew';
+import type { GangDef } from '../gangs';
 import type { DecorPlacement } from '../decor';
 import type { JobId } from '../jobs';
 import type { PropPlacement } from '../props';
@@ -347,6 +348,12 @@ export interface PrisonDef {
    * drink, in order. Without it, none.
    */
   cooler?: { x: number; z: number; spots: ReadonlyArray<{ x: number; z: number }> };
+  /**
+   * 2.36, gangs and turf (content/gangs.ts): two or three a prison, each with its boss (a merchant), its
+   * members by cell, its canteen table and its corner of the yard (rectangles of floor tiles: nothing on
+   * the map changes). Without it, none (the Training Block).
+   */
+  gangs?: readonly GangDef[];
   /**
    * The map's revision (P31: raised when the prison is rebuilt; none: 0). A save from an older
    * one starts the run again there (saves.ts rebuiltSince).

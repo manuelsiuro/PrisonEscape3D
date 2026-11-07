@@ -160,6 +160,8 @@ let turns = false;
 /** The gym's machines in use (Social.machines). */
 let machines = false;
 let reads = false;
+/** The gangs hold their turf today (Social.gangs). */
+let gangsOn = false;
 
 /** 2.30: inmates work their stations (Social.jobOf: each one's job, -1 none; empty: replaying an older run). */
 let jobOf: readonly number[] = [];
@@ -456,6 +458,51 @@ function nextLeg(c: Crowd, all: Inmate[], m: Inmate): boolean {
   return false;
 }
 
+/** How often (steps) a gang member's evening changes between its corner and elsewhere: 40 s. */
+const CORNER_TURN = 40 * STEPS_PER_SECOND;
+
+/** The rectangle of a cell's gang's turf (its table or its corner), null for someone in no gang. */
+function turfOf(w: World, cell: number, which: 'table' | 'corner') {
+  const g = w.def.gangs?.find((d) => d.members.includes(cell));
+  return g ? g[which] : null;
+}
+
+/** 2.36: a free seat at the inmate's gang's table, facing it (null: no gang, or none free). */
+function gangSeat(w: World, all: Inmate[], m: Inmate): Spot | null {
+  const r = turfOf(w, m.cell, 'table');
+  if (!r) return null;
+  const free = placesOf(w).seats.filter((q) => inTiles(r, q.tile) && !taken(all, q.tile));
+  return free.length ? free[m.cell % free.length] : null;
+}
+
+/** 2.36: a free floor tile in the inmate's gang's corner of the yard, facing its middle (null: no gang, or none free). */
+function cornerSpot(w: World, all: Inmate[], m: Inmate): Spot | null {
+  const r = turfOf(w, m.cell, 'corner');
+  if (!r) return null;
+  const free: number[] = [];
+  for (let z = r[1]; z <= r[3]; z++)
+    for (let x = r[0]; x <= r[2]; x++) if (!w.blocked(x, z) && !taken(all, z * MAP_W + x)) free.push(z * MAP_W + x);
+  if (!free.length) return null;
+  const tile = free[m.cell % free.length];
+  const dx = (r[0] + r[2] + 1) / 2 - (tile % MAP_W) - 0.5;
+  const dz = (r[1] + r[3] + 1) / 2 - Math.floor(tile / MAP_W) - 0.5;
+  return { tile, face: Math.abs(dx) + Math.abs(dz) < 0.6 ? 5 : nearestDir(dx * 100, dz * 100) || 5 };
+}
+
+/** 2.36: an inmate on its own gang's corner. */
+const inCorner = (w: World, m: Inmate) => {
+  const r = turfOf(w, m.cell, 'corner');
+  return !!r && inTiles(r, m.goal);
+};
+/** How much longer a gang member lingers at its corner in the evening (steps: 40 s). */
+const CORNER_LINGER = 40 * STEPS_PER_SECOND;
+
+const inTiles = (r: readonly number[], tile: number) => {
+  const x = tile % MAP_W;
+  const z = Math.floor(tile / MAP_W);
+  return x >= r[0] && x <= r[2] && z >= r[1] && z <= r[3];
+};
+
 /** Chooses where an inmate goes next for its plan, and what it does there (`work`: its job's zone index, -1 without one). */
 function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: number, job: number) {
   const w = c.w;
@@ -474,6 +521,8 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
     case 'dinner':
       spot = pickSpot(all, places.seats, rng);
       then = DOING.EAT;
+      // (2.36: at dinner, a gang member at its gang's table, a seat there free; the draw above as it was.)
+      if (gangsOn && id === 'dinner') spot = gangSeat(w, all, m) ?? spot;
       // (2.25: its seat kept, the tray fetched from the serving counter first.)
       if (serving && spot) {
         m.seat = spot.tile;
@@ -622,6 +671,21 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       }
     }
   }
+  // (2.36: in the evening, a gang member hangs about its corner two times in three, by its cell and the time, not the
+  // librarian at his desk: the draws above as they were.)
+  if (
+    gangsOn &&
+    id === 'eveningFreeTime' &&
+    w.def.leisure?.librarian?.cell !== m.cell &&
+    (Math.floor(c.step / CORNER_TURN) + m.cell) % 3 !== 0
+  ) {
+    const at = cornerSpot(w, all, m);
+    if (at) {
+      spot = at;
+      then = DOING.NOTHING;
+      m.book = 0;
+    }
+  }
   if (!spot) return;
   m.goal = spot.tile;
   m.face = spot.face;
@@ -653,6 +717,7 @@ export function stepInmates(
   turns = !!social.turns;
   machines = !!social.machines;
   reads = !!social.reads;
+  gangsOn = !!social.gangs;
   jobOf = social.jobOf ?? [];
   bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
@@ -847,6 +912,8 @@ export interface Social {
   jobOf?: number[];
   /** 2.25: a meal on, fetched from the serving counter (false: none on, no counter here, or replaying an older run). */
   serve?: boolean;
+  /** 2.36: the gangs hold their turf today (gangs.ts turfHeld): their tables at dinner, their corners in the evening. */
+  gangs?: boolean;
 }
 const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], pace: [], face: [] };
 
@@ -969,7 +1036,11 @@ function arrive(c: Crowd, m: Inmate, plan: number, rng: { rng: number }, job: nu
     return;
   }
   // Free time: linger 15–45 s before moving on.
-  if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) m.wait = STEPS_PER_SECOND * (15 + randomInt(rng, 31));
+  if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) {
+    m.wait = STEPS_PER_SECOND * (15 + randomInt(rng, 31));
+    // (2.36: at its gang's corner in the evening, a while longer: they hold it.)
+    if (gangsOn && ROUTINE[plan].id === 'eveningFreeTime' && inCorner(c.w, m)) m.wait += CORNER_LINGER;
+  }
 }
 
 /** The zone an inmate stands in. */

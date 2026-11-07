@@ -59,6 +59,12 @@ export interface HudState {
   crew: { icons: string[]; text: string; alert: boolean } | null;
   /** Tipsy (P28): until when (the clock's time), game minutes left, out of how many; null sober. */
   tipsy: { until: string; left: number; of: number } | null;
+  /**
+   * 2.36, gangs: the player's gang (its id, for the face's ring in its colour; null none), and a warning off a
+   * rival's turf (whose, in words; seconds left of the TRESPASS_STEPS to get off it), null none.
+   */
+  gang?: string | null;
+  turf?: { text: string; left: number; of: number } | null;
   /** The odd job held (P40): its kind's icon, the step under way, the time left (0–1); on watch at a dig, the whistle (urgent: a guard coming); null none. */
   oddjob?: { icon: string; text: string; tail: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
   /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
@@ -156,6 +162,7 @@ export class Hud {
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-waved hidden" role="status">${icon('idCard', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-turf hidden">${icon('fist', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-tipsy hidden">${icon('brew', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
@@ -200,6 +207,7 @@ export class Hud {
     this.cold = q('.hud-cold');
     this.bribe = q('.hud-bribe');
     this.tipsy = q('.hud-tipsy');
+    this.turf = q('.hud-turf');
     this.today = q('.hud-today');
     this.rat = q('.hud-rat');
     this.rat.addEventListener('click', () => this.onRat());
@@ -246,6 +254,7 @@ export class Hud {
 
   private readonly bribe: HTMLElement;
   private readonly tipsy: HTMLElement;
+  private readonly turf: HTMLElement;
   private readonly power: HTMLElement;
   private readonly riot: HTMLElement;
   private readonly waved: HTMLElement;
@@ -294,6 +303,16 @@ export class Hud {
     setText(el.querySelector('b')!, t('hud.bribeUntil', { time: b.until }));
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
     el.classList.toggle('low', b.left <= 15);
+  }
+
+  /** 2.36: told off a rival gang's turf: whose, the seconds left to get off it, the bar draining (red throughout: it's a warning). */
+  private turfChip(b: HudState['turf']) {
+    const el = this.turf;
+    el.classList.toggle('hidden', !b);
+    if (!b) return;
+    setText(el.querySelector('span')!, b.text);
+    setText(el.querySelector('b')!, `${b.left}`);
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
   }
 
   /** Tipsy (P28): "Tipsy until 13:30", the bar draining. */
@@ -543,7 +562,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${s.oddjob ? `${s.oddjob.icon}:${s.oddjob.text}:${s.oddjob.urgent}:${s.oddjob.watch}:${s.oddjob.done}:${Math.round(s.oddjob.left * 40)}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${s.turf ? `${s.turf.text}:${s.turf.left}` : ''}|${s.oddjob ? `${s.oddjob.icon}:${s.oddjob.text}:${s.oddjob.urgent}:${s.oddjob.watch}:${s.oddjob.done}:${Math.round(s.oddjob.left * 40)}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -558,11 +577,17 @@ export class Hud {
       this.chill(c);
       this.lookAway(s.bribe);
       this.tipsyChip(s.tipsy);
+      this.turfChip(s.turf ?? null);
       this.dayChip(d);
       this.ratChip(s.rat);
       this.orderChip(s.order);
       this.crewChip(s.crew);
       this.jobChip(s.oddjob ?? null);
+    }
+    // (2.36: the player's gang: the face's ring in its colour.)
+    if ((this.cashPill.dataset.gang ?? '') !== (s.gang ?? '')) {
+      if (s.gang) this.cashPill.dataset.gang = s.gang;
+      else delete this.cashPill.dataset.gang;
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.

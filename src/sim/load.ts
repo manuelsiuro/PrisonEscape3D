@@ -41,6 +41,23 @@ import { GUARD_STR, OPINION_START, START_STR, UNIT, MEAL_STEPS, MEAL_STEPS_224 }
 import { containersOf } from './world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from './world/World';
 import { freshState, type Call, type SimState } from './state';
+import { GANGS } from '../content/gangs';
+
+/** 2.36: the gangs' record as a save holds it (gangs.ts G): eight whole numbers, a gang that exists, steps not ahead of now. */
+function gangOk(g: unknown, step: number): boolean {
+  if (!ints(g, 8)) return false;
+  const v = g as number[];
+  return (
+    v[0] >= 0 &&
+    v[0] <= GANGS.length &&
+    v[1] >= 0 &&
+    v[1] <= step &&
+    v[2] >= 0 &&
+    v[2] <= GANGS.length &&
+    v[3] <= step &&
+    v.every((x, k) => k === 3 || x >= 0)
+  );
+}
 
 /** An array of n whole numbers (a save's field checked before it's trusted). */
 const ints = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every((x) => Number.isInteger(x));
@@ -55,9 +72,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   const out = {} as Record<keyof SimState, unknown>;
   for (const k of Object.keys(fresh) as Array<keyof SimState>) out[k] = st[k] ?? fresh[k];
   const s = out as SimState;
-  // (2.36: optional, so not among a fresh state's keys: kept when there, last, as a straight run has it; checked below.)
-  if (st.struckLayer !== undefined) s.struckLayer = st.struckLayer;
-  if (st.recall !== undefined) s.recall = st.recall;
+  // (2.36: optional, so not among a fresh state's keys: kept when there, last, in the order the run added them (the
+  // hash reads the keys in order); checked below.)
+  for (const k of Object.keys(st))
+    if ((k === 'struckLayer' || k === 'gang' || k === 'recall') && st[k] !== undefined) (s as unknown as Record<string, unknown>)[k] = st[k];
   // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
   // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
   // cameras it has).
@@ -471,6 +489,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     (!Number.isInteger(s.struckLayer) || s.struckLayer < LAYER.UNDER || s.struckLayer > LAYER.ROOF || s.struckLayer === LAYER.GROUND)
   )
     delete s.struckLayer;
+  // 2.36: the gangs' record, whole numbers in range, or none (gangs.ts G).
+  if (s.gang !== undefined && !gangOk(s.gang, s.step)) delete s.gang;
   // 2.36: absent, or a step (the hounds back at work then).
   if (s.recall !== undefined && (!Number.isInteger(s.recall) || s.recall < 0)) delete s.recall;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
