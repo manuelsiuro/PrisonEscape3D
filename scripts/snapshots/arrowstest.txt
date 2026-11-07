@@ -1,0 +1,30 @@
+center-perks meal seats: 48 tiles, 190 ways sat, 930 presses with someone by, 0 taken
+  before 2.36: 234 taken
+center-perks desk: 1 tile, 1 ways, 4 presses, 0 taken
+center-perks job board: 12 ways, 60 presses, 0 taken
+center-perks job (laundry): 12 ways at its take, 60 presses, 0 taken
+stalag-flucht meal seats: 24 tiles, 95 ways sat, 382 presses with someone by, 0 taken
+  before 2.36: 102 taken
+stalag-flucht desk: 1 tile, 1 ways, 4 presses, 0 taken
+stalag-flucht job board: 5 ways, 19 presses, 0 taken
+stalag-flucht job (kitchen): 16 ways at its take, 60 presses, 0 taken
+shankton meal seats: 24 tiles, 96 ways sat, 544 presses with someone by, 0 taken
+  before 2.36: 168 taken
+shankton desk: 1 tile, 1 ways, 4 presses, 0 taken
+shankton job board: 12 ways, 52 presses, 0 taken
+shankton job (metalshop): 12 ways at its take, 64 presses, 0 taken
+san-pancho meal seats: 16 tiles, 62 ways sat, 325 presses with someone by, 0 taken
+  before 2.36: 109 taken
+san-pancho desk: 1 tile, 1 ways, 4 presses, 0 taken
+san-pancho job board: 8 ways, 34 presses, 0 taken
+san-pancho job (janitor): 8 ways at its take, 24 presses, 0 taken
+irongate meal seats: 16 tiles, 61 ways sat, 316 presses with someone by, 0 taken
+  before 2.36: 102 taken
+irongate desk: 1 tile, 3 ways, 12 presses, 0 taken
+irongate job board: 2 ways, 7 presses, 0 taken
+irongate job (woodshop): 20 ways at its take, 96 presses, 0 taken
+six-hunter meal seats: 24 tiles, 96 ways sat, 544 presses with someone by, 0 taken
+  before 2.36: 168 taken
+six-hunter desk: 1 tile, 3 ways, 12 presses, 0 taken
+six-hunter job board: 9 ways, 43 presses, 0 taken
+six-hunter job (kennels): 12 ways at its take, 64 presses, 0 taken

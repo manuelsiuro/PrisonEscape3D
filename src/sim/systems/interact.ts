@@ -5,20 +5,23 @@
  * Pure: it reads the state and changes nothing (the arrays it fills are the sim's scratch).
  */
 import type { SimContext } from '../context';
-import { LAYER } from '../world/World';
+import { LAYER, MAP_W } from '../world/World';
+import { UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
-import { counterTray, trayOffer, type TrayOffer } from './canteen';
+import { placesOf } from '../ai/places';
+import { counterTray, mealOn, trayOffer, type TrayOffer } from './canteen';
 import { coolerOffer } from './cooler';
 import { atTail } from './delivery';
 import type { Station } from './economy';
 import { atWindow, windowFirst } from './getaway';
 import type { Guard } from './guards';
-import type { Inmate } from './inmates';
+import { TRAY, type Inmate } from './inmates';
 import { interactTarget, itemOf, type Target } from './items';
 import { letterDue, station } from './jobs';
 import { menuOffer } from './menu';
 import type { Body } from './movement';
 import { atRelease, atTray } from './paperwork';
+import { seatSpot } from './rest';
 import { canAnswer } from './rollcall';
 import { showerOffer } from './showers';
 import { climbTarget, DIRT, facesProp, preferClimb, WALL_CHUNK, type ClimbTarget } from './structure';
@@ -107,6 +110,34 @@ export function reachClimb(sim: SimContext, target: Target): ClimbTarget | null 
   return preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
 }
 
+/**
+ * 2.36: where the floor arrows end, what they led the player there for, when someone standing by would otherwise
+ * take the press (the player happening to face them): a free seat at a canteen table with the meal's tray in hand,
+ * the player's own desk from beside it (the first day's guide), the job board. It's what's in reach with nobody
+ * about; null when that isn't one of these. (Before, Sim.rules235: whoever was faced.)
+ */
+function arrowsTarget(sim: SimContext): Fixture | Extract<Reached, { kind: 'container' }> | null {
+  const s = sim.state;
+  const w = sim.world;
+  if (sim.rules235 || s.layer !== LAYER.GROUND) return null;
+  const alone = interactTarget(w, s.items, s.player, sim.bedtime, s.layer, [], 0, undefined, sim.bedtime && !sim.rules227);
+  if (!alone) return null;
+  const tile = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
+  const places = placesOf(w);
+  if (alone.kind === 'fixture' && alone.use === 'board') return alone;
+  if (alone.kind === 'fixture' && alone.use === 'sit' && s.tray === TRAY.FULL && mealOn(sim) && places.seats.some((q) => q.tile === tile)) {
+    // (Its spot free: sat on by nobody, the press would be refused.)
+    const spot = seatSpot(w, alone.index, s.player);
+    const taken = bodiesAbout(sim).some((b) => Math.floor(b.x / UNIT) === spot.x && Math.floor(b.z / UNIT) === spot.z);
+    return taken ? null : alone;
+  }
+  if (alone.kind === 'container' && tile === places.deskside[1]) {
+    const c = containersOf(w)[alone.index];
+    return c.mine && c.prop.kind === 'desk' ? alone : null;
+  }
+  return null;
+}
+
 /** What a press of the action button does now; null: nothing (it does nothing). */
 export function interactPlan(sim: SimContext): Plan | null {
   const s = sim.state;
@@ -144,6 +175,12 @@ export function interactPlan(sim: SimContext): Plan | null {
   if (coolerOffer(sim)) return { do: 'cooler' };
   if (menuOffer(sim)) return { do: 'menu' };
   if (!target) return null;
+  // (2.36: at the end of the arrows, what they led there for, ahead of someone standing by.)
+  if (target.kind === 'person') {
+    const led = arrowsTarget(sim);
+    if (led?.kind === 'fixture') return { do: 'fixture', target: led };
+    if (led?.kind === 'container') return { do: 'search', target: led };
+  }
   switch (target.kind) {
     case 'ground':
       return { do: 'pickUp', target };
