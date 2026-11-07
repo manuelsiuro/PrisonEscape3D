@@ -10,7 +10,10 @@
 // Run it in an isolated browser profile: each shot is a game started, so its escapes, stats and
 // trophies land in that profile's storage.
 // Retake a picture at the viewport it was taken in, or its framing changes: most were taken at 915×412
-// (landscape emulation, device pixel ratio 2), night.webp at 1440×844 (ratio 1). Compare old and new
+// (landscape emulation, device pixel ratio 2), night.webp at 1440×844 (ratio 1). Session 14 retook these at
+// 1440×844 with their zoom set to match the old frame (today's camera framed them otherwise): bluff, checkers,
+// football, games, goal, holidays, island, library, meals, menu, night, oddjobs, parole, rollcall, showers, train,
+// vending, work. Compare old and new
 // pixel by pixel. A shot's zoom: set `zoom` and call `applyZoom()` (an equal zoom never re-applies);
 // past 1.9 is fine here. Offset the camera by steering `view.target`, not the camera in a render hook
 // (the see-through cut lands on a wall as a dark patch). Fake daylight must null `security.beams` too;
@@ -222,7 +225,7 @@ export const SHOTS: Record<string, Shot> = {
       useProp(bot, room.machines[0]);
     },
     when: at(0.99),
-    zoom: 2.2,
+    zoom: 2.55,
     dx: 1,
   },
   // 2.31: on a library chair at Center Perks with a book, a page half read, the readers and the librarian about.
@@ -241,7 +244,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.5,
     dz: -1,
   },
   // 2.32: something just bought from Center Perks' vending machine, seen from the front.
@@ -260,7 +263,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.35,
     dz: -1,
   },
   // 2.33: Center Perks' menu board just scribbled on, two inmates having a word at the water cooler beside it.
@@ -281,7 +284,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.15,
     dx: 4,
     dz: -1,
   },
@@ -302,7 +305,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.35,
     dx: 1.5,
     dz: -1,
   },
@@ -328,8 +331,8 @@ export const SHOTS: Record<string, Shot> = {
       for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(command(0, OP.TRAIN, 1 + (k % 2)));
     },
     when: (s) => s.state.bout.length > 0,
-    after: 40,
-    zoom: 2.6,
+    after: 10,
+    zoom: 2.05,
   },
   cheat: {
     lesson: 'cards',
@@ -383,7 +386,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.until(() => false, 40);
     },
     when: at(0.98),
-    zoom: 3.6,
+    zoom: 2.84,
     dz: 0.5,
   },
   football: {
@@ -416,7 +419,7 @@ export const SHOTS: Record<string, Shot> = {
     },
     when: (s) => !!s.state.match,
     after: 300,
-    zoom: 1.6,
+    zoom: 1.2,
   },
   race: {
     lesson: 'ratRace',
@@ -570,7 +573,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.until(() => false, 60);
     },
     when: at(0.98),
-    zoom: 3.4,
+    zoom: 3.54,
     dx: -0.6,
     dz: -1.2,
   },
@@ -585,7 +588,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.until(() => false, 20);
     },
     when: at(0.99),
-    zoom: 2.4,
+    zoom: 2.5,
     dz: -1,
   },
 
@@ -619,7 +622,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 2.2,
+    zoom: 2.17,
     dx: 2,
     dz: 1,
   },
@@ -651,7 +654,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
-    zoom: 3,
+    zoom: 2.94,
     dx: 1,
     dz: 1,
   },
@@ -673,7 +676,7 @@ export const SHOTS: Record<string, Shot> = {
       return bot;
     },
     when: at(0.999),
-    zoom: 1.5,
+    zoom: 1.66,
     dx: -3.5,
     dz: -2,
   },
@@ -685,7 +688,7 @@ export const SHOTS: Record<string, Shot> = {
   bluff: { prison: 'center-perks', route: 'bluff', when: on('bluff'), after: -4, zoom: 2.2 },
   glider: { prison: 'center-perks', route: 'glider', when: on('glide'), after: -3, zoom: 1.8, dz: -1, light: 600, live: 0.5 },
   // (Out of the tunnel onto the road, the escape camera turning on the prison behind.)
-  goal: { prison: 'center-perks', route: 'tunnel', when: (_s, k, n) => k >= n - 2, zoom: 1.4, light: 600, live: 2 },
+  goal: { prison: 'center-perks', route: 'tunnel', when: (_s, k, n) => k >= n - 2, zoom: 0.74, light: 600, live: 2 },
   // (Cleared, in their own clothes, out through the doors by the desk: its lamp green.)
   paperwork: { prison: 'center-perks', route: 'paperwork', when: (s) => s.state.release[1] > 0, after: 6, zoom: 2.2, dz: -1.2 },
   power: { prison: 'center-perks', route: 'cutout', when: on('power'), after: 4, zoom: 2.2, dx: -1, dz: 1.5, light: 600 },
@@ -724,7 +727,7 @@ export const SHOTS: Record<string, Shot> = {
   weather: { prison: 'stalag-flucht', route: 'tunnel', when: (_s, k, n) => k >= n - 30, zoom: 2.2, dz: -0.5 },
   shell: { prison: 'shankton', route: 'rooftop', when: (_s, k, n) => k >= n - 60, zoom: 1.5, dz: 2.5, light: 1050 },
   mines: { prison: 'san-pancho', route: 'gate', when: (_s, k, n) => k >= n - 40, zoom: 1.3, light: 1050 },
-  island: { prison: 'irongate', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 2, dx: -2 },
+  island: { prison: 'irongate', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 0.98, dx: -2 },
 };
 
 const view = () => (window as unknown as { __view: View }).__view;

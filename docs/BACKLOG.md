@@ -62,12 +62,11 @@ fixes, and polished systems before the feature built on them; the user may reord
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
 4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
-7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 12, tools, digging, items and looting, 13, talk, merchants and the crew, and 15, character animation, in v2.36.0; 9's colour-blind palette was
+7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 12, tools, digging, items and looting, 13, talk, merchants and the crew, 14, the picture review, and 15, character animation, in v2.36.0; 9's colour-blind palette was
 left out by the user; 10, gamepad support, was moved to §3 by the user).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 14 | Picture review of every prison | Day and night, materials, shadows, light: a report first, then the fixes picked (as the lamps) |
 | 16 | Gangs and turf | §3; built on 11 and 13 (fights, opinion, merchants, the crew) once they're polished |
 
 ## 5. Upkeep
