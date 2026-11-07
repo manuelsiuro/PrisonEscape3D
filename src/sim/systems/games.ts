@@ -44,7 +44,7 @@ import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { SimState } from '../state';
 import { ATTRS, type Refusal } from '../events';
-import { ATTR_MAX, TIRED, UNIT } from '../tuning';
+import { ATTR_MAX, TIRED, UNIT, WORN_WARN } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, type World } from '../world/World';
 import { eventOn, prisonDay, TODAY } from './calendar';
@@ -411,6 +411,8 @@ function setPin(sim: SimContext) {
   const left = usesOf(v) - 1;
   if (left > 0) {
     it.inv[it.hand] = slot(itemOf(v), left);
+    // (2.36: told as it nears its end, as a tool is.)
+    if (left === WORN_WARN) sim.events.push({ type: 'worn', item: LOCKPICK, left });
     return;
   }
   it.inv[it.hand] = 0;

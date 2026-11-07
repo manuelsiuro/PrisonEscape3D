@@ -55,6 +55,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   const out = {} as Record<keyof SimState, unknown>;
   for (const k of Object.keys(fresh) as Array<keyof SimState>) out[k] = st[k] ?? fresh[k];
   const s = out as SimState;
+  // (2.36: optional, so not among a fresh state's keys: kept when there, last, as a straight run has it; checked below.)
+  if (st.struckLayer !== undefined) s.struckLayer = st.struckLayer;
   // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
   // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
   // cameras it has).

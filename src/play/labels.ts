@@ -703,7 +703,8 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   const worn = sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0;
   v.progress = tt.hp > 0 ? Math.min(1, worn / tt.hp) : 0;
   // 2.36: the tool's uses left, and whether they'd see it through (what's struck stays struck: another tool takes it on).
-  if (d?.tool && plan && plan.dmg > 0 && tt.hp > 0) {
+  // (Only a tool that does this job: a shovel at a wall has no uses to count here.)
+  if (d?.tool && plan && tt.fits && plan.why !== 'tool' && plan.dmg > 0 && tt.hp > 0) {
     v.uses = usesOf(sim.state.items.inv[sim.state.items.hand]);
     v.short = v.uses * plan.dmg < tt.hp - worn;
   }
