@@ -16,7 +16,7 @@ import { genOf, offFor } from '../sim/systems/power';
 import { helicopterIn } from '../sim/systems/sea';
 import { clockRinging } from '../sim/systems/noise';
 import { CHOC_EGG, ICE_LOLLY, STRIKES, underSea, type ToolTarget } from '../sim/systems/structure';
-import { energyCost } from '../sim/systems/weather';
+import { planStrike } from '../sim/systems/actions';
 import { dogDef } from '../sim/systems/k9';
 import { petOf, trapChance } from '../sim/systems/rats';
 import { RAT_MEALS, STEPS_PER_MINUTE, STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
@@ -454,6 +454,8 @@ export function describeAttack(sim: Sim): ToolView | null {
   v.attack = true;
   v.confirm = false;
   v.armed = false;
+  v.uses = null;
+  v.short = false;
   return v;
 }
 
@@ -498,6 +500,8 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   v.caption = false;
   v.confirm = false;
   v.armed = false;
+  v.uses = null;
+  v.short = false;
   // (2.32: a can or a cup's drunk, not eaten.)
   v.verb = t(tt.action === 'eat' && itemDef(held).food?.drink ? 'act.drink' : (`act.${tt.action}` as Key));
   v.icon = TOOL_ICON[tt.action];
@@ -639,8 +643,10 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     v.progress = Math.min(1, usesOf(sim.state.items.inv[sim.state.items.hand]) / tt.hp);
     return v;
   }
-  // Grey when it can't be done: the wrong tool, reinforced concrete, or too tired to swing.
-  v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= energyCost(sim, d?.tool?.energy ?? 0)));
+  // Grey when it can't be done: the wrong tool, reinforced concrete, too tired to swing, or (a strike) the last blow with
+  // nowhere for what it yields; 2.36: the sim's own answer (planStrike), so a crew digger's help counts here as it does there.
+  const plan = strike ? planStrike(sim, tt, held) : null;
+  v.fits = tt.fits && (!plan || !plan.why);
   // Digging up takes a press per strike (a hold never surfaces the player).
   v.repeat = strike && tt.action !== 'digUp';
   if (tt.action === 'eat')
@@ -696,16 +702,11 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
               : t('thing.floor');
   const worn = sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0;
   v.progress = tt.hp > 0 ? Math.min(1, worn / tt.hp) : 0;
-  // The last blow would drop a chunk or dirt at the player's feet with no room in their pockets: grey, as the sim refuses it.
-  const yields = tt.action === 'chip' || (tt.action === 'dig' && tt.layer === LAYER.GROUND);
-  if (
-    yields &&
-    sim.state.layer === LAYER.GROUND &&
-    d?.tool &&
-    worn + d.tool.damage >= tt.hp &&
-    !sim.state.items.inv.slice(0, 6).includes(0)
-  )
-    v.fits = false;
+  // 2.36: the tool's uses left, and whether they'd see it through (what's struck stays struck: another tool takes it on).
+  if (d?.tool && plan && plan.dmg > 0 && tt.hp > 0) {
+    v.uses = usesOf(sim.state.items.inv[sim.state.items.hand]);
+    v.short = v.uses * plan.dmg < tt.hp - worn;
+  }
   return v;
 }
 

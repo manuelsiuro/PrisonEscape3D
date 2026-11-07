@@ -108,7 +108,9 @@ export function watch(sim: SimContext) {
   // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
   // A scuffle (hitting back, or P17's food fight) never hides tools at work or damage found; a food fight's blows at inmates in the canteen are noticed not at all.
   const swung = seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS;
-  const tampered = seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS;
+  // (2.36: a strike in a tunnel or the vents, out of every guard's sight, isn't work seen once the player is back on the floor.)
+  const workHere = sim.rules235 || (s.struckLayer ?? LAYER.GROUND) === s.layer;
+  const tampered = seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS && workHere;
   const outLate = !cleared && late && zone !== 'playerCell';
   const staffOnly = !cleared && RESTRICTED.includes(zone);
   // 2.35: a guard takes a moment to be sure of those (its "?" filling); seen, then not, it comes to look.
@@ -116,7 +118,7 @@ export function watch(sim: SimContext) {
     ? { fight: swung && !s.selfDefense, work: tampered, late: eyes && outLate, restricted: eyes && staffOnly }
     : notice(sim, {
         fight: s.step - s.swingAt <= NOTICE_HOLD && !s.selfDefense,
-        work: s.step - s.struckAt <= NOTICE_HOLD,
+        work: s.step - s.struckAt <= NOTICE_HOLD && workHere,
         late: outLate,
         restricted: staffOnly,
       });
@@ -134,7 +136,7 @@ export function watch(sim: SimContext) {
   const filmed = cameraSeesPlayer(sim);
   if (!reason && filmed) {
     const fighting = s.step - s.swingAt <= STRIKE_SEEN_STEPS && !s.selfDefense;
-    const working = s.step - s.struckAt <= STRIKE_SEEN_STEPS;
+    const working = s.step - s.struckAt <= STRIKE_SEEN_STEPS && workHere;
     if (fighting || working || (!cleared && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone))))
       [reason, heat] = [SPOT.indexOf('camera'), 100];
   }
@@ -327,6 +329,12 @@ export function setTile(sim: SimContext, layer: number, tile: number, kind: numb
   sim.world.setKind(layer, tile, k);
   sim.tilesRev++;
   sim.wearRev++;
+}
+
+/** 2.36: the layer of the strike just made, kept only off the ground floor (`SimState.struckLayer`). */
+export function strikeLayer(s: { layer: number; struckLayer?: number }) {
+  if (s.layer === LAYER.GROUND) delete s.struckLayer;
+  else s.struckLayer = s.layer;
 }
 
 /** Heat; at 100% the sirens go: a lockdown, every guard hunting the player (GDD §3.1). */

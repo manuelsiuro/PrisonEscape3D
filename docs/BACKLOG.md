@@ -14,9 +14,6 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 |---|---|
 | Quiz, football, rat races | Partly |
 | Free time | Not reviewed |
-| Items and crafting | Not reviewed |
-| Searching and looting | Not reviewed |
-| Tools, digging, vents and roofs | Not reviewed |
 | Talking, favors and opinion | Not reviewed |
 | Merchants and money | Not reviewed |
 | Crew | Not reviewed |
@@ -68,12 +65,11 @@ fixes, and polished systems before the feature built on them; the user may reord
 starts by asking the user's choices, and ends with its history entry; take it off here when done
 (the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
 4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
-7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 14, the picture review, in v2.36.0; 9's colour-blind palette was
+7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 12, tools, digging, items and looting, and 14, the picture review, in v2.36.0; 9's colour-blind palette was
 left out by the user; 10, gamepad support, was moved to §3 by the user).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 12 | Tools, digging, items, looting | §1: tools, digging, vents and roofs; items and crafting; searching and looting |
 | 13 | Talk, merchants, crew | §1: talking, favours and opinion; merchants and money; the crew |
 | 15 | Character animation polish | Blends between poses, idle and walk variety, hands and what they hold |
 | 16 | Gangs and turf | §3; built on 11 and 13 (fights, opinion, merchants, the crew) once they're polished |

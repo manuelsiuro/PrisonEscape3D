@@ -14,6 +14,7 @@ import { itemName } from '../ui/items';
 import { banner, itemsUI, ratPanel, phonePanel, crewPanel, settings, sound, tools, view } from './context';
 import { play } from './game';
 import { NEED } from './labels';
+import { press } from './reach';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 import { today } from '../sim/systems/calendar';
 import { dayTime } from './warden';
@@ -86,6 +87,8 @@ export function announceWorks(e: SimEvent, sim: Sim) {
       sound.strike(e.action, e.broke);
       view.impact(e.action, e.tile, e.layer, e.broke);
       buzz(e.broke ? 'giveWay' : 'strike');
+      // (2.36: the first time a tool is put to something it'll wear out before getting through: the work isn't lost.)
+      if (!e.broke && press.toolNow?.short) coachOnce('toolShort', 'hint.toolShort');
       if (e.broke) {
         const done = (
           {
@@ -140,6 +143,11 @@ export function announceWorks(e: SimEvent, sim: Sim) {
     case 'broke':
       sound.sting();
       itemsUI.toast(t('toast.broke', { item: itemName(e.item) }));
+      break;
+    case 'worn':
+      // (2.36: never broken unannounced.)
+      sound.sting();
+      itemsUI.toast(t('toast.worn', { item: itemName(e.item), n: e.left }));
       break;
     case 'shocked':
       sound.zap();
