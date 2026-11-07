@@ -3874,7 +3874,7 @@ export const en = {
   "help.delivery.steps": "Stand at its tail (the green ring) with no guard looking.\nUse the action button to climb in: hidden, nobody sees you, but the routine goes on without you.\nA quick look at 14:30 and you leave with it; a thorough search finds you, and it’s solitary.",
   "help.delivery.tip": "With nobody there to search (knocked out, drawn off by a noise, bribed to look the other way), there’s no search at all.",
   "help.delivery.warn": "In a lockdown nothing leaves unsearched, and damage the guards find while you hide raises one.",
-  "help.delivery.more": "Every prison but Shankton has one: a supply truck, the Red Cross truck, a produce truck, Irongate’s helicopter, the Six Hunter’s outfitter’s truck.\nWhile it’s in, it blocks the way and the view, and its supervisor walks round it.\nHow thorough the search is depends on the prison and the day; the gossip knows.\nA strict guard always looks properly, and so does everyone for two weeks after a stowaway is caught.",
+  "help.delivery.more": "Every prison but Shankton has one: a supply truck (Center Perks’ and the Six Hunter’s), the Red Cross truck, a produce truck, Irongate’s helicopter.\nWhile it’s in, it blocks the way and the view, and its supervisor walks round it.\nHow thorough the search is depends on the prison and the day; the gossip knows.\nA strict guard always looks properly, and so does everyone for two weeks after a stowaway is caught.",
   "help.bluff.hook": "A fake ID at the shift change",
   "help.bluff.sum": "At the evening shift change the new gatekeeper doesn’t know a face yet: show a fake ID and walk out.",
   "help.bluff.tl": "19:50|The gate changes shifts\n20:10|The change is over",
@@ -5102,7 +5102,13 @@ export const en = {
   "help.hunters.list2": "A drag line, thrown, takes your trail with it: the hounds on duty within earshot drag their Hunters to where it lands.\nTar soap washes your scent off, twice.\nA ghillie cloak, worn, leaves no trail out in the open.\nThe Huntmaster carries the recall horn: blown, every hound runs home for an hour, and the Hunters nearby hear it.",
   "help.hunters.warn": "The river floods any tunnel dug under it, and granite lies under the north-west corner.\nThe fieldstone wall can’t be chipped, and the deer fence is electric.",
   "help.hunters.tip": "In fog, thick in the morning and from 19:00, a Hunter out in it sees only 4 tiles.",
-  "help.hunters.more": "No takeover here: six Hunters and their hounds are too many to put down at once.\nSeven ways out: by the river, under the wall, over it on the wind, in the outfitter’s truck, through the gate on a bluff, on forged papers, or on parole.\nThe hounds work from day 2, as everywhere; three of them work nights too.\nOver the wall, the valley of the Hollowrun: fords wash your trail, and the Six come after you with their hounds.",
+  "help.hunters.more": "No takeover here: six Hunters and their hounds are too many to put down at once.\nSeven ways out: by the river, under the wall, over it on the wind, in the supply truck, through the gate on a bluff, on forged papers, or on parole.\nThe hounds work from day 2, as everywhere; three of them work nights too.\nOver the wall, the valley of the Hollowrun: fords wash your trail, and the Six come after you with their hounds.",
+  // 2.36: the Six Hunter's guards are Hunters (ui/names.ts guardWord: `<key>.<prison>` first).
+  "guard.title.six-hunter": "Hunter {name}",
+  "guard.addressed.six-hunter": "Hunter {name}",
+  "guard.subject.six-hunter": "Hunter {name}",
+  "guard.the.six-hunter": "Hunter {name}",
+  "combat.guardNamed.six-hunter": "Hunter {name} · {key} key",
 };
 
 export type Strings = typeof en;

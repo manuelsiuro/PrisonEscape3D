@@ -39,7 +39,7 @@ import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
-import { inmateName } from '../ui/names';
+import { guardWord, inmateName } from '../ui/names';
 import type { StageView } from '../ui/stage';
 import type { QuizView } from '../ui/quiz';
 
@@ -53,7 +53,7 @@ import type { QuizView } from '../ui/quiz';
 /** A clock time ("19:34") from minutes of the day. */
 const formatTime = (m: number) => hhmm(m % 1440);
 /** A guard by name ("Officer Pratt"), an item by its id. */
-const guardLabel = (sim: Sim, k: number) => t('guard.title', { name: sim.prison.guards[k]?.name ?? '' });
+const guardLabel = (sim: Sim, k: number) => guardWord(sim, 'guard.title', { name: sim.prison.guards[k]?.name ?? '' });
 const itemName = (id: string) => t(`item.${id}` as Key);
 
 /** The last act's verdict and the last quiz's end, held a moment for the cards (ms of play time: a pause doesn't eat them); the last judgement's flash; notes in a row. Not state. */

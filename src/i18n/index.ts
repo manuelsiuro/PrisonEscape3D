@@ -55,6 +55,8 @@ export function setLang(l: Lang | 'auto') {
 }
 
 export const currentLang = () => lang;
+/** Whether a key exists (a prison's own wording, looked for before the usual one). */
+export const hasKey = (k: string): k is Key => k in en;
 /** What text drawn earlier depends on: the language and the player's keys (session 9). A cache keyed on it redraws after either changes. */
 export const textStamp = () => `${lang}:${keysVersion()}`;
 

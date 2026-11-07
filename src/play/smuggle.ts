@@ -39,7 +39,7 @@ import { BOARD_LOOKS, HEARINGS } from '../content/parole';
 import { boardShown } from './parole';
 import { centerX, centerZ } from '../sim/world/grid';
 import { dayTime } from './warden';
-import { guardSubject } from '../ui/names';
+import { guardSubject, guardWord } from '../ui/names';
 
 /**
  * Smuggling on screen (P21): the phone's panel (what an order costs each way, and when and
@@ -263,7 +263,9 @@ export function announceSmuggle(sim: Sim, e: Extract<SimEvent, { type: 'smuggle'
     case 'turnedBack':
       // (The sirens, or a guard looking right where it would land.)
       if (e.guard !== undefined)
-        itemsUI.toast(t('toast.turnedBackWatched', { item, guard: t('guard.the', { name: sim.prison.guards[e.guard]?.name ?? '' }) }));
+        itemsUI.toast(
+          t('toast.turnedBackWatched', { item, guard: guardWord(sim, 'guard.the', { name: sim.prison.guards[e.guard]?.name ?? '' }) }),
+        );
       else itemsUI.toast(t('toast.turnedBack', { item }));
       break;
     case 'dropped': {
