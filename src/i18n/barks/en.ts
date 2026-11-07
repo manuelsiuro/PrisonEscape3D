@@ -439,6 +439,16 @@ export const enBarks = {
     { t: 'The sea keeps every secret you give it.', v: ['poet'] },
     { t: 'Sharks out there. Trained sharks. Government sharks.', v: ['conspiracist'] },
   ],
+  'in.pines': [
+    "Pines, pines, pines. I've started naming them.",
+    'Hear that? Hounds. Somewhere. Always somewhere.',
+    'The woods are lovely, dark and full of Hunters.',
+    "Smells like Christmas. Feels like Monday.",
+    "Somebody's counting us on that tally board. I can feel it.",
+    'Every twig snaps like a gunshot out here.',
+    { t: 'The forest remembers every footprint. So does the bloodhound.', v: ['poet'] },
+    { t: "Those aren't owls. Those are drones dressed as owls.", v: ['conspiracist'] },
+  ],
   'in.lockdown': [
     'Lockdown again? What did you do?',
     "Great. Now we're locked in AND bored.",
@@ -725,6 +735,14 @@ export const enBarks = {
     'The sea\'s rough. Good.',
     'Thirty years on this rock.',
     'Waves all day. Waves all night.',
+  ],
+  'gu.pines': [
+    'Lovely morning for a chase.',
+    "Smell that? Pine and fear. My favourites.",
+    'The hounds are keen today.',
+    'Run if you like. We like it when they run.',
+    "Six of us, six of them. Nobody's ever been the seventh.",
+    'Mind the roots. Mind the river. Mind me.',
   ],
   'sl.gu': [
     'Zzz… halt… zzz',

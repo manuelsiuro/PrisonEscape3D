@@ -26,6 +26,7 @@ const TOOLS = [
   'glider',
   'sheet_rope',
   'timber_brace',
+  'antler_pick',
 ];
 const LOCKS = [
   'molten_plastic',
@@ -41,6 +42,7 @@ const LOCKS = [
   'fake_id',
   'hollow_book',
   'forged_release',
+  'ghillie_cloak',
 ];
 const WEAPONS = [
   'sock_mace',
@@ -63,6 +65,8 @@ const EVERYDAY = [
   'rat_track',
   'tattoo_gun',
   'guitar',
+  'drag_line',
+  'tar_soap',
 ];
 const OF: Record<string, number> = Object.fromEntries([TOOLS, LOCKS, WEAPONS, EVERYDAY].flatMap((list, k) => list.map((id) => [id, k])));
 

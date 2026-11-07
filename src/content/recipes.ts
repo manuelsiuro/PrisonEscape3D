@@ -81,6 +81,12 @@ export const RECIPES: readonly RecipeDef[] = [
   { result: 'hollow_book', ingredients: ['thick_book', 'razor_blade'], int: BOOK_INT, keep: ['razor_blade'] },
   // P36: a blank release form filled in and the strict guard's signature copied (content/paperwork.ts).
   r('forged_release', FORGE_INT, 'release_form', 'ink'),
+  // 2.36 (The Six Hunter): each needs something found only there (pine tar, a fishing net, aniseed, a shed antler), so no
+  // older prison's handbook, tips or Intellect marks move (systems/recipes.ts nextTip teaches only what can be had here).
+  r('drag_line', 30, 'sock', 'aniseed'),
+  r('tar_soap', 20, 'soap', 'pine_tar'),
+  r('ghillie_cloak', 50, 'fishing_net', 'bed_sheet', 'pine_tar'),
+  r('antler_pick', 40, 'shed_antler', 'tool_handle', 'duct_tape'),
 ];
 
 /** The item ids an ingredient accepts. */

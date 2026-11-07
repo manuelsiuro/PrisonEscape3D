@@ -401,6 +401,8 @@ export interface SimState {
   blockAt: number;
   /** 2.36: the layer the last strike (`struckAt`) was made on, when not the ground floor (absent: there): work in a tunnel or the vents is no guard's sight once the player is back on the floor. */
   struckLayer?: number;
+  /** 2.36 (The Six Hunter): the step the hounds called home by the recall horn go back to work (absent: never blown). */
+  recall?: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

@@ -34,6 +34,9 @@ const COATS: Record<DogCoat, { main: number; saddle: number | null; head: number
   mastiff: { main: 0x8c6239, saddle: 0x5e3d24, head: 0x7a5432, build: [1.6, 1.35, 1.35] },
   retriever: { main: 0xc9743b, saddle: null, head: 0xc9743b, build: [1.35, 1.25, 1.25] },
   collie: { main: 0xefebe3, saddle: 0x1f1c20, head: 0x24212a, build: [1.2, 1.2, 1.2] },
+  // 2.36 (The Six Hunter's pack; the look's pass may refine them): a tricolour foxhound, a liver-red bloodhound.
+  foxhound: { main: 0xefe6d6, saddle: 0x2a211b, head: 0xb8783e, build: [1.3, 1.3, 1.25] },
+  bloodhound: { main: 0x8a4a2a, saddle: null, head: 0x7a3f22, build: [1.45, 1.35, 1.35] },
 };
 
 /** Paint values: the coat's own (1), a little darker underneath, the muzzle, the ears, the nose and eyes, the paws. */

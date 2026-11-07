@@ -297,6 +297,9 @@ export type SimEvent =
    */
   | { type: 'dog'; dog: number; what: DogNews; trust?: number; trail?: boolean }
   | { type: 'washed' }
+  /** 2.36 (The Six Hunter): the recall horn blown (where), a drag line landed (where, whether a trail was washed out). */
+  | { type: 'horn'; tile: number }
+  | { type: 'dragLine'; tile: number; trail: boolean }
   /**
    * The pet rat (P20, rats.ts): what a rat did or why it couldn't (`why`): a trap caught one
    * (`at`: its placeKey), a caught rat fed (`item` the bait, `n` its meals so far), tamed, or
@@ -704,7 +707,8 @@ type RatNews =
   | 'refused';
 
 /** What a dog did (P19, the 'dog' event). */
-type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew';
+type DogNews =
+  'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew' | 'recalled';
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
 type BribeKind = 'look' | 'paper' | 'over';

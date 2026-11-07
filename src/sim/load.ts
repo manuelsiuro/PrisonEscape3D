@@ -57,6 +57,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   const s = out as SimState;
   // (2.36: optional, so not among a fresh state's keys: kept when there, last, as a straight run has it; checked below.)
   if (st.struckLayer !== undefined) s.struckLayer = st.struckLayer;
+  if (st.recall !== undefined) s.recall = st.recall;
   // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
   // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
   // cameras it has).
@@ -470,6 +471,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     (!Number.isInteger(s.struckLayer) || s.struckLayer < LAYER.UNDER || s.struckLayer > LAYER.ROOF || s.struckLayer === LAYER.GROUND)
   )
     delete s.struckLayer;
+  // 2.36: absent, or a step (the hounds back at work then).
+  if (s.recall !== undefined && (!Number.isInteger(s.recall) || s.recall < 0)) delete s.recall;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];

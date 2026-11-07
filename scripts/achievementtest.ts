@@ -217,7 +217,7 @@ check(
   check('allEars' in trophies.earnedTrophies(), 'All Ears at the tenth rumor');
   const career = trophies.careerOf();
   const prog = ACHIEVEMENTS.find((a) => a.id === 'grandTour')!.progress!(career);
-  check(prog[0] === 1 && prog[1] === 5, 'Grand Tour: one prison of five');
+  check(prog[0] === 1 && prog[1] === 6, 'Grand Tour: one prison of six');
   console.log(
     `career so far: ${Object.keys(trophies.earnedTrophies())
       .filter((k) => !before.includes(k))

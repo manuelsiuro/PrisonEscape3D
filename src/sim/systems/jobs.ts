@@ -3,6 +3,7 @@
  * and settling, the job board, a new day's vacancies, and loose change in desks and pockets.
  */
 import { gardenDelivered } from './grounds';
+import { kennelsFed } from './k9';
 import { twist } from './twists';
 import { itemDef, itemNumber } from '../../content/items';
 import { type JobDef, WORK_ITEMS } from '../../content/jobs';
@@ -183,6 +184,8 @@ export function quotaUp(sim: SimContext) {
   s.tally[3] += wage;
   // (P31: the gardener's crates, into the kitchen.)
   if (def.id === 'gardener') gardenDelivered(sim);
+  // (2.36: the kennel hand's bowls, every hound's share from the player's hands.)
+  if (def.id === 'kennels') kennelsFed(sim);
 }
 
 /** What a job pays (P26: nothing on an Unpaid Labour Daily). */

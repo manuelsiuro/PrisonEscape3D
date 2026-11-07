@@ -85,6 +85,7 @@ export const ACTION_IDS = [
   'harvest',
   'unbook',
   'carve',
+  'blow',
 ];
 const TOOL_ICON: Record<string, string> = {
   chip: 'pick',
@@ -113,6 +114,7 @@ const TOOL_ICON: Record<string, string> = {
   harvest: 'fruit',
   unbook: 'book',
   carve: 'pumpkin',
+  blow: 'megaphone',
 };
 
 /** A firecracker in hand (P14): the tool button throws it. */
@@ -510,6 +512,14 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     if (clockRinging(sim.state.items.inv[sim.state.items.hand])) v.verb = t('act.stop');
     v.what = t('thing.clock');
     v.fits = true;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
+  // 2.36 (The Six Hunter): the recall horn, every hound sent home (grey where there are none).
+  if (tt.action === 'blow') {
+    v.what = t('thing.hounds');
+    v.fits = tt.fits;
     v.repeat = false;
     v.progress = null;
     return v;

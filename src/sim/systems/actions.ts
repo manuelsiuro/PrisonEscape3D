@@ -74,6 +74,7 @@ import {
   SHEET_ROPE,
   SHIVS,
   STRIKES,
+  TAR_SOAP,
   toolTarget,
   digUpTarget,
   type ToolTarget,
@@ -88,7 +89,7 @@ import { menuOp } from './menu';
 import { coolerOp } from './cooler';
 import { onReadChair, readOn, rep, stopTraining, study, useMachine } from './training';
 import { addHeat, setTile, strikeLayer } from './watch';
-import { washScent } from './k9';
+import { blowHorn, washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
 import { placeOrder } from './smuggling';
 import { endBout, pickLock, push, stopPick } from './games';
@@ -444,8 +445,15 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
       sim.events.push({ type: 'cantStrike', why: 'noScent', action: 'wash' });
       return;
     }
-    it.inv[it.hand] = 0;
+    // (2.36: tar soap lasts two washes.)
+    const left = held === TAR_SOAP ? usesOf(it.inv[it.hand]) - 1 : 0;
+    it.inv[it.hand] = left > 0 ? slot(held, left) : 0;
     it.rev++;
+    return;
+  }
+  // 2.36 (The Six Hunter): the recall horn blown (none to call: nothing happens).
+  if (target.action === 'blow') {
+    if (target.fits) blowHorn(sim);
     return;
   }
   // A caught rat fed (P20); a rat trap set down where the player stands.

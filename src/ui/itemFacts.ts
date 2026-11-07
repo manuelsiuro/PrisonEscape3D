@@ -64,6 +64,11 @@ export const OWN_LINE: readonly string[] = [
   'forged_release',
   'costume',
   'own_clothes',
+  // 2.36 (The Six Hunter).
+  'drag_line',
+  'tar_soap',
+  'ghillie_cloak',
+  'recall_horn',
 ];
 
 /** Eaten from the hand without a `food` of their own (chocolate's energy; the cake its own). */
