@@ -15,6 +15,7 @@
   --layers-gold-88b: #ffd05c;
   --layers-gold-66: #b48a5c;
   --layers-blue-86: #b8d4f0;
+  --layers-stone-22: #24180a;
 }
 
 /* ------------------------------------------------------------ the tool button (touch) */
@@ -127,6 +128,41 @@ kbd.wide {
   height: 100%;
   background: var(--gold);
   transition: width 0.15s;
+}
+
+/* 2.36: the tool's uses left, once few (red: too few to get through what's left of it). */
+.tool-btn .tool-uses {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 12px;
+  color: var(--layers-stone-22);
+  font: 800 13px var(--font-ui);
+  font-style: normal;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px rgba(var(--dlg-bottom-rgb), 0.9);
+}
+
+.tool-prompt .tool-uses {
+  flex: none;
+  color: var(--gold);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.tool-btn .tool-uses.short {
+  color: var(--white);
+  background: var(--red-67);
+}
+
+.tool-prompt .tool-uses.short {
+  color: var(--red-79);
 }
 
 /* ------------------------------------------------------------ energy */

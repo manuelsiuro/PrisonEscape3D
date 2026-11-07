@@ -9,7 +9,7 @@ import type { ItemState } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { lineOfSight } from '../sim/ai/sight';
 import { prisonDay } from '../sim/systems/clock';
-import { energyCost } from '../sim/systems/weather';
+import { planStrike } from '../sim/systems/actions';
 import { stowCard } from './day';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
@@ -294,7 +294,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     tools.releaseUp();
   }
   if (up) {
-    upView.fits = up.fits && st.energy >= energyCost(sim, (held && itemDef(held).tool?.energy) || 0);
+    // (2.36: the sim's own answer, as the tool button's.)
+    upView.fits = up.fits && !planStrike(sim, up, held).why;
     upView.progress = Math.min(1, (st.wear[placeKey(up.layer, up.tile)] ?? 0) / up.hp);
     upView.heard = memo.upHeard;
   }

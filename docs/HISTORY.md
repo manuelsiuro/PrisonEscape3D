@@ -175,3 +175,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The screen sizes (v2.35.0, not released yet)
 - The accessibility options (v2.35.0, not released yet)
 - Fights, stealth and heat (v2.35.0, not released yet)
+- Tools, items and looting (v2.36.0, not released yet)

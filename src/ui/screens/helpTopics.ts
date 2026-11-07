@@ -103,7 +103,13 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           listIcons: ['clock', 'eye', 'lock', 'briefcase'],
           list2Icons: ['eye', 'moon', 'down'],
         }),
-        T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
+        T('items', 'briefcase', '#8e5a2b', {
+          diagram: 'pockets',
+          lessons: ['search', 'stash'],
+          // (2.36: where things are.)
+          listIcons: ['item:toothbrush', 'item:plastic_spoon', 'item:timber', 'coin', 'item:key_yellow', 'clock'],
+          see: ['craft', 'searches'],
+        }),
       ],
     },
     {
@@ -137,7 +143,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           see: ['guardWays', 'caught'],
         }),
         T('guardWays', 'shield', '#5b6fa8', { lessons: ['guards'], listIcons: ['book', 'moon', 'eye', 'coin'] }),
-        T('caught', 'siren', '#e5484d', { listIcons: ['hammer'], see: ['heat'] }),
+        T('caught', 'siren', '#e5484d', { listIcons: ['hammer', 'fist'], see: ['heat'] }),
         T('searches', 'bell', '#d9930a', {
           recipes: ['bed_dummy'],
           lessons: ['stash', 'night'],
@@ -251,7 +257,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('tools', 'pick', '#6f93b8', {
           lessons: ['dig'],
           see: ['noise', 'layers', 'cover'],
-          listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel'],
+          listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel', 'item:plastic_fork'],
         }),
         T('lockpick', 'lockpick', '#8d949e', { diagram: 'pins', recipes: ['lockpick'], lessons: ['lockpick'] }),
         T('noise', 'ear', '#e8963a', { diagram: 'bars', lessons: ['noise'], listIcons: ['lock', 'ear'] }),
