@@ -73,3 +73,8 @@ Every session is done, or moved by the user (2026-11-07).
   push soon. A rewrite gives every commit and tag a new id, so it needs his work in first and a
   fresh clone on his side after; never without the user's go. Before it: a `git clone --mirror`
   backup; after it: build, tests, every tag, the site and CI checked.
+- **Shader programs first made mid-play** (found 2026-11-07, v2.36.0): `View.warmDay` now links every
+  program at load (the worst frames 934 → 250 ms), but a few things are first built mid-play and still
+  stall about 80 ms once each (the shower water, a night mesh, a holiday piece's shadow, the team view).
+  Drawing them at load would change pixels; warming their materials on a hidden mesh would not.
+  `scripts/dev/hitchprobe.ts` now counts these (`waited`).
