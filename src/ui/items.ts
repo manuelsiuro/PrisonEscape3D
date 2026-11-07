@@ -3,6 +3,7 @@ import { RECIPES } from '../content/recipes';
 import { EXT, OP, SLOT } from '../sim/command';
 import { ingredientOptions } from '../sim/systems/recipes';
 import { benchCheck, canCraft, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
+import { isTribute } from '../sim/systems/gangs';
 import { itemFacts } from './itemFacts';
 import { ALARM_CLOCK, HOLLOW_BOOK } from '../sim/systems/structure';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
@@ -482,7 +483,9 @@ export class ItemsUI {
       s.title = it.inv[k]
         ? inside
           ? t('items.inside', { item: itemName(itemOf(it.inv[k])), inside: itemName(inside) })
-          : itemName(itemOf(it.inv[k]))
+          : isTribute(it.inv[k])
+            ? `${itemName(itemOf(it.inv[k]))} (${t('talk.gang.initiation')})`
+            : itemName(itemOf(it.inv[k]))
         : k === SLOT.WEAPON
           ? t('items.weapon')
           : k === SLOT.OUTFIT
@@ -500,7 +503,7 @@ export class ItemsUI {
     if (box) {
       setText(this.boxTitle, v.boxTitle);
       const cell = (k: number) =>
-        `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? itemName(itemOf(box[k])) : ''}">${slotInner(box[k])}</button>`;
+        `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? (isTribute(box[k]) ? `${itemName(itemOf(box[k]))} (${t('talk.gang.initiation')})` : itemName(itemOf(box[k]))) : ''}">${slotInner(box[k])}</button>`;
       this.box.querySelector('.box-hidden-wrap')!.classList.toggle('hidden', v.boxHidden === 0);
       this.box.classList.toggle('plain', v.boxHidden === 0);
       this.box.querySelector('.box-tunnel:not(.box-study)')!.classList.toggle('hidden', !v.deskTunnel);
@@ -681,6 +684,7 @@ export class ItemsUI {
     const clock = n === ALARM_CLOCK ? `<em class="clock">${clockText(value)}</em>` : '';
     const tags = [
       d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '',
+      isTribute(value) ? `<em>${t('talk.gang.initiation')}</em>` : '',
       d.uses ? `<em>${d.id === 'pruno_bag' ? t('items.brewDays', { n: usesOf(value) }) : t('items.uses', { n: usesOf(value) })}</em>` : '',
       clock,
     ].join('');

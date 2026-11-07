@@ -11,6 +11,7 @@ import { atRelease, atTray, releaseRefusal, trayRefusal } from '../sim/systems/p
 import { bluffRefusal } from '../sim/systems/getaway';
 import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/systems/combat';
 import { GUARD } from '../sim/systems/guards';
+import { inmateInCell } from '../sim/systems/inmates';
 import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
 import { genOf, offFor } from '../sim/systems/power';
 import { helicopterIn } from '../sim/systems/sea';
@@ -179,11 +180,15 @@ export function boxTitle(sim: Sim, index: number) {
   // Someone's pockets: and how long before they come round.
   const who = ownerOf(sim.world, index);
   const ko = who >= 0 ? (personOf(sim.state, who)?.ko ?? 0) : 0;
-  const key = `${index}:${textStamp()}:${Math.ceil(ko / STEPS_PER_SECOND)}`;
+  const key = `${sim.prison.id}:${index}:${textStamp()}:${Math.ceil(ko / STEPS_PER_SECOND)}`;
   if (key !== titleKey) {
     titleKey = key;
     const name = thingName(sim, index);
     titleText = name.charAt(0).toUpperCase() + name.slice(1);
+    const c = who < 0 ? containersOf(sim.world)[index] : undefined;
+    const cell = c && !c.mine && (c.prop.kind === 'desk' || c.prop.kind === 'bed') ? sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] : 0;
+    const inmate = cell > 1 ? inmateInCell(sim.state, cell) : -1;
+    if (inmate >= 0) titleText = `${titleText} · ${personName(sim, inmate)}`;
     if (who >= 0)
       titleText = t(isGuard(sim.state, who) ? 'box.pocketsGuard' : 'box.pocketsInmate', { s: Math.ceil(ko / STEPS_PER_SECOND) });
   }

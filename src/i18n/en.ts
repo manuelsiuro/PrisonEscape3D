@@ -651,7 +651,7 @@ export const en = {
   "favor.retrieve": "“{name} stole my {item}. Knock them out, take it back from their pockets and bring it to me.”",
   "favor.beatdown": "“{name} has been running their mouth. Knock them out for me.”",
   "favor.distraction": "“Start a fight at the next roll call, so I can slip away.”",
-  "favor.initiation": "“Want in? Bring me the {item} from {name}'s desk. Don't let anyone see you at it.”",
+  "favor.initiation": "“Want in? Bring me the {item} from {name}'s desk (cell {cell}). Don't let anyone see you at it.”",
   "talk.favor": "Favor",
   "talk.accept": "Take it on",
   "talk.handIn": "Hand in",

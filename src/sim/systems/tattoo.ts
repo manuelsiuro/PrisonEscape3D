@@ -52,7 +52,7 @@ import type { SimContext } from '../context';
 import type { SimState } from '../state';
 import type { Refusal } from '../events';
 import { countGame, eyesOn, gameOn, gamesOpen, playedToday } from './games';
-import { hotbarSlotOf } from './items';
+import { HOTBAR, itemOf, usesOf } from './items';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
 import { addHeat } from './watch';
@@ -210,8 +210,17 @@ const gainOf = (quality: number) => INK_GAIN_BASE + Math.floor((INK_GAIN * quali
 /** Tattoos given to inmates today. */
 export const inksToday = (s: Pick<SimState, 'inkDays' | 'step'>) => s.inkDays.filter((d) => d === prisonDay(s.step)).length;
 
-/** The hotbar slot holding an item (-1 none). */
-const carried = (s: Pick<SimState, 'items'>, item: number) => hotbarSlotOf(s.items.inv, item);
+/** The hotbar slot holding an item (-1 none), an unmarked one before a gang's tribute. */
+function carried(s: Pick<SimState, 'items'>, item: number): number {
+  let fallback = -1;
+  for (let k = 0; k < HOTBAR; k++) {
+    const v = s.items.inv[k];
+    if (itemOf(v) !== item) continue;
+    if (usesOf(v) !== 77) return k;
+    if (fallback < 0) fallback = k;
+  }
+  return fallback;
+}
 
 /** Why an inmate won't sit for a tattoo now, or ink the player's (null: they will). */
 export function inkRefusal(sim: SimContext, who: number, mine: boolean, design = 0): Refusal | null {

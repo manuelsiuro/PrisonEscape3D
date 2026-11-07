@@ -21,6 +21,7 @@
  * - **leaving and thrown out;** a lockdown holds nothing; a save and a load mid-way go on as the run did;
  * - **old rules:** a run logged before 2.36 (`Sim.rules235`) has no gangs at all.
  */
+import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { DAY_BOOKS, DAY_EVENTS } from '../src/content/days';
 import { GANGS, TRIBUTE } from '../src/content/gangs';
 import { PRISONS } from '../src/content/prisons';
@@ -28,7 +29,8 @@ import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { ROUTINE } from '../src/content/routine';
 import { itemDef } from '../src/content/items';
-import { command, OP, TALK } from '../src/sim/command';
+import { RECIPES } from '../src/content/recipes';
+import { command, EXT, OP, TALK } from '../src/sim/command';
 import { prepareReplay } from '../src/sim/runlog';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { dayPlan, eventOn } from '../src/sim/systems/calendar';
@@ -38,6 +40,8 @@ import {
   G,
   gangOf,
   gangsHere,
+  initiationGoal,
+  isTribute,
   playerGang,
   rivalBoss,
   tributeDesk,
@@ -47,7 +51,8 @@ import {
   warring,
 } from '../src/sim/systems/gangs';
 import { DOING, inmateInCell } from '../src/sim/systems/inmates';
-import { HOTBAR, itemOf, slot } from '../src/sim/systems/items';
+import { HOTBAR, ingredientSlots, itemOf, slot } from '../src/sim/systems/items';
+import { newRat } from '../src/sim/systems/rats';
 import { placesOf } from '../src/sim/ai/places';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
@@ -64,6 +69,10 @@ import {
 } from '../src/sim/tuning';
 import { check } from './assert';
 import { Bot, DIR, n } from './bots';
+
+GlobalRegistrator.register({ url: 'http://localhost:5310/', width: 1440, height: 844 });
+const { boxTitle } = await import('../src/play/labels');
+const { favorText, inmateName } = await import('../src/ui/names');
 
 const MIN = STEPS_PER_MINUTE;
 const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
@@ -362,8 +371,60 @@ for (const def of PRISONS) {
       `${id}: a ${TRIBUTE[g.id]} not from the desk: not taken`,
     );
   }
+  // (Polish: the quote and the desk's title name the rival boss and his cell; the arrows lead to his desk, then back to the boss;
+  // a lost tribute is put back in the rival boss's desk so the initiation never locks; crafting prefers an unmarked copy; a pet rat
+  // fetches the tribute ahead of dearer things, sugar included.)
+  {
+    const rivalCell = st.inmates[rival].cell;
+    const rivalName = inmateName(sim, rival);
+    check(
+      favorText(sim, f!).includes(rivalName) && favorText(sim, f!).includes(String(rivalCell)),
+      `${id}: the initiation quote names ${rivalName} and cell ${rivalCell}`,
+    );
+    check(
+      boxTitle(sim, desk).includes(rivalName) && boxTitle(sim, desk).includes(String(rivalCell)),
+      `${id}: the rival desk's title names ${rivalName} and cell ${rivalCell}`,
+    );
+    const goal0 = initiationGoal(sim);
+    check(!!goal0 && goal0(placesOf(sim.world).deskside[rivalCell]), `${id}: arrows lead to ${rivalName}'s desk before fetching`);
+    // Lost tribute re-planted, and fetched by a pet rat.
+    const c = new Bot(def, 3);
+    c.sim.restore(sim.snapshot());
+    c.st.items.containers[desk].fill(0);
+    c.step();
+    check(c.st.items.containers[desk].includes(tributeOf(f!)), `${id}: tribute lost, put back in ${rivalName}'s desk on the next step`);
+    const hidden = containersOf(c.sim.world)[desk].hidden;
+    c.st.items.containers[desk][hidden] = slot(n('lighter'));
+    c.st.items.containers[desk][hidden + 1] = tributeOf(f!);
+    const side = placesOf(c.sim.world).deskside[rivalCell];
+    c.st.player.x = (side % MAP_W) * UNIT + UNIT / 2;
+    c.st.player.z = Math.floor(side / MAP_W) * UNIT + UNIT / 2;
+    c.st.rats = [newRat(false, c.st.player.x, c.st.player.z)];
+    c.op(OP.EXT, EXT.RAT_FETCH, desk & 63, desk >> 6);
+    c.until(() => c.st.items.inv.includes(tributeOf(f!)), 200);
+    check(c.st.items.inv.includes(tributeOf(f!)), `${id}: pet rat fetches the marked ${TRIBUTE[g.id]} from ${rivalName}'s desk`);
+    // Crafting prefers an unmarked copy over the marked tribute.
+    const rec = RECIPES.findIndex((r) => r.ingredients.includes(TRIBUTE[g.id]));
+    if (rec >= 0) {
+      c.st.items.inv = [tributeOf(f!), slot(f!.item), 0, 0, 0, 0, 0, 0];
+      for (const ing of RECIPES[rec].ingredients)
+        if (ing !== TRIBUTE[g.id]) c.st.items.inv[c.st.items.inv.indexOf(0)] = slot(n(ing.split('|')[0]));
+      const used = ingredientSlots(c.st.items, rec);
+      check(!!used && used.includes(1) && !used.includes(0), `${id}: crafting ${RECIPES[rec].result} uses unmarked ${TRIBUTE[g.id]} first`);
+    }
+    check(!isTribute(slot(n('hollow_book'), slot(n('mold_red')))), `${id}: hollow book hiding mold_red is not mistaken for a tribute`);
+    say(c, boss, TALK.DROP);
+    check(
+      !c.st.items.inv.some((v) => isTribute(v)) && !c.st.items.containers[desk].some((v) => isTribute(v)),
+      `${id}: dropping the initiation strips the tribute mark`,
+    );
+  }
   const got = desk >= 0 && fetchFromDesk(bot, desk, f!.item);
   check(got, `${id}: walked to the desk, the tribute taken`);
+  {
+    const goal1 = initiationGoal(sim);
+    check(!!goal1 && goal1(tileOf(st.inmates[boss].body)), `${id}: with the tribute in hand, arrows lead back to the boss`);
+  }
   const before = st.inmates.map((m) => m.opinion);
   const paid = say(bot, boss, TALK.HAND_IN);
   const took = Math.round((st.step - t0) / MIN);

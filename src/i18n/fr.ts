@@ -648,7 +648,7 @@ export const fr: Partial<Strings> = {
   "favor.retrieve": "« {name} m’a volé ça : {item}. Assomme-le, reprends-le dans ses poches et rapporte-le-moi. »",
   "favor.beatdown": "« {name} parle trop. Assomme-le pour moi. »",
   "favor.distraction": "« Déclenche une bagarre au prochain appel, que je puisse filer. »",
-  "favor.initiation": "« Tu veux en être ? Rapporte-moi ça : {item}, dans le bureau de {name}. Que personne ne te voie. »",
+  "favor.initiation": "« Tu veux en être ? Rapporte-moi ça : {item}, dans le bureau de {name} (cellule {cell}). Que personne ne te voie. »",
   "talk.favor": "Service",
   "talk.accept": "Accepter",
   "talk.handIn": "Rendre",

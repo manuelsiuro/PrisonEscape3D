@@ -184,3 +184,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The picture review (v2.36.0)
 - Gangs and turf (v2.36.0)
 - The Six Hunter (v2.36.0)
+- Gang initiation polish (v2.36.1, not released yet)

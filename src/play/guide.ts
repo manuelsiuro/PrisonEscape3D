@@ -26,6 +26,7 @@ import { banner, hint, sound, view } from './context';
 import { play, sendOp, type Game } from './game';
 import { firstDay, markTip } from './tips';
 import { jobGoal } from './oddjobs';
+import { initiationGoal } from '../sim/systems/gangs';
 
 const LETTER = itemNumber('letter');
 const MOP = itemNumber('mop');
@@ -178,10 +179,12 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
     if (seat >= 0) return (i) => i === seat;
   }
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
-  // Nowhere the routine wants the player: the odd job's step (P40), where it has a place.
+  // Nowhere the routine wants the player: the odd job's step (P40) or a gang's initiation, where it has a place.
   if (!zones.length || s.attended) {
     const job = jobGoal(sim);
     if (job) return job;
+    const init = initiationGoal(sim);
+    if (init) return init;
   }
   // (2.36: the first day's guide asks for the desk in the player's own time: to beside it, where the button searches it.)
   if ((!zones.length || s.attended) && firstDay.step === 'desk' && places.deskside[1] >= 0) {

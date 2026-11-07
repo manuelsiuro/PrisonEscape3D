@@ -20,6 +20,7 @@ import { GANGS, type GangDef, TRIBUTE } from '../../content/gangs';
 import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { BACK_REACH, BRAWL_GAP } from '../../content/crew';
+import { placesOf } from '../ai/places';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
@@ -41,14 +42,15 @@ import {
   UNIT,
 } from '../tuning';
 import { containersOf } from '../world/containers';
-import { centerX, centerZ } from '../world/grid';
-import { LAYER, MAP_W, type World } from '../world/World';
+import { centerX, centerZ, tileAt } from '../world/grid';
+import { LAYER, layerOfKey, MAP_W, tileOfKey, type World } from '../world/World';
 import { prisonDay } from './clock';
 import { crowdPlan, eventOn, planOf, today } from './calendar';
 import { dist2 } from './combat';
 import { type Favor, FAVOR, FAVOR_STATE, priceOf } from './economy';
 import { DOING, type Inmate, inmateInCell } from './inmates';
-import { HOTBAR, slot } from './items';
+import { HOTBAR, itemOf, slot, usesOf } from './items';
+import { HOLLOW_BOOK } from './structure';
 import type { Body } from './movement';
 import { bodyAt } from './movement';
 import { hearingToday } from './parole';
@@ -198,22 +200,23 @@ export function askToJoin(sim: SimContext, who: number) {
 /** The tribute put in the rival boss's desk, if it isn't there already. */
 function plantTribute(sim: SimContext, f: Favor) {
   const s = sim.state;
-  const w = sim.world;
-  const cell = s.inmates[f.target]?.cell ?? -1;
-  const list = containersOf(w);
-  const i = list.findIndex((c) => c.table === 'inmateDesk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
+  const i = tributeDesk(sim, f);
   if (i < 0) return;
+  const list = containersOf(sim.world);
+  const want = tributeOf(f);
+  // (No stray mark elsewhere: only one copy is the tribute.)
+  clearTribute(sim, f, i);
   const box = s.items.containers[i];
   // (Any of the kind already in its drawers is the boss's own, so the tribute: whichever the player takes from there counts.)
   let there = false;
   for (let j = list[i].hidden; j < box.length; j++)
     if ((box[j] & 255) === f.item) {
-      box[j] = tributeOf(f);
+      box[j] = want;
       there = true;
     }
   if (!there) {
     const free = box.indexOf(0, list[i].hidden);
-    box[free >= 0 ? free : box.length - 1] = tributeOf(f);
+    box[free >= 0 ? free : box.length - 1] = want;
   }
   s.items.rev++;
 }
@@ -224,6 +227,30 @@ function plantTribute(sim: SimContext, f: Favor) {
  */
 export const TRIBUTE_MARK = 77;
 export const tributeOf = (f: Pick<Favor, 'item'>) => slot(f.item, TRIBUTE_MARK);
+export const isTribute = (v: number) => itemOf(v) !== HOLLOW_BOOK && usesOf(v) === TRIBUTE_MARK;
+/** Whether a slot (or a hollow book in it) holds the marked tribute `want`. */
+const holdsTribute = (v: number, want: number) => v === want || (itemOf(v) === HOLLOW_BOOK && usesOf(v) === want);
+const unmark = (v: number, f: Pick<Favor, 'item'>) => {
+  const want = tributeOf(f);
+  if (v === want) return slot(f.item);
+  if (itemOf(v) === HOLLOW_BOOK && usesOf(v) === want) return slot(HOLLOW_BOOK, slot(f.item));
+  return v;
+};
+
+/** Strips the initiation mark from any copy of `f.item` across the prison (except container `skipBox`). */
+export function clearTribute(sim: SimContext, f: Pick<Favor, 'item'>, skipBox = -1) {
+  const it = sim.state.items;
+  for (let k = 0; k < it.inv.length; k++) it.inv[k] = unmark(it.inv[k], f);
+  for (let c = 0; c < it.containers.length; c++) {
+    if (c === skipBox) continue;
+    const box = it.containers[c];
+    for (let j = 0; j < box.length; j++) box[j] = unmark(box[j], f);
+  }
+  for (let g = 0; g < it.ground.length; g++) it.ground[g][1] = unmark(it.ground[g][1], f);
+  for (const r of sim.state.rats) r.carry = unmark(r.carry, f);
+  it.rev++;
+}
+
 /** The hotbar slot holding what a favor asks for (an initiation: its tribute only), -1 none. */
 export function favorSlot(inv: readonly number[], f: Pick<Favor, 'kind' | 'item'>): number {
   for (let k = 0; k < HOTBAR; k++) {
@@ -238,6 +265,56 @@ export function tributeDesk(sim: Pick<SimContext, 'world' | 'state'>, f: Favor):
   const w = sim.world;
   const cell = sim.state.inmates[f.target]?.cell ?? -1;
   return containersOf(w).findIndex((c) => c.table === 'inmateDesk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
+}
+
+/** Whether an initiation's marked tribute is somewhere the player can find it (pockets, own cell, rival's desk, open box, floor, rat). */
+export function hasTribute(sim: Pick<SimContext, 'world' | 'state'>, f: Favor): boolean {
+  const s = sim.state;
+  const want = tributeOf(f);
+  if (s.items.inv.some((v) => holdsTribute(v, want))) return true;
+  const desk = tributeDesk(sim, f);
+  if (desk >= 0 && s.items.containers[desk].some((v) => holdsTribute(v, want))) return true;
+  if (s.items.open >= 0 && s.items.containers[s.items.open]?.some((v) => holdsTribute(v, want))) return true;
+  const list = containersOf(sim.world);
+  if (list.some((c, i) => c.mine && s.items.containers[i].some((v) => holdsTribute(v, want)))) return true;
+  if (s.items.ground.some(([, v]) => holdsTribute(v, want))) return true;
+  if (s.rats.some((r) => holdsTribute(r.carry, want))) return true;
+  return false;
+}
+
+/** Where the floor arrows lead for an initiation under way (null: none, or already there). */
+export function initiationGoal(sim: Pick<SimContext, 'world' | 'state' | 'rules235'>): ((i: number) => boolean) | null {
+  if (!gangsHere(sim)) return null;
+  const s = sim.state;
+  const f = s.favors.find((x) => x.kind === FAVOR.INITIATION && x.state === FAVOR_STATE.TAKEN);
+  if (!f) return null;
+  const w = sim.world;
+  const want = tributeOf(f);
+  const places = placesOf(w);
+  let tile = -1;
+  if (s.items.inv.some((v) => holdsTribute(v, want))) {
+    const boss = s.inmates[f.by];
+    if (boss) tile = tileAt(boss.body.x, boss.body.z);
+  } else {
+    const rat = s.rats.find((r) => holdsTribute(r.carry, want));
+    if (rat) tile = tileAt(rat.x, rat.z);
+    else {
+      const list = containersOf(w);
+      const mine = list.findIndex((c, i) => c.mine && s.items.containers[i].some((v) => holdsTribute(v, want)));
+      if (mine >= 0) tile = list[mine].prop.kind === 'bed' ? places.bedside[1] : places.deskside[1];
+      else {
+        const ground = s.items.ground.find(([k, v]) => layerOfKey(k) === LAYER.GROUND && holdsTribute(v, want));
+        if (ground) tile = tileOfKey(ground[0]);
+        else {
+          const desk = tributeDesk(sim, f);
+          const cell = s.inmates[f.target]?.cell ?? -1;
+          if (desk >= 0 && cell >= 0 && s.items.containers[desk].some((v) => holdsTribute(v, want))) tile = places.deskside[cell] ?? -1;
+        }
+      }
+    }
+  }
+  if (tile < 0 || tile === tileAt(s.player.x, s.player.z)) return null;
+  return (i) => i === tile;
 }
 
 /** Why an initiation can't be handed in now ('' it can): already in a gang, or one was left today. */
@@ -324,8 +401,10 @@ function squareUp(sim: SimContext, who: number) {
  */
 export function gangs(sim: SimContext) {
   const s = sim.state;
+  if (!gangsHere(sim)) return;
+  for (const f of s.favors) if (f.kind === FAVOR.INITIATION && f.state === FAVOR_STATE.TAKEN && !hasTribute(sim, f)) plantTribute(sim, f);
   const g = s.gang;
-  if (!g || !gangsHere(sim)) return;
+  if (!g) return;
   const mine = playerGang(sim);
   if (mine < 0 || !reachable(sim)) {
     if (g[G.WARN]) clearWarning(sim, false);
