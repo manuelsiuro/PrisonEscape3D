@@ -1,7 +1,7 @@
 /** The hunt's vehicles: the helicopter, the searchers' van, and each safe point's vehicle or post. */
 import * as THREE from 'three';
 import type { SafeKind } from '../content/outside/types';
-import { box, cyl, kitMaterial, merge, rod, type Part } from './kit';
+import { box, cyl, kitMaterial, merge, paint, rod, type Part } from './kit';
 
 /** A helicopter: its body, the rotor (turned about y) and the tail rotor, nose along +z. */
 export function heliModel(paintC: number): { body: THREE.Mesh; rotor: THREE.Group; tail: THREE.Group } {
@@ -43,7 +43,9 @@ export function vanGeometry(): THREE.BufferGeometry {
 }
 
 /** The safe point's vehicle or post (nose toward +z, centered): a bus, a border barrier with its sign, a boxcar, a rig, a coach. */
-export function vehicleGeometry(kind: SafeKind): THREE.BufferGeometry {
+export function vehicleGeometry(kind: SafeKind, theme?: string): THREE.BufferGeometry {
+  // (2.36: the Six Hunter's valley: the sawmill's timber train, a flatcar of logs chained down behind a little engine.)
+  if (kind === 'train' && theme === 'forest') return timberTrain();
   const wheels = (w: number, zs: number[], r = 0.26) =>
     zs.flatMap((z) => [-1, 1].map((s) => rod(r, 0.2, 0x15171b, s * (w / 2 - 0.08), r, z, 10)));
   switch (kind) {
@@ -92,4 +94,37 @@ export function vehicleGeometry(kind: SafeKind): THREE.BufferGeometry {
       return merge(parts);
     }
   }
+}
+
+/** The sawmill siding's timber train (2.36): a green shunting engine, two flatcars stacked with logs, their chains, wheels. */
+function timberTrain(): THREE.BufferGeometry {
+  const w = 1.2;
+  const parts: Part[] = [
+    box(w, 0.9, 1.6, 0x2f5a3a, 0, 0.35, 2.4),
+    box(w - 0.3, 0.55, 0.8, 0x2f5a3a, 0, 1.25, 2.0),
+    box(w - 0.28, 0.2, 0.05, 0x1c2a38, 0, 1.5, 2.4),
+    box(w + 0.04, 0.06, 0.84, 0x1f2a22, 0, 1.8, 2.0),
+    cyl(0.1, 0.4, 0x2a2724, 0, 1.25, 2.95, 8),
+    box(w, 0.06, 0.06, 0xd8b828, 0, 0.6, 3.2),
+  ];
+  for (const z0 of [0.4, -1.9]) {
+    parts.push(box(w, 0.14, 2.1, 0x4a3a2c, 0, 0.35, z0));
+    for (const [x, y, r, c] of [
+      [-0.3, 0.68, 0.19, 0x8a6a46],
+      [0.0, 0.68, 0.19, 0x7a5c3c],
+      [0.3, 0.68, 0.19, 0x9a7650],
+      [-0.15, 0.98, 0.18, 0x7a5c3c],
+      [0.15, 0.98, 0.18, 0x8a6a46],
+      [0.0, 1.26, 0.17, 0x9a7650],
+    ] as const) {
+      parts.push(
+        paint(new THREE.CylinderGeometry(r, r, 2.0, 8).rotateX(Math.PI / 2).translate(x, y, z0), c),
+        paint(new THREE.CylinderGeometry(r * 0.75, r * 0.75, 2.02, 8).rotateX(Math.PI / 2).translate(x, y, z0), 0xd8b888),
+      );
+    }
+    for (const dz of [-0.6, 0.6]) parts.push(box(w + 0.02, 0.03, 0.04, 0x3a3a3e, 0, 1.44, z0 + dz));
+  }
+  for (const z of [2.6, 1.9, 1.1, -0.3, -1.2, -2.6])
+    for (const sx of [-1, 1]) parts.push(rod(0.2, 0.2, 0x15171b, sx * (w / 2 - 0.08), 0.2, z, 10));
+  return merge(parts);
 }
