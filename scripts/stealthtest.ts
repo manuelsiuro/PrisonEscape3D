@@ -9,8 +9,9 @@
  * - the block: half the damage, half the pace; an inmate's blow locks on to them, a guard's doesn't.
  */
 import { PRISONS } from '../src/content/prisons';
-import { OPEN_AIR, RESTRICTED, ZONES, type ZoneId } from '../src/content/zones';
-import { darkReach, litTile, seesInDark, type Dark } from '../src/sim/ai/light';
+import { CELL_BLOCK, OPEN_AIR, RESTRICTED, ZONES, type ZoneId } from '../src/content/zones';
+import { TILE_INFO } from '../src/sim/world/tiles';
+import { darkReach, lampHead, litTile, seesInDark, type Dark } from '../src/sim/ai/light';
 import { canSee, lineOfSight, sightReach } from '../src/sim/ai/sight';
 import { command, EXT, OP } from '../src/sim/command';
 import { Sim } from '../src/sim/Sim';
@@ -245,6 +246,43 @@ for (const prison of PRISONS) {
   }
   check(lamp > 0 && room > 0, `${prison.id}: lit at night: ${lamp} tiles under lamps, ${room} in rooms`);
   const row = [`${lamp} tiles lit by lamps, ${room} in rooms`];
+  // 2.36 (session 14): a lamp lights only what its head sees. Checked against a line of its own (floats, a
+  // thirty-second of a tile): every tile lit by a lamp is seen clear by one in reach; a cell behind a wall
+  // from every lamp in reach is dark after Lights Out, and was lit under the old rules (Sim.rules235).
+  check(dark.walls === true, `${prison.id}: today's runs stop lamps at walls`);
+  const old: Dark = { ...dark, walls: false };
+  const lampsNear = (x: number, z: number) =>
+    w.props
+      .filter((p) => p.kind === 'lamp')
+      .map((p) => lampHead(p).map((v) => v / 100))
+      .filter(([hx, hz]) => (x + 0.5 - hx) ** 2 + (z + 0.5 - hz) ** 2 <= 2.5 * 2.5);
+  const clear = ([hx, hz]: number[], x: number, z: number) => {
+    for (let k = 1; k < 128; k++) {
+      const sx = Math.floor(hx + ((x + 0.5 - hx) * k) / 128);
+      const sz = Math.floor(hz + ((z + 0.5 - hz) * k) / 128);
+      if ((sx !== x || sz !== z) && TILE_INFO[w.ground.base[sz * MAP_W + sx]].opaque) return false;
+    }
+    return true;
+  };
+  let walledCells = 0;
+  for (let i = 0; i < MAP_W * MAP_H; i++) {
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    if (TILE_INFO[w.ground.base[i]].opaque) continue;
+    const near = lampsNear(x, z);
+    if (!near.length) continue;
+    const seen = near.some((h) => clear(h, x, z));
+    if (OPEN_AIR.has(zoneAt(w, i)))
+      check(litTile(w, dark, x, z) === seen, `${prison.id}: ${x},${z} outdoors lit ${litTile(w, dark, x, z)}, a lamp sees it ${seen}`);
+    if (!CELL_BLOCK.has(zoneAt(w, i)) || seen) continue;
+    walledCells++;
+    check(!litTile(w, dark, x, z), `${prison.id}: cell tile ${x},${z} lit through a wall after Lights Out`);
+    check(litTile(w, old, x, z), `${prison.id}: cell tile ${x},${z} not lit under the old rules`);
+  }
+  const was = fresh(prison, LATE, 5, night);
+  was.rules235 = true;
+  check(darkNow(was)?.walls === false, `${prison.id}: older runs' lamps light through walls`);
+  row.push(`${walledCells} cell tiles behind a wall from the lamps, dark`);
   // Out in the dark 6 tiles off: unseen; 3 tiles: seen.
   const g = sim.state.guards[night];
   const pair = darkPair(sim, dark, 6, false);

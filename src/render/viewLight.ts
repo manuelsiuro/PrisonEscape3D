@@ -33,6 +33,8 @@ const MOON_LIFT = 0.37;
 const OVERCAST_SHADOW = 0.4;
 const STORM_SHADOW = 0.2;
 const FOG_SHADOW = 0.3;
+/** A heatwave's ambient: the day warmed and bleached (session 14). */
+const HEAT_LIGHT = 0xffd49a;
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -169,6 +171,9 @@ export class Lighting {
     if (g.heat > 0.002) {
       this.sun.intensity *= 1 + 0.08 * g.heat;
       this.sun.color.lerp(this.c1.set(0xffc27a), 0.4 * g.heat);
+      // (Session 14: the whole scene warmed and bleached, not only the sun and the sky the camera hardly sees.)
+      this.skyLight.lerp(this.c1.set(HEAT_LIGHT), 0.45 * g.heat);
+      this.ambient.intensity *= 1 + 0.12 * g.heat;
       this.sky.lerp(this.c1.set(0xe8c79a), 0.35 * g.heat);
     }
     if (this.flash > 0.001) {
