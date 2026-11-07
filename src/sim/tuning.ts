@@ -254,6 +254,10 @@ export const TIP_OPINION = 60;
 /** Studying tells the player a recipe each time Intellect passes a multiple of this. */
 export const STUDY_TIP_EVERY = 5;
 export const FAVOR_OPINION = 15;
+/** 2.36: a favor taken on and let go (TALK.DROP): the asker thinks this much less of the player. */
+export const FAVOR_DROP_OPINION = 5;
+/** Friends this close in opinion and up tell the player true rumors (src/talk/, presentation only). */
+export const GOSSIP_OPINION = 55;
 export const HIT_OPINION = 8;
 export const KO_OPINION = 15;
 export const BUY_OPINION = 2;

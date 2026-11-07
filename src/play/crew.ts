@@ -1,10 +1,21 @@
 import { buzz } from '../app/haptics';
 import { ROUTINE } from '../content/routine';
-import { BACK_REACH, BRAWL_GUARDS, BRAWL_RANGE, NIGHT_OPINION, WATCH_RANGE } from '../content/crew';
+import { BACK_REACH, BRAWL_GUARDS, BRAWL_RANGE, DIG_REACH, NIGHT_OPINION, WATCH_RANGE } from '../content/crew';
 import { lowerFirst, t, textStamp, type Key } from '../i18n';
 import { EXT, OP, ORDER } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { brawlWith, cantOrder, carryingOf, crewEntry, nightOf, orderOf, ORDERS_OF, shaftOf, specialityOf } from '../sim/systems/crew';
+import {
+  brawlWith,
+  cantOrder,
+  carryingOf,
+  crewEntry,
+  helpOf,
+  nightOf,
+  orderOf,
+  ORDERS_OF,
+  shaftOf,
+  specialityOf,
+} from '../sim/systems/crew';
 import { HOTBAR } from '../sim/systems/items';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
@@ -81,11 +92,17 @@ function crewStatus(sim: Sim, who: number): string {
       const room = s.items.inv.slice(0, HOTBAR).includes(0);
       return t(room ? 'crew.s.carry' : 'crew.s.carryFull', { item: lowItem(item) });
     }
-    case ORDER.DIG:
+    // (2.36: the help as the sim gives it: too far, or a digger who missed where the player went down, says so.)
+    case ORDER.DIG: {
+      const help = helpOf(sim, who);
+      if (help === 'lost') return t('crew.s.lost');
       if (shaftOf(s, who) >= 0) return t('crew.s.shaft');
-      return about ? t('crew.s.dig') : t('crew.s.waiting');
+      if (!about) return t('crew.s.waiting');
+      return help === 'far' ? t('crew.s.digFar', { n: DIG_REACH }) : t('crew.s.dig');
+    }
     case ORDER.BACK:
-      return about ? t('crew.s.back') : t('crew.s.waiting');
+      if (!about) return t('crew.s.waiting');
+      return helpOf(sim, who) === 'far' ? t('crew.s.backFar', { n: BACK_REACH }) : t('crew.s.back');
   }
   if (nightOf(s, who)) return t('crew.s.night');
   return about ? t('crew.s.follow') : t('crew.s.waiting');

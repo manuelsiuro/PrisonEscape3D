@@ -237,7 +237,7 @@ export type SimEvent =
   /** P28: something sold to a merchant (ripe pruno, a vegetable). */
   | { type: 'sold'; who: number; item: number; price: number }
   | { type: 'gift'; who: number; item: number; cash: number }
-  | { type: 'favor'; who: number; kind: number; state: 'offered' | 'taken' | 'done' | 'paid' }
+  | { type: 'favor'; who: number; kind: number; state: 'offered' | 'taken' | 'done' | 'paid' | 'dropped' }
   | { type: 'recruit'; who: number; on: boolean }
   | { type: 'delivered'; who: number }
   /** An inmate with a grudge jumps the player (GDD §10.3); a follower lands a blow on someone. */

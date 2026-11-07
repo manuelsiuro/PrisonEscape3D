@@ -1,0 +1,11 @@
+center-perks: 3 merchants, 7 things bought for $151 as shown
+stalag-flucht: 3 merchants, 7 things bought for $158 as shown
+shankton: 4 merchants, 12 things bought for $279 as shown
+san-pancho: merchant 10 starts with a grudge
+san-pancho: 4 merchants, 8 things bought for $181 as shown
+irongate: 4 merchants, 8 things bought for $179 as shown
+center-perks: change about each morning $13/$24/$44, favors on offer $110/$92/$85, wages $30–$55, merchant goods $12–$40
+stalag-flucht: change about each morning $23/$50/$82, favors on offer $126/$85/$96, wages $30–$65, merchant goods $12–$40
+shankton: change about each morning $37/$91/$137, favors on offer $139/$118/$109, wages $30–$65, merchant goods $12–$40
+san-pancho: change about each morning $37/$70/$116, favors on offer $128/$94/$84, wages $30–$65, merchant goods $12–$40
+irongate: change about each morning $36/$90/$139, favors on offer $120/$125/$113, wages $30–$65, merchant goods $12–$40
