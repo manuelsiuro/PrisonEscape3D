@@ -66,10 +66,12 @@ entries.forEach((e, k) => {
   const want = t.length <= 110 ? t : t.slice(0, 107);
   check(!!lines[k] && lines[k].startsWith(`- ${want}`), `HISTORY.md line ${k + 1} is "${want.slice(0, 50)}" (${e.f})`);
 });
-// The game's version in the latest range: a file per ten minor versions.
+// The game's version in the latest range: a file per ten minor versions, per five from 2.35 (when
+// v2.30-v2.39 reached its 80 KB and was split in two).
 const [maj, min] = version.split('.').map(Number);
-const lo = Math.floor(min / 10) * 10;
-const latest = `docs/history/v${maj}.${lo}-v${maj}.${lo + 9}.md`;
+const span = maj > 2 || min >= 35 ? 5 : 10;
+const lo = Math.floor(min / span) * span;
+const latest = `docs/history/v${maj}.${lo}-v${maj}.${lo + span - 1}.md`;
 check(ranges.at(-1) === latest || ranges.includes(latest), `the history of ${version} goes in ${latest}`);
 // A "not released yet" may stand only for the version being released.
 for (const f of [...ranges, 'docs/HISTORY.md', 'docs/POLISH.md']) {
