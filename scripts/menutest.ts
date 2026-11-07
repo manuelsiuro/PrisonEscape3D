@@ -17,7 +17,8 @@ import { canSee } from '../src/sim/ai/sight';
 import { EXT, OP } from '../src/sim/command';
 import { replayLog, RunRecorder } from '../src/sim/runlog';
 import { Sim } from '../src/sim/Sim';
-import { DAY_STEPS, planOf, prisonDay, today } from '../src/sim/systems/calendar';
+import { DAY_STEPS, keepOldCards, planOf, prisonDay, today } from '../src/sim/systems/calendar';
+import { DAY_BOOKS } from '../src/content/days';
 import { atCooler, coolerOffer, coolerProp, drinkRefusal, twoAtCooler } from '../src/sim/systems/cooler';
 import { hurt } from '../src/sim/systems/fights';
 import { awake } from '../src/sim/systems/guards';
@@ -434,6 +435,9 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   was.rules2331 = true;
   was.rules233 = true;
   was.rules234 = true;
+  was.rules235 = true;
+  // (Played then, with the week's cards as they were: the gang war's place held by the card it took, 2.36.)
+  keepOldCards(was.state, [1, 2, 3], (d) => planOf(was, d).event, { gangWar: DAY_BOOKS['center-perks'].beforeGangs! });
   const prev = new RunRecorder(was, { seed: 24, game: '2.32.0' });
   for (let k = 0; k < 34 * 60 * STEPS_PER_MINUTE && prev.sim.state.step < DAY_STEPS + 9 * 60 * STEPS_PER_MINUTE; k++) prev.step(0);
   check(dishNow(prev.sim) === null, 'the old rules: no dish');

@@ -163,6 +163,7 @@ export class Crowd {
       else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !reduced, m.doing, this.machineRest[k] ?? this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !reduced);
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !reduced);
+      c.colours(m.colours ?? 0);
     });
   }
 

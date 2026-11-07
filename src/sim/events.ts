@@ -242,6 +242,12 @@ export type SimEvent =
   | { type: 'delivered'; who: number }
   /** An inmate with a grudge jumps the player (GDD §10.3); a follower lands a blow on someone. */
   | { type: 'ambush'; who: number }
+  /**
+   * 2.36, gangs and turf (gangs.ts): the player joined a gang (who: its boss), left it or was thrown out (who: the
+   * boss left at, or the mate hit); told off a rival's turf, off it in time, a rival squaring up over it; a war's
+   * rival coming for them. `gang`: its place in the prison's gangs.
+   */
+  | { type: 'gang'; what: GangNews; gang: number; who?: number }
   /** 2.23: an inmate saw the player going through the things in their cell (snoop.ts): thinks less of them, and with a grudge left, fights. */
   | { type: 'snooped'; who: number; fights: boolean }
   /** 2.30: a guard tells the player to get out of a work room not theirs. Not being spotted at anything, yet. */
@@ -743,6 +749,9 @@ export type NoiseKind = 'thump' | 'strike' | 'thud' | 'bang' | 'ring' | 'bark' |
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
+/** What happened in gang business (2.36). */
+export type GangNews = 'met' | 'joined' | 'left' | 'kicked' | 'warn' | 'clear' | 'jumped' | 'warJump';
+
 /** The three attributes (GDD §3.2). */
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
@@ -895,4 +904,8 @@ export type Refusal =
   | 'notOwed'
   | 'notHisJob'
   | 'notLookout'
-  | 'liftFull';
+  | 'liftFull'
+  | 'inGang'
+  | 'leftToday'
+  | 'favorFirst'
+  | 'gangOpinion';

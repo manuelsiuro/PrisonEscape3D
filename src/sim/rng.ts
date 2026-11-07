@@ -87,6 +87,7 @@ export const SALT = {
   VEND: 46,
   MENU: 47,
   COOLER: 48,
+  GANG_WAR: 49,
 } as const;
 
 /** A number in [0, 2³²) for a draw of a kind (SALT) and its arguments: pure, never the same stream as another kind. */

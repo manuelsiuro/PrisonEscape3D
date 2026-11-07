@@ -7,7 +7,9 @@ import { traitOf } from '../sim/systems/guards';
 import { lookAwayPrice, lookingAway, paperPrice } from '../sim/systems/ways';
 import { STAPLES } from '../content/long';
 import { saleOf, stapleSlot } from '../sim/systems/pantry';
-import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_STATE, giftOpinion, OPINION_LADDER, priceOf } from '../sim/systems/economy';
+import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_STATE, fetchFavor, giftOpinion, OPINION_LADDER } from '../sim/systems/economy';
+import { askOf, memberDeal } from '../sim/systems/gangs';
+import { gangChip, gangSection, gangView } from './gangs';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
 import { nextTip } from '../sim/systems/recipes';
@@ -55,9 +57,9 @@ export interface OddJobTalkView {
 /** What an inmate thinks of the player, in three bands (GDD §10.3). */
 const moodOf = (opinion: number) => (opinion <= OPINION_LOW ? 'low' : opinion >= OPINION_HIGH ? 'high' : 'neutral');
 
-/** The next step up the ladder from an opinion, in words ("At 55: true rumors"). */
-export function nextUnlock(opinion: number): string {
-  const next = OPINION_LADDER.find(([n]) => opinion < n);
+/** The next step up the ladder from an opinion, in words ("At 55: true rumors"); a gang's step only for a boss (2.36). */
+export function nextUnlock(opinion: number, boss = false): string {
+  const next = OPINION_LADDER.find(([n, what]) => opinion < n && (boss || what !== 'gang'));
   return next ? t('talk.next', { n: next[0], what: t(`talk.unlock.${next[1]}` as Key) }) : t('talk.unlock.top');
 }
 
@@ -203,7 +205,10 @@ export class TalkPanel {
     const his = s.line.indexOf(who);
     const ahead = mine > 0 && his >= 0 && his < mine;
     const oj = this.oddJob(sim, who);
+    // 2.36: their gang, and what the player can do about it here.
+    const gs = gangView(sim, who);
     const key = [
+      gs ? JSON.stringify(gs) : '',
       oj?.key ?? '',
       crewKey,
       gamesKey,
@@ -247,14 +252,13 @@ export class TalkPanel {
       job >= 0 ? `<span class="chip">${icon('briefcase', 13)}${esc(t(`job.${sim.prison.jobs[job].id}` as Key))}</span>` : '',
       following ? `<span class="chip ally">${icon('star', 13)}${t('role.follower')}</span>` : '',
       `<span class="chip spec" data-spec="${spec}">${icon(SPEC_ICON[spec], 13)}${t(`spec.${spec}`)}</span>`,
+      gs ? gangChip(gs) : '',
     ].join('');
     // The favor: what they ask, what it pays, what can be done about it now.
     let favorHtml = '';
     if (favor) {
       const carrying = favor.item ? inv.some((v) => itemOf(v) === favor.item) : false;
-      const ready =
-        favor.state === FAVOR_STATE.DONE ||
-        ((favor.kind === FAVOR.SCAVENGE || favor.kind === FAVOR.RETRIEVE) && favor.state === FAVOR_STATE.TAKEN && carrying);
+      const ready = favor.state === FAVOR_STATE.DONE || (fetchFavor(favor.kind) && favor.state === FAVOR_STATE.TAKEN && carrying);
       const offered = favor.state === FAVOR_STATE.OFFERED;
       // (A distraction's moment: the next roll call's time, or now.)
       const call = favor.kind === FAVOR.DISTRACTION ? nextRollCall(sim) : '';
@@ -263,7 +267,7 @@ export class TalkPanel {
         : ready
           ? `<button class="big-btn primary small" data-act="${TALK.HAND_IN}">${icon('coin', 16)}<span>${t('talk.handIn')}</span></button>`
           : `<span class="talk-status">${
-              favor.kind === FAVOR.SCAVENGE || favor.kind === FAVOR.RETRIEVE
+              fetchFavor(favor.kind)
                 ? t('talk.bringIt')
                 : favor.kind === FAVOR.DISTRACTION
                   ? call
@@ -280,12 +284,12 @@ export class TalkPanel {
           : '';
       favorHtml = `<section class="talk-favor" data-state="${favor.state}"><div class="box-label">${icon('chat', 14)}<span>${t('talk.favor')}</span></div>
         <p class="talk-quote">${esc(favorText(sim, favor))}</p>
-        <div class="talk-row"><span class="talk-reward">${icon('coin', 14)}$${favor.reward}${gain ? `<em>${t('talk.opinionGain', { n: gain })}</em>` : ''}</span>${status}</div>${foot}</section>`;
+        <div class="talk-row"><span class="talk-reward">${favor.kind === FAVOR.INITIATION ? `${icon('users', 14)}${esc(t('talk.gang.initiation'))}` : `${icon('coin', 14)}$${favor.reward}${gain ? `<em>${t('talk.opinionGain', { n: gain })}</em>` : ''}`}</span>${status}</div>${foot}</section>`;
     }
     // The shop: only during free time, never for someone who despises the player.
     let shopHtml = '';
     if (shop) {
-      const off = Math.round(discountOf(m.opinion) * 100);
+      const off = Math.round(discountOf(m.opinion, memberDeal(sim, who)) * 100);
       const closed = !sim.shopsOpen;
       const grudge = m.opinion <= OPINION_LOW;
       const items = shop
@@ -293,7 +297,7 @@ export class TalkPanel {
           if (!v) return '';
           const n = itemOf(v);
           const d = itemDef(n);
-          const price = priceOf(d.value, m.opinion);
+          const price = askOf(sim, who, d.value);
           const afford = s.cash >= price;
           return `<button class="shop-item${afford ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}<span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
         })
@@ -302,7 +306,7 @@ export class TalkPanel {
       const staples = STAPLES.map((id, k) => {
         const n = itemNumber(id);
         const d = itemDef(n);
-        const price = priceOf(d.value, m.opinion);
+        const price = askOf(sim, who, d.value);
         return `<button class="shop-item staple${s.cash >= price ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${stapleSlot(k)}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
       }).join('');
       // (P28: what the merchant buys from the hotbar: ripe pruno, vegetables.)
@@ -425,8 +429,8 @@ export class TalkPanel {
     const armed = this.el.querySelector<HTMLElement>('.armed[data-act]');
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
-      ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low" style="left:${OPINION_LOW}%"></i><i class="tick high" style="left:${OPINION_HIGH}%"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div><p class="talk-next">${esc(nextUnlock(m.opinion))}</p>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low" style="left:${OPINION_LOW}%"></i><i class="tick high" style="left:${OPINION_HIGH}%"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div><p class="talk-next">${esc(nextUnlock(m.opinion, gs?.boss ?? false))}</p>
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${cv ? crewSection(cv) : ''}${gs ? gangSection(gs) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);
       if (b && !(b as HTMLButtonElement).disabled) confirmed(b);
