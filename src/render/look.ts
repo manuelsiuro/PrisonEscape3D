@@ -33,6 +33,8 @@ export interface Look {
   tattoo?: number;
   tattooColor?: number;
   trim?: number;
+  /** 2.36 (the Six Hunter): a ghillie cloak over the outfit: burlap and net tufts on the body and limbs, a shaggy hood. */
+  ghillie?: boolean;
   /** P29: tattoos inked in the prison ([shape, colour] each, in order): the left forearm's front, its outer side, the right forearm's outer side. */
   inked?: ReadonlyArray<readonly [number, number]>;
 }
