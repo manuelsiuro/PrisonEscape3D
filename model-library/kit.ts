@@ -2,14 +2,21 @@
  * The model library's building kit: low-poly primitives, each placed in model space and painted with a
  * vertex colour, merged into one geometry per part layer.
  *
- * MANDATORY LOW-POLY FIRST PRINCIPLES:
- * - Low polygon counts are a FIRST-ORDER requirement for all procedural models.
- * - Flat-shaded low-poly aesthetics look cleaner, crisper, and render orders of magnitude faster on mobile.
- * - Primitives default to low radial segment counts:
+ * MANDATORY VISUAL & PERFORMANCE STANDARDS:
+ * - All generated models must closely match the visual style, silhouette simplicity, and color palette
+ *   of the game's existing props and decor (`src/render/props.ts` and `src/render/decor.ts`).
+ * - MINIMAL POLYGON COUNT AS FIRST PRINCIPLE:
+ *   • Rely on clean, chunky angular silhouettes rather than curved subdivisions or rounded bevels.
+ *   • Target budgets: small props 50–250 triangles; furniture/appliances 200–500 triangles; large fixtures 500–1,000 triangles.
  *   • Small details, rods, pipes, needles, screws, cables: 6 segments (or 4 for diamond/square cross-sections).
- *   • Cylinders, cones, dishes, wheels, mugs, barrels: 8 segments.
+ *   • Cylinders, cones, dishes, wheels, mugs, barrels: 6 to 8 segments.
  *   • Large hero curves (tanks, silos, radar domes): 8 to 10 segments maximum.
  *   • NEVER use 16, 24, or 32 segments for procedural models.
+ * - PALETTE DISCIPLINE (RULE OF 3 TO 5 COLORS):
+ *   • Every model must restrict itself to between 2 and 5 cohesive colors from `PALETTE` (`palette.ts`).
+ *   • Match the game's institutional/industrial tones: `metal` (0x8d949e), `dark` (0x3b4048), `wood` (0x9b6a3f),
+ *     `white` (0xeef1f4), `steel` (0xb8bec6), and a single functional accent (e.g. `brass`, `red`, `yellow`).
+ *   • Avoid rainbow variety or saturated primary colors.
  *
  * `paint`, `box`, `cyl`, `rod`, `disc` and `merge` keep the signatures and the baked foot shade of the
  * game's `src/render/kit.ts` (`mapviewertest` proves the output identical), so a library model can
