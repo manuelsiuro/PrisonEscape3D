@@ -3,6 +3,10 @@
  * tags, footprint, its parameters) and a pure `buildParts` that turns parameter values into named part
  * layers. `compile.ts` turns a blueprint into a Three.js group (one mesh per layer, articulated layers
  * on their pivots) or into a single merged geometry for an `InstancedMesh`.
+ *
+ * MANDATORY DESIGN CRITERIA:
+ * - Minimal Polygon Count: Built close to the game's original models (50–250 tris for props, 200–600 for machinery).
+ * - Palette Discipline: Every model must use 2 to 5 cohesive colors from `PALETTE` (`palette.ts`).
  */
 import type * as THREE from 'three';
 

@@ -2,6 +2,12 @@
  * Blueprint to Three.js: `compileModel` for a scene (one mesh per layer, articulated layers on their
  * pivots, an animation hook, a dispose), `mergedGeometry` for one draw call per copy (an InstancedMesh
  * with `kitMaterial`), and `validateBlueprint` for the checks a model must pass to join the library.
+ *
+ * AESTHETIC & PERFORMANCE MANDATE:
+ * - Low Polygon Budget: Rely on angular box primitives, 6-sided rods, and 8-sided cylinders.
+ *   Ceiling is 1,400 triangles (enforced by `validateBlueprint`).
+ * - Color Palette Discipline: Rely on curated institutional tones from PALETTE (`palette.ts`)
+ *   following the Rule of 3-to-5 Colors (1 base, 1 framing, 1 surface, max 1 accent).
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
