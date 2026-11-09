@@ -143,7 +143,10 @@ const GEAR: PropPlacement[] = [
 ];
 
 /** Two rows of six in the middle of the yard, facing the Huntmaster at its west side. */
-const rollCall = [24, 26].flatMap((z) => [18, 20, 22, 24, 26, 28].map((x) => ({ x, z })));
+// (2.37: a tile further west, the zone a tile wider, so a tile of yard lies round the squares on every side; the wall stands
+// just past x 28. Before, x 18 to 28: the east column on the zone's edge, under its painted line.)
+const rollCall = [24, 26].flatMap((z) => [17, 19, 21, 23, 25, 27].map((x) => ({ x, z })));
+const rollCall236 = [24, 26].flatMap((z) => [18, 20, 22, 24, 26, 28].map((x) => ({ x, z })));
 
 /**
  * The Six (the Master of the Hunt's own), each with a hound. Directions: 1 east, 5 south, 9 west, 13 north.
@@ -286,7 +289,7 @@ export const SIX_HUNTER: PrisonDef = {
     ['generator', 47, 14, 54, 20],
     // The yard (roll call in its middle), the garden at its west end; the kitchen, the Trophy Hall.
     ['yard', 15, 22, 28, 31],
-    ['rollCall', 17, 23, 28, 27],
+    ['rollCall', 16, 23, 28, 27],
     ['garden', 8, 22, 13, 31],
     ['kitchen', 30, 22, 35, 31],
     ['canteen', 37, 22, 54, 31],
@@ -328,6 +331,7 @@ export const SIX_HUNTER: PrisonDef = {
     ],
   },
   rollCall,
+  rollCallBefore237: { spots: rollCall236, zones: [[17, 23, 28, 27]] },
   spawn: { x: 9, z: 11 },
   reachable: [
     'cellBlock',

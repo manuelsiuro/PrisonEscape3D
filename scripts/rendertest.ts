@@ -21,6 +21,7 @@ import { pitchOf } from '../src/sim/systems/football';
 import { drillOn, planOf } from '../src/sim/systems/calendar';
 import { clockAt, DAY_STEPS } from '../src/sim/systems/clock';
 import { STEPS_PER_MINUTE } from '../src/sim/tuning';
+import { World } from '../src/sim/world/World';
 import { spotsOnPitch } from '../src/render/Pastimes';
 import { check } from './assert';
 
@@ -111,7 +112,7 @@ const ALL = [...PRISONS, TRAINING];
       check(inside === on[k], `pitch: ${p.id}'s spot ${k} is told apart right`);
     });
     // The roll call's marks: off the pitch, or on their own layer.
-    const layer = rollCallOverPitch(p);
+    const layer = rollCallOverPitch(new World(p));
     if (pitch && !layer)
       for (const s of p.rollCall)
         check(
@@ -177,9 +178,12 @@ const ALL = [...PRISONS, TRAINING];
     pitchOf(old) === was && pitchOf(new Sim(def, 3)) === def.leisure!.pitch,
     'replay pitch: a 2.5.0 replay plays on the old pitch, a game on the new',
   );
-  const crossed = rollCallOverPitch(def, was);
+  const crossed = rollCallOverPitch(new World(def), was);
   const spots = spotsOnPitch(def.leisure!.hoop!, was).filter(Boolean).length;
-  check(crossed && !rollCallOverPitch(def), 'replay pitch: the roll call goes on its own layer over the old pitch, baked beside the new');
+  check(
+    crossed && !rollCallOverPitch(new World(def)),
+    'replay pitch: the roll call goes on its own layer over the old pitch, baked beside the new',
+  );
   console.log(
     `replay pitch: ${def.id} 2.5.0 replays on ${was.x},${was.z} ${was.w}×${was.d}: roll call ${crossed ? 'on its own layer' : 'baked'}, hoop spots on it ${spots}`,
   );

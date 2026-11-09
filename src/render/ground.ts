@@ -4,7 +4,7 @@ import { PROPS } from '../content/props';
 import { ROUTINE } from '../content/routine';
 import { KEY, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
-import type { Pitch, PrisonDef } from '../content/prisons/types';
+import type { Pitch } from '../content/prisons/types';
 import type { SimContext } from '../sim/context';
 import { drillOn } from '../sim/systems/calendar';
 import { seeded } from './rand';
@@ -164,7 +164,7 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
   }
 
   // Roll call: a painted border and a box per standing spot (P29: on its own layer where it would cross the football pitch).
-  if (!rollCallOverPitch(world.def, pitch)) drawRollCall(c, world.def, 0, 0);
+  if (!rollCallOverPitch(world, pitch)) drawRollCall(c, world, 0, 0);
 
   // Hazard stripes under detector arches and gates.
   for (let z = 0; z < MAP_H; z++) {
@@ -194,10 +194,13 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
 
 // ------------------------------------------------------------------ roll call over the pitch
 
+/** What the roll call's paint reads: its zone and its squares (as they were, for a replay from 2.36 or before: World.oldRollCall). */
+type RollCallSource = Pick<World, 'def' | 'rollCallSpots' | 'zoneRects'>;
+
 /** The roll call's paint, its border round the zone and a box per standing spot, drawn with (ox, oz) as the canvas's corner (tiles). */
-function drawRollCall(c: CanvasRenderingContext2D, def: PrisonDef, ox: number, oz: number) {
+function drawRollCall(c: CanvasRenderingContext2D, world: RollCallSource, ox: number, oz: number) {
   const R = PAINT_RES;
-  const yard = def.zones.find(([id]) => id === 'rollCall');
+  const yard = world.zoneRects.find(([id]) => id === 'rollCall');
   if (yard) {
     const [, x0, z0, x1, z1] = yard;
     c.strokeStyle = 'rgba(242, 194, 48, 0.9)';
@@ -205,7 +208,7 @@ function drawRollCall(c: CanvasRenderingContext2D, def: PrisonDef, ox: number, o
     c.strokeRect((x0 - ox) * R + 6, (z0 - oz) * R + 6, (x1 - x0 + 1) * R - 12, (z1 - z0 + 1) * R - 12);
   }
   // (The first is the player's, cell 1's, 2.27: its own colour, and filled in faintly.)
-  def.rollCall.forEach((s, k) => {
+  world.rollCallSpots.forEach((s, k) => {
     const own = k === 0;
     const line = own ? 'rgba(255, 138, 30, 0.95)' : 'rgba(255, 255, 255, 0.85)';
     if (own) {
@@ -221,10 +224,10 @@ function drawRollCall(c: CanvasRenderingContext2D, def: PrisonDef, ox: number, o
 }
 
 /** The tiles the roll call's paint covers (its zone and its standing spots), null for none. */
-function rollCallBounds(def: PrisonDef): { x0: number; z0: number; x1: number; z1: number } | null {
-  const yard = def.zones.find(([id]) => id === 'rollCall');
+function rollCallBounds(world: RollCallSource): { x0: number; z0: number; x1: number; z1: number } | null {
+  const yard = world.zoneRects.find(([id]) => id === 'rollCall');
   let b = yard ? { x0: yard[1], z0: yard[2], x1: yard[3], z1: yard[4] } : null;
-  for (const s of def.rollCall)
+  for (const s of world.rollCallSpots)
     b = b
       ? { x0: Math.min(b.x0, s.x), z0: Math.min(b.z0, s.z), x1: Math.max(b.x1, s.x), z1: Math.max(b.z1, s.z) }
       : { x0: s.x, z0: s.z, x1: s.x, z1: s.z };
@@ -237,8 +240,8 @@ function rollCallBounds(def: PrisonDef): { x0: number; z0: number; x1: number; z
  * roll call only, and the pitch's lines are left clean the rest of the day. `p`: the pitch in use
  * (a 2.5.0 replay's is the one it had then: football.ts pitchOf).
  */
-export function rollCallOverPitch(def: PrisonDef, p: Pitch | null | undefined = def.leisure?.pitch): boolean {
-  const b = rollCallBounds(def);
+export function rollCallOverPitch(world: RollCallSource, p: Pitch | null | undefined = world.def.leisure?.pitch): boolean {
+  const b = rollCallBounds(world);
   return !!p && !!b && b.x0 < p.x + p.w && b.x1 >= p.x && b.z0 < p.z + p.d && b.z1 >= p.z;
 }
 
@@ -263,14 +266,14 @@ export function rollCallShows(sim: Pick<SimContext, 'prison' | 'state'>, minute:
 
 /** That layer (null where the roll call keeps off the pitch): a decal over the roll call's tiles, faded in and out by its material's opacity. */
 export function rollCallLayer(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null): THREE.Mesh | null {
-  const b = rollCallOverPitch(world.def, pitch) ? rollCallBounds(world.def) : null;
+  const b = rollCallOverPitch(world, pitch) ? rollCallBounds(world) : null;
   if (!b) return null;
   const w = b.x1 - b.x0 + 1;
   const d = b.z1 - b.z0 + 1;
   const canvas = document.createElement('canvas');
   canvas.width = w * PAINT_RES;
   canvas.height = d * PAINT_RES;
-  drawRollCall(canvas.getContext('2d')!, world.def, b.x0, b.z0);
+  drawRollCall(canvas.getContext('2d')!, world, b.x0, b.z0);
   const tex = canvasTexture(canvas, 'sharp');
   const material = new THREE.MeshBasicMaterial({
     map: tex,
