@@ -193,7 +193,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 79 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 80 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.
@@ -217,7 +217,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 | `src/flows/` | The title, intake, tutorial and Daily Escape flows |
 | `src/ui/` | The HUD, panels and screens (title, prisons, how to play, trophies, settings…) |
 | `src/talk/` | Speech bubbles: who says what, when, and gossip that is always true |
-| `src/tutorial/` | The 69 lessons and their chapters |
+| `src/tutorial/` | The 70 lessons and their chapters |
 | `src/game/` | Saves, settings, records, trophies, stats, replays and storage |
 | `src/replay/` | Watching an escape again |
 | `src/audio/`, `src/app/` | Synthesized sound; haptics, graphics quality, the service worker, installing |

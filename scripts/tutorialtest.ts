@@ -732,6 +732,14 @@ play('crew', (bot) => {
   bot.until(() => bot.sim.events.some((e) => e.type === 'crew' && e.what === 'whistle'), 3000);
 });
 
+play('freetime', (bot) => {
+  // Up to the first at the dice, the press (a talk: joining it), $5 on the table, standing on the throw.
+  const who = bot.st.huddle!.who[0];
+  check(talkTo(bot, bot.st.inmates[who].body) && bot.st.talk === who, 'freetime: joined the dice');
+  bot.op(OP.TALK, TALK.DICE, 0);
+  bot.op(OP.TALK, TALK.REROLL, 0);
+});
+
 play('gangJoin', (bot) => {
   const boss = bossIn(bot.sim, KITCHEN);
   check(talkTo(bot, bot.st.inmates[boss].body) && bot.st.talk === boss, 'gangJoin: talking to Rusty');

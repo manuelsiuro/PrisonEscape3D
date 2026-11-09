@@ -4,6 +4,7 @@ import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { DESIGNS } from '../content/team';
 import { pad2 } from '../sim/systems/clock';
+import { HUDDLE } from '../content/huddles';
 
 /** The last dice game as it's shown (P22; presentation only: the sim settled it already). */
 export interface DiceShow {
@@ -107,7 +108,9 @@ function dieFace(n: number, size = 34): string {
  * risk; the dice on the table to throw again (tapped to choose: `mask`) or stand on; the last
  * game's throw and how it went. Every button is OP.TALK; the panel redraws from the sim.
  */
-export function gamesSection(v: GamesView, mask: number, now: number): string {
+export function gamesSection(v: GamesView, mask: number, now: number, invited = -1): string {
+  // (2.39: the game the player joined at, picked out.)
+  const pick = (kind: number) => (invited === kind ? ' invited' : '');
   const label = `<div class="box-label">${icon('dice', 14)}<span>${t('games.title')}</span><em>${v.open || v.why === '' ? t('games.left', { n: v.left }) : ''}</em></div>`;
   const sports = v.sports
     ? `<p class="games-sports${v.sports.won ? ' won' : ''}">${icon('trophy', 14)}<span>${esc(v.sports.won ? t('games.sportsWon', { n: v.sports.prize }) : t('games.sports', { n: v.sports.wins, of: v.sports.of, prize: v.sports.prize }))}</span></p>`
@@ -165,7 +168,7 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
     .join('');
   const hoopsOk = v.open && v.court;
   const hoops = v.hasCourt
-    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('hoops.title')}</b><small>${esc(v.court ? t('hoops.note') : t('hoops.notHere'))}</small></span><button class="big-btn ${hoopsOk ? 'primary' : 'ghost'} small" data-act="${TALK.HOOPS}" ${hoopsOk ? '' : 'disabled'} aria-label="${esc(t('hoops.goAria'))}">${icon('ball', 16)}<span>${t('hoops.go')}</span></button></div>`
+    ? `<div class="bribe-row${pick(HUDDLE.HOOPS)}"><span class="bribe-text"><b>${t('hoops.title')}</b><small>${esc(v.court ? t('hoops.note') : t('hoops.notHere'))}</small></span><button class="big-btn ${hoopsOk ? 'primary' : 'ghost'} small" data-act="${TALK.HOOPS}" ${hoopsOk ? '' : 'disabled'} aria-label="${esc(t('hoops.goAria'))}">${icon('ball', 16)}<span>${t('hoops.go')}</span></button></div>`
     : '';
   const e = v.elder;
   const elder = e
@@ -184,8 +187,8 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
       <div class="bribe-row ink-row"><span class="bribe-text"><b>${t('ink.mine')}</b><small>${esc(ink.mineWhy || t('ink.mineOffer', { name: v.name }))}</small></span><div class="stake-row">${ink.designs.map((d) => `<button class="cash-btn stake design${ink.inked.includes(d.k) ? ' have' : ''}" data-act="${TALK.INK_ME}" data-arg="${d.k}" ${ink.mineWhy || ink.inked.includes(d.k) ? 'disabled' : ''} title="${esc(designName(d.k))}" aria-label="${esc(ink.inked.includes(d.k) ? `${designName(d.k)}: ${t('refused.haveIt')}` : t('ink.mineAria', { design: designA(d.k), name: v.name }))}">${designIcon(d.k)}<span>${esc(designName(d.k))}</span></button>`).join('')}</div></div>${v.inkHeat ? `<p class="talk-note games-warn">${icon('eye', 13)}<span>${t('ink.seenWarn', { n: v.inkHeat })}</span></p>` : ''}`
     : '';
   return `<section class="talk-games">${label}${sports}${result}${why}${elder}${football}${tattoo}
-    <div class="bribe-row"><span class="bribe-text"><b>${t('games.dice')}</b><small>${t('games.diceNote')}</small></span><div class="stake-row">${stakes}</div></div>
-    <div class="bribe-row"><span class="bribe-text"><b>${t('cheat.name')}</b><small>${t('cheat.note')}</small></span><div class="stake-row">${cheatStakes}</div></div>${warn}
+    <div class="bribe-row${pick(HUDDLE.DICE)}"><span class="bribe-text"><b>${t('games.dice')}</b><small>${t('games.diceNote')}</small></span><div class="stake-row">${stakes}</div></div>
+    <div class="bribe-row${pick(HUDDLE.CARDS)}"><span class="bribe-text"><b>${t('cheat.name')}</b><small>${t('cheat.note')}</small></span><div class="stake-row">${cheatStakes}</div></div>${warn}
     <div class="bribe-row"><span class="bribe-text"><b>${t('games.wrestle')}</b><small>${esc(armNote)}</small></span><button class="big-btn ${armOk ? 'primary' : 'ghost'} small" data-act="${TALK.WRESTLE}" ${armOk ? '' : 'disabled'}>${icon('arm', 16)}<span>${t('games.wrestleGo')}</span></button></div>${hoops}</section>`;
 }
 

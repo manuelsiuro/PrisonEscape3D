@@ -329,6 +329,8 @@ export function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
   if (s.line.includes(k) || s.booth[0] === k) return false;
   // (2.33: having a drink at the water cooler: done with that first.)
   if (!waiting && s.cooler.who.includes(k)) return false;
+  // (2.39: gathered for a chat or a game: done with that first.)
+  if (!waiting && s.huddle?.who.includes(k)) return false;
   if (
     s.match?.team.includes(k) ||
     s.ink?.who === k ||
@@ -389,6 +391,8 @@ export function vending(sim: SimContext) {
       if (v.asked[b] & (1 << k) || v.who === k || v.line.includes(k)) continue;
       const at = wantsSnack(s.salt, day, b, k);
       if (at < 0 || minute < at) continue;
+      // (2.39: gathered for a chat or a game: the snack waits till it's over.)
+      if (s.huddle?.who.includes(k)) continue;
       v.asked[b] |= 1 << k;
       if (v.line.filter((q) => q !== VEND_PLAYER).length >= LINE_MAX || staysPut(sim, k) || !freeToGo(sim, k)) continue;
       v.line.push(k);

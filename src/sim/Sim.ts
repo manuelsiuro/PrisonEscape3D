@@ -38,6 +38,7 @@ import { kiosk } from './systems/kiosk';
 import { vending } from './systems/vending';
 import { menu } from './systems/menu';
 import { cooler } from './systems/cooler';
+import { huddles } from './systems/huddles';
 import { forgetPlaces } from './ai/places';
 import { freedNow, paperwork } from './systems/paperwork';
 import { hearingZones, parole, paroled } from './systems/parole';
@@ -227,6 +228,8 @@ export class Sim {
   rules235 = false;
   /** Replaying a run from 2.36.0: a gang initiation's tribute as it was (never put back once used up, its mark left on a favor dropped, no rat or tattoo told it from a plain copy). Not state. */
   rules2360 = false;
+  /** Replaying a run from before 2.39: free time as it was (nobody gathers for a chat or a game). Not state. */
+  rules238 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -341,6 +344,8 @@ export class Sim {
     // The menu board and the water cooler (2.33): the scribble, its laughs; who's drinking.
     menu(this);
     cooler(this);
+    // Free time's gatherings (2.39): chats and inmates' games formed, arrivals, the end.
+    huddles(this);
     // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
     paperwork(this);
     // The parole board (P39): plotting found out, the hearing at 10:00, its questions and verdict.

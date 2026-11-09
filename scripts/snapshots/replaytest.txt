@@ -1,5 +1,5 @@
 codec: 5 runs in 21 bytes
-two days: 57600 steps, 48 checksums, 1797 bytes of commands (899 a day), 3403 characters stored
+two days: 57600 steps, 48 checksums, 1741 bytes of commands (871 a day), 3331 characters stored
 two branches from a save at day 2: both replay (32400 and 32400 steps)
 a run of commands changed from step 31454 (hour 26): verified to hour 26
 a save: 7993 characters (its log apart)

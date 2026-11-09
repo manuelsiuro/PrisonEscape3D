@@ -92,6 +92,8 @@ export class TalkPanel {
   greeting = '';
   /** Whether the player has heard a rumor (its fact key): a guard's ways show once gossip told them (P15). */
   knows: (key: string) => boolean = () => false;
+  /** 2.39: the inmates' game (HUDDLE kind) the player walked up to and joined by talking to this one (-1 none): it comes first. */
+  invited = -1;
   /** The games on offer with this inmate (P22), from the play layer. */
   games: (sim: Sim) => GamesView | null = () => null;
   /** The crew's orders for a follower (P23, play/crew.ts). */
@@ -235,6 +237,7 @@ export class TalkPanel {
       s.routine,
       textStamp(),
       this.greeting,
+      this.invited,
     ].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
@@ -378,7 +381,9 @@ export class TalkPanel {
         <div class="bribe-row"><span class="bribe-text"><b>${t('talk.swap')}</b><small>${esc(t('talk.swapNote', { n: his + 1 }))}</small></span><button class="big-btn ${s.cash >= SWAP_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.SWAP}" ${s.cash >= SWAP_PRICE ? '' : 'disabled'} aria-label="${esc(t('talk.swapAria', { n: SWAP_PRICE }))}"><span>$${SWAP_PRICE}</span></button></div></section>`
       : '';
     // The games (P22): dice and an arm-wrestle.
-    const gamesHtml = gv ? gamesSection(gv, this.diceMask, now) : '';
+    const gamesHtml = gv ? gamesSection(gv, this.diceMask, now, this.invited) : '';
+    // (2.39: joined at an inmates' game: the games first, under what they think of the player.)
+    const gamesFirst = this.invited >= 0 && !!gv;
     // Gifts: anything worth something from the hotbar, or a little cash.
     const full = m.opinion >= 100;
     const fSlot = favor && fetchFavor(favor.kind) && favor.state === FAVOR_STATE.TAKEN ? favorSlot(inv, favor) : -1;
@@ -434,7 +439,7 @@ export class TalkPanel {
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low" style="left:${OPINION_LOW}%"></i><i class="tick high" style="left:${OPINION_HIGH}%"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div><p class="talk-next">${esc(gs?.boss && gs.rel === 'free' && gs.ask === '' ? t('talk.gang.next', { gang: gangName(sim, gangOf(sim, who)) }) : nextUnlock(m.opinion, !!gs?.boss && gs.rel === 'free'))}</p>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${cv ? crewSection(cv) : ''}${gs ? gangSection(gs) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${gamesFirst ? gamesHtml : ''}${cv ? crewSection(cv) : ''}${gs ? gangSection(gs) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesFirst ? '' : gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);
       if (b && !(b as HTMLButtonElement).disabled) confirmed(b);

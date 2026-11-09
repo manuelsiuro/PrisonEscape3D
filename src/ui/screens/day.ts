@@ -33,6 +33,8 @@ export interface DayBlock {
   name: string;
   /** Where it wants the player ("Canteen", "Laundry", "Anywhere legal"). */
   place: string;
+  /** 2.39: what it opens (free time: "Open: shops, games…"), under the place. */
+  open?: string;
   /** Before, during or after the clock. */
   at: 'past' | 'now' | 'next';
   /** Something is asked of the player (a filled dot), or it's free (a ring). */
@@ -78,7 +80,7 @@ function block(b: DayBlock): string {
     .join('');
   return `<li class="dc-block ${b.at}${b.must ? ' must' : ''}"${b.at === 'now' ? ' aria-current="time"' : ''}>
     <time datetime="${b.time}">${b.time}</time><span class="dc-dot" aria-hidden="true"></span>
-    <span class="dc-body"><span class="dc-row"><span class="dc-ic">${icon(b.icon, 16)}</span><span class="dc-text"><b>${esc(b.name)}</b><small>${esc(b.place)}</small></span>${tag}</span>${now}${pin}</span>
+    <span class="dc-body"><span class="dc-row"><span class="dc-ic">${icon(b.icon, 16)}</span><span class="dc-text"><b>${esc(b.name)}</b><small>${esc(b.place)}</small>${b.open ? `<small class="dc-open">${esc(b.open)}</small>` : ''}</span>${tag}</span>${now}${pin}</span>
   </li>`;
 }
 

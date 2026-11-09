@@ -1,4 +1,8 @@
 import { twist } from '../sim/systems/twists';
+import { HUDDLE } from '../content/huddles';
+import { STAKES } from '../content/games';
+import { gameRefusal } from '../sim/systems/games';
+import { huddleGameOf } from '../sim/systems/huddles';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { currentLang, t, textStamp, type Key } from '../i18n';
 import { lineOfSight } from '../sim/ai/sight';
@@ -314,7 +318,22 @@ export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionW
       const n = st.inmates.length;
       // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
       const guard = who >= n ? sim.prison.guards[who - n] : undefined;
-      return say(`person:${who}:${mail}:${lang}`, mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk', () =>
+      // (2.39: someone at an inmates' game who'll play the player: the press joins it, a talk offering that game.)
+      // (Dice and cards are played for a stake: with less than the smallest on them, a plain talk.)
+      const at = !mail && !guard && !gameRefusal(sim, who) ? huddleGameOf(sim, who) : -1;
+      const game = at === HUDDLE.HOOPS || (at >= 0 && st.cash >= STAKES[0]) ? at : -1;
+      const verb = mail
+        ? 'act.deliver'
+        : guard
+          ? 'act.talkGuard'
+          : game === HUDDLE.DICE
+            ? 'act.joinDice'
+            : game === HUDDLE.CARDS
+              ? 'act.joinCards'
+              : game === HUDDLE.HOOPS
+                ? 'act.joinHoops'
+                : 'act.talk';
+      return say(`person:${who}:${mail}:${game}:${lang}`, verb, () =>
         !guard ? inmateName(sim, who) : guard.name ? guardWord(sim, 'guard.addressed', { name: guard.name }) : t('guard.addressedNameless'),
       );
     }

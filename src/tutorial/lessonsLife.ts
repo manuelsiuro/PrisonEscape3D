@@ -1,3 +1,4 @@
+import type { Sim } from '../sim/Sim';
 import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
 import { ORDER } from '../sim/command';
@@ -16,6 +17,9 @@ import { smellsOfContraband } from '../sim/systems/k9';
 import { guardTalking } from '../sim/systems/social';
 import { dropTile } from '../sim/systems/smuggling';
 import { gameRefusal } from '../sim/systems/games';
+import { HUDDLE } from '../content/huddles';
+import { ringsOf, seatHuddle } from '../sim/systems/huddles';
+import { staysPut } from '../sim/systems/vending';
 import { newRat, petOf } from '../sim/systems/rats';
 import { CROP, GROWN } from '../content/long';
 import { atTrack, cardUp } from '../sim/systems/races';
@@ -74,6 +78,21 @@ import {
   waitAt,
   wiltedBed,
 } from './kit';
+
+/** The free time lesson's ring: the one nearest Center Perks' yard bench (32, 31). */
+function freeRing(sim: Sim): number {
+  const rings = ringsOf(sim.world);
+  let best = 0;
+  rings.forEach((r, k) => {
+    if ((r.x - 32) ** 2 + (r.z - 31) ** 2 < (rings[best].x - 32) ** 2 + (rings[best].z - 31) ** 2) best = k;
+  });
+  return best;
+}
+/** Its two at dice: the first two inmates nobody comes looking for (not a merchant, the fixer or the librarian). */
+function freeTwo(sim: Sim): [number, number] {
+  const k = sim.state.inmates.map((_, i) => i).filter((i) => !staysPut(sim, i));
+  return [k[0], k[1]];
+}
 
 /** Life inside, its first half (the third chapter): the guards, the day, dogs, a rat, smuggling, the side games, the pastimes, the long games, the stage, the crew. Out of lessons.ts (v2.34.2), in LESSONS' order (a lesson without a seed of its own takes its place's). */
 export const LIFE: readonly Lesson[] = [
@@ -720,6 +739,53 @@ export const LIFE: readonly Lesson[] = [
           return !seesRound(c.sim, at, 0) ? 'lesson.crew.far' : null;
         },
       },
+    ],
+  },
+  {
+    // Free time (2.39): what it opens, two inmates at dice in the yard joined by walking up to one, a game played; the
+    // chats and the warning before roll call told at the end. At Center Perks on day 2 (none gather on the first).
+    id: 'freetime',
+    icon: 'walk',
+    prison: CENTER_PERKS,
+    seed: 165,
+    setup: (sim) => {
+      // (A quiet evening: nothing to take the crowd off to the canteen.)
+      sim.state.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
+      clockTo(sim, DAY_TWO + EVENING);
+      const ring = freeRing(sim);
+      const [a, b] = freeTwo(sim);
+      for (const k of [a, b]) sim.state.inmates[k].opinion = 55;
+      seatHuddle(sim, 0, HUDDLE.DICE, ring, [a, b]);
+      const r = ringsOf(sim.world)[ring];
+      const [x, z] = near(sim, r.x, r.z + 3);
+      place(sim, x, z, 13);
+      sim.state.cash = 20;
+    },
+    steps: [
+      {
+        text: 'lesson.freetime.join',
+        touch: 'lesson.freetime.joinTouch',
+        on: (e) => e.type === 'huddle' && e.what === 'joined',
+        goal: (sim) => {
+          const k = freeTwo(sim)[0];
+          return tileAt(sim.state.inmates[k].body.x, sim.state.inmates[k].body.z);
+        },
+        fail: (c) =>
+          eveningOver('lesson.freetime.late')(c) ??
+          (!c.sim.state.huddle?.who.slice(0, 4).some((k) => k >= 0) && c.sim.state.talk < 0 ? 'lesson.freetime.parted' : null),
+      },
+      {
+        text: 'lesson.freetime.dice',
+        on: (e) => e.type === 'dice' && e.what === 'rolled',
+        fail: (c) =>
+          eveningOver('lesson.freetime.late')(c) ?? (c.sim.state.cash < 5 && !c.sim.state.dice.length ? 'lesson.freetime.cash' : null),
+      },
+      {
+        text: 'lesson.freetime.settle',
+        on: (e) => e.type === 'dice' && (e.what === 'won' || e.what === 'lost' || e.what === 'push'),
+        fail: eveningOver('lesson.freetime.late'),
+      },
+      { text: 'lesson.freetime.over', done: () => true, least: 8 },
     ],
   },
   {

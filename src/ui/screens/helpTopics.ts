@@ -65,6 +65,13 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           lessons: ['walk', 'routine'],
           see: ['rollcall', 'meals', 'showers', 'night'],
         }),
+        // 2.39: what free time is for, the crowd's own games, the warning before roll call.
+        T('freetime', 'walk', '#2f9e6e', {
+          pic: true,
+          lessons: ['freetime', 'games', 'trade'],
+          stepIcons: ['clock', 'chat', 'dice', 'ear'],
+          see: ['games', 'chatter', 'rollcall', 'menu'],
+        }),
         T('night', 'moon', '#5a6fd0', {
           pic: true,
           lessons: ['routine', 'night'],

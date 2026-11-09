@@ -9,7 +9,7 @@ import { STEPS_PER_SECOND, STRIKE_STEPS, UNIT } from '../sim/tuning';
 import { announce, tickTock } from './announce';
 import { chatterEvent } from './chatter';
 import { press, targets, updateTargets } from './reach';
-import { controls, hint, itemsUI, settings, socialOpen, tools, view } from './context';
+import { controls, hint, itemsUI, settings, socialOpen, talk, tools, view } from './context';
 import { buildFrame } from './frame';
 import { play, tickPlayClock, type Game } from './game';
 import { updateGuide } from './guide';
@@ -131,6 +131,9 @@ function stepSim(g: Game, dt: number) {
     for (const e of sim.events) {
       announce(e, sim);
       dayEvent(e, sim);
+      // (2.39: a talk begun at an inmates' game offers that game first, in a lesson too.)
+      if (e.type === 'talk') talk.invited = -1;
+      else if (e.type === 'huddle' && e.who === sim.state.talk) talk.invited = e.kind;
       if (!g.lesson) chatterEvent(e, sim);
       lessonEvent(g, e);
       // Out on the road: the escape screen.

@@ -1,0 +1,17 @@
+center-perks: 10 places (37,12 rollCall; 28,14 rollCall; 17,51 sports; 30,8 rollCall; 32,31 yard; 21,13 cellBlock; 35,18 rollCall; 50,12 canteen; 48,22 corridor; 16,22 corridor)
+stalag-flucht: 10 places (23,24 rollCall; 21,33 yard; 16,23 rollCall; 39,23 yard; 35,14 cellBlock; 20,4 yard; 21,16 yard; 54,55 sports; 40,52 yard; 21,56 yard)
+shankton: 10 places (15,46 cellBlock; 47,17 sports; 33,30 rollCall; 31,21 canteen; 13,38 corridor; 39,38 corridor; 22,25 corridor; 53,38 corridor; 11,25 corridor; 33,38 corridor)
+san-pancho: 6 places (29,29 rollCall; 35,27 rollCall; 31,41 sports; 44,21 corridor; 19,21 corridor; 45,27 corridor)
+irongate: 3 places (41,24 rollCall; 15,32 sports; 17,25 sports)
+six-hunter: 6 places (23,24 rollCall; 50,30 canteen; 24,16 cellBlock; 13,49 sports; 44,27 canteen; 44,15 corridor)
+center-perks: 15 gatherings over 9 free times (chat 9, dice 4, cards 2, hoops 0), 0.8 gathered on average, 2 at most
+stalag-flucht: 18 gatherings over 9 free times (chat 10, dice 6, cards 2, hoops 0), 1.2 gathered on average, 3 at most
+shankton: 23 gatherings over 9 free times (chat 10, dice 9, cards 2, hoops 2), 1.4 gathered on average, 3 at most
+san-pancho: 36 gatherings over 9 free times (chat 16, dice 9, cards 8, hoops 3), 2.5 gathered on average, 4 at most
+irongate: 38 gatherings over 9 free times (chat 17, dice 9, cards 7, hoops 5), 2.6 gathered on average, 4 at most
+six-hunter: 23 gatherings over 9 free times (chat 11, dice 6, cards 3, hoops 3), 1.4 gathered on average, 3 at most
+none on day 1, at the Training Block, in an older run, on a film night or in a lockdown
+a game joined by walking up and pressing, a game of dice played; a chat goes on without the one talked to
+the hoop: walked up to and joined in every prison
+the walk to roll call at worst (of 40 game minutes from the warning): center-perks 18 min, stalag-flucht 18 min, shankton 12 min, san-pancho 11 min, irongate 12 min, six-hunter 13 min
+free time ok

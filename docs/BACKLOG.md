@@ -13,7 +13,6 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 | Area | State in `POLISH.md` |
 |---|---|
 | Quiz, football, rat races | Partly |
-| Free time | Not reviewed |
 | Side games (dice, arm-wrestling, cards, hoops, checkers) | Not reviewed |
 | Long games (pruno, garden, rats) | Not reviewed |
 | Pay phone, kiosk and paperwork | Not reviewed |

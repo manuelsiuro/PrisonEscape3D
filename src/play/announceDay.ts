@@ -5,6 +5,7 @@ import { hostile } from '../sim/systems/social';
 import { ROUTINE, type RoutineId } from '../content/routine';
 import { type Key, listOf, t } from '../i18n';
 import { itemsText } from '../ui/itemFacts';
+import { freeTimeLine } from './whatsOn';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
 import { traysHere } from '../sim/systems/canteen';
@@ -83,7 +84,10 @@ export function announceDay(e: SimEvent, sim: Sim) {
             ? t('banner.toWork', { place: t(`zone.${jobRooms(sim.world)[job].def.zone}` as Key), n: jobRooms(sim.world)[job].def.quota })
             : r.zones.length
               ? t('banner.goTo', { place: routinePlace(e.routine) })
-              : t('banner.free');
+              : // (2.39: free time says what it opens.)
+                r.id === 'freeTime' || r.id === 'eveningFreeTime'
+                ? freeTimeLine(sim)
+                : t('banner.free');
       banner.show(routineName(e.routine), sub);
       break;
     }
