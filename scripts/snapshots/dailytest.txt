@@ -65,7 +65,7 @@ the escape bots, every twist of their prison at once (but those closing their wa
   irongate stowaway: out day 1 14:31 under 18 twists (all but threeDays, customs, truckStrike)
   irongate bluff: out day 1 19:51 under 21 twists (all there are)
   irongate paperwork: out day 2 10:09 under 21 twists (all there are)
-  six-hunter raft: out day 1 23:38 under 20 twists (all but closedShop)
+  six-hunter raft: out day 1 23:36 under 20 twists (all but closedShop)
   six-hunter tunnel: out day 2 00:44 under 21 twists (all there are)
   six-hunter glider: out day 1 23:37 under 21 twists (all there are)
   six-hunter stowaway: out day 1 14:31 under 18 twists (all but threeDays, customs, truckStrike)

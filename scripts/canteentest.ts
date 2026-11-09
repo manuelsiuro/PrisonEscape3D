@@ -313,9 +313,9 @@ const freeSeat = (bot: Bot) =>
   for (let k = 0; k < 40; k++) old.step(0);
   const log = old.toLog();
   check(new RunRecorder(old.sim, { log, game: '2.36.0' }).toLog().seed === -1, 'a log from 2.24 is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 33), { seed: 33, game: '2.36.1' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 33), { seed: 33, game: '2.37.0' });
   for (let k = 0; k < 40; k++) now.step(0);
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.36.1' }).toLog().seed === 33, 'a log from today is');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.37.0' }).toLog().seed === 33, 'a log from today is');
   // (Played under today's rules, a log of today's replays whole.)
   const again = replayLog(now.toLog(), CENTER_PERKS);
   check(!!again?.ok, 'and replays whole');

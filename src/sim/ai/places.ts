@@ -245,7 +245,7 @@ function build(w: World): Places {
       if (p.rot !== 3) along(p.x + p.w, z, W);
     }
   }
-  const rollCall = w.def.rollCall.map((r) => ({ tile: r.z * MAP_W + r.x, face: N }));
+  const rollCall = w.rollCallSpots.map((r) => ({ tile: r.z * MAP_W + r.x, face: N }));
   // (North of the square first: the line faces that way. Nothing else's square, nothing solid.)
   const squares = new Set(rollCall.map((r) => r.tile));
   const countStops = rollCall.map((r) => {

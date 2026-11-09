@@ -6,6 +6,6 @@ scribbled unseen at center-perks: done in 2 s, 7 inmates laughed by 17:30, wiped
 caught scribbling: stalag-flucht at day 2 09:05
 a cup: center-perks at day 1 10:16; stalag-flucht at day 1 10:12; shankton at day 1 10:12; san-pancho at day 1 10:13; irongate at day 1 10:13; six-hunter at day 1 10:10; training at day 1 10:08
 a heatwave at san-pancho on day 2 13:10: cooled by a cup
-inmates (days 2–4, seeds 3–5): center-perks: 3.7 cups a day, two at once 0.8 times a day; stalag-flucht: 6.3 cups a day, two at once 2.0 times a day; shankton: 7.1 cups a day, two at once 2.4 times a day; san-pancho: 7.8 cups a day, two at once 2.7 times a day; irongate: 8.8 cups a day, two at once 3.3 times a day; six-hunter: 6.8 cups a day, two at once 2.2 times a day
+inmates (days 2–4, seeds 3–5): center-perks: 3.7 cups a day, two at once 0.8 times a day; stalag-flucht: 6.3 cups a day, two at once 2.0 times a day; shankton: 7.0 cups a day, two at once 2.3 times a day; san-pancho: 7.8 cups a day, two at once 2.7 times a day; irongate: 8.8 cups a day, two at once 3.3 times a day; six-hunter: 7.1 cups a day, two at once 2.4 times a day
 older runs: a 2.32 log replays as it was and is not carried on; a new one is
 all good

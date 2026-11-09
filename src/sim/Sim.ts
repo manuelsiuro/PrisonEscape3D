@@ -209,6 +209,16 @@ export class Sim {
     forgetReserved(this.world);
     reserved(this.world);
   }
+  /** Replaying a run from 2.36 or before: the Six Hunter's and Shankton's roll call squares and zone as they were (World.oldRollCall). */
+  get rules236() {
+    return this.world.oldRollCall;
+  }
+  set rules236(on: boolean) {
+    this.world.oldRollCall = on;
+    forgetPlaces(this.world);
+    forgetReserved(this.world);
+    reserved(this.world);
+  }
   /** Replaying a run from before 2.34: reading as it was (the marker at full speed, never stopping, a press counted within READ_WINDOW of a key word). Not state. */
   rules233 = false;
   /** Replaying a run from before 2.35: fights, stealth and heat as they were (seen meant sure at once, the dark hid nothing, heat cooled alike everywhere, nobody locked on by a blow, no block). Not state. */
