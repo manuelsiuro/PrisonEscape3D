@@ -300,10 +300,17 @@ function replantTribute(sim: SimContext) {
 
 /** Where the floor arrows lead for an initiation under way (null: none, or already there). */
 export function initiationGoal(sim: Pick<SimContext, 'world' | 'state' | 'rules235'>): ((i: number) => boolean) | null {
-  if (!gangsHere(sim)) return null;
+  const tile = initiationTile(sim);
+  if (tile < 0 || tile === tileAt(sim.state.player.x, sim.state.player.z)) return null;
+  return (i) => i === tile;
+}
+
+/** The tile an initiation under way leads to (-1: none): the tribute where it is, else the boss to hand it to (the tutorial's arrows too). */
+export function initiationTile(sim: Pick<SimContext, 'world' | 'state' | 'rules235'>): number {
+  if (!gangsHere(sim)) return -1;
   const s = sim.state;
   const f = s.favors.find((x) => x.kind === FAVOR.INITIATION && x.state === FAVOR_STATE.TAKEN);
-  if (!f) return null;
+  if (!f) return -1;
   const w = sim.world;
   const want = tributeOf(f);
   const places = placesOf(w);
@@ -329,8 +336,7 @@ export function initiationGoal(sim: Pick<SimContext, 'world' | 'state' | 'rules2
       }
     }
   }
-  if (tile < 0 || tile === tileAt(s.player.x, s.player.z)) return null;
-  return (i) => i === tile;
+  return tile;
 }
 
 /** Why an initiation can't be handed in now ('' it can): already in a gang, or one was left today. */

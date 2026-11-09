@@ -87,6 +87,8 @@ export const DAYS: readonly Lesson[] = [
     // The sports ground (P31): a lap of the running track for Speed, a set on the pull-up bar for Strength.
     id: 'laps',
     icon: 'run',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 41,
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 31, 38, 1);

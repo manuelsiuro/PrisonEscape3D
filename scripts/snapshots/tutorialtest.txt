@@ -33,6 +33,8 @@ tattoo: 5 steps done by day 1 10:14
 talent: 4 steps done by day 1 20:04
 quiz: 4 steps done by day 1 19:55
 crew: 3 steps done by day 1 10:33
+gangJoin: 4 steps done by day 1 18:18
+gangTurf: 3 steps done by day 2 18:24
 crew, posted far: ended at step 3 (lesson.crew.far)
 meals: 4 steps done by day 1 09:16
 night: 6 steps done by day 2 07:55
@@ -40,12 +42,19 @@ night: 6 steps done by day 1 23:08
 rollcall: 4 steps done by day 1 08:22
 rollcall: 4 steps done by day 1 08:36
 showers: 3 steps done by day 1 16:12
+caught: 4 steps done by day 1 12:52
+towers: 2 steps done by day 1 23:40
 laps: 3 steps done by day 1 10:55
 gardener: 4 steps done by day 1 12:18
 lockpick: 3 steps done by day 1 10:35
+keys: 5 steps done by day 1 18:04
+keys, put back uncopied: ended at step 2 (lesson.keys.late)
+cams: 3 steps done by day 1 18:05
 stowaway: 3 steps done by day 1 14:31
 bluff: 3 steps done by day 1 19:50
 glider: 2 steps done by day 1 23:21
+grapnel: 2 steps done by day 1 23:21
+takeover: 2 steps done by day 1 10:40
 forgery: 3 steps done by day 1 22:01
 release: 3 steps done by day 2 10:06
 parole: 4 steps done by day 10 10:15
@@ -83,6 +92,14 @@ crew, called off: ended at step 3 (lesson.crew.off)
 smuggle, by visitor: ended at step 1 (lesson.smuggle.wrong)
 heat, out the east fence: ended at step 1 (lesson.outEarly)
 tunnel, down a stray hole: on at step 4 (null)
-4 chapters: basics 10, getby 7, life 30, ways 8
+hounds: 3 steps done by day 2 18:11
+cold: 4 steps done by day 1 19:23
+shell: 5 steps done by day 1 23:27
+mines: 2 steps done by day 1 23:22
+raft: 3 steps done by day 1 23:42
+helicopter: 2 steps done by day 1 23:34
+caught, waited out: done
+shell, thrown off the arrows: at step 5
+5 chapters: basics 10, getby 7, life 34, ways 12, prisons 6
 training: its guard out cold, no takeover
 every lesson goal is open floor
