@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: Overgrown Street Kiosk (lib:overgrown_kiosk)
+ * Model library, weathered city set: Overgrown Street Kiosk (lib:overgrown_kiosk)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~310 triangles.
@@ -17,7 +17,7 @@ export const overgrownKioskBlueprint: ModelBlueprint = {
   nameFr: 'Kiosque à journaux de rue abandonné et envahi',
   category: 'architecture',
   subcategory: 'Civic & Transit',
-  tags: ['kit-library', 'architecture', 'tlou', 'kiosk', 'abandoned', 'overgrown', 'low-poly'],
+  tags: ['kit-library', 'architecture', 'kiosk', 'abandoned', 'overgrown', 'low-poly'],
   description:
     'Rusted urban newsstand with boarded service window, weathered corrugated sheet roof, peeling poster flyers, and lush cascading ivy vines crawling down the canopy.',
   footprint: [1, 1],
@@ -87,9 +87,7 @@ export const overgrownKioskBlueprint: ModelBlueprint = {
       // 4 horizontal timber planks nailed across window opening
       const plankYs = [0.88, 1.02, 1.16, 1.3];
       for (const py of plankYs) {
-        kioskParts.push(
-          box(0.78, 0.11, 0.02, PALETTE.wood, 0, py, 0.45),
-        );
+        kioskParts.push(box(0.78, 0.11, 0.02, PALETTE.wood, 0, py, 0.45));
       }
     } else {
       // Open window revealing dark ransacked interior

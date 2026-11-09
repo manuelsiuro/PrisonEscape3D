@@ -61,7 +61,7 @@ export const storageLockerBlueprint: ModelBlueprint = {
       // Base plinth keeping locker off damp prison floor (y: 0 -> 0.08)
       box(0.44, 0.08, 0.46, PALETTE.dark, 0, 0, 0),
       // Main metal locker cabinet body (y: 0.08 -> 1.38)
-      box(0.42, 1.30, 0.44, bodyHex, 0, 0.08, 0),
+      box(0.42, 1.3, 0.44, bodyHex, 0, 0.08, 0),
       // Top protective cap / trim (y: 1.38 -> 1.41)
       box(0.44, 0.03, 0.46, PALETTE.dark, 0, 1.38, 0),
     ];
@@ -76,21 +76,17 @@ export const storageLockerBlueprint: ModelBlueprint = {
       // Lower compartment (y: 0.09 -> 0.71)
       doorParts.push(
         box(0.38, 0.62, 0.012, bodyHex, 0, 0.09, 0.222),
-        ...repeatLinear(3, (i) =>
-          box(0.18, 0.012, 0.008, PALETTE.dark, 0, 0.65 - i * 0.025, 0.228),
-        ),
-        box(0.02, 0.08, 0.016, PALETTE.chrome, 0.14, 0.40, 0.23),
+        ...repeatLinear(3, (i) => box(0.18, 0.012, 0.008, PALETTE.dark, 0, 0.65 - i * 0.025, 0.228)),
+        box(0.02, 0.08, 0.016, PALETTE.chrome, 0.14, 0.4, 0.23),
         box(0.06, 0.03, 0.006, PALETTE.brass, 0, 0.54, 0.228),
       );
 
       // Upper compartment (y: 0.75 -> 1.37)
       doorParts.push(
         box(0.38, 0.62, 0.012, bodyHex, 0, 0.75, 0.222),
-        ...repeatLinear(3, (i) =>
-          box(0.18, 0.012, 0.008, PALETTE.dark, 0, 1.31 - i * 0.025, 0.228),
-        ),
+        ...repeatLinear(3, (i) => box(0.18, 0.012, 0.008, PALETTE.dark, 0, 1.31 - i * 0.025, 0.228)),
         box(0.02, 0.08, 0.016, PALETTE.chrome, 0.14, 1.05, 0.23),
-        box(0.06, 0.03, 0.006, PALETTE.brass, 0, 1.20, 0.228),
+        box(0.06, 0.03, 0.006, PALETTE.brass, 0, 1.2, 0.228),
       );
 
       // Padlock on upper latch
@@ -104,19 +100,15 @@ export const storageLockerBlueprint: ModelBlueprint = {
       // Single full-height door (y: 0.09 -> 1.37)
       doorParts.push(
         box(0.38, 1.28, 0.012, bodyHex, 0, 0.09, 0.222),
-        ...repeatLinear(4, (i) =>
-          box(0.2, 0.012, 0.008, PALETTE.dark, 0, 1.31 - i * 0.025, 0.228),
-        ),
-        ...repeatLinear(4, (i) =>
-          box(0.2, 0.012, 0.008, PALETTE.dark, 0, 0.20 - i * 0.025, 0.228),
-        ),
+        ...repeatLinear(4, (i) => box(0.2, 0.012, 0.008, PALETTE.dark, 0, 1.31 - i * 0.025, 0.228)),
+        ...repeatLinear(4, (i) => box(0.2, 0.012, 0.008, PALETTE.dark, 0, 0.2 - i * 0.025, 0.228)),
         box(0.02, 0.1, 0.016, PALETTE.chrome, 0.14, 0.72, 0.23),
         box(0.07, 0.035, 0.006, PALETTE.brass, 0, 1.15, 0.228),
       );
 
       if (hasPadlock) {
         doorParts.push(
-          box(0.03, 0.035, 0.014, PALETTE.brass, 0.14, 0.70, 0.245),
+          box(0.03, 0.035, 0.014, PALETTE.brass, 0.14, 0.7, 0.245),
           box(0.02, 0.02, 0.006, PALETTE.chrome, 0.14, 0.735, 0.245),
         );
       }

@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: Abandoned Patrol Car (lib:abandoned_patrol_car)
+ * Model library, weathered city set: Abandoned Patrol Car (lib:abandoned_patrol_car)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~390 triangles.
@@ -17,7 +17,7 @@ export const abandonedPatrolCarBlueprint: ModelBlueprint = {
   nameFr: 'Voiture de patrouille abandonnée et envahie',
   category: 'vehicles',
   subcategory: 'Derelict Vehicles',
-  tags: ['kit-library', 'vehicle', 'tlou', 'car', 'abandoned', 'overgrown', 'low-poly'],
+  tags: ['kit-library', 'vehicle', 'car', 'abandoned', 'overgrown', 'low-poly'],
   description:
     'Rusted city police sedan resting on deflated tires, with faded paint, lightbar, open driver door, and climbing green ivy vines along the hood and windshield.',
   footprint: [2, 1],

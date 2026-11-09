@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: Quarantine Medical Triage Tent (lib:triage_tent)
+ * Model library, weathered city set: Quarantine Medical Triage Tent (lib:triage_tent)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~320 triangles.
@@ -16,8 +16,8 @@ export const triageTentBlueprint: ModelBlueprint = {
   name: 'Quarantine Medical Triage Tent',
   nameFr: 'Tente de triage médical de quarantaine',
   category: 'architecture',
-  subcategory: 'Quarantine & Military',
-  tags: ['kit-library', 'architecture', 'tlou', 'tent', 'medical', 'quarantine', 'low-poly'],
+  subcategory: 'Emergency & Military',
+  tags: ['kit-library', 'architecture', 'tent', 'medical', 'quarantine', 'low-poly'],
   description:
     'Olive-drab military emergency medical tent with stenciled red cross, tubular frame, rolled entry flap, and field triage cot with IV drip stand.',
   footprint: [2, 2],
