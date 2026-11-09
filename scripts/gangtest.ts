@@ -564,6 +564,12 @@ for (const def of PRISONS) {
     const k2 = new Bot(def, 3);
     k2.sim.restore(sim.snapshot());
     const m2 = mate;
+    // (The mate brought beside the player: walked across the prison mid-morning, the player was out of place long enough
+    // to be caught on the way in some prisons, and the case then tested nothing. 2.37.)
+    const by = besides(k2.sim, k2.tile)[0];
+    const mb = k2.st.inmates[m2].body;
+    mb.x = (by % MAP_W) * UNIT + UNIT / 2;
+    mb.z = Math.floor(by / MAP_W) * UNIT + UNIT / 2;
     meet(k2, m2);
     k2.op(OP.CLOSE);
     k2.st.lock = m2;

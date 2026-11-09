@@ -3,7 +3,7 @@ stalag-flucht: the longest walk home 24.7 s (sports), of 25; from 19 rooms, none
 shankton: the longest walk home 22.3 s (inmateCell), of 25; from 19 rooms, none from: outside, perimeter, none, guardQuarters, generator, solitary, controlRoom
 san-pancho: the longest walk home 18.4 s (infirmary), of 25; from 19 rooms, none from: outside, walkway, none, solitary, controlRoom, generator, guardQuarters
 irongate: the longest walk home 22.6 s (woodshop), of 25; from 18 rooms, none from: perimeter, walkway, solitary, none, generator, garden, dock, controlRoom, helipad, guardQuarters, outside
-six-hunter: the longest walk home 22.6 s (kennels), of 25; from 19 rooms, none from: outside, perimeter, none, generator, solitary, guardQuarters
+six-hunter: the longest walk home 22.7 s (kennels), of 25; from 19 rooms, none from: outside, perimeter, none, generator, solitary, guardQuarters
 center-perks: beside the bed (7,7): Sleep in 144 of 144 positions and facings, a chair in none
 stalag-flucht: beside the bed (5,7): Sleep in 144 of 144 positions and facings, a chair in none
 shankton: beside the bed (9,9): Sleep in 144 of 144 positions and facings, a chair in none
@@ -17,9 +17,9 @@ the bed: Tuck in, Take out, then Sleep in every prison; full pockets and a full 
 bed checks: up in the cell passes with a word; asleep passes; a dummy tucked in at night fools them
 center-perks: every inmate in bed by 14, 12, 13, 13 s; the player woken at 07:55
 stalag-flucht: every inmate in bed by 16, 14, 16, 14 s; the player woken at 07:55
-shankton: every inmate in bed by 21, 19, 19, 18 s; the player woken at 07:55
+shankton: every inmate in bed by 19, 19, 20, 18 s; the player woken at 07:55
 san-pancho: every inmate in bed by 16, 16, 16, 17 s; the player woken at 07:55
 irongate: every inmate in bed by 18, 18, 19, 15 s; the player woken at 07:55
-six-hunter: every inmate in bed by 15, 15, 16, 14 s; the player woken at 07:55
+six-hunter: every inmate in bed by 17, 16, 15, 15 s; the player woken at 07:55
 older runs: a 2.27 log replays as it was and is not carried on; a new one is
 the words: in both languages

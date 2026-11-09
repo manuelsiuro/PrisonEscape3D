@@ -121,7 +121,10 @@ props.push(
 );
 
 /** Three rows of four in the courtyard east of the garden (P32), facing the warden at the north end. */
-const rollCall = [30, 32, 34].flatMap((z) => [32, 34, 36, 38].map((x) => ({ x, z })));
+// (2.37: a row further north, the zone a row higher, so a tile of yard lies round the squares on every side; the yard's
+// benches and two gangs' corners keep row 35. Before, z 30 to 34: the south row on the zone's edge, under its painted line.)
+const rollCall = [29, 31, 33].flatMap((z) => [32, 34, 36, 38].map((x) => ({ x, z })));
+const rollCall236 = [30, 32, 34].flatMap((z) => [32, 34, 36, 38].map((x) => ({ x, z })));
 
 /**
  * Eight guards (GDD §4.3). Directions: 1 east, 5 south, 9 west, 13 north.
@@ -300,7 +303,7 @@ export const SHANKTON: PrisonDef = {
     ['yard', 24, 27, 39, 36],
     // P32: the walled garden plot in the courtyard's west end; roll call east of it.
     ['garden', 24, 28, 29, 35],
-    ['rollCall', 31, 29, 39, 34],
+    ['rollCall', 31, 28, 39, 34],
     ['woodshop', 41, 28, 47, 35],
     ['metalshop', 49, 28, 54, 35],
     ['library', 24, 41, 30, 46],
@@ -338,6 +341,7 @@ export const SHANKTON: PrisonDef = {
     ],
   },
   rollCall,
+  rollCallBefore237: { spots: rollCall236, zones: [[31, 29, 39, 34]] },
   spawn: { x: 10, z: 10 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
   guards,

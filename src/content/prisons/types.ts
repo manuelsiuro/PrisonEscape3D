@@ -287,6 +287,12 @@ export interface PrisonDef {
   props: readonly PropPlacement[];
   /** Standing spots at roll call, one per inmate (painted on the ground; used by the routine). */
   rollCall: ReadonlyArray<{ x: number; z: number }>;
+  /**
+   * 2.37: the roll call as it was before its squares were centred in their zone (the Six Hunter's, Shankton's):
+   * its standing spots (when they moved) and its zone's rectangles in place of the `rollCall` ones, for runs logged
+   * on 2.36 or before (`World.oldRollCall`, `Sim.rules236`).
+   */
+  rollCallBefore237?: { spots?: ReadonlyArray<{ x: number; z: number }>; zones: readonly Rect[] };
   /** Where the player starts, as a tile. */
   spawn: { x: number; z: number };
   /** Zones the player must be able to walk to from the cell with no keys or tools (validated). */
