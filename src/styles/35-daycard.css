@@ -331,6 +331,14 @@
   color: var(--dlg-soft);
 }
 
+/* 2.39: what free time opens, under its place: a quieter line, wrapping. */
+.dc-text small.dc-open {
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--daycard-gold-87);
+  opacity: 0.85;
+}
+
 /* Gone by: quieter (the place and how it went stay readable). */
 .dc-block.past .dc-ic,
 .dc-block.past .dc-text b {

@@ -10,7 +10,7 @@ denied: solitary twice and a knockout (score -15), again from day 13, the next h
 center-perks: applied day 3 10:13, sat day 10 10:07; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:14 by parole (gold by day 12)
 stalag-flucht: applied day 3 10:20, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +5: granted 26; out day 11 10:12 by parole (gold by day 12)
 shankton: applied day 3 10:17, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:15 by parole (gold by day 13)
-san-pancho: applied day 3 10:32, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:17 by parole (gold by day 13)
+san-pancho: applied day 3 10:18, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:17 by parole (gold by day 13)
 irongate: applied day 3 10:14, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +1 +3 +5: granted 23; out day 11 10:09 by parole (gold by day 14)
 six-hunter: applied day 3 10:18, sat day 10 10:05; record 14 (rollCalls +7, meals +4, showers +3), answers +1 +3 +5: granted 23; out day 11 10:13 by parole (gold by day 14)
 plotter: day 3 23:26 parole: voided (night); again from day 6

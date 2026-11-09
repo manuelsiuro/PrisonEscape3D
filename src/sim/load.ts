@@ -31,6 +31,7 @@ import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { newVend, vendOk } from './systems/vendState';
 import { coolerOk, menuOk, newCooler, newMenu } from './systems/menuState';
+import { huddlesOk, newHuddles } from './systems/huddles';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
 import { FREED_STEPS } from '../content/paperwork';
@@ -75,7 +76,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (2.36: optional, so not among a fresh state's keys: kept when there, last, in the order the run added them (the
   // hash reads the keys in order); checked below.)
   for (const k of Object.keys(st))
-    if ((k === 'struckLayer' || k === 'gang' || k === 'recall' || k === 'replant') && st[k] !== undefined)
+    if ((k === 'struckLayer' || k === 'gang' || k === 'recall' || k === 'replant' || k === 'huddle') && st[k] !== undefined)
       (s as unknown as Record<string, unknown>)[k] = st[k];
   // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
   // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
@@ -495,6 +496,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // 2.36: absent, or a step (the hounds back at work then).
   if (s.recall !== undefined && (!Number.isInteger(s.recall) || s.recall < 0)) delete s.recall;
   if (s.replant !== undefined && (!Number.isInteger(s.replant) || s.replant < 0)) delete s.replant;
+  // 2.39: free time's gatherings, checked (else set afresh: nobody gathered, the block's slots set again).
+  if (s.huddle !== undefined && !huddlesOk(s.huddle, s.inmates.length)) s.huddle = newHuddles();
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];

@@ -2,7 +2,7 @@ import { huntTap } from './lazy';
 import { itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import { clockAt } from '../sim/systems/clock';
-import { NIGHT_WARNING } from '../sim/tuning';
+import { NIGHT_WARNING, ROLL_CALL_WARNING } from '../sim/tuning';
 import { t } from '../i18n';
 import { lessonGoal } from './lazy';
 import { ZONES } from '../content/zones';
@@ -123,6 +123,18 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   }
   if (s.hearing) return null;
   const r = ROUTINE[s.routine];
+  // (2.39: the evening's free time nearly over, roll call next (missed: a lockdown): to the player's square, from the
+  // warning on, until they're in the yard.)
+  if (
+    r.id === 'eveningFreeTime' &&
+    !sim.rules238 &&
+    !w.def.rules?.relaxed &&
+    clockAt(s.step).minuteOfDay >= ROLL_CALL_WARNING &&
+    sim.playerZone !== 'rollCall'
+  ) {
+    const spot = places.rollCall[0].tile;
+    return (i) => i === spot;
+  }
   // (2.28: counted at the evening's roll call, and the warning's gone: home.)
   if (
     r.id === 'eveningRollCall' &&

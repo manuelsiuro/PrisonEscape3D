@@ -6,6 +6,7 @@ import type { PrisonDef } from '../content/prisons/types';
 import { SHOP_SLOTS } from '../content/loot';
 import { newVend, type VendState } from './systems/vendState';
 import { newCooler, newMenu, type CoolerState, type MenuState } from './systems/menuState';
+import type { HuddleState } from './systems/huddles';
 import { ROUTINE, routineAt } from '../content/routine';
 import { HOLDER, type Favor } from './systems/economy';
 import { maxHealth } from './systems/combat';
@@ -413,6 +414,8 @@ export interface SimState {
   recall?: number;
   /** 2.37: the prison day a used-up initiation tribute was last put back in the rival boss's desk (gangs.ts; absent: never). */
   replant?: number;
+  /** 2.39, free time's gatherings (huddles.ts): absent until the first forms (a run that never reaches one hashes as before). */
+  huddle?: HuddleState;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

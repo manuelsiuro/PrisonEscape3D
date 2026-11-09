@@ -183,7 +183,8 @@ function verbsFor(plan: Plan): string[] {
     case 'bed':
       return ['act.tuckIn', 'act.takeOut'];
     case 'talk':
-      return ['act.talk', 'act.talkGuard', 'act.deliver'];
+      // (2.39: someone at an inmates' game who'll play the player: asked to.)
+      return ['act.talk', 'act.talkGuard', 'act.deliver', 'act.joinDice', 'act.joinCards', 'act.joinHoops'];
     case 'fixture': {
       const use = plan.target.use;
       if (use === 'generator') return ['act.powerOff', 'act.powerOn'];

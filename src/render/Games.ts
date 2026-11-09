@@ -31,6 +31,21 @@ export interface GamesFrame {
     t: [number, number, number, number];
     seed: number;
   } | null;
+  /**
+   * 2.39: inmates' own games of dice in free time (play/huddles.ts): the middle between the two, the one throwing and
+   * the other, the pair's faces, seconds since they left the hand, a seed for their scatter.
+   */
+  crowd?: ReadonlyArray<{
+    x: number;
+    z: number;
+    fromX: number;
+    fromZ: number;
+    oppX: number;
+    oppZ: number;
+    faces: readonly [number, number];
+    t: number;
+    seed: number;
+  }>;
   /** Taps at a lock and throws of the dice so far (the arm twitches at each new one). */
   taps: number;
   /** Sports day: bunting strung over the yard. */
@@ -45,6 +60,8 @@ const FLIGHT = 0.55;
 const HAND_AHEAD = 0.5;
 const HAND_SIDE = 0.29;
 const HAND_Y = 0.6;
+/** 2.39: the inmates' games of dice drawn at once at most (two dice each). */
+const CROWD_DICE = 3;
 /** A die's size (a tile is 1). */
 const DIE = 0.17;
 /** Pennants on the bunting at most, and its poles. */
@@ -178,7 +195,11 @@ export class GamesView {
   private readonly yAxis = new THREE.Vector3(0, 1, 0);
 
   constructor() {
-    this.dice = new THREE.InstancedMesh(dieGeometry(), new THREE.MeshStandardMaterial({ map: diceTexture(), roughness: 0.45 }), 4);
+    this.dice = new THREE.InstancedMesh(
+      dieGeometry(),
+      new THREE.MeshStandardMaterial({ map: diceTexture(), roughness: 0.45 }),
+      4 + CROWD_DICE * 2,
+    );
     this.dice.count = 0;
     this.dice.frustumCulled = false;
     this.dice.castShadow = true;
@@ -449,9 +470,58 @@ export class GamesView {
         this.dice.setMatrixAt(n++, this.m);
       }
     }
+    // 2.39: the inmates' own games, a pair each from the one whose turn it is.
+    const crowd = ground ? (f?.crowd ?? []) : [];
+    for (let g = 0; g < crowd.length && g < CROWD_DICE; g++) {
+      const c = crowd[g];
+      for (let k = 0; k < 2; k++) {
+        this.throwDie(c.x, c.z, c.fromX, c.fromZ, c.oppX, c.oppZ, c.faces[k], c.t, c.seed, k, motion);
+        this.dice.setMatrixAt(n++, this.m);
+      }
+    }
     this.dice.count = n;
     this.dice.visible = n > 0;
     if (n) this.dice.instanceMatrix.needsUpdate = true;
+  }
+
+  /** A die thrown from a hand toward the middle between two, `t` s ago, into this.m (an inmates' game: one pair, their own seed). */
+  private throwDie(
+    x: number,
+    z: number,
+    fromX: number,
+    fromZ: number,
+    oppX: number,
+    oppZ: number,
+    face: number,
+    t: number,
+    seed: number,
+    k: number,
+    motion: boolean,
+  ) {
+    const len = Math.hypot(oppX - fromX, oppZ - fromZ) || 1;
+    const fx = (oppX - fromX) / len;
+    const fz = (oppZ - fromZ) / len;
+    const off = (k === 0 ? -1 : 1) * (0.13 + jit(seed, k) * 0.05);
+    const toward = (jit(seed, k + 4) - 0.5) * 0.08;
+    // (Along the camera's depth the throwers' backs would hide them: a little to the side.)
+    const cx = x + (Math.abs(fz) > Math.abs(fx) ? 0.3 : 0);
+    const rx = cx + fz * off + fx * toward;
+    const rz = z - fx * off + fz * toward;
+    const hx = fromX + fx * HAND_AHEAD + fz * HAND_SIDE;
+    const hz = fromZ + fz * HAND_AHEAD - fx * HAND_SIDE;
+    const e = motion ? Math.min(1, Math.max(0, t) / FLIGHT) : 1;
+    const arc = Math.sin(Math.min(1, e / 0.8) * Math.PI) * 0.28 + (e > 0.8 ? Math.sin(((e - 0.8) / 0.2) * Math.PI) * 0.05 : 0);
+    const h = (HAND_Y - DIE / 2) * (1 - Math.min(1, e / 0.8));
+    this.p.set(hx + (rx - hx) * Math.min(1, e / 0.8), DIE / 2 + arc + h, hz + (rz - hz) * Math.min(1, e / 0.8));
+    this.q.copy(UP[face]);
+    this.q2.setFromAxisAngle(this.yAxis, jit(seed, k + 8) * Math.PI * 2);
+    this.q.premultiply(this.q2);
+    if (e < 1) {
+      this.axis.set(jit(seed, k + 12) - 0.5, 0.3, jit(seed, k + 16) - 0.5).normalize();
+      this.q2.setFromAxisAngle(this.axis, (1 - e) * (1 - e) * 14);
+      this.q.premultiply(this.q2);
+    }
+    this.m.compose(this.p, this.q, this.s);
   }
 
   /** Shown for a moment while the renderer compiles their shaders (a new game), then hidden again. */

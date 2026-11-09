@@ -38,6 +38,7 @@ export const LESSON_IDS: readonly string[] = [
   'talent',
   'quiz',
   'crew',
+  'freetime',
   'gangJoin',
   'gangTurf',
   'caught',
