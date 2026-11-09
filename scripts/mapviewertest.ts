@@ -99,6 +99,8 @@ const KNOWN_PRISON = new Set([
   'map',
   // No place on a map: the zones maptest checks can be walked to.
   'reachable',
+  // No place on a map: only an old run's replay plays the roll call where it was (2.37).
+  'rollCallBefore237',
 ]);
 const KNOWN_GUARD = new Set(['name', 'beat', 'posts', 'night', 'duties', 'key', 'riot', 'helipad', 'trait', 'dog', 'about', 'kit']);
 const KNOWN_LEISURE = new Set(['hoop', 'oldTimer', 'garden', 'race', 'pitch', 'pitchWas', 'stage', 'quiz', 'track', 'librarian']);

@@ -11,7 +11,7 @@ twenty minutes of everything (600 turns, items swapped, blows): 34 parts as at t
 training: a day (28801 steps), 2 people, 75 changes of what they do: 0 jumps; 295 times standing about with nothing to do, 0 left in a pose
 center-perks: a day (28801 steps), 12 people, 515 changes of what they do: 0 jumps; 1309 times standing about with nothing to do, 0 left in a pose
 stalag-flucht: a day (28801 steps), 15 people, 858 changes of what they do: 0 jumps; 1514 times standing about with nothing to do, 0 left in a pose
-shankton: a day (28801 steps), 19 people, 1094 changes of what they do: 0 jumps; 1802 times standing about with nothing to do, 0 left in a pose
+shankton: a day (28801 steps), 19 people, 1143 changes of what they do: 0 jumps; 1819 times standing about with nothing to do, 0 left in a pose
 san-pancho: a day (28801 steps), 21 people, 1281 changes of what they do: 0 jumps; 3466 times standing about with nothing to do, 0 left in a pose
 irongate: a day (28801 steps), 23 people, 1125 changes of what they do: 0 jumps; 3931 times standing about with nothing to do, 0 left in a pose
-six-hunter: a day (28801 steps), 17 people, 1096 changes of what they do: 0 jumps; 1883 times standing about with nothing to do, 0 left in a pose
+six-hunter: a day (28801 steps), 17 people, 1083 changes of what they do: 0 jumps; 1828 times standing about with nothing to do, 0 left in a pose

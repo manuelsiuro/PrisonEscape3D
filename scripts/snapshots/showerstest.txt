@@ -14,7 +14,7 @@ stalag-flucht #42: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 25, 
 stalag-flucht #43: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 shankton #41: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 shankton #42: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
-shankton #43: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+shankton #43: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 26, still waiting at the end 0
 san-pancho #41: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 26, still waiting at the end 0
 san-pancho #42: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 san-pancho #43: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 29, still waiting at the end 0
@@ -28,14 +28,14 @@ center-perks, 0 minutes in: washing after 4.4 s of a 60 s block, 0 heads taken
 center-perks, 35 minutes in: washing after 1.0 s of a 60 s block, 0 heads taken
 stalag-flucht, 0 minutes in: washing after 3.5 s of a 60 s block, 0 heads taken
 stalag-flucht, 35 minutes in: washing after 1.9 s of a 60 s block, 0 heads taken
-shankton, 0 minutes in: washing after 13.0 s of a 60 s block, 0 heads taken
-shankton, 35 minutes in: washing after 1.4 s of a 60 s block, 0 heads taken
+shankton, 0 minutes in: washing after 19.0 s of a 60 s block, 3 heads taken
+shankton, 35 minutes in: washing after 1.6 s of a 60 s block, 0 heads taken
 san-pancho, 0 minutes in: washing after 7.3 s of a 60 s block, 2 heads taken
 san-pancho, 35 minutes in: washing after 0.9 s of a 60 s block, 0 heads taken
 irongate, 0 minutes in: washing after 3.4 s of a 60 s block, 0 heads taken
 irongate, 35 minutes in: washing after 3.0 s of a 60 s block, 2 heads taken
-six-hunter, 0 minutes in: washing after 3.0 s of a 60 s block, 0 heads taken
-six-hunter, 35 minutes in: washing after 0.9 s of a 60 s block, 0 heads taken
+six-hunter, 0 minutes in: washing after 3.1 s of a 60 s block, 0 heads taken
+six-hunter, 35 minutes in: washing after 0.8 s of a 60 s block, 0 heads taken
 ambush: 1.5 s squaring up before it moves or lands a blow
 san-pancho, day 1, a player who stands there: knocked out in 9 of 12 blocks, 9 ambushes
 san-pancho, day 1, a player who hits back: knocked out in 6 of 12 blocks, 9 ambushes

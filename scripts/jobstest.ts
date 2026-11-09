@@ -571,8 +571,8 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
   check(!!replayed?.ok && replayed.sim.rules229 === true, 'a 2.29 log through work replays whole under the old rules');
   check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.36.1' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.37.0' });
   for (let k = 0; k < (WORK + 60 - 8 * 60) * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.36.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.37.0' }).toLog().seed === 24, 'and is carried on');
 }

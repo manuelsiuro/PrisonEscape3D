@@ -199,15 +199,8 @@ export class World {
       if (k !== TILE.EMPTY && !TILE_INFO[k].outdoor) roof.kind[i] = vents.kind[i] === TILE.LADDER ? TILE.LADDER : TILE.ROOF;
     }
     for (const l of this.layers) l.base.set(l.kind);
-    // Zones: road is outside, unlisted open ground is the perimeter, unlisted indoor tiles (doors,
-    // walls) belong to none; then the rectangles, then the cells.
-    for (let i = 0; i < MAP_W * MAP_H; i++)
-      g.zone[i] = zoneIndex(g.kind[i] === TILE.ROAD ? 'outside' : TILE_INFO[g.kind[i]].outdoor ? 'perimeter' : 'none');
-    for (const [id, x0, z0, x1, z1] of def.zones) this.fill(g.zone, x0, z0, x1, z1, zoneIndex(id));
-    def.cells.forEach(([x0, z0, x1, z1], k) => {
-      this.fill(g.zone, x0, z0, x1, z1, zoneIndex(k === 0 ? 'playerCell' : 'inmateCell'));
-      this.fill(this.cellOf, x0, z0, x1, z1, k + 1);
-    });
+    this.fillZones();
+    def.cells.forEach(([x0, z0, x1, z1], k) => this.fill(this.cellOf, x0, z0, x1, z1, k + 1));
     if (def.drawbridge) this.fill(this.bridge, ...def.drawbridge, 1);
     for (const q of def.checkpoint?.gates ?? []) this.checkpoint[q.z * MAP_W + q.x] = 1;
     if (def.checkpoint?.bridge && def.drawbridge) this.fill(this.checkpoint, ...def.drawbridge, 1);
@@ -258,6 +251,43 @@ export class World {
   /** What blocks a route the player is walked along on a layer (tap to walk, the bots): on the ground floor, mines too. */
   routeGrid(layer: number): Uint8Array {
     return layer === LAYER.GROUND ? this.routeBlock : this.layers[layer].block;
+  }
+
+  /**
+   * The ground's zones: road is outside, unlisted open ground is the perimeter, unlisted indoor tiles (doors, walls)
+   * belong to none; then the rectangles (the roll call's as it was under `oldRollCall`), then the cells.
+   */
+  private fillZones() {
+    const g = this.ground;
+    for (let i = 0; i < MAP_W * MAP_H; i++)
+      g.zone[i] = zoneIndex(g.kind[i] === TILE.ROAD ? 'outside' : TILE_INFO[g.kind[i]].outdoor ? 'perimeter' : 'none');
+    for (const [id, x0, z0, x1, z1] of this.zoneRects) this.fill(g.zone, x0, z0, x1, z1, zoneIndex(id));
+    this.def.cells.forEach(([x0, z0, x1, z1], k) => this.fill(g.zone, x0, z0, x1, z1, zoneIndex(k === 0 ? 'playerCell' : 'inmateCell')));
+  }
+
+  /** Replaying a run from 2.36 or before: the roll call's squares and zone as they were (Sim.rules236; `PrisonDef.rollCallBefore237`). */
+  private rollCallOld = false;
+  get oldRollCall() {
+    return this.rollCallOld;
+  }
+  set oldRollCall(on: boolean) {
+    if (on === this.rollCallOld || !this.def.rollCallBefore237) return;
+    this.rollCallOld = on;
+    this.fillZones();
+  }
+  /** The standing spots at roll call (the prison's, or as they were under `oldRollCall`). */
+  get rollCallSpots(): PrisonDef['rollCall'] {
+    return (this.rollCallOld && this.def.rollCallBefore237?.spots) || this.def.rollCall;
+  }
+  /** The zones' rectangles, the roll call's as they were under `oldRollCall`. */
+  get zoneRects(): PrisonDef['zones'] {
+    const old = this.rollCallOld ? this.def.rollCallBefore237 : undefined;
+    if (!old) return this.def.zones;
+    // (In the first one's place: later rectangles win.)
+    const first = this.def.zones.findIndex(([id]) => id === 'rollCall');
+    return this.def.zones.flatMap((z, k) =>
+      z[0] !== 'rollCall' ? [z] : k === first ? old.zones.map((r) => ['rollCall', ...r] as const) : [],
+    );
   }
 
   private fill(a: Uint8Array, x0: number, z0: number, x1: number, z1: number, v: number) {

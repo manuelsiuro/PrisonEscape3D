@@ -205,9 +205,10 @@ export class RunRecorder {
       // (Nor one from before the menu's dishes and the water cooler, 2.33.0, or the booth standing in the way, 2.33.2.)
       // (Nor one from before the reading marker slowed down and waited, 2.34.)
       // (Nor one from before noticing, the dark, lying low and the block, 2.35; nor the 2.36 passes, tools and items the first.)
-      // (Nor one from 2.36.0, before the initiation's tribute was put back once used up, 2.36.1.)
-      // (Every one of those versions comes before 2.36.1, the latest gate: one test covers them all.)
-      const stale = beforeTributeKept(log?.game ?? '');
+      // (Nor one from 2.36.0, before the initiation's tribute was put back once used up, 2.36.1; nor from 2.36, before the
+      // roll call's squares were centred, 2.37.)
+      // (Every one of those versions comes before 2.37.0, the latest gate: one test covers them all.)
+      const stale = before237(log?.game ?? '');
       const runs =
         log && log.prison === sim.prison.id && log.from + log.steps === from && !stale
           ? decodeRuns(fromBase64(log.data) ?? new Uint8Array())
@@ -352,6 +353,8 @@ const beforeStealth = (game: string) => versionBefore(game, 2, 35);
 export const before236 = (game: string) => versionBefore(game, 2, 36);
 /** Before the gang initiation's polish (2.36.1): Sim.rules2360 plays its tribute as it was. */
 const beforeTributeKept = (game: string) => versionBefore(game, 2, 36, 1);
+/** Before the roll call's squares were centred in their zone (2.37.0): Sim.rules236 plays them as they were. */
+const before237 = (game: string) => versionBefore(game, 2, 37);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -429,6 +432,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (before236(log.game)) sim.rules235 = true;
   // Played on 2.36.0: the initiation's tribute as it was.
   if (beforeTributeKept(log.game)) sim.rules2360 = true;
+  // Played on 2.36 or before: the roll call's squares as they were.
+  if (before237(log.game)) sim.rules236 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

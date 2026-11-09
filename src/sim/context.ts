@@ -40,6 +40,7 @@ export type SimContext = Pick<
   | 'rules233'
   | 'rules234'
   | 'rules235'
+  | 'rules236'
   | 'rules2360'
   | 'aboutBefore'
   | 'groundFrom'
