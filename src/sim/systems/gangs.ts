@@ -49,7 +49,7 @@ import { crowdPlan, eventOn, planOf, today } from './calendar';
 import { dist2 } from './combat';
 import { type Favor, FAVOR, FAVOR_STATE, priceOf } from './economy';
 import { DOING, type Inmate, inmateInCell } from './inmates';
-import { HOTBAR, itemOf, slot, usesOf } from './items';
+import { HOTBAR, isTribute, itemOf, slot, TRIBUTE_MARK, usesOf } from './items';
 import { HOLLOW_BOOK } from './structure';
 import type { Body } from './movement';
 import { bodyAt } from './movement';
@@ -204,8 +204,8 @@ function plantTribute(sim: SimContext, f: Favor) {
   if (i < 0) return;
   const list = containersOf(sim.world);
   const want = tributeOf(f);
-  // (No stray mark elsewhere: only one copy is the tribute.)
-  clearTribute(sim, f, i);
+  // (No stray mark elsewhere: only one copy is the tribute. Not in a run from 2.36.0, which left them.)
+  if (!sim.rules2360) clearTribute(sim, f, i);
   const box = s.items.containers[i];
   // (Any of the kind already in its drawers is the boss's own, so the tribute: whichever the player takes from there counts.)
   let there = false;
@@ -222,12 +222,11 @@ function plantTribute(sim: SimContext, f: Favor) {
 }
 
 /**
- * The tribute as it lies in the rival boss's desk: the item with a mark of its own in its uses (none of the three
- * has uses), so that only it is taken for the initiation, not one bought, found or picked up elsewhere.
+ * The tribute as it lies in the rival boss's desk: the item with a mark of its own in its uses (TRIBUTE_MARK, items.ts),
+ * so that only it is taken for the initiation, not one bought, found or picked up elsewhere.
  */
-export const TRIBUTE_MARK = 77;
+export { isTribute, TRIBUTE_MARK };
 export const tributeOf = (f: Pick<Favor, 'item'>) => slot(f.item, TRIBUTE_MARK);
-export const isTribute = (v: number) => itemOf(v) !== HOLLOW_BOOK && usesOf(v) === TRIBUTE_MARK;
 /** Whether a slot (or a hollow book in it) holds the marked tribute `want`. */
 const holdsTribute = (v: number, want: number) => v === want || (itemOf(v) === HOLLOW_BOOK && usesOf(v) === want);
 const unmark = (v: number, f: Pick<Favor, 'item'>) => {
@@ -267,19 +266,36 @@ export function tributeDesk(sim: Pick<SimContext, 'world' | 'state'>, f: Favor):
   return containersOf(w).findIndex((c) => c.table === 'inmateDesk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
 }
 
-/** Whether an initiation's marked tribute is somewhere the player can find it (pockets, own cell, rival's desk, open box, floor, rat). */
-export function hasTribute(sim: Pick<SimContext, 'world' | 'state'>, f: Favor): boolean {
+/**
+ * Whether an initiation's marked tribute still exists anywhere: pockets, any container (a desk, a stash, someone's
+ * pockets), the floor, a rat's mouth. Hidden somewhere else, it's still there: only one used up is lost.
+ */
+export function hasTribute(sim: Pick<SimContext, 'state'>, f: Favor): boolean {
   const s = sim.state;
   const want = tributeOf(f);
-  if (s.items.inv.some((v) => holdsTribute(v, want))) return true;
-  const desk = tributeDesk(sim, f);
-  if (desk >= 0 && s.items.containers[desk].some((v) => holdsTribute(v, want))) return true;
-  if (s.items.open >= 0 && s.items.containers[s.items.open]?.some((v) => holdsTribute(v, want))) return true;
-  const list = containersOf(sim.world);
-  if (list.some((c, i) => c.mine && s.items.containers[i].some((v) => holdsTribute(v, want)))) return true;
-  if (s.items.ground.some(([, v]) => holdsTribute(v, want))) return true;
-  if (s.rats.some((r) => holdsTribute(r.carry, want))) return true;
-  return false;
+  const has = (v: number) => holdsTribute(v, want);
+  return (
+    s.items.inv.some(has) ||
+    s.items.containers.some((box) => box.some(has)) ||
+    s.items.ground.some(([, v]) => has(v)) ||
+    s.rats.some((r) => has(r.carry))
+  );
+}
+
+/**
+ * An initiation's tribute used up (crafted with, eaten, sold): a new one put in the rival boss's desk, so the initiation
+ * never locks (2.36.1); only when no marked copy is left anywhere, and at most once a prison day, so it can't be farmed
+ * (2.37). Not in a run from 2.36.0.
+ */
+function replantTribute(sim: SimContext) {
+  const s = sim.state;
+  const day = prisonDay(s.step);
+  if (sim.rules2360 || s.replant === day) return;
+  for (const f of s.favors)
+    if (f.kind === FAVOR.INITIATION && f.state === FAVOR_STATE.TAKEN && tributeDesk(sim, f) >= 0 && !hasTribute(sim, f)) {
+      plantTribute(sim, f);
+      s.replant = day;
+    }
 }
 
 /** Where the floor arrows lead for an initiation under way (null: none, or already there). */
@@ -402,7 +418,7 @@ function squareUp(sim: SimContext, who: number) {
 export function gangs(sim: SimContext) {
   const s = sim.state;
   if (!gangsHere(sim)) return;
-  for (const f of s.favors) if (f.kind === FAVOR.INITIATION && f.state === FAVOR_STATE.TAKEN && !hasTribute(sim, f)) plantTribute(sim, f);
+  replantTribute(sim);
   const g = s.gang;
   if (!g) return;
   const mine = playerGang(sim);

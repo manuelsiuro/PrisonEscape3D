@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: Survivor Workbench (lib:survivor_workbench)
+ * Model library, weathered city set: Survivor Workbench (lib:survivor_workbench)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~240 triangles.
@@ -17,7 +17,7 @@ export const survivorWorkbenchBlueprint: ModelBlueprint = {
   nameFr: 'Établi artisanal de survie pour armes',
   category: 'props',
   subcategory: 'Survivor Equipment',
-  tags: ['kit-library', 'prop', 'tlou', 'workbench', 'crafting', 'wood', 'low-poly'],
+  tags: ['kit-library', 'prop', 'workbench', 'crafting', 'wood', 'low-poly'],
   description:
     'Heavy timber carpentry table rigged for survival weapon upgrades, equipped with a mechanical bench vise, articulated desk lamp, scrap weapon parts, and duct tape.',
   footprint: [1, 1],
@@ -117,10 +117,7 @@ export const survivorWorkbenchBlueprint: ModelBlueprint = {
       );
     } else {
       // Basic sparse supplies
-      tableParts.push(
-        cyl(0.04, 0.03, PALETTE.grey, -0.1, 0.78, 0.1, 8),
-        box(0.08, 0.03, 0.04, PALETTE.dark, 0.12, 0.78, 0.02),
-      );
+      tableParts.push(cyl(0.04, 0.03, PALETTE.grey, -0.1, 0.78, 0.1, 8), box(0.08, 0.03, 0.04, PALETTE.dark, 0.12, 0.78, 0.02));
     }
 
     return [

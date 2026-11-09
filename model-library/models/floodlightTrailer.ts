@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: QZ Floodlight Trailer (lib:qzone_floodlight)
+ * Model library, weathered city set: Floodlight Trailer (lib:floodlight_trailer)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~350 triangles.
@@ -11,17 +11,17 @@ import { box, cyl, rod, rotBox } from '../kit';
 import { PALETTE } from '../palette';
 import type { ModelBlueprint, Part, PartLayerSpec } from '../types';
 
-export const qzoneFloodlightBlueprint: ModelBlueprint = {
-  id: 'lib:qzone_floodlight',
-  name: 'Mobile QZ Diesel Floodlight Trailer',
+export const floodlightTrailerBlueprint: ModelBlueprint = {
+  id: 'lib:floodlight_trailer',
+  name: 'Mobile Diesel Floodlight Trailer',
   nameFr: 'Remorque projecteur diesel de zone de quarantaine',
   category: 'fixtures',
-  subcategory: 'Quarantine & Military',
-  tags: ['kit-library', 'fixture', 'tlou', 'floodlight', 'military', 'generator', 'low-poly'],
+  subcategory: 'Emergency & Military',
+  tags: ['kit-library', 'fixture', 'floodlight', 'military', 'generator', 'low-poly'],
   description:
     'Towable military generator trailer equipped with an articulated telescoping mast holding twin high-intensity halogen floodlights and emergency fuel jerrycans.',
   footprint: [1, 1],
-  sourceFile: 'model-library/models/qzoneFloodlight.ts',
+  sourceFile: 'model-library/models/floodlightTrailer.ts',
   params: [
     {
       key: 'lightOn',

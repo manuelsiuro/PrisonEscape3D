@@ -1,4 +1,5 @@
 import { itemDef, itemNumber } from '../../content/items';
+import { TRIBUTE } from '../../content/gangs';
 import { LOOT, POCKET_SLOTS } from '../../content/loot';
 import { choices, RECIPES } from '../../content/recipes';
 import { DIR_X, DIR_Z, SLOT } from '../command';
@@ -22,6 +23,18 @@ import { ON_MACHINE } from '../ai/doing';
 export const slot = (item: number, uses = itemDef(item)?.uses ?? 0) => item | (uses << 8);
 export const itemOf = (v: number) => v & 255;
 export const usesOf = (v: number) => v >>> 8;
+
+/**
+ * A gang initiation's tribute (2.36, gangs.ts): one of the three tribute items, marked with this in its uses (none of
+ * them has uses), so that only the copy from the rival boss's desk counts.
+ */
+export const TRIBUTE_MARK = 77;
+let tributeItems: ReadonlySet<number> | null = null;
+/** Whether a slot holds a marked tribute (only a tribute item: a multitool worn down to 77 uses is not one). */
+export function isTribute(v: number): boolean {
+  tributeItems ??= new Set(Object.values(TRIBUTE).map(itemNumber));
+  return usesOf(v) === TRIBUTE_MARK && tributeItems.has(itemOf(v));
+}
 
 export const HOTBAR = 6;
 /** Starting Intellect (GDD §3.2; trained in the library). */
@@ -517,10 +530,10 @@ export function ingredientSlots(s: ItemState, recipe: number): number[] | null {
   for (const ing of RECIPES[recipe].ingredients) {
     const ok = choices(ing).map(itemNumber);
     let found = -1;
-    // (An unmarked item before a gang's tribute (uses 77), so crafting never spends the tribute when another is carried.)
+    // (An unmarked item before a gang's tribute, so crafting never spends the tribute when another is carried.)
     for (let k = 0; k < s.inv.length; k++) {
       if (used.includes(k) || !ok.includes(itemOf(s.inv[k]))) continue;
-      if (usesOf(s.inv[k]) !== 77) {
+      if (!isTribute(s.inv[k])) {
         found = k;
         break;
       }

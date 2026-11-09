@@ -58,8 +58,13 @@ const docs = (...dirs: string[]) =>
     )
     .join('\n');
 const plan = readFileSync('docs/PLAN.md', 'utf8') + docs('docs/decisions', 'docs/phases');
-/** The version a flag is named for: rules224, played under 2.24 or before; but rules250, under 2.5.0. */
-const version = (flag: string) => (flag === 'rules250' ? [2, 5, 0] : [Number(flag[5]), Number(flag.slice(6)), 0]);
+/** The version a flag is named for: rules224, played under 2.24 or before; rules2360, under 2.36.0 (a patch); but rules250, under 2.5.0. */
+const version = (flag: string) =>
+  flag === 'rules250'
+    ? [2, 5, 0]
+    : flag.length === 9
+      ? [Number(flag[5]), Number(flag.slice(6, 8)), Number(flag[8])]
+      : [Number(flag[5]), Number(flag.slice(6)), 0];
 const log = (game: string): RunLog => ({ v: 1, prison: CENTER_PERKS.id, seed: 1, game, from: 0, steps: 0, data: '', sums: [] });
 for (const flag of flags) {
   check(plan.includes(`Sim.${flag}`), `${flag}: written down in the plan (PLAN.md, docs/decisions/, docs/phases/)`);

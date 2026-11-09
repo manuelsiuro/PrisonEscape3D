@@ -85,10 +85,7 @@ export const canteenTraysBlueprint: ModelBlueprint = {
     }
     // Top tray detail: molded divider rim
     const topY = baseY + count * 0.026;
-    trayParts.push(
-      box(0.4, 0.008, 0.012, trayHex, 0, topY, 0),
-      box(0.012, 0.008, 0.32, trayHex, 0, topY, 0),
-    );
+    trayParts.push(box(0.4, 0.008, 0.012, trayHex, 0, topY, 0), box(0.012, 0.008, 0.32, trayHex, 0, topY, 0));
 
     // 3. Side Cutlery Caddy Bins with Metal Spoons
     if (hasCutlery) {

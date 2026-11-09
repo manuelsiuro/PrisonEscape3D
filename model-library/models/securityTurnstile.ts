@@ -68,7 +68,7 @@ export const securityTurnstileBlueprint: ModelBlueprint = {
       // Card scanner / fingerprint sensor pad on top (y: 0.92 -> 0.935)
       box(0.16, 0.015, 0.22, PALETTE.black, -0.15, 0.92, -0.18),
       // Directional LED status light on front face (+Z)
-      box(0.10, 0.04, 0.02, PALETTE.dark, -0.15, 0.70, 0.37),
+      box(0.1, 0.04, 0.02, PALETTE.dark, -0.15, 0.7, 0.37),
       box(0.06, 0.02, 0.01, statusLed, -0.15, 0.71, 0.385),
     ];
 
