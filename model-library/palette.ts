@@ -71,8 +71,8 @@ export const PALETTE = {
   /** Light pastel sheet blue (matches props.ts `bed`). */
   blueLight: 0x9fb7d0,
 
-  // --- Post-Apocalyptic & Weathered City Tones (The Last of Us / Urban Decay) ---
-  /** Military olive drab canvas, FEDRA armor, and tactical vehicle panels. */
+  // --- Weathered city tones (urban decay) ---
+  /** Military olive drab canvas, field gear and tactical vehicle panels. */
   oliveDrab: 0x4a533b,
   /** Deep foliage green for encroaching moss, climbing ivy, and cracked asphalt weeds. */
   overgrownGreen: 0x3e5f2d,
@@ -80,7 +80,7 @@ export const PALETTE = {
   concreteGrey: 0x82888f,
   /** Faded scavenger blue for waterproof tarps, water collection drums, and plastic barricades. */
   tarpBlue: 0x2a5982,
-  /** Cordyceps fungal amber and toxic spore bioluminescent glow. */
+  /** Warm amber for warning lamps and glowing accents. */
   amberGlow: 0xd97724,
 } as const;
 

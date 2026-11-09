@@ -416,7 +416,7 @@ for (const def of PRISONS) {
   );
   check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = logOf('2.36.0', false);
+  const now = logOf('2.36.1', false);
   const again = replayLog(now.toLog(), stalag);
   check(!!again?.ok && again.sim.rules227 === false, "a log of today's replays under today's rules");
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.36.1' }).toLog().seed === 3, 'and is carried on');

@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: Decayed Bus Stop Shelter (lib:decayed_bus_stop)
+ * Model library, weathered city set: Decayed Bus Stop Shelter (lib:decayed_bus_stop)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~260 triangles.
@@ -17,7 +17,7 @@ export const decayedBusStopBlueprint: ModelBlueprint = {
   nameFr: 'Abribus municipal décrépit et pillé',
   category: 'architecture',
   subcategory: 'Civic & Transit',
-  tags: ['kit-library', 'architecture', 'tlou', 'shelter', 'transit', 'abandoned', 'low-poly'],
+  tags: ['kit-library', 'architecture', 'shelter', 'transit', 'abandoned', 'low-poly'],
   description:
     'Shattered municipal transit shelter with a cantilevered rust canopy, cracked sidewalk slab with encroaching weeds, weathered bench, and scavenged survivor backpack.',
   footprint: [2, 1],

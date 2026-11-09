@@ -32,7 +32,7 @@ agent. It points to the real sources rather than repeating them; when they disag
 | Command | What it does |
 |---|---|
 | `npm run dev` | Dev server, the game at <http://localhost:5310/> (one may already be running: reuse it) |
-| `npm run check` | Types, lint, layout and every test (78 scripts): gate on its **exit code**, never on `| tail` |
+| `npm run check` | Types, lint, layout and every test (79 scripts): gate on its **exit code**, never on `| tail` |
 | `npm test -- name1 name2` | Some tests only; `npm test -- -u` accepts snapshots, **only after reading the diff** |
 | `ONLY=<prison> npx tsx scripts/escapetest.ts` | One prison's escape bots (after any map change) |
 | `npm run build` | Type-check and build to `dist/` |

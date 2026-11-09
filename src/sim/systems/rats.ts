@@ -46,8 +46,7 @@ import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey, type World } from '../world
 import { clockAt, prisonDay } from './clock';
 import { awake, type Guard } from './guards';
 import { DOING, type Inmate } from './inmates';
-import { freeHotbar, giveSlot, guardKit, HOTBAR, itemOf, ownerOf, pocketOf, slot, usesOf } from './items';
-import { HOLLOW_BOOK } from './structure';
+import { freeHotbar, giveSlot, guardKit, HOTBAR, isTribute, itemOf, ownerOf, pocketOf, slot, usesOf } from './items';
 import { makeNoise } from './noise';
 import { RAT_START_SPEED } from '../../content/long';
 import { playerAbout } from './presence';
@@ -525,8 +524,8 @@ function errand(sim: SimContext, r: Rat) {
   }
   let best = -1;
   for (let k = from; k < slots.length; k++) {
-    // (A gang initiation's tribute in the rival boss's desk comes first, sugar included.)
-    if (itemOf(slots[k]) !== HOLLOW_BOOK && usesOf(slots[k]) === 77) {
+    // (2.36.1: a gang initiation's tribute comes first, sugar included.)
+    if (!sim.rules2360 && isTribute(slots[k])) {
       best = k;
       break;
     }

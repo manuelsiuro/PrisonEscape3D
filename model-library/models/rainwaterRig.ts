@@ -1,5 +1,5 @@
 /**
- * The Last of Us Style - City Model Library: Rainwater Catchment Rig (lib:rainwater_rig)
+ * Model library, weathered city set: Rainwater Catchment Rig (lib:rainwater_rig)
  *
  * AESTHETIC & PERFORMANCE COMPLIANCE:
  * - Low Polygon Budget: ~230 triangles.
@@ -17,7 +17,7 @@ export const rainwaterRigBlueprint: ModelBlueprint = {
   nameFr: 'Collecteur et filtre à eau de pluie de toit',
   category: 'props',
   subcategory: 'Survivor Equipment',
-  tags: ['kit-library', 'prop', 'tlou', 'water', 'survival', 'scavenged', 'low-poly'],
+  tags: ['kit-library', 'prop', 'water', 'survival', 'scavenged', 'low-poly'],
   description:
     'Rooftop water harvesting setup built from linked industrial plastic drums, timber platform, corrugated sheet funnel tray, PVC pipes, and a hanging charcoal filtration bucket.',
   footprint: [1, 1],
@@ -88,9 +88,7 @@ export const rainwaterRigBlueprint: ModelBlueprint = {
 
     // Interconnecting balance pipe between drums (if dual)
     if (isDual) {
-      rigParts.push(
-        tubeZ(0.015, 0.36, PALETTE.white, 0, 0.36, -0.04, 6).rotateZ(Math.PI / 2),
-      );
+      rigParts.push(tubeZ(0.015, 0.36, PALETTE.white, 0, 0.36, -0.04, 6).rotateZ(Math.PI / 2));
     }
 
     // 3. Hanging Charcoal / Gravel Filter Bucket on side
