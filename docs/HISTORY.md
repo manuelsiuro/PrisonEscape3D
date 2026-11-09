@@ -188,3 +188,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The 3D objects viewer (v2.37.0, not released yet)
 - Procedural 3D model library (v2.37.0, not released yet)
 - The week's changes reviewed (v2.37.0, not released yet)
+- The update notice on a slow start (v2.37.0, not released yet)
