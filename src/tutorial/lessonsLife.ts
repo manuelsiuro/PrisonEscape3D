@@ -6,7 +6,9 @@ import { STEPS_PER_MINUTE, TRUST_IGNORE, UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { MAP_W } from '../sim/world/World';
 import { CENTER_PERKS } from '../content/prisons/center-perks';
-import { DAY_EVENTS } from '../content/days';
+import { DAY_EVENTS, WEATHERS } from '../content/days';
+import { GANGS } from '../content/gangs';
+import { initiationTile, playerGang } from '../sim/systems/gangs';
 import { CATALOGUE, WAY } from '../content/smuggling';
 import { dayMinute, planOf, prisonDay, TODAY } from '../sim/systems/calendar';
 import { postOf } from '../sim/systems/crew';
@@ -21,8 +23,18 @@ import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 import { tileAt } from '../sim/world/grid';
 import {
   apart,
+  MOSS,
   at,
   bagsHidden,
+  bossIn,
+  cornerTile,
+  GYM_RATS,
+  initiation,
+  initiationFail,
+  KITCHEN,
+  onCorner,
+  tributeCarried,
+  turfJumped,
   boardFail,
   carries,
   centre,
@@ -38,6 +50,8 @@ import {
   inkOff,
   type Lesson,
   matchFail,
+  EVENING,
+  eveningOver,
   MORNING,
   myDesk,
   n,
@@ -149,6 +163,8 @@ export const LIFE: readonly Lesson[] = [
     // The pet rat (P20): a caught rat fed twice is tame, and fetches from furniture that isn't yours.
     id: 'rat',
     icon: 'rat',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 27,
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 23, 23, 1);
@@ -228,6 +244,8 @@ export const LIFE: readonly Lesson[] = [
     // Side games (P22): dice for a stake, then an arm-wrestle.
     id: 'games',
     icon: 'dice',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 29,
     setup: (sim) => {
       // Evening free time: four hours of games ahead (the morning's ends at noon).
       clockTo(sim, at(18, 15));
@@ -256,6 +274,8 @@ export const LIFE: readonly Lesson[] = [
     // Cheat (P27): a hand for $5 with Sparky, played out to its last chip.
     id: 'cards',
     icon: 'cards',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 30,
     setup: (sim) => {
       clockTo(sim, at(18, 15));
       place(sim, 24, 31, 1);
@@ -291,6 +311,8 @@ export const LIFE: readonly Lesson[] = [
     // Hoops (P27): a basket on one's own, then a shootout with Sparky.
     id: 'hoops',
     icon: 'ball',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 31,
     setup: (sim) => {
       clockTo(sim, at(18, 15));
       const c = sim.prison.leisure!.hoop;
@@ -330,6 +352,8 @@ export const LIFE: readonly Lesson[] = [
     // Checkers (P27): the old-timer's game left set up, won with a double jump; his secret.
     id: 'checkers',
     icon: 'checkers',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 32,
     setup: (sim) => {
       clockTo(sim, at(18, 15));
       place(sim, 24, 31, 1);
@@ -370,6 +394,8 @@ export const LIFE: readonly Lesson[] = [
     // Pruno (P28): a bag brewed and hidden; last night's ripe by morning, and drunk.
     id: 'pruno',
     icon: 'brew',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 33,
     setup: (sim) => {
       // Lights Out, in the cell: fruit and sugar in the pockets, and a bag hidden in the desk two nights ago.
       clockTo(sim, at(23, 5));
@@ -411,6 +437,8 @@ export const LIFE: readonly Lesson[] = [
     // The garden (P28): a bed planted and watered, a wilted one saved, a ripe one picked; the hole under a plant.
     id: 'garden',
     icon: 'sprout',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 34,
     setup: (sim) => {
       clockTo(sim, MORNING);
       const g = sim.prison.leisure!.garden;
@@ -455,6 +483,8 @@ export const LIFE: readonly Lesson[] = [
     // Rat racing (P28): the pet run on its track, then race night: entered, a bet, the race.
     id: 'ratRace',
     icon: 'race',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 35,
     setup: (sim) => {
       // Evening free time on a race night (day 1 is odd), in the cell, the rat on the shoulder.
       clockTo(sim, at(19, 40));
@@ -551,6 +581,8 @@ export const LIFE: readonly Lesson[] = [
     // The tattoo parlour (P29): a gun crafted, a heart traced for Sparky, a design of his on the player's arm.
     id: 'tattoo',
     icon: 'needle',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 37,
     setup: (sim) => {
       clockTo(sim, at(10, 5));
       place(sim, 36, 23, 1);
@@ -665,6 +697,8 @@ export const LIFE: readonly Lesson[] = [
     // The crew (P23): a friend recruited and posted as lookout by the patrol hall's doorway, whistling as the guard comes by.
     id: 'crew',
     icon: 'users',
+    // (Its seed as it was before the hounds and the gangs came before it in the list.)
+    seed: 40,
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 36, 23, 1);
@@ -686,6 +720,149 @@ export const LIFE: readonly Lesson[] = [
           return !seesRound(c.sim, at, 0) ? 'lesson.crew.far' : null;
         },
       },
+    ],
+  },
+  {
+    // Gangs (2.37's lesson for 2.36): Rusty, the Kitchen Crew's boss, won over and asked in; the initiation's sugar
+    // taken from the desk of Lefty, the Lifers' boss, and handed in.
+    id: 'gangJoin',
+    icon: 'fist',
+    prison: CENTER_PERKS,
+    seed: 150,
+    setup: (sim) => {
+      // (The evening's free time: four minutes, time enough to read and do it.)
+      clockTo(sim, EVENING);
+      const boss = bossIn(sim, KITCHEN);
+      // (Won over already: 65 is what it takes.)
+      sim.state.inmates[boss].opinion = 70;
+      // (In the cell block's corridor, outside his cell's door, as he comes out for free time.)
+      const b = sim.state.inmates[boss].body;
+      const [x, z] = near(sim, Math.floor(b.x / UNIT) + 1, 12);
+      place(sim, x, z, 13);
+    },
+    steps: [
+      {
+        text: 'lesson.gangJoin.talk',
+        touch: 'lesson.gangJoin.talkTouch',
+        done: (c) => c.sim.state.talk === bossIn(c.sim, KITCHEN) || !!initiation(c.sim),
+        fail: eveningOver('lesson.gangJoin.late'),
+        goal: (sim) => tileAt(sim.state.inmates[bossIn(sim, KITCHEN)].body.x, sim.state.inmates[bossIn(sim, KITCHEN)].body.z),
+      },
+      {
+        text: 'lesson.gangJoin.ask',
+        done: (c) => !!initiation(c.sim) || playerGang(c.sim) >= 0,
+        fail: eveningOver('lesson.gangJoin.late'),
+      },
+      {
+        text: 'lesson.gangJoin.take',
+        done: (c) => tributeCarried(c.sim) || playerGang(c.sim) >= 0,
+        goal: (sim) => (initiationTile(sim) >= 0 ? initiationTile(sim) : null),
+        fail: (c) => initiationFail(c) ?? eveningOver('lesson.gangJoin.late')(c),
+      },
+      {
+        text: 'lesson.gangJoin.hand',
+        done: (c) => playerGang(c.sim) === KITCHEN,
+        goal: (sim) => (initiationTile(sim) >= 0 ? initiationTile(sim) : null),
+        fail: (c) => initiationFail(c) ?? eveningOver('lesson.gangJoin.late')(c),
+      },
+    ],
+  },
+  {
+    // Turf (2.37's lesson for 2.36): in the Kitchen Crew, the evening's corners held; a rival's corner, told off, walked
+    // off in time; home to the Crew's own corner.
+    id: 'gangTurf',
+    icon: 'flag',
+    prison: CENTER_PERKS,
+    seed: 151,
+    setup: (sim) => {
+      // (An ordinary second day: no film or talent night to keep the corners empty.)
+      sim.state.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
+      clockTo(sim, DAY_TWO + at(18, 10));
+      // In the Kitchen Crew since yesterday (met them then).
+      sim.state.gang = [GANGS.indexOf('kitchen') + 1, 0, 0, 0, 0, 0, 1, 1];
+      const [x, z] = near(sim, 31, 27);
+      place(sim, x, z, 1);
+    },
+    steps: [
+      {
+        text: 'lesson.gangTurf.rival',
+        on: (e) => e.type === 'gang' && e.what === 'warn',
+        goal: (sim) => cornerTile(sim, GYM_RATS),
+        fail: eveningOver('lesson.gangTurf.late'),
+      },
+      {
+        text: 'lesson.gangTurf.off',
+        // (Off the corner, however the warning ends: a "clear" doesn't come when its holders have gone.)
+        done: (c) => !onCorner(c.sim, GYM_RATS),
+        failOn: turfJumped,
+        fail: eveningOver('lesson.gangTurf.late'),
+      },
+      { text: 'lesson.gangTurf.home', done: (c) => onCorner(c.sim, KITCHEN), goal: (sim) => cornerTile(sim, KITCHEN), failOn: turfJumped },
+    ],
+  },
+  {
+    // Caught (2.38): wanted past 90%, a guard's catch, solitary with the contraband gone, potatoes peeled, out.
+    id: 'caught',
+    icon: 'lock',
+    prison: CENTER_PERKS,
+    seed: 158,
+    caught: true,
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      const m = sim.state.guards[MOSS].body;
+      const [x, z] = near(sim, Math.floor(m.x / UNIT) + 3, Math.floor(m.z / UNIT));
+      place(sim, x, z, 9);
+      pockets(sim, 'light_cutters', 'chocolate');
+      sim.state.heat = 95;
+    },
+    steps: [
+      {
+        text: 'lesson.caught.chase',
+        on: (e) => e.type === 'caught',
+        goal: (sim) => tileAt(sim.state.guards[MOSS].body.x, sim.state.guards[MOSS].body.z),
+        failOn: (e) => (e.type === 'gaveUp' ? 'lesson.caught.lost' : null),
+        fail: (c) => (c.sim.state.heat < 90 && !c.sim.state.lockdown && c.sim.state.ko <= 0 ? 'lesson.caught.cooled' : null),
+      },
+      {
+        text: 'lesson.caught.wake',
+        // (Shown while out cold, read before waking: no hold once awake, the clock in solitary running.)
+        speed: 3,
+        done: (c) => c.sim.state.solitary > 0 && c.sim.state.ko <= 0,
+        failOn: (e) => (e.type === 'infirmary' ? 'lesson.caught.cooled' : null),
+      },
+      {
+        text: 'lesson.caught.peel',
+        touch: 'lesson.caught.peelTouch',
+        // (Or waited out to the end: let out with nothing peeled.)
+        on: (e) => (e.type === 'peel' && e.done) || (e.type === 'solitary' && !e.on),
+      },
+      { text: 'lesson.caught.out', speed: 4, on: (e) => e.type === 'solitary' && !e.on, done: (c) => c.sim.state.solitary <= 0 },
+    ],
+  },
+  {
+    // The towers (2.38): at night the searchlights sweep the perimeter; crossed between the beams.
+    id: 'towers',
+    icon: 'target',
+    prison: CENTER_PERKS,
+    seed: 159,
+    routine: false,
+    setup: (sim) => {
+      clockTo(sim, at(23, 20));
+      place(sim, 44, 58, 9);
+      fill(
+        sim,
+        containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'),
+        'bed_dummy',
+      );
+    },
+    steps: [
+      {
+        text: 'lesson.towers.cross',
+        done: (c) => Math.floor(c.sim.state.player.x / UNIT) <= 22,
+        goal: () => tile(21, 58),
+        failOn: (e) => (e.type === 'spotted' ? (e.reason === 'searchlight' ? 'lesson.towers.lit' : 'lesson.towers.seen') : null),
+      },
+      { text: 'lesson.towers.day', done: () => true, least: 8 },
     ],
   },
 ];

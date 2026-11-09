@@ -36,6 +36,9 @@ import { OVER, SEEK, type Hunt } from '../sim/hunt/Hunt';
 import { spotTile } from '../sim/hunt/world';
 import { centerX, centerZ, tileAt } from '../sim/world/grid';
 import { inmateInCell } from '../sim/systems/inmates';
+import { FAVOR } from '../sim/systems/economy';
+import { favorSlot, playerGang } from '../sim/systems/gangs';
+import { pocketOf } from '../sim/systems/items';
 
 /** What a step looks at: the game, and the bits of the screen the sim doesn't know (P41: and the manhunt under way, if any). */
 export interface LessonCtx {
@@ -85,6 +88,8 @@ export interface Lesson {
    * the minute of the day, cousin Lou's car waiting. No roadblocks, no helicopter.
    */
   hunt?: { kind: StartKind; searchers: readonly number[]; headStart: number; minute: number; lou: boolean };
+  /** 2.38: being caught is what it teaches (it doesn't end the lesson, as it ends any other). */
+  caught?: true;
   /** Sets the scene on a fresh game (before its first step). */
   setup: (sim: Sim) => void;
   steps: LessonStep[];
@@ -150,6 +155,8 @@ export const cellHole = (sim: Sim, kind: number) => sim.world.ground.kind.some((
 
 /** A quiet morning of free time: no block to keep, nothing due. */
 export const MORNING = at(10, 30);
+/** 2.37: the evening's free time just begun (four minutes of it, for a lesson with more to do and read). */
+export const EVENING = at(18, 2);
 
 /** The nearest open floor tile to (x, z), searching outwards (the tile itself if it's open). */
 export function near(sim: Sim, x: number, z: number): [number, number] {
@@ -511,3 +518,109 @@ export function inkFail(c: LessonCtx): Key | null {
 export function inkOff(e: SimEvent): Key | null {
   return e.type === 'tattoo' && (e.what === 'quit' || e.what === 'off') ? 'lesson.tattoo.off' : null;
 }
+
+// ---------------------------------------------------------------- 2.37: the lessons the tutorial lacked
+
+/** Center Perks' gangs (2.36), their places in its list: the Kitchen Crew (Rusty's), the Lifers (Lefty's), the Gym Rats (Bones's). */
+export const KITCHEN = 0;
+export const GYM_RATS = 2;
+/** A gang's boss (inmate index). */
+export const bossIn = (sim: Sim, gang: number) => inmateInCell(sim.state, sim.prison.gangs![gang].boss);
+/** The initiation under way, if any. */
+export const initiation = (sim: Sim) => sim.state.favors.find((f) => f.kind === FAVOR.INITIATION);
+/** The initiation's tribute in the pockets. */
+export function tributeCarried(sim: Sim): boolean {
+  const f = initiation(sim);
+  return !!f && favorSlot(sim.state.items.inv, f) >= 0;
+}
+/** The joining lesson's dead end: the initiation let go before the player is in. */
+export function initiationFail(c: LessonCtx): Key | null {
+  return !initiation(c.sim) && playerGang(c.sim) < 0 ? 'lesson.gangJoin.dropped' : null;
+}
+/** The turf lesson's dead end: time ran out on a rival's corner, and one of them squared up. */
+export function turfJumped(e: SimEvent): Key | null {
+  return e.type === 'gang' && e.what === 'jumped' ? 'lesson.gangTurf.jumped' : null;
+}
+/** A gang's corner of the yard (its middle tile). */
+export function cornerTile(sim: Sim, gang: number): number {
+  const c = sim.prison.gangs![gang].corner;
+  return tile(Math.floor((c[0] + c[2]) / 2), Math.floor((c[1] + c[3]) / 2));
+}
+/** On a gang's corner of the yard. */
+export function onCorner(sim: Sim, gang: number): boolean {
+  const c = sim.prison.gangs![gang].corner;
+  const x = Math.floor(sim.state.player.x / UNIT);
+  const z = Math.floor(sim.state.player.z / UNIT);
+  return x >= c[0] && x <= c[2] && z >= c[1] && z <= c[3];
+}
+
+/** Center Perks' guard with the generator room's purple key (P15's list): Officer Keller. */
+export const KELLER = 4;
+/** A guard's pockets (the container searched when he's out cold). */
+export const guardPockets = (sim: Sim, guard: number) => pocketOf(sim.world, sim.state.inmates.length + guard);
+/** His own key back in a guard's pockets. */
+export const keyBack = (sim: Sim, guard: number, id: string) =>
+  sim.state.items.containers[guardPockets(sim, guard)].some((v) => itemOf(v) === n(id));
+/** The keys lesson's dead end: he came round without his key and radioed it in. */
+export function keyMissed(e: SimEvent): Key | null {
+  return (e.type === 'cameTo' && e.keyMissing) || (e.type === 'spotted' && e.reason === 'keyMissing') ? 'lesson.keys.missed' : null;
+}
+/** The keys lesson's early dead end: he came round before his key was copied (taken and put back too soon, or never taken). */
+export function keyLate(c: LessonCtx): Key | null {
+  return c.sim.state.guards[KELLER].ko <= 0 && !['key_purple', 'mold_purple', 'plastic_key_purple'].some((id) => carries(c.sim, id))
+    ? 'lesson.keys.late'
+    : null;
+}
+/** A lesson in the evening's free time, its dead end once it's over (the roll call, then the cells): why, as `key`. */
+export const eveningOver =
+  (key: Key) =>
+  (c: LessonCtx): Key | null =>
+    ROUTINE[c.sim.state.routine].id !== 'eveningFreeTime' && !c.sim.state.escaped ? key : null;
+/** The hound nearest the player (the hounds lesson's arrows). */
+export function nearestDog(sim: Sim) {
+  const p = sim.state.player;
+  let best = null as Sim['state']['dogs'][number] | null;
+  let bestD = Infinity;
+  for (const d of sim.state.dogs) {
+    const dd = (d.body.x - p.x) ** 2 + (d.body.z - p.z) ** 2;
+    if (dd < bestD) {
+      bestD = dd;
+      best = d;
+    }
+  }
+  return best;
+}
+/** The open floor tile of a zone nearest a tile (by the crow's flight), the tile itself if none. */
+export function nearestZoneTile(sim: Sim, from: number, z: string): number {
+  const fx = from % MAP_W;
+  const fz = Math.floor(from / MAP_W);
+  let best = from;
+  let bestD = Infinity;
+  for (let i = 0; i < sim.world.ground.kind.length; i++) {
+    const x = i % MAP_W;
+    const zz = Math.floor(i / MAP_W);
+    if (sim.world.zoneAt(x, zz) !== z || !isFloor(sim.world, x, zz)) continue;
+    const d = (x - fx) ** 2 + (zz - fz) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return best;
+}
+/** A guard out cold on a tile for a while (a scene's setup: as a blow leaves him, for longer). */
+export function knockOut(sim: Sim, guard: number, x: number, z: number, steps: number) {
+  const g = sim.state.guards[guard];
+  g.hp = 0;
+  g.ko = steps;
+  g.body.x = x * UNIT + UNIT / 2;
+  g.body.z = z * UNIT + UNIT / 2;
+  g.body.moving = false;
+  g.path = [];
+  g.goal = -1;
+}
+/** Center Perks' courtyard guard (P15's list): Officer Moss. */
+export const MOSS = 3;
+/** The camera over the woodshop (Center Perks' second), and the canteen's detector arch (its west tile). */
+export const WOODSHOP_CAM = 1;
+export const CANTEEN_ARCH = tile(44, 20);
