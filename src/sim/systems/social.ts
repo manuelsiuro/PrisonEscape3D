@@ -288,7 +288,7 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       // (2.36: a favor taken on and not yet done, let go: it frees its place, and they think a little less of the player.)
       const f = s.favors.find((x) => x.by === who && x.state === FAVOR_STATE.TAKEN);
       if (!f) return;
-      if (f.kind === FAVOR.INITIATION) clearTribute(sim, f);
+      if (f.kind === FAVOR.INITIATION && !sim.rules2360) clearTribute(sim, f);
       s.favors.splice(s.favors.indexOf(f), 1);
       sim.events.push({ type: 'favor', who, kind: f.kind, state: 'dropped' });
       changeOpinion(sim, who, -FAVOR_DROP_OPINION);

@@ -1,0 +1,4 @@
+game: 322 models, 51521 triangles
+kit-library: 20 models, 9504 triangles
+model library: 20 blueprints
+the objects viewer and the model library build, and the two kits agree

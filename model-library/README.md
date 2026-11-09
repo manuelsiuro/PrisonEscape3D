@@ -68,7 +68,7 @@ model-library/
 
 ## 3. Catalog of Procedural Models
 
-All 23 models in the library strictly adhere to the Low-Polygon First and 3-to-5 Color Palette standards:
+All 20 models in the library strictly adhere to the Low-Polygon First and 3-to-5 Color Palette standards:
 
 | Model ID                  | Name                        | Category     | Tris  | Palette Colors Used | Features & Parameters |
 | ------------------------- | --------------------------- | ------------ | :---: | :---: | --------------------- |
@@ -77,12 +77,9 @@ All 23 models in the library strictly adhere to the Low-Polygon First and 3-to-5
 | `lib:guard_booth_modular` | Modular Guard Booth         | Architecture |  208  | 4 (metal, dark, white, blue) | Tinted windows, searchlight, desk console, boom gate barrier. |
 | `lib:storage_locker`      | Institutional Double Locker | Props        |  216  | 4 (grey, dark, chrome, brass) | Louvered vent slats, chrome latch, brass number plates, padlock. |
 | `lib:security_turnstile`  | Security Checkpoint Gate    | Fixtures     |  228  | 4 (steel, dark, chrome, green) | Stainless housing, card scanner pad, access LED, 3-arm revolving rotor. |
-| `lib:cordyceps_growth`    | Cordyceps Fungal Colony     | Props        |  288  | 5 (dark, concrete, rust, amber, wood) | Bracket shelf mushrooms, spore tendrils, bioluminescent spore pods. |
-| `lib:fedra_gate`          | FEDRA Quarantine Zone Gate  | Architecture |  292  | 5 (concrete, dark, rust, olive, yellow)| Jersey barriers, sandbags, razor wire, searchlight, hinged gate. |
 | `lib:canteen_trays`       | Canteen Tray Dispenser Cart | Props        |  312  | 4 (steel, dark, blue, chrome) | Tubular cart, casters, molded meal tray stack, hanging cutlery bin. |
 | `lib:decayed_bus_stop`    | Weathered Municipal Shelter | Architecture |  336  | 5 (concrete, dark, rust, green, olive) | Cantilevered canopy, cracked slab weeds, bench, scavenged rucksack. |
-| `lib:firefly_barricade`   | Improvised Rebel Barricade  | Fixtures     |  360  | 5 (woodDark, wood, rust, sand, white)  | Cargo pallets, sandbags, welded rebar caltrop spikes, Firefly symbol. |
-| `lib:qzone_floodlight`    | QZ Floodlight Generator Cart| Fixtures     |  364  | 5 (dark, olive, black, steel, yellow)  | Towable trailer, diesel genset, telescoping mast, twin halogen lamps. |
+| `lib:floodlight_trailer`  | Floodlight Generator Cart   | Fixtures     |  364  | 5 (dark, olive, black, steel, yellow)  | Towable trailer, diesel genset, telescoping mast, twin halogen lamps. |
 | `lib:triage_tent`         | Quarantine Medical Tent     | Architecture |  412  | 5 (olive, steel, white, red, tarpBlue) | Canvas tent, red cross stencil, rolled flap, field cot, IV drip pole. |
 | `lib:abandoned_patrol_car`| Overgrown Derelict Cruiser  | Vehicles     |  416  | 5 (white, dark, rust, green, blue)     | Deflated rims, lightbar, open door, climbing ivy on hood and bumper. |
 | `lib:survivor_workbench`  | Weapon Crafting Workbench   | Props        |  420  | 5 (wood, woodDark, dark, chrome, olive)| Heavy timber bench, vise, articulated clamp lamp, gun parts, duct tape. |

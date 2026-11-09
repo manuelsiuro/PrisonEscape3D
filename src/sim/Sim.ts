@@ -215,6 +215,8 @@ export class Sim {
   rules234 = false;
   /** Replaying a run from before 2.36: tools and items as they were (a strike in a tunnel or the vents still counted as work a guard saw, for a moment after the player surfaced). Not state. */
   rules235 = false;
+  /** Replaying a run from 2.36.0: a gang initiation's tribute as it was (never put back once used up, its mark left on a favor dropped, no rat or tattoo told it from a plain copy). Not state. */
+  rules2360 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

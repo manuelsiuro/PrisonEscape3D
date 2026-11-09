@@ -84,6 +84,8 @@ export function initModelViewer() {
   const modelListEl = document.getElementById('model-list')!;
   const resultCountEl = document.getElementById('result-count')!;
   const searchInputEl = document.getElementById('search-input') as HTMLInputElement;
+  // (The count from the catalog itself: written in the page, it fell behind as models were added.)
+  searchInputEl.placeholder = `Search ${catalog.length} models by name, FR, shape, #tag…`;
   const inspectorEl = document.getElementById('inspector-content')!;
   const hudTitleEl = document.getElementById('hud-title')!;
   const hudSubEl = document.getElementById('hud-sub')!;

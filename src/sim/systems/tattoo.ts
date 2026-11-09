@@ -52,7 +52,7 @@ import type { SimContext } from '../context';
 import type { SimState } from '../state';
 import type { Refusal } from '../events';
 import { countGame, eyesOn, gameOn, gamesOpen, playedToday } from './games';
-import { HOTBAR, itemOf, usesOf } from './items';
+import { HOTBAR, hotbarSlotOf, isTribute, itemOf } from './items';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
 import { addHeat } from './watch';
@@ -210,13 +210,14 @@ const gainOf = (quality: number) => INK_GAIN_BASE + Math.floor((INK_GAIN * quali
 /** Tattoos given to inmates today. */
 export const inksToday = (s: Pick<SimState, 'inkDays' | 'step'>) => s.inkDays.filter((d) => d === prisonDay(s.step)).length;
 
-/** The hotbar slot holding an item (-1 none), an unmarked one before a gang's tribute. */
-function carried(s: Pick<SimState, 'items'>, item: number): number {
+/** The hotbar slot holding an item (-1 none); from 2.36.1 an unmarked one before a gang's tribute (ink is the Lifers'). */
+function carried(sim: Pick<SimContext, 'state' | 'rules2360'>, item: number): number {
+  const inv = sim.state.items.inv;
+  if (sim.rules2360) return hotbarSlotOf(inv, item);
   let fallback = -1;
   for (let k = 0; k < HOTBAR; k++) {
-    const v = s.items.inv[k];
-    if (itemOf(v) !== item) continue;
-    if (usesOf(v) !== 77) return k;
+    if (itemOf(inv[k]) !== item) continue;
+    if (!isTribute(inv[k])) return k;
     if (fallback < 0) fallback = k;
   }
   return fallback;
@@ -234,8 +235,8 @@ export function inkRefusal(sim: SimContext, who: number, mine: boolean, design =
   // (One a day for each, a few a day in all: a gun and a steady hand aren't a mint.)
   if (!mine && (s.inkDays[who] ?? 0) === prisonDay(s.step)) return 'inkedToday';
   if (!mine && inksToday(s) >= INKS_A_DAY) return 'inkedEnough';
-  if (carried(s, TATTOO_GUN) < 0) return 'noGun';
-  if (carried(s, INK) < 0) return 'noInk';
+  if (carried(sim, TATTOO_GUN) < 0) return 'noGun';
+  if (carried(sim, INK) < 0) return 'noInk';
   if (mine && s.inked.length >= MAX_INKED) return 'armsFull';
   if (mine && s.inked.includes(design)) return 'haveIt';
   return null;
@@ -256,7 +257,7 @@ export function startInk(sim: SimContext, who: number, design: number, mine: boo
   stopTraining(sim);
   endTalk(sim);
   // The ink goes into the gun.
-  s.items.inv[carried(s, INK)] = 0;
+  s.items.inv[carried(sim, INK)] = 0;
   s.items.rev++;
   const [x, z] = d.path[0];
   s.ink = { who, design, k: 0, nx: x, nz: z, err: 0, mine: mine ? 1 : 0, seen: 0, at: 0, n: 0 };

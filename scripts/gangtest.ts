@@ -393,6 +393,48 @@ for (const def of PRISONS) {
     c.st.items.containers[desk].fill(0);
     c.step();
     check(c.st.items.containers[desk].includes(tributeOf(f!)), `${id}: tribute lost, put back in ${rivalName}'s desk on the next step`);
+    // (2.37: only a tribute used up is put back, once a prison day; one hidden elsewhere still counts, so it can't be farmed.
+    // The snapshot is taken after c's own re-plant today: each bot forgets it first, or nothing below could fail.)
+    {
+      const marked = (b: Bot) =>
+        b.st.items.containers.reduce((t, box) => t + box.filter((v) => v === tributeOf(f!)).length, 0) +
+        b.st.items.inv.filter((v) => v === tributeOf(f!)).length;
+      const wipe = (b: Bot) => b.st.items.containers.forEach((box) => box.forEach((v, j) => v === tributeOf(f!) && (box[j] = 0)));
+      const d = new Bot(def, 3);
+      d.sim.restore(c.sim.snapshot());
+      delete d.st.replant;
+      const other = containersOf(d.sim.world).findIndex((k, i) => i !== desk && k.table === 'inmateDesk');
+      const box = d.st.items.containers[desk];
+      const at = box.indexOf(tributeOf(f!));
+      d.st.items.containers[other][d.st.items.containers[other].indexOf(0)] = box[at];
+      box[at] = 0;
+      d.step();
+      check(
+        marked(d) === 1 && d.st.replant === undefined,
+        `${id}: a tribute hidden in another desk is not put back again (${marked(d)} marked)`,
+      );
+      wipe(d);
+      d.step();
+      check(marked(d) === 1, `${id}: used up: put back`);
+      wipe(d);
+      d.step();
+      check(marked(d) === 0, `${id}: used up again the same day: not put back twice a day`);
+      d.st.replant = (d.st.replant ?? 1) - 1;
+      d.step();
+      check(marked(d) === 1, `${id}: and put back the next day`);
+      // A run from 2.36.0 (Sim.rules2360): never put back, and a favor dropped leaves its mark.
+      const old = new Bot(def, 3);
+      old.sim.restore(c.sim.snapshot());
+      delete old.st.replant;
+      old.sim.rules2360 = true;
+      wipe(old);
+      old.step();
+      check(marked(old) === 0, `${id}: a run from 2.36.0 never puts it back`);
+      old.st.items.inv[0] = tributeOf(f!);
+      say(old, boss, TALK.DROP);
+      check(old.st.items.inv[0] === tributeOf(f!), `${id}: a run from 2.36.0 keeps the mark on a favor dropped`);
+    }
+    check(!isTribute(slot(n('multitool'), 77)), `${id}: a multitool worn down to 77 uses is not a tribute`);
     const hidden = containersOf(c.sim.world)[desk].hidden;
     c.st.items.containers[desk][hidden] = slot(n('lighter'));
     c.st.items.containers[desk][hidden + 1] = tributeOf(f!);
@@ -833,5 +875,10 @@ for (const def of PRISONS) {
   const evOf = (s: Sim) => dayPlan(def.id, s.state.salt, day, s.state.calendar).event;
   check(!!set && evOf(set.sim) === was && set.sim.rules235, `a 2.35 log replays day ${day}'s ${was}, not the gang war`);
   check(!!now && evOf(now.sim) === 'gangWar', `a 2.36 log: the gang war stands on day ${day}`);
+  const later = prepareReplay({ ...log, game: '2.36.1' }, def);
+  check(
+    !!now && now.sim.rules2360 && !!later && !later.sim.rules2360,
+    'a 2.36.0 log plays the tribute as it was (Sim.rules2360), a 2.36.1 log does not',
+  );
   console.log(`deck: ${def.id}'s day ${day} is the gang war's (a 2.35 log: ${was})`);
 }

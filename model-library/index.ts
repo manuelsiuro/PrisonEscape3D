@@ -26,16 +26,13 @@ import { canteenTraysBlueprint } from './models/canteenTrays';
 import { securityTurnstileBlueprint } from './models/securityTurnstile';
 import { storageLockerBlueprint } from './models/storageLocker';
 
-// The Last of Us Style City Models
-import { fedraGateBlueprint } from './models/fedraGate';
+// The weathered city set
 import { abandonedPatrolCarBlueprint } from './models/abandonedPatrolCar';
 import { survivorWorkbenchBlueprint } from './models/survivorWorkbench';
 import { decayedBusStopBlueprint } from './models/decayedBusStop';
-import { qzoneFloodlightBlueprint } from './models/qzoneFloodlight';
-import { fireflyBarricadeBlueprint } from './models/fireflyBarricade';
+import { floodlightTrailerBlueprint } from './models/floodlightTrailer';
 import { rainwaterRigBlueprint } from './models/rainwaterRig';
 import { overgrownKioskBlueprint } from './models/overgrownKiosk';
-import { cordycepsGrowthBlueprint } from './models/cordycepsGrowth';
 import { triageTentBlueprint } from './models/triageTent';
 
 import type { ModelBlueprint } from './types';
@@ -54,16 +51,13 @@ export {
   canteenTraysBlueprint,
   securityTurnstileBlueprint,
   storageLockerBlueprint,
-  // TLOU City Models
-  fedraGateBlueprint,
+  // The weathered city set
   abandonedPatrolCarBlueprint,
   survivorWorkbenchBlueprint,
   decayedBusStopBlueprint,
-  qzoneFloodlightBlueprint,
-  fireflyBarricadeBlueprint,
+  floodlightTrailerBlueprint,
   rainwaterRigBlueprint,
   overgrownKioskBlueprint,
-  cordycepsGrowthBlueprint,
   triageTentBlueprint,
 };
 
@@ -82,16 +76,13 @@ export const MODEL_LIBRARY: readonly ModelBlueprint[] = [
   canteenTraysBlueprint,
   securityTurnstileBlueprint,
   storageLockerBlueprint,
-  // TLOU City Models
-  fedraGateBlueprint,
+  // The weathered city set
   abandonedPatrolCarBlueprint,
   survivorWorkbenchBlueprint,
   decayedBusStopBlueprint,
-  qzoneFloodlightBlueprint,
-  fireflyBarricadeBlueprint,
+  floodlightTrailerBlueprint,
   rainwaterRigBlueprint,
   overgrownKioskBlueprint,
-  cordycepsGrowthBlueprint,
   triageTentBlueprint,
 ] as const;
 
