@@ -1,6 +1,9 @@
 import { FORGE_INT } from '../content/paperwork';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { SLOT } from '../sim/command';
+import { tileAt } from '../sim/world/grid';
+import { maxHealth } from '../sim/systems/combat';
+import { STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { slot } from '../sim/systems/items';
 import { containersOf } from '../sim/world/containers';
 import { LAYER, MAP_W } from '../sim/world/World';
@@ -18,7 +21,16 @@ import {
   apart,
   at,
   bluffFail,
+  CANTEEN_ARCH,
   carries,
+  KELLER,
+  keyBack,
+  keyLate,
+  keyMissed,
+  knockOut,
+  MOSS,
+  near,
+  WOODSHOP_CAM,
   centre,
   clockTo,
   DAY_TWO,
@@ -31,8 +43,11 @@ import {
   huntWalked,
   type Lesson,
   lineGoal,
+  EVENING,
+  eveningOver,
   MORNING,
   n,
+  onFloor,
   paroleLost,
   pickFail,
   place,
@@ -77,6 +92,91 @@ export const WAYS: readonly Lesson[] = [
       },
       // (It shuts again before long: picked again, or the lockpick broken on it.)
       { text: 'lesson.lockpick.through', done: zone('generator'), goal: () => tile(43, 19), fail: pickFail },
+    ],
+  },
+  {
+    // Keys (2.37): a guard out cold, his key pressed into putty and put back before he comes round; the mold cast in
+    // molten plastic; the generator room's purple door opened with the copy.
+    id: 'keys',
+    icon: 'key',
+    prison: CENTER_PERKS,
+    seed: 152,
+    setup: (sim) => {
+      // (The evening's free time: four minutes, time enough to read and do it.)
+      clockTo(sim, EVENING);
+      // (Officer Keller, out cold by the generator room's door for two minutes: a blow gives thirty seconds.)
+      knockOut(sim, KELLER, 13, 37, 120 * STEPS_PER_SECOND);
+      place(sim, 14, 37, 9);
+      pockets(sim, 'putty', 'molten_plastic');
+      // (Intellect enough for both recipes: 50 for the mold, 60 for the key.)
+      sim.state.items.int = Math.max(sim.state.items.int, 60);
+    },
+    steps: [
+      {
+        text: 'lesson.keys.search',
+        touch: 'lesson.keys.searchTouch',
+        done: (c) => carries(c.sim, 'key_purple') || carries(c.sim, 'mold_purple'),
+        goal: () => tile(14, 37),
+        failOn: keyMissed,
+        fail: keyLate,
+      },
+      {
+        text: 'lesson.keys.mold',
+        touch: 'lesson.keys.moldTouch',
+        done: (c) => carries(c.sim, 'mold_purple') || carries(c.sim, 'plastic_key_purple'),
+        failOn: keyMissed,
+        fail: keyLate,
+      },
+      {
+        text: 'lesson.keys.back',
+        done: (c) => keyBack(c.sim, KELLER, 'key_purple') && !carries(c.sim, 'key_purple'),
+        failOn: keyMissed,
+      },
+      {
+        text: 'lesson.keys.cast',
+        done: (c) => carries(c.sim, 'plastic_key_purple'),
+        failOn: keyMissed,
+      },
+      { text: 'lesson.keys.door', done: zone('generator'), goal: () => tile(10, 39), failOn: keyMissed },
+    ],
+  },
+  {
+    // Cameras and arches (2.37): contraband through the canteen's detector arch in a pouch; the woodshop's camera taped over.
+    id: 'cams',
+    icon: 'camera',
+    prison: CENTER_PERKS,
+    seed: 153,
+    setup: (sim) => {
+      // (The evening's free time: four minutes, time enough to read and do it.)
+      clockTo(sim, EVENING);
+      place(sim, 44, 22, 13);
+      pockets(sim, 'light_cutters', 'pouch', 'duct_tape');
+      // (Nothing in hand: the cutters are contraband, a guard who sees them in hand minds.)
+      sim.state.items.hand = 1;
+    },
+    steps: [
+      {
+        text: 'lesson.cams.arch',
+        on: (e) => e.type === 'scanned' && !e.tripped,
+        failOn: (e) => (e.type === 'scanned' && e.tripped ? 'lesson.cams.tripped' : null),
+        fail: (c) =>
+          !carries(c.sim, 'pouch')
+            ? 'lesson.cams.noPouch'
+            : !carries(c.sim, 'light_cutters')
+              ? 'lesson.cams.noCutters'
+              : eveningOver('lesson.cams.late')(c),
+        goal: () => CANTEEN_ARCH,
+      },
+      {
+        text: 'lesson.cams.tape',
+        touch: 'lesson.cams.tapeTouch',
+        on: (e) => e.type === 'camera' && e.blind && e.index === WOODSHOP_CAM,
+        goal: (sim) => tile(sim.prison.cameras![WOODSHOP_CAM].x, sim.prison.cameras![WOODSHOP_CAM].z),
+        fail: (c) =>
+          !carries(c.sim, 'duct_tape') && !c.sim.state.cams[WOODSHOP_CAM] ? 'lesson.cams.noTape' : eveningOver('lesson.cams.late')(c),
+        failOn: (e) => (e.type === 'scanned' && e.tripped ? 'lesson.cams.tripped' : null),
+      },
+      { text: 'lesson.cams.blind', done: () => true, least: 6 },
     ],
   },
   {
@@ -173,6 +273,90 @@ export const WAYS: readonly Lesson[] = [
         fail: glideFail,
       },
       { text: 'lesson.glider.fly', touch: 'lesson.glider.flyTouch', done: (c) => c.sim.state.escaped > 0, fail: glideFail },
+    ],
+  },
+  {
+    // The grapnel (2.37): from the roof's west edge after Lights Out, hooked over the fence, down the sheet rope outside.
+    id: 'grapnel',
+    icon: 'hook',
+    prison: CENTER_PERKS,
+    seed: 154,
+    routine: false,
+    setup: (sim) => {
+      clockTo(sim, at(23, 20));
+      // (Up the generator room's ladder, as the vents lesson ends.)
+      place(sim, 12, 39, 9);
+      sim.state.layer = LAYER.ROOF;
+      pockets(sim, 'grapnel', 'sheet_rope');
+      sim.state.items.hand = 0;
+      fill(
+        sim,
+        containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'),
+        'bed_dummy',
+      );
+    },
+    steps: [
+      {
+        text: 'lesson.grapnel.edge',
+        done: (c) => c.sim.state.escaped > 0 || apart(c.sim.state.player, centre(tile(6, 39))) < 0.7,
+        goal: () => tile(6, 39),
+        layer: LAYER.ROOF,
+      },
+      {
+        text: 'lesson.grapnel.throw',
+        touch: 'lesson.grapnel.throwTouch',
+        done: (c) => c.sim.state.escaped > 0,
+        // (Dropped on the roof, it lies there to pick up again.)
+        fail: (c) =>
+          !c.sim.state.escaped && !carries(c.sim, 'sheet_rope') && !onFloor(c.sim, 'sheet_rope') ? 'lesson.grapnel.noRope' : null,
+      },
+    ],
+  },
+  {
+    // The takeover (2.37): four of the five guards out cold, the last put down, out through the gates left open.
+    id: 'takeover',
+    icon: 'siren',
+    prison: CENTER_PERKS,
+    seed: 155,
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      const s = sim.state;
+      // (Out cold for ten minutes, as if just put down one after another: in a game, thirty seconds each.)
+      s.guards.forEach((g, k) => {
+        if (k !== MOSS) knockOut(sim, k, Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT), 600 * STEPS_PER_SECOND);
+      });
+      const m = s.guards[MOSS].body;
+      const [x, z] = near(sim, Math.floor(m.x / UNIT) + 3, Math.floor(m.z / UNIT));
+      place(sim, x, z, 9);
+      // Trained, armed and armored, as a takeover takes.
+      s.str = 90;
+      s.spd = 90;
+      s.health = maxHealth(s.str);
+      pockets(sim);
+      s.items.inv[SLOT.WEAPON] = slot(n('nunchucks'));
+      s.items.inv[SLOT.OUTFIT] = slot(n('plated_outfit'));
+    },
+    steps: [
+      {
+        text: 'lesson.takeover.fight',
+        touch: 'lesson.takeover.fightTouch',
+        done: (c) => c.sim.state.takeover || c.sim.state.escaped > 0,
+        goal: (sim) => tileAt(sim.state.guards[MOSS].body.x, sim.state.guards[MOSS].body.z),
+        // (Too long about it: the four come round, and it's no takeover any more.)
+        fail: (c) =>
+          c.sim.state.ko > 0
+            ? 'lesson.takeover.down'
+            : !c.sim.state.takeover && c.sim.state.guards.some((g, k) => k !== MOSS && g.ko <= 0)
+              ? 'lesson.takeover.over'
+              : null,
+      },
+      {
+        text: 'lesson.takeover.out',
+        done: (c) => c.sim.state.escaped > 0,
+        goal: () => tile(30, 62),
+        fail: (c) =>
+          c.sim.state.ko > 0 ? 'lesson.takeover.down' : !c.sim.state.takeover && !c.sim.state.escaped ? 'lesson.takeover.over' : null,
+      },
     ],
   },
   {
