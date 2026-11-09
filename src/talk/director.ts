@@ -22,6 +22,9 @@ import { CHATTY, guardVoice, inmateVoice, PAUSE, PITCH } from './voice';
 import { hash32, randomFrom } from '../sim/rng';
 import { FROM } from '../content/oddjobs';
 import { twoAtCooler } from '../sim/systems/cooler';
+import { HUDDLE } from '../content/huddles';
+import { huddlesNow, type HuddleView } from '../sim/systems/huddles';
+import { gameRefusal } from '../sim/systems/games';
 
 /**
  * The speech bubbles' director (P13): who says what, and when. Presentation only: it reads
@@ -105,6 +108,12 @@ const NO_TAGS: ReadonlySet<Tag> = new Set();
 const COOLER_EARSHOT = 3;
 const COOLER_LEAVE = 6;
 const COOLER_TALES = 3;
+/** 2.39: free time's chats likewise: how near one to overhear, how far off before another, how much a day. */
+const RING_EARSHOT = 3;
+const RING_LEAVE = 6;
+const RING_TALES = 3;
+/** What's said over an inmates' game, by its kind (a chat: what's said anywhere). */
+const GAME_TALK: Partial<Record<number, BankId>> = { [HUDDLE.DICE]: 'ex.dice', [HUDDLE.CARDS]: 'ex.cards', [HUDDLE.HOOPS]: 'ex.hoops' };
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
@@ -140,6 +149,10 @@ export class Director {
   private coolerArmed = true;
   private coolerToday = 0;
   overheard = 0;
+  /** 2.39: a free time's chats: ready for the player's next visit to one, how much was overheard today; the gatherings this tick. */
+  private ringArmed = true;
+  private ringToday = 0;
+  private rings: HuddleView[] = [];
   private told = new Set<string>();
   private catchDay = new Map<number, number>();
   private incidents: Incident[] = [];
@@ -200,6 +213,8 @@ export class Director {
     this.nextAmbient = this.nextTick = this.gossipNext = 0;
     this.coolerArmed = true;
     this.coolerToday = 0;
+    this.ringArmed = true;
+    this.ringToday = 0;
     this.day = sim.clock.day;
     this.dayEvent = null;
     this.dogAbout = -1;
@@ -494,6 +509,7 @@ export class Director {
       this.dayEvent = null;
       this.told.clear();
       this.coolerToday = 0;
+      this.ringToday = 0;
     }
     this.incidents = this.incidents.filter((i) => now - i.at < 10);
     // Only on the ground floor (from the vents and tunnels nobody is seen talking).
@@ -504,6 +520,8 @@ export class Director {
     this.bumps(sim, now);
     this.reactions(sim, stage);
     this.coolerTalk(sim, stage);
+    huddlesNow(sim, this.rings);
+    this.ringTalk(sim, stage);
     if (now >= this.nextAmbient && this.active.length < stage.max) {
       this.nextAmbient = now + stage.gap * (0.7 + 0.6 * this.random());
       this.ambient(sim, stage);
@@ -529,6 +547,39 @@ export class Director {
     this.coolerArmed = false;
     this.coolerToday++;
     this.overheard++;
+  }
+
+  /**
+   * 2.39: a ring of inmates chatting in free time, the player standing by: one tells something true, overheard (into the
+   * file, as at the cooler). Once a visit (walk off from every chat and come back for another), a few times a day.
+   */
+  private ringTalk(sim: Sim, stage: Stage) {
+    const s = sim.state;
+    const chats = this.rings.filter((r) => r.kind === HUDDLE.CHAT && r.who.length >= 2);
+    let near = Infinity;
+    let ring: HuddleView | null = null;
+    for (const r of chats) {
+      const d = Math.hypot(s.player.x / UNIT - (r.x + 0.5), s.player.z / UNIT - (r.z + 0.5));
+      if (d < near) {
+        near = d;
+        ring = r;
+      }
+    }
+    if (near > RING_LEAVE) this.ringArmed = true;
+    if (!ring || !this.ringArmed || near > RING_EARSHOT || this.ringToday >= RING_TALES) return;
+    const who = ring.who.filter((k) => stage.sees(k) && !this.speaking(k) && this.canSpeak(sim, k, stage.now));
+    if (who.length < 2 || this.active.length >= stage.max) return;
+    const id = who[Math.floor(this.random() * who.length)];
+    if (!this.gossip(sim, stage, id)) return;
+    this.ringArmed = false;
+    this.ringToday++;
+    this.overheard++;
+  }
+
+  /** 2.39: the gathering an inmate's in now (from this tick's list), null none. */
+  private ringOf(k: number): HuddleView | null {
+    for (const r of this.rings) if (r.who.includes(k)) return r;
+    return null;
   }
 
   /** The player walking into someone: they say so (once in a while each). */
@@ -617,7 +668,8 @@ export class Director {
       const fx = DIR_X[b.facing] ?? 0;
       const fz = DIR_Z[b.facing] ?? 0;
       const facing = d > 0.1 && ((s.player.x - b.x) * fx + (s.player.z - b.z) * fz) / (d * UNIT * 1024) > 0.5 ? 1.5 : 1;
-      const w = CHATTY[this.voiceOf(id)] * mood.intensity * prox * facing * (id >= n ? 0.8 : 1);
+      // (2.39: gathered with others, they talk more.)
+      const w = CHATTY[this.voiceOf(id)] * mood.intensity * prox * facing * (id >= n ? 0.8 : this.ringOf(id) ? 1.8 : 1);
       if (w <= 0) continue;
       total += w;
       pool.push({ id, w, mood, d });
@@ -643,7 +695,8 @@ export class Director {
     if (calm && m.opinion >= GOSSIP_OPINION && d <= 3 && now >= this.gossipNext && this.random() < 0.6 && this.gossip(sim, stage, id))
       return;
     // Two idle inmates side by side: a line and its reply.
-    if (calm && this.random() < 0.25 && this.exchange(sim, stage, id)) return;
+    // (2.39: in a ring or at a game, more often than not.)
+    if (calm && this.random() < (this.ringOf(id) ? 0.7 : 0.25) && this.exchange(sim, stage, id)) return;
     // Its own catchphrase, once a day.
     const name = nameOf(sim, id);
     const catchBank = `catch.${name}` as BankId;
@@ -710,9 +763,17 @@ export class Director {
         !!o &&
         o.ko <= 0 &&
         o.angry <= 0 &&
-        (o.doing === DOING.NOTHING || o.doing === DOING.SIT || o.doing === DOING.EAT || o.doing === DOING.LINE_UP)
+        (o.doing === DOING.NOTHING ||
+          o.doing === DOING.SIT ||
+          o.doing === DOING.EAT ||
+          o.doing === DOING.LINE_UP ||
+          o.doing === DOING.CHAT ||
+          o.doing === DOING.DICE ||
+          o.doing === DOING.CARDS)
       );
     };
+    // (2.39: in a gathering, its own: the reply from someone in it, about its game.)
+    const ring = this.ringOf(id);
     // Room for both lines on screen (a phone held upright has room for two at most).
     if (!idle(id) || stage.max - this.active.length < 2) return false;
     const other = s.inmates.findIndex(
@@ -720,7 +781,7 @@ export class Director {
         k !== id &&
         idle(k) &&
         k !== stage.partner &&
-        dist(o.body, m.body) <= 1.5 &&
+        (ring ? ring.who.includes(k) : dist(o.body, m.body) <= 1.5) &&
         stage.sees(k) &&
         !this.speaking(k) &&
         stage.now >= (this.speakerNext.get(k) ?? 0) &&
@@ -729,7 +790,8 @@ export class Director {
     if (other < 0) return false;
     const meal = m.doing === DOING.EAT || ROUTINE[s.routine].id === 'breakfast' || ROUTINE[s.routine].id === 'dinner';
     const topics: BankId[] = meal ? ['ex.food', 'ex.food', 'ex.life', 'ex.guards'] : ['ex.life', 'ex.guards', 'ex.escape', 'ex.food'];
-    const bank = topics[Math.floor(this.random() * topics.length)];
+    const game = ring && ring.on ? GAME_TALK[ring.kind] : undefined;
+    const bank = game && this.random() < 0.7 ? game : topics[Math.floor(this.random() * topics.length)];
     const got = this.pickLine(sim, bank, id);
     if (!got?.def.r) return false;
     // The reply talks about the same guard, meal or event (its own speaker and place aside).
@@ -753,6 +815,10 @@ export class Director {
   /** How an inmate answers something the player did with it (a gift, a favor paid, joining up…), if at all. */
   private answerBank(e: SimEvent, sim: Sim): BankId | null {
     switch (e.type) {
+      // (2.39: walked up to an inmates' game and talked to one at it: asked in, if they'll play the player.)
+      case 'huddle':
+        if (gameRefusal(sim, e.who)) return null;
+        return e.kind === HUDDLE.DICE ? 'gr.join.dice' : e.kind === HUDDLE.CARDS ? 'gr.join.cards' : 'gr.join.hoops';
       case 'gift':
         return 're.gift.in';
       case 'opinion':

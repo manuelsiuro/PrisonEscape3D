@@ -102,6 +102,7 @@ export function chatterStart(sim: Sim, rumors: readonly Rumor[] = []) {
   // Only rumors this version can tell again truly (a save from a newer one, or a damaged one, may hold others).
   director.rumors = keepRumors(rumors.filter((r) => factOk(r.fact, sim)));
   talk.greeting = '';
+  talk.invited = -1;
 }
 
 export function chatterStop() {

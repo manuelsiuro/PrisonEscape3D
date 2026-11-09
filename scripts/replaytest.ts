@@ -176,6 +176,8 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   // Storage full: every log and replay gives way to a save.
   const { replayBestKey } = await import('../src/game/storage');
   writeSave(1, sim, 'test', [], saved);
+  // (2.39: a second save's log too, as the save grew with the free time's gatherings.)
+  writeSave(2, sim, 'test', [], saved);
   // As full as it gets: the save fits only once the logs are gone.
   const logsSize = [...mem.entries()]
     .filter(([k]) => k.startsWith('pe3d.log.') || k.startsWith('pe3d.replay.'))
@@ -224,6 +226,7 @@ console.log('replay ok');
   old.rules2331 = true;
   old.rules233 = true;
   old.rules234 = true;
+  old.rules238 = true;
   const r = new RunRecorder(old, { seed, game: '1.10.1' });
   for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
   const log = r.toLog();

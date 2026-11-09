@@ -28,6 +28,6 @@ the escape bots under christmas:
   six-hunter: raft d1 23:35, tunnel d2 00:44, glider d1 23:37, stowaway d1 14:31, bluff d1 19:50, paperwork d2 10:13
 the parole board's model prisoner under a holiday:
   easter: center-perks: applied day 3 10:13, sat day 10 10:07; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:14 by parole (gold by day 12)
-  summer: san-pancho: applied day 3 10:32, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:16 by parole (gold by day 13)
+  summer: san-pancho: applied day 3 10:18, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:17 by parole (gold by day 13)
   halloween: shankton: applied day 3 10:17, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:15 by parole (gold by day 13)
   christmas: stalag-flucht: applied day 3 10:20, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +5: granted 26; out day 11 10:12 by parole (gold by day 12)

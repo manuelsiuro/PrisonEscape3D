@@ -16,10 +16,12 @@ export interface PastimesFrame {
     t: number;
     fromY: number;
   } | null;
-  /** The ball held up for a shot (the marker 0–1: the arms dip and rise with it), the way to the rim (a unit vector: it's held a little that way). */
-  holding: { who: number; power: number; dx: number; dz: number } | null;
+  /** The ball held up for a shot (the marker 0–1: the arms dip and rise with it), the way to the rim (a unit vector: it's held a little that way); 2.39: where, when an inmate holds it (tiles; else the player). */
+  holding: { who: number; power: number; dx: number; dz: number; x?: number; z?: number } | null;
   /** Cards between the player and the inmate: the middle, the way from the player to them, face-down cards on the pile, a call's cards face up. */
   cards: { x: number; z: number; angle: number; pile: number; reveal: number[] | null } | null;
+  /** 2.39: inmates' own card games in free time (play/huddles.ts): a pile face down between them, how many cards in it. */
+  crowdCards?: ReadonlyArray<{ x: number; z: number; angle: number; pile: number }>;
   /** The old-timer's board between him and the player: its middle, the way from the player to him, its squares (PIECE), the last move's squares. */
   board: { x: number; z: number; angle: number; sq: number[]; last: number[] } | null;
 }
@@ -47,6 +49,8 @@ const COURT_NEAR = 5.5;
 export function spotsOnPitch(c: Court, p: Pitch | null | undefined): boolean[] {
   return c.spots.map((q) => !!p && q.x >= p.x && q.x < p.x + p.w && q.z >= p.z && q.z < p.z + p.d);
 }
+/** Face-down cards drawn at most: the player's game's 14, and 2.39's inmates' games (a few piles of up to 6). */
+const CARD_BACKS = 14 + 18;
 /** A playing card (tiles), the checkers board's side and a piece. */
 const CARD_W = 0.15;
 const CARD_H = 0.21;
@@ -178,7 +182,7 @@ export class PastimesView {
     this.ball.castShadow = true;
     this.ball.visible = false;
     const cards = new THREE.MeshStandardMaterial({ map: cardTexture(), roughness: 0.8 });
-    this.backs = new THREE.InstancedMesh(cardGeometry(0), cards, 14);
+    this.backs = new THREE.InstancedMesh(cardGeometry(0), cards, CARD_BACKS);
     this.backs.count = 0;
     this.backs.frustumCulled = false;
     this.faces = [1, 2, 3, 4].map((k) => {
@@ -321,7 +325,7 @@ export class PastimesView {
     } else if (on && f.holding) {
       // (Over the head, a little toward the rim; down at the bottom of the marker's sweep, up at the top: the knees and arms work it.)
       const h = f.holding;
-      this.ball.position.set(px + h.dx * HOLD_AHEAD, HOLD_Y + h.power * 0.1, pz + h.dz * HOLD_AHEAD);
+      this.ball.position.set((h.x ?? px) + h.dx * HOLD_AHEAD, HOLD_Y + h.power * 0.1, (h.z ?? pz) + h.dz * HOLD_AHEAD);
       this.ball.rotation.x = 0;
       this.ball.visible = true;
     } else this.ball.visible = false;
@@ -351,6 +355,16 @@ export class PastimesView {
         this.q.identity();
         this.m.compose(this.p, this.q, this.s.set(1, 1, 1));
         mesh.setMatrixAt(counts[card - 1]++, this.m);
+      }
+    }
+    // 2.39: the inmates' own games: a small pile each, a little scattered.
+    for (const g of on ? (f.crowdCards ?? []) : []) {
+      for (let k = 0; k < g.pile && n < CARD_BACKS; k++) {
+        const j = Math.sin((k + g.pile) * 12.9898) * 43758.5453;
+        this.p.set(g.x + (j - Math.floor(j) - 0.5) * 0.1, 0.004 + k * 0.002, g.z + Math.sin(k * 7.13) * 0.04);
+        this.q.setFromAxisAngle(this.yAxis, g.angle + Math.sin(k * 3.7 + g.x) * 0.6);
+        this.m.compose(this.p, this.q, this.s.set(1, 1, 1));
+        this.backs.setMatrixAt(n++, this.m);
       }
     }
     if (n !== this.backs.count || n) {

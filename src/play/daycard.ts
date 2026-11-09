@@ -1,3 +1,4 @@
+import { freeTimeLine } from './whatsOn';
 import { BETS, RACE_MINUTE, RACE_STEPS } from '../content/long';
 import { BLOCK, ROUTINE, routineAt, routineEnd } from '../content/routine';
 import { presenceNeeded } from '../sim/systems/routine';
@@ -229,6 +230,8 @@ function dayView(g: Game): DayView {
       icon: BLOCK_ICON[r.id],
       name: routineName(k),
       place,
+      // (2.39: free time, now or to come: what it opens.)
+      open: (r.id === 'freeTime' || r.id === 'eveningFreeTime') && at !== 'past' ? freeTimeLine(sim) : undefined,
       at,
       must,
       tag,

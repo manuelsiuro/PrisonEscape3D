@@ -22,7 +22,7 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, dayRoll, eventOn, planOf, TODAY, today, weatherNow, type DayPlan } from '../sim/systems/calendar';
 import { hhmm } from '../sim/systems/clock';
 import { searchMinute } from '../sim/systems/delivery';
-import { DOG_DAY_FROM, LAST_WARNING, LIGHTS_OUT_GRACE, NIGHT_WARNING, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
+import { DOG_DAY_FROM, LAST_WARNING, LIGHTS_OUT_GRACE, NIGHT_WARNING, ROLL_CALL_WARNING, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import type { PaRow } from '../ui/pa';
@@ -304,6 +304,25 @@ export function dayStep(sim: Sim) {
       'info',
       6000,
     );
+  // (2.39: the evening's free time ends in roll call, and missing it is a lockdown: told ten minutes before, wherever
+  // the player is, down a tunnel too, unless already in the yard.)
+  if (
+    g &&
+    !g.over &&
+    st.step % STEPS_PER_MINUTE === 0 &&
+    !sim.rules238 &&
+    sim.clock.minuteOfDay === ROLL_CALL_WARNING &&
+    ROUTINE[st.routine].id === 'eveningFreeTime' &&
+    !st.lockdown &&
+    st.solitary <= 0 &&
+    st.ko <= 0 &&
+    !sim.away &&
+    sim.playerZone !== 'rollCall' &&
+    !sim.world.def.rules?.relaxed
+  ) {
+    sound.paChime();
+    banner.toast(t('toast.rollCallWarning', { time: hhmm(ROUTINE[st.routine + 1].start) }), 'bad', 6000);
+  }
   // (2.30: the quota not done, with time left to do it.)
   // (Not once a knockout or a lockdown has let them off: it can't cost the job today.)
   if (g && !g.over && st.step % STEPS_PER_MINUTE === 0 && sim.onDuty && !st.excused) {

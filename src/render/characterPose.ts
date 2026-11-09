@@ -393,6 +393,19 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.armRx += (-2.55 + loop) * ga;
     l.armRz -= (0.18 + (motion ? Math.cos(t * 11) * 0.1 : 0)) * ga;
     l.armLz += 0.35 * ga;
+  } else if (doing === DOING.CHAT) {
+    // In a ring for a chat (2.39): a turn to talk now and then (by the character's own time), the right hand up and
+    // moving as it makes its point, the left on the hip; listening, the hands loose and the weight on one foot.
+    // (Held still with reduced motion: the hand halfway up.)
+    const ga = m.act;
+    const turn = Math.max(0, Math.sin(t * 0.55));
+    const talking = motion ? turn * turn * (3 - 2 * turn) : 0.45;
+    const beat = motion ? Math.sin(t * 4.2) * 0.18 * talking : 0;
+    l.armRx += (-0.25 - 0.85 * talking + beat) * ga;
+    l.armRz -= (0.1 + 0.25 * talking) * ga;
+    l.armLz += 0.32 * ga;
+    l.armLx += -0.12 * ga;
+    l.bob += (motion ? Math.sin(t * 0.8) * 0.006 : 0) * ga;
   } else if (doing === DOING.QUEUE) {
     // Waiting in line for the phone (P34): arms crossed, the weight shifting slowly from foot to foot (below).
     const ga = m.act;
