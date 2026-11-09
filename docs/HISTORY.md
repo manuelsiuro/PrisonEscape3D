@@ -191,3 +191,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The update notice on a slow start (v2.37.0)
 - Roll call squares centred (v2.37.0)
 - The tutorial's missing lessons (v2.38.0)
+- Free time polished (v2.39.0, not released yet)

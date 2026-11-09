@@ -42,6 +42,8 @@ export const BED_CHECK_MINUTES: readonly number[] = [30, 240];
 /** Out of the cell this long after Lights Out begins before it counts (the walk home). */
 /** 22:50: the warning (2.28) that Lights Out is near, by the toast and the floor arrows. */
 export const NIGHT_WARNING = 22 * 60 + 50;
+/** 21:50: 2.39's warning that the evening's free time ends in roll call (missed: a lockdown), by the toast and the floor arrows. */
+export const ROLL_CALL_WARNING = 21 * 60 + 50;
 export const LIGHTS_OUT_GRACE = 25 * STEPS_PER_MINUTE;
 /** What it was before 2.28 (Sim.rules227): shorter than the walk home from the far rooms. */
 export const LIGHTS_OUT_GRACE_227 = 15 * STEPS_PER_MINUTE;

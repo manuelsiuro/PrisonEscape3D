@@ -40,6 +40,7 @@ export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readon
       'talent',
       'quiz',
       'crew',
+      'freetime',
       'gangJoin',
       'gangTurf',
       'caught',

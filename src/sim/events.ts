@@ -130,6 +130,8 @@ export type SimEvent =
   | { type: 'menu'; what: MenuNews; who?: number; /** caught: the heat it really cost. */ n?: number }
   /** 2.33: at the water cooler (n: energy back; cooled: a heatwave's heat gone; who: the inmate). */
   | { type: 'cooler'; what: CoolerNews; n?: number; cooled?: boolean; who?: number }
+  /** 2.39: the player took someone out of an inmates' game by talking to them (its kind: HUDDLE): the talk offers that game. */
+  | { type: 'huddle'; what: 'joined'; who: number; kind: number }
   /** Dirt down a toilet; a toilet that takes no more for now. */
   | { type: 'flushed'; item: number }
   | { type: 'clogged' }

@@ -44,6 +44,7 @@ import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
 import { diceRival, gamesDoing, gamesFrameOf } from './games';
+import { crowdGames } from './huddles';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
 import { longFrameOf, petOnTrack } from './long';
 import { teamFrameOf } from './team';
@@ -652,6 +653,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? (f.inmates[rival] ?? null) : null);
   // Card sharks (P27): the court, the ball, the cards between the two, the board.
   f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner);
+  // Free time's gatherings (2.39): the inmates' own dice, cards and shots at the hoop.
+  crowdGames(sim, f.inmates, f.x, f.z, f.games, f.pastimes);
   // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
   f.long = longFrameOf(sim, a);
   // Team & ink (P29): the pitch, the ball.

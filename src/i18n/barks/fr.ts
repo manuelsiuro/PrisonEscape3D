@@ -1486,6 +1486,35 @@ export const frBarks: Barks = {
     { t: 'T’as entendu pour {event} ?', r: 'Qui n’a pas entendu ?' },
     { t: 'Mon codétenu parle en dormant.', r: 'Le mien chante. Faux.' },
   ],
+  // 2.39 : autour d’un jeu entre détenus, en temps libre.
+  'ex.dice': [
+    { t: 'Allez, le sept !', r: 'Tu l’as déjà dit la dernière fois.' },
+    { t: 'Souffle dessus, ça porte chance.', r: 'Je souffle pas sur tes dés.' },
+    { t: 'Double as. Encore.', r: 'Les dés t’aiment pas.' },
+    { t: 'Quitte ou double ?', r: 'T’as plus rien. Alors, double.' },
+    { t: 'Ils sont pipés, ces dés.', r: 'Ils sont taillés dans du savon.' },
+    { t: 'À moi, à moi.', r: 'T’as lancé les trois derniers.' },
+  ],
+  'ex.cards': [
+    { t: 'Deux rois. Promis.', r: 'Menteur !' },
+    { t: 'Qui a distribué ce bazar ?', r: 'Toi.' },
+    { t: 'Arrête de regarder mes cartes.', r: 'Je regarde ta tête. C’est pire.' },
+    { t: 'À toi.', r: 'Je réfléchis. Ça prend du temps.' },
+    { t: 'T’as un joker dans la manche ?', r: 'Ce maillot a pas de manches.' },
+    { t: 'Une dernière main.', r: 'Tu disais ça il y a une heure.' },
+  ],
+  'ex.hoops': [
+    { t: 'Que du filet !', r: 'Que de la chance.' },
+    { t: 'Tout est dans le poignet.', r: 'Ton poignet a raté.' },
+    { t: 'Il a touché le cercle. Ça compte.', r: 'Ça compte pas.' },
+    { t: 'Le premier à dix ?', r: 'Le premier au dîner.' },
+    { t: 'Recule, laisse-moi de la place.', r: 'T’as toute la cour.' },
+    { t: 'Je jouais, avant, tu sais.', r: 'Au basket ? Ou au ballon ?' },
+  ],
+  // 2.39 : l’accueil quand le joueur rejoint un jeu entre détenus.
+  'gr.join.dice': ['Prends une caisse. Aux dés ?', 'T’en es ? Cinq dollars le lancer.', 'Du sang neuf. Un coup de dés ?', 'Il est sorti. T’es dedans. Lance.', 'Tu lances avec nous ? Le perdant paie le savon.', 'T’as cinq dollars ? Alors t’as une place.'],
+  'gr.join.cards': ['Je te sers ?', 'Une partie de Menteur ?', 'Il nous manque un joueur. Assieds-toi.', 'Des cartes ? Garde ton sérieux.', 'Nouvelle main. Me dis pas la tienne.', 'Assieds-toi. Et garde ton air de rien.'],
+  'gr.join.hoops': ['On tire quelques paniers ?', 'Cinq chacun, depuis les marques ?', 'T’as un tir en suspension ? Montre.', 'Le ballon est à toi. Fais voir.', 'À deux, c’est un match. À trois, un tournoi.', 'Tu tires, je compte les points. Honnêtement.'],
 
   // ---------------------------------------------------------------- répliques fétiches
   'catch.Rusty': ['Rusty, c’est mon nom. La rouille, c’est mon jeu.', 'Je suis pas vieux, je suis vintage.'],

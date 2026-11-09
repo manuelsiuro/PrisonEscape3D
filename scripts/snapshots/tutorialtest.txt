@@ -33,6 +33,7 @@ tattoo: 5 steps done by day 1 10:14
 talent: 4 steps done by day 1 20:04
 quiz: 4 steps done by day 1 19:55
 crew: 3 steps done by day 1 10:33
+freetime: 4 steps done by day 2 18:02
 gangJoin: 4 steps done by day 1 18:18
 gangTurf: 3 steps done by day 2 18:24
 crew, posted far: ended at step 3 (lesson.crew.far)
@@ -100,6 +101,6 @@ raft: 3 steps done by day 1 23:42
 helicopter: 2 steps done by day 1 23:34
 caught, waited out: done
 shell, thrown off the arrows: at step 5
-5 chapters: basics 10, getby 7, life 34, ways 12, prisons 6
+5 chapters: basics 10, getby 7, life 35, ways 12, prisons 6
 training: its guard out cold, no takeover
 every lesson goal is open floor

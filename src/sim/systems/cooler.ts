@@ -138,6 +138,8 @@ export function cooler(sim: SimContext) {
       if (q.asked[b] & (1 << k) || q.who.includes(k)) continue;
       const at = wantsDrink(s.salt, day, b, k);
       if (at < 0 || minute < at) continue;
+      // (2.39: gathered for a chat or a game: the drink waits till it's over.)
+      if (s.huddle?.who.includes(k)) continue;
       q.asked[b] |= 1 << k;
       const free = q.who.indexOf(-1);
       if (free < 0 || staysPut(sim, k) || !freeToGo(sim, k) || s.vend.line.includes(k)) continue;

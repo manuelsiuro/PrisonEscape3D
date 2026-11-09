@@ -57,6 +57,10 @@ import { VEND } from '../../src/content/vending';
 import { VEND_NOBODY } from '../../src/sim/systems/vending';
 import { MENU } from '../../src/content/menu';
 import { twoAtCooler } from '../../src/sim/systems/cooler';
+import { HUDDLE } from '../../src/content/huddles';
+import { ringsOf, seatHuddle } from '../../src/sim/systems/huddles';
+import { DAY_EVENTS, WEATHERS } from '../../src/content/days';
+import { at as atTime, clockTo, DAY_TWO, place } from '../../src/tutorial/kit';
 import { UNIT } from '../../src/sim/tuning';
 import { holidayDecor } from '../../src/render/holidayDecor';
 import { tributeDesk } from '../../src/sim/systems/gangs';
@@ -337,6 +341,26 @@ export const SHOTS: Record<string, Shot> = {
     when: (_s, k, n) => k >= n - 1,
     zoom: 2.15,
     dx: 4,
+    dz: -1,
+  },
+  // 2.39: free time in Center Perks' roll call yard: a ring of three chatting, two at dice beside them.
+  freetime: {
+    make: () => {
+      // (Set before the first step, which the picture's replay starts from: the clock moved on as a lesson's is.)
+      const bot = new Bot(CENTER_PERKS, 41);
+      bot.st.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
+      clockTo(bot.sim, DAY_TWO + atTime(18, 20));
+      const rings = ringsOf(bot.sim.world);
+      const ring = (x: number, z: number) => rings.findIndex((r) => r.x === x && r.z === z);
+      seatHuddle(bot.sim, 0, HUDDLE.CHAT, ring(35, 18), [0, 1, 2]);
+      seatHuddle(bot.sim, 1, HUDDLE.DICE, ring(37, 12), [3, 4]);
+      place(bot.sim, 33, 15, 1);
+      bot.until(() => false, 60);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 1.6,
+    dx: 2,
     dz: -1,
   },
   // 2.29: a set under way at Center Perks' gym, the crowd on the other machines.

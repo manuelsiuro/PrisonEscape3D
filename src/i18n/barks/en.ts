@@ -1489,6 +1489,36 @@ export const enBarks = {
     { t: 'My cellmate talks in his sleep.', r: 'Mine sings. Badly.' },
   ],
 
+  // 2.39: over an inmates' own game in free time (the reply from someone at it).
+  'ex.dice': [
+    { t: 'Come on, sevens!', r: 'You said that last time.' },
+    { t: 'Blow on them for luck.', r: "I'm not blowing on your dice." },
+    { t: 'Snake eyes. Again.', r: "The dice don't like you." },
+    { t: 'Double or nothing?', r: "You've got nothing. So, double." },
+    { t: 'These dice are loaded.', r: "They're carved from soap." },
+    { t: 'My throw, my throw.', r: 'Your throw was the last three.' },
+  ],
+  'ex.cards': [
+    { t: "Two kings. Honest.", r: 'Liar!' },
+    { t: 'Who dealt this mess?', r: 'You did.' },
+    { t: "Stop looking at my cards.", r: "I'm looking at your face. It's worse." },
+    { t: 'Your go.', r: "I'm thinking. It takes a while." },
+    { t: 'Is that a joker up your sleeve?', r: 'This shirt has no sleeves.' },
+    { t: 'One more hand.', r: "That's what you said an hour ago." },
+  ],
+  'ex.hoops': [
+    { t: 'Nothing but net!', r: 'Nothing but luck.' },
+    { t: 'Watch the wrist. All in the wrist.', r: 'Your wrist missed.' },
+    { t: 'That was on the rim. Counts.', r: "It doesn't count." },
+    { t: 'First to ten?', r: 'First to dinner.' },
+    { t: 'Back off, give me room.', r: "You've got the whole yard." },
+    { t: "I used to play, you know.", r: 'Basketball? Or the ball?' },
+  ],
+  // 2.39: the talk's greeting when the player walks up to an inmates' game and joins it.
+  'gr.join.dice': ['Pull up a crate. Dice?', "You in? Five bucks a throw.", 'Fresh blood. Want a go with the dice?', "He's out. You're in. Throw.", 'Roll with us? Loser buys the soap.', "Got five bucks? Then you've got a seat."],
+  'gr.join.cards': ['Deal you in?', 'Fancy a hand of Cheat?', "We're a player short. Sit.", 'Cards? Keep your face straight.', "New hand. Don't tell me yours.", 'Take a seat. Bring your poker face.'],
+  'gr.join.hoops': ['Want to shoot a few?', 'Five each from the spots?', 'Got a jump shot? Show me.', "Ball's yours. Let's see it.", "Two's a game. Three's a tournament.", "You shoot, I'll keep score. Honestly."],
+
   // ---------------------------------------------------------------- catchphrases (by nickname, every prison)
   'catch.Rusty': ["Rusty's the name, rust is the game.", "I'm not old, I'm vintage."],
   'catch.Tank': ["Tank doesn't do stairs. Tank does walls.", "Need something moved? I'm the move."],
