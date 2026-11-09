@@ -35,7 +35,9 @@ export class LessonProgress {
   /** An event from the game, kept for the next update. */
   event(e: SimEvent, sim: Sim) {
     if (this.done) return;
-    this.failed ??= this.step.failOn?.(e, sim) ?? ENDS[e.type] ?? null;
+    // (2.38: a lesson about getting caught goes on through the catch.)
+    const ends = e.type === 'caught' && this.lesson.caught ? null : ENDS[e.type];
+    this.failed ??= this.step.failOn?.(e, sim) ?? ends ?? null;
     if (this.seen.length >= 256) return;
     this.seen.push(e);
     this.sim = sim;

@@ -5,6 +5,7 @@
  * can get stuck.
  */
 import { TRAY } from '../src/sim/systems/inmates';
+import { beamAt } from '../src/sim/systems/security';
 import { VEND } from '../src/content/vending';
 import { MENU } from '../src/content/menu';
 import { peopleAhead, VEND_NOBODY } from '../src/sim/systems/vending';
@@ -53,7 +54,25 @@ import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
 import { BOARD, J, KIND, STAGE } from '../src/content/oddjobs';
 import { check } from './assert';
 import { aimToss } from '../src/sim/systems/throwing';
-import { type LessonCtx, myDesk } from '../src/tutorial/kit';
+import {
+  bossIn,
+  CANTEEN_ARCH,
+  cornerTile,
+  guardPockets,
+  GYM_RATS,
+  initiation,
+  KELLER,
+  keyBack,
+  KITCHEN,
+  type LessonCtx,
+  MOSS,
+  myDesk,
+  nearestDog,
+  tributeCarried,
+  WOODSHOP_CAM,
+} from '../src/tutorial/kit';
+import { initiationTile, tributeDesk, tributeOf } from '../src/sim/systems/gangs';
+import { TRUST_IGNORE } from '../src/sim/tuning';
 import { LESSON_IDS } from '../src/tutorial/lessonIds';
 
 const tile = (x: number, z: number) => z * MAP_W + x;
@@ -713,11 +732,52 @@ play('crew', (bot) => {
   bot.until(() => bot.sim.events.some((e) => e.type === 'crew' && e.what === 'whistle'), 3000);
 });
 
+play('gangJoin', (bot) => {
+  const boss = bossIn(bot.sim, KITCHEN);
+  check(talkTo(bot, bot.st.inmates[boss].body) && bot.st.talk === boss, 'gangJoin: talking to Rusty');
+  bot.op(OP.TALK, TALK.JOIN);
+  bot.close();
+  const f = initiation(bot.sim);
+  check(!!f, 'gangJoin: the initiation taken on');
+  // To the rival boss's desk by the lesson's arrows, the marked sugar taken from its drawers.
+  const desk = tributeDesk(bot.sim, f!);
+  check(bot.walkTo(initiationTile(bot.sim), 4000), "gangJoin: at Lefty's desk");
+  const p = containersOf(bot.sim.world)[desk].prop;
+  const dx = p.x + (p.w - 1) / 2 - (bot.tile % MAP_W);
+  const dz = p.z + (p.d - 1) / 2 - Math.floor(bot.tile / MAP_W);
+  bot.face(Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? DIR.EAST : DIR.WEST) : dz > 0 ? DIR.SOUTH : DIR.NORTH);
+  check(bot.open(desk), "gangJoin: Lefty's desk open");
+  const k = bot.st.items.containers[desk].findIndex((v) => v === tributeOf(f!));
+  const free = bot.st.items.inv.slice(0, 6).indexOf(0);
+  bot.op(OP.MOVE, SLOT.CONTAINER + k, free);
+  bot.close();
+  check(tributeCarried(bot.sim), 'gangJoin: the sugar in the pockets');
+  // (Someone else in the way takes the press: let go, and again.)
+  for (let k = 0; k < 8 && bot.st.talk !== boss; k++) {
+    if (bot.st.talk >= 0) bot.close();
+    talkTo(bot, bot.st.inmates[boss].body, 4000);
+  }
+  check(bot.st.talk === boss, 'gangJoin: back with Rusty');
+  bot.op(OP.TALK, TALK.HAND_IN);
+  bot.close();
+});
+
+play('gangTurf', (bot) => {
+  // Onto the Gym Rats' corner, there until told off (they get there from dinner), then home to the Crew's.
+  check(bot.walkTo(cornerTile(bot.sim, GYM_RATS), 2000), "gangTurf: on the Gym Rats' corner");
+  check(
+    bot.until(() => bot.events.some((e) => e.type === 'gang' && e.what === 'warn'), 20 * 60 * 20),
+    'gangTurf: told off',
+  );
+  check(bot.walkTo(cornerTile(bot.sim, KITCHEN), 2000), "gangTurf: on the Kitchen Crew's corner");
+  check(!bot.events.some((e) => e.type === 'gang' && e.what === 'jumped'), 'gangTurf: off in time, nobody squared up');
+});
+
 {
   // Posted where Bell's round can't be seen (back along the corridor): the lesson says so and ends.
   const index = LESSONS.findIndex((l) => l.id === 'crew');
   const lesson = LESSONS[index];
-  const bot = new Bot(TRAINING, 7 + index);
+  const bot = new Bot(lesson.prison ?? TRAINING, lesson.seed ?? 7 + index);
   lesson.setup(bot.sim);
   const progress = new LessonProgress(lesson);
   const ctx: LessonCtx = { sim: bot.sim, craftOpen: false };
@@ -857,6 +917,44 @@ play('showers', (bot) => {
   check(!bot.st.washing, 'showers: walked away from');
 });
 
+play('caught', (bot) => {
+  // Stood still till Moss has them; out cold, then solitary; a potato peeled; out.
+  check(
+    bot.until(() => bot.events.some((e) => e.type === 'caught'), 3 * 60 * 20),
+    'caught: Moss catches them',
+  );
+  check(
+    bot.until(() => bot.st.solitary > 0 && bot.st.ko <= 0, 120 * 20),
+    'caught: awake in solitary',
+  );
+  check(bot.slotOf('light_cutters') < 0 && bot.slotOf('chocolate') >= 0, 'caught: the cutters taken, the chocolate kept');
+  for (let k = 0; k < 5; k++) {
+    bot.act();
+    for (let j = 0; j < 4; j++) bot.step();
+  }
+  check(
+    bot.events.some((e) => e.type === 'peel' && e.done),
+    'caught: a potato peeled',
+  );
+  bot.until(() => bot.events.some((e) => e.type === 'solitary' && !e.on), 130 * 60 * 20);
+});
+
+play('towers', (bot) => {
+  // The east beam just gone by and leaving the strip: west along it before the west beam comes down to it.
+  const lights = bot.sim.prison.searchlights!;
+  const beam = { x: 0, z: 0 };
+  const east = () => beamAt(lights[1], bot.st.step, beam);
+  const leaving = () => {
+    const now = east();
+    const [x, z] = [now.x, now.z];
+    const next = beamAt(lights[1], bot.st.step + 20, { x: 0, z: 0 });
+    return x >= 46 * UNIT && next.z < z;
+  };
+  check(bot.until(leaving, 5 * 60 * 20), 'towers: the east beam on its way back up');
+  check(bot.walkTo(tile(21, 58), 800), 'towers: across the strip');
+  check(!bot.events.some((e) => e.type === 'spotted'), 'towers: never lit');
+});
+
 play('laps', (bot) => {
   // (P31: through the gate onto the sports ground, a lap along the lanes from the nearest corner, then the pull-up bar.
   // A step first: the gate opens for free time as the step ends.)
@@ -915,6 +1013,75 @@ play('lockpick', (bot) => {
   check(bot.walkTo(tile(43, 19)), 'lockpick: through into the generator room');
 });
 
+play('keys', (bot, ctx) => {
+  // Keller's pockets searched, his key taken; pressed into the putty; put back; the mold cast; through the purple door.
+  const pockets = guardPockets(bot.sim, KELLER);
+  bot.face(DIR.WEST);
+  check(bot.open(pockets), "keys: Keller's pockets open");
+  const k = bot.st.items.containers[pockets].findIndex((v) => itemOf(v) === n('key_purple'));
+  bot.op(OP.MOVE, SLOT.CONTAINER + k, bot.st.items.inv.slice(0, 6).indexOf(0));
+  bot.close();
+  check(bot.slotOf('key_purple') >= 0, 'keys: the key taken');
+  ctx.craftOpen = true;
+  bot.op(OP.CRAFT, (1 << bot.slotOf('putty')) | (1 << bot.slotOf('key_purple')));
+  ctx.craftOpen = false;
+  check(bot.slotOf('mold_purple') >= 0 && bot.slotOf('key_purple') >= 0, 'keys: the mold made, the key kept');
+  check(bot.open(pockets), "keys: Keller's pockets open again");
+  bot.putIn('key_purple', bot.st.items.containers[pockets].indexOf(0));
+  bot.close();
+  check(keyBack(bot.sim, KELLER, 'key_purple'), 'keys: the key back in his pockets');
+  ctx.craftOpen = true;
+  bot.op(OP.CRAFT, (1 << bot.slotOf('mold_purple')) | (1 << bot.slotOf('molten_plastic')));
+  ctx.craftOpen = false;
+  check(bot.slotOf('plastic_key_purple') >= 0, 'keys: the plastic key cast');
+  // (A step first: the key in the pockets opens its door from then on.)
+  bot.step();
+  check(bot.walkTo(tile(10, 39), 600), 'keys: into the generator room');
+});
+
+{
+  // (Review: the key taken and put straight back, uncopied: once Keller comes round, the lesson says so and ends.)
+  const index = LESSONS.findIndex((l) => l.id === 'keys');
+  const lesson = LESSONS[index];
+  const bot = new Bot(lesson.prison ?? TRAINING, lesson.seed ?? 7 + index);
+  lesson.setup(bot.sim);
+  const progress = new LessonProgress(lesson);
+  const ctx: LessonCtx = { sim: bot.sim, craftOpen: false };
+  const pockets = guardPockets(bot.sim, KELLER);
+  bot.face(DIR.WEST);
+  bot.open(pockets);
+  bot.op(OP.MOVE, SLOT.CONTAINER + bot.st.items.containers[pockets].findIndex((v) => itemOf(v) === n('key_purple')), 0);
+  for (const e of bot.sim.events) progress.event(e, bot.sim);
+  progress.update(ctx);
+  bot.putIn('key_purple', bot.st.items.containers[pockets].indexOf(0));
+  bot.close();
+  bot.until(() => bot.st.guards[KELLER].ko <= 0, 200 * 20);
+  progress.update(ctx);
+  check(
+    progress.k === 1 && progress.verdict(ctx) === 'lesson.keys.late',
+    'keys: the key put back uncopied, Keller awake: the lesson ends, to try again',
+  );
+  console.log(`keys, put back uncopied: ended at step ${progress.k + 1} (${progress.verdict(ctx)})`);
+}
+
+play('cams', (bot) => {
+  // Through the canteen's arch with the cutters and the pouch; to the woodshop's camera, taped over.
+  check(bot.walkTo(CANTEEN_ARCH - MAP_W, 400), "cams: through the canteen's arch");
+  check(
+    bot.events.some((e) => e.type === 'scanned' && !e.tripped),
+    'cams: scanned, the pouch hid the cutters',
+  );
+  const cam = bot.sim.prison.cameras![WOODSHOP_CAM];
+  check(bot.walkTo(tile(cam.x, cam.z), 1200), 'cams: under the woodshop camera');
+  bot.hold('duct_tape');
+  for (const dir of [DIR.NORTH, DIR.WEST, DIR.EAST, DIR.SOUTH]) {
+    if (bot.st.cams[WOODSHOP_CAM]) break;
+    bot.face(dir);
+    bot.use();
+  }
+  check(bot.st.cams[WOODSHOP_CAM] > bot.st.step, 'cams: the camera taped over');
+});
+
 play('stowaway', (bot) => {
   check(!thorough(bot.sim, 1), "stowaway: the lesson's day is a quick look, as it says");
   const d = bot.sim.prison.delivery!;
@@ -945,6 +1112,34 @@ play('glider', (bot) => {
   check(bot.walkTo(tile(57, 39), 600), "glider: at the roof's east edge");
   bot.face(DIR.EAST);
   bot.use();
+});
+
+play('grapnel', (bot) => {
+  check(bot.walkTo(tile(6, 39), 600), "grapnel: at the roof's west edge");
+  bot.face(DIR.WEST);
+  bot.hold('grapnel');
+  bot.use();
+});
+
+play('takeover', (bot) => {
+  // Moss, locked on and beaten; out through the gates.
+  const inmates = bot.st.inmates.length;
+  const moss = bot.st.guards[MOSS].body;
+  let fights = 0;
+  for (let k = 0; k < 4000 && !bot.st.takeover && bot.st.ko === 0; k++) {
+    const d = Math.max(Math.abs(moss.x - bot.st.player.x), Math.abs(moss.z - bot.st.player.z));
+    if (d > 3 * UNIT) {
+      if (k % 20 === 0) bot.pilot.goTo(Math.floor(moss.z / UNIT) * MAP_W + Math.floor(moss.x / UNIT));
+      bot.step(command(bot.pilot.dir(bot.st.player)));
+      continue;
+    }
+    bot.pilot.stop();
+    if (bot.st.lock !== inmates + MOSS) bot.op(OP.LOCK, 2 + inmates + MOSS);
+    if (d < 1.2 * UNIT) bot.op(OP.USE, fights++ === 0 ? 1 : 0);
+    else bot.step(command(dirFromVector(moss.x - bot.st.player.x, moss.z - bot.st.player.z)));
+  }
+  check(bot.st.takeover, 'takeover: every guard down at once');
+  check(bot.walkTo(tile(30, 62), 1500), 'takeover: out through the gates');
 });
 
 play('forgery', (bot, ctx) => {
@@ -1658,6 +1853,180 @@ function follow(id: string) {
   bot.until(() => bot.st.guards[0].sees, 3000);
   progress.update(ctx);
   check(progress.k === 2 && !progress.done, `disguise: the warning step comes up and waits to be read (at ${progress.k})`);
+}
+
+// ---------------------------------------------------------------- The prisons (2.38)
+
+play('hounds', (bot) => {
+  bot.step();
+  // A few tiles off the nearest hound (the arrows'), then the trout thrown where it stands (a miss: picked up, and again).
+  const trusted = () => bot.st.dogs.some((d) => d.trust >= TRUST_IGNORE);
+  for (let k = 0; k < 3000 && !trusted(); k++) {
+    const dog = nearestDog(bot.sim)!.body;
+    const dx = Math.floor(dog.x / UNIT) - Math.floor(bot.st.player.x / UNIT);
+    const dz = Math.floor(dog.z / UNIT) - Math.floor(bot.st.player.z / UNIT);
+    const d = Math.max(Math.abs(dx), Math.abs(dz));
+    if (bot.slotOf('trout') < 0) {
+      const lying = bot.st.items.ground.find(([, v]) => itemOf(v) === n('trout'));
+      if (!lying) break;
+      bot.walkTo(lying[0], 400);
+      bot.step();
+      continue;
+    }
+    if (d > 4) {
+      bot.pilot.goTo(Math.floor(dog.z / UNIT) * MAP_W + Math.floor(dog.x / UNIT));
+      bot.step(command(bot.pilot.dir(bot.st.player)));
+      continue;
+    }
+    bot.hold('trout');
+    if (d >= 2 && aimToss(bot.sim, dx, dz).why === null) bot.op(OP.EXT, EXT.THROW, ...tossArgs(bot.tile + dz * MAP_W + dx));
+    else bot.step();
+  }
+  check(trusted(), 'hounds: the trout eaten, trusted');
+  // The drag line, thrown as far off as a throw goes (the first way that will do).
+  bot.hold('drag_line');
+  const ways = [
+    [6, 0],
+    [-6, 0],
+    [0, 6],
+    [0, -6],
+    [4, 4],
+    [-4, 4],
+    [4, -4],
+    [-4, -4],
+  ];
+  for (let k = 0; k < 200 && bot.slotOf('drag_line') >= 0; k++) {
+    const way = ways.find(([dx, dz]) => aimToss(bot.sim, dx, dz).why === null);
+    if (way) bot.op(OP.EXT, EXT.THROW, ...tossArgs(bot.tile + way[1] * MAP_W + way[0]));
+    else bot.step(command(DIR.SOUTH));
+  }
+  check(
+    bot.events.some((e) => e.type === 'dragLine'),
+    'hounds: the drag line thrown',
+  );
+});
+
+play('cold', (bot) => {
+  // A minute out in the snow, then indoors till warm, then the cushioned outfit on.
+  check(
+    bot.until(() => bot.st.frozen, 90 * 20),
+    'cold: chilled',
+  );
+  check(bot.walkTo(placesOf(bot.sim.world).bedside[1], 1500), 'cold: indoors');
+  check(
+    bot.until(() => !bot.st.frozen, 60 * 20),
+    'cold: warm again',
+  );
+  bot.op(OP.EQUIP, bot.slotOf('cushioned_outfit'));
+});
+
+play('shell', (bot) => {
+  // The concrete tried, up the ladder, the grapnel onto the gatehouse, down its far side.
+  bot.face(DIR.SOUTH);
+  bot.use();
+  check(bot.walkTo(tile(38, 50), 400), 'shell: at the ladder');
+  bot.face(DIR.NORTH);
+  bot.act();
+  check(bot.st.layer === LAYER.ROOF, 'shell: up on the roof');
+  check(bot.walkTo(tile(53, 55), 1200), "shell: at the roof's south edge");
+  bot.face(DIR.SOUTH);
+  bot.hold('grapnel');
+  bot.use();
+  check(
+    bot.st.layer === LAYER.ROOF && bot.events.some((e) => e.type === 'layer' && e.how === 'grapnel'),
+    'shell: across onto the gatehouse',
+  );
+  check(bot.walkTo(tile(53, 62), 400), "shell: at the gatehouse's far edge");
+  bot.face(DIR.SOUTH);
+  bot.hold('sheet_rope');
+  bot.use();
+});
+
+play('mines', (bot) => {
+  bot.step();
+  check(bot.walkTo(tile(31, 62), 1500), 'mines: down the paving and out of the gate');
+  check(!bot.st.craters.length, 'mines: never on a mine');
+});
+
+play('raft', (bot) => {
+  bot.face(DIR.EAST);
+  check(
+    bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[tile(60, 28)] === TILE.FENCE_CUT),
+    'raft: the dock fence cut',
+  );
+  check(bot.walkTo(tile(62, 28), 300), "raft: at the pier's end");
+  bot.face(DIR.EAST);
+  bot.hold('raft');
+  bot.use();
+});
+
+play('helicopter', (bot) => {
+  // Each riot guard: locked on, a cup of molten chocolate thrown; then aboard.
+  const st = bot.st;
+  const inmates = st.inmates.length;
+  for (const k of bot.sim.prison.guards.flatMap((g, j) => (g.helipad ? [j] : []))) {
+    const g = st.guards[k];
+    for (let t = 0; t < 600 && g.ko === 0; t++) {
+      const d = Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z));
+      if (d > 2.5 * UNIT) {
+        if (t % 10 === 0) bot.pilot.goTo(Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT));
+        bot.step(command(bot.pilot.dir(st.player)));
+        continue;
+      }
+      bot.pilot.stop();
+      if (st.lock !== inmates + k) bot.op(OP.LOCK, 2 + inmates + k);
+      bot.hold('molten_chocolate');
+      bot.op(OP.USE, 1);
+    }
+    check(g.ko > 0, `helicopter: riot guard ${k} out cold`);
+  }
+  check(bot.walkTo(tile(34, 45), 400), 'helicopter: beside the pad');
+  bot.face(DIR.EAST);
+  bot.act();
+});
+
+/** A lesson's scene and its progress, to play a side road the main bots don't take (the reviews' dead ends). */
+function sideRoad(id: string) {
+  const index = LESSONS.findIndex((l) => l.id === id);
+  const lesson = LESSONS[index];
+  const bot = new Bot(lesson.prison ?? TRAINING, lesson.seed ?? 7 + index);
+  lesson.setup(bot.sim);
+  const progress = new LessonProgress(lesson);
+  const ctx: LessonCtx = { sim: bot.sim, craftOpen: false };
+  const step = bot.step.bind(bot);
+  bot.step = (cmd = 0) => {
+    step(cmd);
+    for (const e of bot.sim.events) progress.event(e, bot.sim);
+    progress.update(ctx);
+  };
+  progress.update(ctx);
+  return { bot, progress, ctx };
+}
+
+{
+  // (Review: solitary waited out, nothing peeled: let out, the lesson still ends done.)
+  const { bot, progress, ctx } = sideRoad('caught');
+  bot.until(() => bot.events.some((e) => e.type === 'solitary' && !e.on), 140 * 60 * 20);
+  bot.until(() => progress.done, 200);
+  check(progress.done && !progress.verdict(ctx), 'caught: solitary waited out, nothing peeled, the lesson done');
+  console.log(`caught, waited out: ${progress.done ? 'done' : `stuck at ${progress.k + 1}`}`);
+}
+
+{
+  // (Review: the grapnel thrown from along the edge, three tiles off the arrows: across all the same.)
+  const { bot, progress, ctx } = sideRoad('shell');
+  bot.face(DIR.SOUTH);
+  bot.use();
+  bot.walkTo(tile(38, 50), 400);
+  bot.face(DIR.NORTH);
+  bot.act();
+  bot.walkTo(tile(50, 55), 1200);
+  bot.face(DIR.SOUTH);
+  bot.hold('grapnel');
+  bot.use();
+  bot.step();
+  check(progress.k === 4 && !progress.verdict(ctx), `shell: thrown from 50,55, on to the last step (at ${progress.k + 1})`);
+  console.log(`shell, thrown off the arrows: at step ${progress.k + 1}`);
 }
 
 // Every lesson is in exactly one chapter, the chapters in the order the list has them.
