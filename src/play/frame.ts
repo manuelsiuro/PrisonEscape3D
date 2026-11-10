@@ -43,7 +43,7 @@ import { freezing } from '../sim/systems/weather';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
-import { diceRival, gamesDoing, gamesFrameOf } from './games';
+import { diceRival, gamesDoing, gamesFrameOf, placeCrate, cheersSoFar } from './games';
 import { crowdGames } from './huddles';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
 import { longFrameOf, petOnTrack } from './long';
@@ -651,6 +651,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.smuggle = smuggleFrame(sim, a);
   // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
   f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? (f.inmates[rival] ?? null) : null);
+  if (f.games.bout?.crate) placeCrate(f.x, f.z, f.inmates[f.games.bout.who]);
+  f.cheer = cheersSoFar();
   // Card sharks (P27): the court, the ball, the cards between the two, the board.
   f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner);
   // Free time's gatherings (2.39): the inmates' own dice, cards and shots at the hoop.

@@ -89,7 +89,7 @@ import { phoneView, smuggleHints } from './smuggle';
 import { PHONE, smugglingOf } from '../sim/systems/smuggling';
 import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 import { boardNow, cheatNow, courtNow } from './pastimes';
-import { pickNow, wrestleNow } from './games';
+import { diceNow, pickNow, wrestleNow } from './games';
 import { crewChipList, crewRows } from './crew';
 import { NO_TAKE, raceNow, takeOffers } from './long';
 import { inkNow, matchNow, teamSounds } from './team';
@@ -284,7 +284,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const fighting = st.lock >= 0 || memo.fighting;
   // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
   // (P27: so do a hand of Cheat and the old-timer's board.)
-  const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated || !!st.ink;
+  // (2.40: and the dice's card: the tool and lock-on buttons step aside for it too.)
+  const training =
+    st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated || !!st.ink || (!busy && !!diceNow(sim));
   tools.update(
     training ? null : press.toolNow,
     st.energy,
@@ -326,6 +328,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const cards = gameCards();
   cards?.wrestleCard.update(bout);
   cards?.pickCard.update(pick, !settings.reducedMotion);
+  // (2.40: a game of dice on its own card, the talk panel stepping aside for it.)
+  const diceV = busy ? null : diceNow(sim);
+  cards?.diceCard.update(diceV);
   // Card sharks (P27): a hand of Cheat and the old-timer's board have their cards (as a bout); the court's card while on a spot.
   const cheat = busy ? null : cheatNow(sim);
   const boardV = busy ? null : boardNow(sim);
@@ -343,7 +348,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   document.body.classList.toggle('matching', !!match);
   document.body.classList.toggle('inking', !!inkV);
   // Stage nights (P30): talent night's card at the stage (the lanes while playing), quiz night's at the table.
-  const otherGame = !!(bout || pick || cheat || boardV || match || inkV);
+  const otherGame = !!(bout || pick || diceV || cheat || boardV || match || inkV);
   const stageV = busy || otherGame ? null : stageNow(sim, a);
   const quizV = busy || otherGame || stageV ? null : quizNow(sim);
   cards?.stageCard.update(stageV);
@@ -404,6 +409,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     court ||
     bout ||
     pick ||
+    diceV ||
     match ||
     inkV ||
     stageV ||
@@ -416,12 +422,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
       ? null
       : raceNow(sim, a);
   const raceShown = cards?.raceCard.update(race) ?? false;
-  document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
+  document.body.classList.toggle('gaming', !!bout || !!pick || !!diceV || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
   // (The race card up: the lesson's card steps aside in landscape; while the race is run, the hotbar too.)
   document.body.classList.toggle('racing', raceShown);
-  // (A hand of Cheat, the board: the hotbar steps aside on a phone held sideways, for the card.)
-  document.body.classList.toggle('seated-game', !!cheat || !!boardV);
+  // (A hand of Cheat, the board: the hotbar steps aside on a phone held sideways, for the card; 2.40: dice's too.)
+  document.body.classList.toggle('seated-game', !!cheat || !!boardV || !!diceV);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');

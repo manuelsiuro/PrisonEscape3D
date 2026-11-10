@@ -39,6 +39,7 @@ import { vending } from './systems/vending';
 import { menu } from './systems/menu';
 import { cooler } from './systems/cooler';
 import { huddles } from './systems/huddles';
+import { spectate } from './systems/spectate';
 import { forgetPlaces } from './ai/places';
 import { freedNow, paperwork } from './systems/paperwork';
 import { hearingZones, parole, paroled } from './systems/parole';
@@ -230,6 +231,8 @@ export class Sim {
   rules2360 = false;
   /** Replaying a run from before 2.39: free time as it was (nobody gathers for a chat or a game). Not state. */
   rules238 = false;
+  /** Replaying a run from before 2.40: the side games as they were (an arm-wrestle mashed with no count-in, nobody came to watch a game, a gang's table warning dropped when its holders stepped off). Not state. */
+  rules239 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -346,6 +349,8 @@ export class Sim {
     cooler(this);
     // Free time's gatherings (2.39): chats and inmates' games formed, arrivals, the end.
     huddles(this);
+    // A crowd at the player's game (2.40).
+    spectate(this);
     // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
     paperwork(this);
     // The parole board (P39): plotting found out, the hearing at 10:00, its questions and verdict.

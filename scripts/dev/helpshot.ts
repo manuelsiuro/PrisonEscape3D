@@ -20,7 +20,7 @@
 // clear `g.guide` after freezing, or the floor arrows show. A `live` play-on runs in real time, so
 // its result varies: look at each picture.
 import { PLANS, quiet, runRoute, type Route } from '../escapes';
-import { Bot, DIR } from '../bots';
+import { boutPress, Bot, DIR } from '../bots';
 import { placesOf } from '../../src/sim/ai/places';
 import { TRAINING } from '../../src/content/prisons/training';
 import { WAY } from '../../src/content/smuggling';
@@ -403,7 +403,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.op(OP.TALK, TALK.DICE, 0);
       bot.op(OP.TALK, TALK.REROLL, 0);
       bot.op(OP.TALK, TALK.WRESTLE);
-      for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(command(0, OP.TRAIN, 1 + (k % 2)));
+      for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(boutPress(bot.sim));
     },
     when: (s) => s.state.bout.length > 0,
     after: 10,

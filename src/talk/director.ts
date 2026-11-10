@@ -151,6 +151,8 @@ export class Director {
   overheard = 0;
   /** 2.39: a free time's chats: ready for the player's next visit to one, how much was overheard today; the gatherings this tick. */
   private ringArmed = true;
+  /** 2.40: when one of those watching the player's game next calls out (seconds, the stage's clock). */
+  private watchNext = 0;
   private ringToday = 0;
   private rings: HuddleView[] = [];
   private told = new Set<string>();
@@ -522,6 +524,7 @@ export class Director {
     this.coolerTalk(sim, stage);
     huddlesNow(sim, this.rings);
     this.ringTalk(sim, stage);
+    this.watchTalk(sim, now);
     if (now >= this.nextAmbient && this.active.length < stage.max) {
       this.nextAmbient = now + stage.gap * (0.7 + 0.6 * this.random());
       this.ambient(sim, stage);
@@ -574,6 +577,19 @@ export class Director {
     this.ringArmed = false;
     this.ringToday++;
     this.overheard++;
+  }
+
+  /**
+   * 2.40: the crowd at the player's game calls out now and then (one of those standing there watching, every 5 to 8
+   * seconds): encouragement, mostly.
+   */
+  private watchTalk(sim: Sim, now: number) {
+    const w = sim.state.watch;
+    if (!w?.length || now < this.watchNext) return;
+    const there = w.filter((k) => sim.state.inmates[k]?.doing === DOING.WATCH);
+    if (!there.length) return;
+    this.watchNext = now + 5 + 3 * this.random();
+    this.queueUp(now, 're.watch.in', there, 2, 'watch', 'shout', 0.2, 2.2);
   }
 
   /** 2.39: the gathering an inmate's in now (from this tick's list), null none. */

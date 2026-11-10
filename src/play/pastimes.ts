@@ -22,6 +22,7 @@ import { coachOnce } from './tips';
 import { director } from './chatter';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
+import { cheer } from './games';
 import { inmateName } from '../ui/names';
 
 /**
@@ -109,6 +110,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
         playLater(650, () => {
           if (play.game !== g) return;
           if (e.what === 'won') {
+            cheer();
             sound.coin(n >= 20);
             buzz('attended');
             floatUp(`+$${n * 2}`, 'cash');
@@ -143,6 +145,8 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       const land = FLIGHT_S * 1000;
       playLater(land, () => {
         if (play.game !== g) return;
+        // (2.40: a basket of the player's in a shootout: those watching cheer it.)
+        if (e.by < 0 && sim.state.shootout && (e.result === 'swish' || e.result === 'in')) cheer();
         if (e.result === 'swish') sound.swish();
         else if (e.result === 'in') {
           sound.rimClang(0.6);
@@ -189,6 +193,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       } else if (e.what === 'won')
         later(() => {
           if ((e.crowd ?? 0) > 0) sound.cheer();
+          cheer(e.fans);
           sound.levelUp();
           buzz('attended');
           if (e.spd) floatUp(`+1 ${t('attr.spdShort')}`, 'gain');
@@ -218,6 +223,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       if (e.what === 'sat') coachOnce('checkers', TOUCH ? 'hint.checkersTouch' : 'hint.checkers');
       else if (e.what === 'moved') sound.checker((e.path?.length ?? 0) > 2 || Math.abs((e.path?.[1] ?? 0) - (e.path?.[0] ?? 0)) > 5);
       else if (e.what === 'won') {
+        cheer();
         sound.fanfare();
         buzz('attended');
         if (e.int) floatUp(`+1 ${t('attr.intShort')}`, 'gain');

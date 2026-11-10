@@ -416,6 +416,10 @@ export interface SimState {
   replant?: number;
   /** 2.39, free time's gatherings (huddles.ts): absent until day 2's first free time (a run that never reaches it hashes as before). */
   huddle?: HuddleState;
+  /** 2.40, a crowd at the player's game (spectate.ts): the inmates watching it now; absent until the first game is watched. */
+  watch?: number[];
+  /** 2.40: the step the watched game ended, while those watching stay a moment (spectate.ts LINGER); absent or 0: on. */
+  watchEnd?: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

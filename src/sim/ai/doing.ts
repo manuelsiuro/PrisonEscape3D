@@ -50,6 +50,8 @@ export const DOING = {
   SCRIBBLE: 49,
   /** 2.39: in a ring of inmates having a chat in free time (systems/huddles.ts). */
   CHAT: 50,
+  /** 2.40: watching the player's game (systems/spectate.ts): arms folded, a fist up to cheer (the view's pump). */
+  WATCH: 51,
 } as const;
 
 /** Using a machine (2.29): an inmate doing one of these is on it, and is asked for a turn rather than talked to. (RUN: on an inmate, only ever the treadmill; a jogger's stride is the view's.) */

@@ -1,4 +1,4 @@
-import { PickCard, WrestleCard } from '../ui/games';
+import { PickCard, DiceCard, WrestleCard } from '../ui/games';
 import { BoardCard, CheatCard, CourtCard } from '../ui/pastimes';
 import { RaceCard } from '../ui/long';
 import { InkCard, MatchCard } from '../ui/team';
@@ -16,6 +16,8 @@ export function makeCards() {
   /** The side games (P22): the arm-wrestle's card and the lockpick's. */
   const wrestleCard = new WrestleCard(sendOp);
   const pickCard = new PickCard();
+  /** 2.40: a game of dice on its own card. */
+  const diceCard = new DiceCard(sendOp, click);
   /** Card sharks (P27): a hand of Cheat, the court's card, the old-timer's checkers board. */
   const cheatCard = new CheatCard(sendOp, click);
   const courtCard = new CourtCard();
@@ -28,5 +30,5 @@ export function makeCards() {
   /** Stage nights (P30): talent night's card, quiz night's. */
   const stageCard = new StageCard(sendOp, click);
   const quizCard = new QuizCard(sendOp, click);
-  return { wrestleCard, pickCard, cheatCard, courtCard, boardCard, raceCard, matchCard, inkCard, stageCard, quizCard };
+  return { wrestleCard, pickCard, diceCard, cheatCard, courtCard, boardCard, raceCard, matchCard, inkCard, stageCard, quizCard };
 }

@@ -27,6 +27,7 @@ import { toggleCrew } from './crew';
 import { openObjectives } from './lazy';
 import { openDay } from './daycard';
 import { pastimeKey, shootKey } from './pastimes';
+import { diceKey } from './games';
 import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
@@ -155,8 +156,8 @@ function onKeyDown(e: KeyboardEvent) {
     if (code === 'KeyH') void openHelp();
     return;
   }
-  // Card sharks (P27): the hand of Cheat's keys (1–5, Enter, L) come before the hotbar's.
-  if (pastimeKey(code)) {
+  // Card sharks (P27): the hand of Cheat's keys (1–5, Enter, L) come before the hotbar's; 2.40: the dice's (1, 2, Enter).
+  if (pastimeKey(code) || diceKey(code)) {
     e.preventDefault();
     return;
   }

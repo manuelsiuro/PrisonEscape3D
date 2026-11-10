@@ -48,12 +48,13 @@ import {
   tributeOf,
   turfAt,
   warGround,
+  warningLeft,
   warring,
 } from '../src/sim/systems/gangs';
 import { DOING, inmateInCell } from '../src/sim/systems/inmates';
 import { HOTBAR, ingredientSlots, itemOf, slot } from '../src/sim/systems/items';
 import { newRat } from '../src/sim/systems/rats';
-import { placesOf } from '../src/sim/ai/places';
+import { isFloor, placesOf } from '../src/sim/ai/places';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
 import { MAP_H, MAP_W } from '../src/sim/world/World';
@@ -776,6 +777,60 @@ for (const def of PRISONS) {
         `${id}: told off, its holders gone: the warning over, nobody squares up`,
       );
     }
+  }
+  // (2.40, the review of 2.39: told off, then its holders step off the table a moment, a few tiles away and still about
+  // (a tray taken back): the countdown waits for them, never told again; back, it runs on and one squares up. A run from
+  // before 2.40 (Sim.rules239): over without a word, then told afresh, the countdown from the start again.)
+  if (spots.length) {
+    const [x0, z0, x1, z1] = rt;
+    // (A floor tile 3 to 6 off the table, out of reach of holding it (a tile around it counts), nearest the table.)
+    let off = -1;
+    for (let r = 3; r <= 6 && off < 0; r++)
+      for (const [x, z] of [
+        [x0, z1 + r],
+        [x0, z0 - r],
+        [x0 - r, z0],
+        [x1 + r, z0],
+      ])
+        if (off < 0 && isFloor(sim.world, x, z) && !sim.world.block[z * MAP_W + x]) off = z * MAP_W + x;
+    const lines: string[] = [];
+    for (const old of [false, true]) {
+      const c = copyAt();
+      c.sim.rules239 = old;
+      c.walkTo(spots[0].tile, 3000);
+      c.until(() => warnedOn(c), 300);
+      const told = warnedOn(c);
+      const e8 = c.events.length;
+      const left = warningLeft(c.sim);
+      const holders = def.gangs![rivalK].members.map((cl) => inmateInCell(c.st, cl)).filter((k) => k >= 0);
+      // (Held off the table for twice the warning's time.)
+      for (let k = 0; k < TRESPASS_STEPS * 2 && off >= 0; k++) {
+        for (const h of holders) {
+          const b = c.st.inmates[h].body;
+          b.x = (off % MAP_W) * UNIT + UNIT / 2;
+          b.z = Math.floor(off / MAP_W) * UNIT + UNIT / 2;
+          b.moving = false;
+        }
+        c.step();
+      }
+      const held = warningLeft(c.sim);
+      // (Then let back: they come back to their table.)
+      c.until(() => gangEv(c.events.slice(e8), 'jumped').length > 0 || gangEv(c.events.slice(e8), 'warn').length > 0, TRESPASS_STEPS * 3);
+      const warns = gangEv(c.events.slice(e8), 'warn').length;
+      const jumped = gangEv(c.events.slice(e8), 'jumped').length;
+      if (!old)
+        check(
+          off >= 0 && told && held === left && warns === 0 && jumped === 1,
+          `${id}: told off, its holders a moment off the table: the countdown waits for them (${held} of ${left} steps left), not told again; back, one squares up`,
+        );
+      else
+        check(
+          off >= 0 && told && warns === 1,
+          `${id}: a run from before 2.40: the warning dropped while they were off it, told afresh once back`,
+        );
+      lines.push(old ? 'before 2.40, told afresh' : `waits (${held} steps left), then squared up`);
+    }
+    trespassLine += `; holders off a moment: ${lines.join(' / ')}`;
   }
 
   // The evening: the members at their corners.

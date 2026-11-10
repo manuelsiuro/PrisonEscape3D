@@ -16,6 +16,7 @@ import {
   BAR,
   BOUT_ENERGY,
   BOUT_STEPS,
+  COUNT_IN,
   CROWD_OPINION,
   CROWD_RANGE,
   DICE_HEAT,
@@ -37,6 +38,10 @@ import {
   STAKES,
   SURGE_ODDS,
   WIN_OPINION,
+  WRESTLE_BEAT,
+  WRESTLE_HIT,
+  WRESTLE_MISS,
+  WRESTLE_WINDOW,
 } from '../../content/games';
 import { nearestDir } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
@@ -52,7 +57,7 @@ import { DOING } from './inmates';
 import { closeBox, itemOf, slot, usesOf } from './items';
 import { makeNoise } from './noise';
 import { changeOpinion, endTalk, refuse } from './social';
-import { stopTraining } from './training';
+import { beatAt, stopTraining } from './training';
 import { addHeat, strikeLayer } from './watch';
 import { lookingAway } from './ways';
 import { energyCost } from './weather';
@@ -198,7 +203,10 @@ export function settleDice(sim: SimContext) {
 
 // ------------------------------------------------------------------ arm-wrestling
 
-/** An arm-wrestle (TALK.WRESTLE): the bar from the middle, the player facing the inmate; it costs energy. */
+/**
+ * An arm-wrestle (TALK.WRESTLE): the bar from the middle, the player facing the inmate; it costs energy. 2.40: `s.bout`
+ * is [who, the bar, the side last pressed, the step it starts (after COUNT_IN's count-in), the beat last counted].
+ */
 export function startBout(sim: SimContext, who: number) {
   const s = sim.state;
   if (gameOn(s)) return;
@@ -209,7 +217,7 @@ export function startBout(sim: SimContext, who: number) {
   stopTraining(sim);
   closeBox(sim);
   s.energy = Math.max(0, s.energy - energyCost(sim, BOUT_ENERGY));
-  s.bout = [who, BAR / 2, 0, s.step];
+  s.bout = sim.rules239 ? [who, BAR / 2, 0, s.step] : [who, BAR / 2, 0, s.step + COUNT_IN, -1];
   const b = s.inmates[who].body;
   const p = s.player;
   p.moving = false;
@@ -227,12 +235,35 @@ export const surging = (salt: number, from: number, t: number) =>
 /** How hard the inmate pushes back a step (`t` steps into the bout). */
 export const drainOf = (str: number, surge: boolean) => Math.floor(((str + DRAIN_BASE) * (surge ? 3 : 2)) / 20);
 
-/** A press in a bout (OP.TRAIN 1 or 2): only one on the other side from the last counts. */
+/** 2.40: how hard a press on the beat pushes (Strength helps), and one off it. */
+export const hitOf = (str: number) => WRESTLE_HIT + Math.max(0, str);
+
+/** Where a step falls in a bout's beats (from its start, after the count-in): the beat's number, how far off it. */
+export const boutBeat = (step: number, from: number) => beatAt(step - from, WRESTLE_BEAT);
+
+/**
+ * A press in a bout (OP.TRAIN 1 or 2): only one on the other side from the last counts. 2.40 (the gym's way): none in
+ * the count-in (but for the first beat's own window), only the first of each beat, WRESTLE_WINDOW steps either side of it
+ * for hitOf, else WRESTLE_MISS.
+ */
 export function push(sim: SimContext, side: number) {
   const s = sim.state;
   if (!s.bout.length || side === s.bout[2]) return;
-  s.bout[2] = side;
-  s.bout[1] = Math.min(BAR, s.bout[1] + pushOf(s.str));
+  if (sim.rules239) {
+    s.bout[2] = side;
+    s.bout[1] = Math.min(BAR, s.bout[1] + pushOf(s.str));
+  } else {
+    const from = s.bout[3];
+    // (The first beat as every other: a press up to WRESTLE_WINDOW steps before it counts for it.)
+    if (s.step < from - WRESTLE_WINDOW) return;
+    const { n, off } = boutBeat(s.step, from);
+    if (n === (s.bout[4] ?? -1)) return;
+    s.bout[2] = side;
+    s.bout[4] = n;
+    const hit = Math.abs(off) <= WRESTLE_WINDOW;
+    s.bout[1] = Math.min(BAR, s.bout[1] + (hit ? hitOf(s.str) : WRESTLE_MISS));
+    sim.events.push({ type: 'bout', what: 'push', who: s.bout[0], hit });
+  }
   if (s.bout[1] >= BAR) endBout(sim, 'won');
 }
 
@@ -254,16 +285,20 @@ export function endBout(sim: SimContext, how: BoutEnd) {
     // Those watching think more of the player too (each once a day: no cheering the same faces up all afternoon).
     const day = prisonDay(s.step);
     const crowd = watchers(sim, who).filter((k) => (s.cheered[k] ?? 0) !== day);
+    // (2.40: those whose opinion rose for it, shown over their heads; one already at the top is still a cheer.)
+    const fans: number[] = [];
     for (const k of crowd) {
       while (s.cheered.length <= k) s.cheered.push(0);
       s.cheered[k] = day;
+      const before = s.inmates[k].opinion;
       changeOpinion(sim, k, CROWD_OPINION);
+      if (s.inmates[k].opinion > before) fans.push(k);
     }
     const str = s.str < ATTR_MAX ? 1 : 0;
     s.str += str;
     s.trained |= 1 << ATTRS.indexOf('str');
     const wins = sportsWin(sim);
-    sim.events.push({ type: 'bout', what: 'won', who, crowd: crowd.length, wins, str, gain: m.opinion - was });
+    sim.events.push({ type: 'bout', what: 'won', who, crowd: crowd.length, wins, str, gain: m.opinion - was, fans });
     if (wins >= SPORTS_WINS) sportsPrizeIfDue(sim);
     return;
   }
@@ -327,6 +362,8 @@ function keepBout(sim: SimContext) {
   if (!m || m.ko > 0 || m.angry > 0 || s.talk !== who || sim.away || s.lockdown || s.sleeping || s.layer !== LAYER.GROUND)
     return endBout(sim, 'off');
   const t = s.step - from;
+  // (2.40: the count-in, both arms still.)
+  if (t < 0) return;
   s.bout[1] = Math.max(0, s.bout[1] - drainOf(m.str, surging(s.salt, from, t)));
   if (s.bout[1] <= 0) return endBout(sim, 'lost');
   if (t >= BOUT_STEPS) endBout(sim, 'draw');

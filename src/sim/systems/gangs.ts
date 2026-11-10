@@ -459,10 +459,21 @@ function holders(sim: SimContext, gang: number, piece: TurfPiece): number[] {
   return out.sort((a, b) => dist2(s.inmates[a].body, p) - dist2(s.inmates[b].body, p) || a - b);
 }
 
+/** 2.40: one of the gang's own still up and about within BACK_TILES of the player: taken for its holders only stepping off a moment (the whole gang gone, or far off: over). */
+const BACK_TILES = 10;
+function back(sim: SimContext, gang: number): boolean {
+  const s = sim.state;
+  const def = sim.world.def.gangs![gang];
+  return s.inmates.some(
+    (m, who) => def.members.includes(m.cell) && about(sim, m, who) && dist2(m.body, s.player) <= (BACK_TILES * UNIT) ** 2,
+  );
+}
+
 /**
  * A member on a rival's held turf (the piece held now: the table at dinner, the corner in the evening), its holders
  * there: told by one who sees them, TRESPASS_STEPS to get off, then the nearest who sees them squares up. Out of all
- * their sight the countdown waits (it never runs out unseen); the holders gone, or the player off it, it's over.
+ * their sight the countdown waits (it never runs out unseen), and (2.40) while they've only stepped off it (one of them
+ * still about nearby); the player off it, the piece no longer held, or its holders gone for good, it's over.
  */
 function trespass(sim: SimContext, mine: number) {
   const s = sim.state;
@@ -475,7 +486,14 @@ function trespass(sim: SimContext, mine: number) {
   const rival = t >= 0 && t !== mine;
   const there = rival ? holders(sim, t, piece!) : [];
   if (!there.length) {
-    // (Off it: said so. Still on it, its holders gone: over without a word.)
+    // (2.40: still on it, its holders stepped off it a moment (a tray taken back): the countdown waits for them, as it
+    // does unseen; it used to clear without a word and start afresh when they were back, so it could restart for ever.)
+    if (g[G.WARN] && rival && !sim.rules239 && g[G.TURF] === GANGS.indexOf(sim.world.def.gangs![t].id) + 1 && back(sim, t)) {
+      g[G.WARN] = Math.min(s.step, g[G.WARN] + 1);
+      return;
+    }
+    // (Off it: said so. Still on it, its holders gone for good (out cold, far off; or a run from before 2.40, any): over
+    // without a word.)
     if (g[G.WARN]) clearWarning(sim, !rival);
     return;
   }

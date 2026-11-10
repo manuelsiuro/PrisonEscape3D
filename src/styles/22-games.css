@@ -210,6 +210,133 @@
   color: var(--red-81);
 }
 
+/* 2.40: the dice's own card: the two throws one above the other, the inmate's dice face down (shaken) until they
+   land, the verdict held in the colour of how it went until Done. */
+.dice-card .train-ic {
+  background: var(--games-green-48);
+}
+.dice-card .train-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--gold);
+}
+.dice-card .dice-play {
+  margin-top: 8px;
+}
+.dice-card .dice-row.theirs .dice-who {
+  color: rgba(var(--white-rgb), 0.55);
+}
+.dice-card span.die {
+  pointer-events: none;
+}
+.dice-card[data-what=''] .dice-row.theirs .die:not(.fresh) .die-face {
+  opacity: 0.45;
+}
+.dice-card .dice-verdict {
+  margin: 6px 0 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(var(--white-rgb), 0.05);
+  font-weight: 700;
+}
+.dice-card .dice-verdict[data-what='won'] {
+  font-weight: 800;
+  color: var(--green-88);
+  background: rgba(var(--green-75-rgb), 0.14);
+  box-shadow: inset 0 0 0 1px rgba(var(--green-75-rgb), 0.4);
+}
+.dice-card .dice-verdict[data-what='lost'] {
+  font-weight: 800;
+  color: var(--red-81);
+  background: rgba(var(--health-rgb), 0.1);
+  box-shadow: inset 0 0 0 1px rgba(var(--health-rgb), 0.3);
+}
+.dice-card .dice-verdict[data-what='push'] {
+  font-weight: 800;
+}
+.dice-card .games-warn {
+  margin: -4px 0 8px;
+}
+/* A phone turned: the card compact (smaller dice, tighter rows, no keys' line: there are none on a phone), down to the
+   bottom as Cheat's (the hotbar steps aside), scrolling only as a last resort; a lesson's step docked at its top kept small. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .train-card.dice-card {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: min(360px, calc(100vw - 330px));
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 6px 12px;
+  }
+  .dice-card .train-head .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+  /* (While the dice are in play, the buttons say what to do: the line saying it too goes, for room.) */
+  .dice-card .dice-verdict[data-what='wait'] {
+    display: none;
+  }
+  .dice-card .dice-acts {
+    flex-wrap: nowrap;
+  }
+  .dice-card .dice-acts .big-btn span {
+    font-size: 13px;
+  }
+  /* (The two throws side by side: a row's worth of room.) */
+  .dice-card .dice-play {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 8px;
+    margin-top: 4px;
+    padding: 0;
+  }
+  .dice-card .dice-verdict,
+  .dice-card .games-warn,
+  .dice-card .dice-acts {
+    grid-column: 1 / -1;
+  }
+  .dice-card .dice-row {
+    min-height: 32px;
+    gap: 5px;
+  }
+  .dice-card .dice-who {
+    min-width: 0;
+    max-width: 52px;
+  }
+  .dice-card .dice-sum {
+    font-size: 14px;
+  }
+  .dice-card .die {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+  .dice-card .die .die-face {
+    width: 26px;
+    height: 26px;
+  }
+  .dice-card .dice-verdict {
+    margin: 3px 0 5px;
+    padding: 3px 8px;
+    font-size: 12.5px;
+  }
+  .dice-card .dice-acts .big-btn {
+    height: 36px;
+    min-height: 36px;
+    padding-block: 0;
+  }
+  .dice-card .train-note {
+    display: none;
+  }
+  .train-card .lesson-strip {
+    margin-bottom: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+}
+
 /* The arm-wrestle's card: their side red, the player's green, the knot where the bout stands. */
 .wrestle-card .train-ic {
   background: var(--red-57);
@@ -275,6 +402,24 @@
 .wrestle-card.winning .tug-you,
 .wrestle-card.losing .tug-them {
   font-weight: 900;
+}
+/* 2.40: the gym's beat under the tug, and its count-in (3, 2, 1, Go!) over the track, beside the line. */
+.wrestle-card .train-beat {
+  margin: 4px 0 6px;
+}
+.wrestle-count {
+  position: absolute;
+  inset: 0 auto 0 calc(50% + 14px);
+  display: grid;
+  place-items: center start;
+  font: 900 12px/1 var(--font-ui);
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(var(--black-rgb), 0.6);
+  pointer-events: none;
+}
+.wrestle-card.counting .tug-bar {
+  opacity: 0.7;
 }
 @keyframes surge-flash {
   to {
