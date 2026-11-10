@@ -227,6 +227,7 @@ console.log('replay ok');
   old.rules233 = true;
   old.rules234 = true;
   old.rules238 = true;
+  old.rules239 = true;
   const r = new RunRecorder(old, { seed, game: '1.10.1' });
   for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
   const log = r.toLog();

@@ -1,0 +1,8 @@
+center-perks: 2 came to watch over 2 games (2 free within 9 tiles), at their places within 2 s, a moment after the end (2), then gone
+stalag-flucht: 2 came to watch over 3 games (1 free within 9 tiles), at their places within 3 s, a moment after the end (1), then gone
+shankton: 9 came to watch over 3 games (0 free within 9 tiles), at their places within 4 s, a moment after the end (3), then gone
+san-pancho: 6 came to watch over 3 games (2 free within 9 tiles), at their places within 3 s, a moment after the end (3), then gone
+irongate: 4 came to watch over 3 games (2 free within 9 tiles), at their places within 11 s, a moment after the end (3), then gone
+six-hunter: 4 came to watch over 3 games (1 free within 9 tiles), at their places within 2 s, a moment after the end (3), then gone
+nobody comes at the Training Block or in a run from before 2.40; past the games' hours: 1 watching till noon, then none
+a bout after its count-in (1.8 s), Strength 40 vs the nearest: on the beat: won 4.8s; 0.1 s late: won 4.9s; 0.1 s early: won 5.9s; 0.2 s late: lost 5.0s

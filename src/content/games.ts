@@ -26,6 +26,17 @@ export const DRAIN_BASE = 30;
 export const BOUT_STEPS = 600;
 /** Each second, the odds (out of 100) the inmate surges for its first half. */
 export const SURGE_ODDS = 30;
+/**
+ * 2.40 (the side games' polish, the user's pick: timing, like the gym): a press counts once a beat, every
+ * WRESTLE_BEAT steps from the bout's start; within WRESTLE_WINDOW steps of the beat it pushes WRESTLE_HIT plus the
+ * player's Strength, anywhere else WRESTLE_MISS (mashing is the slow way). The bout starts after a count-in of
+ * COUNT_IN steps (three beats), the inmate's arm still. A run logged before 2.40 (Sim.rules239) mashes as it did.
+ */
+export const WRESTLE_BEAT = 12;
+export const WRESTLE_WINDOW = 3;
+export const WRESTLE_HIT = 82;
+export const WRESTLE_MISS = 12;
+export const COUNT_IN = 3 * WRESTLE_BEAT;
 /** A bout costs this much energy (too tired, no bout). */
 export const BOUT_ENERGY = 6;
 /** A win: the loser thinks this much more of the player (a good loser), everyone watching this much (each once a day), and a point of Strength. */

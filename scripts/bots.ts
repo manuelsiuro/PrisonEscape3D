@@ -14,6 +14,7 @@ import { command, OP, SLOT } from '../src/sim/command';
 import { canAnswer } from '../src/sim/systems/rollcall';
 import { keyAt, keyFrom } from '../src/content/books';
 import { freeReadSeat } from '../src/sim/systems/training';
+import { boutBeat } from '../src/sim/systems/games';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
@@ -39,6 +40,19 @@ export function beatPress(sim: Sim): number {
   }
   if (!prop || beatAt(s.step + 1, beatOf(prop.kind).beat).off !== 0) return 0;
   return command(0, OP.TRAIN, s.repSide === 1 ? 2 : 1);
+}
+
+/**
+ * The command for this step of an arm-wrestle (2.40, the gym's way): a press on the other side, right on the beat, or
+ * nothing (in the count-in too). A run from before 2.40 mashes: a press every step, each side in turn.
+ */
+export function boutPress(sim: Sim): number {
+  const s = sim.state;
+  if (!s.bout.length) return 0;
+  const side = s.bout[2] === 1 ? 2 : 1;
+  if (sim.rules239) return command(0, OP.TRAIN, side);
+  if (s.step + 1 < s.bout[3] || boutBeat(s.step + 1, s.bout[3]).off !== 0) return 0;
+  return command(0, OP.TRAIN, side);
 }
 
 export class Bot {

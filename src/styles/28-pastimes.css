@@ -419,6 +419,7 @@ body.courting .tool-prompt {
 /* Landscape phones: the cards docked to the left (as the arm-wrestle's), the Shoot pad at the right thumb. */
 @media (max-height: 520px) {
   .cheat-card,
+  .dice-card,
   .court-card,
   .board-card {
     animation: fade 0.25s ease-out;
@@ -577,6 +578,7 @@ body.courting .tool-prompt {
 body.reduced-motion .pcard.flip,
 body.reduced-motion .pcard-btn,
 body.reduced-motion .cheat-card,
+body.reduced-motion .dice-card,
 body.reduced-motion .court-card,
 body.reduced-motion .board-card {
   animation: none !important;
@@ -586,6 +588,7 @@ body.reduced-motion .board-card {
 /* Wide screens: the hand of Cheat, the court and the board docked left, clear of the players in the middle (and of the action's prompt). */
 @media (min-width: 900px) and (min-height: 521px) {
   .cheat-card,
+  .dice-card,
   .court-card,
   .board-card {
     left: max(24px, env(safe-area-inset-left));

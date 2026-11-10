@@ -128,6 +128,8 @@ export interface Frame {
   smuggle: SmuggleFrame | null;
   /** Side games (P22): an arm-wrestle, dice on the ground, the lockpick's taps, sports day's bunting. */
   games: GamesFrame;
+  /** 2.40: cheers so far from the crowd at the player's game (play/games.ts): those watching throw a fist up at each. */
+  cheer: number;
   /** Card sharks (P27): the court's lit spot, the ball, cards on the ground, the old-timer's board. */
   pastimes: PastimesFrame;
   /** Long games (P28): the garden, the rat track and its racers, the pet's laps, tipsy (null: none yet). */
@@ -283,6 +285,7 @@ export function emptyFrame(): Frame {
     rats: [],
     smuggle: null,
     games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
+    cheer: 0,
     pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
     long: null,
     team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },

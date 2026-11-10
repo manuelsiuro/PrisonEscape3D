@@ -6,7 +6,7 @@ import { en } from '../i18n/en';
 import type { SimEvent } from '../sim/Sim';
 import { chapterOf, LESSONS } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
-import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
+import { LessonCard, OWN_PLACE, showLessonResult, type LessonResult } from '../ui/lessonCard';
 import { showObjectives, type Objectives } from '../ui/screens/objectives';
 import {
   board,
@@ -244,11 +244,36 @@ export async function openObjectives() {
  * at the side or the bottom).
  */
 export function lessonHidden(): boolean {
-  return !!coveringPanel();
+  return !!coveringPanel() || squeezedOut();
+}
+
+/** 2.40: a phone turned too narrow for the lesson's card beside a game's (under 820 across: 137 px wide at 697). */
+const NARROW_GAME = '(max-height: 520px) and (orientation: landscape) and (max-width: 819px)';
+/** A game's own card that reaches the screen's bottom there (the hotbar stepping aside): room for the step at its top. */
+const DOCK_CARD = ':is(.dice-card, .cheat-card, .board-card):not(.hidden)';
+/** Any other game's card, up: no room for the step (above the pads, or the hotbar). */
+const GAME_CARD =
+  ':is(.wrestle-card, .pick-card, .ink-card, .court-card, .match-card, .race-card, .stage-card, .quiz-card, .phone-card, .kiosk-card, .oddjobs-card, .parole-card):not(.hidden)';
+
+let narrowQuery: MediaQueryList | null = null;
+const narrowGame = () => (narrowQuery ??= matchMedia(NARROW_GAME)).matches && document.body.matches(OWN_PLACE);
+
+/**
+ * 2.40: on a phone turned too narrow for both, a game's card with no room for the step: the lesson's card waits (the
+ * bulb by the pause button holds the step, its dot lit, as for any step the card couldn't show), rather than squeezed
+ * into a sliver over the play.
+ */
+function squeezedOut(): boolean {
+  return narrowGame() && !document.querySelector(DOCK_CARD) && !!document.querySelector(GAME_CARD);
 }
 
 /** The panel over the card's spot, if one is (the card then waits under it, its step docked at the panel's top). */
 function coveringPanel(): HTMLElement | null {
+  // (2.40: on a phone turned too narrow for both, the dice's, Cheat's or the board's card takes the step at its top, as a panel does.)
+  if (narrowGame()) {
+    const game = document.querySelector<HTMLElement>(DOCK_CARD);
+    if (game) return game;
+  }
   if (!socialOpen()) return null;
   const c = card.at;
   for (const p of [talk, board, profile, ratPanel, phonePanel, crewPanel]) {

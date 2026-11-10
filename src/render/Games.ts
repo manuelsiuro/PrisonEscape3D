@@ -7,11 +7,15 @@ import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { now, type Later } from './batch';
 import { onTrack } from '../content/grounds';
 import { canvasTexture } from './canvas';
+import { decorGeometry } from './decor';
+import { kitMaterial } from './kit';
+import { seeThrough } from './occlusion';
 
 /** What the side games show this frame (P22). */
 export interface GamesFrame {
   /** An arm-wrestle: the inmate (index), how it's going for the player (−1 losing … 1 winning), the inmate surging. */
-  bout: { who: number; strain: number; surge: boolean } | null;
+  /** An arm-wrestle: who, how it's going, a surge; 2.40: the crate between the two (where, turned along the line between them; null: none, a run from before). */
+  bout: { who: number; strain: number; surge: boolean; crate: { x: number; z: number; angle: number } | null } | null;
   /**
    * Dice on the ground between the player and the inmate (`x`, `z`), each pair thrown from a
    * hand (`fromX`, `fromZ` the player's, the inmate's at `oppX`, `oppZ`): the faces (0: that pair
@@ -66,6 +70,8 @@ const HAND_Y = 0.6;
 const CROWD_DICE = 3;
 /** None of them (underground, or no frame): the same empty list every frame. */
 const NONE: NonNullable<GamesFrame['crowd']> = [];
+/** 2.40: the arm-wrestle's crates, scaled to stand under the locked hands (their top a little below the grip). */
+const CRATE_SCALE = { x: 0.62, y: 0.86 };
 /** A die's size (a tile is 1). */
 const DIE = 0.17;
 /** Pennants on the bunting at most, and its poles. */
@@ -184,6 +190,8 @@ const jit = (seed: number, k: number) => Math.abs(Math.sin(seed * 12.9898 + k * 
 export class GamesView {
   readonly group = new THREE.Group();
   private readonly dice: THREE.InstancedMesh;
+  /** 2.40: the crates the two lean over in an arm-wrestle (the decor's, a little smaller). */
+  private readonly crate: THREE.Mesh;
   private readonly flags: THREE.InstancedMesh;
   private readonly poles: THREE.InstancedMesh;
   private strings: THREE.LineSegments | null = null;
@@ -207,6 +215,13 @@ export class GamesView {
     this.dice.count = 0;
     this.dice.frustumCulled = false;
     this.dice.castShadow = true;
+    this.crate = new THREE.Mesh(decorGeometry('crates', 1, 1).base, seeThrough(kitMaterial.clone(), 0.6));
+    this.crate.scale.set(CRATE_SCALE.x, CRATE_SCALE.y, CRATE_SCALE.x);
+    this.crate.castShadow = true;
+    // (Not darkened by the two leaning over it: from this camera its lid is most of what's seen, and in their shadow it
+    // read as a hole between them.)
+    this.crate.receiveShadow = false;
+    this.crate.visible = false;
     const tri = new THREE.BufferGeometry();
     // A pennant hanging from its top edge (along x), pointing down.
     tri.setAttribute('position', new THREE.Float32BufferAttribute([-0.13, 0, 0, 0.13, 0, 0, 0, -0.3, 0], 3));
@@ -227,6 +242,7 @@ export class GamesView {
     this.poles.visible = false;
     this.dice.receiveShadow = true;
     this.group.add(this.dice, this.flags, this.poles);
+    this.group.add(this.crate);
   }
 
   /**
@@ -432,6 +448,13 @@ export class GamesView {
     this.poles.visible = bunting && this.poles.count > 0;
     if (this.strings) this.strings.visible = bunting;
     if (bunting && motion) this.placeFlags(time, true);
+    // 2.40: the crates between the two arm-wrestlers.
+    const crate = ground ? f?.bout?.crate : null;
+    this.crate.visible = !!crate;
+    if (crate) {
+      this.crate.position.set(crate.x, 0, crate.z);
+      this.crate.rotation.y = crate.angle;
+    }
     // The dice.
     const d = f?.dice;
     let n = 0;

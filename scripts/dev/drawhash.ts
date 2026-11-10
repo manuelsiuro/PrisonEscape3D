@@ -40,7 +40,7 @@ const FORCES: Record<string, (f: Frame, n: number) => void> = {
   ko: (f) => void (f.knockedOut = true),
   // The player's own stances (Center Perks' 15:05 only): an arm-wrestle, a lock, the dice, a machine, the showers and the towel, a tray, dressed as a guard and inked holding something, up from a bed.
   bout: (f, n) => {
-    f.games.bout = { who: 0, strain: Math.sin(n / 10), surge: n % 20 < 5 };
+    f.games.bout = { who: 0, strain: Math.sin(n / 10), surge: n % 20 < 5, crate: null };
     f.doing = DOING.WRESTLE;
   },
   pick: (f, n) => {

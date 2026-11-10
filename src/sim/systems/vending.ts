@@ -329,8 +329,9 @@ export function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
   if (s.line.includes(k) || s.booth[0] === k) return false;
   // (2.33: having a drink at the water cooler: done with that first.)
   if (!waiting && s.cooler.who.includes(k)) return false;
-  // (2.39: gathered for a chat or a game: done with that first.)
+  // (2.39: gathered for a chat or a game: done with that first; 2.40: watching the player's game, likewise.)
   if (!waiting && s.huddle?.who.includes(k)) return false;
+  if (!waiting && s.watch?.includes(k)) return false;
   if (
     s.match?.team.includes(k) ||
     s.ink?.who === k ||
