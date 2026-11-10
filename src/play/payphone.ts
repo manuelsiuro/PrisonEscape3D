@@ -3,6 +3,8 @@ import {
   APPEAL_HEAT,
   CALL_STEPS,
   CALLEE,
+  CATCH,
+  CLEAR_NEED,
   COINS,
   codeBit,
   HOME_ENERGY,
@@ -26,7 +28,9 @@ import {
   atPhone,
   byPhone,
   callRefusal,
+  catchAt,
   commsOf,
+  phraseWorth,
   mailWaiting,
   nextMoneyDay,
   phoneBusy,
@@ -44,6 +48,7 @@ import { director } from './chatter';
 import { play, playNow } from './game';
 import { coachOnce } from './tips';
 import { hhmm } from '../sim/systems/clock';
+import { UNIT } from '../sim/tuning';
 import { refusedText } from './refusals';
 import { guardWord } from '../ui/names';
 
@@ -85,9 +90,16 @@ const view0: PayphoneView = {
   closed: '',
   hint: '',
   second: '',
+  heard: [],
+  follow: 0,
+  need: 0,
+  risk: 0,
+  limit: -1,
+  caught: false,
+  where: '',
 };
 /** The view as it starts each frame (nothing left over from the last: a turn's note under a call). */
-const blank: PayphoneView = { ...view0, waiting: [], rows: [], phrases: [], known: [] };
+const blank: PayphoneView = { ...view0, waiting: [], rows: [], phrases: [], known: [], heard: [] };
 
 /** Why not, in words. */
 const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
@@ -119,6 +131,8 @@ export function payphoneNow(sim: Sim): PayphoneView | null {
       v.phrases = ph.map(([tier, k]) =>
         t(`lou.${JOBS[call.sub]}.${LINES[v.line]}.${TIERS[tier]}.${k}` as Key, { hour: hourText(call.arg) }),
       );
+      // (2.42: Lou answers each phrase said: what kind it was, how well he follows, how much the tap has heard.)
+      louTalk(sim, v, call);
       v.known = ph.map(([tier, k]) => tier === TIER.DEEP && (s.lou[0] & codeBit(call.sub, v.line, k)) !== 0);
       v.progress = Math.max(0, (call.ends - s.step) / LINE_STEPS);
       v.secs = Math.max(0, call.ends - s.step) / 20;
@@ -179,6 +193,46 @@ export function payphoneNow(sim: Sim): PayphoneView | null {
   const next = nextMoneyDay(s);
   v.mail = mail ? t('phone.mail', { n: mail }) : next > 0 ? t('phone.nextMoney', { n: next }) : '';
   return v;
+}
+
+/** Lou's answers: one of three for each kind of phrase, the same for the same call and line (no draw). */
+const REPLIES = 3;
+
+/**
+ * 2.42, Lou talks back: the phrases said so far (their kind, his answer), how well he follows (the clarity said against
+ * CLEAR_NEED), how much the guard on the tap has heard (the risk said against what their way lets slip: shown once
+ * the player knows their way, and as soon as it's past it, whether known or not: the click on the line).
+ */
+function louTalk(sim: Sim, v: PayphoneView, call: NonNullable<Sim['state']['call']>) {
+  const s = sim.state;
+  let follow = 0;
+  let risk = 0;
+  v.heard = [];
+  for (let line = 0; line < Math.min(3, call.at); line++) {
+    const tier = call.said[line];
+    if (tier < 0) continue;
+    const kv = phrasesOf(s, call, line).find(([t]) => t === tier)!;
+    const w = phraseWorth(s, call.sub, line, tier, kv[1]);
+    follow += w.clarity;
+    risk += w.risk;
+    const kind = tier === TIER.DEEP ? (w.clarity > 0 ? 'known' : 'deep') : TIERS[tier];
+    v.heard.push({
+      kind: t(`lou.kind.${kind}` as Key),
+      reply: t(`lou.reply.${kind}.${(call.from + line) % REPLIES}` as Key),
+      good: w.clarity > 0,
+    });
+  }
+  v.follow = follow;
+  v.need = CLEAR_NEED;
+  v.risk = risk;
+  const g = call.ear >= 0 ? sim.prison.guards[call.ear] : null;
+  const limit = catchAt(sim, call.ear);
+  v.limit = !g ? -1 : talk.knows(`trait:${call.ear}`) ? CATCH[traitOf(g)] : 0;
+  v.caught = !!g && risk >= limit;
+  // (Where the listener is: the guard's room now.)
+  const body = g ? s.guards[call.ear]?.body : null;
+  const zone = body ? sim.world.zoneAt(Math.floor(body.x / UNIT), Math.floor(body.z / UNIT)) : '';
+  v.where = zone && zone !== 'none' ? t('phone.earWhere', { zone: t(`zone.${zone}` as Key) }) : '';
 }
 
 /** On Lou's line, 1–3 say a phrase (taken: true, so the hotbar doesn't have them). */
@@ -251,14 +305,34 @@ export function announcePhone(sim: Sim, e: Extract<SimEvent, { type: 'phone' }>)
       return banner.toast(t('toast.phone.tipEmpty', { n: e.cell ?? 0 }), 'bad', 3600);
     case 'snitch':
       return banner.toast(t('toast.phone.snitch', { name: name(e.who) }), 'bad', 3600);
-    case 'said':
+    case 'said': {
+      // (2.42: Lou answers down the line, puzzled by a code he doesn't know; a click as the tap hears something, two
+      // once it's heard enough. The last line's answer is the call's end.)
       sound.blip();
+      const call = s.call;
+      if (!call || call.to !== CALLEE.COUSIN) return;
+      const line = e.n ?? 0;
+      const kv = phrasesOf(s, call, line).find(([tier]) => tier === e.tier);
+      const w = kv ? phraseWorth(s, call.sub, line, kv[0], kv[1]) : null;
+      sound.louVoice(!!w && w.clarity === 0);
+      if (call.ear >= 0 && w && w.risk > 0) {
+        let risk = 0;
+        for (let k = 0; k <= line; k++) {
+          const p = phrasesOf(s, call, k).find(([tier]) => tier === call.said[k]);
+          if (p) risk += phraseWorth(s, call.sub, k, p[0], p[1]).risk;
+        }
+        sound.tapClick(risk >= catchAt(sim, call.ear));
+      }
       return;
+    }
     case 'silence':
       sound.hangUp();
       end(t('toast.phone.silence'), false);
       return itemsUI.toast(t('toast.phone.silence'));
     case 'lou': {
+      // (2.42: the last line's answer: Lou's voice, and two clicks if the tap caught it.)
+      sound.louVoice(!e.ok);
+      if (e.blown) sound.tapClick(true);
       sound.hangUp();
       if (!e.ok) {
         end(t('lou.lost'), false);

@@ -53,11 +53,22 @@ const STENCIL_MARK: Partial<THREE.MeshStandardMaterialParameters> = {
 /** How far a head turns either way glancing about with a rat on the shoulder (P20; ±0.55 otherwise): its side stays clear of the rat. */
 const PERCHED_GLANCE = 0.2;
 
-/** On the pay phone (P34): drawn this far to their right of where they stand (tiles). */
-const PHONE_SHIFT = 0.27;
+/**
+ * On the pay phone (2.42): drawn this far along its wall from where they stand (tiles), beside it rather than in front
+ * (`phoneSide`), this far in toward the wall, their back to it and turned this much toward the phone (radians).
+ */
+const PHONE_SIDE = 0.6;
+const PHONE_IN = 0.16;
+const PHONE_TWIST = 0.45;
 
 /** At the internet kiosk (P35): drawn this far back from where they stand (tiles), so the screen shows over their head and the hands come down on the keyboard. */
 const KIOSK_BACK = 0.22;
+/**
+ * 2.42: at a kiosk on a north wall (`kioskSide`), drawn this far to one side instead (tiles) and turned this much
+ * toward it (radians): from this camera, standing square in front of it, their head hid the screen.
+ */
+const KIOSK_SIDE = 0.34;
+const KIOSK_TWIST = 0.55;
 
 /** Scratch for a held cup kept upright (2.33), and for a held item placed (session 15). */
 const UPRIGHT = new THREE.Quaternion();
@@ -258,8 +269,13 @@ export class Character {
   private readonly buckets: THREE.Mesh;
   private readonly sticks: THREE.Mesh[] = [];
   private readonly guitar: THREE.Mesh;
-  /** On the pay phone (P34): the handset at the ear, in the left hand. */
+  /** On the pay phone (P34): the handset at the ear, in the hand on the phone's side (2.42: the right one where `phoneSide` is 1). */
   private readonly handset: THREE.Mesh;
+  private readonly handsetR: THREE.Mesh;
+  /** 2.42: which side of the pay phone they stand on while on it (render/Phone.ts phoneSide): -1 the left hand to the ear, 1 the right. */
+  phoneSide: 1 | -1 = -1;
+  /** 2.42: at a kiosk on a north wall, which side of it they're drawn on (1 or -1); 0 square in front (a side wall's). */
+  kioskSide: -1 | 0 | 1 = 0;
   /** The same bones in shorts (2.26): the body drawn in place of the dressed one. Guards never wash. */
   private dressed!: THREE.SkinnedMesh;
   private washBody: THREE.SkinnedMesh | null = null;
@@ -441,6 +457,10 @@ export class Character {
     this.handset = new THREE.Mesh(instruments().handset, kitMaterial);
     this.handset.visible = false;
     this.armL.add(this.handset);
+    this.handsetR = new THREE.Mesh(instruments().handset, kitMaterial);
+    this.handsetR.visible = false;
+    this.handsetR.scale.x = -1;
+    this.armR.add(this.handsetR);
     // A towel (2.26), in the body's own material like the tray: round the neck with its ends down the front, or over the hair.
     this.towelNeck = new THREE.Mesh(
       merge(
@@ -789,6 +809,10 @@ export class Character {
     this.pumped = Math.max(0, this.pumped - dt * 3);
     this.at.set(x, this.baseY, z);
     let turn = facing;
+    // (2.42: on the pay phone, their back to its wall, turned a little toward it.)
+    if (doing === DOING.PHONE && !moving && !ko) turn += Math.PI + this.phoneSide * PHONE_TWIST;
+    // (2.42: at a north wall's kiosk, drawn to its side and turned in to the screen.)
+    else if (doing === DOING.KIOSK && !moving && !ko && this.kioskSide) turn -= this.kioskSide * KIOSK_TWIST;
     // A lookout on watch (P23): his whole body sweeps slowly from side to side (the head held still: a raised arm beside it).
     if (doing === DOING.LOOKOUT && !moving && !ko) turn += (motion ? Math.sin((time + this.offset) * 0.8) * 0.5 : 0) * this.act;
     if (ko) {
@@ -876,25 +900,26 @@ export class Character {
     }
     // (Session 15: with reduced motion, there at once.)
     this.act = moving ? 0 : motion ? Math.min(1, this.act + dt * 3) : 1;
-    // On the pay phone (P34): drawn a little to the right (away from the raised hand's side), so the
-    // empty hook and the stretched cord show beside them, the hand clear of the hood's side.
-    // (Session 15: eased back as they hang up too; it was a jump of a quarter of a tile.)
+    // On the pay phone (2.42): beside it along its wall rather than in front of it (from this camera the caller hid it),
+    // a little in, their back to the wall and turned out to the room: the phone, the empty hook and the stretched cord
+    // in sight beside them. (Session 15: eased back as they hang up too.)
     this.phoneOff += ((doing === DOING.PHONE && !ko ? this.act : 0) - this.phoneOff) * (motion ? k(8) : 1);
     if (this.phoneOff < 0.002) this.phoneOff = 0;
     if (this.phoneOff > 0) {
-      const r = this.root.rotation.y;
-      const o = PHONE_SHIFT * this.phoneOff;
-      this.root.position.x += Math.cos(r) * o;
-      this.root.position.z -= Math.sin(r) * o;
+      const o = PHONE_SIDE * this.phoneOff * this.phoneSide;
+      const w = PHONE_IN * this.phoneOff;
+      this.root.position.x += Math.cos(facing) * o + Math.sin(facing) * w;
+      this.root.position.z += -Math.sin(facing) * o + Math.cos(facing) * w;
     }
     // At the kiosk (P35): drawn a step back from the wall, the screen in sight over the head.
     this.kioskOff += ((doing === DOING.KIOSK && !ko ? this.act : 0) - this.kioskOff) * (motion ? k(8) : 1);
     if (this.kioskOff < 0.002) this.kioskOff = 0;
     if (this.kioskOff > 0) {
-      const r = this.root.rotation.y;
-      const o = KIOSK_BACK * this.kioskOff;
-      this.root.position.x -= Math.sin(r) * o;
-      this.root.position.z -= Math.cos(r) * o;
+      const r = facing;
+      const o = (this.kioskSide ? KIOSK_BACK * 0.5 : KIOSK_BACK) * this.kioskOff;
+      const side = KIOSK_SIDE * this.kioskSide * this.kioskOff;
+      this.root.position.x += -Math.sin(r) * o + Math.cos(r) * side;
+      this.root.position.z += -Math.cos(r) * o - Math.sin(r) * side;
     }
     // (Session 15: with reduced motion too, held still: a pose that says what they're doing never vanishes.)
     const a = this.act;
@@ -924,6 +949,15 @@ export class Character {
     m.shudder = this.shudder;
     m.diceShake = this.diceShake;
     activityPose(doing, l, m);
+    // (2.42: on the pay phone's other side, the right hand to the ear: the pose mirrored.)
+    if (doing === DOING.PHONE && this.phoneSide === 1) {
+      const lx = l.armLx;
+      const lz = l.armLz;
+      l.armLx = l.armRx;
+      l.armLz = -l.armRz;
+      l.armRx = lx;
+      l.armRz = -lz;
+    }
     // Dozing on its feet (P15): arms folded across the chest, a slouch and a sway (the chin
     // sinks and jerks back up, below). Eased by its own weight so waking unfolds them.
     const dz = this.doze * this.doze * (3 - 2 * this.doze);
@@ -1161,7 +1195,8 @@ export class Character {
     this.buckets.visible = drums;
     for (const st of this.sticks) st.visible = drums;
     this.guitar.visible = doing === DOING.GUITAR && this.act > 0.3;
-    this.handset.visible = doing === DOING.PHONE && this.act > 0.3;
+    this.handset.visible = doing === DOING.PHONE && this.act > 0.3 && this.phoneSide !== 1;
+    this.handsetR.visible = doing === DOING.PHONE && this.act > 0.3 && this.phoneSide === 1;
     const shorts = this.undressed && this.washBody !== null;
     this.dressed.visible = !shorts;
     if (this.washBody) this.washBody.visible = shorts;
@@ -1200,7 +1235,7 @@ export class Character {
     const look = this.perched ? Math.max(-PERCHED_GLANCE, Math.min(PERCHED_GLANCE, this.extra.headY)) : this.extra.headY;
     this.head.rotation.y = this.glance + look;
     // (On the phone: the head tipped toward the handset.)
-    this.head.rotation.z = (doing === DOING.PHONE ? 0.16 * this.act : 0) + this.extra.headZ;
+    this.head.rotation.z = (doing === DOING.PHONE ? 0.16 * this.act * -this.phoneSide : 0) + this.extra.headZ;
     // Nodding off: the chin sinks for 4 s and jerks back up (still, it just hangs); a blow snaps it back (eased in and out of the nod).
     this.head.rotation.x = this.recoil > 0 ? nod + (-0.35 - nod) * Math.sin(this.recoil * Math.PI) : nod;
     return stepped;

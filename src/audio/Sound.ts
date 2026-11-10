@@ -164,6 +164,27 @@ export class Sound extends SoundEffects {
     this.hiss(0.05, 'lowpass', 900, 0.7, 0.05);
   }
 
+  /** 2.42, Lou answering down the line: a few muffled syllables, a voice through a tinny handset (`puzzled`: rising at the end). */
+  louVoice(puzzled = false) {
+    const n = 4;
+    for (let k = 0; k < n; k++) {
+      const d = 0.06 + k * 0.11 + (k % 2) * 0.02;
+      const f = 190 + ((k * 37) % 50) + (puzzled && k === n - 1 ? 90 : 0);
+      this.tone(f, f * (puzzled && k === n - 1 ? 1.35 : 0.92), 0.09, 'sawtooth', 0.012, d);
+      this.hiss(0.07, 'bandpass', 1400 + (k % 3) * 300, 3, 0.02, undefined, d);
+    }
+  }
+
+  /** 2.42, a click on a tapped line (`twice`: the listener's heard enough). */
+  tapClick(twice = false) {
+    this.tone(2400, 900, 0.025, 'square', 0.03, 0.55);
+    this.hiss(0.03, 'highpass', 3000, 1, 0.04, undefined, 0.55);
+    if (twice) {
+      this.tone(2400, 900, 0.025, 'square', 0.035, 0.72);
+      this.hiss(0.03, 'highpass', 3000, 1, 0.045, undefined, 0.72);
+    }
+  }
+
   /** Keys typed at the kiosk (P35): a few quick plastic clicks, uneven. */
   keys() {
     const at = [0, 0.07, 0.15, 0.2, 0.29, 0.36];

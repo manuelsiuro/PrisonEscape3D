@@ -110,6 +110,8 @@ export class PlayerView {
   draw(f: Frame, dt: number, time: number, doing: number, reduced: boolean): boolean {
     const { gear, running, crowd } = this.shared();
     this.c.root.visible = true;
+    this.c.phoneSide = f.phone.side;
+    this.c.kioskSide = f.kiosk.side;
     // (A tray takes both hands: what's in hand is out of sight while it does.)
     this.c.hold(
       f.sleeping ||
@@ -119,7 +121,9 @@ export class PlayerView {
         f.doing === DOING.BENCH ||
         f.doing === DOING.PULLUP ||
         f.doing === DOING.PUSHUP ||
-        f.doing === DOING.BAG
+        f.doing === DOING.BAG ||
+        // (2.42: on the pay phone, a hand to the ear with the handset: what was in it is put away meanwhile.)
+        f.doing === DOING.PHONE
         ? 0
         : f.held,
       f.held ? itemGeometry(itemDef(f.held)) : null,

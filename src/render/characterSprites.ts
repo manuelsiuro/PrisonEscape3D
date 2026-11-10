@@ -127,13 +127,15 @@ export function markTexture(ch: string): THREE.CanvasTexture {
  * done (hand it in), a merchant open for business, the letter the player carries for them,
  * a follower. Drawn shapes, not font glyphs, so they look the same everywhere.
  */
-export type BadgeKind = '' | 'favor' | 'done' | 'shop' | 'mail' | 'ally';
+export type BadgeKind = '' | 'favor' | 'done' | 'shop' | 'mail' | 'ally' | 'ear';
 const BADGE_COLORS: Record<Exclude<BadgeKind, ''>, string> = {
   favor: '#ffc23d',
   done: '#42c97a',
   shop: '#3fbf6f',
   mail: '#4aa3ff',
   ally: '#29b6c8',
+  // (2.42: over the guard listening in on Lou's line.)
+  ear: '#8a6bd8',
 };
 const badgeTextures = new Map<string, THREE.CanvasTexture>();
 export function badgeTexture(kind: Exclude<BadgeKind, ''>): THREE.CanvasTexture {
@@ -179,6 +181,20 @@ export function badgeTexture(kind: Exclude<BadgeKind, ''>): THREE.CanvasTexture 
     g.moveTo(28, 27);
     g.lineTo(48, 43);
     g.lineTo(68, 27);
+    g.stroke();
+  } else if (kind === 'ear') {
+    // An ear: the outer curve, the inner fold.
+    g.lineWidth = 8;
+    g.beginPath();
+    g.moveTo(40, 58);
+    g.bezierCurveTo(30, 52, 31, 22, 50, 20);
+    g.bezierCurveTo(66, 19, 70, 36, 60, 46);
+    g.bezierCurveTo(54, 52, 54, 60, 48, 63);
+    g.stroke();
+    g.lineWidth = 6;
+    g.beginPath();
+    g.moveTo(45, 44);
+    g.bezierCurveTo(43, 34, 52, 30, 56, 37);
     g.stroke();
   } else {
     g.beginPath();

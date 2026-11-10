@@ -14,7 +14,6 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 |---|---|
 | Football | Partly |
 | Long games (pruno, garden, rats) | Not reviewed |
-| Pay phone, kiosk and paperwork | Not reviewed |
 
 ## 2. Checks only a person can do
 

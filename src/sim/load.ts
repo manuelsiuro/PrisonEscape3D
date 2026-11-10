@@ -32,6 +32,7 @@ import { ITEMS } from '../content/items';
 import { newVend, vendOk } from './systems/vendState';
 import { coolerOk, menuOk, newCooler, newMenu } from './systems/menuState';
 import { huddlesOk, newHuddles } from './systems/huddles';
+import { kioskByOk, newKioskBy } from './systems/kiosk';
 import { WATCH_ALL } from './systems/spectate';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
@@ -78,7 +79,14 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // hash reads the keys in order); checked below.)
   for (const k of Object.keys(st))
     if (
-      (k === 'struckLayer' || k === 'gang' || k === 'recall' || k === 'replant' || k === 'huddle' || k === 'watch' || k === 'watchEnd') &&
+      (k === 'struckLayer' ||
+        k === 'gang' ||
+        k === 'recall' ||
+        k === 'replant' ||
+        k === 'huddle' ||
+        k === 'watch' ||
+        k === 'watchEnd' ||
+        k === 'kioskBy') &&
       st[k] !== undefined
     )
       (s as unknown as Record<string, unknown>)[k] = st[k];
@@ -515,6 +523,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   )
     s.watch = [];
   if (s.watchEnd !== undefined && (!Number.isInteger(s.watchEnd) || s.watchEnd < 0 || s.watchEnd > s.step)) s.watchEnd = 0;
+  // 2.42: inmates at the kiosk, checked (else nobody on it, nobody drawn yet today).
+  if (s.kioskBy !== undefined && !kioskByOk(s.kioskBy, s.inmates.length, s.step)) s.kioskBy = newKioskBy();
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];

@@ -154,6 +154,8 @@ export class Director {
   /** 2.39: a free time's chats: ready for the player's next visit to one, how much was overheard today; the gatherings this tick. */
   private ringArmed = true;
   /** 2.40: when one of those watching the player's game next calls out (seconds, the stage's clock). */
+  /** 2.42: when the line at the pay phone may next tell the player to hurry up (0: not on a call yet). */
+  private hogNext = 0;
   private watchNext = 0;
   private ringToday = 0;
   private rings: HuddleView[] = [];
@@ -550,6 +552,7 @@ export class Director {
     huddlesNow(sim, this.rings);
     this.ringTalk(sim, stage);
     this.watchTalk(sim, now);
+    this.hogTalk(sim, now);
     if (now >= this.nextAmbient && this.active.length < stage.max) {
       this.nextAmbient = now + stage.gap * (0.7 + 0.6 * this.random());
       this.ambient(sim, stage);
@@ -633,6 +636,28 @@ export class Director {
     }
     this.watchNext = now + 5 + 3 * this.random();
     this.queueUp(now, 're.watch.in', there, 2, 'watch', 'shout', 0.2, 2.2);
+  }
+
+  /**
+   * 2.42: the player on the pay phone with inmates waiting for it: now and then (every 16 to 24 seconds) one of them
+   * says so.
+   */
+  private hogTalk(sim: Sim, now: number) {
+    const s = sim.state;
+    if (!s.call) {
+      this.hogNext = 0;
+      return;
+    }
+    if (now < this.hogNext) return;
+    const waiting = s.line.filter((k) => k >= 0 && s.inmates[k]?.doing === DOING.QUEUE);
+    if (!waiting.length) return;
+    // (Not the moment the call begins: a while into it.)
+    if (this.hogNext === 0) {
+      this.hogNext = now + 12;
+      return;
+    }
+    this.hogNext = now + 16 + 8 * this.random();
+    this.queueUp(now, 're.phoneHog.in', waiting, 2, 'phoneHog', 'say', 0.2, 2.4);
   }
 
   /** 2.39: the gathering an inmate's in now (from this tick's list), null none. */
