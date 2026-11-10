@@ -6,6 +6,7 @@ import {
   COURSE_STEPS,
   KIOSK,
   KIOSK_BLOCK,
+  KIOSK_TURN_PRICE,
   NEWS_AHEAD,
   NEWS_DAYS,
   PHOTOS,
@@ -20,7 +21,9 @@ import { itemNumber } from '../content/items';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayRoll, planOf, prisonDay, type DayPlan } from '../sim/systems/calendar';
-import { atKiosk, courseQuestion, kioskOf, kioskOpen, kioskRefusal, loggedIn } from '../sim/systems/kiosk';
+import { atKiosk, courseQuestion, KB, waitingAtKiosk, kioskOf, kioskOpen, kioskRefusal, kioskTyping, loggedIn } from '../sim/systems/kiosk';
+import { nameOf } from '../talk/fill';
+import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { DAY, FEAT } from '../sim/systems/ledger';
 import type { KioskView } from '../ui/kiosk';
 import { itemName } from '../ui/items';
@@ -57,7 +60,12 @@ const view: KioskView = {
   loginWhy: '',
   left: 0,
   secs: 0,
+  mins: 0,
   spent: 0,
+  busy: '',
+  askWhy: '',
+  askPrice: 0,
+  done: { mail: false, shop: false, news: false, course: false },
   mailWhy: '',
   mailNote: '',
   coming: [],
@@ -130,7 +138,9 @@ export function kioskNow(sim: Sim): KioskView | null {
   const held = result && playNow() - result.at < RESULT_MS ? result : null;
   // (Logged out, on its own tile only: not beside it, studying at the shelf next door.)
   const k = kioskOf(sim)!;
-  if (!on && !(atKiosk(sim) && Math.floor(s.player.x / UNIT) === k.x && Math.floor(s.player.z / UNIT) === k.z)) return null;
+  // (2.42: or waiting beside it, standing still and not reading or seated there: its own tile may be an inmate's.)
+  const here = Math.floor(s.player.x / UNIT) === k.x && Math.floor(s.player.z / UNIT) === k.z;
+  if (!on && !((atKiosk(sim) && here) || waitingAtKiosk(sim))) return null;
   const v = view;
   v.phase = on ? 'on' : 'off';
   v.cash = s.cash;
@@ -139,8 +149,24 @@ export function kioskNow(sim: Sim): KioskView | null {
   v.spent = spent;
   v.left = on ? Math.max(0, (s.kiosk - s.step) / KIOSK_BLOCK) : 0;
   v.secs = on ? Math.max(0, s.kiosk - s.step) / 20 : 0;
-  if (!on) return v;
+  v.mins = on ? Math.max(1, Math.ceil((s.kiosk - s.step) / STEPS_PER_MINUTE)) : 0;
+  // (2.42: an inmate on it: who, about how long, and his turn for sale.)
+  const typing = kioskTyping(s);
+  v.busy =
+    typing >= 0
+      ? t('kiosk.busy', {
+          name: nameOf(sim, typing) ?? '',
+          n: Math.max(1, Math.ceil((s.kioskBy![KB.UNTIL] - s.step) / STEPS_PER_MINUTE)),
+        })
+      : '';
+  v.askWhy = typing >= 0 ? why(kioskRefusal(sim, KIOSK.ASK)) : '';
+  v.askPrice = KIOSK_TURN_PRICE;
   const day = prisonDay(s.step);
+  // (What's done today, marked on its tab.)
+  v.done.mail = s.post[0] === day;
+  v.done.shop = s.post[4] === day;
+  v.done.course = s.post[5] === day && !s.course.length;
+  if (!on) return v;
   // Mail: a letter, what's coming, the wall.
   v.mailWhy = why(kioskRefusal(sim, KIOSK.WRITE));
   const moneyDue = !s.phoned[0] || day - s.phoned[0] >= MONEY_EVERY;
@@ -217,7 +243,7 @@ export function kioskKey(code: string): boolean {
 }
 
 /** What the kiosk does on screen: toasts, sounds, a course's last word. */
-export function announceKiosk(e: Extract<SimEvent, { type: 'kiosk' }>) {
+export function announceKiosk(sim: Sim, e: Extract<SimEvent, { type: 'kiosk' }>) {
   const end = (text: string, good: boolean) => (result = { text, good, at: playNow() });
   switch (e.what) {
     case 'login':
@@ -285,5 +311,15 @@ export function announceKiosk(e: Extract<SimEvent, { type: 'kiosk' }>) {
     case 'unhidden':
       sound.pickup();
       return itemsUI.toast(t('toast.kiosk.unhidden', { item: itemName(e.item ?? 0) }));
+    // (2.42: an inmate's session over with the player waiting at it; his turn bought.)
+    case 'inmateOff':
+      if (e.why === 'done' && waitingAtKiosk(sim) && !loggedIn(sim.state)) {
+        sound.blip();
+        itemsUI.toast(t('toast.kiosk.free', { name: nameOf(sim, e.who ?? -1) ?? '' }));
+      }
+      return;
+    case 'turnBought':
+      sound.coin();
+      return itemsUI.toast(t('toast.kiosk.turnBought', { name: nameOf(sim, e.who ?? -1) ?? '' }));
   }
 }

@@ -57,6 +57,18 @@ export interface PayphoneView {
   closed: string;
   hint: string;
   second: string;
+  /**
+   * 2.42, Lou's line: the phrases said so far (their kind, Lou's answer, whether he followed it), how well he follows
+   * (`follow` of `need`), how much the tap has heard (`risk`; `limit` what the listener lets slip: 0 their way unknown,
+   * -1 nobody listening), past it (the click on the line), where the listener is.
+   */
+  heard: Array<{ kind: string; reply: string; good: boolean }>;
+  follow: number;
+  need: number;
+  risk: number;
+  limit: number;
+  caught: boolean;
+  where: string;
 }
 
 /** What the card's menus have picked (UI only: the play layer reads it to say why not). */
@@ -181,6 +193,12 @@ export class PayphoneCard {
       v.ear,
       v.phrases.join(),
       v.known.join(),
+      v.heard.map((x) => x.kind + x.reply).join(),
+      v.follow,
+      v.risk,
+      v.limit,
+      v.caught,
+      v.where,
       v.result,
       this.pick.menu,
       this.pick.hour,
@@ -236,7 +254,21 @@ export class PayphoneCard {
     if (v.phase === 'call') return `<p class="phone-calling">${icon('phone', 16)}<span>${esc(v.calling)}</span></p>`;
     if (v.phase === 'lou') {
       const names = [t('phone.lines.what'), v.second, t('phone.lines.when')];
-      return `<p class="phone-ear">${icon('ear', 14)}<span>${esc(v.ear)}</span></p>
+      // (2.42: the listener and where they are; Lou's answers so far; how well he follows, how much the tap has heard.)
+      const pips = (n: number, of: number, cls: string) =>
+        Array.from({ length: Math.max(of, n) }, (_, k) => `<i class="${k < n ? cls : ''}"></i>`).join('');
+      const meters =
+        `<div class="lou-meters">` +
+        `<p class="lou-meter${v.follow >= v.need ? ' full' : ''}"><span>${esc(t('lou.follows'))}</span><b class="lou-pips">${pips(v.follow, v.need, 'on')}</b><small>${esc(t('lou.needs', { n: v.need }))}</small></p>` +
+        (v.limit < 0
+          ? ''
+          : `<p class="lou-meter tap${v.caught ? ' caught' : ''}"><span>${esc(t('lou.tap'))}</span><b class="lou-pips">${pips(v.risk, v.limit > 0 ? v.limit : 3, 'on')}</b><small>${esc(v.caught ? t('lou.click') : v.limit > 0 ? t('lou.catches', { n: v.limit }) : t('lou.catchesUnknown'))}</small></p>`) +
+        `</div>`;
+      const heard = v.heard
+        .map((x, k) => `<li class="${x.good ? 'good' : 'lost'}"><b>${k + 1}</b><span><em>${esc(x.kind)}</em> ${esc(x.reply)}</span></li>`)
+        .join('');
+      return `<p class="phone-ear">${icon('ear', 14)}<span>${esc(v.ear)}${v.where ? ` <small>${esc(v.where)}</small>` : ''}</span></p>
+        ${heard ? `<ol class="lou-heard">${heard}</ol>` : ''}${meters}
         <p class="phone-step"><b>${esc(t('phone.line', { n: v.line + 1 }))}</b> · ${esc(names[v.line] ?? '')}</p>
         <div class="phone-says">${v.phrases
           .map(

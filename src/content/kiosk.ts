@@ -23,6 +23,8 @@ export const KIOSK = {
   COURSE: 4,
   ANSWER: 5,
   QUIT: 6,
+  /** 2.42: the inmate on it paid to let the player have it (KIOSK_TURN_PRICE). */
+  ASK: 7,
 } as const;
 
 /** The kiosk's apps, as its tabs show them (the card's alone: the sim doesn't keep which is open). */
@@ -31,6 +33,23 @@ export const APPS = ['mail', 'shop', 'news', 'course'] as const;
 /** What a block of time at the screen costs, and how long it lasts (steps). */
 export const KIOSK_FEE = 1;
 export const KIOSK_BLOCK = 10 * STEPS_PER_MINUTE;
+
+// ------------------------------------------------------------------ inmates at it (2.42)
+
+/** Inmates use it from this prison day, once the player has logged in this run (day 1 is the escape bots', untouched). */
+export const KIOSK_LINE_DAY = 2;
+/** The odds (in 100) an inmate wants a session in a free time, and within how many minutes of its start; at most this many sessions a free time (a big prison's crowd never keeps it from the player). */
+export const KIOSK_WANT = 30;
+export const KIOSK_WITHIN = 75;
+export const KIOSK_PER_BLOCK = 3;
+/** Nobody sets off for it with less than this left of the free time (game minutes): he'd be called away on the way. */
+export const KIOSK_LATE = 20;
+/** An inmate's session: game minutes (MIN + up to SPAN − 1); not there this long after setting off (steps), he gives up. */
+export const KIOSK_USE_MIN = 8;
+export const KIOSK_USE_SPAN = 9;
+export const KIOSK_REACH = 20 * STEPS_PER_MINUTE;
+/** What the inmate on it takes to let the player have it now (the phone's place costs as much: SWAP_PRICE). */
+export const KIOSK_TURN_PRICE = 5;
 
 // ------------------------------------------------------------------ mail
 

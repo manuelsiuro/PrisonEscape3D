@@ -1,7 +1,6 @@
 /**
  * The internet kiosk (P35, docs/phases/5-phone-kiosk.md): a wall terminal in the library (`comms.kiosk`),
- * open in the free times outside a lockdown, for one at a time (inmates never use it: the escape
- * bots play as before).
+ * open in the free times outside a lockdown, for one at a time.
  *
  * - **Logged in** (EXT.KIOSK LOGIN): $1 a block of ten game minutes, paid up front; the next
  *   block is paid as the last runs out. Walking away, the kiosk shutting or no dollar left for the
@@ -17,6 +16,12 @@
  * - **The hollow book**: a small item moved onto an empty hollow book goes inside it (its slot's
  *   upper bits, where wear is kept: no search reads them); the use button takes it out again.
  *
+ * - **Inmates at it** (2.42, not in a run from before: Sim.rules241): once the player has logged in this run
+ *   (`kioskBy` is there from then on), from prison day 2, an inmate may want a session in a free time
+ *   (KIOSK_WANT, at a minute of its own), walks over and types for a while. The player standing at it
+ *   first has it (nobody sets off then, and one on his way turns back); one already on it finishes, or
+ *   takes KIOSK_TURN_PRICE to let the player have it (ASK). The escape bots never log in: untouched.
+ *
  * Every draw comes from roll() (SALT.KIOSK, SALT.COURSE), never the state's RNG.
  */
 import {
@@ -31,6 +36,15 @@ import {
   KIOSK,
   KIOSK_BLOCK,
   KIOSK_FEE,
+  KIOSK_LATE,
+  KIOSK_LINE_DAY,
+  KIOSK_PER_BLOCK,
+  KIOSK_REACH,
+  KIOSK_TURN_PRICE,
+  KIOSK_USE_MIN,
+  KIOSK_USE_SPAN,
+  KIOSK_WANT,
+  KIOSK_WITHIN,
   PHOTO_WALL,
   PHOTOS,
   SHOP,
@@ -44,9 +58,13 @@ import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { SimState } from '../state';
 import { ATTRS, type Refusal } from '../events';
-import { ATTR_MAX, STEPS_PER_MINUTE } from '../tuning';
+import { ATTR_MAX, STEPS_PER_MINUTE, UNIT } from '../tuning';
+import { DOING } from '../ai/doing';
+import { ROUTINE } from '../../content/routine';
+import { bodyAt, type Body } from './movement';
+import { blockNow, freeToGo, staysPut } from './vending';
 import { deskRoom } from '../world/containers';
-import { dayMinute, prisonDay } from './calendar';
+import { crowdPlan, dayMinute, prisonDay } from './calendar';
 import { clockAt } from './clock';
 import { routineEnd } from '../../content/routine';
 import { freeHotbar, itemOf, slot, usesOf } from './items';
@@ -68,6 +86,15 @@ export const kioskOpen = (sim: SimContext) => !!kioskOf(sim) && phoneOpen(sim) &
 export function atKiosk(sim: SimContext): boolean {
   const k = kioskOf(sim);
   return !!k && atFixture(sim, k);
+}
+
+/**
+ * 2.42: the player waiting at the kiosk: in reach of it, standing still, not seated, reading or training (at the shelf
+ * beside it, a reader isn't waiting for it). Nobody sets off for it then, one on his way turns back, and its card shows.
+ */
+export function waitingAtKiosk(sim: SimContext): boolean {
+  const s = sim.state;
+  return atKiosk(sim) && !s.player.moving && s.seat < 0 && s.book <= 0 && s.train < 0;
 }
 
 /** Logged in (time paid for): the step it runs out at, 0 when logged out. */
@@ -101,7 +128,9 @@ export function kioskRefusal(sim: SimContext, b: number, c = 0): Refusal | null 
   if (b === KIOSK.QUIT || b === KIOSK.ANSWER) return s.course.length ? null : 'loggedOut';
   if (!kioskOpen(sim)) return s.lockdown ? 'gamesLockdown' : phoneOpen(sim) ? 'kioskDark' : 'kioskClosed';
   if (!atKiosk(sim)) return 'notAtKiosk';
-  if (b === KIOSK.LOGIN) return loggedIn(s) ? 'loggedIn' : s.cash < KIOSK_FEE ? 'cash' : null;
+  // (2.42: an inmate on it: his turn first, or bought.)
+  if (b === KIOSK.ASK) return kioskTyping(s) < 0 ? 'kioskFree' : s.cash < KIOSK_TURN_PRICE ? 'cash' : null;
+  if (b === KIOSK.LOGIN) return loggedIn(s) ? 'loggedIn' : kioskTyping(s) >= 0 ? 'kioskBusy' : s.cash < KIOSK_FEE ? 'cash' : null;
   if (!loggedIn(s)) return 'loggedOut';
   const day = prisonDay(s.step);
   if (b === KIOSK.WRITE) return s.post[0] === day ? 'wrote' : null;
@@ -136,7 +165,19 @@ export function kioskOp(sim: SimContext, b: number, c: number) {
       pay(sim, KIOSK_FEE);
       s.kiosk = s.step + KIOSK_BLOCK;
       sim.events.push({ type: 'kiosk', what: 'login' });
+      // (2.42: from the first, inmates use it too; one on his way turns back.)
+      if (!sim.rules241) {
+        if (!s.kioskBy) s.kioskBy = newKioskBy();
+        else if (s.kioskBy[KB.WHO] >= 0) inmateOff(sim, 'beaten');
+      }
       return;
+    case KIOSK.ASK: {
+      const who = s.kioskBy![KB.WHO];
+      pay(sim, KIOSK_TURN_PRICE);
+      inmateOff(sim, 'asked');
+      sim.events.push({ type: 'kiosk', what: 'turnBought', who });
+      return;
+    }
     case KIOSK.LOGOUT:
       return logOut(sim, 'asked');
     case KIOSK.WRITE: {
@@ -299,6 +340,116 @@ export function openBook(sim: SimContext) {
   sim.events.push({ type: 'kiosk', what: 'unhidden', item: itemOf(inside) });
 }
 
+// ------------------------------------------------------------------ inmates at it (2.42)
+
+/** `kioskBy`'s places. */
+export const KB = { WHO: 0, UNTIL: 1, FROM: 2, ASKED: 3, DAY: 5, SESSIONS: 6 } as const;
+/** A fresh `kioskBy`: nobody on it, nobody drawn. */
+export const newKioskBy = () => [-1, 0, 0, 0, 0, 0, 0, 0];
+
+/** The inmate on the kiosk, typing (-1 nobody: none, or one still on his way). */
+export const kioskTyping = (s: Pick<SimState, 'kioskBy'>) => (s.kioskBy && s.kioskBy[KB.UNTIL] > 0 ? s.kioskBy[KB.WHO] : -1);
+
+/** The inmate on the kiosk or on his way to it (-1 nobody). */
+export const kioskInmate = (s: Pick<SimState, 'kioskBy'>) => s.kioskBy?.[KB.WHO] ?? -1;
+
+/** A save's `kioskBy`, as it can be (load.ts). */
+export function kioskByOk(v: unknown, inmates: number, step: number): boolean {
+  if (!Array.isArray(v) || v.length !== 8 || !v.every((x) => Number.isInteger(x) && x >= -1)) return false;
+  const [who, until, from] = v as number[];
+  return who < inmates && from <= step && (who >= 0 || (until === 0 && from === 0));
+}
+
+/** The minute into the prison day an inmate wants a session in a free time (-1: not this one), by roll(). */
+export function wantsKiosk(salt: number, day: number, b: number, k: number): number {
+  if (rollInt(salt, SALT.KIOSK, day * 2 + b, 5000 + k, 100) >= KIOSK_WANT) return -1;
+  const id = b ? 'eveningFreeTime' : 'freeTime';
+  const at = ROUTINE.findIndex((r) => r.id === id);
+  const from = ROUTINE[at].start - 8 * 60;
+  const to = ROUTINE[at + 1].start - 8 * 60;
+  return from + rollInt(salt, SALT.KIOSK, day * 2 + b, 6000 + k, Math.max(1, Math.min(KIOSK_WITHIN, to - from - 20)));
+}
+
+/** The inmate on it off (his session done, the player there first, called away, paid off). */
+function inmateOff(sim: SimContext, why: 'done' | 'beaten' | 'away' | 'asked') {
+  const by = sim.state.kioskBy!;
+  const who = by[KB.WHO];
+  by[KB.WHO] = -1;
+  by[KB.UNTIL] = 0;
+  by[KB.FROM] = 0;
+  if (who >= 0) sim.events.push({ type: 'kiosk', what: 'inmateOff', who, why: why === 'asked' ? 'asked' : why });
+}
+
+/** Inmates at the kiosk: who sets off for it, who's there, who's done. */
+function inmatesAt(sim: SimContext, k: NonNullable<ReturnType<typeof kioskOf>>) {
+  const s = sim.state;
+  const by = s.kioskBy;
+  if (!by || sim.rules241) return;
+  const day = prisonDay(s.step);
+  const b = blockNow(sim);
+  const open = kioskOpen(sim) && b >= 0 && day >= KIOSK_LINE_DAY && crowdPlan(sim, s.routine) === s.routine;
+  const who = by[KB.WHO];
+  if (who >= 0) {
+    const m = s.inmates[who];
+    if (!open || !m || !freeToGo(sim, who, true, true)) inmateOff(sim, 'away');
+    else if (by[KB.UNTIL] > 0) {
+      if (s.step >= by[KB.UNTIL]) inmateOff(sim, 'done');
+    } else if (waitingAtKiosk(sim)) inmateOff(sim, 'beaten');
+    else if (Math.floor(m.body.x / UNIT) === k.x && Math.floor(m.body.z / UNIT) === k.z && !m.body.moving) {
+      by[KB.UNTIL] = s.step + (KIOSK_USE_MIN + rollInt(s.salt, SALT.KIOSK, day * 2 + b, 7000 + who, KIOSK_USE_SPAN)) * STEPS_PER_MINUTE;
+      sim.events.push({ type: 'kiosk', what: 'inmateOn', who });
+    } else if (s.step - by[KB.FROM] > KIOSK_REACH) inmateOff(sim, 'away');
+  }
+  // Who sets off, at his minute: not with the player at it or logged in, nor with someone on it already.
+  if (!open || by[KB.WHO] >= 0 || s.step % STEPS_PER_MINUTE !== 0 || loggedIn(s) || waitingAtKiosk(sim)) return;
+  if (by[KB.DAY] !== day) {
+    by[KB.ASKED] = 0;
+    by[KB.ASKED + 1] = 0;
+    by[KB.SESSIONS] = 0;
+    by[KB.SESSIONS + 1] = 0;
+    by[KB.DAY] = day;
+  }
+  if (by[KB.SESSIONS + b] >= KIOSK_PER_BLOCK) return;
+  if ((((routineEnd(s.routine) - clockAt(s.step).minuteOfDay) % 1440) + 1440) % 1440 < KIOSK_LATE) return;
+  const minute = dayMinute(s.step);
+  for (let i = 0; i < s.inmates.length && i < 30; i++) {
+    const bit = 1 << i;
+    if (by[KB.ASKED + b] & bit) continue;
+    const at = wantsKiosk(s.salt, day, b, i);
+    if (at < 0 || minute < at) continue;
+    // (Gathered for a chat or a game: the kiosk waits till it's over.)
+    if (s.huddle?.who.includes(i)) continue;
+    by[KB.ASKED + b] |= bit;
+    if (staysPut(sim, i) || !freeToGo(sim, i) || s.vend.line.includes(i)) continue;
+    by[KB.WHO] = i;
+    by[KB.UNTIL] = 0;
+    by[KB.FROM] = s.step;
+    by[KB.SESSIONS + b]++;
+    s.inmates[i].path = [];
+    sim.events.push({ type: 'kiosk', what: 'inmateGoes', who: i });
+    return;
+  }
+}
+
+const mark: Body = bodyAt(0, 0);
+
+/** The inmate at the kiosk where he stands (socialNow): on its tile, facing it, typing once there. */
+export function kioskTargets(sim: SimContext, so: { follow: Array<Body | null>; gap: number[]; doing: number[]; face: number[] }) {
+  const s = sim.state;
+  const k = kioskOf(sim);
+  const who = kioskInmate(s);
+  if (!k || who < 0) return;
+  const m = s.inmates[who];
+  if (!m || m.ko > 0 || m.angry > 0) return;
+  m.wait = 0;
+  mark.x = k.x * UNIT + UNIT / 2;
+  mark.z = k.z * UNIT + UNIT / 2;
+  so.follow[who] = mark;
+  so.gap[who] = 0;
+  so.doing[who] = s.kioskBy![KB.UNTIL] > 0 ? DOING.KIOSK : DOING.NOTHING;
+  so.face[who] = k.face;
+}
+
 // ------------------------------------------------------------------ each step
 
 /** Each step: mail call's goods and drawings, the time paid for (or logged out), the course. */
@@ -306,6 +457,7 @@ export function kiosk(sim: SimContext) {
   const s = sim.state;
   if (!kioskOf(sim)) return;
   if (s.step % STEPS_PER_MINUTE === 0 && dayMinute(s.step) === MAIL_MINUTE) mailCall(sim);
+  inmatesAt(sim, kioskOf(sim)!);
   if (!loggedIn(s)) return;
   if (!kioskOpen(sim)) return logOut(sim, 'closed');
   if (!atKiosk(sim)) return logOut(sim, 'left');

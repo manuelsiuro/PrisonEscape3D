@@ -1,0 +1,10 @@
+center-perks: 3 seeds, days 2–4: 12 set off, 12 typed on its tile, at most 2 a free time
+stalag-flucht: 3 seeds, days 2–4: 14 set off, 12 typed on its tile, at most 2 a free time
+shankton: 3 seeds, days 2–4: 20 set off, 19 typed on its tile, at most 2 a free time
+san-pancho: 3 seeds, days 2–4: 23 set off, 22 typed on its tile, at most 3 a free time
+irongate: 3 seeds, days 2–4: 26 set off, 26 typed on its tile, at most 3 a free time
+six-hunter: 3 seeds, days 2–4: 17 set off, 17 typed on its tile, at most 3 a free time
+before 2.42: nobody but the player at the kiosk
+at the kiosk: logging in refused while he types; his turn $5 (refused short of it, and with nobody on); one on his way turns back
+saves: kioskBy absent stays absent, a damaged one set afresh, a good one kept
+the caller beside the phone, away from the queue: center-perks left hand; stalag-flucht right hand; shankton right hand; san-pancho right hand; irongate left hand; six-hunter right hand

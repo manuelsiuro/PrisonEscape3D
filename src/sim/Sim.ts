@@ -235,6 +235,8 @@ export class Sim {
   rules239 = false;
   /** Replaying a run from before 2.41: quiz night and the rat races as they were (fifteen history questions drawn at random, nothing ruled out by Intellect, no host, nobody watching, no owners at the start). Not state. */
   rules240 = false;
+  /** Replaying a run from before 2.42: the kiosk as it was (no inmate ever used it). Not state. */
+  rules241 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

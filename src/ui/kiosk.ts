@@ -34,7 +34,15 @@ export interface KioskView {
   /** The block paid for: how much is left (0–1), in seconds; the dollars spent since logging in. */
   left: number;
   secs: number;
+  /** 2.42: the game minutes left on the block paid for. */
+  mins: number;
   spent: number;
+  /** 2.42: the inmate on it and about how long he'll be ('' nobody); why his turn can't be bought ('' it can), its price. */
+  busy: string;
+  askWhy: string;
+  askPrice: number;
+  /** 2.42: what's been done today, marked on its tab. */
+  done: Record<App, boolean>;
   /** Mail: why no letter now ('' one can be written), what a letter does, what's on its way, the drawings on the wall. */
   mailWhy: string;
   mailNote: string;
@@ -157,6 +165,10 @@ export class KioskCard {
       v.loginWhy,
       v.cash,
       v.spent,
+      v.mins,
+      v.busy,
+      v.askWhy,
+      APPS.map((a) => (v.done[a] ? 1 : 0)).join(''),
       v.mailWhy,
       v.mailNote,
       v.coming.join(),
@@ -183,19 +195,31 @@ export class KioskCard {
       this.el.dataset.course = v.phase === 'on' ? v.course : '';
       setText(this.title, t('kiosk.title'));
       setText(this.value, t('phone.price', { n: v.cash }));
-      setText(this.bill, v.phase === 'on' ? t('kiosk.bill', { n: v.spent }) : '');
+      setText(this.bill, v.phase === 'on' ? t('kiosk.bill', { n: v.spent, m: v.mins }) : '');
       this.tabs.innerHTML =
         v.phase === 'on' && !inCourse
           ? APPS.map(
               (a) =>
-                `<button role="tab" aria-selected="${a === this.app}" class="kiosk-tab${a === this.app ? ' on' : ''}" data-app="${a}">${icon(APP_ICON[a], 15)}<span>${esc(t(`kiosk.app.${a}`))}</span></button>`,
+                `<button role="tab" aria-selected="${a === this.app}" class="kiosk-tab${a === this.app ? ' on' : ''}${v.done[a] ? ' done' : ''}" data-app="${a}">${icon(APP_ICON[a], 15)}<span>${esc(t(`kiosk.app.${a}`))}</span>${v.done[a] ? `<i class="kiosk-done" aria-label="${esc(t('kiosk.doneToday'))}">${icon('check', 11)}</i>` : ''}</button>`,
             ).join('')
           : '';
-      this.body.innerHTML = v.phase === 'on' ? this.appHtml(v) : v.closed ? '' : `<p class="kiosk-intro">${esc(t('kiosk.intro'))}</p>`;
+      // (Logged in, what's on its way shows over every app; logged out, what each app gives, or who's on it.)
+      const coming =
+        v.phase === 'on' && v.coming.length && this.app !== 'mail'
+          ? `<p class="kiosk-coming">${icon('letter', 13)}<span>${esc(v.coming.join(' · '))}</span></p>`
+          : '';
+      this.body.innerHTML =
+        v.phase === 'on'
+          ? coming + this.appHtml(v)
+          : v.closed
+            ? ''
+            : v.busy
+              ? `<p class="kiosk-busy">${icon('monitor', 14)}<span><b>${esc(v.busy)}</b><small>${esc(t('kiosk.next'))}</small></span></p>`
+              : `<p class="kiosk-intro">${esc(t('kiosk.intro'))}</p><ul class="kiosk-apps">${APPS.map((a) => `<li>${icon(APP_ICON[a], 14)}<span><b>${esc(t(`kiosk.app.${a}`))}</b> ${esc(t(`kiosk.gives.${a}`))}</span></li>`).join('')}</ul>`;
       setText(
         this.note,
         v.phase === 'off'
-          ? v.closed || v.loginWhy
+          ? v.closed || (v.busy ? v.askWhy : v.loginWhy)
           : this.app !== 'course'
             ? ''
             : v.course === 'ask'
@@ -208,7 +232,9 @@ export class KioskCard {
         v.phase === 'off'
           ? v.closed
             ? ''
-            : `<button class="big-btn primary small" data-op="${KIOSK.LOGIN}" ${v.loginWhy ? 'disabled' : ''}>${icon('monitor', 16)}<span>${esc(t('kiosk.login'))}</span></button>`
+            : v.busy
+              ? `<button class="big-btn primary small" data-op="${KIOSK.ASK}" ${v.askWhy ? 'disabled' : ''}>${icon('coin', 16)}<span>${esc(t('kiosk.ask', { n: v.askPrice }))}</span></button>`
+              : `<button class="big-btn primary small" data-op="${KIOSK.LOGIN}" ${v.loginWhy ? 'disabled' : ''}>${icon('monitor', 16)}<span>${esc(t('kiosk.login'))}</span></button>`
           : `${inCourse && v.course !== 'result' ? `<button class="big-btn ghost small" data-op="${KIOSK.QUIT}">${icon('close', 16)}<span>${esc(t('kiosk.course.quit'))}</span></button>` : ''}<button class="big-btn ghost small" data-op="${KIOSK.LOGOUT}">${icon('close', 16)}<span>${esc(t('kiosk.logout'))}</span></button>`;
     }
     (this.bar.firstElementChild as HTMLElement).style.width = `${(Math.max(0, Math.min(1, v.left)) * 100).toFixed(1)}%`;

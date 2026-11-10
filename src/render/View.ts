@@ -1081,7 +1081,7 @@ export class View {
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.crowd.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
     this.lampsWalled = f.dark?.walls !== false;
-    this.pieces.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    this.pieces.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER, dt);
   }
 
   /** A sleeper's head, for the snores. */
@@ -1115,6 +1115,11 @@ export class View {
   /** The diversion at the gate (P34, the phone's 'diversion' and 'ignored' events): an amber beacon flashes at the ground tile for ten game minutes (steady with reduced motion). */
   phoneAlarm(tile: number) {
     this.pieces.phoneView.alarm(tile);
+  }
+
+  /** 2.42: the release desk's clerk stamps the papers (the player cleared, or turned away). */
+  releaseStamp() {
+    this.pieces.releaseView.stamp();
   }
 
   /** Delivery day's sounds (the play layer plays them): reversing beeps, the tailgate, the engine. */

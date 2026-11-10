@@ -20,7 +20,7 @@ import { LAYER, MAP_W } from '../sim/world/World';
 import { lockList } from './reach';
 import { nextWork } from '../sim/systems/jobs';
 import { freeReadSeat } from '../sim/systems/training';
-import { calledNow, freedNow } from '../sim/systems/paperwork';
+import { calledNow, freedNow, trayRefusal } from '../sim/systems/paperwork';
 import { hearingDue, hearingOf } from '../sim/systems/parole';
 import { banner, hint, sound, view } from './context';
 import { play, sendOp, type Game } from './game';
@@ -30,6 +30,8 @@ import { initiationGoal } from '../sim/systems/gangs';
 
 const LETTER = itemNumber('letter');
 const MOP = itemNumber('mop');
+/** 2.42: a forged release form (the arrows lead to the desk while it's in hand). */
+const FORGED = itemNumber('forged_release');
 
 /** How close (CSS px) a tap must land to someone's middle to lock on to them. */
 const TAP_PERSON_PX = 40;
@@ -193,6 +195,11 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
   // Nowhere the routine wants the player: the odd job's step (P40) or a gang's initiation, where it has a place.
   if (!zones.length || s.attended) {
+    // (2.42: a forged release form in hand, the tray still taking forms tonight: to the release desk, where the button files it.)
+    if (desk && itemOf(s.items.inv[s.items.hand]) === FORGED && !trayRefusal(sim)) {
+      const tiles = desk.map((q) => q.z * MAP_W + q.x);
+      return (i) => tiles.includes(i);
+    }
     const job = jobGoal(sim);
     if (job) return job;
     const init = initiationGoal(sim);

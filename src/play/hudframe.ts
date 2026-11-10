@@ -33,7 +33,7 @@ import { portraitOf } from '../render/portrait';
 import { dogWarning } from '../sim/systems/k9';
 import { markTip, seenTip } from './tips';
 import { wavedLeft } from './getaway';
-import { freedLeft, releaseChip } from './paperwork';
+import { freedLeft, paperStep, releaseChip } from './paperwork';
 import { calledNow } from '../sim/systems/paperwork';
 import { ratHud } from './rat';
 import { orderHud } from './smuggle';
@@ -218,6 +218,8 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   // The day (P17): the weather by the clock, the event's chip, the drill.
   dayHud(sim, hudState, a);
   // (P36: the name on tomorrow's release list, or called this morning: its chip in the day's place.)
+  // (2.42: the paperwork escape's step, on its own pill.)
+  hudState.paper = paperStep(sim);
   const rel = releaseChip(sim);
   if (rel) {
     releaseHud.text = rel;

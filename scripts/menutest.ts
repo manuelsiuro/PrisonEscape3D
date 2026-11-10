@@ -439,6 +439,7 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   was.rules238 = true;
   was.rules239 = true;
   was.rules240 = true;
+  was.rules241 = true;
   // (Played then, with the week's cards as they were: the gang war's place held by the card it took, 2.36.)
   keepOldCards(was.state, [1, 2, 3], (d) => planOf(was, d).event, { gangWar: DAY_BOOKS['center-perks'].beforeGangs! });
   const prev = new RunRecorder(was, { seed: 24, game: '2.32.0' });
@@ -447,10 +448,10 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules232 === true, 'a 2.32 log replays whole under the old rules');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.41.0' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.42.0' });
   for (let k = 0; k < 2 * 60 * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.41.0' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.42.0' }).toLog().seed === 24, 'and is carried on');
   // Under the old rules, no card, no cup.
   const old = new Bot(CENTER_PERKS, 3);
   old.sim.rules232 = true;

@@ -27,6 +27,8 @@ const VEND_EARSHOT = 10;
 /** 2.33: a dish worth a word at the counter: this much energy or more (good), this much or less (bad). */
 const DISH_GOOD = 45;
 const DISH_BAD = 20;
+/** 2.42: how near the kiosk's user has to be for the player to catch what he says. */
+const KIOSK_EARSHOT = 8;
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** What `react` may do with the director (its own methods and memory, handed over as these). */
@@ -441,6 +443,21 @@ export function react(d: Reactor, e: SimEvent, sim: Sim, now: number) {
       }
       break;
     // 2.41: the race's end: the winning rat's owner crows, the others' grumble, the crowd talks it over.
+    // 2.42: the phone's line when the player cuts in or buys a place; the kiosk's user paid off or beaten to it.
+    case 'phone':
+      if (e.what === 'cut' && e.n) d.queueUp(now, 're.phoneCut.in', s.line.slice(1, 1 + e.n), 4, 'phoneCut', 'shout', 0.3);
+      else if (e.what === 'swapped' && e.who !== undefined) d.queueUp(now, 're.phoneSwap.in', [e.who], 3, 'phoneSwap', 'say', 0.3);
+      break;
+    case 'kiosk':
+      if (e.who === undefined || e.who < 0 || dist(s.inmates[e.who].body, s.player) > KIOSK_EARSHOT) break;
+      if (e.what === 'turnBought') d.queueUp(now, 're.kioskSold.in', [e.who], 3, 'kioskSold', 'say', 0.3);
+      else if (e.what === 'inmateOff' && e.why === 'beaten') d.queueUp(now, 're.kioskBeaten.in', [e.who], 2, 'kioskBeaten', 'say', 0.4);
+      break;
+    // 2.42: the release morning: the name called (those about the player say so), and cleared (goodbyes).
+    case 'paper':
+      if (e.what === 'called') d.queueUp(now, 're.called.in', d.inmatesNear(sim, px, pz, 8), 3, 'called', 'say', 3.2);
+      else if (e.what === 'cleared') d.queueUp(now, 're.release.in', d.inmatesNear(sim, px, pz, 9), 4, 'release', 'shout', 0.8, 3);
+      break;
     case 'race':
       if (e.what === 'result' && sim.state.watch?.length) {
         const day = prisonDay(s.step);

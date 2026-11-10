@@ -67,6 +67,8 @@ export interface HudState {
   turf?: { text: string; left: number; of: number } | null;
   /** The odd job held (P40): its kind's icon, the step under way, the time left (0–1); on watch at a dig, the whistle (urgent: a guard coming); null none. */
   oddjob?: { icon: string; text: string; tail: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
+  /** 2.42, the paperwork escape under way: its step, what's next, at risk (the heat up before the records); null none. */
+  paper?: { text: string; tail: string; urgent: boolean } | null;
   /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
   quietRoutine?: boolean;
   /** At roll call (2.27): the pill's second line, your square, or the shakedown's cells. */
@@ -170,6 +172,7 @@ export class Hud {
         <button class="pill hud-alert hud-order hidden" aria-keyshortcuts="P"><i class="hud-order-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
         <button class="pill hud-alert hud-crew hidden" aria-keyshortcuts="G"><i class="hud-crew-ic"></i><b></b></button>
         <button class="pill hud-alert hud-job hidden" aria-keyshortcuts="B"><i class="hud-job-ic"></i><b></b><em class="hud-job-tail"></em><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+        <span class="pill hud-alert hud-paper hidden" role="status">${icon('clipboard', 15)}<b></b><em></em></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -436,6 +439,16 @@ export class Hud {
     el.setAttribute('aria-label', `${j.sr}. ${what}`);
   }
 
+  /** 2.42, the paperwork's pill: the step it's at and what's next (red with the heat up before the records). */
+  private paperChip(p: HudState['paper']) {
+    const el = this.el.querySelector<HTMLElement>('.hud-paper')!;
+    el.classList.toggle('hidden', !p);
+    if (!p) return;
+    el.classList.toggle('urgent', p.urgent);
+    setText(el.querySelector('b')!, p.text);
+    setText(el.querySelector('em')!, p.tail);
+  }
+
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
   private dayChip(d: HudState['today']) {
     const el = this.today;
@@ -562,7 +575,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${s.turf ? `${s.turf.text}:${s.turf.left}` : ''}|${s.oddjob ? `${s.oddjob.icon}:${s.oddjob.text}:${s.oddjob.urgent}:${s.oddjob.watch}:${s.oddjob.done}:${Math.round(s.oddjob.left * 40)}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${s.turf ? `${s.turf.text}:${s.turf.left}` : ''}|${s.oddjob ? `${s.oddjob.icon}:${s.oddjob.text}:${s.oddjob.urgent}:${s.oddjob.watch}:${s.oddjob.done}:${Math.round(s.oddjob.left * 40)}` : ''}|${s.paper ? `${s.paper.text}:${s.paper.tail}:${s.paper.urgent}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -583,6 +596,7 @@ export class Hud {
       this.orderChip(s.order);
       this.crewChip(s.crew);
       this.jobChip(s.oddjob ?? null);
+      this.paperChip(s.paper ?? null);
     }
     // (2.36: the player's gang: the face's ring in its colour.)
     if ((this.cashPill.dataset.gang ?? '') !== (s.gang ?? '')) {

@@ -94,6 +94,8 @@ export class Crowd {
     f.inmates.forEach((m, k) => {
       const c = this.cast[k];
       if (!c) return;
+      c.phoneSide = f.phone.side;
+      c.kioskSide = f.kiosk.side;
       if (m.doing === DOING.WATCH) {
         // (And now and then on its own, each at its own time, while it watches; never with reduced motion.)
         const rep = Math.floor((time + k * 1.7) / 5.5);
@@ -219,6 +221,8 @@ export class Crowd {
         !reduced,
         g.notice,
       );
+      // (2.42: an ear over the guard listening in on the player's call to Lou.)
+      c.badge(k === f.phone.ear ? 'ear' : '', dt, !reduced);
       c.stir = g.stir;
       c.showKey(g.hasKey);
       // A guard's key opens the door it walks through (and the one just ahead).
