@@ -76,3 +76,9 @@ Every session is done, or moved by the user (2026-11-07).
   stall about 80 ms once each (the shower water, a night mesh, a holiday piece's shadow, the team view).
   Drawing them at load would change pixels; warming their materials on a hidden mesh would not.
   `scripts/dev/hitchprobe.ts` now counts these (`waited`).
+- **A game's lesson card on the narrowest phone turned** (found 2026-11-10, v2.39.1): at 697 wide the lesson's
+  card in a minigame's layout is about 137 px wide (`100vw - 560px`, 25-tutorial.css), so many steps run under
+  the hotbar while a game is on; fine from 915 wide. screensweep's `lessonCards('gaming')` (or another mode) measures it.
+- **A gang's table warning that restarts for ever** (found 2026-11-09 by the free time review, 2.36's gangs): a
+  rival gang's warning at their table clears without a word when its holders step off it (a tray taken back) and
+  starts again when they're back, so the countdown can restart for ever and nobody squares up.

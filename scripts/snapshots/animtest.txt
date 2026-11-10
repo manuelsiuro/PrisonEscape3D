@@ -9,9 +9,23 @@ a walk's stride, radians a game second, steady and never a run: ×1 at 60 fps 11
 a crowd of 24 setting off together: 47 of 276 pairs in step; standing about: at the sides 14, hands behind 4, arms folded 6; 6 of 12 guards with their hands behind their backs; one number moves alike every time; Math.random never drawn
 twenty minutes of everything (600 turns, items swapped, blows): 34 parts as at the start, standing as one that only walked
 training: a day (28801 steps), 2 people, 75 changes of what they do: 0 jumps; 295 times standing about with nothing to do, 0 left in a pose
+training: day 2's morning free time (2901 steps), 2 people, 5 changes of what they do: 0 jumps; 56 times standing about with nothing to do, 0 left in a pose
+training: day 2's evening free time (5301 steps), 2 people, 6 changes of what they do: 0 jumps; 66 times standing about with nothing to do, 0 left in a pose
 center-perks: a day (28801 steps), 12 people, 515 changes of what they do: 0 jumps; 1309 times standing about with nothing to do, 0 left in a pose
+center-perks: day 2's morning free time (2901 steps), 12 people, 53 changes of what they do: 0 jumps; 133 times standing about with nothing to do, 0 left in a pose
+center-perks: day 2's evening free time (5301 steps), 12 people, 75 changes of what they do: 0 jumps; 365 times standing about with nothing to do, 0 left in a pose
 stalag-flucht: a day (28801 steps), 15 people, 858 changes of what they do: 0 jumps; 1514 times standing about with nothing to do, 0 left in a pose
+stalag-flucht: day 2's morning free time (2901 steps), 15 people, 73 changes of what they do: 0 jumps; 187 times standing about with nothing to do, 0 left in a pose
+stalag-flucht: day 2's evening free time (5301 steps), 15 people, 100 changes of what they do: 0 jumps; 324 times standing about with nothing to do, 0 left in a pose
 shankton: a day (28801 steps), 19 people, 1143 changes of what they do: 0 jumps; 1819 times standing about with nothing to do, 0 left in a pose
+shankton: day 2's morning free time (2901 steps), 19 people, 102 changes of what they do: 0 jumps; 314 times standing about with nothing to do, 0 left in a pose
+shankton: day 2's evening free time (5301 steps), 19 people, 128 changes of what they do: 0 jumps; 483 times standing about with nothing to do, 0 left in a pose
 san-pancho: a day (28801 steps), 21 people, 1281 changes of what they do: 0 jumps; 3466 times standing about with nothing to do, 0 left in a pose
+san-pancho: day 2's morning free time (2901 steps), 21 people, 115 changes of what they do: 0 jumps; 410 times standing about with nothing to do, 0 left in a pose
+san-pancho: day 2's evening free time (5301 steps), 21 people, 144 changes of what they do: 0 jumps; 603 times standing about with nothing to do, 0 left in a pose
 irongate: a day (28801 steps), 23 people, 1125 changes of what they do: 0 jumps; 3931 times standing about with nothing to do, 0 left in a pose
+irongate: day 2's morning free time (2901 steps), 23 people, 118 changes of what they do: 0 jumps; 374 times standing about with nothing to do, 0 left in a pose
+irongate: day 2's evening free time (5301 steps), 23 people, 157 changes of what they do: 0 jumps; 1153 times standing about with nothing to do, 0 left in a pose
 six-hunter: a day (28801 steps), 17 people, 1083 changes of what they do: 0 jumps; 1828 times standing about with nothing to do, 0 left in a pose
+six-hunter: day 2's morning free time (2901 steps), 17 people, 98 changes of what they do: 0 jumps; 233 times standing about with nothing to do, 0 left in a pose
+six-hunter: day 2's evening free time (5301 steps), 17 people, 122 changes of what they do: 0 jumps; 477 times standing about with nothing to do, 0 left in a pose

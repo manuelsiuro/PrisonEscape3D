@@ -33,9 +33,11 @@ export interface GamesFrame {
   } | null;
   /**
    * 2.39: inmates' own games of dice in free time (play/huddles.ts): the middle between the two, the one throwing and
-   * the other, the pair's faces, seconds since they left the hand, a seed for their scatter.
+   * the other, the pair's faces, seconds since they left the hand (below 0: still shaken in it, not drawn), a seed for
+   * their scatter (one a throw), and who throws (the inmate: its arm flings them, viewCrowd.ts).
    */
   crowd?: ReadonlyArray<{
+    by: number;
     x: number;
     z: number;
     fromX: number;
@@ -62,6 +64,8 @@ const HAND_SIDE = 0.29;
 const HAND_Y = 0.6;
 /** 2.39: the inmates' games of dice drawn at once at most (two dice each). */
 const CROWD_DICE = 3;
+/** None of them (underground, or no frame): the same empty list every frame. */
+const NONE: NonNullable<GamesFrame['crowd']> = [];
 /** A die's size (a tile is 1). */
 const DIE = 0.17;
 /** Pennants on the bunting at most, and its poles. */
@@ -471,9 +475,11 @@ export class GamesView {
       }
     }
     // 2.39: the inmates' own games, a pair each from the one whose turn it is.
-    const crowd = ground ? (f?.crowd ?? []) : [];
+    const crowd = ground ? (f?.crowd ?? NONE) : NONE;
     for (let g = 0; g < crowd.length && g < CROWD_DICE; g++) {
       const c = crowd[g];
+      // (2.39.1: picked up and shaken in the hand before each throw, as the player's partner does: not drawn.)
+      if (c.t < 0) continue;
       for (let k = 0; k < 2; k++) {
         this.throwDie(c.x, c.z, c.fromX, c.fromZ, c.oppX, c.oppZ, c.faces[k], c.t, c.seed, k, motion);
         this.dice.setMatrixAt(n++, this.m);

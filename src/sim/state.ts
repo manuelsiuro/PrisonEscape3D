@@ -414,7 +414,7 @@ export interface SimState {
   recall?: number;
   /** 2.37: the prison day a used-up initiation tribute was last put back in the rival boss's desk (gangs.ts; absent: never). */
   replant?: number;
-  /** 2.39, free time's gatherings (huddles.ts): absent until the first forms (a run that never reaches one hashes as before). */
+  /** 2.39, free time's gatherings (huddles.ts): absent until day 2's first free time (a run that never reaches it hashes as before). */
   huddle?: HuddleState;
 }
 

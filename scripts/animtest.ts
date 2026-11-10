@@ -8,7 +8,8 @@
  * - a crowd isn't in step, nor all standing alike, and a character moves the same way every time
  *   (its own numbers, never Math.random);
  * - nothing piles up over a long run;
- * - a day in each prison, everyone drawn as the sim has them: no jumps, and nobody left in a pose.
+ * - a day in each prison, everyone drawn as the sim has them: no jumps, and nobody left in a pose; and day 2's two free
+ *   times (2.39.1: the inmates' gatherings, from day 2: a chat, dice, cards, the hoop, broken up and walked away from).
  */
 import * as THREE from 'three';
 import { check } from './assert';
@@ -527,8 +528,10 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
 {
   /** Two frames a step: the sim's 20 a second drawn at 40, positions in between as the game's frames have them. */
   const SUB = 2;
-  for (const def of [TRAINING, ...PRISONS]) {
+  /** Everyone drawn from `from` (a day and minute, the routine played up to it undrawn; null: the start) for `steps`. */
+  const watch = (def: (typeof PRISONS)[number], label: string, from: readonly [number, number] | null, limit: number) => {
     const bot = new Bot(def, 3);
+    if (from) bot.routineUntil(from[0], from[1]);
     const st = bot.st;
     const cast = st.inmates.map((m) => new Character({ ...inmateLook(m.cell), silhouette: undefined }, 100 + m.cell));
     const guards = st.guards.map((_, k) => new Character(guardLook(k), 1000 + k));
@@ -605,13 +608,19 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
       st.guards.forEach((g, k) => (prev[cast.length + k] = { x: g.body.x, z: g.body.z }));
       return false;
     };
-    bot.keepRoutine(draw, 24 * 60 * 20);
-    check(pops === 0, `${def.id}: ${pops} jumps in a day (${[...popAt.entries()].map(([k, n]) => `${k} ×${n}`).join(', ')})`);
-    check(leftOver === 0, `${def.id}: ${leftOver} left in a pose standing about (${[...leftAt.keys()].join(', ')})`);
+    bot.keepRoutine(draw, limit);
+    check(pops === 0, `${def.id}: ${pops} jumps in ${label} (${[...popAt.entries()].map(([k, n]) => `${k} ×${n}`).join(', ')})`);
+    check(leftOver === 0, `${def.id}: ${leftOver} left in a pose standing about in ${label} (${[...leftAt.keys()].join(', ')})`);
     console.log(
-      `${def.id}: a day (${steps} steps), ${who.length} people, ${changes} changes of what they do: ${pops} jumps; ${checked} times standing about with nothing to do, ${leftOver} left in a pose`,
+      `${def.id}: ${label} (${steps} steps), ${who.length} people, ${changes} changes of what they do: ${pops} jumps; ${checked} times standing about with nothing to do, ${leftOver} left in a pose`,
     );
     for (const c of who) c.dispose();
+  };
+  for (const def of [TRAINING, ...PRISONS]) {
+    watch(def, 'a day', null, 24 * 60 * 20);
+    // (Day 2's free times, from a few minutes before each to a few after: gatherings form, play and break up.)
+    watch(def, "day 2's morning free time", [2, 9 * 60 + 55], (2 * 60 + 25) * 20);
+    watch(def, "day 2's evening free time", [2, 17 * 60 + 55], (4 * 60 + 25) * 20);
   }
 }
 Math.random = realRandom;
