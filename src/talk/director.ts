@@ -1,4 +1,6 @@
 import { itemDef } from '../content/items';
+import { sceneNow } from '../sim/systems/spectate';
+import { RACE } from '../sim/systems/races';
 import { ROUTINE } from '../content/routine';
 import { barksOf, t, type Key, type Lang } from '../i18n';
 import { enBarks, type BankId, type Barks } from '../i18n/barks/en';
@@ -486,6 +488,29 @@ export class Director {
   }
 
   /** Reads one event of the step just run (called for each, in order): reactions.ts. */
+  /**
+   * 2.41: a line whose words the play layer gives (quiz night's host reading out, a contestant's buzz): said by its
+   * speaker once they're on screen, as a reaction (it doesn't wait for a turn), or dropped after `life` seconds.
+   */
+  line(now: number, speaker: number, text: string, prio = 3, style: Style = 'say', delay = 0, life = 2.5) {
+    if (speaker < 0 || !text) return;
+    this.queue.push({
+      bank: 're.watch.in',
+      speakers: [speaker],
+      prio,
+      at: now + delay,
+      expires: now + delay + life,
+      trigger: 'line',
+      style,
+      text,
+      line: -1,
+    });
+    if (this.queue.length > QUEUE_MAX) {
+      this.queue.sort((a, b) => b.prio - a.prio || b.at - a.at);
+      this.queue.length = QUEUE_MAX;
+    }
+  }
+
   react(e: SimEvent, sim: Sim, now: number) {
     react(this.reactor, e, sim, now);
   }
@@ -588,6 +613,24 @@ export class Director {
     if (!w?.length || now < this.watchNext) return;
     const there = w.filter((k) => sim.state.inmates[k]?.doing === DOING.WATCH);
     if (!there.length) return;
+    // (2.41: at quiz night, a whisper now and then; at the track, the owners egging their own rat on, the rest chatting.)
+    const sc = sceneNow(sim);
+    if (sc?.kind === 'quiz') {
+      this.watchNext = now + 9 + 4 * this.random();
+      this.queueUp(now, 're.quizCrowd.in', there, 2, 'watch', 'whisper', 0.2, 2.2);
+      return;
+    }
+    if (sc?.kind === 'race') {
+      const r = sim.state.race;
+      const on = r[RACE.ON] === 1;
+      this.watchNext = now + (on ? 1.6 : 4) + 2 * this.random();
+      const owners = there.filter((k) => sc.owners.includes(k));
+      const crowd = there.filter((k) => !sc.owners.includes(k));
+      if (owners.length && (on || this.random() < 0.5))
+        this.queueUp(now, on ? 're.raceOwner.in' : 're.raceOwnerPre.in', owners, 2, 'watch', on ? 'shout' : 'say', 0.1, 1.8);
+      else this.queueUp(now, 're.raceCrowd.in', crowd, 2, 'watch', 'say', 0.1, 2.2);
+      return;
+    }
     this.watchNext = now + 5 + 3 * this.random();
     this.queueUp(now, 're.watch.in', there, 2, 'watch', 'shout', 0.2, 2.2);
   }

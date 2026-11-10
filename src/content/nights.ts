@@ -221,4 +221,63 @@ export const HISTORY = [
   'colditz',
   // Henri Charrière ("Papillon"): the penal colony in French Guiana.
   'papillon',
+  // 2.41: twenty-five more (a run from before plays with the first HISTORY_240 only).
+  // Hugo Grotius, Loevestein Castle, 1621: carried out in a chest of books.
+  'grotius',
+  // Mary, Queen of Scots, Lochleven Castle, 2 May 1568.
+  'lochleven',
+  // Giacomo Casanova, the Leads of the Doge's Palace, Venice, 1756 (through the roof).
+  'casanova',
+  // Winston Churchill, a war correspondent taken in the Boer War, out of the State Model School in Pretoria, December 1899.
+  'churchill',
+  // The Earl of Nithsdale, the Tower of London, 1716, the night before his execution: in women's clothes his wife brought.
+  'nithsdale',
+  // John Dillinger, Crown Point jail (Indiana), March 1934: a gun whittled from wood, blacked with shoe polish.
+  'dillinger',
+  // Éamon de Valera, Lincoln Prison, February 1919: a key from an impression of the chaplain's in candle wax.
+  'deValera',
+  // Ronnie Biggs, Wandsworth, 1965 (over the wall by a rope ladder): Australia first, then Brazil, for over thirty years.
+  'biggs',
+  // Joel David Kaplan, Santa Martha Acatitla (Mexico City), August 1971: a helicopter landed in the yard.
+  'kaplan',
+  // Billy Hayes ("Midnight Express"): İmralı island prison, Turkey, 1975 (by rowing boat, then on foot to Greece).
+  'hayes',
+  // The Wooden Horse, Stalag Luft III, 1943: a vaulting horse over the tunnel's mouth; all three got home.
+  'woodenHorse',
+  'woodenHorseHome',
+  // The tunnel Harry's trapdoor: under the stove in Hut 104.
+  'harryStove',
+  // Alcatraz: "The Rock".
+  'alcatrazRock',
+  // Colditz Castle, Saxony, Germany.
+  'colditzCountry',
+  // Jack Sheppard: four escapes in 1724, from London's prisons (Newgate twice).
+  'sheppard',
+  // Libby Prison, Richmond, Virginia, February 1864: 109 Union officers out through a tunnel.
+  'libby',
+  // Harry Houdini's jailbreaks, from the 1900s.
+  'houdini',
+  // Papillon's last escape, as he told it: a raft of sacks of coconuts.
+  'papillonRaft',
+  // Films: Clint Eastwood as Frank Morris (Escape from Alcatraz, 1979); Steve McQueen's motorcycle (The Great Escape, 1963);
+  // Steve McQueen as Papillon (1973); Andy's poster and rock hammer (The Shawshank Redemption, 1994).
+  'eastwood',
+  'mcqueen',
+  'mcqueenPapillon',
+  'shawshank',
+  'shawshankHammer',
+  // Fiction: Edmond Dantès leaves the Château d'If sewn into the dead Abbé Faria's sack (Dumas, 1844).
+  'monteCristo',
 ] as const;
+/** Before 2.41 (Sim.rules240): the bank's first fifteen, drawn at random each night. */
+export const HISTORY_240 = 15;
+/**
+ * 2.41: the player's Intellect rules out a wrong answer as each question is put: on half of them from STRIKE_ONE, on
+ * every one from STRIKE_TWO (never the right one; the contestants answer as before).
+ */
+export const STRIKE_ONE = 60;
+export const STRIKE_TWO = 85;
+/** 2.41: the host (the librarian, else the nearest inmate up and about) comes from up to QUIZ_CALL tiles; stands up to HOST_OUT tiles in front of the places. */
+export const HOST_OUT = 3;
+/** 2.41: the prisons with a warden of their own to ask about (`warden.<id>` in the text): quiztest checks it's every prison's. */
+export const WARDENS: readonly string[] = ['center-perks', 'stalag-flucht', 'shankton', 'san-pancho', 'irongate', 'six-hunter'];

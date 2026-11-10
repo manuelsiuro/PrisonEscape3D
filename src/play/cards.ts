@@ -6,6 +6,7 @@ import { StageCard } from '../ui/stage';
 import { QuizCard } from '../ui/quiz';
 import { click } from './context';
 import { sendOp } from './game';
+import { quizDone } from './nights';
 
 /**
  * The side games' cards (P22, P27–P30) in a file of their own (v2.34.2, the faster first load):
@@ -30,5 +31,6 @@ export function makeCards() {
   /** Stage nights (P30): talent night's card, quiz night's. */
   const stageCard = new StageCard(sendOp, click);
   const quizCard = new QuizCard(sendOp, click);
+  quizCard.onDone = quizDone;
   return { wrestleCard, pickCard, diceCard, cheatCard, courtCard, boardCard, raceCard, matchCard, inkCard, stageCard, quizCard };
 }

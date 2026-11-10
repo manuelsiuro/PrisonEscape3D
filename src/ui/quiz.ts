@@ -32,9 +32,17 @@ export interface QuizView {
   end: 'won' | 'tie' | 'lost' | '';
   prize: number;
   int: number;
+  /** 2.41: the answers the player's Intellect rules out of this question (never the right one). */
+  struck: readonly number[];
 }
 
-/** The quiz night's card (P30): Join; the question, the answers (1–4), the points; Give up. */
+/** 2.41: the final standings: the four by points (a tie shares its place), the player first among equals. */
+function standings(names: readonly string[], pts: readonly number[]): Array<{ place: number; name: string; pts: number; me: boolean }> {
+  const order = names.map((_, k) => k).sort((a, b) => pts[b] - pts[a] || a - b);
+  return order.map((k) => ({ place: 1 + pts.filter((p) => p > pts[k]).length, name: names[k], pts: pts[k], me: k === 0 }));
+}
+
+/** The quiz night's card (P30): Join; the question, the answers (1–4), the points; Give up. 2.41: the final standings till Done. */
 export class QuizCard {
   private readonly el: HTMLElement;
   private readonly title: HTMLElement;
@@ -46,7 +54,10 @@ export class QuizCard {
   private readonly note: HTMLElement;
   private readonly join: HTMLButtonElement;
   private readonly quit: HTMLButtonElement;
+  private readonly done: HTMLButtonElement;
   private drawn = '';
+  /** 2.41: the final standings put away (the play layer's). */
+  onDone: () => void = () => {};
 
   constructor(
     private readonly send: Send,
@@ -62,7 +73,8 @@ export class QuizCard {
       <i class="match-clock quiz-bar" role="timer"><i></i></i>
       <p class="train-note"></p>
       <button class="big-btn primary small quiz-join">${icon('brain', 18)}<span></span></button>
-      <button class="big-btn ghost small quiz-quit">${icon('close', 16)}<span></span></button>`,
+      <button class="big-btn ghost small quiz-quit">${icon('close', 16)}<span></span></button>
+      <button class="big-btn primary small quiz-done hidden">${icon('check', 16)}<span></span></button>`,
     );
     this.title = this.el.querySelector('.train-head b')!;
     this.value = this.el.querySelector('.train-value')!;
@@ -73,6 +85,7 @@ export class QuizCard {
     this.note = this.el.querySelector('.train-note')!;
     this.join = this.el.querySelector('.quiz-join')!;
     this.quit = this.el.querySelector('.quiz-quit')!;
+    this.done = this.el.querySelector('.quiz-done')!;
     // An answer on the press (the buttons are redrawn as others buzz: a click could miss them between down and up); from the keyboard, on Enter or Space.
     const answer = (c: HTMLButtonElement | null) => {
       if (!c || c.disabled) return false;
@@ -96,6 +109,9 @@ export class QuizCard {
       } else if (el.closest('.quiz-quit')) {
         this.click();
         this.send(OP.EXT, EXT.QUIZ, 1);
+      } else if (el.closest('.quiz-done')) {
+        this.click();
+        this.onDone();
       }
     });
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
@@ -112,22 +128,43 @@ export class QuizCard {
       this.drawn = '';
       return false;
     }
-    const key = [v.phase, v.why, v.names.join(), v.pts.join(), v.said.join(), v.got, v.q, v.question, v.end, textStamp(), TOUCH].join('|');
+    const key = [
+      v.phase,
+      v.why,
+      v.names.join(),
+      v.pts.join(),
+      v.said.join(),
+      v.got,
+      v.q,
+      v.question,
+      v.end,
+      v.struck.join(),
+      textStamp(),
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;
       setText(this.title, t('quiz.title'));
       const asking = v.phase === 'ask' || v.phase === 'reveal';
       setText(this.value, asking ? t('quiz.of', { n: v.q + 1, of: QUIZ_QUESTIONS }) : '');
+      this.board.classList.toggle('podium', v.phase === 'result');
       this.board.innerHTML =
         v.phase === 'offer'
           ? ''
-          : v.names
-              .map((n, k) => {
-                const cls = [k === 0 ? 'me' : '', v.got === k ? 'got' : '', v.said[k] >= 0 && v.got !== k ? 'out' : ''].join(' ');
-                return `<li class="${cls}"><span>${esc(n)}</span><b>${v.pts[k]}</b></li>`;
-              })
-              .join('');
+          : v.phase === 'result'
+            ? standings(v.names, v.pts)
+                .map(
+                  (r) =>
+                    `<li class="${r.me ? 'me' : ''} p${Math.min(r.place, 4)}"><i>${esc(t(`quiz.place${Math.min(r.place, 4)}` as 'quiz.place1'))}</i><span>${esc(r.name)}</span><b>${r.pts}</b></li>`,
+                )
+                .join('')
+            : v.names
+                .map((n, k) => {
+                  const cls = [k === 0 ? 'me' : '', v.got === k ? 'got' : '', v.said[k] >= 0 && v.got !== k ? 'out' : ''].join(' ');
+                  return `<li class="${cls}"><span>${esc(n)}</span><b>${v.pts[k]}</b></li>`;
+                })
+                .join('');
       setText(this.question, asking ? v.question : '');
       this.choices.innerHTML = asking
         ? v.choices
@@ -142,17 +179,24 @@ export class QuizCard {
                 mine ? 'mine' : '',
                 theirs && !right ? 'struck' : '',
               ].join(' ');
-              const off = v.phase === 'reveal' || v.said[0] >= 0;
-              return `<button class="${cls}" data-choice="${k}" ${off ? 'disabled' : ''}><kbd>${k + 1}</kbd><span>${esc(c)}</span></button>`;
+              // (2.41: ruled out by the player's Intellect: shown struck from the start, not to be chosen.)
+              const ruled = v.phase === 'ask' && v.struck.includes(k);
+              const off = v.phase === 'reveal' || v.said[0] >= 0 || ruled;
+              const aria = ruled ? ` aria-label="${esc(`${c}: ${t('quiz.ruledAria')}`)}"` : '';
+              // (Its mark the brain, Intellect's, in place of its key: not to be taken for one struck by a wrong buzz.)
+              const mark = ruled ? `<i class="quiz-ruled">${icon('brain', 14)}</i>` : `<kbd>${k + 1}</kbd>`;
+              return `<button class="${cls}${ruled ? ' ruled' : ''}" data-choice="${k}" ${off ? 'disabled' : ''}${aria}>${mark}<span>${esc(c)}</span></button>`;
             })
             .join('')
         : '';
 
       setText(this.join.querySelector('span')!, t('quiz.join'));
       setText(this.quit.querySelector('span')!, t('quiz.quit'));
+      setText(this.done.querySelector('span')!, t('quiz.done'));
       this.join.classList.toggle('hidden', v.phase !== 'offer');
       this.join.disabled = !!v.why;
       this.quit.classList.toggle('hidden', v.phase === 'offer' || v.phase === 'result');
+      this.done.classList.toggle('hidden', v.phase !== 'result');
     }
     // (The note outside the redraw: the head start counts down each second, the answers left as they are.)
     const note =
@@ -169,9 +213,9 @@ export class QuizCard {
             : v.phase === 'ask'
               ? v.said[0] >= 0
                 ? t('quiz.outYou')
-                : v.reading
-                  ? t('quiz.reading', { n: v.reading })
-                  : t(TOUCH ? 'quiz.askTouch' : 'quiz.askKeys')
+                : `${v.reading ? t('quiz.reading', { n: v.reading }) : t(TOUCH ? 'quiz.askTouch' : 'quiz.askKeys')}${
+                    v.struck.length ? ` · ${t('quiz.ruled')}` : ''
+                  }`
               : v.end === 'won'
                 ? t('quiz.won', { n: v.prize, m: v.int })
                 : v.end === 'tie'

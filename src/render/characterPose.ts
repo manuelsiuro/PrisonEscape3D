@@ -423,6 +423,15 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.armRx += (-0.95 - up * 1.95) * ga;
     l.armRz -= (0.55 - up * 0.45) * ga;
     l.bob += up * 0.04 * ga;
+  } else if (doing === DOING.HOST) {
+    // Quiz night's host (2.41): the question card up in the left hand to read from, the right hand out to the contestants,
+    // moving a little as he reads. (Reduced motion: held still; it still says "reading them out".)
+    const ga = m.act;
+    const say = motion ? Math.sin(t * 2.6) * 0.14 : 0;
+    l.armLx -= 1.25 * ga;
+    l.armLz += 0.45 * ga;
+    l.armRx += (-0.75 + say) * ga;
+    l.armRz -= 0.3 * ga;
   } else if (doing === DOING.LOOKOUT) {
     // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
     // get in front of the face), the other arm a little out; the whole body sweeps from side to
