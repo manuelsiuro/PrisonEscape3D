@@ -376,9 +376,52 @@
   background: rgba(var(--green-75-rgb), 0.55);
   box-shadow: inset 0 0 0 2px var(--green-87);
 }
+/* (2.41: ruled out by the player's Intellect: dimmed, the brain in place of its key; a wrong buzz's is struck through.) */
+.quiz-choice.ruled {
+  background: rgba(var(--white-rgb), 0.03);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--white-rgb), 0.08);
+}
+.quiz-choice.ruled span {
+  opacity: 0.38;
+}
+.quiz-ruled {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  color: var(--nights-blue-81);
+  background: rgba(var(--nights-blue-75-rgb), 0.18);
+}
+/* (2.41: the final standings, a row each, the winner's in gold.) */
+.quiz-board.podium {
+  flex-direction: column;
+  gap: 5px;
+}
+.quiz-board.podium li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.quiz-board.podium li i {
+  font: 800 12px var(--font-ui);
+  font-style: normal;
+  color: rgba(var(--white-rgb), 0.6);
+}
+.quiz-board.podium li.p1 {
+  background: rgba(var(--gold-rgb), 0.24);
+}
+.quiz-board.podium li.p1 i {
+  color: var(--gold-89);
+}
 .quiz-bar.hidden,
 .quiz-join.hidden,
-.quiz-quit.hidden {
+.quiz-quit.hidden,
+.quiz-done.hidden {
   display: none;
 }
 .quiz-bar > i {
@@ -389,7 +432,8 @@
   background: linear-gradient(90deg, var(--gold-75), var(--gold-89));
 }
 .quiz-join,
-.quiz-quit {
+.quiz-quit,
+.quiz-done {
   margin-top: 8px;
 }
 .quiz-quit {

@@ -10,6 +10,8 @@ import type { Body } from '../sim/systems/movement';
 import { RAT } from '../sim/systems/rats';
 import { wardenOf } from '../sim/systems/rollcall';
 import { librarianOf } from '../sim/systems/training';
+import { rivals } from '../sim/systems/races';
+import { prisonDay } from '../sim/systems/clock';
 import { feastNow } from '../sim/systems/calendar';
 import { UNIT } from '../sim/tuning';
 import type { Incident } from './mood';
@@ -437,6 +439,40 @@ export function react(d: Reactor, e: SimEvent, sim: Sim, now: number) {
         // (2.40: those who came to watch groan with the player.)
         d.queueUp(now, 're.watchLost.in', sim.state.watch ?? [], 3, 'watchLost', undefined, 1.2);
       }
+      break;
+    // 2.41: the race's end: the winning rat's owner crows, the others' grumble, the crowd talks it over.
+    case 'race':
+      if (e.what === 'result' && sim.state.watch?.length) {
+        const day = prisonDay(s.step);
+        const card = rivals(s, day);
+        const owner = card[e.order?.[0] ?? -1]?.owner ?? -1;
+        const w = sim.state.watch;
+        const owners = card.map((x) => x.owner).filter((k) => w.includes(k));
+        if (owner >= 0 && w.includes(owner)) d.queueUp(now, 're.raceWin.in', [owner], 3, 'raceWin', 'shout', 0.3);
+        d.queueUp(
+          now,
+          're.raceLost.in',
+          owners.filter((k) => k !== owner),
+          3,
+          'raceLost',
+          undefined,
+          1.1,
+        );
+        d.queueUp(
+          now,
+          're.raceEnd.in',
+          w.filter((k) => !owners.includes(k)),
+          2,
+          'raceEnd',
+          undefined,
+          1.8,
+        );
+      }
+      break;
+    // 2.41: quiz night's crowd: a cheer as the player wins it, a groan for them if not.
+    case 'quiz':
+      if (e.what === 'won') d.queueUp(now, 're.watchWin.in', sim.state.watch ?? [], 3, 'watchWin', 'shout', 1.6);
+      else if (e.what === 'lost') d.queueUp(now, 're.watchLost.in', sim.state.watch ?? [], 3, 'watchLost', undefined, 1.8);
       break;
     // 2.40: the crowd at the player's game: a cheer or a groan as a hand of Cheat, a shootout or the old-timer's board ends.
     case 'cheat':

@@ -1,0 +1,21 @@
+center-perks: host at 19,33; quiz crowd 4 places; race owners 10,14 10,12 9,13, crowd 4
+stalag-flucht: host at 11,55; quiz crowd 4 places; race owners 9,14 9,12 8,13, crowd 4
+shankton: host at 27,43; quiz crowd 4 places; race owners 14,12 16,12 15,11, crowd 4
+san-pancho: host at 44,44; quiz crowd 4 places; race owners 19,29 19,27 18,28, crowd 4
+irongate: host at 51,36; quiz crowd 4 places; race owners 26,14 25,15 25,14, crowd 4
+six-hunter: host at 21,41; quiz crowd 4 places; race owners 12,15 11,14 11,15, crowd 4
+Intellect 40: one ruled out on 0 of 40; Intellect 60: one ruled out on 16 of 40; Intellect 85: one ruled out on 40 of 40
+guessing 1.5 s in, over 40 nights: Intellect 40: 0 won 5 tied; Intellect 60: 12 won 0 tied; Intellect 85: 13 won 0 tied; knowing, 5 s in, Intellect 40: 40 won 0 tied
+center-perks: quiz night hosted by the librarian, at his place in 1 s; 1 came to watch (1 at most at once), 1 a moment after, then gone
+stalag-flucht: quiz night hosted by the librarian, at his place in 2 s; 2 came to watch (2 at most at once), 2 a moment after, then gone
+shankton: quiz night hosted by the librarian, at his place in 0 s; 3 came to watch (4 at most at once), 3 a moment after, then gone
+san-pancho: quiz night hosted by the librarian, at his place in 3 s; 1 came to watch (1 at most at once), 1 a moment after, then gone
+irongate: quiz night hosted by the librarian, at his place in 2 s; 2 came to watch (4 at most at once), 3 a moment after, then gone
+six-hunter: quiz night hosted by the librarian, at his place in 1 s; 2 came to watch (2 at most at once), 2 a moment after, then gone
+center-perks: two race nights with a bet on: 6 of 6 owners at the start, 8 more came to watch
+stalag-flucht: two race nights with a bet on: 5 of 6 owners at the start, 7 more came to watch
+shankton: two race nights with a bet on: 6 of 6 owners at the start, 7 more came to watch
+san-pancho: two race nights with a bet on: 6 of 6 owners at the start, 14 more came to watch
+irongate: two race nights with a bet on: 6 of 6 owners at the start, 11 more came to watch
+six-hunter: two race nights with a bet on: 5 of 6 owners at the start, 6 more came to watch
+a save mid-quiz round trips with its host

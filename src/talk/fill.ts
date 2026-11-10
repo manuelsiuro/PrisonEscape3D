@@ -15,7 +15,8 @@ import {
   type Nick,
 } from '../i18n/barks/grammar';
 import type { Sim } from '../sim/Sim';
-import { formatTime, hhmm } from '../sim/systems/clock';
+import { formatTime, hhmm, prisonDay } from '../sim/systems/clock';
+import { rivals } from '../sim/systems/races';
 import { tileOfBody } from '../sim/systems/movement';
 import { MAP_W } from '../sim/world/World';
 import { handlersOf } from '../sim/systems/k9';
@@ -33,7 +34,8 @@ import { hash32 } from '../sim/rng';
  * · {guard} {guard.full} a guard · {here.at} {here.the} where the speaker stands ·
  * {place.at} {place.the} a room · {item} {item.a} {item.the} {item.my} · {time} {block}
  * {next} {day} {weekday} · {meal} today's dish (the meal at hand), {dinner} tonight's · {event}
- * what happened today · and gossip's own: {n} {m} {t1} {t2} {key} · (P36) a guard's {nick} {home} {team}.
+ * what happened today · and gossip's own: {n} {m} {t1} {t2} {key} · (P36) a guard's {nick} {home} {team} · (2.41) {rat}
+ * the speaker's rat on tonight's race card.
  */
 export interface FillContext {
   lang: Lang;
@@ -98,6 +100,7 @@ export const SLOTS: ReadonlySet<string> = new Set([
   'nick',
   'home',
   'team',
+  'rat',
 ]);
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -274,6 +277,12 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
       const k = fact?.guard ?? ctx.speaker - s.inmates.length;
       const w = sim.prison.guards[k]?.about?.[name];
       v = w ? w.charAt(0) + w.slice(1).toLowerCase() : null;
+      break;
+    }
+    // 2.41: the speaker's own rat on tonight's race card (none: the line won't do).
+    case 'rat': {
+      const e = rivals(s, prisonDay(s.step)).find((x) => x.owner === ctx.speaker);
+      v = e ? (t('race.names').split('|')[e.name] ?? null) : null;
       break;
     }
     // A guard dog (P19): the fact's, the dog of the guard speaking, else one of the prison's.

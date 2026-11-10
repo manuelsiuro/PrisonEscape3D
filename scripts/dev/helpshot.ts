@@ -36,10 +36,11 @@ import { jobRooms } from '../../src/sim/systems/economy';
 import { fieldOf, pitchOf } from '../../src/sim/systems/football';
 import { courtOf, powerAt, shotWindow } from '../../src/sim/systems/hoops';
 import { questionNow } from '../../src/sim/systems/quiz';
-import { cardUp, RACE_ENTER, raceCard } from '../../src/sim/systems/races';
+import { RACE } from '../../src/sim/systems/races';
 import { tonight, turnFrom } from '../../src/sim/systems/talent';
 import { pointAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
+import { SAN_PANCHO } from '../../src/content/prisons/san-pancho';
 import { SIX_HUNTER } from '../../src/content/prisons/six-hunter';
 import { HEARINGS } from '../../src/content/parole';
 import { HOLIDAY } from '../../src/content/holidays';
@@ -497,21 +498,21 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 1.2,
   },
   race: {
-    lesson: 'ratRace',
-    moves: (bot) => {
-      bot.hold('rat_track');
-      bot.use();
-      const r = TRAINING.leisure!.race;
-      bot.walkTo(tile(r.x, r.z - 1));
-      bot.until(() => cardUp(bot.sim), 2 * 60 * 20 * 60);
-      bot.op(OP.EXT, EXT.RACE, RACE_ENTER);
-      bot.op(OP.EXT, EXT.RACE, raceCard(bot.st, prisonDay(bot.st.step)).length - 1, 0);
-      bot.until(() => bot.sim.events.some((e) => e.type === 'race' && e.what === 'result'), 90 * 20 * 60);
+    // (2.41: a race night at San Pancho with a bet on: the owners at the start, a crowd either side of the track.)
+    make: () => {
+      const bot = new Bot(SAN_PANCHO, 4);
+      bot.st.cash = 50;
+      bot.routineUntil(3, 20 * 60 + 15);
+      const r = SAN_PANCHO.leisure!.race!;
+      bot.walkTo(tile(r.x + 3, r.z - 1));
+      bot.face(DIR.SOUTH);
+      bot.op(OP.EXT, EXT.RACE, 0, 0);
+      bot.until(() => bot.st.race[RACE.ON] === 1 && bot.st.step - bot.st.race[RACE.AT] > 100, 60 * 20 * 60);
+      return bot;
     },
-    when: (_s, k, n) => k >= n - 60,
-    zoom: 2.8,
-    dx: 3,
-    dz: 1,
+    when: at(0.999),
+    zoom: 2.3,
+    dz: 0.5,
     light: 600,
   },
   talent: {

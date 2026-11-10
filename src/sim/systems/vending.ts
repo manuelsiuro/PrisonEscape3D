@@ -339,7 +339,9 @@ export function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
     s.shootout?.who === k ||
     s.dice[0] === k ||
     s.bout[0] === k ||
-    s.quiz?.who.includes(k)
+    s.quiz?.who.includes(k) ||
+    // (2.41: quiz night's host too: a stand-in isn't one who stays put.)
+    s.quiz?.host === k
   )
     return false;
   return true;

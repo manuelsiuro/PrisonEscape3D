@@ -22,8 +22,11 @@ export interface RaceLane {
   /** The bookie's odds now (tenths). */
   odds: number;
   mine: boolean;
-  /** The player's own rat ate today (null: a rival's, not known). */
+  /** The player's own rat ate today (null: a rival's, not known). 2.41: a rival's as gossip told it (`heard`). */
   fed: boolean | null;
+  heard: boolean;
+  /** 2.41: in front now, as it's run. */
+  lead: boolean;
   /** How far along the track it is (0–1), and where it finished (1 first; 0 not yet). */
   pos: number;
   place: number;
@@ -49,6 +52,10 @@ export interface RaceView {
   cash: number;
   /** Tonight's race (the card closed for it stays closed until the player leaves the track). */
   day: number;
+  /** 2.41: the race called as it's run ('' none); the gambling heat a guard's eyes cost ('' none to say), a guard seeing now. */
+  call: string;
+  risk: string;
+  seen: boolean;
 }
 
 /** Lane colours, in lane order (the 3D's rats wear the same); the player's own rat is gold. */
@@ -73,6 +80,8 @@ export class RaceCard {
   private readonly stakes: HTMLElement;
   private readonly rows: HTMLElement;
   private readonly note: HTMLElement;
+  private readonly call: HTMLElement;
+  private readonly risk: HTMLElement;
   private readonly enter: HTMLButtonElement;
   private drawn = '';
   private stakesDrawn = '';
@@ -91,6 +100,8 @@ export class RaceCard {
       `<div class="train-head"><i class="train-ic">${icon('race', 18)}</i><b></b><span class="train-value"></span><button class="icon-btn small race-close">${icon('close', 16)}</button></div>
       <div class="race-stakes" role="radiogroup"></div>
       <button class="big-btn primary small race-enter hidden">${icon('rat', 18)}<span></span></button>
+      <p class="race-risk"></p>
+      <p class="race-call" role="status" aria-live="polite"></p>
       <div class="race-rows"></div>
       <p class="train-note" role="status"></p>`,
     );
@@ -98,6 +109,8 @@ export class RaceCard {
     this.at = this.el.querySelector('.train-value')!;
     this.stakes = this.el.querySelector('.race-stakes')!;
     this.rows = this.el.querySelector('.race-rows')!;
+    this.call = this.el.querySelector('.race-call')!;
+    this.risk = this.el.querySelector('.race-risk')!;
     this.note = this.el.querySelector('.train-note')!;
     this.enter = this.el.querySelector('.race-enter')!;
     this.el.addEventListener('click', (e) => {
@@ -188,7 +201,7 @@ export class RaceCard {
     const key = [
       v.phase,
       v.at,
-      v.lanes.map((l) => `${l.name}:${l.owner}:${l.speed}:${l.odds}:${l.place}:${l.fed}`).join(','),
+      v.lanes.map((l) => `${l.name}:${l.owner}:${l.speed}:${l.odds}:${l.place}:${l.fed}:${l.heard}`).join(','),
       v.bet ? `${v.bet.lane}:${v.bet.stake}` : '',
       v.enter,
       v.entered,
@@ -207,7 +220,9 @@ export class RaceCard {
       this.rows.innerHTML = v.lanes
         .map((l, k) => {
           const who = l.mine ? t('race.yours') : t('race.whose', { name: esc(l.owner) });
-          const fed = l.fed === null ? '' : ` · ${t(l.fed ? 'race.fed' : 'race.hungry')}`;
+          // (2.41: a rival's as the gossip told it.)
+          const fed =
+            l.fed === null ? '' : ` · ${t(l.heard ? (l.fed ? 'race.fedHeard' : 'race.hungryHeard') : l.fed ? 'race.fed' : 'race.hungry')}`;
           const odds = oddsText(l.odds);
           const betHere = v.bet?.lane === k;
           const tag = betHere ? `<em class="race-tag">${t('race.yourBet', { n: v.bet!.stake })}</em>` : '';
@@ -236,12 +251,20 @@ export class RaceCard {
       this.enter.classList.toggle('hidden', !v.enter || !card);
       setText(this.enter.querySelector('span')!, v.enter ? t('race.enter', { name: v.enter }) : '');
     }
-    // The race as it's run (every frame): each lane's rat along its bar.
+    // The race as it's run (every frame): each lane's rat along its bar, the one in front marked (2.41), the race called.
     const bars = this.rows.querySelectorAll<HTMLElement>('.race-run i');
+    const rows = this.rows.children;
     v.lanes.forEach((l, k) => {
       const bar = bars[k];
       if (bar) bar.style.width = `${(l.pos * 100).toFixed(1)}%`;
+      rows[k]?.classList.toggle('lead', l.lead);
     });
+    setText(this.call, v.call);
+    this.call.classList.toggle('hidden', !v.call);
+    // (2.41: a guard's eyes and the heat they cost, before a bet and while it's on: red when one sees the player now.)
+    setText(this.risk, v.risk);
+    this.risk.classList.toggle('hidden', !v.risk);
+    this.risk.classList.toggle('seen', v.seen);
     this.el.classList.toggle('running', v.phase !== 'card');
     return true;
   }

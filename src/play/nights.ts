@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, SONGS } from '../content/nights';
+import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, QUIZ_QUESTIONS, SONGS } from '../content/nights';
 import { listOf, t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -27,6 +27,7 @@ import {
   quizOn,
   quizRefusal,
   readOf,
+  struckOf,
   type Choice,
   type Question,
 } from '../sim/systems/quiz';
@@ -34,7 +35,9 @@ import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import type { NightsFrame } from '../render/Nights';
-import { banner, itemsUI, sound } from './context';
+import { banner, itemsUI, settings, sound } from './context';
+import { director } from './chatter';
+import { cheer } from './games';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
@@ -70,6 +73,13 @@ let stageResult: {
 let quizResult: { at: number; what: 'won' | 'tie' | 'lost'; pts: number[]; prize: number; int: number; names: string[] } | null = null;
 let judged = { grade: 0, at: 0 };
 const RESULT_MS = 6000;
+/** 2.41: quiz night's standings: up till Done (or the player walks off), a minute at most. */
+const QUIZ_RESULT_MS = 60_000;
+
+/** 2.41: the standings put away (the card's Done). */
+export function quizDone() {
+  quizResult = null;
+}
 
 /** A new game (or a load): nothing to show. */
 export function resetNights() {
@@ -200,6 +210,7 @@ const quizView: QuizView = {
   end: '',
   prize: 0,
   int: 0,
+  struck: [],
 };
 
 /** A question's words and its four answers', in this language (from the running game's own names). */
@@ -218,6 +229,8 @@ export function questionText(sim: Sim, q: Question): { text: string; choices: st
         return t(`keyColor.${c.c}` as Key);
       case 'h':
         return t(`quiz.${q.id}.${c.k}` as Key);
+      case 'warden':
+        return t(`warden.${c.id}` as Key);
     }
   };
   // (The same item twice: once, counted.)
@@ -229,9 +242,11 @@ export function questionText(sim: Sim, q: Question): { text: string; choices: st
   const text =
     q.id === 'key'
       ? t('quiz.key', { name: guardLabel(sim, q.guard ?? 0) })
-      : q.id === 'recipe'
-        ? t('quiz.recipe', { items: listOf(items) })
-        : t(`quiz.${q.id}` as Key);
+      : q.id === 'keyHolder'
+        ? t('quiz.keyHolder', { colour: t(`keyColor.${q.colour ?? ''}` as Key) })
+        : q.id === 'recipe'
+          ? t('quiz.recipe', { items: listOf(items) })
+          : t(`quiz.${q.id}` as Key);
   return { text, choices: q.choices.map(choice) };
 }
 
@@ -240,7 +255,9 @@ export function quizNow(sim: Sim): QuizView | null {
   const s = sim.state;
   const o = s.quiz;
   const now = playNow();
-  const held = quizResult && now - quizResult.at < RESULT_MS ? quizResult : null;
+  // (2.41: the standings stay up till Done, or the player walks off (then gone for good); before, a moment.)
+  if (quizResult && !sim.rules240 && nearestPlace(sim) < 0) quizResult = null;
+  const held = quizResult && now - quizResult.at < (sim.rules240 ? RESULT_MS : QUIZ_RESULT_MS) ? quizResult : null;
   if (!o && !held && !(quizOn(sim) && nearestPlace(sim) >= 0)) return null;
   const v = quizView;
   if (o) {
@@ -265,6 +282,7 @@ export function quizNow(sim: Sim): QuizView | null {
     v.reading = !o.until && k < read ? Math.ceil((read - k) / STEPS_PER_SECOND) : 0;
     v.left = o.until ? 0 : k < read ? 1 - k / read : 1 - (k - read) / (all - read);
     v.secs = o.until ? 0 : Math.max(0, Math.ceil((all - k) / STEPS_PER_SECOND));
+    v.struck = struckOf(sim);
     return v;
   }
   if (held) {
@@ -276,6 +294,7 @@ export function quizNow(sim: Sim): QuizView | null {
     v.end = held.what;
     v.prize = held.prize;
     v.int = held.int;
+    v.struck = [];
     return v;
   }
   v.phase = 'offer';
@@ -309,6 +328,16 @@ export function nightsKey(code: string): boolean {
             : -1;
     if (lane >= 0) lanePress(lane);
     return lane >= 0 || KEPT.test(code);
+  }
+  // (2.41: the standings put away by Enter, as Done.)
+  if (
+    !s.quiz &&
+    quizResult &&
+    (code === 'Enter' || code === 'NumpadEnter') &&
+    document.querySelector('.quiz-card:not(.hidden) .quiz-done:not(.hidden)')
+  ) {
+    quizDone();
+    return true;
   }
   if (s.quiz) {
     const d = /^(?:Digit|Numpad)([1-4])$/.exec(code);
@@ -369,6 +398,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
       break;
     }
     case 'quiz': {
+      quizTalk(e, sim);
       if (e.what === 'start') coachOnce('quiz', TOUCH ? 'hint.quizTouch' : 'hint.quiz');
       else if (e.what === 'question') sound.blip();
       else if (e.what === 'right') {
@@ -382,12 +412,73 @@ export function announceNights(sim: Sim, e: SimEvent) {
           sound.levelUp();
           buzz('attended');
           floatUp(`+$${e.prize ?? QUIZ_PRIZE}`, 'cash');
+          // (2.41: those watching throw a fist up.)
+          if (sim.state.watch?.length) cheer();
         } else if (e.what === 'tie') sound.coin();
         else sound.sting();
       } else if (e.what === 'off' && !sim.state.escaped) itemsUI.toast(t('toast.quizOff'));
       break;
     }
   }
+}
+
+// ------------------------------------------------------------------ 2.41: the host and the buzzes, said
+
+/** Quiz night's host (an inmate's index, -1 none), kept for the end (the quiz is gone from the state by then). */
+let quizHost = -1;
+
+/**
+ * 2.41: quiz night out loud: the host reads out each question's number, says who had it (or the answer, time up) and
+ * the winner; a contestant who buzzes calls out the answer. Bubbles only: the card says it all too.
+ */
+function quizTalk(e: Extract<SimEvent, { type: 'quiz' }>, sim: Sim) {
+  if (settings.chatter === 'off') return;
+  const s = sim.state;
+  const o = s.quiz;
+  const now = performance.now() / 1000;
+  if (o) quizHost = o.host ?? -1;
+  if (e.what === 'question' && o) {
+    director.line(now, quizHost, t(o.q + 1 >= QUIZ_QUESTIONS ? 'quiz.host.last' : 'quiz.host.ask', { n: o.q + 1 }), 4, 'shout', 0, 2.2);
+    return;
+  }
+  if ((e.what === 'right' || e.what === 'wrong') && o && (e.by ?? 0) > 0) {
+    const q = questionNow(sim);
+    const said = q && e.choice !== undefined ? questionText(sim, q).choices[e.choice] : '';
+    if (said) director.line(now, o.who[(e.by ?? 1) - 1], t('quiz.buzz', { answer: said }), 4, 'shout', 0, 1.8);
+  }
+  if ((e.what === 'right' || e.what === 'timeUp') && o) {
+    const q = questionNow(sim);
+    const by = e.what === 'right' ? (e.by ?? -1) : -1;
+    const text =
+      by === 0
+        ? t('quiz.host.you')
+        : by > 0
+          ? t('quiz.host.them', { name: inmateName(sim, o.who[by - 1]) })
+          : q
+            ? t('quiz.host.time', { answer: questionText(sim, q).choices[q.answer] })
+            : '';
+    director.line(now, quizHost, text, 4, 'say', 0.9, 2.4);
+    return;
+  }
+  if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {
+    const pts = e.pts ?? [0, 0, 0, 0];
+    const top = Math.max(...pts.slice(1));
+    const best = pts.indexOf(top, 1);
+    // (Two of them level at the top, or the player with one: a tie.)
+    const level = top > 0 && pts.slice(1).filter((p) => p === top).length > 1;
+    const text =
+      e.what === 'won'
+        ? t('quiz.host.winYou')
+        : Math.max(...pts) === 0
+          ? t('quiz.host.none')
+          : e.what === 'tie' || level
+            ? t('quiz.host.tie')
+            : best > 0 && e.who
+              ? t('quiz.host.win', { name: inmateName(sim, e.who[best - 1]) })
+              : '';
+    director.line(now, quizHost, text, 4, 'shout', 0.4, 3.2);
+    quizHost = -1;
+  } else if (e.what === 'off' || e.what === 'quit') quizHost = -1;
 }
 
 // ------------------------------------------------------------------ the music
