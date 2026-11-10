@@ -43,6 +43,11 @@ import {
   SPORTS_WINS,
   STAKES,
   WIN_OPINION,
+  COUNT_IN,
+  WRESTLE_BEAT,
+  WRESTLE_HIT,
+  WRESTLE_MISS,
+  WRESTLE_WINDOW,
 } from '../src/content/games';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
@@ -60,6 +65,7 @@ import { Sim, type SimEvent } from '../src/sim/Sim';
 import { planOf, TODAY } from '../src/sim/systems/calendar';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import {
+  boutBeat,
   drainOf,
   eyesOn,
   gamesOpen,
@@ -67,6 +73,7 @@ import {
   markerAt,
   pinsOf,
   playedToday,
+  hitOf,
   pushOf,
   sportsWins,
   surging,
@@ -82,6 +89,7 @@ import { STEPS_PER_MINUTE, STEPS_PER_SECOND, TIRED, UNIT } from '../src/sim/tuni
 import { KEY } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
+import { boutPress } from './bots';
 
 const n = (id: string) => itemNumber(id);
 const LOCKPICK = n('lockpick');
@@ -432,47 +440,71 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   m.opinion = 50;
   s.energy = 50;
   talk(TALK.WRESTLE);
-  check(s.bout.length === 4 && s.energy === 50 - BOUT_ENERGY && s.bout[0] === 1, `a bout: ${BOUT_ENERGY} energy`);
-  // The bar, step by step, exactly as the rule says (presses alternate; one on the same side counts for nothing).
+  check(
+    s.bout.length === 5 && s.energy === 50 - BOUT_ENERGY && s.bout[0] === 1 && s.bout[3] > s.step,
+    `a bout: ${BOUT_ENERGY} energy, a count-in first`,
+  );
+  // 2.40: the count-in: a press does nothing, nor does their arm.
+  step(command(0, OP.TRAIN, 1));
+  check(s.bout[1] === BAR / 2 && s.bout[2] === 0, 'in the count-in, a press does nothing and their arm is still');
+  while (s.step + 1 < s.bout[3]) step();
+  // The bar, step by step, exactly as the rule says: presses alternate, one a beat, on the beat for hitOf, else a little.
   let bar = s.bout[1];
   let side = 0;
+  let beat = -1;
   let wrong = 0;
-  const presses = [1, 2, 2, 1, 0, 2, 1, 0, 0, 2, 1, 2, 1, 1, 2];
-  for (const p of presses) {
-    if (!s.bout.length) break;
-    const counts = p !== 0 && p !== side;
-    if (counts) {
+  let hits = 0;
+  let misses = 0;
+  // (Steps from the start: 0 on the beat; 1 the same beat again; 12 the next, the same side; 13 the other; 17 that beat
+  // again; 20 the next, 4 early; 37 one late, within the window.)
+  const presses = new Map([
+    [0, 1],
+    [1, 2],
+    [12, 1],
+    [13, 2],
+    [17, 1],
+    [20, 1],
+    [37, 2],
+  ]);
+  for (let t = 0; t <= 40 && s.bout.length; t++) {
+    const p = presses.get(t) ?? 0;
+    const { n, off } = boutBeat(s.bout[3] + t, s.bout[3]);
+    if (p && p !== side && n !== beat) {
       side = p;
-      bar = Math.min(BAR, bar + pushOf(s.str));
+      beat = n;
+      const hit = Math.abs(off) <= WRESTLE_WINDOW;
+      if (hit) hits++;
+      else misses++;
+      bar = Math.min(BAR, bar + (hit ? hitOf(s.str) : WRESTLE_MISS));
     }
     step(p ? command(0, OP.TRAIN, p) : 0);
     if (!s.bout.length) break;
-    const t = s.step - s.bout[3];
-    bar = Math.max(0, bar - drainOf(m.str, surging(s.salt, s.bout[3], t)));
+    bar = Math.max(0, bar - drainOf(m.str, surging(s.salt, s.bout[3], s.step - s.bout[3])));
     if (s.bout[1] !== bar) wrong++;
   }
   check(
-    wrong === 0,
-    'the bar moves by the push (20 + Strength/4) and their push back ((Strength + 20)/10, half again in a surge), alternate presses only',
+    wrong === 0 && hits === 3 && misses === 1,
+    `the bar moves as the rule says: a press a beat, alternating, ${WRESTLE_WINDOW} steps either side for ${WRESTLE_HIT} + Strength, else ${WRESTLE_MISS}; their push back ((Strength + 30)/10 a step, half again in a surge)`,
   );
   // Not pressing: pinned.
   const before = m.opinion;
   for (let k = 0; k < BOUT_STEPS && s.bout.length; k++) step();
   const lost = last(seen, 'bout')!;
   check(lost.what === 'lost' && m.opinion === before + PLAY_OPINION, `not pushing: lost, +${PLAY_OPINION} opinion all the same`);
-  // Winning: a press every step, with two others watching close by and one far off.
+  // Winning: a press on every beat, with two others close by (2.40: and those who come over to watch).
   s.played[1] = 0;
   s.str = 60;
-  const near = [3, 4].map((k) => {
+  [3, 4].forEach((k) => {
     put(s.inmates[k].body, tileOf(s.player) + 2 * MAP_W);
     s.inmates[k].opinion = 50;
-    return k;
   });
   talk(TALK.WRESTLE);
   const ops = s.inmates.map((x) => x.opinion);
+  let came = 0;
   for (let k = 0; k < 400 && s.bout.length; k++) {
     // (The step before the last: who watches is worked out with everyone where they'll be.)
-    step(command(0, OP.TRAIN, 1 + (k % 2)));
+    step(boutPress(sim));
+    came = Math.max(came, s.watch?.length ?? 0);
   }
   const won = last(seen, 'bout')!;
   const watching = s.inmates.map(
@@ -490,17 +522,19 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   check(
     won.what === 'won' &&
       won.crowd === watching.filter(Boolean).length &&
-      near.every((k) => watching[k]) &&
+      (won.crowd ?? 0) >= 2 &&
+      came > 0 &&
+      JSON.stringify(won.fans) === JSON.stringify(watching.flatMap((w, k) => (w ? [k] : []))) &&
       crowdOk &&
       s.str === 61 &&
       (s.trained & 1) === 1,
-    `a win: +${WIN_OPINION} (the loser), +${CROWD_OPINION} from each of the ${won.crowd} watching, +1 Strength (trained today)`,
+    `a win: +${WIN_OPINION} (the loser), +${CROWD_OPINION} from each of the ${won.crowd} watching (named, ${came} came over), +1 Strength (trained today)`,
   );
   // A draw at the bell: pressing only while the bar is on their side.
   s.played[1] = 0;
   talk(TALK.WRESTLE);
   const drawFrom = m.opinion;
-  for (let k = 0; k < BOUT_STEPS + 5 && s.bout.length; k++) step(s.bout[1] < BAR / 2 ? command(0, OP.TRAIN, 1 + (k % 2)) : 0);
+  for (let k = 0; k < BOUT_STEPS + COUNT_IN + 5 && s.bout.length; k++) step(s.bout[1] < BAR / 2 ? boutPress(sim) : 0);
   check(
     last(seen, 'bout')!.what === 'draw' && m.opinion === drawFrom + PLAY_OPINION,
     `the bell after ${BOUT_STEPS / STEPS_PER_SECOND} s: a draw, +${PLAY_OPINION}`,
@@ -528,23 +562,32 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     talk(TALK.WRESTLE);
     const struck = s.struckAt;
     step(command(0, OP.USE, 1));
-    check(s.bout.length === 4 && s.struckAt === struck, 'mid-bout, the use button does nothing');
+    check(s.bout.length === 5 && s.struckAt === struck, 'mid-bout, the use button does nothing');
     step(command(0, OP.TRAIN, 3));
   }
   check(s.feats[FEAT.bouts] >= 4 && s.feats[FEAT.boutsWon] === 1, 'the ledger counts bouts and wins');
-  // How it goes: presses a second against an inmate's arm, with the player's Strength (each bout from the middle).
+  // How it goes (2.40): on every beat, three beats in four (the fourth late), or mashing, against an inmate's arm, with the
+  // player's Strength (each bout from the middle, as the rule plays it: a press a beat, alternating).
+  const styles: Array<[string, (t: number) => boolean]> = [
+    ['every beat', (t) => t % WRESTLE_BEAT === 0],
+    ['3 in 4', (t) => (Math.floor(t / WRESTLE_BEAT) % 4 === 3 ? t % WRESTLE_BEAT === 5 : t % WRESTLE_BEAT === 0)],
+    ['mashing 8/s', (t) => t % 3 === 0],
+  ];
   const rows: string[] = [];
   for (const str of [40, 70]) {
     const cells: string[] = [];
-    for (const rate of [5, 8, 12]) {
-      const per = Math.round(STEPS_PER_SECOND / rate);
+    for (const [name, press] of styles) {
       const out: string[] = [];
       for (const them of [30, 45, 60]) {
         let b = BAR / 2;
-        let t = 0;
+        let beat = -1;
         let res = 'draw';
-        for (; t <= BOUT_STEPS; t++) {
-          if (t % per === 0) b = Math.min(BAR, b + pushOf(str));
+        for (let t = 0; t <= BOUT_STEPS; t++) {
+          const { n, off } = boutBeat(t, 0);
+          if (press(t) && n !== beat) {
+            beat = n;
+            b = Math.min(BAR, b + (Math.abs(off) <= WRESTLE_WINDOW ? hitOf(str) : WRESTLE_MISS));
+          }
           if (b >= BAR) {
             res = `won ${(t / STEPS_PER_SECOND).toFixed(1)}s`;
             break;
@@ -557,9 +600,27 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
         }
         out.push(res);
       }
-      cells.push(`${rate}/s ${out.join(' · ')}`);
+      cells.push(`${name} ${out.join(' · ')}`);
     }
     rows.push(`Strength ${str} vs 30 · 45 · 60: ${cells.join('; ')}`);
+  }
+  // A run from before 2.40 mashes as it did: no count-in, every press on the other side pushes 20 + Strength/4.
+  {
+    const old = game(11);
+    old.sim.rules239 = true;
+    old.to(1, 10, 30);
+    old.talkTo(1);
+    old.sim.state.inmates[1].opinion = 50;
+    old.sim.state.energy = 50;
+    old.talk(TALK.WRESTLE);
+    const os = old.sim.state;
+    const was = os.bout[1];
+    old.step(command(0, OP.TRAIN, 1));
+    check(
+      os.bout.length === 4 &&
+        os.bout[1] === Math.max(0, was + pushOf(os.str) - drainOf(os.inmates[1].str, surging(os.salt, os.bout[3], os.step - os.bout[3]))),
+      'a run from before 2.40 (Sim.rules239): mashed, no count-in',
+    );
   }
   console.log(
     `arm-wrestling: the bar as the rule says; a win +${WIN_OPINION} / +${CROWD_OPINION} x ${won.crowd} watching / +1 Strength; lost, drawn +${PLAY_OPINION}; given up, broken off`,
@@ -581,7 +642,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.inmates[0].opinion = 60;
   const win = () => {
     talk(TALK.WRESTLE);
-    for (let k = 0; k < 200 && s.bout.length; k++) step(command(0, OP.TRAIN, 1 + (k % 2)));
+    for (let k = 0; k < 400 && s.bout.length; k++) step(boutPress(sim));
     return last(seen, 'bout')?.what === 'won';
   };
   check(win() && sportsWins(s) === 0, 'a bout won on an ordinary day: not counted');
@@ -853,7 +914,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   check(s.dice.length === 4 && twin(sim, [command(0, OP.TALK, TALK.REROLL, 1), 0, 0]), 'saved with the dice on the table: the same game');
   talk(TALK.WRESTLE);
   check(
-    s.bout.length === 4 &&
+    s.bout.length === 5 &&
       twin(
         sim,
         Array.from({ length: 60 }, (_, k) => (k % 3 ? 0 : command(0, OP.TRAIN, 1 + ((k / 3) % 2)))),

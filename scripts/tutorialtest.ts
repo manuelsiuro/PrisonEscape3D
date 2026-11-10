@@ -47,7 +47,7 @@ import { CALLEE, JOB, TIER } from '../src/content/phone';
 import { phrasesOf } from '../src/sim/systems/phone';
 import { KIOSK, SHOP } from '../src/content/kiosk';
 import { courseQuestion } from '../src/sim/systems/kiosk';
-import { Bot, DIR, n } from './bots';
+import { boutPress, Bot, DIR, n } from './bots';
 import { HEARINGS } from '../src/content/parole';
 import { answerWorth, recordCounts } from '../src/sim/systems/parole';
 import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
@@ -480,7 +480,7 @@ play('games', (bot) => {
   bot.op(OP.TALK, TALK.DICE, 0);
   bot.op(OP.TALK, TALK.REROLL, 0);
   bot.op(OP.TALK, TALK.WRESTLE);
-  for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(command(0, OP.TRAIN, 1 + (k % 2)));
+  for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(boutPress(bot.sim));
 });
 
 play('cards', (bot) => {

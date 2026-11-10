@@ -432,7 +432,18 @@ export function react(d: Reactor, e: SimEvent, sim: Sim, now: number) {
         );
         d.queueUp(now, 're.boutLoser.in', [e.who], 3, 'boutLoser', undefined, 1.4);
       }
-      if (e.what === 'lost') d.queueUp(now, 're.boutWinner.in', [e.who], 3, 'boutWinner', undefined, 0.5);
+      if (e.what === 'lost') {
+        d.queueUp(now, 're.boutWinner.in', [e.who], 3, 'boutWinner', undefined, 0.5);
+        // (2.40: those who came to watch groan with the player.)
+        d.queueUp(now, 're.watchLost.in', sim.state.watch ?? [], 3, 'watchLost', undefined, 1.2);
+      }
+      break;
+    // 2.40: the crowd at the player's game: a cheer or a groan as a hand of Cheat, a shootout or the old-timer's board ends.
+    case 'cheat':
+    case 'hoops':
+    case 'checkers':
+      if (e.what === 'won') d.queueUp(now, 're.watchWin.in', sim.state.watch ?? [], 3, 'watchWin', 'shout', 0.4);
+      else if (e.what === 'lost') d.queueUp(now, 're.watchLost.in', sim.state.watch ?? [], 3, 'watchLost', undefined, 0.6);
       break;
     case 'shot':
       d.incident('shot', px, pz, now);

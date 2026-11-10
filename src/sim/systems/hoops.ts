@@ -287,10 +287,14 @@ function endShootout(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off') {
     // Those watching think more of the player too (each once a day, as at arm-wrestling).
     const day = prisonDay(s.step);
     const crowd = watchers(sim, who).filter((k) => (s.cheered[k] ?? 0) !== day);
+    // (2.40: those whose opinion rose for it, shown over their heads.)
+    const fans: number[] = [];
     for (const k of crowd) {
       while (s.cheered.length <= k) s.cheered.push(0);
       s.cheered[k] = day;
+      const before = s.inmates[k].opinion;
       changeOpinion(sim, k, CROWD_OPINION);
+      if (s.inmates[k].opinion > before) fans.push(k);
     }
     const spd = s.spd < ATTR_MAX ? 1 : 0;
     s.spd += spd;
@@ -301,6 +305,7 @@ function endShootout(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off') {
       what: 'won',
       who,
       crowd: crowd.length,
+      fans,
       wins,
       spd,
       gain: (m?.opinion ?? 0) - was,

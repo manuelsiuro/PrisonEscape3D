@@ -40,6 +40,9 @@ export class Crowd {
   rivalThrew = false;
   /** 2.39.1: for each inmate, the throw of an inmates' game of dice its arm last flung (a throw's seed: it flings once). */
   private readonly crowdThrew: number[] = [];
+  /** 2.40: the crowd's cheers seen, and each watcher's last fist up of its own (it cheers now and then while it watches). */
+  private cheerSeen = 0;
+  private readonly cheerRep: number[] = [];
 
   constructor(
     private readonly add: (c: Character) => void,
@@ -85,9 +88,18 @@ export class Crowd {
   /** The inmates where the frame has them (`bout`: the player's arm-wrestle, P22). */
   drawInmates(f: Frame, dt: number, time: number, reduced: boolean) {
     const bout = f.games.bout;
+    // (2.40: a cheer from the player's game: everyone watching throws a fist up.)
+    const cheered = f.cheer !== this.cheerSeen;
+    this.cheerSeen = f.cheer;
     f.inmates.forEach((m, k) => {
       const c = this.cast[k];
       if (!c) return;
+      if (m.doing === DOING.WATCH) {
+        // (And now and then on its own, each at its own time, while it watches; never with reduced motion.)
+        const rep = Math.floor((time + k * 1.7) / 5.5);
+        if (cheered || (!reduced && rep !== this.cheerRep[k] && this.cheerRep[k] !== undefined && (k + rep) % 3 === 0)) c.pump();
+        this.cheerRep[k] = rep;
+      }
       // In the tunnels the ground floor and everyone on it are out of the picture.
       c.root.visible = f.layer !== LAYER.UNDER;
       // (2.26: the water's the head's own; a turn at the showers in shorts, a towel while waiting and after.)

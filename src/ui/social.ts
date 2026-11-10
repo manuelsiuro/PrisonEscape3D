@@ -92,6 +92,8 @@ export class TalkPanel {
   greeting = '';
   /** Whether the player has heard a rumor (its fact key): a guard's ways show once gossip told them (P15). */
   knows: (key: string) => boolean = () => false;
+  /** 2.40: a game's own card is up for this talk (dice's: the play layer's), the panel steps aside meanwhile. */
+  gameCard: (sim: Sim) => boolean = () => false;
   /** 2.39: the inmates' game (HUDDLE kind) the player walked up to and joined by talking to this one (-1 none): it comes first. */
   invited = -1;
   /** 2.39.1: the joined game's row not yet brought into view this talk (a phone turned: it fell below the panel's fold). */
@@ -147,8 +149,8 @@ export class TalkPanel {
   update(sim: Sim, busy: boolean) {
     const s = sim.state;
     const who = s.talk;
-    // (P22: an arm-wrestle has its own card meanwhile; P27: so do a hand of Cheat and the old-timer's board.)
-    if (who < 0 || busy || s.bout.length || s.cheat || s.board?.seated) {
+    // (P22: an arm-wrestle has its own card meanwhile; P27: so do a hand of Cheat and the old-timer's board; 2.40: dice.)
+    if (who < 0 || busy || s.bout.length || s.cheat || s.board?.seated || this.gameCard(sim)) {
       if (this.open) this.hide();
       return;
     }

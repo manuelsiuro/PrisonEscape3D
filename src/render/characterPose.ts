@@ -413,6 +413,16 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.armRx += -0.95 * ga;
     l.armLz += 0.55 * ga;
     l.armRz -= 0.55 * ga;
+  } else if (doing === DOING.WATCH) {
+    // Watching the player's game (2.40): arms folded as in a queue, the weight on its heels; a cheer (`pumped`, the view's)
+    // throws the right fist up over the head and lifts the body a little. (Reduced motion: the arms stay folded.)
+    const ga = m.act;
+    const up = m.pumped;
+    l.armLx += -0.95 * ga;
+    l.armLz += 0.55 * ga;
+    l.armRx += (-0.95 - up * 1.95) * ga;
+    l.armRz -= (0.55 - up * 0.45) * ga;
+    l.bob += up * 0.04 * ga;
   } else if (doing === DOING.LOOKOUT) {
     // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
     // get in front of the face), the other arm a little out; the whole body sweeps from side to

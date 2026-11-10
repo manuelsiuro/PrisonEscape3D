@@ -88,6 +88,7 @@ import { MAP_W } from '../src/sim/world/World';
 import { TILE } from '../src/sim/world/tiles';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { check } from './assert';
+import { boutPress } from './bots';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
 const VISITING = DAY_EVENTS.indexOf('visiting');
@@ -151,6 +152,12 @@ function game(prison: PrisonDef, seed = 5, calendar: Array<[number, number, numb
         o.body.x = m.body.x;
         o.body.z = m.body.z;
         o.path = [];
+      }
+    // (2.40: a guard passing close by too: a bout's count-in left one there once, and the press went to him.)
+    for (const o of sim.state.guards)
+      if (near(o, a) || near(o, b)) {
+        o.body.x = m.body.x;
+        o.body.z = m.body.z;
       }
     putTile(m.body, b);
     putTile(sim.state.player, a);
@@ -457,7 +464,7 @@ function work(g: Game, deal: Deal): boolean {
       g.talkTo(deal.target);
       g.talk(TALK.WRESTLE);
       check(s.bout.length > 0, `${sim.prison.id}: a bout begun (${refusals(g.seen).slice(-2)})`);
-      for (let k = 0; k < 800 && s.bout.length; k++) g.step(deal.variant ? command(0, OP.TRAIN, 1 + (k % 2)) : 0);
+      for (let k = 0; k < 800 && s.bout.length; k++) g.step(deal.variant ? boutPress(g.sim) : 0);
       return job[J.STAGE] === STAGE.DONE;
     }
     case KIND.CHEAT: {
@@ -775,7 +782,7 @@ function handIn(g: Game, deal: Deal) {
     s.energy = 100;
     g.talkTo(deal.target);
     g.talk(TALK.WRESTLE);
-    for (let k = 0; k < 800 && s.bout.length; k++) g.step(command(0, OP.TRAIN, 1 + (k % 2)));
+    for (let k = 0; k < 800 && s.bout.length; k++) g.step(boutPress(g.sim));
     check(!jobOf(s) && jobNews(g.seen, 'failed').at(-1)?.why === 'fixed', 'asked to lose the arm-wrestle, won it: failed');
   }
   // The lookout: a false alarm costs dig time; a guard close who sees in finds the dig.
