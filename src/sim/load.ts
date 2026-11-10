@@ -32,7 +32,7 @@ import { ITEMS } from '../content/items';
 import { newVend, vendOk } from './systems/vendState';
 import { coolerOk, menuOk, newCooler, newMenu } from './systems/menuState';
 import { huddlesOk, newHuddles } from './systems/huddles';
-import { WATCH_MAX } from './systems/spectate';
+import { WATCH_ALL } from './systems/spectate';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
 import { FREED_STEPS } from '../content/paperwork';
@@ -508,7 +508,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     s.watch !== undefined &&
     !(
       Array.isArray(s.watch) &&
-      s.watch.length <= WATCH_MAX &&
+      s.watch.length <= WATCH_ALL &&
       s.watch.every((k) => Number.isInteger(k) && k >= 0 && k < s.inmates.length) &&
       new Set(s.watch).size === s.watch.length
     )
@@ -609,7 +609,9 @@ function quizOk(o: Quiz | null, n: number, step: number): boolean {
     ints(o.pts, 4) &&
     o.pts.every((x) => x >= 0) &&
     ints(o.said, 4) &&
-    o.said.every((x) => x >= -1 && x <= 3)
+    o.said.every((x) => x >= -1 && x <= 3) &&
+    // (2.41: the host, absent in a save from before: an inmate who isn't a contestant, or -1.)
+    (o.host === undefined || (Number.isInteger(o.host) && o.host >= -1 && o.host < n && !o.who.includes(o.host)))
   );
 }
 

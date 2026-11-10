@@ -197,3 +197,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 ## [v2.40 to v2.44](history/v2.40-v2.44.md)
 
 - The side games polished (v2.40.0)
+- Quiz night and the rat races polished (v2.41.0, not released yet)

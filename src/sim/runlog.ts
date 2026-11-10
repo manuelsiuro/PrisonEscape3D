@@ -207,9 +207,9 @@ export class RunRecorder {
       // (Nor one from before noticing, the dark, lying low and the block, 2.35; nor the 2.36 passes, tools and items the first.)
       // (Nor one from 2.36.0, before the initiation's tribute was put back once used up, 2.36.1; nor from 2.36, before the
       // roll call's squares were centred, 2.37; nor from before free time's gatherings, 2.39; nor from before the side
-      // games' polish, 2.40.)
-      // (Every one of those versions comes before 2.40.0, the latest gate: one test covers them all.)
-      const stale = before240(log?.game ?? '');
+      // games' polish, 2.40; nor from before quiz night and the races' polish, 2.41.)
+      // (Every one of those versions comes before 2.41.0, the latest gate: one test covers them all.)
+      const stale = before241(log?.game ?? '');
       const runs =
         log && log.prison === sim.prison.id && log.from + log.steps === from && !stale
           ? decodeRuns(fromBase64(log.data) ?? new Uint8Array())
@@ -360,6 +360,8 @@ const before237 = (game: string) => versionBefore(game, 2, 37);
 const before239 = (game: string) => versionBefore(game, 2, 39);
 /** Before the side games' polish (2.40.0): Sim.rules239 plays them as they were. */
 const before240 = (game: string) => versionBefore(game, 2, 40);
+/** Before quiz night and the rat races' polish (2.41.0): Sim.rules240 plays them as they were. */
+const before241 = (game: string) => versionBefore(game, 2, 41);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -443,6 +445,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (before239(log.game)) sim.rules238 = true;
   // Played before 2.40: the side games as they were.
   if (before240(log.game)) sim.rules239 = true;
+  // Played before 2.41: quiz night and the races as they were.
+  if (before241(log.game)) sim.rules240 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

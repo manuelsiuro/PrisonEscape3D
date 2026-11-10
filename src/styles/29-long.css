@@ -90,6 +90,30 @@
 .race-row.won {
   background: rgba(var(--gold-88b-rgb), 0.2);
 }
+/* (2.41: the one in front as it's run.) */
+.race-card.running .race-row.lead .race-name b::after {
+  content: ' ▲';
+  color: var(--gold-88b);
+  font-size: 0.8em;
+}
+/* 2.41: the race called as it's run, and what a guard's eyes cost (red while one sees the player). */
+.race-call {
+  margin: 4px 0 6px;
+  font: 800 14px/1.25 var(--font-ui);
+  color: var(--gold-88b);
+}
+.race-risk {
+  margin: 2px 0 6px;
+  font: 600 11.5px/1.3 var(--font-ui);
+  color: rgba(var(--white-rgb), 0.62);
+}
+.race-risk.seen {
+  color: var(--red-90b);
+}
+.race-call.hidden,
+.race-risk.hidden {
+  display: none;
+}
 .race-dot {
   width: 12px;
   height: 12px;

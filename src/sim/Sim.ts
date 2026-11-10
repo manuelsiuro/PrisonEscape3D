@@ -233,6 +233,8 @@ export class Sim {
   rules238 = false;
   /** Replaying a run from before 2.40: the side games as they were (an arm-wrestle mashed with no count-in, nobody came to watch a game, a gang's table warning dropped when its holders stepped off). Not state. */
   rules239 = false;
+  /** Replaying a run from before 2.41: quiz night and the rat races as they were (fifteen history questions drawn at random, nothing ruled out by Intellect, no host, nobody watching, no owners at the start). Not state. */
+  rules240 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
