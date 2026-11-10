@@ -420,6 +420,13 @@ export interface SimState {
   watch?: number[];
   /** 2.40: the step the watched game ended, while those watching stay a moment (spectate.ts LINGER); absent or 0: on. */
   watchEnd?: number;
+  /**
+   * 2.42, inmates at the internet kiosk (kiosk.ts KB): absent until the player first logs in (a run that never does
+   * hashes and plays as before); then [who's on it or on his way (-1 nobody), the step his session ends (0: on his
+   * way), the step he set off, who's been drawn in the morning's free time (bits), in the evening's, that prison day,
+   * the sessions begun in the morning's free time, in the evening's].
+   */
+  kioskBy?: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

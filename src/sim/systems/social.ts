@@ -5,6 +5,7 @@
 import { mealOn, traysHere } from './canteen';
 import { phoneTargets, swapPlace } from './phone';
 import { vendTargets } from './vending';
+import { kioskTargets } from './kiosk';
 import { coolerTargets } from './cooler';
 import { huddleTargets } from './huddles';
 import { watchTargets } from './spectate';
@@ -578,6 +579,8 @@ export function socialNow(sim: SimContext): Social {
   watchTargets(sim, so);
   // The vending machine (2.32): its queue, once the others have had their say.
   vendTargets(sim, so);
+  // (2.42: an inmate at the kiosk.)
+  kioskTargets(sim, so);
   // Talent night (P30): the act on the stage (wherever the player is).
   stageTargets(sim, so);
   // The odd jobs board (P40): a lookout job's digger at his bed in the free times (only once the player has taken one).

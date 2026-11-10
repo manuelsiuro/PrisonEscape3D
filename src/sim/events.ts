@@ -539,7 +539,8 @@ export type SimEvent =
   | {
       type: 'kiosk';
       what: KioskNews;
-      why?: 'asked' | 'left' | 'closed' | 'broke';
+      why?: 'asked' | 'left' | 'closed' | 'broke' | 'done' | 'beaten' | 'away';
+      who?: number;
       item?: number;
       n?: number;
       q?: number;
@@ -681,7 +682,12 @@ type KioskNews =
   | 'failed'
   | 'quit'
   | 'hidden'
-  | 'unhidden';
+  | 'unhidden'
+  // (2.42: an inmate on his way to it (`who`), on it, off it (`why`: done, beaten to it, called away); his turn bought.)
+  | 'inmateGoes'
+  | 'inmateOn'
+  | 'inmateOff'
+  | 'turnBought';
 /** What pruno did (P28, the 'pruno' event). */
 type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
 /** What a garden bed did (P28, the 'garden' event). */
@@ -913,6 +919,8 @@ export type Refusal =
   | 'coursed'
   | 'inCourse'
   | 'kioskDark'
+  | 'kioskBusy'
+  | 'kioskFree'
   | 'courseLate'
   | 'bookFull'
   | 'onList'

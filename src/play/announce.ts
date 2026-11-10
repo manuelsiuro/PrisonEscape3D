@@ -97,7 +97,7 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     // The pay phone (P34): the queue, calls, Lou and his jobs, a secret overheard.
     case 'kiosk':
-      announceKiosk(e);
+      announceKiosk(sim, e);
       break;
     case 'vend':
       announceVending(sim, e);
