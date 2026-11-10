@@ -192,4 +192,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Roll call squares centred (v2.37.0)
 - The tutorial's missing lessons (v2.38.0)
 - Free time polished (v2.39.0)
-- 2.38 and 2.39 reviewed (v2.39.1, not released yet)
+- 2.38 and 2.39 reviewed (v2.39.1)
