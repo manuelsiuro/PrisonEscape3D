@@ -38,6 +38,8 @@ export class Crowd {
   rivalWho = -1;
   readonly rivalOff = { x: 0, z: 0 };
   rivalThrew = false;
+  /** 2.39.1: for each inmate, the throw of an inmates' game of dice its arm last flung (a throw's seed: it flings once). */
+  private readonly crowdThrew: number[] = [];
 
   constructor(
     private readonly add: (c: Character) => void,
@@ -124,6 +126,20 @@ export class Crowd {
             ? gearAt.y * blend
             : 0;
       c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);
+      // 2.39.1: an inmates' game of dice: the one whose turn it is shakes the pair in its hand, then flings them (the
+      // player's partner's own below). Anyone else's hand is still: reset every frame, never left shaking.
+      c.diceShake = false;
+      const crowd = f.games.crowd;
+      if (crowd)
+        for (const d of crowd) {
+          if (d.by !== k) continue;
+          c.diceShake = d.t < 0;
+          // (Once a throw, as it leaves the hand: not for one already down when the player came by.)
+          if (d.t >= 0 && this.crowdThrew[k] !== d.seed) {
+            this.crowdThrew[k] = d.seed;
+            if (d.t < 0.3) c.pump();
+          }
+        }
       // The one arm-wrestling the player (P22): square on to them in its stance, straining the other way (eased back to its spot after).
       if (bout && bout.who === k) {
         c.strain = -bout.strain;

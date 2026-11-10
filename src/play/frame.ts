@@ -654,7 +654,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // Card sharks (P27): the court, the ball, the cards between the two, the board.
   f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner);
   // Free time's gatherings (2.39): the inmates' own dice, cards and shots at the hoop.
-  crowdGames(sim, f.inmates, f.x, f.z, f.games, f.pastimes);
+  crowdGames(sim, f.inmates, f.x, f.z, f.games, f.pastimes, a);
   // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
   f.long = longFrameOf(sim, a);
   // Team & ink (P29): the pitch, the ball.

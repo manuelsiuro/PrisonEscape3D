@@ -5,7 +5,7 @@
  * on that game, a game played), a chat that goes on without the one talked to and two left alone parting; the walk to
  * roll call from the far places against the time the 21:50 warning leaves; what free time opens, by prison.
  */
-import { HUDDLE, HUDDLE_FROM_DAY, HUDDLE_SLOTS } from '../src/content/huddles';
+import { HUDDLE, HUDDLE_FROM_DAY, HUDDLE_SLOTS, HUDDLE_STALL_STEPS } from '../src/content/huddles';
 import { DAY_EVENTS, WEATHERS } from '../src/content/days';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
@@ -39,12 +39,39 @@ function talkTo(bot: Bot, body: { x: number; z: number }, limit = 1500): boolean
   return false;
 }
 
-/** A model prisoner's day up to a minute, then the crowd's own (the player standing still) for `minutes`. */
-function idleFrom(bot: Bot, minutes: number, each: () => void, every = STEPS_PER_MINUTE) {
+/** A model prisoner's day up to a minute, then the crowd's own (the player standing still) for `minutes`; `stepped` after each step. */
+function idleFrom(bot: Bot, minutes: number, each: () => void, every = STEPS_PER_MINUTE, stepped?: () => void) {
   for (let k = 0; k < minutes * STEPS_PER_MINUTE; k++) {
     bot.step();
+    stepped?.();
     if (k % every === 0) each();
   }
+}
+
+/**
+ * 2.39.1 (the review): those sent to a gathering who gave up on the way, seen step by step: dropped while not yet there,
+ * once the stall time had gone by since it formed. (Counted from the members first seen, it could never be above 0.)
+ */
+function gaveUpCounter(bot: Bot) {
+  let who: number[] = [];
+  let there: number[] = [];
+  let since: number[] = [];
+  let n = 0;
+  return {
+    step() {
+      const h = bot.st.huddle;
+      // (Its start as it was before the step: a gathering broken up has it set back to 0.)
+      if (h)
+        for (let i = 0; i < who.length; i++)
+          if (who[i] >= 0 && !there[i] && h.who[i] !== who[i] && bot.st.step - since[Math.floor(i / 4)] > HUDDLE_STALL_STEPS) n++;
+      who = h ? h.who.slice() : [];
+      there = h ? h.there.slice() : [];
+      since = h ? h.since.slice() : [];
+    },
+    get n() {
+      return n;
+    },
+  };
 }
 
 // ------------------------------------------------------------------ the places
@@ -93,32 +120,36 @@ for (const def of PRISONS) {
       bot.st.calendar = [[day, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
       bot.routineUntil(day, minute);
       const seen = new Set<string>();
-      const joined = new Map<string, number>();
-      idleFrom(bot, length, () => {
-        samples++;
-        const v = huddlesNow(bot.sim);
-        let now = 0;
-        for (const g of v) {
-          const key = `${g.slot}:${g.since}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            formed++;
-            kinds[g.kind]++;
-            joined.set(key, bot.st.huddle!.who.slice(g.slot * 4, g.slot * 4 + 4).filter((k) => k >= 0).length);
+      const gave = gaveUpCounter(bot);
+      idleFrom(
+        bot,
+        length,
+        () => {
+          samples++;
+          const v = huddlesNow(bot.sim);
+          let now = 0;
+          for (const g of v) {
+            const key = `${g.slot}:${g.since}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              formed++;
+              kinds[g.kind]++;
+            }
+            now += g.who.length;
+            for (const k of g.who) if (staysPut(bot.sim, k)) wrongful++;
           }
-          now += g.who.length;
-          for (const k of g.who) if (staysPut(bot.sim, k)) wrongful++;
-        }
-        gathered += now;
-        most = Math.max(most, now);
-        check(
-          now <= Math.ceil(bot.st.inmates.filter((_, k) => !staysPut(bot.sim, k)).length / 2),
-          `${def.id}: never more than half of those free to gather (${now})`,
-        );
-        check(v.length <= HUDDLE_SLOTS[minute < 18 * 60 ? 0 : 1], `${def.id}: no more gatherings than slots`);
-      });
-      // (Those sent who never got there: given up on.)
-      for (const [, n] of joined) stalled += n < 2 ? 1 : 0;
+          gathered += now;
+          most = Math.max(most, now);
+          check(
+            now <= Math.ceil(bot.st.inmates.filter((_, k) => !staysPut(bot.sim, k)).length / 2),
+            `${def.id}: never more than half of those free to gather (${now})`,
+          );
+          check(v.length <= HUDDLE_SLOTS[minute < 18 * 60 ? 0 : 1], `${def.id}: no more gatherings than slots`);
+        },
+        STEPS_PER_MINUTE,
+        () => gave.step(),
+      );
+      stalled += gave.n;
     }
   }
   check(formed > 0, `${def.id}: inmates gather`);
@@ -127,6 +158,38 @@ for (const def of PRISONS) {
   console.log(
     `${def.id}: ${formed} gatherings over 9 free times (chat ${kinds[0]}, dice ${kinds[1]}, cards ${kinds[2]}, hoops ${kinds[3]}), ${(gathered / samples).toFixed(1)} gathered on average, ${most} at most`,
   );
+}
+
+// ------------------------------------------------------------------ a give-up is seen
+// (The measure above can fail: inmates held off their places, each put back where it stood every step, give up.)
+{
+  const bot = new Bot(CENTER_PERKS, 4);
+  bot.st.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
+  bot.routineUntil(2, 18 * 60 + 1);
+  const gave = gaveUpCounter(bot);
+  const pinned = new Map<number, { x: number; z: number }>();
+  // (Two hours: the first forms 20 to 40 minutes in, and giving up takes the stall's 25 game minutes.)
+  idleFrom(
+    bot,
+    120,
+    () => {},
+    STEPS_PER_MINUTE,
+    () => {
+      gave.step();
+      const h = bot.st.huddle;
+      if (!h) return;
+      for (let i = 0; i < h.who.length; i++) {
+        const w = h.who[i];
+        if (w < 0 || h.there[i]) continue;
+        const b = bot.st.inmates[w].body;
+        const p = pinned.get(w) ?? { x: b.x, z: b.z };
+        pinned.set(w, p);
+        b.x = p.x;
+        b.z = p.z;
+      }
+    },
+  );
+  check(gave.n > 0, `inmates who can't get to their place are seen giving up (${gave.n})`);
 }
 
 // ------------------------------------------------------------------ when there are none

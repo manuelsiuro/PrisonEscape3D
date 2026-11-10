@@ -5,7 +5,7 @@
 // the browser exposes its timer, and which part of the scene the calls come from.
 //   const pp = await import('/scripts/dev/perfprobe.ts');
 //   await pp.measure(3);                  // the game on screen as it is, for 3 s
-//   const rows = await pp.scenes();       // every prison × moment (or pp.scenes([['irongate', 1, 490]]))
+//   const rows = await pp.scenes();       // every prison × moment, and two with gatherings (or pp.scenes([['irongate', 1, 490]]))
 //   await pp.check();                     // every scene against perfbudget.json: what's drawn grew?
 //   await pp.record();                    // the new perfbudget.json's text, after a change meant to draw more
 // Run it with the phone's profile in DevTools (412×915 at 2.625, mobile, touch, an Android user agent: the
@@ -18,6 +18,13 @@ import budget from './perfbudget.json';
 
 const MOMENTS = [7 * 60 + 50, 8 * 60 + 2, 12 * 60 + 10, 15 * 60 + 5, 18 * 60 + 40, 23 * 60 + 30];
 const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
+/** 2.39.1: free time's gatherings, from day 2 (none on day 1, where the moments above are): a game of dice at Center
+ * Perks, a game of cards at Irongate in the morning, shots at its hoop in the evening. */
+const GATHERINGS: Array<[string, number, number]> = [
+  ['center-perks', 2, 10 * 60 + 44],
+  ['irongate', 2, 10 * 60 + 36],
+  ['irongate', 3, 19 * 60 + 42],
+];
 
 type Acc = { frames: number; total: number[]; view: number[]; render: number[]; gaps: number[]; gpu: number[] };
 let acc: Acc | null = null;
@@ -216,9 +223,9 @@ export async function measure(seconds = 3) {
   };
 }
 
-/** Every prison at the day's moments (waking, roll call, lunch, the yard, the evening, night), or the ones given. */
+/** Every prison at the day's moments (waking, roll call, lunch, the yard, the evening, night) and the gatherings, or the ones given. */
 export async function scenes(list?: Array<[string, number, number]>, seconds = 3) {
-  const todo = list ?? PRISONS.flatMap((p) => MOMENTS.map((m) => [p, 1, m] as [string, number, number]));
+  const todo = list ?? [...PRISONS.flatMap((p) => MOMENTS.map((m) => [p, 1, m] as [string, number, number])), ...GATHERINGS];
   const rows = [];
   for (const [prison, day, minute] of todo) {
     await at(prison, day, minute);

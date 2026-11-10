@@ -13,6 +13,8 @@ export class LessonCard {
   private shown = '';
   /** Where the card's bottom and right edge were last set for the banner and the toasts to keep clear of (px). */
   private edge = '';
+  /** The window's size (and whether a game's card has the top row) when the card was last fitted. */
+  private size = '';
   /** Where it was last seen on screen. */
   at: DOMRect | null = null;
 
@@ -48,15 +50,27 @@ export class LessonCard {
       }
     }
     const key = `${chapter}:${n}:${done}:${tick}:${text}`;
-    if (key === this.shown) return;
+    // (Fitted again when the step, the window or the layout changes; hidden, the routine pill is never left lifted over.)
+    const size = hidden ? '' : `${innerWidth}x${innerHeight}:${document.body.matches(OWN_PLACE)}`;
+    if (key === this.shown) {
+      if (size !== this.size) this.fit(size);
+      return;
+    }
     this.shown = key;
     this.el.classList.toggle('done', tick);
     const dots = Array.from({ length: steps }, (_, k) => `<i class="${k < done ? 'on' : k === done ? 'now' : ''}"></i>`).join('');
     this.el.innerHTML = `<span class="coach-ic">${icon(tick ? 'check' : 'bulb', 18)}</span>
       <span class="coach-text"><small>${t(`chapter.${chapter}` as Key)} · ${t('lesson.of', { n, of })} · ${t(`lesson.${id}.t` as Key)}</small><b>${t(TOUCH && touch ? touch : text)}</b><span class="lesson-dots">${dots}</span></span>`;
+    this.fit(size);
     this.strip.classList.toggle('done', tick);
     this.strip.innerHTML = `${icon(tick ? 'check' : 'bulb', 15)}<span></span>`;
     this.strip.querySelector('span')!.textContent = t(TOUCH && touch ? touch : text);
+  }
+
+  private fit(size: string) {
+    this.size = size;
+    if (size) fitLessonCard(this.el);
+    else document.body.classList.remove('lesson-high');
   }
 
   /** The step docked at the top of the panel covering the card (or taken down): a panel that redraws itself gets it back the next frame. */
@@ -67,10 +81,34 @@ export class LessonCard {
 
   hide() {
     this.el.classList.add('hidden');
-    document.body.classList.remove('lesson-on');
+    document.body.classList.remove('lesson-on', 'lesson-high');
+    this.size = '';
     this.strip.remove();
     this.shown = '';
   }
+}
+
+/** A phone turned (in Chrome about 274 tall): the room under the routine pill and above the hotbar. */
+const SHORT = '(max-height: 520px) and (orientation: landscape)';
+/** A game's own card layout, where the lesson's card has a place of its own (25-tutorial.css's list): never lifted. */
+const OWN_PLACE = '.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling';
+
+/**
+ * 2.39.1: on a phone turned, a step too long for the room above the hotbar lifts the card over the routine pill
+ * (`body.lesson-high`, 25-tutorial.css), for that step only; the rest keep it where it was. Where the card is laid out,
+ * not where its slide-in has it now. Also run by screensweep's `lessonCards()`.
+ */
+export function fitLessonCard(card: HTMLElement) {
+  document.body.classList.remove('lesson-high');
+  if (!matchMedia(SHORT).matches || document.body.matches(OWN_PLACE)) return;
+  const bar = document.querySelector<HTMLElement>('.hotbar');
+  const parent = card.offsetParent?.getBoundingClientRect();
+  if (!bar || !parent) return;
+  const h = bar.getBoundingClientRect();
+  const left = parent.left + card.offsetLeft;
+  const bottom = parent.top + card.offsetTop + card.offsetHeight;
+  const across = h.width > 0 && left + card.offsetWidth > h.left && left < h.right;
+  if (bottom > (across ? h.top : innerHeight)) document.body.classList.add('lesson-high');
 }
 
 export type LessonResult = 'next' | 'list' | 'again' | 'play';

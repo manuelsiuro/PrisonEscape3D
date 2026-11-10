@@ -94,6 +94,8 @@ export class TalkPanel {
   knows: (key: string) => boolean = () => false;
   /** 2.39: the inmates' game (HUDDLE kind) the player walked up to and joined by talking to this one (-1 none): it comes first. */
   invited = -1;
+  /** 2.39.1: the joined game's row not yet brought into view this talk (a phone turned: it fell below the panel's fold). */
+  private showInvite = false;
   /** The games on offer with this inmate (P22), from the play layer. */
   games: (sim: Sim) => GamesView | null = () => null;
   /** The crew's orders for a follower (P23, play/crew.ts). */
@@ -242,6 +244,7 @@ export class TalkPanel {
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
+    if (first) this.showInvite = true;
     const delta = first ? 0 : m.opinion - this.opinion;
     this.who = who;
     this.opinion = m.opinion;
@@ -458,6 +461,11 @@ export class TalkPanel {
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));
+    }
+    // (The game joined, picked out, brought into view once: further down the panel than a turned phone shows.)
+    if (this.showInvite && this.invited >= 0) {
+      this.showInvite = false;
+      this.el.querySelector('.bribe-row.invited')?.scrollIntoView({ block: 'nearest' });
     }
   }
 
