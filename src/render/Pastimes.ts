@@ -33,8 +33,9 @@ const BOARD_FACE = 0.2;
 const BALL_R = 0.1;
 const HOLD_Y = 1.45;
 const HOLD_AHEAD = 0.1;
-/** The ball comes to rest this long after it's let go (s; reduced motion: there at once). */
-const REST_T = 2;
+/** The ball comes to rest this long after it's let go (s; reduced motion: there at once). 2.39.1: 2.4 (was 2), so a
+ * rim-out's full bounce is over before it's taken away (play/pastimes.ts and play/huddles.ts show it this long). */
+const REST_T = 2.4;
 /** The flight's time (play/pastimes.ts FLIGHT_S) and the ground. */
 const FLIGHT = 0.9;
 /** The spots: a painted disc each, and the ring over the lit one. */
@@ -51,6 +52,8 @@ export function spotsOnPitch(c: Court, p: Pitch | null | undefined): boolean[] {
 }
 /** Face-down cards drawn at most: the player's game's 14, and 2.39's inmates' games (a few piles of up to 6). */
 const CARD_BACKS = 14 + 18;
+/** No inmates' card games (underground, or none): the same empty list every frame. */
+const NO_CARDS: NonNullable<PastimesFrame['crowdCards']> = [];
 /** A playing card (tiles), the checkers board's side and a piece. */
 const CARD_W = 0.15;
 const CARD_H = 0.21;
@@ -250,11 +253,14 @@ export class PastimesView {
     const endY = result === 'air' ? (long ? RIM_Y + 0.25 : RIM_Y - 0.35) : RIM_Y + 0.03;
     const ex = rx + ux * end;
     const ez = rz + uz * end;
-    // The arc: a quadratic through the hands, up past the apex, to the end.
+    // The arc: a quadratic through the hands, up past the apex, to the end; from where the ball was held (over the head,
+    // a little toward the rim, at the top of the sweep: 2.39.1, it jumped a tenth of a tile as it was let go).
     const ctrl = 2 * (Math.max(b.fromY, endY) + 0.9) - (b.fromY + endY) / 2;
     if (t <= FLIGHT) {
       const e = t / FLIGHT;
-      out.set(fromX + (ex - fromX) * e, (1 - e) * (1 - e) * b.fromY + 2 * (1 - e) * e * ctrl + e * e * endY, fromZ + (ez - fromZ) * e);
+      const hx = fromX + ux * HOLD_AHEAD;
+      const hz = fromZ + uz * HOLD_AHEAD;
+      out.set(hx + (ex - hx) * e, (1 - e) * (1 - e) * b.fromY + 2 * (1 - e) * e * ctrl + e * e * endY, hz + (ez - hz) * e);
       return;
     }
     // Its speed as it arrives (tiles a second): along the shot, and down.
@@ -284,7 +290,9 @@ export class PastimesView {
       return;
     }
     const b2 = a - tHit;
-    const up = Math.min(2.4, Math.abs(vy - g * tHit) * 0.45);
+    // (2.39.1: over by REST_T at the latest, where it's at rest: it's taken away then, and reduced motion shows it
+    // there. A rim-out's bounce used to be still in the air at 2.1 s, and vanished there; none is cut short now.)
+    const up = Math.max(0, Math.min(2.4, Math.abs(vy - g * tHit) * 0.45, (g * (REST_T - FLIGHT - tHit)) / 2));
     const h = b2 < (2 * up) / g ? up * b2 - 0.5 * g * b2 * b2 : 0;
     // (Along the ground it slows to a stop.)
     const roll = 1 - Math.exp(-b2 * 1.5);
@@ -358,9 +366,11 @@ export class PastimesView {
       }
     }
     // 2.39: the inmates' own games: a small pile each, a little scattered.
-    for (const g of on ? (f.crowdCards ?? []) : []) {
+    for (const g of on ? (f.crowdCards ?? NO_CARDS) : NO_CARDS) {
+      // (Each card where it was put down: its scatter by its place in the pile and the game's place, never the pile's size.)
+      const game = g.x * 3.1 + g.z * 1.7;
       for (let k = 0; k < g.pile && n < CARD_BACKS; k++) {
-        const j = Math.sin((k + g.pile) * 12.9898) * 43758.5453;
+        const j = Math.sin((k + game) * 12.9898) * 43758.5453;
         this.p.set(g.x + (j - Math.floor(j) - 0.5) * 0.1, 0.004 + k * 0.002, g.z + Math.sin(k * 7.13) * 0.04);
         this.q.setFromAxisAngle(this.yAxis, g.angle + Math.sin(k * 3.7 + g.x) * 0.6);
         this.m.compose(this.p, this.q, this.s.set(1, 1, 1));

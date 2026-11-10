@@ -65,6 +65,8 @@ line is something that was missed or broke at some point.
   pages that mention the same thing.
 - A lesson in `CHAPTERS`. A lesson without its own `seed` uses `7 + its place`, so inserting one moves
   every unseeded lesson after it: add it after the last unseeded one, with a seed.
+- A lesson's step is read on a phone turned in Chrome (697×274) above the hotbar: `screensweep`'s `lessonCards()`
+  at that size measures every step in both languages (2.38's long steps ran off the screen there; keep them short).
 - The first-day guide (`src/ui/coach.ts`).
 - Every line in `src/i18n/en.ts` and `fr.ts` that describes the old behaviour. New French follows `fr.ts`: a narrow
   no-break space (U+202F) before `:` `;` `!` `?` and `%`, and inside « ».
