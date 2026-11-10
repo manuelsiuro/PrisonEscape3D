@@ -7,6 +7,7 @@ import { phoneTargets, swapPlace } from './phone';
 import { vendTargets } from './vending';
 import { coolerTargets } from './cooler';
 import { huddleTargets } from './huddles';
+import { watchTargets } from './spectate';
 import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
 import { boardKeptClear, hearingToday } from './parole';
 import { releaseToday } from './paperwork';
@@ -573,6 +574,8 @@ export function socialNow(sim: SimContext): Social {
   coolerTargets(sim, so);
   // Free time's gatherings (2.39): a chat, an inmates' game (the machine's queue after: whoever joins it leaves them).
   huddleTargets(sim, so);
+  // A crowd at the player's game (2.40): either side of it, watching.
+  watchTargets(sim, so);
   // The vending machine (2.32): its queue, once the others have had their say.
   vendTargets(sim, so);
   // Talent night (P30): the act on the stage (wherever the player is).

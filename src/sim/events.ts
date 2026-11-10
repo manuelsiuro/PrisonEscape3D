@@ -358,7 +358,18 @@ export type SimEvent =
    * given up (`pin` pins set, `of` in all).
    */
   | { type: 'dice'; what: DiceNews; who: number; stake: number; mine: number[]; theirs?: number[]; mask?: number }
-  | { type: 'bout'; what: BoutNews; who: number; crowd?: number; wins?: number; str?: number; gain?: number }
+  | {
+      type: 'bout';
+      what: BoutNews;
+      who: number;
+      crowd?: number;
+      wins?: number;
+      str?: number;
+      gain?: number;
+      hit?: boolean;
+      /** 2.40: those watching who cheered (each +2 opinion), shown over their heads. */
+      fans?: number[];
+    }
   | { type: 'pick'; what: PickNews; tile: number; pin?: number; of?: number }
   /**
    * The crew (P23, crew.ts): an order taken (`order`: ORDER), a lookout's whistle (`guard`
@@ -408,6 +419,8 @@ export type SimEvent =
       what: 'start' | 'won' | 'lost' | 'draw' | 'off' | 'practice';
       who: number;
       crowd?: number;
+      /** 2.40: those watching who cheered (each +2 opinion), shown over their heads. */
+      fans?: number[];
       wins?: number;
       spd?: number;
       gain?: number;
@@ -695,7 +708,8 @@ type CrewNews =
 /** A dice game (P22, the 'dice' event). */
 type DiceNews = 'rolled' | 'rerolled' | 'won' | 'lost' | 'push';
 /** An arm-wrestle (P22, the 'bout' event). */
-type BoutNews = 'start' | 'won' | 'lost' | 'draw' | 'gaveUp' | 'off';
+/** (2.40: 'push', a press that counted: `hit` on the beat or not.) */
+type BoutNews = 'start' | 'push' | 'won' | 'lost' | 'draw' | 'gaveUp' | 'off';
 /** The lockpick at work (P22, the 'pick' event). */
 type PickNews = 'start' | 'set' | 'slip' | 'open' | 'stop';
 

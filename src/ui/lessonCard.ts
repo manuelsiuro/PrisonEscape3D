@@ -91,7 +91,7 @@ export class LessonCard {
 /** A phone turned (in Chrome about 274 tall): the room under the routine pill and above the hotbar. */
 const SHORT = '(max-height: 520px) and (orientation: landscape)';
 /** A game's own card layout, where the lesson's card has a place of its own (25-tutorial.css's list): never lifted. */
-const OWN_PLACE = '.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling';
+export const OWN_PLACE = '.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling';
 
 /**
  * 2.39.1: on a phone turned, a step too long for the room above the hotbar lifts the card over the routine pill

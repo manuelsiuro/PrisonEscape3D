@@ -193,3 +193,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The tutorial's missing lessons (v2.38.0)
 - Free time polished (v2.39.0)
 - 2.38 and 2.39 reviewed (v2.39.1)
+
+## [v2.40 to v2.44](history/v2.40-v2.44.md)
+
+- The side games polished (v2.40.0, not released yet)
