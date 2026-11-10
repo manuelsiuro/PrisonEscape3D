@@ -15,8 +15,17 @@
  * - **The end**: most points wins QUIZ_PRIZE and QUIZ_INTELLECT (a tie at the top, half of each),
  *   and QUIZ_WIN_OPINION with the contestants; playing it out, QUIZ_OPINION. Given up (EXT.QUIZ 1)
  *   or off (the player QUIZ_LEAVE away, a lockdown): nothing.
+ * - **2.41** (not in a run from before, Sim.rules240): the history questions go round the whole bank a week's quiz at a
+ *   time (none again till all have been asked); two more about the prison (its warden, who carries a key's colour); the
+ *   player's Intellect rules out wrong answers (`struckOf`); a host (the librarian, else the nearest inmate up and about)
+ *   stands in front of the places (`hostSpot`), and spectate.ts brings a crowd.
  */
 import {
+  HISTORY_240,
+  HOST_OUT,
+  STRIKE_ONE,
+  STRIKE_TWO,
+  WARDENS,
   BUZZ_MIN,
   BUZZ_MIN_215,
   BUZZ_SPAN,
@@ -62,7 +71,10 @@ import { DOING } from './inmates';
 import { ATTRS } from '../events';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
-import { tilesFrom } from '../world/grid';
+import { MAP_W, tilesFrom } from '../world/grid';
+import { DIR_X, DIR_Z } from '../command';
+import { isFloor } from '../ai/places';
+import { librarianOf } from './training';
 
 /** A quiz under way (P30): plain data in the state. */
 export interface Quiz {
@@ -80,6 +92,8 @@ export interface Quiz {
   /** Who took it (-1 nobody yet, or nobody: time up; 0 the player, 1–3 a contestant); the step its answer stops being shown (0: still being asked). */
   got: number;
   until: number;
+  /** 2.41: the host (an inmate's index; -1 or absent: none, as in a run from before). */
+  host?: number;
 }
 
 /** A choice as the card shows it: a time (minutes of the day), a guard (index), an item (id), a number, a key's colour, a history answer (its place in the text). */
@@ -89,12 +103,15 @@ export type Choice =
   | { kind: 'item'; id: string }
   | { kind: 'n'; n: number }
   | { kind: 'colour'; c: string }
-  | { kind: 'h'; k: number };
+  | { kind: 'h'; k: number }
+  | { kind: 'warden'; id: string };
 
 /** A question: its text (`quiz.<id>`), what it needs (a guard, ingredients), the four choices, the right one. */
 export interface Question {
   id: string;
   guard?: number;
+  /** 2.41: the key's colour asked about (keyHolder). */
+  colour?: string;
   items?: string[];
   choices: Choice[];
   answer: number;
@@ -140,7 +157,14 @@ const plainRecipes = RECIPES.filter(
 );
 
 /** The questions about this prison that it can be asked (each always true in the running game). */
-function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: number, mods: readonly string[], kind: number): Question[] {
+function prisonQuestions(
+  sim: Pick<SimContext, 'prison'>,
+  salt: number,
+  day: number,
+  mods: readonly string[],
+  kind: number,
+  fresh: boolean,
+): Question[] {
   const p = sim.prison;
   const out: Question[] = [];
   out.push(timeQuestion('rollCall', blockAt('eveningRollCall'), salt, day, 0, kind));
@@ -167,8 +191,10 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
     out.push({ id: `trait.${trait}`, choices, answer: choices.findIndex((c) => c.kind === 'guard' && c.k === right) });
   }
   // A guard's key's colour.
+  let keyAsked: { k: number; key: string } | null = null;
   if (named.length) {
     const g = named[rollInt(salt, kind, day, 600, named.length)];
+    keyAsked = { k: g.k, key: g.g.key };
     const others = shuffled(
       KEY_ITEM_COLORS.map(([c]) => c).filter((c) => c !== g.g.key),
       salt,
@@ -201,6 +227,36 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
   if (deck.includes('delivery'))
     out.push(timeQuestion('delivery', 480 + (EVENT_TIMES.delivery.at as number) + EVENT_TIMES.delivery.length - 1, salt, day, 4, kind));
   if (deck.includes('visiting')) out.push(timeQuestion('visiting', 480 + (EVENT_TIMES.visiting.at as number), salt, day, 5, kind));
+  if (!fresh) return out;
+  // 2.41: the warden's name (this prison's among three others').
+  if (WARDENS.includes(p.id)) {
+    const others = shuffled(
+      WARDENS.filter((id) => id !== p.id),
+      salt,
+      day,
+      17,
+      kind,
+    ).slice(0, 3);
+    const choices = shuffled([p.id, ...others], salt, day, 18, kind).map((id): Choice => ({ kind: 'warden', id }));
+    out.push({ id: 'warden', choices, answer: choices.findIndex((c) => c.kind === 'warden' && c.id === p.id) });
+  }
+  // 2.41: who carries a key's colour (the guard with it among three with another colour).
+  // (Never the key question's guard nor its colour: one would answer the other.)
+  const holders = named.filter((e) => e.k !== keyAsked?.k && e.g.key !== keyAsked?.key);
+  if (holders.length && named.length >= 4) {
+    const g = holders[rollInt(salt, kind, day, 610, holders.length)];
+    const others = shuffled(
+      named.filter((e) => e.g.key !== g.g.key && e.k !== keyAsked?.k).map((e) => e.k),
+      salt,
+      day,
+      19,
+      kind,
+    ).slice(0, 3);
+    if (others.length === 3) {
+      const choices = shuffled([g.k, ...others], salt, day, 21, kind).map((k): Choice => ({ kind: 'guard', k }));
+      out.push({ id: 'keyHolder', colour: g.g.key, choices, answer: choices.findIndex((c) => c.kind === 'guard' && c.k === g.k) });
+    }
+  }
   return out;
 }
 
@@ -211,7 +267,7 @@ const asked = new Map<string, Question[]>();
  * (P35: a kiosk course's are drawn the same way under SALT.COURSE, `n` of them, `history` of those from the bank.)
  */
 export function questionsOf(
-  sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'> },
+  sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'>; rules240?: boolean },
   day: number,
   kind: number = SALT.QUIZ,
   n = QUIZ_QUESTIONS,
@@ -219,22 +275,24 @@ export function questionsOf(
 ): Question[] {
   const salt = sim.state.salt;
   const mods = sim.state.mods ?? [];
-  const key = `${sim.prison.id}:${salt}:${day}:${mods.join()}:${kind}:${n}:${historyN}`;
+  const fresh = !sim.rules240;
+  const key = `${sim.prison.id}:${salt}:${day}:${mods.join()}:${kind}:${n}:${historyN}:${fresh}`;
   const had = asked.get(key);
   if (had) return had;
-  const history = shuffled(
-    HISTORY.map((_, k) => k),
-    salt,
-    day,
-    1,
-    kind,
-  )
-    .slice(0, historyN)
-    .map((k, j): Question => {
-      const order = shuffled([0, 1, 2, 3], salt, day, 20 + j, kind);
-      return { id: `h.${HISTORY[k]}`, choices: order.map((a): Choice => ({ kind: 'h', k: a })), answer: order.indexOf(0) };
-    });
-  const local = shuffled(prisonQuestions(sim, salt, day, mods, kind), salt, day, 2, kind).slice(0, n - history.length);
+  const bank = fresh ? HISTORY.length : HISTORY_240;
+  const all = HISTORY.slice(0, bank).map((_, k) => k);
+  // (2.41: quiz night goes round the bank, a week's quiz at a time, in an order of the run's own; a course still draws.)
+  const week = Math.max(0, Math.floor((day - 2) / 7));
+  let picked: number[];
+  if (fresh && kind === SALT.QUIZ) {
+    const round = shuffled(all, salt, 0, 1, kind);
+    picked = Array.from({ length: historyN }, (_, j) => round[(week * historyN + j) % bank]);
+  } else picked = shuffled(all, salt, day, 1, kind).slice(0, historyN);
+  const history = picked.map((k, j): Question => {
+    const order = shuffled([0, 1, 2, 3], salt, day, 20 + j, kind);
+    return { id: `h.${HISTORY[k]}`, choices: order.map((a): Choice => ({ kind: 'h', k: a })), answer: order.indexOf(0) };
+  });
+  const local = shuffled(prisonQuestions(sim, salt, day, mods, kind, fresh), salt, day, 2, kind).slice(0, n - history.length);
   const out: Question[] = [];
   for (let k = 0; out.length < history.length + local.length; k++) {
     if (k < history.length) out.push(history[k]);
@@ -251,6 +309,23 @@ export const readOf = (sim: Pick<SimContext, 'rules215'>, q: Pick<Question, 'id'
 
 /** How long a question is open, its reading time included (steps). */
 export const questionSteps = (sim: Pick<SimContext, 'rules215'>) => (sim.rules215 ? QUESTION_STEPS_215 : QUESTION_STEPS);
+
+/**
+ * 2.41: the answer to the quiz's question now that the player's Intellect rules out (never the right one), by roll():
+ * from STRIKE_ONE on half the questions, from STRIKE_TWO on every one; none before, nor in a run from before. (Two ruled
+ * out were measured: blind guessing won 37 nights of 40, knowing the answers no longer mattered. quiztest has it.)
+ */
+export function struckOf(sim: SimContext): readonly number[] {
+  const o = sim.state.quiz;
+  const q = questionNow(sim);
+  const int = sim.state.items.int;
+  if (sim.rules240 || !o || !q || int < STRIKE_ONE) return NO_STRIKES;
+  const day = prisonDay(o.from) * 16 + o.q;
+  if (int < STRIKE_TWO && rollInt(sim.state.salt, SALT.QUIZ, day, 5100, 2) !== 0) return NO_STRIKES;
+  const wrong = [0, 1, 2, 3].filter((k) => k !== q.answer);
+  return [wrong[rollInt(sim.state.salt, SALT.QUIZ, day, 5000, 3)]];
+}
+const NO_STRIKES: readonly number[] = [];
 
 /** A contestant's buzz on a question: when (steps after it's put: `read` steps of reading first, -1 as before 2.16), and whether right; the wrong choice it gives otherwise. */
 function buzzOf(
@@ -309,23 +384,51 @@ const BUSY: ReadonlySet<number> = new Set([
   DOING.GUITAR,
 ]);
 
-/** The three contestants: the nearest inmates up and about to the places, not busy with the player or the crew (ties: the lower index); null if fewer. */
+/** Up and about for the quiz: not out, not after the player, not busy with a game, a talk, the crew. */
+function upFor(sim: SimContext, k: number): boolean {
+  const s = sim.state;
+  const m = s.inmates[k];
+  if (!m || m.ko > 0 || m.angry > 0 || BUSY.has(m.doing) || s.talk === k || s.followers.includes(k)) return false;
+  return !(
+    s.match?.team.includes(k) ||
+    s.ink?.who === k ||
+    s.cheat?.who === k ||
+    s.shootout?.who === k ||
+    s.dice[0] === k ||
+    s.bout[0] === k
+  );
+}
+
+/** 2.41: the host: the librarian if he's up and about within QUIZ_CALL, else -1 (the nearest after the contestants is taken then: `joinQuiz`). */
+function librarianHost(sim: SimContext): number {
+  const pl = quizOf(sim.world);
+  const k = librarianOf(sim);
+  if (sim.rules240 || !pl || k < 0 || !upFor(sim, k)) return -1;
+  const m = sim.state.inmates[k];
+  const c = placeAt(pl, 0);
+  return Math.max(Math.abs(m.body.x - c.x), Math.abs(m.body.z - c.z)) <= QUIZ_CALL * UNIT ? k : -1;
+}
+
+/** The three contestants: the nearest inmates up and about to the places, not busy with the player or the crew (ties: the lower index); null if fewer. 2.41: never the host; with no librarian to host, a fourth (the next nearest) hosts. */
 function contestantsFor(sim: SimContext): number[] | null {
   const s = sim.state;
   const pl = quizOf(sim.world);
   if (!pl) return null;
   const c = placeAt(pl, 0);
   const pool: number[] = [];
+  const host = librarianHost(sim);
   s.inmates.forEach((m, k) => {
-    if (m.ko > 0 || m.angry > 0 || BUSY.has(m.doing) || s.talk === k || s.followers.includes(k)) return;
-    if (s.match?.team.includes(k) || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k)
-      return;
+    if (k === host || !upFor(sim, k)) return;
     if (Math.max(Math.abs(m.body.x - c.x), Math.abs(m.body.z - c.z)) > QUIZ_CALL * UNIT) return;
     pool.push(k);
   });
   if (pool.length < 3) return null;
   const d2 = (k: number) => (s.inmates[k].body.x - c.x) ** 2 + (s.inmates[k].body.z - c.z) ** 2;
-  return pool.sort((a, b) => d2(a) - d2(b) || a - b).slice(0, 3);
+  pool.sort((a, b) => d2(a) - d2(b) || a - b);
+  // (2.41: the librarian hosts; else the next nearest, if there's one.)
+  if (!sim.rules240) pool.length = Math.min(pool.length, host >= 0 ? 3 : 4);
+  else pool.length = 3;
+  return host >= 0 ? [...pool, host] : pool;
 }
 
 /** Why the player can't join the quiz now (null: they can). */
@@ -347,17 +450,21 @@ export function joinQuiz(sim: SimContext) {
   if (gameOn(s) || s.quiz || s.show) return;
   const why = quizRefusal(sim);
   if (why) return refuse(sim, why);
-  const who = contestantsFor(sim)!;
+  const four = contestantsFor(sim)!;
+  const who = four.slice(0, 3);
+  // (2.41: the host, the fourth if there's one: the librarian, else the next nearest.)
+  const host = four.length > 3 ? four[3] : -1;
   const mine = nearestPlace(sim);
   const seats = [mine, ...[0, 1, 2, 3].filter((k) => k !== mine)];
   stopTraining(sim);
   endTalk(sim);
-  for (const k of who) {
+  for (const k of four) {
     s.inmates[k].wait = 0;
     s.inmates[k].path = [];
   }
   s.quizDay = prisonDay(s.step);
   s.quiz = { who, seats, from: s.step, q: -1, at: 0, pts: [0, 0, 0, 0], said: [-1, -1, -1, -1], got: -1, until: 0 };
+  if (!sim.rules240) s.quiz.host = host;
   sim.events.push({ type: 'quiz', what: 'start', who: who.slice() });
 }
 
@@ -376,6 +483,8 @@ export function answerQuiz(sim: SimContext, choice: number) {
   const o = s.quiz;
   const q = questionNow(sim);
   if (!o || !q || o.until || o.said[0] >= 0 || choice < 0 || choice > 3) return;
+  // (2.41: one the player's Intellect ruled out can't be chosen.)
+  if (struckOf(sim).includes(choice)) return;
   o.said[0] = choice;
   const right = choice === q.answer;
   sim.events.push({ type: 'quiz', what: right ? 'right' : 'wrong', by: 0, q: o.q, choice });
@@ -411,6 +520,8 @@ export function keepQuiz(sim: SimContext) {
     return endQuiz(sim, 'off');
   // (A contestant knocked out or going for the player: the quiz is off, never won by default.)
   if (o.who.some((k) => !s.inmates[k] || s.inmates[k].ko > 0 || s.inmates[k].angry > 0)) return endQuiz(sim, 'off');
+  // (2.41: the host knocked out or going for the player: the quiz goes on without one.)
+  if (o.host !== undefined && o.host >= 0 && (!s.inmates[o.host] || s.inmates[o.host].ko > 0 || s.inmates[o.host].angry > 0)) o.host = -1;
   if (o.q < 0) {
     // Walking over: under way once all three are at their places, or after QUIZ_GATHER.
     const there = o.who.every((k, j) => {
@@ -507,5 +618,53 @@ export function quizTargets(sim: SimContext, so: { follow: Array<Body | null>; g
     so.doing[k] = DOING.QUIZ;
     so.face[k] = pl.face;
   });
+  // 2.41: the host at his place in front of them, facing them; reading the questions once he's there.
+  const h = o.host ?? -1;
+  const m = h >= 0 ? s.inmates[h] : null;
+  const at = hostSpot(sim.world);
+  if (!m || !at || m.ko > 0 || m.angry > 0) return;
+  m.wait = 0;
+  hostMark.x = at.x * UNIT + UNIT / 2;
+  hostMark.z = at.z * UNIT + UNIT / 2;
+  so.follow[h] = hostMark;
+  so.gap[h] = 0;
+  so.face[h] = at.face;
+  so.doing[h] = !m.body.moving && tilesFrom(at.x, at.z, m.body.x, m.body.z) === 0 ? DOING.HOST : DOING.NOTHING;
 }
 const marks: Body[] = [0, 1, 2].map(() => bodyAt(0, 0));
+const hostMark: Body = bodyAt(0, 0);
+
+/** The four places' middle (tiles, fractional). */
+export function quizMiddle(pl: QuizPlace): { x: number; z: number } {
+  const n = pl.spots.length;
+  return { x: pl.spots.reduce((a, q) => a + q.x, 0) / n + 0.5, z: pl.spots.reduce((a, q) => a + q.z, 0) / n + 0.5 };
+}
+
+const hostSpots = new WeakMap<World, { x: number; z: number; face: number } | null>();
+/**
+ * 2.41: where the host stands (tiles): in front of the places, the way they face, the nearest open floor to their
+ * middle up to HOST_OUT tiles out (a table in the way: further, or a tile aside); facing back at them. Null: no room.
+ */
+export function hostSpot(w: World): { x: number; z: number; face: number } | null {
+  if (hostSpots.has(w)) return hostSpots.get(w)!;
+  const pl = quizOf(w);
+  let out: { x: number; z: number; face: number } | null = null;
+  if (pl) {
+    const dx = Math.sign(DIR_X[pl.face]);
+    const dz = Math.sign(DIR_Z[pl.face]);
+    const mid = quizMiddle(pl);
+    const back = ((pl.face - 1 + 8) % 16) + 1;
+    const taken = (x: number, z: number) => pl.spots.some((q) => q.x === x && q.z === z);
+    search: for (let d = 1; d <= HOST_OUT; d++)
+      for (const side of [0, 1, -1, 2, -2]) {
+        // (Aside: across the line the places stand on.)
+        const x = Math.floor(mid.x + dx * d + (dz !== 0 ? side : 0));
+        const z = Math.floor(mid.z + dz * d + (dx !== 0 ? side : 0));
+        if (!isFloor(w, x, z) || w.npcBlock[z * MAP_W + x] || taken(x, z)) continue;
+        out = { x, z, face: back };
+        break search;
+      }
+  }
+  hostSpots.set(w, out);
+  return out;
+}

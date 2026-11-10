@@ -174,7 +174,7 @@ function dressForMap(v: MapShotParts): () => void {
     const track = Array.from({ length: ls.race.len }, (_, k) =>
       tile(ls.race.x + Math.round(Math.cos(a)) * k, ls.race.z + Math.round(Math.sin(a)) * k),
     );
-    v.pieces.longView.update({ beds, track, rats: [], laps: null, tipsy: false }, 0, false, true);
+    v.pieces.longView.update({ beds, track, rats: [], laps: null, tipsy: false, flash: 0 }, 0, false, true);
   }
   // (Its one piece never otherwise moved behind the title: up, as in a day's play; the helicopter away at 10:00.)
   v.island?.update(100, 0, 600, false, false);

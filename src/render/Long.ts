@@ -21,6 +21,8 @@ export interface LongFrame {
   laps: { x: number; z: number } | null;
   /** The player tipsy (the walk sways). */
   tipsy: boolean;
+  /** 2.41: a photo finish's flash at the line (1 as they cross it, fading to 0). */
+  flash: number;
 }
 
 const SOIL = 0x7a5536;
@@ -121,6 +123,11 @@ export class LongView {
   private readonly track = new THREE.Group();
   private trackTiles: number[] | null = null;
   private readonly lap: THREE.Group;
+  /** 2.41: the camera's flash over the finish line (a photo finish), hidden otherwise. */
+  private readonly flash = new THREE.Mesh(
+    new THREE.CircleGeometry(0.8, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }),
+  );
   private readonly lapRat: Racer;
   private shown = '';
 
@@ -180,6 +187,10 @@ export class LongView {
     this.lap.add(this.lapRat.root);
     this.lap.visible = false;
     this.group.add(this.lap);
+    this.flash.rotation.x = -Math.PI / 2;
+    this.flash.visible = false;
+    this.flash.renderOrder = 3;
+    this.group.add(this.flash);
   }
 
   /** When to free the last track's chalk (setWorld). */
@@ -320,6 +331,13 @@ export class LongView {
       if (!n) continue;
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+    // A photo finish (2.41): a white flash over the line as they cross it (reduced motion: none).
+    const end = tiles?.[tiles.length - 1];
+    this.flash.visible = motion && f.flash > 0 && end !== undefined;
+    if (this.flash.visible && end !== undefined) {
+      this.flash.position.set((end % MAP_W) + 0.5, 0.05, Math.floor(end / MAP_W) + 0.5);
+      (this.flash.material as THREE.MeshBasicMaterial).opacity = 0.75 * f.flash * f.flash;
     }
     // The pet's laps at home: round the oval, a lap every second and a half.
     const l = f.laps;

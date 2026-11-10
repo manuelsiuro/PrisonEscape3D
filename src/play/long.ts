@@ -34,6 +34,10 @@ import { treatOffers } from './holidays';
 import { floatUp } from './floats';
 import { ratName } from './labels';
 import { inmateName } from '../ui/names';
+import { DICE_HEAT } from '../content/games';
+import { eyesOn } from '../sim/systems/games';
+import { director } from './chatter';
+import { cheer } from './games';
 
 /**
  * Long games (P28) on screen: what can be taken from the open furniture, the race card, the
@@ -92,7 +96,13 @@ let result: {
   won: number;
   purse: number;
   day: number;
+  /** 2.41: the first two so close at the line it took the camera (PHOTO), not in a run from before. */
+  photo: boolean;
 } | null = null;
+/** 2.41: a photo finish: the first two within this share of the winner's distance. */
+const PHOTO = 0.02;
+/** 2.41: the camera's flash at the line (ms). */
+const FLASH_MS = 700;
 /** Where the pet runs its laps at home (tiles: a free floor tile beside the player as it set off), held for the session. */
 let lapAt: { x: number; z: number } | null = null;
 const RESULT_MS = 6000;
@@ -190,6 +200,9 @@ export function announceLong(sim: Sim, e: SimEvent) {
         const raced = cardOf(sim, day, order.length);
         const fin: number[] = [];
         positions(runRace(sim.state.salt, day, raced).legs, 1, fin);
+        const run = runRace(sim.state.salt, day, raced);
+        const far = (lane: number | undefined) => (lane === undefined ? 0 : (run.legs[lane]?.[LEGS - 1] ?? 0));
+        const lead = far(order[0]);
         result = {
           order,
           card: raced,
@@ -201,8 +214,12 @@ export function announceLong(sim: Sim, e: SimEvent) {
           won: e.won ?? 0,
           purse: e.purse ?? 0,
           day,
+          photo: !sim.rules240 && order.length > 1 && lead - far(order[1]) <= lead * PHOTO,
         };
         sound.cheer();
+        if (result.photo) sound.click();
+        // (2.41: those at the track throw a fist up.)
+        if (sim.state.watch?.length) cheer();
         const winner = result.card[order[0]];
         const name = winner ? entrantName(sim, winner) : '';
         if (e.won || e.purse) {
@@ -263,7 +280,52 @@ export function raceStep(sim: Sim) {
 
 // ------------------------------------------------------------------ the race card
 
-const raceView: RaceView = { phase: 'card', at: '', lanes: [], bet: null, enter: '', entered: '', why: '', result: '', cash: 0, day: 0 };
+const raceView: RaceView = {
+  phase: 'card',
+  at: '',
+  lanes: [],
+  bet: null,
+  enter: '',
+  entered: '',
+  why: '',
+  result: '',
+  cash: 0,
+  day: 0,
+  call: '',
+  risk: '',
+  seen: false,
+};
+
+/** 2.41: what the player has heard of a rival's rat today (gossip kept in the file): fed, hungry, or null nothing. */
+function heardFed(day: number, owner: number): boolean | null {
+  const r = director.rumors.find((x) => x.fact.key === `ratFed:${day}:${owner}`);
+  return r ? r.fact.kind === 'ratFed' : null;
+}
+
+/** 2.41: the race called as it's run: the off, who leads (a change held a moment), neck and neck, pulling clear. */
+const calling = { day: -1, lead: -1, text: '', until: 0 };
+function callOf(sim: Sim, card: readonly Entrant[], at: readonly number[], f: number, day: number): string {
+  const now = performance.now();
+  if (calling.day !== day) Object.assign(calling, { day, lead: -1, text: '', until: 0 });
+  if (f < 0.12) return t('race.call.off');
+  const order = card.map((_, k) => k).sort((a, b) => at[b] - at[a] || a - b);
+  const [a, b] = order;
+  const gap = b === undefined ? 1 : at[a] - at[b];
+  const name = (k: number) => entrantName(sim, card[k]);
+  if (now < calling.until && a === calling.lead) return calling.text;
+  const text =
+    a !== calling.lead
+      ? t('race.call.lead', { name: name(a) })
+      : f > 0.85 && gap < 0.03 && b !== undefined
+        ? t('race.call.line', { name: name(a), other: name(b) })
+        : gap < 0.04 && b !== undefined
+          ? t('race.call.close', { name: name(a), other: name(b) })
+          : gap > 0.1
+            ? t('race.call.clear', { name: name(a) })
+            : t('race.call.front', { name: name(a) });
+  Object.assign(calling, { lead: a, text, until: now + 1500 });
+  return text;
+}
 const lanePool: RaceLane[] = [];
 
 /** How far along each lane is at a fraction of the race (0–1 of the winner's distance). */
@@ -300,18 +362,37 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
   const pet = petLane(card);
   v.lanes.length = 0;
   card.forEach((e, k) => {
-    const l = (lanePool[k] ??= { name: '', owner: '', speed: 0, odds: 0, mine: false, fed: null, pos: 0, place: 0 });
+    const l = (lanePool[k] ??= {
+      name: '',
+      owner: '',
+      speed: 0,
+      odds: 0,
+      mine: false,
+      fed: null,
+      heard: false,
+      lead: false,
+      pos: 0,
+      place: 0,
+    });
     l.name = entrantName(sim, e);
     l.owner = e.owner >= 0 ? inmateName(sim, e.owner) : '';
     l.speed = e.speed;
     l.odds = odds[k];
     l.mine = k === pet;
-    // (The player knows whether their own rat ate; the rivals', only the gossip says.)
-    l.fed = l.mine ? e.fed : null;
+    // (The player knows whether their own rat ate; the rivals', only the gossip says: 2.41, what was heard.)
+    const heard = l.mine ? null : heardFed(day, e.owner);
+    l.fed = l.mine ? e.fed : heard;
+    l.heard = heard !== null;
+    l.lead = false;
     l.pos = 0;
     l.place = 0;
     v.lanes.push(l);
   });
+  // (2.41: a guard who sees the player at it with a bet on while it's run: heat, once. Said before the bet, and while it's
+  // run till charged: red as a guard sees them then.)
+  v.seen = running && eyesOn(s, s.step);
+  v.risk = sim.rules240 || (running && s.race[RACE.SEEN] === 1) ? '' : t(v.seen ? 'race.riskSeen' : 'race.risk', { n: DICE_HEAT });
+  v.call = '';
   const lane = s.race[RACE.DAY] === day ? s.race[RACE.LANE] : -1;
   v.bet =
     lane >= 0
@@ -322,8 +403,19 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
   if (running) {
     v.phase = 'running';
     const run = runRace(s.salt, day, card);
-    positions(run.legs, (s.step - s.race[RACE.AT] + a) / RACE_STEPS, pos);
+    const f = (s.step - s.race[RACE.AT] + a) / RACE_STEPS;
+    positions(run.legs, f, pos);
     v.lanes.forEach((l, k) => (l.pos = pos[k]));
+    // (2.41: the leader marked and the race called; the risk only with a bet on.)
+    if (!sim.rules240) {
+      let lead = 0;
+      v.lanes.forEach((l, k) => {
+        if (l.pos > v.lanes[lead].pos) lead = k;
+      });
+      v.lanes[lead].lead = true;
+      v.call = callOf(sim, card, pos, f, day);
+    }
+    if (!v.bet) v.risk = '';
     v.result = '';
     v.enter = '';
     v.why = '';
@@ -343,7 +435,9 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
         ? t('race.resultWon', { name: entrantName(sim, w), n: result!.won })
         : t('race.result', { name: entrantName(sim, w) })
       : '';
-    v.result = result!.purse ? `${said} ${t('toast.purse', { n: result!.purse })}` : said;
+    const photo = result!.photo ? `${t('race.photo')} ` : '';
+    v.result = photo + (result!.purse ? `${said} ${t('toast.purse', { n: result!.purse })}` : said);
+    v.risk = '';
     v.enter = '';
     v.why = '';
     return v;
@@ -361,7 +455,7 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
 
 // ------------------------------------------------------------------ the picture
 
-const frame: LongFrame = { beds: [], track: null, rats: [], laps: null, tipsy: false };
+const frame: LongFrame = { beds: [], track: null, rats: [], laps: null, tipsy: false, flash: 0 };
 const bedPool: LongFrame['beds'] = [];
 const ratPool: LongFrame['rats'] = [];
 
@@ -404,7 +498,11 @@ export function longFrameOf(sim: Sim, a: number): LongFrame {
       r.pet = card[k].owner < 0;
       f.rats.push(r);
     });
-  } else if (track && result && result.day === day && performance.now() - result.at < RESULT_MS) {
+  }
+  // (2.41: a photo finish: the camera's flash at the line as they cross it.)
+  const since = result ? performance.now() - result.at : Infinity;
+  f.flash = track && result && result.photo && result.day === day && since < FLASH_MS ? 1 - since / FLASH_MS : 0;
+  if (!f.rats.length && track && result && result.day === day && performance.now() - result.at < RESULT_MS) {
     // (At the finish line a moment after.)
     result.card.forEach((_, k) => {
       const r = (ratPool[k] ??= { lane: 0, of: 0, pos: 0, pet: false });

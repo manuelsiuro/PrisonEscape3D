@@ -53,6 +53,8 @@ export const TRACK_STEPS = 8 * 20;
 
 /** Race nights: odd prison days, at RACE_MINUTE (21:00); the card is up from CARD_MINUTE (19:00; 20:00 before 2.16, Sim.rules215); bets at most BET_RANGE tiles from the track. */
 export const RACE_MINUTE = 21 * 60;
+/** 2.41: from RACE_GATHER (20:40), with the player's bet or pet in tonight's race, the rats' owners come to the start and a crowd to the track (spectate.ts). */
+export const RACE_GATHER = RACE_MINUTE - 20;
 export const CARD_MINUTE = 19 * 60;
 export const CARD_MINUTE_215 = 20 * 60;
 export const BET_RANGE = 3;

@@ -52,6 +52,8 @@ export const DOING = {
   CHAT: 50,
   /** 2.40: watching the player's game (systems/spectate.ts): arms folded, a fist up to cheer (the view's pump). */
   WATCH: 51,
+  /** 2.41: quiz night's host reading out the questions (systems/quiz.ts): the card up in one hand, the other out to the contestants. */
+  HOST: 52,
 } as const;
 
 /** Using a machine (2.29): an inmate doing one of these is on it, and is asked for a turn rather than talked to. (RUN: on an inmate, only ever the treadmill; a jogger's stride is the view's.) */
