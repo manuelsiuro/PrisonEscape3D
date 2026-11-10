@@ -179,6 +179,8 @@ function freeToQueue(sim: SimContext, k: number, waiting = false): boolean {
   // (One already waiting may chat with the player: he keeps his place.)
   if (!m || m.ko > 0 || m.angry > 0 || (s.talk === k && !waiting) || s.followers.includes(k)) return false;
   if (m.doing === DOING.SLEEP || m.doing === DOING.BRAWL) return false;
+  // (2.42: at the kiosk, or on his way: that first.)
+  if (s.kioskBy?.[0] === k) return false;
   if (
     s.match?.team.includes(k) ||
     s.ink?.who === k ||

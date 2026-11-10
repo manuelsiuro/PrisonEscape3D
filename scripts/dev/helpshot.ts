@@ -24,6 +24,8 @@ import { boutPress, Bot, DIR } from '../bots';
 import { placesOf } from '../../src/sim/ai/places';
 import { TRAINING } from '../../src/content/prisons/training';
 import { WAY } from '../../src/content/smuggling';
+import { CALLEE } from '../../src/content/phone';
+import { KIOSK } from '../../src/content/kiosk';
 import { CHARTS, countIn, LATE, songSteps } from '../../src/content/nights';
 import { command, dirFromVector, EXT, LINE, needleArgs, OP, ORDER, TALK, tossArgs } from '../../src/sim/command';
 import { nearestDir } from '../../src/sim/ai/path';
@@ -623,18 +625,26 @@ export const SHOTS: Record<string, Shot> = {
       bot.walkTo(tile(c.line[0].x, c.line[0].z));
       bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
       bot.until(() => bot.st.booth[0] < 0 && bot.st.turn > 0, 20 * 60 * 20);
-      bot.until(() => false, 10);
+      // (2.42: once the one who was on it has walked off, on to the phone and a call home: the caller beside it, back to
+      // the wall, the phone in view.)
+      const near = () =>
+        bot.st.inmates.some((m) => Math.abs(m.body.x / UNIT - c.phone.x - 0.5) < 1.6 && Math.abs(m.body.z / UNIT - c.phone.z - 0.5) < 1.6);
+      bot.until(() => !near(), 240);
+      bot.walkTo(tile(c.phone.x, c.phone.z));
+      bot.op(OP.EXT, EXT.CALL, CALLEE.HOME * 16, 0);
+      bot.until(() => false, 60);
     },
     when: at(0.99),
     zoom: 2.4,
-    dx: -1,
   },
   kiosk: {
     lesson: 'kiosk',
     moves: (bot) => {
       // (A tile beside the terminal, so the player doesn't hide it.)
+      // (2.42: logged in, drawn beside it and turned in to it: the screen in view, the mail on it.)
       const k = CENTER_PERKS.comms!.kiosk;
-      bot.walkTo(tile(k.x + 1, k.z + 1));
+      bot.walkTo(tile(k.x, k.z));
+      bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
       bot.until(() => false, 60);
     },
     when: at(0.98),

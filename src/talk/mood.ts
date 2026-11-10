@@ -15,6 +15,7 @@ import type { ZoneId } from '../content/zones';
 import { HOLIDAY } from '../content/holidays';
 import { holidayDays, holidayOf, soaked } from '../sim/systems/holiday';
 import { gangOf, warGround, warOn, warring } from '../sim/systems/gangs';
+import { freedNow } from '../sim/systems/paperwork';
 import { centerX, centerZ } from '../sim/world/grid';
 
 /**
@@ -92,6 +93,8 @@ export function outdoors(sim: Sim, b: Body): boolean {
   return !!TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]]?.outdoor;
 }
 
+/** 2.42: inmates this near (tiles) the player walking out cleared for release call a goodbye. */
+const RELEASE_SEEN = 7;
 const mood = (bank: BankId, intensity: number, style: Style = 'say', alt?: readonly BankId[]): Mood => ({ bank, intensity, style, alt });
 
 /** The weather's bank for someone outdoors (the day's fog, rain, storm or heatwave, P17; else the snow, the sun, the sea), if any. A storm is heard indoors too. */
@@ -124,6 +127,8 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (m.angry > 0) return mood('in.hostile', 1, 'shout');
   if (s.takeover || near(r, b, ['fight', 'ko'], 8, 6) || r.now - r.powerOutAt < 20) return mood('in.excited', 0.8);
   if (s.lockdown) return mood('in.lockdown', 0.6);
+  // (2.42: the player walking out cleared for release, in their own clothes: those they pass see them off.)
+  if (freedNow(s) && d <= RELEASE_SEEN) return mood('re.release.in', 1, 'shout');
   if (m.opinion <= OPINION_LOW && d <= 3) return mood('in.hostile', 0.8);
   if (m.hp < maxHealth(m.str) / 2 || r.now - (r.cameTo.get(id) ?? -1e9) < 20) return mood('in.hurt', 0.7);
   if (r.now - (r.bumped.get(id) ?? -1e9) < 30) return mood('in.grumpy', 0.7);
@@ -170,6 +175,9 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
     // The pay phone (P34): on it, and waiting for it.
     case DOING.PHONE:
       return mood('in.phone', 0.8, 'say', ['in.homesick']);
+    // (2.42: at the internet kiosk.)
+    case DOING.KIOSK:
+      return mood('in.kiosk', 0.45, 'say', some('in.idle', 'in.bored'));
     case DOING.QUEUE:
       return mood('in.queue', 0.55, 'say', some('in.idle', 'in.bored', friend));
     case DOING.LINE_UP:

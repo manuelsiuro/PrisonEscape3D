@@ -6,6 +6,11 @@ import { now } from './batch';
 import { box, disc, kitMaterial, merge } from './kit';
 import { glowTexture } from './lights';
 import { seeThrough } from './occlusion';
+import { Character } from './Character';
+import { guardLook } from './look';
+import { itemDef, itemNumber } from '../content/items';
+import { itemGeometry } from './itemModels';
+import { DOING } from '../sim/systems/inmates';
 
 /** What the release desk (P36) shows this frame. */
 export interface ReleaseFrame {
@@ -13,12 +18,27 @@ export interface ReleaseFrame {
   called: boolean;
   /** Cleared: its lamp steady green while the way out is open. */
   freed: boolean;
+  /**
+   * 2.42, the clerk at the desk (drawn only: nobody in the sim): 0 none, 1 leafing through tomorrow's list (the hour
+   * before the records), 2 checking the one called (the morning's call, and while the way out is open); where the
+   * player is, for him to look up at them when they're close.
+   */
+  clerk: 0 | 1 | 2;
+  px: number;
+  pz: number;
 }
 
 const NAVY = 0x2c4a6e;
 const PAPER = 0xf4efe0;
 const STEEL = 0x9aa2ad;
 const STEEL_DARK = 0x6b737c;
+/** 2.42: the clerk stands this far beside the podium (tiles: on its side away from the release point, the sign on its post not in front of him), and looks up at the player within this many tiles. */
+const CLERK_SIDE = 0.5;
+const CLERK_LOOK = 3;
+/** He stays this long (seconds) once the call's over at the desk: a refusal's stamp seen. */
+const CLERK_LINGER = 3;
+/** His own number, for how he stands (characterMotion.ts). */
+const CLERK_SEED = 3100;
 const OFF = new THREE.Color(0x4a4f57);
 const AMBER = new THREE.Color(0xffb84a);
 const GREEN = new THREE.Color(0x5fe08a);
@@ -100,6 +120,18 @@ export class ReleaseView {
     depthWrite: false,
   });
 
+  /** 2.42: the clerk (made with the first desk, hidden till he's needed), and the stamps he's to make. */
+  private clerk: Character | null = null;
+  private stamps = 0;
+  /** 2.42: when he was last at the desk for a call (the clock's seconds), so a refusal's stamp is seen before he goes. */
+  private calledAt = -1e9;
+  private readonly clerkAt = { x: 0, z: 0 };
+
+  /** 2.42: the clerk stamps the papers (cleared, or turned away). */
+  stamp() {
+    this.stamps++;
+  }
+
   /** A prison: its desk on its wall (none without one). */
   setWorld(world: World, later: Later = now) {
     const old = this.desk;
@@ -123,15 +155,56 @@ export class ReleaseView {
     g.position.set(at.x, 0, at.z);
     this.group.add(g);
     this.desk = g;
+    const r = world.def.comms!.release.at[0];
+    const away = r.x + 0.5 >= at.x ? -1 : 1;
+    this.clerkAt.x = at.x + away * CLERK_SIDE;
+    this.clerkAt.z = at.z - 0.45;
+    // (2.42: the clerk, a guard in glasses with a clipboard, made once, hidden until the list or the call.)
+    if (!this.clerk) {
+      const c = new Character({ ...guardLook(11), glasses: 2, glassesColor: 0x2a2a2e }, CLERK_SEED);
+      const clipboard = itemNumber('magazine');
+      c.hold(clipboard, itemGeometry(itemDef(clipboard)));
+      c.root.visible = false;
+      this.clerk = c;
+      this.group.add(c.root);
+    }
   }
 
   /** The lamp: off, blinking amber while the name is called, steady green while the way out is open (`shown` false: not from the tunnels). */
-  update(f: ReleaseFrame | null, time: number, motion: boolean, shown = true) {
+  update(f: ReleaseFrame | null, time: number, motion: boolean, shown = true, dt = 0) {
     this.group.visible = !!this.desk && !!f && shown;
+    this.clerkFrame(f, time, motion, dt);
     if (!f) return;
     const on = f.freed || (f.called && (!motion || Math.floor(time * 2) % 2 === 0));
     this.lampMat.color.copy(f.freed ? GREEN : on ? AMBER : OFF);
     this.glowMat.color.copy(f.freed ? GREEN : AMBER);
     this.glowMat.opacity = on ? 0.55 : 0;
+  }
+
+  /**
+   * 2.42, the clerk: behind the podium facing out, leafing through the list (head down over the clipboard), or for the
+   * morning's call looking up at the player as they come; a stamp at a time (an arm's pump) as they're cleared or not.
+   */
+  private clerkFrame(f: ReleaseFrame | null, time: number, motion: boolean, dt: number) {
+    const c = this.clerk;
+    const d = this.desk;
+    if (!c) return;
+    if (f?.clerk === 2) this.calledAt = time;
+    // (A player turned away takes the name off the list at once: he stays a moment, stamping it, before he goes.)
+    const lingering = time - this.calledAt < CLERK_LINGER;
+    const on = !!f && !!d && (f.clerk > 0 || lingering);
+    c.root.visible = on;
+    if (!on) {
+      this.stamps = 0;
+      return;
+    }
+    const { x, z } = this.clerkAt;
+    const near = (f.clerk === 2 || lingering) && Math.hypot(f.px - x, f.pz - z) < CLERK_LOOK;
+    const facing = near ? Math.atan2(f.px - x, f.pz - z) : 0;
+    while (this.stamps > 0) {
+      this.stamps--;
+      c.pump();
+    }
+    c.pose(x, z, facing, false, dt, time, motion, near ? DOING.NOTHING : DOING.READ);
   }
 }

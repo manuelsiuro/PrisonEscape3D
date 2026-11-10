@@ -88,6 +88,22 @@
   background: rgba(var(--kiosk-blue-59-rgb), 0.5);
   box-shadow: inset 0 0 0 1.5px rgba(var(--kiosk-blue-81-rgb), 0.6);
 }
+.kiosk-tab {
+  position: relative;
+}
+/* (2.42: what's done today, a tick on its tab's corner.) */
+.kiosk-done {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  color: var(--kiosk-grey-19);
+  background: var(--kiosk-green-85);
+}
 .kiosk-body {
   display: grid;
   gap: 4px;
@@ -121,6 +137,58 @@
   flex: none;
   margin-top: 1px;
   opacity: 0.8;
+}
+/* (2.42: logged out, what each app gives; who's on it; what's on its way, over every app.) */
+.kiosk-apps {
+  display: grid;
+  gap: 4px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+  font: 600 12px/1.3 var(--font-ui);
+  color: rgba(var(--white-rgb), 0.78);
+}
+.kiosk-apps li,
+.kiosk-busy,
+.kiosk-coming {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+}
+.kiosk-apps li .ic,
+.kiosk-busy .ic,
+.kiosk-coming .ic {
+  flex: none;
+  margin-top: 1px;
+  color: var(--kiosk-blue-81);
+}
+.kiosk-apps b {
+  color: var(--white);
+}
+.kiosk-busy {
+  margin: 2px 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(var(--white-rgb), 0.06);
+}
+.kiosk-busy span {
+  display: grid;
+  gap: 2px;
+  font: 700 13px/1.25 var(--font-ui);
+  color: var(--white);
+}
+.kiosk-busy small {
+  font: 600 12px/1.3 var(--font-ui);
+  color: rgba(var(--white-rgb), 0.72);
+}
+.kiosk-coming {
+  margin: 0 0 2px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font: 600 12px/1.3 var(--font-ui);
+  color: var(--kiosk-yellow-97);
+  background: rgba(var(--kiosk-blue-59-rgb), 0.22);
 }
 .kiosk-list span::first-letter {
   text-transform: uppercase;
@@ -941,6 +1009,13 @@ body.menu-reading .up-prompt {
     height: 36px;
   }
   .menu-note {
+    display: none;
+  }
+}
+
+/* 2.42: a phone turned in Chrome (about 274 tall): logged out, the price and Log in alone, not what each app gives. */
+@media (max-height: 320px) {
+  .kiosk-apps {
     display: none;
   }
 }

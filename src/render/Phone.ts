@@ -9,12 +9,28 @@ import { box, cyl, kitMaterial, merge, paint, rod, type Part } from './kit';
 import { glowTexture } from './lights';
 import { seeThrough } from './occlusion';
 
+/**
+ * 2.42: which side of the phone its caller stands on, along its wall: -1 the phone's +x (where its hook is), +1 its -x
+ * (the phone drawn mirrored, the hook on that side): away from the queue, so the first in line isn't in the caller.
+ * The caller faces the phone at heading f; the line's first tile against R = (cos f, −sin f) says which way it goes.
+ */
+export function phoneSide(c: Pick<CommsDef, 'phone' | 'line'>): 1 | -1 {
+  const f = headingAngle(c.phone.face);
+  const q = c.line[0];
+  if (!q) return -1;
+  const along = (q.x - c.phone.x) * Math.cos(f) - (q.z - c.phone.z) * Math.sin(f);
+  return along > 0 ? -1 : 1;
+}
+
 /** What the pay phone (P34) shows this frame. */
 export interface PhoneFrame {
   /** Someone on the phone (an inmate's call begun, or the player's): the handset is off its hook. */
   offHook: boolean;
   /** Lou's getaway car waits on the road tonight. */
   car: boolean;
+  /** 2.42: the side its caller stands on (phoneSide); the guard listening in on the player's call to Lou (-1 none). */
+  side: 1 | -1;
+  ear: number;
 }
 
 /** A face (1 east, 5 south, 9 west, 13 north) as the turn that points +z that way. */
@@ -27,6 +43,8 @@ const AWAY_FADE = 1.1;
 const AWAY_PULL = 3.6;
 /** The car's nose ahead of its middle (tiles). */
 const CAR_NOSE = 1.4;
+/** 2.42: where the cord off the hook ends, in the phone's own terms: in the caller's fist at the ear, beside the phone. */
+const STUB_END = [0.42, 1.2, 0.36] as const;
 /** The beacon stands this far off its tile's middle, toward the gate and its post. */
 const BEACON_OFF = 0.36;
 
@@ -77,12 +95,12 @@ export function phoneParts(): { body: Part[]; handset: Part[]; out: Part[] } {
   ]);
   handset.push(paint(new THREE.TubeGeometry(coil, 14, 0.014, 5, false), BLACK));
   // Off the hook: only the cord, stretched out of the box, sagging, up into the caller's raised fist
-  // (Character: drawn PHONE_SHIFT to their right, the fist over the ear at PHONE_ARM).
+  // (2.42, Character: drawn PHONE_SIDE along the wall on the hook's side, their back to the wall, the fist at the ear).
   const stub = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0.12, 0.84, 0.1),
-    new THREE.Vector3(0.2, 0.72, 0.17),
-    new THREE.Vector3(0.23, 0.86, 0.27),
-    new THREE.Vector3(0.165, 1.08, 0.33),
+    new THREE.Vector3(0.24, 0.66, 0.2),
+    new THREE.Vector3(0.36, 0.86, 0.3),
+    new THREE.Vector3(STUB_END[0], STUB_END[1], STUB_END[2]),
   ]);
   return { body, handset, out: [paint(new THREE.TubeGeometry(stub, 14, 0.016, 5, false), BLACK)] };
 }
@@ -274,6 +292,8 @@ export class PhoneView {
     const a = headingAngle(c.phone.face);
     g.position.set(c.phone.x + 0.5 + Math.sin(a) * 0.5, 0, c.phone.z + 0.5 + Math.cos(a) * 0.5);
     g.rotation.y = a + Math.PI;
+    // (2.42: mirrored where its caller stands on its other side, the hook and the cord toward them.)
+    if (phoneSide(c) === 1) g.scale.x = -1;
     this.phone = g;
     this.group.add(g);
     this.carAt = { x: c.car.x + 0.5, z: c.car.z + 0.5, angle: headingAngle(c.car.face) };

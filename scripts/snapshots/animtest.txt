@@ -7,7 +7,7 @@ a fight, arms folded before it, a blow every 0.8 s: back in the stance at most 0
 in hand at a blow: a mop swung out of the fist (0.00 rad off a tool's grip), upright again after; a bundle: NOTHING shown, WORK shown, EXERCISE hidden, KNOCKED_OUT hidden
 a walk's stride, radians a game second, steady and never a run: ×1 at 60 fps 11.4, ×1 at 30 fps 11.4, ×4 at 60 fps 11.4, ×4 at 30 fps 7.5, ×16 at 60 fps 3.7, ×16 at 30 fps 1.9
 a crowd of 24 setting off together: 47 of 276 pairs in step; standing about: at the sides 14, hands behind 4, arms folded 6; 6 of 12 guards with their hands behind their backs; one number moves alike every time; Math.random never drawn
-twenty minutes of everything (600 turns, items swapped, blows): 34 parts as at the start, standing as one that only walked
+twenty minutes of everything (600 turns, items swapped, blows): 35 parts as at the start, standing as one that only walked
 training: a day (28801 steps), 2 people, 75 changes of what they do: 0 jumps; 295 times standing about with nothing to do, 0 left in a pose
 training: day 2's morning free time (2901 steps), 2 people, 5 changes of what they do: 0 jumps; 56 times standing about with nothing to do, 0 left in a pose
 training: day 2's evening free time (5301 steps), 2 people, 6 changes of what they do: 0 jumps; 66 times standing about with nothing to do, 0 left in a pose

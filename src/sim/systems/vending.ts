@@ -320,13 +320,18 @@ export function wantsSnack(salt: number, day: number, b: number, k: number): num
   return from + Math.min(rush, to - from - 15);
 }
 
-/** An inmate free to go to the machine (as the phone's queue asks), and none of those people come looking for. */
-export function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
+/**
+ * An inmate free to go to the machine (as the phone's queue asks), and none of those people come looking for.
+ * `kiosk`: asked for the one at the kiosk (2.42) himself, who isn't kept from it by being there.
+ */
+export function freeToGo(sim: SimContext, k: number, waiting = false, kiosk = false): boolean {
   const s = sim.state;
   const m = s.inmates[k];
   if (!m || m.ko > 0 || m.angry > 0 || (s.talk === k && !waiting) || s.followers.includes(k)) return false;
   if (m.doing === DOING.SLEEP || m.doing === DOING.BRAWL) return false;
   if (s.line.includes(k) || s.booth[0] === k) return false;
+  // (2.42: at the kiosk, or on his way: that first.)
+  if (!kiosk && s.kioskBy?.[0] === k) return false;
   // (2.33: having a drink at the water cooler: done with that first.)
   if (!waiting && s.cooler.who.includes(k)) return false;
   // (2.39: gathered for a chat or a game: done with that first; 2.40: watching the player's game, likewise.)

@@ -1,4 +1,5 @@
 import { focusNow } from './focus';
+import { kioskCard } from './context';
 import { JOBS } from '../content/jobs';
 import { SCENT_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
 import { checkpointOf, shiftChange } from '../sim/systems/getaway';
@@ -52,7 +53,11 @@ import { nightsFrameOf } from './nights';
 import { INSTRUMENT } from '../content/nights';
 import { sightFor } from '../sim/systems/football';
 import { carWaiting, commsOf } from '../sim/systems/phone';
-import { kioskOf, loggedIn } from '../sim/systems/kiosk';
+import { phoneSide } from '../render/Phone';
+import { CALLEE } from '../content/phone';
+import { kioskSide } from '../render/Kiosk';
+import { kioskOf, kioskTyping, loggedIn } from '../sim/systems/kiosk';
+import { APPS } from '../content/kiosk';
 import { atVending, VEND_NOBODY, VEND_PLAYER, vendProp } from '../sim/systems/vending';
 import { coolerProp } from '../sim/systems/cooler';
 import { atMenu } from '../sim/systems/menu';
@@ -62,6 +67,7 @@ import { COIL_STEPS, INMATE_COIL_STEPS, THUMP_STEPS } from '../content/vending';
 import { powered } from '../sim/systems/power';
 import { boardNow, boardOf } from '../sim/systems/oddjobs';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
+import { RECORDS_MINUTE } from '../content/paperwork';
 import { fireworksOn, holidayNow } from '../sim/systems/holiday';
 import { decorHoliday } from './holidays';
 import { tileAt } from '../sim/world/grid';
@@ -72,6 +78,8 @@ import { crowdPlan } from '../sim/systems/calendar';
 import { GANG_COLOR } from '../content/gangs';
 import { turfHint } from './gangs';
 
+/** 2.42: the release desk's clerk is there this long (game minutes) before the records, leafing through tomorrow's list. */
+const CLERK_EARLY = 60;
 /** A cell's inmate's gang colours (0: in no gang). */
 const coloursOf = (sim: Sim, cell: number) => {
   const k = gangOfCell(sim.world.def, cell);
@@ -503,7 +511,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   if (comms) {
     f.doing = DOING.PHONE;
     const ph = comms.phone;
-    if (!p.moving) f.facing = Math.atan2(ph.x + 0.5 + DIR_X[ph.face] / 2048 - f.x, ph.z + 0.5 + DIR_Z[ph.face] / 2048 - f.z);
+    // (2.42: drawn from the phone's own tile, facing its wall, whichever tile beside it the call was made from: the
+    // caller's place beside the phone is worked out from there, or a call from the next tile drew them in the wall.)
+    if (!p.moving) {
+      f.x = ph.x + 0.5;
+      f.z = ph.z + 0.5;
+      f.facing = headingAngle(ph.face);
+    }
   }
   // (P35: logged in at the kiosk, standing at it, typing, facing its screen on the wall; a step off it
   // and still logged in, not typing at nothing.)
@@ -666,8 +680,15 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The pay phone (P34): off the hook while an inmate's call has begun or the player's is on; Lou's car on its night.
   f.phone.offHook = (st.booth[0] >= 0 && st.booth[1] > 0) || st.call !== null;
   f.phone.car = carWaiting(st);
+  const cm = commsOf(sim);
+  f.phone.side = cm ? phoneSide(cm) : -1;
+  f.phone.ear = st.call && st.call.to === CALLEE.COUSIN ? st.call.ear : -1;
   // The internet kiosk (P35): the screen awake while the player's logged in; the drawings pinned over the bed.
-  f.kiosk.on = loggedIn(st);
+  // (2.42: or an inmate typing at it; the player's app open on its screen, an inmate's on the news.)
+  f.kiosk.on = loggedIn(st) || kioskTyping(st) >= 0;
+  f.kiosk.app = loggedIn(st) ? APPS.indexOf(kioskCard.app) : 2;
+  const ko = kioskOf(sim);
+  f.kiosk.side = ko ? kioskSide(ko.face) : 0;
   // The vending machine (2.32): lit, what's left, what's dropping.
   f.vending.on = powered(sim.world, st, 'lights');
   f.vending.left = st.vend.left;
@@ -686,6 +707,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The release desk (P36): its lamp while the name is called, and while the way out is open.
   f.release.called = calledNow(st);
   f.release.freed = freedNow(st);
+  // (2.42: the clerk at the desk: the hour before the records with a name on tomorrow's list, the morning's call.)
+  const listedNow =
+    st.release[0] === prisonDay(st.step) + 1 && dayMinute(st.step) >= RECORDS_MINUTE - CLERK_EARLY && dayMinute(st.step) < RECORDS_MINUTE;
+  f.release.clerk = f.release.called || f.release.freed ? 2 : listedNow ? 1 : 0;
+  f.release.px = f.x;
+  f.release.pz = f.z;
   f.inked = st.inked;
   return f;
 }

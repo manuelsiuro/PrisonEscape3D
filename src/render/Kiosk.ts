@@ -11,12 +11,19 @@ import { seeThrough } from './occlusion';
 import { canvasTexture } from './canvas';
 import { drawingTexture } from './kioskDrawings';
 
+/** 2.42: which side of a kiosk on a north wall its user is drawn on (Character.kioskSide); 0 on a side wall (seen from the side already). */
+export const kioskSide = (face: number): -1 | 0 | 1 => (face === 13 ? -1 : 0);
+
 /** What the internet kiosk (P35) shows this frame. */
 export interface KioskFrame {
   /** The player logged in (time paid for): the screen awake, its apps up. */
   on: boolean;
   /** The family's drawings pinned over the player's bed (indices into PHOTOS, oldest first). */
   photos: readonly number[];
+  /** 2.42: the side its user is drawn on (kioskSide). */
+  side: -1 | 0 | 1;
+  /** 2.42: the app on its screen (0 mail, 1 the shop, 2 the news, 3 a course: APPS), the player's or the inmate's at it. */
+  app: number;
 }
 
 /** A face (1 east, 5 south, 9 west, 13 north) as the turn that points +z that way. */
@@ -106,7 +113,7 @@ export function kioskHeadParts(): Part[] {
 }
 
 /** The screen's picture: the screensaver (logged out) or the kiosk's apps (logged in). */
-function drawScreen(c: CanvasRenderingContext2D, on: boolean, lines: number, cursor: boolean, spot: number) {
+function drawScreen(c: CanvasRenderingContext2D, on: boolean, lines: number, cursor: boolean, spot: number, app = 0) {
   if (!on) {
     // A dim navy screen, the network's globe drifting from spot to spot, "touch to begin" under it.
     c.fillStyle = '#07111d';
@@ -139,9 +146,9 @@ function drawScreen(c: CanvasRenderingContext2D, on: boolean, lines: number, cur
   c.fillRect(108, 3, 16, 7);
   for (let k = 0; k < 4; k++) {
     const x = 2 + k * 31;
-    c.fillStyle = k === 0 ? '#ffffff' : '#c6d6e2';
+    c.fillStyle = k === app ? '#ffffff' : '#c6d6e2';
     c.fillRect(x, 15, 29, 11);
-    c.strokeStyle = k === 0 ? '#1f8a7a' : '#5b7385';
+    c.strokeStyle = k === app ? '#1f8a7a' : '#5b7385';
     c.fillStyle = c.strokeStyle;
     c.lineWidth = 1.5;
     c.beginPath();
@@ -179,6 +186,10 @@ function drawScreen(c: CanvasRenderingContext2D, on: boolean, lines: number, cur
   }
   c.fillStyle = '#ffffff';
   c.fillRect(2, 27, 124, 67);
+  // (2.42: the page of the app open: the shop's shelf, the news's front page, a course's question; else a letter.)
+  if (app === 1) return drawShop(c, lines);
+  if (app === 2) return drawNews(c, lines);
+  if (app === 3) return drawCourse(c, lines, cursor);
   let end = 0;
   let endY = 0;
   for (let k = 0; k < lines; k++) {
@@ -195,6 +206,63 @@ function drawScreen(c: CanvasRenderingContext2D, on: boolean, lines: number, cur
   // (Send: a teal button at the foot of the page.)
   c.fillStyle = '#1f8a7a';
   c.fillRect(96, 84, 26, 7);
+}
+
+/** 2.42, the shop's page: goods on a shelf of tiles, each a coloured box and its price tag, coming in one by one. */
+function drawShop(c: CanvasRenderingContext2D, lines: number) {
+  const goods = ['#7fb8e6', '#8a5a32', '#e05a4f', '#f2f2f2', '#c9b6f0', '#26313d'];
+  for (let k = 0; k < 6; k++) {
+    if (k >= lines) break;
+    const x = 7 + (k % 3) * 40;
+    const y = 31 + Math.floor(k / 3) * 30;
+    c.fillStyle = '#e4edf3';
+    c.fillRect(x, y, 34, 26);
+    c.fillStyle = goods[k];
+    c.fillRect(x + 10, y + 3, 14, 12);
+    c.fillStyle = '#8fa0ae';
+    c.fillRect(x + 4, y + 18, 16, 3);
+    c.fillStyle = '#f2c94c';
+    c.fillRect(x + 23, y + 17, 8, 5);
+  }
+}
+
+/** 2.42, the news's page: the masthead, a picture and its headline, the columns filling in. */
+function drawNews(c: CanvasRenderingContext2D, lines: number) {
+  c.fillStyle = '#2b3a4a';
+  c.fillRect(7, 31, 114, 6);
+  c.fillStyle = '#9cc4e6';
+  c.fillRect(7, 41, 44, 30);
+  c.fillStyle = '#f2c94c';
+  c.beginPath();
+  c.arc(40, 50, 5, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = '#5f9a5a';
+  c.fillRect(7, 62, 44, 9);
+  for (let k = 0; k < Math.min(lines, 6); k++) {
+    c.fillStyle = k === 0 ? '#2b3a4a' : '#8fa0ae';
+    c.fillRect(56, 42 + k * 6, k === 0 ? 62 : 54 - (k % 2) * 10, k === 0 ? 4 : 2);
+  }
+  for (let k = 0; k < Math.min(lines, 3); k++) {
+    c.fillStyle = '#8fa0ae';
+    c.fillRect(7, 76 + k * 5, 114 - k * 18, 2);
+  }
+}
+
+/** 2.42, a course's page: the question and its four answers, one lit as it's picked. */
+function drawCourse(c: CanvasRenderingContext2D, lines: number, cursor: boolean) {
+  c.fillStyle = '#2b3a4a';
+  c.fillRect(7, 32, 92, 4);
+  c.fillStyle = '#8fa0ae';
+  c.fillRect(7, 39, 70, 3);
+  for (let k = 0; k < 4; k++) {
+    const x = 7 + (k % 2) * 58;
+    const y = 50 + Math.floor(k / 2) * 20;
+    const lit = k === lines % 4 && cursor;
+    c.fillStyle = lit ? '#1f8a7a' : '#e4edf3';
+    c.fillRect(x, y, 54, 16);
+    c.fillStyle = lit ? '#ffffff' : '#5b7385';
+    c.fillRect(x + 6, y + 6, 30 - k * 4, 3);
+  }
 }
 
 // ------------------------------------------------------------------ the family's drawings
@@ -418,8 +486,9 @@ export class KioskView {
       const page = LINES.length * LINE_SECS + PAGE_PAUSE;
       const lines = motion ? Math.min(LINES.length, 1 + Math.floor((time % page) / LINE_SECS)) : LINES.length;
       const cursor = !motion || (time * BLINK_HZ) % 1 < 0.55;
-      key = 100 + lines * 2 + (cursor ? 1 : 0);
-      if (key !== this.shownKey) drawScreen(this.ctx, true, lines, cursor, 0);
+      const app = Math.max(0, Math.min(3, f?.app ?? 0));
+      key = 100 + app * 100 + lines * 2 + (cursor ? 1 : 0);
+      if (key !== this.shownKey) drawScreen(this.ctx, true, lines, cursor, 0, app);
     } else {
       const spot = motion ? Math.floor(time / HOP_SECS) % 4 : 0;
       key = spot;
