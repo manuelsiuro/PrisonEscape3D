@@ -16,7 +16,13 @@
 //            text under 10px (both in the screen's points: the interface scaled up, its scale counted)
 //   scroll   the page itself scrolls sideways or down (the game never should)
 //   scrolled a button of a card in play reached only by scrolling the card (dialogs' and panels' lists aside)
+// `lessonCards()` (2.39.1): every step of every lesson, in both languages, in the lesson's card in play, measured against
+// the hotbar and the window (a phone turned in Chrome, 915×274, is where they ran under it).
+import { currentLang, loadLang, setLang, t, type Key } from '../../src/i18n';
 import { play } from '../../src/play/game';
+import { chapterOf, LESSONS } from '../../src/tutorial/lessons';
+import { icon } from '../../src/ui/icons';
+import { fitLessonCard } from '../../src/ui/lessonCard';
 
 export type Issue = { scene: string; kind: string; what: string; box: string; note?: string };
 
@@ -323,4 +329,61 @@ export async function sweep() {
           `${k} ×${e.n} [${[...e.scenes].slice(0, 4).join('; ')}${e.scenes.size > 4 ? '; …' : ''}] e.g. ${e.sample.what} ${e.sample.note ?? ''} @${e.sample.box}`,
       ),
   };
+}
+
+/**
+ * Every lesson step's text (and its touch variant) in the lesson's card, in English and French, at this size: those whose
+ * card runs under the hotbar (where the two overlap across) or out of the window, by how many px, and how many the game
+ * lifts over the routine pill to fit (a phone turned, `fitLessonCard`); `mode`, a game's own card layout's body class to
+ * measure in (never lifted there). A game must be on
+ * screen (`playat.at(...)` first, or `moments()`); the card is put back hidden after.
+ */
+export async function lessonCards(mode = ''): Promise<{ size: string; steps: number; lifted: number; over: string[] }> {
+  // (The HUD comes up a moment after the game does.)
+  for (let k = 0; k < 30 && !(document.querySelector('.coach.lesson-coach') && document.querySelector('.hotbar')); k++) await wait(100);
+  const card = document.querySelector<HTMLElement>('.coach.lesson-coach');
+  const bar = document.querySelector<HTMLElement>('.hotbar');
+  if (!card || !bar) throw new Error('no game on screen: playat.at(...) first');
+  const was = currentLang();
+  const hidden = card.classList.contains('hidden');
+  const before = card.innerHTML;
+  card.classList.remove('hidden');
+  // (Where it settles: its slide-in, just restarted, would put it lower for the first frames.)
+  card.style.animation = 'none';
+  document.body.classList.add('lesson-on');
+  // (`mode`: a game's own card layout to measure in, its body class: 'inking', 'phoning'…)
+  if (mode) document.body.classList.add(mode);
+  const over: string[] = [];
+  let steps = 0;
+  let lifted = 0;
+  for (const lang of ['en', 'fr'] as const) {
+    await loadLang(lang);
+    setLang(lang);
+    LESSONS.forEach((lesson, k) => {
+      const c = chapterOf(k);
+      for (const s of lesson.steps)
+        for (const key of [s.text, s.touch]) {
+          if (!key) continue;
+          steps++;
+          card.innerHTML = `<span class="coach-ic">${icon('bulb', 18)}</span><span class="coach-text"><small>${t(`chapter.${c.id}` as Key)} · ${t('lesson.of', { n: c.n, of: c.of })} · ${t(`lesson.${lesson.id}.t` as Key)}</small><b>${t(key)}</b><span class="lesson-dots">${'<i></i>'.repeat(lesson.steps.length)}</span></span>`;
+          // (Where the game puts it: lifted over the routine pill when it wouldn't fit under it.)
+          fitLessonCard(card);
+          const r = card.getBoundingClientRect();
+          const h = bar.getBoundingClientRect();
+          if (document.body.classList.contains('lesson-high')) lifted++;
+          const across = h.width > 0 && r.right > h.left && r.left < h.right;
+          const by = Math.round(r.bottom - (across ? Math.min(h.top, innerHeight) : innerHeight));
+          if (by > 0) over.push(`${by}px ${lang} ${key}`);
+        }
+    });
+  }
+  setLang(was);
+  card.innerHTML = before;
+  card.style.animation = '';
+  document.body.classList.remove('lesson-high');
+  if (mode) document.body.classList.remove(mode);
+  card.classList.toggle('hidden', hidden);
+  if (hidden) document.body.classList.remove('lesson-on');
+  over.sort((a, b) => parseInt(b) - parseInt(a));
+  return { size: `${innerWidth}×${innerHeight}`, steps, lifted, over };
 }

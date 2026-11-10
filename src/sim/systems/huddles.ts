@@ -11,8 +11,8 @@
  *   play/labels.ts); talking to anyone in one takes them out of it, and two left alone part. Standing by a chat, the
  *   player overhears something true (the director's, as at the water cooler).
  *
- * A run logged before 2.39 (Sim.rules238) has none of it. State: `state.huddle`, absent until the first one forms (a
- * run that never reaches day 2's free time hashes as before).
+ * A run logged before 2.39 (Sim.rules238) has none of it. State: `state.huddle`, absent until day 2's first free time
+ * begins, before any gathering forms (a run that never reaches it hashes as before).
  */
 import {
   HOOPS_TURN_S,

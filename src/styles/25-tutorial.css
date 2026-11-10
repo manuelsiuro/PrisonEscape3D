@@ -274,6 +274,53 @@
   }
 }
 
+/* A phone turned in Chrome (about 274 tall, its bars showing): under the routine pill only about 75 px are left above
+   the hotbar, and most steps ran under it (2.39.1). The card closer under the pill, wider (clear of the player in the
+   middle), its kicker on one line and its text a little smaller; the chips beside it kept clear of the wider card. A
+   game's own card layout (the list at the top of the 520 query above) keeps its place. */
+@media (max-height: 320px) and (orientation: landscape) {
+  body:not(.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling)
+    .coach.lesson-coach {
+    top: 102px;
+    margin-top: 0;
+    max-width: min(420px, 46vw);
+    padding-block: 5px;
+  }
+  body.lesson-on:not(.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling)
+    .hud:not(.hunt-hud)
+    .hud-alerts {
+    padding-left: calc(min(420px, 46vw) + 8px);
+  }
+  .coach.lesson-coach .coach-text small {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 9.5px;
+  }
+  .coach.lesson-coach .coach-text b {
+    font-size: 12.5px;
+    line-height: 1.25;
+  }
+  .coach.lesson-coach .coach-ic {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* A phone turned (520 tall or less): a step still too long for the room under the routine pill (the narrowest, where the
+   hotbar spans most of the bottom; or 330 tall, the card at its usual size) lifts the card over the pill for that
+   step: lessonCard.ts's fitLessonCard, never in a game's own card layout. */
+@media (max-height: 520px) and (orientation: landscape) {
+  body.lesson-high:not(.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling)
+    .coach.lesson-coach {
+    top: 52px;
+  }
+  body.lesson-high:not(.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling)
+    .hud-routine {
+    visibility: hidden;
+  }
+}
+
 /* The step docked at the top of a panel over the card (a screen too narrow for both side by side),
    staying there as the panel scrolls (solid: the panel's content slides under it). */
 .lesson-strip {

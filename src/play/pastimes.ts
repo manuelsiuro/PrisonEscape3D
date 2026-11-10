@@ -54,7 +54,8 @@ interface BallShow {
 let ball: BallShow | null = null;
 /** How long a shot is in the air (s), and how long a miss rolls about after (s). */
 const FLIGHT_S = 0.9;
-const AFTER_S = 1.2;
+/** (2.39.1: 1.5, was 1.2: shown until it has come to rest, Pastimes' REST_T.) */
+const AFTER_S = 1.5;
 
 /** A new game (or a load): nothing to show. */
 export function resetPastimes() {
