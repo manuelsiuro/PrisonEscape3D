@@ -2,7 +2,7 @@
  * The map viewer (assets/maps) is in step with the game: data.js is what `npm run maps` would write
  * now, its drawn pictures come from the drawing code and content of today (each one's SVG hash), and
  * every prison has its pictures on disk. The version in data.js may lag, so a release alone never
- * fails this. It can't see the 3D photos go stale: those are retaken by hand (CLAUDE.md).
+ * fails this. It can't see the 3D photos go stale: those are retaken by hand (docs/TOOLS.md).
  *
  * A new field on a prison or a guard fails here too, until it's listed below as drawn, as shown on
  * the sheet, or as having no place on a map: that's how the viewer has fallen behind before.

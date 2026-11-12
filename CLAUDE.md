@@ -1,10 +1,11 @@
 # Working on Prison Escape 3D
 
-An Escapists-like 3D prison escape for the browser (phone and desktop). Built from
-web-game-starter with the **web-game-playbook** and **web-sim-game-playbook** skills.
+An Escapists-like 3D prison escape for the browser (phone and desktop), started from web-game-starter.
+The general playbooks (`web-game-playbook`, `web-sim-game-playbook`) aren't needed to work here: this
+file and the project's skills are; lessons go back into them only at the user's word.
 
 - **The plan**: `docs/README.md` says where to find what; read only the file you need. `docs/PLAN.md`
-  (decisions, architecture, tests, release routine; §8 the status). The design source of truth is
+  (decisions, architecture, tests; §8 the status). The design source of truth is
   `docs/source/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/source/tech_plan.md` fills
   engineering gaps only. A new conflict goes into its area's file in `docs/decisions/` in the same
   commit. **Writing to the docs** (a feature, a fix, a release, the memory): the `docs-upkeep` skill,
@@ -47,39 +48,23 @@ Rules that matter every time:
   (in `src/styles/01-base.css` if more than one file uses it, else at its file's top; translucent:
   `rgba(var(--x-rgb), 0.4)`), which `tokentest` checks; check desktop, phone portrait (412×915) and
   phone landscape (915×412), and after a layout change `scripts/dev/screensweep.ts` at its eight sizes
-  (every screen and moment of play, in English and French; a phone turned in Chrome is only ~274 tall;
-  the interface scaled up lays a phone out on as little as 300 across: 360×641 at 130%, an Android
-  user agent in the emulation, `app/scale.ts`).
+  (`docs/TOOLS.md`).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
-  prison and moment and drives it by real keys. A render change meant to draw nothing new (a refactor,
-  a speed-up): `scripts/dev/drawhash.ts` fingerprints 279 frames (every prison and moment, forced
-  weather, layers, stances, effects, the cameras, the manhunt), its baseline taken on the old code first.
-  A change to what's drawn: `scripts/dev/perfprobe.ts`'s `check()` in a phone's profile (draw calls and
-  triangles of 42 scenes against `perfbudget.json`; `record()` after a change meant to draw more); slow
-  frames, shader compiles and memory over a long game: `scripts/dev/hitchprobe.ts`.
+  prison and moment and drives it by real keys. A render change is measured: `drawhash` (meant to draw
+  nothing new), `perfprobe` (draws more), `hitchprobe` (slow frames, memory); how, in `docs/TOOLS.md`.
 - **The real phone** (an Android phone on USB, adb): testing, measuring or playing by touch on it, the
   `real-phone` skill (`scripts/dev/phone.ts`).
 - **Dev server**: `npm run dev` on port 5310, the game at `http://localhost:5310/` (not
   `/PrisonEscape3D/`, where public files come back as the page). One may already be running from an
   earlier session: reuse it. In dev builds `]` fast-forwards the clock ×30.
-- **Map viewer** (`assets/maps/index.html`): keep it in step with the prisons. When a phase
-  changes a map or adds something placed on it (props, decor, guards, a new `PrisonDef` field
-  such as `comms`), draw the new data in `scripts/dev/mapimage.ts` (picture, legend and the
-  tile info in `tileData`), then run `npm run maps`. If the change shows in 3D, also retake
-  the "In game" photos with `scripts/dev/mapshot.ts` in the dev build (`send()` writes them to
-  `assets/maps/` through `scripts/dev/shotsink.ts`; a change to the manhunt's outside: `send(true)`,
-  its "Outside 3D" photos). Check that the new
-  thing appears: a group the title screen hides needs showing in `View.mapShot` (its `dress`, for
-  what stands there every day). Then run `npm run maps` again, and commit the pictures with the
-  phase. Rules and non-places go in `scripts/dev/mapdata.ts` (the prison sheet, the overlays).
-  `mapviewertest` fails when `data.js` or a drawn picture no longer matches the game, or when a
-  prison gets a field the viewer doesn't know yet; it can't see the 3D photos go stale.
+- **Map viewer** (`assets/maps/index.html`): keep it in step with the prisons. A phase that changes a
+  map or places something new on it (props, decor, guards, a new `PrisonDef` field) brings it up to date
+  and commits the pictures with it: the steps in `docs/TOOLS.md`.
 - **How to play**: a new feature gets a topic in `src/ui/screens/helpTopics.ts` with its
   `help.<id>.*` parts (`helptest` checks the French has as many lines, the icons and pictures).
-  Its picture is a `SHOTS` entry in `scripts/dev/helpshot.ts` (a bot's run or a lesson replayed
-  in the dev build, posted to `public/help/` through the shot sink); a topic seen from the start
-  is pictured at Center Perks. Retake a picture when what it shows changes.
+  Its picture is a `SHOTS` entry in `scripts/dev/helpshot.ts` (`docs/TOOLS.md`), retaken when what
+  it shows changes.
 - **Release**: build, `npm run check` green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
   background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).

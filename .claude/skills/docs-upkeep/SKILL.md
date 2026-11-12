@@ -17,6 +17,7 @@ Write each fact once, in its home, and link to it from elsewhere. Don't retell i
 |---|---|---|
 | How the project is run, rules that matter every time | `CLAUDE.md` (short: pointers to the rest) | the detail of any feature |
 | Where to find what | `docs/README.md` | |
+| How a dev tool is used (the screen sweep, the render probes, the map viewer, the help pictures) | `docs/TOOLS.md` | `CLAUDE.md`, beyond a one-line pointer |
 | A rule of the game where the design document (GDD) is overruled or silent, as it stands now | its area's file in `docs/decisions/` (one row) | the story of how it was found |
 | What a release changed, what its review found, what was accepted | its entry in the latest `docs/history/` file, and its line in `docs/HISTORY.md` | the user's choices again in full |
 | A polish pass: the user's choices and the known limits | its area's row in `docs/POLISH.md` (at most 1,500 characters from 2.35) | what was built, measured or fixed |
