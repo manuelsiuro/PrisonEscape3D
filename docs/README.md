@@ -13,6 +13,7 @@ record. Nothing was rewritten: rows and entries moved word for word.
 | How a phase was planned and proved (P0–P42, the polish series, the Six Hunter) | [`phases/`](phases/), one file per roadmap (the list is in `PLAN.md` §4) |
 | A review of the game's pictures or another part, with its findings and what was picked | [`reviews/`](reviews/) (`picture-review-2.36.md`: day and night, materials, light) |
 | What's open: areas not polished yet, checks only a person can do, parked ideas, the improvement queue (sessions picked by the user, in order) | [`BACKLOG.md`](BACKLOG.md) |
+| The dev tools' procedures: the screen sweep, the render probes, the map viewer, How to play's pictures | [`TOOLS.md`](TOOLS.md) |
 | How the code is checked: types, lint, layout, the tests | [`PLAN.md`](PLAN.md) §6, [`.oxlintrc.json`](../.oxlintrc.json) (each rule turned off, why) |
 | What the game has, for players | [`FEATURES.md`](FEATURES.md) |
 | The original design | [`the_escapists_3d_complete_game_design_document.md`](source/the_escapists_3d_complete_game_design_document.md) (the GDD, the source of truth), [`game_idea.md`](source/game_idea.md), [`tech_plan.md`](source/tech_plan.md) (engineering, where the GDD says nothing) |

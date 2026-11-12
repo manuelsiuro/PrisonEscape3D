@@ -50,7 +50,7 @@ Any further conflict found during the build is added to its area's file in the s
 
 ## 3. Architecture
 
-Starter layout (base playbook §2), as it stands at v2.23:
+Starter layout (base playbook §2), as it stands (checked at v2.42):
 
 ```
 src/
@@ -59,6 +59,7 @@ src/
     state.ts          freshState, the state layout (new fields appended), snapshots
     events.ts         SimEvent (what a step reports) and the names shared with the state
     load.ts           loadState: a snapshot loaded, old fields filled in, damage put right
+    context.ts        what the systems see of the Sim: state, world, the step's events
     command.ts        the packed command (dir, op, a/b/c): keys, touch and bots alike
     rng.ts            the PRNG; roll()/state.salt for draws that mustn't shift other streams
     Recorder.ts       a keyframe every game hour, seek(step)
@@ -101,7 +102,7 @@ src/
   styles/             CSS, one file per part (shared colour tokens in 01-base.css, dialogs in 14-dialogs.css)
 scripts/
   test.ts             runs every *test*.ts in parallel against scripts/snapshots/
-  *test*.ts           54 tests (§6); bots.ts, escapes.ts, parolebots.ts, holidaybots.ts and
+  *test*.ts           the tests (§6; their count in §8); bots.ts, escapes.ts, parolebots.ts, holidaybots.ts and
                       huntbot.ts hold the bots they share
   dev/                map viewer (mapimage, mapshot, shotsink), help pictures (helpshot),
                       the release check (released.sh), trailer tools, probes
@@ -132,7 +133,7 @@ release with `npm version`. Visual checks are done at desktop size, 412×915 and
 eight sizes after a layout change, `scripts/dev/screensweep.ts`).
 A phase that changes a map or places something new on it also brings the map viewer
 (`assets/maps/`) up to date: drawn in `scripts/dev/mapimage.ts`, `npm run maps`, and the
-"In game" photos retaken when it shows in 3D (CLAUDE.md, Map viewer).
+"In game" photos retaken when it shows in 3D ([`TOOLS.md`](TOOLS.md), the map viewer).
 
 Every phase is built and released. The plans, phase by phase with what each shipped and how it was proved, are kept in `docs/phases/`, one file per roadmap (moved there word for word on 2026-11-06):
 
@@ -144,7 +145,7 @@ Every phase is built and released. The plans, phase by phase with what each ship
 - [How to play, laid out again (P37–P38, v2.13–v2.17)](phases/6-how-to-play.md): P37 How to play, laid out again, P38 How to play II, The day's card, easier games, Share
 - [Parole, odd jobs, the manhunt, holidays (P39–P42, v2.18–v2.21)](phases/7-after-hours.md): P39 The parole board, P40 The odd jobs board, P41 The manhunt, P42 Holidays
 - [The Six Hunter (v2.36)](phases/9-six-hunter.md): the sixth prison past the five, its pack of six, jobs, items, ways out, its look and its finish, as built
-- [Reviews and the gameplay polish series (v2.21.1 on)](phases/8-polish.md): Reviews and Install, Code review, The tattoo drawn by hand, The guards keep watch, The stats laid out, The library and Intellect, The vending machine, The menu board and the water cooler, The checkpoint's booth, Reading made playable, Street lamps, Jobs and the Work Period, Exercise and training, Lights Out and sleep, Roll call, Showers, Meals at the counter
+- [Reviews and the gameplay polish series (v2.21.1 on)](phases/8-polish.md): every review and polish pass, one row each with the snapshots it moved (each area's choices and limits: `POLISH.md`)
 
 ## 5. Mapping the GDD to phases
 
@@ -152,7 +153,7 @@ Kept with the campaign's phases: [`phases/1-campaign.md`](phases/1-campaign.md).
 
 ## 6. Tests
 
-All tests are `scripts/*test*.ts` (54 at v2.21.6), run in parallel by `scripts/test.ts`, each
+All tests are `scripts/*test*.ts` (their count in §8), run in parallel by `scripts/test.ts`, each
 compared line by line with its golden output in `scripts/snapshots/` (see the base playbook §5
 and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accepts new outputs.
 - **Determinism and saves** (`simtest`, `storagetest`, `replaytest`): same seed and same log
@@ -186,25 +187,17 @@ browser at the three sizes (§4).
 
 ## 7. Release routine
 
-`npm run build`, `npm test`, `npm run lint`, `npm run format:check` and the scripts' type check
-(`npm run check` runs all but the build; gate on their exit codes) pass, then commit,
-`npm version minor|patch`, `git push --follow-tags origin main`, and `npm run released` in the
-background: it waits for CI on HEAD, then for the live bundle to carry the version, and exits 1
-on a failed run or a timeout. After that, `npm run docs:released` (the history entry marked released, the status line, the map viewer: the `docs-upkeep` skill), update the
-project memory and report what changed, what wasn't verified (sound, vibration, real touch
-feel) and the known limits. A phase that touches a map also brings the map viewer up to date
-(CLAUDE.md, Map viewer).
+The steps are `CLAUDE.md`'s Release rule; the docs step after it (`npm run docs:released`) is the
+`docs-upkeep` skill's. Then report what changed, what wasn't verified (sound, vibration, real touch
+feel) and the known limits.
 
 ## 8. Progress
 
-**Status (2026-11-11): v2.42.0.** Every planned phase is built and released: the five-prison
-campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports grounds (P31–P33),
-the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
-its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), the tattoo drawn by hand (v2.22.0), the guards keeping watch over the routine and the cells (v2.23.0), the stats laid out (v2.24.0) and meals at the serving counter (v2.25.0), the showers turned on and taken in turns (v2.26.0), roll call on your own square with the guard walking the line (v2.27.0), the night's rules, with energy only asleep and the lights really going out (v2.28.0), sets in time with a beat, with inmates on the machines (v2.29.0), jobs made clear and alive, with inmates at their stations and guards minding work rooms (v2.30.0), the library, with reading as a game of its own, a daily limit, subjects and a librarian (v2.31.0), a working vending machine in every canteen, with snacks that do something, jams thumped free and inmates queueing at it (v2.32.0), and the menu board and water cooler, with a dish of the day, a scribble for a laugh and gossip overheard at the cooler (v2.33.0). Then the improvement queue (`BACKLOG.md` §4, v2.34.2–v2.36.0): fifteen sessions on the code, the UI, the 3D and the gameplay, from lint and types to gangs and turf (the gamepad parked), the last five run by a team of agents, each reviewed independently; and a sixth prison past the five, the Six Hunter (v2.36.0, [`phases/9-six-hunter.md`](phases/9-six-hunter.md)). In numbers: 6 prisons and the Training Block,
+**Status (2026-11-11): v2.42.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
+Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
+(`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 68 help topics,
 5,450 text keys in English and French, 83 test scripts.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).
-
-The history of every release is in [`docs/HISTORY.md`](HISTORY.md).

@@ -48,16 +48,9 @@ re-tuned, as the sports grounds were; gangs, 2.36, start once the player meets t
 
 ## 4. The improvement queue
 
-The user picked all sixteen from a survey of the code, the UI, the 3D and the gameplay (2026-11-06),
-one development session each. The order puts safety nets before refactors, measurements before
-fixes, and polished systems before the feature built on them; the user may reorder. Each session
-starts by asking the user's choices, and ends with its history entry; take it off here when done
-(the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
-4, the faster first load, were done in v2.34.2; 5, the phone performance pass, 6, hitches and memory,
-7, the design tokens, 8, the screen sizes, and 9, the accessibility options, and 11, fights, stealth and heat, in v2.35.0; 12, tools, digging, items and looting, 13, talk, merchants and the crew, 14, the picture review, 15, character animation, and 16, gangs and turf, in v2.36.0; 9's colour-blind palette was
-left out by the user; 10, gamepad support, was moved to §3 by the user).
-
-Every session is done, or moved by the user (2026-11-07).
+All sixteen sessions the user picked on 2026-11-06 are done (v2.34.2–v2.36.0, their entries in
+`history/v2.30-v2.34.md` and `history/v2.35-v2.39.md`), except 10, gamepad support (moved to §3 by
+the user); 9's colour-blind palette was left out by the user.
 
 ## 5. Upkeep
 
