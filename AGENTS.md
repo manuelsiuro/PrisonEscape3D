@@ -1,13 +1,13 @@
 # Prison Escape 3D: guide for other coding agents (Antigravity and the like)
 
-Written 2026-11-07, at v2.36.0, so the project can go on with another agent while Claude's weekly
+Written 2026-11-07 (v2.36.0), kept free of version numbers since 2026-11-12, so the project can go on with another agent while Claude's weekly
 tokens reset. The project was built with Claude Code: its rules live in `CLAUDE.md` and its methods
 in **skills** (`SKILL.md` files). This page says where everything is and how to use it from any
 agent. It points to the real sources rather than repeating them; when they disagree, they win.
 
 ## 1. Where the project stands
 
-- **Live:** v2.36.0 at <https://manuelsiuro.github.io/PrisonEscape3D/> (repo
+- **Live:** the version in `docs/PLAN.md` §8's status line, at <https://manuelsiuro.github.io/PrisonEscape3D/> (repo
   <https://github.com/manuelsiuro/PrisonEscape3D>, branch `main`, tags `vX.Y.Z`).
 - **The game:** an original Escapists-like 3D prison escape for the browser, phone and desktop.
   Six prisons and the Training Block; the sixth, **The Six Hunter** (level 6, out of the Daily),
@@ -22,7 +22,7 @@ agent. It points to the real sources rather than repeating them; when they disag
 
 1. **`CLAUDE.md`**: the rules that matter every time (determinism, old runs replaying as they were,
    content as data, tests and snapshots, lint, storage, text in two languages, keys, UI tokens and
-   sizes, map viewer, How to play, the release routine). Everything in it applies to you too.
+   sizes, map viewer, How to play, the release routine; the tools' procedures in `docs/TOOLS.md`). Everything in it applies to you too.
 2. **`docs/README.md`**: where to find what (one small file per question).
 3. **The skill for your task** (§5 below), before writing code.
 4. The area's row in `docs/POLISH.md` and its file in `docs/decisions/`, before touching an area.
@@ -32,7 +32,7 @@ agent. It points to the real sources rather than repeating them; when they disag
 | Command | What it does |
 |---|---|
 | `npm run dev` | Dev server, the game at <http://localhost:5310/> (one may already be running: reuse it) |
-| `npm run check` | Types, lint, layout and every test (79 scripts): gate on its **exit code**, never on `| tail` |
+| `npm run check` | Types, lint, layout and every test: gate on its **exit code**, never on `| tail` |
 | `npm test -- name1 name2` | Some tests only; `npm test -- -u` accepts snapshots, **only after reading the diff** |
 | `ONLY=<prison> npx tsx scripts/escapetest.ts` | One prison's escape bots (after any map change) |
 | `npm run build` | Type-check and build to `dist/` |
@@ -132,8 +132,9 @@ On another machine, copy the two playbook folders from this Mac first, since the
   then play it in the browser at desktop, 412×915 and 915×412, in English and French.
 - **Change a rule**: old logs must replay as they were. Put the new rule behind a new `Sim` flag, set by
   `src/sim/runlog.ts` for older logs:
-  - the next one is `rules236`, gated `versionBefore(game, 2, 37)`;
-  - see how `rules235` was added, and grep `rules235`.
+  - copy the newest one: the last `rulesNNN` flag in `src/sim/Sim.ts`, set in `prepareReplay`
+    (`src/sim/runlog.ts`) from a `beforeNNN` gate on the version the change ships in;
+  - the `stale` gate in the `RunRecorder` moves to that version too (grep the newest flag's name).
 
   New state fields go at the end and are optional. If a field is absent from `freshState()`, copy it
   explicitly in `loadState` (`src/sim/load.ts`), or a save drops it. Avoid new draws from the state's random
@@ -143,7 +144,7 @@ On another machine, copy the two playbook folders from this Mac first, since the
   zone, recipe and loot lists.
 - **A render change**: if it should draw nothing new, run `scripts/dev/drawhash.ts`, taking its baseline on the old
   code first. If it changes what's drawn, run `scripts/dev/perfprobe.ts` `check()` in the phone profile.
-  Both are in `CLAUDE.md`.
+  Both, and `hitchprobe.ts`, are in `docs/TOOLS.md`.
 - **Release**: §6's routine; read what `npm run released` prints, not only its exit code.
 
 ## 8. Handing back to Claude
