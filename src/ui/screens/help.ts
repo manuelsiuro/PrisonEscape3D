@@ -13,7 +13,8 @@ import { icon } from '../icons';
 import { HELP, POCKET_SAMPLE, topicById, type HelpTab, type HelpTopic } from './helpTopics';
 import { medalDisc } from './trophies';
 import { pad2 } from '../../sim/systems/clock';
-import { keyCode } from '../../input/bindings';
+import { keyCode, padLabels, padLabelsShown } from '../../input/bindings';
+import { BTN, btnLabel, type PadKind } from '../../input/pad';
 
 /**
  * How to play (GDD §13; laid out again in P37): each tab a grid of tiles in groups, a search
@@ -74,6 +75,43 @@ const keys = (): Array<[string, Array<[string, Key]>]> => [
     ],
   ],
 ];
+
+/** The pad's buttons (2.45: a fixed layout), labelled as on this kind of pad. */
+const padRows = (k: PadKind): Array<[string, Array<[string, Key]>]> => {
+  const b = (x: (typeof BTN)[keyof typeof BTN]) => btnLabel(k, x);
+  return [
+    ['move', [[`${t('pad.ls')} · ${t('pad.dpad')}`, 'pad.help.walk']]],
+    [
+      'do',
+      [
+        [b(BTN.A), 'help.k.act'],
+        [b(BTN.X), 'help.k.use'],
+        [b(BTN.Y), 'help.k.lock'],
+        [b(BTN.LT), 'help.k.block'],
+        [`${b(BTN.LB)} ${b(BTN.RB)}`, 'help.k.slots'],
+        [b(BTN.L3), 'help.k.drop'],
+        [`${b(BTN.RT)} + ${t('pad.rs')}`, 'pad.help.throw'],
+        [b(BTN.RT), 'help.k.throwAhead'],
+        [b(BTN.R3), 'help.k.digUp'],
+      ],
+    ],
+    [
+      'panels',
+      [
+        [b(BTN.VIEW), 'pad.help.wheel'],
+        [b(BTN.MENU), 'pad.help.pause'],
+        [b(BTN.B), 'pad.help.back'],
+      ],
+    ],
+    [
+      'games',
+      [
+        [`${t('pad.dpad')} · ${b(BTN.A)}`, 'pad.help.choose'],
+        [t('pad.rs'), 'pad.help.zoom'],
+      ],
+    ],
+  ];
+};
 
 /** The touch controls, in groups: each the HUD's own icon for it. */
 const TOUCHES: Array<[string, Array<[string, Key]>]> = [
@@ -386,25 +424,32 @@ function index(tab: Exclude<HelpTab, 'controls'>, query: string) {
     .join('');
 }
 
-function controls(touch: boolean) {
-  const which = `<div class="seg help-device" role="radiogroup">${(['keys', 'touch'] as const)
+type Device = 'keys' | 'touch' | 'pad';
+const DEVICE_ICON: Record<Device, string> = { keys: 'keyboard', touch: 'hand', pad: 'gamepad' };
+
+function controls(device: Device) {
+  const which = `<div class="seg help-device" role="radiogroup">${(['keys', 'touch', 'pad'] as const)
     .map(
       (d) =>
-        `<button role="radio" data-device="${d}" class="${(d === 'touch') === touch ? 'on' : ''}" aria-checked="${(d === 'touch') === touch}">${icon(d === 'keys' ? 'keyboard' : 'hand', 15)}${t(`help.device.${d}`)}</button>`,
+        `<button role="radio" data-device="${d}" class="${d === device ? 'on' : ''}" aria-checked="${d === device}">${icon(DEVICE_ICON[d], 15)}${t(`help.device.${d}`)}</button>`,
     )
     .join('')}</div>`;
-  const groups = touch
-    ? TOUCHES.map(
-        ([g, rows]) =>
-          [g, rows.map(([ic, k]) => `<li><span class="help-btn">${icon(ic, 18)}</span><span>${t(k)}</span></li>`).join('')] as const,
-      )
-    : keys().map(
-        ([g, rows]) => [g, rows.map(([label, k]) => `<li><kbd>${withKeys(label)}</kbd><span>${t(k)}</span></li>`).join('')] as const,
-      );
+  const groups =
+    device === 'touch'
+      ? TOUCHES.map(
+          ([g, rows]) =>
+            [g, rows.map(([ic, k]) => `<li><span class="help-btn">${icon(ic, 18)}</span><span>${t(k)}</span></li>`).join('')] as const,
+        )
+      : (device === 'pad' ? padRows(padLabelsShown()) : keys()).map(
+          // (The keyboard's list names the keys even with a pad in hand: 2.45.)
+          ([g, rows]) =>
+            [g, rows.map(([label, k]) => `<li><kbd>${withKeys(label, true)}</kbd><span>${t(k)}</span></li>`).join('')] as const,
+        );
   const body = groups
     .map(([g, items]) => `<h4 class="help-group">${t(`help.cg.${g}` as Key)}</h4><ul class="help-keys">${items}</ul>`)
     .join('');
-  return `${which}${body}<p class="help-foot">${t(touch ? 'help.t.zoom' : 'help.k.zoom')}${touch ? '' : ` ${t('help.k.keys')}`}</p>`;
+  const foot = device === 'touch' ? t('help.t.zoom') : device === 'pad' ? t('pad.help.foot') : `${t('help.k.zoom')} ${t('help.k.keys')}`;
+  return `${which}${body}<p class="help-foot">${foot}</p>`;
 }
 
 export interface HelpOptions {
@@ -421,7 +466,7 @@ export function showHelp(click: () => void, opts: HelpOptions = {}): Promise<{ l
   let tab: HelpTab = opts.tab ?? (opts.topic ? (topicById(opts.topic)?.tab ?? 'basics') : 'basics');
   let topic: string | null = opts.topic && topicById(opts.topic) ? opts.topic : null;
   let query = '';
-  let touch = TOUCH;
+  let device: Device = padLabels() ? 'pad' : TOUCH ? 'touch' : 'keys';
   const el = h(
     'div',
     'modal help-modal',
@@ -445,7 +490,7 @@ export function showHelp(click: () => void, opts: HelpOptions = {}): Promise<{ l
     el.classList.toggle('on-controls', tab === 'controls' && !topic);
     const tp = topic ? topicById(topic) : undefined;
     if (tp) pane.innerHTML = page(tp, !!opts.lessons, shown(tp.tab));
-    else pane.innerHTML = tab === 'controls' ? controls(touch) : index(tab, query);
+    else pane.innerHTML = tab === 'controls' ? controls(device) : index(tab, query);
     pane.scrollTop = keepScroll && !topic ? (indexScroll[tab] ?? 0) : 0;
   };
   const openTopic = (id: string) => {
@@ -548,9 +593,9 @@ export function showHelp(click: () => void, opts: HelpOptions = {}): Promise<{ l
       const lesson = target.closest<HTMLElement>('[data-lesson]')?.dataset.lesson;
       if (lesson) return done(lesson);
       const d = target.closest<HTMLElement>('[data-device]')?.dataset.device;
-      if (d && (d === 'touch') !== touch) {
+      if (d && d !== device) {
         click();
-        touch = d === 'touch';
+        device = d as Device;
         return show();
       }
       if (target.closest('[data-done]') || target === el) done();

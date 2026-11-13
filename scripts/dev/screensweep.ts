@@ -18,7 +18,7 @@
 //   scrolled a button of a card in play reached only by scrolling the card (dialogs' and panels' lists aside)
 // `lessonCards()` (2.39.1): every step of every lesson, in both languages, in the lesson's card in play, measured against
 // the hotbar and the window (a phone turned in Chrome, 915×274, is where they ran under it).
-import { currentLang, loadLang, setLang, t, type Key } from '../../src/i18n';
+import { currentLang, hasKey, loadLang, setLang, t, type Key } from '../../src/i18n';
 import { play } from '../../src/play/game';
 import { chapterOf, LESSONS } from '../../src/tutorial/lessons';
 import { icon } from '../../src/ui/icons';
@@ -362,7 +362,8 @@ export async function lessonCards(mode = ''): Promise<{ size: string; steps: num
     LESSONS.forEach((lesson, k) => {
       const c = chapterOf(k);
       for (const s of lesson.steps)
-        for (const key of [s.text, s.touch]) {
+        // (2.45: and a pad's words, where a step has them.)
+        for (const key of [s.text, s.touch, hasKey(`${s.text}Pad`) ? (`${s.text}Pad` as Key) : undefined]) {
           if (!key) continue;
           steps++;
           card.innerHTML = `<span class="coach-ic">${icon('bulb', 18)}</span><span class="coach-text"><small>${t(`chapter.${c.id}` as Key)} · ${t('lesson.of', { n: c.n, of: c.of })} · ${t(`lesson.${lesson.id}.t` as Key)}</small><b>${t(key)}</b><span class="lesson-dots">${'<i></i>'.repeat(lesson.steps.length)}</span></span>`;

@@ -44,7 +44,7 @@ import { fixerOf, smugglingOf } from '../sim/systems/smuggling';
 import { UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { MAP_W } from '../sim/world/World';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { itemName } from '../ui/items';
 import type { HeldView, OddJobsView, PinView } from '../ui/oddjobs';
 import type { PaRow } from '../ui/pa';
@@ -480,7 +480,7 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
   switch (e.what) {
     case 'taken': {
       sound.chime();
-      coachOnce('oddjob', TOUCH ? 'hint.oddjobTouch' : 'hint.oddjob');
+      coachOnce('oddjob', touchWords() ? 'hint.oddjobTouch' : 'hint.oddjob');
       if (e.from === FROM.CHAIN) {
         const step = sim.state.oddjobs[2];
         storyCard.show(name, storyTitle(sim, step), t(`oddjob.chain.${sim.prison.id}.${step}` as Key));
@@ -524,12 +524,12 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       return banner.toast(t(e.n ? 'toast.oddjob.cakeWaits' : 'toast.oddjob.cakeKept'), 'bad', 4500);
     case 'digging':
       sound.blip();
-      coachOnce('lookout', TOUCH ? 'hint.lookoutTouch' : 'hint.lookout');
+      coachOnce('lookout', touchWords() ? 'hint.lookoutTouch' : 'hint.lookout');
       return itemsUI.toast(t('toast.oddjob.digging', { name }));
     case 'coming':
       sound.sting();
       buzz('missed');
-      return banner.toast(t(TOUCH ? 'toast.oddjob.comingTouch' : 'toast.oddjob.coming'), 'bad', 2500);
+      return banner.toast(t(touchWords() ? 'toast.oddjob.comingTouch' : 'toast.oddjob.coming'), 'bad', 2500);
     case 'whistled':
       sound.whistle();
       return itemsUI.toast(t('toast.oddjob.whistled', { name }));

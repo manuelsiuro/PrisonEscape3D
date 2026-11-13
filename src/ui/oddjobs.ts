@@ -1,7 +1,7 @@
 import { t, textStamp } from '../i18n';
 import { BOARD } from '../content/oddjobs';
 import { EXT, OP } from '../sim/command';
-import { esc, h, type Send, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /**
@@ -187,7 +187,7 @@ function heldHtml(j: HeldView, alone: boolean): string {
     )
     .join('');
   const whistle = j.whistle
-    ? `<button class="big-btn ${j.urgent ? 'primary urgent' : 'ghost'} small" data-whistle>${icon('megaphone', 16)}<span>${esc(t(TOUCH ? 'oddjob.whistle' : 'oddjob.whistleKey'))}</span></button>`
+    ? `<button class="big-btn ${j.urgent ? 'primary urgent' : 'ghost'} small" data-whistle>${icon('megaphone', 16)}<span>${esc(t(touchWords() ? 'oddjob.whistle' : 'oddjob.whistleKey'))}</span></button>`
     : '';
   return `<section class="oddjobs-held">${alone ? '' : `<div class="box-label">${icon('briefcase', 14)}<span>${esc(t('oddjob.yourJob'))}</span></div>`}
     <div class="oddjob-pin held"><i class="oddjob-ic">${icon(j.icon, 16)}</i><span class="oddjob-text"><b>${esc(j.kind)} · ${esc(j.who)}</b><small>${esc(j.ask)}</small></span></div>

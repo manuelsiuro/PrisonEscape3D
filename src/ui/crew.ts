@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 import type { Speciality } from '../content/crew';
 import { t, textStamp } from '../i18n';
 import { ORDER, TALK } from '../sim/command';
@@ -161,7 +162,9 @@ export class CrewPanel {
         (r) =>
           `<div class="board-row crew-row"><span class="board-ic crew-act-ic">${icon(SPEC_ICON[r.spec], 20)}</span><span class="board-text"><b>${esc(r.name)}<em>${t(`spec.${r.spec}`)}</em>${r.night ? `<i class="crew-moon" title="${esc(t('crew.nightOn'))}">${icon('moon', 12)}</i><span class="sr-only">${esc(t('crew.nightOn'))}</span>` : ''}</b><small>${esc(r.status)}</small></span>${r.recall ? `<button class="big-btn primary small" data-crew="recall" data-who="${r.who}" aria-label="${esc(t('crew.recallAria', { name: r.name }))}">${icon('bell', 16)}<span>${t('crew.recall')}</span></button>` : ''}</div>`,
       )
-      .join('')}</div><p class="board-note">${t('crew.panelNote')}</p>${TOUCH ? '' : `<p class="rat-keys">${t('crew.keys')}</p>`}`;
+      .join(
+        '',
+      )}</div><p class="board-note">${t('crew.panelNote')}</p>${TOUCH || padLabels() ? '' : `<p class="rat-keys">${t('crew.keys')}</p>`}`;
     if (had !== undefined)
       (this.body.querySelector<HTMLElement>(`[data-who="${had}"]`) ?? this.el.querySelector<HTMLElement>('[data-crew="close"]'))?.focus();
     if (this.focusNext) {

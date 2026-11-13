@@ -146,17 +146,18 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
 
 ## Controls
 
-| | Keyboard and mouse | Touch |
-|---|---|---|
-| Walk | W A S D or the arrow keys; click a spot to walk there | Drag anywhere (a stick appears under your thumb), or tap a spot |
-| Act | E: search, pick up, open, talk, sit, sleep | The action button |
-| Use the tool in hand, hit | Space; U digs up out of a tunnel; R locks on to someone | The use button, the dig-up button, tap someone |
-| Items | 1–6 to hold one, Q to drop it, C to craft | Tap the hotbar, then the hammer to craft |
-| Throw | Hold the right mouse button to aim; F throws straight ahead | The throw button |
-| Panels | I your file, J the day's card, T the rat, P the phone, G the crew, H how to play | Their buttons on the HUD (the clock for the day's card) |
-| Zoom, pause | Mouse wheel, Esc | Pinch, the pause button |
+| | Keyboard and mouse | Touch | Gamepad |
+|---|---|---|---|
+| Walk | W A S D or the arrow keys; click a spot to walk there | Drag anywhere (a stick appears under your thumb), or tap a spot | Left stick or D-pad |
+| Act | E: search, pick up, open, talk, sit, sleep | The action button | A |
+| Use the tool in hand, hit | Space; U digs up out of a tunnel; R locks on to someone | The use button, the dig-up button, tap someone | X; R3 digs up; Y locks on |
+| Items | 1–6 to hold one, Q to drop it, C to craft | Tap the hotbar, then the hammer to craft | LB and RB to hold one, L3 to drop it; View for the pockets and crafting |
+| Throw | Hold the right mouse button to aim; F throws straight ahead | The throw button | Hold RT and aim with the right stick; a tap throws straight ahead |
+| Panels | I your file, J the day's card, T the rat, P the phone, G the crew, H how to play | Their buttons on the HUD (the clock for the day's card) | View opens a wheel of them |
+| Zoom, pause | Mouse wheel, Esc | Pinch, the pause button | Right stick, Menu (B closes a card) |
 
-On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows their real labels.
+On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows their real labels. A gamepad
+(Xbox, PlayStation, Switch Pro and most others) plays the whole game, menus included, and the hints then name its buttons.
 
 ---
 
@@ -193,7 +194,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 85 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 86 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

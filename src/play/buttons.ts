@@ -2,7 +2,7 @@
  * The tool and dig-up presses (what the buttons would do is worked out in reach.ts).
  */
 import { LAYER } from '../sim/world/World';
-import { TOUCH } from '../ui/dom';
+import { TOUCH, touchWords } from '../ui/dom';
 import { armThrow, throwAhead, throwAt } from './aim';
 import { itemsUI, tools } from './context';
 import { t } from '../i18n';
@@ -58,7 +58,7 @@ export function usePress() {
     if (!drinkArmed()) {
       armDrink();
       tools.release();
-      itemsUI.toast(t(TOUCH ? 'toast.drinkAgainTouch' : 'toast.drinkAgain'));
+      itemsUI.toast(t(touchWords() ? 'toast.drinkAgainTouch' : 'toast.drinkAgain'));
       return;
     }
     disarmDrink();

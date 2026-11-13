@@ -10,7 +10,7 @@ import { clockRinging, clockSecs } from '../sim/systems/noise';
 import { itemIcons } from '../render/itemIcons';
 import { t, textStamp, type Key } from '../i18n';
 import { keyLabel } from '../i18n/keys';
-import { esc, h, type Send, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /** What the item UI shows each frame. */
@@ -242,6 +242,19 @@ export class ItemsUI {
   /** A panel (container or workbench) is open: Escape closes it before pausing. */
   get panelOpen() {
     return this.craftOpen || (this.view?.items.open ?? -1) >= 0;
+  }
+
+  /** An item's menu open (its Wear, Throw, Drop…). */
+  get menuOpen() {
+    return this.menu !== null;
+  }
+
+  /** The item's menu closed (2.45: a pad's B); false when none was open. */
+  closeMenu(): boolean {
+    if (this.menu === null) return false;
+    this.menu = null;
+    this.uiRev++;
+    return true;
   }
 
   closePanels() {
@@ -564,7 +577,7 @@ export class ItemsUI {
     const { recipe: r, check } = benchCheck(it, maskOf(this.bench));
     const resultN = r >= 0 ? ITEMS.findIndex((d) => d.id === RECIPES[r].result) + 1 : 0;
     const can = check === 'ok';
-    let msg = TOUCH ? t('craft.pick') : t('craft.pickKeys');
+    let msg = touchWords() ? t('craft.pick') : t('craft.pickKeys');
     if (this.bench.length && r < 0) msg = t('craft.nothing');
     if (r >= 0) msg = can ? t('craft.make', { item: itemName(resultN) }) : t('craft.needInt', { n: RECIPES[r].int, have: it.int });
     const bench = [0, 1, 2]

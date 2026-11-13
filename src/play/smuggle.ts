@@ -34,7 +34,7 @@ import type { PhoneView, PhoneWay } from '../ui/phone';
 import { banner, closeSocial, hud, itemsUI, phonePanel, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce, markTip, seenTip } from './tips';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { BOARD_LOOKS, HEARINGS } from '../content/parole';
 import { boardShown } from './parole';
 import { centerX, centerZ } from '../sim/world/grid';
@@ -316,7 +316,7 @@ export function smuggleHints(sim: Sim, busy: boolean) {
     banner.toast(t('hint.visitWait'), 'info', 2600);
   }
   const s = sim.state;
-  if (itemOf(s.items.inv[s.items.hand]) === PHONE) coachOnce('phone', TOUCH ? 'hint.phone' : 'hint.phoneKeys');
+  if (itemOf(s.items.inv[s.items.hand]) === PHONE) coachOnce('phone', touchWords() ? 'hint.phone' : 'hint.phoneKeys');
 }
 
 // ------------------------------------------------------------------ in the picture

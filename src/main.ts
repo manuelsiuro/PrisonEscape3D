@@ -15,6 +15,7 @@ import { play, sendOp } from './play/game';
 import { onTap } from './play/guide';
 import { openDay } from './play/daycard';
 import { act, listenKeys } from './play/keys';
+import { listenPad } from './play/pad';
 import { frame } from './play/loop';
 import { pauseReplay } from './play/replay';
 import { chatterStats, director } from './play/chatter';
@@ -67,6 +68,7 @@ wireGames();
 wirePastimes();
 wireOddJobs();
 listenKeys();
+listenPad();
 
 // The title shows the first prison drifting by.
 // Behind the title: the newest prison open.

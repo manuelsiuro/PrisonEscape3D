@@ -57,7 +57,7 @@ export class AimUI {
   }
 
   /** The aim's hint: how this aim throws (null: not aiming). */
-  show(mode: 'mouse' | 'click' | 'touch' | null) {
+  show(mode: 'mouse' | 'click' | 'touch' | 'pad' | null) {
     const m = mode ?? '';
     if (m === this.mode) return;
     this.mode = m;
@@ -68,10 +68,12 @@ export class AimUI {
       for (const e of this.ears) e.classList.add('hidden');
       return;
     }
-    this.hintText.textContent = t(mode === 'touch' ? 'aim.touch' : mode === 'click' ? 'aim.click' : 'aim.mouse');
+    this.hintText.textContent = t(
+      mode === 'touch' ? 'aim.touch' : mode === 'click' ? 'aim.click' : mode === 'pad' ? 'aim.pad' : 'aim.mouse',
+    );
     this.cancel.querySelector('span')!.textContent = t('aim.cancel');
     // The mouse held down lets go to throw; a cancel is Esc. Armed or on touch, a button cancels.
-    this.cancel.classList.toggle('hidden', mode === 'mouse');
+    this.cancel.classList.toggle('hidden', mode === 'mouse' || mode === 'pad');
     this.measuredAt = 0;
   }
 

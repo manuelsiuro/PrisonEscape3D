@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 /**
  * Talent night (P30) on screen: the night's acts; the song and the instrument picked, Perform;
  * then the notes coming down three lanes to the line, the lanes' pads, the mark so far; the
@@ -9,7 +10,7 @@ import { t, textStamp, type Key } from '../i18n';
 import { withKeys } from '../i18n/keys';
 import { EXT, OP } from '../sim/command';
 import { STAGE_QUIT } from '../sim/systems/talent';
-import { arrowStep, esc, h, type Send, setText, TOUCH } from './dom';
+import { arrowStep, esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /**
@@ -233,12 +234,17 @@ export class StageCard {
         })
         .join('');
       for (const b of this.pads.querySelectorAll('kbd'))
-        b.textContent = TOUCH ? '' : withKeys(['← %KeyA%', '↓ %KeyS%', '→ %KeyD%'][Number((b.parentElement as HTMLElement).dataset.lane)]);
+        // (2.45: a pad in hand plays the lanes with its arrows: just those.)
+        b.textContent = touchWords()
+          ? ''
+          : padLabels()
+            ? ['←', '↓', '→'][Number((b.parentElement as HTMLElement).dataset.lane)]
+            : withKeys(['← %KeyA%', '↓ %KeyS%', '→ %KeyD%'][Number((b.parentElement as HTMLElement).dataset.lane)]);
       this.pads
         .querySelectorAll<HTMLElement>('[data-lane]')
         .forEach((p, k) => p.setAttribute('aria-label', t('stage.laneAria', { n: k + 1 })));
       if (v.phase === 'offer') setText(this.note, v.why || t('stage.pickNote'));
-      else if (v.phase === 'play') setText(this.note, t(TOUCH ? 'stage.playTouch' : 'stage.playKeys'));
+      else if (v.phase === 'play') setText(this.note, t(touchWords() ? 'stage.playTouch' : 'stage.playKeys'));
       else setText(this.note, this.verdict(v));
       setText(this.go.querySelector('span')!, t('stage.go'));
       setText(this.el.querySelector('.stage-quit span')!, t('stage.quit'));

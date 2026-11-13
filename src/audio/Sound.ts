@@ -14,10 +14,18 @@ export type { Scene } from './soundAmbience';
  * (`soundEffects.ts`); here, the effects of the escapes and the later features.
  */
 export class Sound extends SoundEffects {
+  /** Sound started by a pad's press (2.45): where the browser counts it as a gesture, it plays at once. */
+  wake: () => void = () => {};
   constructor() {
     super();
-    const start = () => {
-      if (this.ctx) return;
+    const start = (e?: Event) => {
+      // (2.45: a pad's keys are synthetic, never a gesture the browser would let start sound.)
+      if (e && !e.isTrusted) return;
+      if (this.ctx) {
+        // (Made by a pad's press the browser didn't count: it waits for a real gesture to resume.)
+        if (this.ctx.state === 'suspended' && !document.hidden) this.ctx.resume().catch(() => {});
+        return;
+      }
       try {
         this.ctx = new AudioContext();
         this.out = this.ctx.createGain();
@@ -34,8 +42,9 @@ export class Sound extends SoundEffects {
         /* no audio on this device */
       }
     };
-    addEventListener('pointerdown', start, { once: true });
-    addEventListener('keydown', start, { once: true });
+    addEventListener('pointerdown', start);
+    addEventListener('keydown', start);
+    this.wake = () => start();
     // Hidden (another app, a locked phone): silence, not a score playing in the pocket. The
     // context's clock stops with it, so the music picks up where it was without a burst.
     document.addEventListener('visibilitychange', () => {

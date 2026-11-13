@@ -1,6 +1,6 @@
 import { t, textStamp, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
-import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
+import { confirmed, esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 import { DESIGNS } from '../content/team';
 import { pad2 } from '../sim/systems/clock';
@@ -358,7 +358,7 @@ export class DiceCard {
         <div class="dice-row theirs"><span class="dice-who">${esc(v.name)}</span>${theirs(0, c)}${theirs(1, d)}<b class="dice-sum">${theirSum}</b></div>
         <p class="dice-verdict" data-what="${v.phase === 'done' ? v.what : 'wait'}">${verdict}</p>${warn}
         <div class="dice-acts">${acts}</div>
-      </div>${v.phase === 'mine' && !TOUCH ? `<p class="train-note">${t('dice.keys')}</p>` : ''}`;
+      </div>${v.phase === 'mine' && !touchWords() ? `<p class="train-note">${t('dice.keys')}</p>` : ''}`;
     this.el.append(this.say);
     // (Said once each: the verdict, for a screen reader.)
     const said = v.phase === 'done' ? verdict : '';
@@ -650,7 +650,10 @@ export class PickCard {
         (_, k) => `<i class="${k < v.pins ? 'set' : k === v.pins ? 'now' : ''}"></i>`,
       ).join('');
       setText(this.count, t('pick.count', { n: v.pins, of: v.of }));
-      setText(this.note, `${TOUCH ? t('pick.touch') : t('pick.keys')} · ${v.uses === 1 ? t('pick.uses1') : t('pick.uses', { n: v.uses })}`);
+      setText(
+        this.note,
+        `${touchWords() ? t('pick.touch') : t('pick.keys')} · ${v.uses === 1 ? t('pick.uses1') : t('pick.uses', { n: v.uses })}`,
+      );
       this.pinsShown = v.pins;
       this.usesShown = v.uses;
       if (motion && (slipped || set)) {
