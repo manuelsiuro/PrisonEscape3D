@@ -51,9 +51,9 @@ colour-blind palette was left out by the user.
 ## 4b. City Escape: the stages to come
 
 The second mode (`phases/10-city-escape.md`, its design in `source/city_escape_design.md`): C1, the
-foundations, is built (v2.46.0). Open, in order, each a release behind `?city`:
+foundations, and C2, survival (scavenging, the dead, shelters and making), are built (v2.46.0, v2.47.0).
+Open, in order, each a release behind `?city`:
 
-- **C2. Survival:** hunger, loot, crafting, weapons, the dead, light and noise, shelters, death.
 - **C3. The story and the ways out:** the radio, the five acts, survivors, the three ways out, the end.
 - **C4. The finish:** the look, sounds, How to play, a tutorial, pad and phone passes, the French, an
   independent review; then the menu entry shown to everyone.

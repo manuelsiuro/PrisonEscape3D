@@ -84,11 +84,75 @@ The city generated, walked and mapped.
 
 ### C2. Survival
 
-Health, hunger and energy; the city's items and loot by place; searching furniture; the pockets and
-crafting panels on the city's lists; weapons and the fight; the dead (shamblers first: by day in the
-dark, at night everywhere), noise and light; shelters (claim, bar, light, stash, sleep); dusk and
-night's warnings; death in both modes; the night's picture (unlit interiors dark, a torch's cone).
-Proved by a survival bot: seven days alive on many seeds without leaving two districts.
+In three slices, each a release.
+
+**C2a. Scavenging (v2.47.0): built.**
+- **The meters** (`sim/City.ts`): health (0–100), hunger and energy (kept in thousandths). Awake, a
+  full stomach lasts about 30 hours and energy about 18; asleep, hunger falls at half the pace and
+  energy comes back. At no hunger, a point of health every three minutes; over half fed, health
+  mends. Under a quarter fed, or worn out, the walk is slower.
+- **The city's things** (`content/items.ts`): 26 of its own (food and drink, a bandage and
+  painkillers, materials, three tools, two weapons whose blows come with C2b), drawn with the item
+  models' shapes. Nothing added to the prisons' items.
+- **Loot** (`content/loot.ts`): desks, shelves, counters, bins, freezers, crates, workbenches,
+  vending machines, beds and tables are searched: one to three draws from the building's list plus
+  the furniture's own, 56 in 100 coming up empty, the same for a city's seed, district and piece. A
+  first search takes a second and a half; what's put back stays.
+- **Pockets:** eight, things of a kind stacking (food 3, materials 4); Eat or Use, Store in the open
+  box, Drop (a pile on the ground, looked at like a box).
+- **Sleep:** in any bed already searched, from 20:00 or when tired, to 06:00 (the night runs 40 times
+  as fast), woken by a move, by hunger, or rested by day; the last bed slept in is **home**.
+- **Death:** a Survivor wakes at home the next morning with 40 health, what they carried in a pile
+  where they fell; in Hardcore the city is lost (the end's card, the save gone).
+- **On screen:** three meters under the HUD's row, the pockets along the bottom (a tap or 1–8: the
+  thing's card), the open box's panel, the action button (Search, Look, Sleep, Close; a search's
+  ring), the floor's brackets round what it would use, toasts.
+- **Proved:** `citysurvivetest`: a scavenger bot (`scripts/citybots.ts`) lives a week on 10 cities
+  without falling or starving; the rules one by one; saves (one from C1 loads, the meters fresh).
+
+**C2b. The dead (v2.47.0, with C2a): built.**
+- **Who's about** (`sim/dead.ts`, numbers in `content/dead.ts`): shamblers, in the district the
+  player is in only, put down afresh each time it's entered (never within ten tiles). By day they
+  stand indoors (three, two more a step of a district's danger, one more a day up to six) and the
+  danger's worth wander the streets; at 21:00 those indoors come out and more arrive one every 20
+  minutes up to the night's count (six, three more a step of danger, two more a night up to
+  sixteen); at 05:00 those in the streets go to ground. A district's danger is its distance from the
+  start in districts, one more where a way out begins.
+- **Sight and noise:** six tiles by day, four at night, two for a sleeper, with a clear line (never
+  through a wall); out of sight six seconds, one goes to where it saw the player last. A blow is heard
+  seven tiles off, a search's rustle four: those not already chasing go and look.
+- **The chase and the bite:** two thirds of the player's walk; in reach it lunges nine steps, then
+  bites (8 health) every 24; struck, it reels, is pushed back and starts its lunge again, so one alone
+  can be fought off clean and two or three can't. A bite wakes a sleeper.
+- **The blow** (Space, its button, a pad's X): the nearest ahead in reach; fists 6, a weapon twice its
+  `attack` more (a bat puts one down in two); a little energy each, half the harm when worn out.
+- **On screen:** the dead as one instanced body with its own gait (`render/CityView.ts`), their eyes
+  lit and a faint pool of light round the player after dark; "n after you" in the HUD; the screen's
+  edges red at a bite; dusk's two warnings (19:00, 20:30), night and dawn said.
+- **Bodies:** nobody walks through the dead, and a chasing pack keeps in file.
+- **Proved:** `cityzedtest` (the counts, sight, the chase, the lunge, the blow, noise, bodies,
+  nightfall and dawn, the same commands the same dead, saves); `citysurvivetest`'s scavenger, which
+  fights what comes in reach and never hides, falls 1.3 times a week on 10 cities; an independent
+  review's nine findings fixed, each with its check.
+
+**C2c. Shelters and making (v2.47.0, with C2a and C2b): built.**
+- **Making** (`content/recipes.ts`, `COP.MAKE`): eight recipes, all known from the start, made from
+  the pockets (C, or the pockets' Make button): a bandage, boards, the nailed bat; at a workbench
+  beside the player, the pipe spear, a knife and the camp stove; with a stove carried, cooked fish and
+  stew. Refused without the parts, the bench or the stove; what doesn't fit the pockets lies underfoot.
+- **Wear:** a weapon's count in its pocket is the blows left in it (a bat 40, a knife 30, the nailed
+  bat 50, the spear 35): one fewer each time it lands, broken at none; found, it has half to all.
+- **Barring doors:** with boards in the pockets (or at a barred door), the action at a building's
+  street door bars it or takes the boards down, two seconds' work heard as a blow is. The player
+  walks through their own barred door; the dead don't (`City.zedGrid`), and none are put down inside.
+- **A shelter** is a building whose every street door is barred: said when the last one goes up,
+  shown as the place in the HUD. Home is still the last bed slept in, marked on the city's map.
+- **On screen:** the Make panel (each recipe, what it takes, what's short ringed, what it needs
+  beside), a weapon's bar in its pocket, boards across barred doors, Bar and Unbar on the button.
+- **Proved:** `citymaketest`: every recipe; wear; a door barred and opened; a first night asleep in a
+  house on 12 cities, bitten in none with its doors barred, woken by a bite in 3 with them open.
+- **Left for later:** light and fire (a torch, a fire barrel, a generator), a stash's own screen,
+  cars searched, the weapons thrown or shot.
 
 ### C3. The story and the ways out
 
@@ -108,4 +172,7 @@ everyone.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
+| C2c | 2.47.0 | `citymaketest` | `citysurvivetest` (weapons wear: 1.8 falls a week), `cityzedtest`, `citytest` (the state's fingerprints), `i18ntest`, `tokentest`, `docstest` counts | desktop: the Make panel, boards made twice, a house's door barred, the shelter said and shown, the boards on the door |
+| C2b | 2.47.0 | `cityzedtest` | `citysurvivetest` (the week with the dead about), `i18ntest`, `tokentest`, `docstest` counts | desktop: one of the dead indoors unseen through its wall, seen and chasing, put down with fists, nightfall's banner, their eyes and the player's light at night |
+| C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall; 412×915 and 915×412: the pockets, the box, the card |
 | C1 | 2.46.0 | `citygentest`, `citytest` | `docstest` counts, `tokentest` (a stylesheet), `i18ntest` (keys) | desktop, 412×915, 915×412: new city, the Intake, the story card, walking, three checkpoints, the map, Continue |

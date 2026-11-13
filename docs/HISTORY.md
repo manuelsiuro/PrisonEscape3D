@@ -207,3 +207,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 - Gamepad support (v2.45.0)
 - City Escape, stage 1: the city generated, walked and mapped (v2.46.0)
+- City Escape, survival: scavenging, the dead, shelters and making (v2.47.0, not released yet)

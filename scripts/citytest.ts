@@ -41,6 +41,8 @@ function nextHop(c: City, visited: Set<number>): number {
 /** Walks the whole city; the commands sent, for the replay. */
 function tour(c: City): { cmds: number[]; ok: boolean } {
   const cmds: number[] = [];
+  // (The walk alone is what's proved here: the dead have their own test.)
+  c.peace = true;
   const visited = new Set([c.state.district]);
   for (let hops = 0; hops < 40; hops++) {
     const to = nextHop(c, visited);
@@ -88,16 +90,19 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   most = Math.max(most, cmds.length);
   // The same commands, the same city.
   const again = new City(seed);
+  again.peace = true;
   for (const cmd of cmds) again.step(cmd);
   const a = JSON.stringify(c.snapshot());
   check(a === JSON.stringify(again.snapshot()), `seed ${seed}: the same commands gave another city`);
   // Saved half way and loaded: the rest played on it ends the same.
   const half = new City(seed);
+  half.peace = true;
   const mid = Math.floor(cmds.length / 2);
   for (let k = 0; k < mid; k++) half.step(cmds[k]);
   const loaded = loadCity(JSON.parse(JSON.stringify(half.snapshot())));
   check(!!loaded, `seed ${seed}: its own save refused`);
   if (loaded) {
+    loaded.peace = true;
     for (let k = mid; k < cmds.length; k++) loaded.step(cmds[k]);
     check(JSON.stringify(loaded.snapshot()) === a, `seed ${seed}: a city saved and loaded played on differently`);
   }
@@ -111,6 +116,7 @@ for (const p of prints) say(`  ${p}`);
 
 // ------------------------------------------------------------------ the clock, the modes, the map
 const c = new City(7, MODE.HARDCORE);
+c.peace = true;
 check(c.minute === START_MINUTE && c.day === 1, `a city starts on day 1 at ${START_MINUTE}: ${c.day}, ${c.minute}`);
 for (let k = 0; k < 20 * 60; k++) c.step(0);
 check(c.minute === START_MINUTE + 60, `an hour of steps is an hour: ${c.minute}`);

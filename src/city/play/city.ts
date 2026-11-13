@@ -1,7 +1,8 @@
 import { itemNumber } from '../../content/items';
 import { readPrisoner } from '../../game/prisoner';
 import { t, type Key } from '../../i18n';
-import { banner, click, controls, hint, settings, sound, view } from '../../play/context';
+import { buzz } from '../../app/haptics';
+import { banner, click, controls, hint, settings, sleepVeil, sound, view } from '../../play/context';
 import { play, tickPlayClock, type SideRun } from '../../play/game';
 import { inPlace } from '../../play/lazy';
 import { settingsChanged } from '../../play/tips';
@@ -9,19 +10,25 @@ import { emptyFrame, type Frame } from '../../render/viewFrame';
 import { Autopilot } from '../../sim/ai/autopilot';
 import { command, headingAngle } from '../../sim/command';
 import { hhmm } from '../../sim/systems/clock';
-import { NIGHT_FROM, NIGHT_TO, STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
+import { STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
 import { MAP_W } from '../../sim/world/World';
 import { h } from '../../ui/dom';
 import { hideLoading } from '../../ui/loading';
 import { showHelp } from '../../ui/screens/help';
 import { showPause } from '../../ui/screens/pause';
 import { showSettings } from '../../ui/screens/settings';
-import { CityView } from '../render/CityView';
-import { writeCitySave } from '../save';
-import type { City, CityEvent } from '../sim/City';
+import { BLOW } from '../content/dead';
+import { CityView, type DeadFrame } from '../render/CityView';
+import { nightAt, ZED, type Zed } from '../sim/dead';
+import { cityItem } from '../content/items';
+import { SEARCH_STEPS } from '../content/loot';
+import { CITY_RECIPES } from '../content/recipes';
+import { deleteCitySave, writeCitySave } from '../save';
+import { BAR_STEPS, COP, FULL, type City, type CityEvent } from '../sim/City';
 import { CityHud, type CityHudState } from '../ui/hud';
 import { paintDistrict } from '../ui/mapPaint';
-import { showCityIntro, showCityMap } from '../ui/screens';
+import { CityPockets, itemName, type PocketsState } from '../ui/pockets';
+import { showCityIntro, showCityMap, showCityOver } from '../ui/screens';
 
 /**
  * City Escape in play (C1): its own simulation (city/sim/City.ts) stepped at the prisons' pace from
@@ -35,6 +42,8 @@ interface CityRun extends SideRun {
   /** Where the player was before the last step (the view eases between the two). */
   prev: { x: number; z: number };
   pilot: Autopilot;
+  /** One-step operations waiting for the next steps (one a step): [op, a]. */
+  ops: Array<[number, number]>;
   paused: boolean;
   /** Written to storage since it last changed district or was paused. */
   saved: boolean;
@@ -42,22 +51,39 @@ interface CityRun extends SideRun {
 }
 
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
+/** What lies on the ground is drawn as a parcel (the view's items are the prisons'). */
+const PILE = itemNumber('parcel');
+/** Asleep, the night runs fast (as the prisons' does). */
+const SLEEP_SPEED = 40;
 
 // (Made as its code comes in, after the rest of the page: put where they'd have been made, see lazy.ts.)
-const [cityView, cityHud, veil] = inPlace('city', () => {
+const [cityView, cityHud, veil, pockets] = inPlace('city', () => {
   const v = new CityView();
-  view.scene.add(v.group);
+  view.scene.add(v.root);
   const veilEl = h('div', 'city-veil');
   document.body.append(veilEl);
-  return [v, new CityHud(), veilEl] as const;
+  return [v, new CityHud(), veilEl, new CityPockets()] as const;
 });
+/** A bite: the screen's edges flash red. */
+const bitten = h('div', 'city-bitten');
+document.body.append(bitten);
+pockets.onOp = (op, a = 0) => {
+  click();
+  run()?.ops.push([op, a]);
+};
+pockets.onAct = () => {
+  click();
+  act();
+};
+pockets.onHit = () => hit();
+pockets.onMake = () => {
+  click();
+  toggleMake();
+};
 cityHud.onPause = () => void pauseCity();
 cityHud.onMap = () => void openMap();
 
 const run = (): CityRun | null => play.side as CityRun | null;
-
-/** Night, as the prisons' lamps have it (21:00 to 05:00). */
-const nightAt = (minute: number) => minute >= NIGHT_FROM || minute < NIGHT_TO;
 
 /**
  * A city on screen: the district the player is in, their prisoner as they look, the HUD and the
@@ -71,6 +97,7 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
       city,
       prev: { x: s.player.x, z: s.player.z },
       pilot: new Autopilot(city.world, () => city.grid),
+      ops: [],
       paused: false,
       saved: false,
       resolve,
@@ -82,6 +109,8 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     view.setPrisoner(readPrisoner());
     view.zoomTo(1.1);
     cityHud.show(true);
+    pockets.show(true);
+    sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
     hint.hide();
     document.body.classList.add('is-playing', 'city-on');
     controls.reset();
@@ -113,6 +142,7 @@ function stage(r: CityRun, first = false) {
   r.prev.x = p.x;
   r.prev.z = p.z;
   picture = null;
+  barsShown = -1;
   sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
 }
 
@@ -125,6 +155,8 @@ function arrive(r: CityRun) {
 /** The city in progress written to its slot. */
 function save(r: CityRun) {
   const c = r.city;
+  // (A city lost, Hardcore: nothing to carry on.)
+  if (c.state.over) return void deleteCitySave();
   r.saved = writeCitySave({
     v: 1,
     at: Date.now(),
@@ -185,20 +217,60 @@ export function stopCity() {
   save(r);
   play.side = null;
   cityHud.show(false);
+  pockets.show(false);
+  sleepVeil.classList.remove('on');
   cityView.clear();
   banner.clear();
   controls.enabled = false;
   controls.reset();
   sound.ambience(false);
   veil.classList.remove('on');
+  bitten.classList.remove('on');
   document.body.classList.remove('is-playing', 'city-on');
   r.resolve();
 }
 
 // ------------------------------------------------------------------ the player's input
+/** The action button / E: what's in reach searched, looked at, slept in. */
+function act() {
+  const r = run();
+  if (!r || r.paused) return;
+  r.pilot.stop();
+  pockets.pick(-1);
+  r.ops.push([COP.ACT, 0]);
+}
+
+/** The Make panel opened or shut (C, its button): the open box shuts for it, and it's not for a sleeper. */
+function toggleMake() {
+  const r = run();
+  if (!r || r.paused || r.city.state.sleeping) return;
+  if (!pockets.makeOpen && r.city.state.open) r.ops.push([COP.CLOSE, 0]);
+  pockets.toggleMake();
+}
+
+/** The blow (Space, its button): as often as the arm allows. */
+function hit() {
+  const r = run();
+  if (!r || r.paused || r.city.state.sleeping) return;
+  if (r.city.state.step - r.city.state.swung < BLOW.every) return;
+  if (!r.ops.some((o) => o[0] === COP.HIT)) r.ops.push([COP.HIT, 0]);
+}
+
 function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
-  if (code === 'Escape') void pauseCity();
-  else if (code === 'KeyM') {
+  // Escape shuts a thing's card, then the open box, and only then pauses.
+  if (code === 'Escape') {
+    if (pockets.open) pockets.shut();
+    else if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
+    else void pauseCity();
+  } else if (code === 'KeyE' || (code === 'Enter' && !(document.activeElement instanceof HTMLButtonElement))) act();
+  else if (code === 'Space' || code === 'KeyF') {
+    e.preventDefault();
+    hit();
+  } else if (code === 'KeyC') toggleMake();
+  else if (/^Digit[1-8]$/.test(e.code)) {
+    const k = Number(e.code.slice(5)) - 1;
+    if (r.city.state.inv[k]?.[0]) pockets.pick(k);
+  } else if (code === 'KeyM') {
     e.preventDefault();
     void openMap();
   } else if (code === 'KeyH') void under(r, () => showHelp(click, {}));
@@ -233,24 +305,168 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   const p = c.state.player;
   if (!r.paused) {
     tickPlayClock(dt * 1000);
-    play.acc += dt;
+    const speed = c.state.sleeping ? SLEEP_SPEED : 1;
+    play.acc += dt * speed;
     let steps = 0;
-    while (play.acc >= 1 / STEPS_PER_SECOND && steps++ < 40) {
+    while (play.acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * speed) {
       play.acc -= 1 / STEPS_PER_SECOND;
       r.prev.x = p.x;
       r.prev.z = p.z;
+      for (const z of c.state.zeds) {
+        const q = was.get(z);
+        if (q) {
+          q.x = z.body.x;
+          q.z = z.body.z;
+        } else was.set(z, { x: z.body.x, z: z.body.z });
+      }
       if (controls.steering) r.pilot.stop();
-      c.step(command(controls.steering ? controls.dir() : r.pilot.dir(p)));
+      const op = r.ops.shift();
+      c.step(command(controls.steering ? controls.dir() : r.pilot.dir(p), op?.[0] ?? 0, op?.[1] ?? 0));
       for (const e of c.events) cityEvent(r, e);
+      // (Over, or carried home: what was waiting is dropped, and nothing slides from the old place.)
+      if (c.state.over || c.events.some((e) => e.type === 'dead')) break;
     }
     if (play.acc > 1) play.acc = 0;
   }
   const a = r.paused ? 1 : play.acc * STEPS_PER_SECOND;
-  view.draw(frameOf(r, a), dt, now / 1000);
+  const f = frameOf(r, a);
+  if (barsShown !== c.barsRev) {
+    barsShown = c.barsRev;
+    cityView.setBars(c.bars, c.district);
+  }
+  cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
+  view.draw(f, dt, now / 1000);
   cityHud.update(hudOf(r));
+  pockets.update(pocketsOf(r));
+  sleepVeil.classList.toggle('on', c.state.sleeping);
 }
 
 function cityEvent(r: CityRun, e: CityEvent) {
+  const c = r.city;
+  switch (e.type) {
+    case 'search':
+      sound.stow(true);
+      break;
+    case 'open':
+      pockets.toggleMake(false);
+      if (e.first) sound.stow(false);
+      break;
+    case 'took':
+      sound.pickup();
+      break;
+    case 'stored':
+    case 'dropped':
+      sound.stow(true);
+      break;
+    case 'used':
+      if (cityItem(e.item)?.kind === 'med') sound.chime();
+      else if (cityItem(e.item)?.shape === 'bottle' || cityItem(e.item)?.shape === 'can') sound.gulp();
+      else sound.munch(true);
+      break;
+    case 'full':
+      banner.toast(t('city.toast.full'), 'info', 2200);
+      break;
+    case 'refused':
+      banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400);
+      break;
+    case 'starving':
+      banner.toast(t('city.toast.starving'), 'bad', 3600);
+      buzz('missed');
+      break;
+    case 'sleep':
+      pockets.shut();
+      r.pilot.stop();
+      r.ops.length = 0;
+      if (e.on) {
+        sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
+        sound.yawn();
+        save(r);
+      } else {
+        play.acc = 0;
+        if (e.why && e.why !== 'stirred')
+          banner.toast(t(`city.toast.woke.${e.why}` as Key), e.why === 'hungry' || e.why === 'attacked' ? 'bad' : 'good', 3000);
+        save(r);
+      }
+      break;
+    case 'spotted':
+      sound.grunt();
+      break;
+    case 'bite':
+      sound.slap();
+      buzz('missed');
+      bitten.classList.remove('on');
+      void bitten.offsetWidth;
+      bitten.classList.add('on');
+      break;
+    case 'swing':
+      sound.swish();
+      if (e.hit) sound.scuffle();
+      if (e.dead) sound.dud();
+      break;
+    case 'dusk':
+      banner.show(t('city.dusk.title'), t(e.soon > 60 ? 'city.dusk.two' : 'city.dusk.half'), 'alarm', 5200);
+      sound.chime();
+      break;
+    case 'night':
+      banner.show(
+        t(e.on ? 'city.night.title' : 'city.dawn.title'),
+        t(e.on ? 'city.night.sub' : 'city.dawn.sub'),
+        e.on ? 'alarm' : 'routine',
+        5200,
+      );
+      sound.setScene(e.on ? 'outdoorNight' : 'outdoorDay');
+      break;
+    case 'made':
+      sound.stow(false);
+      banner.toast(t('city.toast.made', { what: itemName(e.item) }), 'good', 2200);
+      break;
+    case 'cantMake':
+      banner.toast(t(`city.toast.cant.${e.why}` as Key), 'info', 2400);
+      break;
+    case 'broke':
+      sound.dud();
+      banner.toast(t('city.toast.broke', { what: itemName(e.item) }), 'bad', 3000);
+      break;
+    case 'barring':
+      sound.scuffle();
+      break;
+    case 'barred':
+      sound.stow(false);
+      if (e.on && e.shelter) {
+        banner.show(t('city.shelter.title'), t('city.shelter.sub'), 'routine', 5200);
+        sound.chime();
+      } else banner.toast(t(e.on ? 'city.toast.barred' : 'city.toast.unbarred'), 'good', 2400);
+      save(r);
+      break;
+    case 'dead':
+      pockets.shut();
+      r.ops.length = 0;
+      r.pilot.stop();
+      sound.sting();
+      buzz('missed');
+      if (e.final) {
+        save(r);
+        void under(r, () => showCityOver(c.day, c.plan.names[c.state.district], click)).then(() => stopCity());
+        break;
+      }
+      // A Survivor: home, the next morning, behind a blink of dark.
+      veil.classList.remove('on');
+      void veil.offsetWidth;
+      veil.classList.add('on');
+      if (e.moved) stage(r);
+      else {
+        view.snapTo(c.state.player.x / UNIT, c.state.player.z / UNIT);
+        r.prev.x = c.state.player.x;
+        r.prev.z = c.state.player.z;
+      }
+      play.acc = 0;
+      sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
+      banner.show(t('city.fell.title'), t('city.fell.sub'), 'alarm', 5200);
+      save(r);
+      break;
+    default:
+      break;
+  }
   if (e.type === 'travel') {
     // Through a checkpoint: the next district put up behind a blink of dark, then said.
     veil.classList.remove('on');
@@ -287,7 +503,75 @@ function frameOf(r: CityRun, a: number): Frame {
     tapAt.z = Math.floor(dest / MAP_W) + 0.5;
   }
   f.tap = dest >= 0 ? tapAt : null;
+  // What the action button would use, framed on the floor; what lies on the ground.
+  const tg = c.state.sleeping ? null : c.target();
+  if (tg) {
+    const tiles = tg.kind === 'pile' || tg.kind === 'door' ? [tg.tile] : c.tilesOf(Number(tg.key));
+    focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
+    focus.x1 = Math.max(...tiles.map((i) => i % MAP_W));
+    focus.z0 = Math.min(...tiles.map((i) => Math.floor(i / MAP_W)));
+    focus.z1 = Math.max(...tiles.map((i) => Math.floor(i / MAP_W)));
+  }
+  f.focus = tg ? focus : null;
+  const mine = `${c.state.district}:g`;
+  const lying = Object.keys(c.state.boxes).filter((k) => k.startsWith(mine) && c.state.boxes[k].some((st) => st[0]));
+  const key = lying.join();
+  if (key !== pilesFor.key) {
+    pilesFor.key = key;
+    piles = lying
+      .map((k) => Number(k.slice(mine.length)))
+      .map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5, item: PILE }));
+    f.groundRev++;
+  }
+  f.ground = piles;
   return f;
+}
+const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
+/** The barred doors the view last put its boards on (`City.barsRev`). */
+let barsShown = -1;
+
+/** Where each of the dead was before the last step, and what the view is handed of them. */
+const was = new WeakMap<Zed, { x: number; z: number }>();
+const deadList: DeadFrame[] = [];
+function deadOf(r: CityRun, a: number): DeadFrame[] {
+  const zeds = r.city.state.zeds;
+  deadList.length = zeds.length;
+  zeds.forEach((z, k) => {
+    const q = was.get(z) ?? z.body;
+    const o = (deadList[k] ??= { x: 0, z: 0, facing: 0, moving: false, chasing: false, reeling: false, seed: 0 });
+    o.x = (q.x + (z.body.x - q.x) * a) / UNIT;
+    o.z = (q.z + (z.body.z - q.z) * a) / UNIT;
+    o.facing = headingAngle(z.body.facing);
+    o.moving = z.body.moving && !r.paused;
+    o.chasing = z.mode === ZED.CHASE;
+    o.reeling = z.reel > 0;
+    o.seed = z.pace;
+  });
+  return deadList;
+}
+let piles: Array<{ x: number; z: number; item: number }> = [];
+const pilesFor = { key: '?' };
+
+const pocketsState = {} as PocketsState;
+const NO_RECIPES: PocketsState['recipes'] = [];
+function pocketsOf(r: CityRun): PocketsState {
+  const c = r.city;
+  const s = c.state;
+  const st = pocketsState;
+  const tg = c.target();
+  st.inv = s.inv;
+  const open = s.open;
+  st.box = !open ? '' : open.startsWith('g') ? 'city.box.pile' : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
+  st.slots = c.box();
+  st.target = tg;
+  st.targetOpen = !!tg && tg.key === open;
+  st.searched = !!tg && c.searched(tg.key);
+  st.searching = s.search ? 1 - s.searchLeft / (s.search.startsWith('d') ? BAR_STEPS : SEARCH_STEPS) : 0;
+  st.asleep = s.sleeping;
+  st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
+  // (What each recipe lacks: looked at only while the panel is up.)
+  st.recipes = pockets.makeOpen ? CITY_RECIPES.map((_, k) => c.canMake(k)) : NO_RECIPES;
+  return st;
 }
 
 /** The district's picture as seen so far, painted again when more of it is. */
@@ -302,7 +586,7 @@ function hudOf(r: CityRun): CityHudState {
   const st = hudState;
   st.name = c.plan.names[d];
   st.kind = t(`city.kind.${c.plan.kinds[d]}` as Key);
-  st.place = lot ? t(`city.use.${c.district.lots[lot - 1].use}` as Key) : '';
+  st.place = lot ? (c.shelter(lot - 1) ? t('city.shelter.place') : t(`city.use.${c.district.lots[lot - 1].use}` as Key)) : '';
   st.day = c.day;
   st.time = hhmm(c.minute);
   st.night = nightAt(c.minute);
@@ -310,6 +594,10 @@ function hudOf(r: CityRun): CityHudState {
   st.pictureRev = picture.rev + d * 100003;
   st.x = c.state.player.x / UNIT;
   st.z = c.state.player.z / UNIT;
+  st.health = c.state.health / 100;
+  st.hunger = c.state.hunger / FULL;
+  st.energy = c.state.energy / FULL;
+  st.chasing = c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0);
   return st;
 }
 

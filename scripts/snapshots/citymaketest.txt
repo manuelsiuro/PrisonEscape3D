@@ -1,0 +1,6 @@
+8 recipes, each refused without its parts and made with them: bandage, boards, nail_bat, spear (bench), knife (bench), stove (bench), cooked_fish (stove), stew (stove)
+every part is found somewhere in the city or made; a thing made with no room in the pockets lies underfoot
+a weapon loses a blow each time it lands and breaks at none; found, it has between half and all of them left
+a street door is barred in 2 seconds with a set of boards (the player still walks through, the dead don't); every door barred makes a shelter; taken down, the boards come back; a save carries it
+a first night asleep in a house, 12 cities: its doors barred, bitten in 0 (up to 6 of the dead about); its doors open, woken by a bite in 3, 738 bites in all
+a press as the work ends begins nothing; boards stop sight; nothing is barred with one of the dead in the doorway; one weapon strikes (the strongest), alone to wear; the nailed bat takes the more worn bat; old and damaged saves load sound
