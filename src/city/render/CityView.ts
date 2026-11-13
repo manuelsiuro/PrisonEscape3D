@@ -256,7 +256,34 @@ export class CityView {
     );
     this.glow.renderOrder = 0.4;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow);
+    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars);
+  }
+
+  /** Boards nailed across the barred doors (put up again whenever one is barred or opened). */
+  private readonly bars = new THREE.Group();
+  setBars(tiles: readonly number[], district: District) {
+    disposeTree(this.bars, () => false, new Set([kitMaterial]));
+    this.bars.clear();
+    if (!tiles.length) return;
+    const parts: Part[] = [];
+    for (const i of tiles) {
+      const x = (i % W) + 0.5;
+      const z = Math.floor(i / W) + 0.5;
+      // (Across the opening: along x where the walls are to the west and east of the door.)
+      const row = district.rows[Math.floor(i / W)];
+      const across = row[(i % W) - 1] === '#' || row[(i % W) + 1] === '#' ? 0 : Math.PI / 2;
+      const boards = [
+        box(1.04, 0.14, 0.08, 0x8a6a40, 0, 0.32, 0),
+        box(1.04, 0.14, 0.08, 0x7a5c38, 0, 0.72, 0),
+        box(1.04, 0.14, 0.08, 0x94713f, 0, 1.12, 0),
+        box(0.12, 1.2, 0.09, 0x6f5330, -0.3, 0.1, 0.02),
+        box(0.12, 1.2, 0.09, 0x6f5330, 0.3, 0.1, 0.02),
+      ];
+      put(parts, boards, x, z, across);
+    }
+    const mesh = new THREE.Mesh(merge(parts), kitMaterial);
+    mesh.castShadow = true;
+    this.bars.add(mesh);
   }
 
   /** The dead where they stand now: a shamble's sway, a lean into the chase, thrown back by a blow. */
@@ -370,5 +397,7 @@ export class CityView {
     this.dead.count = 0;
     this.eyes.count = 0;
     this.glow.visible = false;
+    disposeTree(this.bars, () => false, new Set([kitMaterial]));
+    this.bars.clear();
   }
 }

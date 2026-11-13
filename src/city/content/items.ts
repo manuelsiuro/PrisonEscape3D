@@ -19,6 +19,8 @@ export interface CityItem {
   /** A weapon in hand (C2b): its blow, its reach in tiles past the fists'. */
   attack?: number;
   reach?: number;
+  /** Blows it lasts (C2c): a weapon's count in its pocket is the blows left in it, not how many there are. */
+  wear?: number;
 }
 
 const food = (
@@ -72,8 +74,17 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'crowbar', kind: 'tool', stack: 1, shape: 'crowbar', color: 0xb03a30 },
   { id: 'torch', kind: 'tool', stack: 1, shape: 'tube', color: 0x2a2f36, accent: 0xf2c230 },
   { id: 'cutters', kind: 'tool', stack: 1, shape: 'cutters', color: 0xd9822b },
-  { id: 'bat', kind: 'weapon', stack: 1, shape: 'bat', color: 0xa9824e, attack: 6 },
-  { id: 'knife', kind: 'weapon', stack: 1, shape: 'knife', color: 0xc4cad0, accent: 0x3a2a1c, attack: 8 },
+  { id: 'bat', kind: 'weapon', stack: 1, shape: 'bat', color: 0xa9824e, attack: 6, wear: 40 },
+  { id: 'knife', kind: 'weapon', stack: 1, shape: 'knife', color: 0xc4cad0, accent: 0x3a2a1c, attack: 8, wear: 30 },
+  // C2c: what's made (content/recipes.ts).
+  { id: 'nail_bat', kind: 'weapon', stack: 1, shape: 'mace', color: 0xa9824e, accent: 0x9aa1ab, attack: 10, wear: 50 },
+  { id: 'spear', kind: 'weapon', stack: 1, shape: 'broom', color: 0x7c8794, accent: 0xc4cad0, attack: 8, reach: 1, wear: 35 },
+  /** Planks nailed across a street door: one bars one door (and comes back when it's taken down). */
+  { id: 'boards', kind: 'tool', stack: 4, shape: 'plank', color: 0x8a6a40, accent: 0x9aa1ab },
+  /** A camp stove: carried, it cooks. */
+  { id: 'stove', kind: 'tool', stack: 1, shape: 'pack', color: 0x4a5560, accent: 0xc24a3a },
+  food('cooked_fish', 'fish', 0xc98a4a, 32, { health: 3 }),
+  food('stew', 'bowl', 0xb5673a, 55, { health: 5, energy: 8 }, 0xe8e2d0),
 ];
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];
