@@ -1,0 +1,11 @@
+60 cities, 540 districts: every one a legal map, every open tile, gate and street door walked to
+starts: corners 0 2 6 8
+borders between districts: 602 open, 118 sealed (of 720)
+a district, on average: 21.9 buildings, 22.9 street doors, 106 pieces of furniture, 23.9 cars, 2956 open tiles
+the first cities (their districts, the start, a fingerprint of all nine maps):
+  1: market precinct docks metro downtown park hospital industrial suburbs · start 8 · 52e48064
+  2: metro industrial precinct hospital downtown park docks market suburbs · start 8 · 3abf5884
+  3: hospital metro industrial market downtown park suburbs precinct docks · start 6 · f13775c8
+  4: docks market suburbs precinct downtown park metro industrial hospital · start 2 · ff4ad43b
+  5: hospital market suburbs metro downtown industrial docks precinct park · start 2 · 28b924a4
+  6: park industrial suburbs hospital downtown market precinct docks metro · start 2 · 0f25dd3d

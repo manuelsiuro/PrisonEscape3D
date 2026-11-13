@@ -100,6 +100,11 @@ export function closeSomething(): boolean {
 }
 
 function onKeyDown(e: KeyboardEvent) {
+  // (2.46: a mode of its own, City Escape: its own keys.)
+  if (play.side) {
+    if (!play.side.paused && !e.metaKey && !e.ctrlKey && !e.repeat) play.side.key(keyCode(e.code), e);
+    return;
+  }
   const game = play.game;
   if (!game || game.paused || game.replay || e.metaKey || e.ctrlKey || e.repeat) return;
   // (Session 9: the key as the action it's bound to: every test below names an action's default key.)
