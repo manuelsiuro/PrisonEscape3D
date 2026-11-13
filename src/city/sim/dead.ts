@@ -10,7 +10,9 @@ import { BLOW, DEAD } from '../content/dead';
 import { ESCAPE_KINDS, isBuilding } from '../content/districts';
 import { cityItem } from '../content/items';
 import { districtX, districtZ } from '../gen/plan';
+import { STORY } from '../content/story';
 import { crowded, type City } from './City';
+import { going } from './story';
 
 /**
  * The dead (C2b), a part of the city's simulation (City.step calls it after the player has moved):
@@ -55,11 +57,17 @@ export function danger(c: City, d: number): number {
 /** How many there should be now: indoors and in the streets. */
 export function quota(c: City): { indoors: number; streets: number } {
   const dg = danger(c, c.state.district);
-  if (nightAt(c.minute)) {
+  // (A way out set going here: the night's count by day too, and more.)
+  const set = going(c);
+  if (nightAt(c.minute) || set === 1) {
     // (The night that began on day n is night n, through to its dawn.)
     // (A Survivor's falls count as nights more: the city doesn't wait for them.)
     const night = (c.minute < NIGHT_TO ? c.day - 1 : c.day) + c.state.deaths;
-    const all = DEAD.nightBase + DEAD.nightPerDanger * dg + Math.min(DEAD.nightMost, DEAD.nightPerNight * Math.max(0, night - 1));
+    const all =
+      DEAD.nightBase +
+      DEAD.nightPerDanger * dg +
+      Math.min(DEAD.nightMost, DEAD.nightPerNight * Math.max(0, night - 1)) +
+      (set ? STORY.extra : 0);
     return { indoors: Math.floor(all / 4), streets: all - Math.floor(all / 4) };
   }
   return { indoors: DEAD.dayBase + DEAD.dayPerDanger * dg + Math.min(DEAD.dayMost, DEAD.dayPerDay * (c.day - 1)), streets: dg };
@@ -80,19 +88,20 @@ export function places(c: City): { indoors: number[]; streets: number[] } {
   return { indoors, streets };
 }
 
-const farEnough = (c: City, tile: number) => {
+const farEnough = (c: City, tile: number, clear: number) => {
   const here = c.tile;
-  return Math.max(Math.abs((tile % MAP_W) - (here % MAP_W)), Math.abs(Math.floor(tile / MAP_W) - Math.floor(here / MAP_W))) >= DEAD.clear;
+  return Math.max(Math.abs((tile % MAP_W) - (here % MAP_W)), Math.abs(Math.floor(tile / MAP_W) - Math.floor(here / MAP_W))) >= clear;
 };
 
-function put(c: City, from: readonly number[], mode: number): boolean {
+/** One more put down on a tile of `from` (`up`: out of the metro's tunnel, into its station whatever its doors, nearer by). */
+function put(c: City, from: readonly number[], mode: number, up = false): boolean {
   if (!from.length) return false;
   for (let tries = 0; tries < 12; tries++) {
     const tile = from[randomInt(c.state, from.length)];
-    if (!farEnough(c, tile)) continue;
+    if (!farEnough(c, tile, up ? DEAD.clearUp : DEAD.clear)) continue;
     // (Never inside a shelter: its doors are barred against them.)
     const lot = c.district.lotAt[tile] - 1;
-    if (lot >= 0 && c.shelter(lot)) continue;
+    if (!up && lot >= 0 && c.shelter(lot)) continue;
     c.state.zeds.push({
       body: bodyAt(tile % MAP_W, Math.floor(tile / MAP_W), 1 + randomInt(c.state, 16)),
       hp: DEAD.health,
@@ -122,6 +131,8 @@ export function populate(c: City) {
 
 /** A noise the dead hear: those within its reach (tiles) and not already after someone go and look. */
 export function noise(c: City, tile: number, reach: number) {
+  // (The docks' fog, the boat ready: sound carries.)
+  if (going(c) === 2) reach *= STORY.fogHearing;
   for (const z of c.state.zeds) {
     if (z.mode === ZED.CHASE) continue;
     const zt = tileAt(z.body.x, z.body.z);
@@ -201,7 +212,7 @@ export function stepDead(c: City) {
     if (m === NIGHT_TO) {
       c.events.push({ type: 'night', on: false });
       // Daylight: those in the streets go to ground (the nearest floor indoors), all but the day's few.
-      let keep = quota(c).streets;
+      let keep = going(c) === 1 ? s.zeds.length : quota(c).streets;
       for (const z of s.zeds) {
         if (z.mode === ZED.CHASE || !c.zedStreet[tileAt(z.body.x, z.body.z)]) continue;
         if (keep-- > 0) continue;
@@ -211,12 +222,21 @@ export function stepDead(c: City) {
       }
     }
     // The night's come a few at a time, out of sight.
-    if (night && m % DEAD.trickle === 0) {
+    const set = going(c);
+    if ((night || set === 1) && m % (set ? STORY.trickle : DEAD.trickle) === 0) {
       const q = quota(c);
-      if (s.zeds.length < q.indoors + q.streets) put(c, c.zedPlaces.streets, ZED.WANDER);
+      // (The generator running: up out of the tunnel, into the station itself. Either way they make for the way out.)
+      const up = set === 1 && s.way === 3 && s.step % (2 * STORY.trickle * STEPS_PER_MINUTE) === 0;
+      const from = up ? c.zedPlaces.indoors.filter((i) => c.district.lotAt[i] === c.story.wayLot[2] + 1) : c.zedPlaces.streets;
+      if (s.zeds.length < q.indoors + q.streets && put(c, from, ZED.WANDER, up) && set === 1) {
+        const z = s.zeds[s.zeds.length - 1];
+        z.mode = ZED.SEEK;
+        z.goal = c.story.exits[s.way - 1];
+      }
     }
   }
-  const sight = (s.sleeping ? DEAD.sightAsleep : night ? DEAD.sightNight : DEAD.sightDay) * UNIT;
+  const fog = going(c) === 2;
+  const sight = (s.sleeping ? DEAD.sightAsleep : fog ? STORY.fogSight : night ? DEAD.sightNight : DEAD.sightDay) * UNIT;
   for (let k = s.zeds.length - 1; k >= 0; k--) {
     const z = s.zeds[k];
     const b = z.body;

@@ -24,6 +24,10 @@ export interface CityHudState {
   energy: number;
   /** How many of the dead are after the player. */
   chasing: number;
+  /** The story's line now ('' none), and where it points in this district (tiles; `marksKey` changes with them). */
+  goal: string;
+  marks: readonly number[];
+  marksKey: string;
 }
 
 /** How much the corner map is enlarged: about a third of the district's width shows. */
@@ -50,6 +54,15 @@ export class CityHud {
   private lang = '';
   onPause: () => void = () => {};
   onMap: () => void = () => {};
+  onJournal: () => void = () => {};
+  private readonly goal: HTMLButtonElement;
+  private readonly radio: HTMLElement;
+  private shownGoal = '';
+  private shownMarks = '?';
+  private markEls: HTMLElement[] = [];
+  /** Dispatch's lines waiting their turn, and the one up now. */
+  private lines: string[] = [];
+  private talking = 0;
 
   constructor() {
     this.el = h(
@@ -65,7 +78,11 @@ export class CityHud {
         <span class="city-meter cm-hunger" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('utensils', 14)}<i><i></i></i></span>
         <span class="city-meter cm-energy" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('bolt', 14)}<i><i></i></i></span>
         <span class="pill hud-alert city-chased hidden" role="status">${icon('siren', 15)}<span></span></span>
-      </div>`,
+      </div>
+      <div class="hud-row city-goal-row">
+        <button class="pill city-goal hidden">${icon('clipboard', 15)}<span></span></button>
+      </div>
+      <div class="city-radio hidden" role="status" aria-live="polite">${icon('megaphone', 18)}<div><b></b><p></p></div></div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
     this.name = q('.city-where b');
@@ -74,6 +91,9 @@ export class CityHud {
     this.day = q('.city-clock small');
     this.sky = q('.cc-ic');
     q('.city-pause').addEventListener('click', () => this.onPause());
+    this.goal = q<HTMLButtonElement>('.city-goal');
+    this.goal.addEventListener('click', () => this.onJournal());
+    this.radio = q('.city-radio');
     this.mapBtn = h('button', 'city-minimap hidden', `<canvas width="${MAP_W}" height="${MAP_H}"></canvas><i class="cm-dot"></i>`);
     this.canvas = this.mapBtn.querySelector('canvas')!;
     this.mapBtn.addEventListener('click', () => this.onMap());
@@ -87,6 +107,32 @@ export class CityHud {
     this.shownChasing = -1;
     this.shownNight = null;
     this.meters = {};
+    this.shownGoal = '';
+    this.shownMarks = '?';
+    if (!on) {
+      this.lines = [];
+      clearTimeout(this.talking);
+      this.talking = 0;
+      this.radio.classList.add('hidden');
+    }
+  }
+
+  /** Dispatch says a line: up for as long as it takes to read, the next after it. */
+  say(text: string) {
+    this.lines.push(text);
+    if (!this.talking) this.next();
+  }
+  private next() {
+    const text = this.lines.shift();
+    this.talking = 0;
+    this.radio.classList.toggle('hidden', !text);
+    if (!text) return;
+    setText(this.radio.querySelector('b')!, t('city.dispatch'));
+    setText(this.radio.querySelector('p')!, text);
+    this.radio.classList.remove('in');
+    void this.radio.offsetWidth;
+    this.radio.classList.add('in');
+    this.talking = window.setTimeout(() => this.next(), Math.min(14000, 3500 + text.length * 55));
   }
 
   update(s: CityHudState) {
@@ -125,6 +171,27 @@ export class CityHud {
       pill.classList.toggle('hidden', !s.chasing);
       if (s.chasing) setText(pill.querySelector('span')!, t(s.chasing === 1 ? 'city.chased.one' : 'city.chased.many', { n: s.chasing }));
     }
+    if (s.goal !== this.shownGoal) {
+      this.shownGoal = s.goal;
+      this.goal.classList.toggle('hidden', !s.goal);
+      setText(this.goal.querySelector('span')!, s.goal);
+      this.goal.setAttribute('aria-keyshortcuts', keyLabel('KeyJ'));
+    }
+    if (s.marksKey !== this.shownMarks) {
+      this.shownMarks = s.marksKey;
+      for (const el of this.markEls) el.remove();
+      this.markEls = s.marks.map(() => h('i', 'cm-mark'));
+      this.mapBtn.append(...this.markEls);
+    }
+    // (Where the story points: on the corner map, or at its edge toward it.)
+    s.marks.forEach((tile, k) => {
+      const mx = 50 + (((tile % MAP_W) + 0.5 - s.x) / MAP_W) * 100 * ZOOM;
+      const mz = 50 + ((Math.floor(tile / MAP_W) + 0.5 - s.z) / MAP_H) * 100 * ZOOM;
+      const el = this.markEls[k];
+      el.style.left = `${Math.max(7, Math.min(93, mx)).toFixed(1)}%`;
+      el.style.top = `${Math.max(7, Math.min(93, mz)).toFixed(1)}%`;
+      el.classList.toggle('off', mx < 7 || mx > 93 || mz < 7 || mz > 93);
+    });
     if (s.pictureRev !== this.shownRev) {
       this.shownRev = s.pictureRev;
       this.canvas.getContext('2d')!.putImageData(s.picture, 0, 0);

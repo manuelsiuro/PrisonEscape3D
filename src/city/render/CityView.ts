@@ -256,7 +256,34 @@ export class CityView {
     );
     this.glow.renderOrder = 0.4;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars);
+    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks);
+  }
+
+  /** Where the story points in this district: a lit diamond turning over each tile, a ring on the floor under it. */
+  private readonly marks = new THREE.Group();
+  private readonly markGem = new THREE.OctahedronGeometry(0.2);
+  private readonly markRing = new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2);
+  private readonly markMat = new THREE.MeshBasicMaterial({
+    color: 0xf2c230,
+    toneMapped: false,
+    transparent: true,
+    opacity: 0.92,
+    depthWrite: false,
+  });
+  setMarks(tiles: readonly number[]) {
+    this.marks.clear();
+    for (const i of tiles) {
+      const g = new THREE.Group();
+      g.position.set((i % W) + 0.5, 0, Math.floor(i / W) + 0.5);
+      const gem = new THREE.Mesh(this.markGem, this.markMat);
+      gem.scale.set(1, 1.5, 1);
+      gem.position.y = 1.9;
+      const ring = new THREE.Mesh(this.markRing, this.markMat);
+      ring.position.y = 0.04;
+      ring.renderOrder = 0.5;
+      g.add(gem, ring);
+      this.marks.add(g);
+    }
   }
 
   /** Boards nailed across the barred doors (put up again whenever one is barred or opened). */
@@ -288,6 +315,11 @@ export class CityView {
 
   /** The dead where they stand now: a shamble's sway, a lean into the chase, thrown back by a blow. */
   drawDead(list: readonly DeadFrame[], time: number, still: boolean, night: boolean, me: { x: number; z: number }) {
+    for (const g of this.marks.children) {
+      const gem = g.children[0];
+      gem.rotation.y = still ? 0 : time * 1.6;
+      gem.position.y = 1.9 + (still ? 0 : Math.sin(time * 2.2 + g.position.x) * 0.08);
+    }
     const n = Math.min(MOST, list.length);
     for (let k = 0; k < n; k++) {
       const d = list[k];
@@ -399,5 +431,6 @@ export class CityView {
     this.glow.visible = false;
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();
+    this.marks.clear();
   }
 }
