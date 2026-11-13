@@ -1,3 +1,4 @@
+import { padLabels } from '../../input/bindings';
 import { t } from '../../i18n';
 import { esc, h, TOUCH } from '../dom';
 import { icon } from '../icons';
@@ -103,7 +104,7 @@ export function showDay(v: DayView, click: () => void): Promise<void> {
       <div class="actions">
         <button class="big-btn primary" data-c="resume">${icon('play', 18)}${t('pause.resume')}</button>
       </div>
-      ${TOUCH ? '' : `<p class="dc-keys">${t('dayCard.keys')}</p>`}
+      ${TOUCH || padLabels() ? '' : `<p class="dc-keys">${t('dayCard.keys')}</p>`}
     </div>`,
   );
   el.setAttribute('role', 'dialog');

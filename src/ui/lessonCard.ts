@@ -1,4 +1,4 @@
-import { t, type Key } from '../i18n';
+import { t, textStamp, type Key } from '../i18n';
 import { TOUCH, h } from './dom';
 import { icon } from './icons';
 
@@ -49,7 +49,8 @@ export class LessonCard {
         document.documentElement.style.setProperty('--lesson-right', `${Math.round(r.right)}px`);
       }
     }
-    const key = `${chapter}:${n}:${done}:${tick}:${text}`;
+    // (2.45: and the text's stamp, the language and the keys or pad named, and which words: touch or not.)
+    const key = `${chapter}:${n}:${done}:${tick}:${text}:${touch ?? ''}:${textStamp()}`;
     // (Fitted again when the step, the window or the layout changes; hidden, the routine pill is never left lifted over.)
     const size = hidden ? '' : `${innerWidth}x${innerHeight}:${document.body.matches(OWN_PLACE)}`;
     if (key === this.shown) {

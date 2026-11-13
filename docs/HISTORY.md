@@ -202,3 +202,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The docs trimmed for context (after v2.42.0)
 - The long games polished: pruno, the garden and the rats (v2.43.0)
 - Football rebuilt as penalties (v2.44.0, not released yet)
+
+## [v2.45 to v2.49](history/v2.45-v2.49.md)
+
+- Gamepad support (v2.45.0, not released yet)

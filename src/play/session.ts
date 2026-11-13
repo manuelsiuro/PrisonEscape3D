@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 import { routineName, setZonesHere } from '../ui/hud';
 import { hideLoading } from '../ui/loading';
 import { buzz } from '../app/haptics';
@@ -243,7 +244,12 @@ export function startGame(
   if (!seenTip('walk')) {
     later(4600, () =>
       hint.show(
-        TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')],
+        // (2.45: a pad in hand, its stick: hint.walkKeys's Pad twin; no click to walk.)
+        padLabels()
+          ? [t('hint.walkKeys'), t('hint.arrows')]
+          : TOUCH
+            ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')]
+            : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')],
       ),
     );
   }

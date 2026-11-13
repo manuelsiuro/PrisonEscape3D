@@ -1,5 +1,6 @@
 import { resetProgress, resetTips, UI_SCALES, type Settings } from '../../game/settings';
 import { IOS, SCALES, uiScale } from '../../app/scale';
+import { canRumble } from '../../app/haptics';
 import { MOBILE } from '../dom';
 import { showKeys } from './keys';
 import { loadLang, t, type Key } from '../../i18n';
@@ -23,6 +24,14 @@ const PA: Choice<'pa'> = [
   ['full', 'settings.paFull'],
   ['short', 'settings.paShort'],
   ['off', 'settings.paOff'],
+];
+/** 2.45: the letters a gamepad's buttons are named with. */
+const PAD_BUTTONS: Choice<'padButtons'> = [
+  ['auto', 'settings.auto'],
+  ['xbox', 'settings.padXbox'],
+  ['ps', 'settings.padPs'],
+  ['nintendo', 'settings.padNintendo'],
+  ['8bitdo', 'settings.pad8bitdo'],
 ];
 /** P42: holidays by the date, one picked now, or none; and which one when picked. */
 const HOLIDAYS: Choice<'holidays'> = [
@@ -50,9 +59,12 @@ type Toggle = 'haptics' | 'reducedMotion' | 'shake' | 'tips' | 'voices';
  * device can vibrate. From the title (`fromTitle`), the progress can be wiped (asked twice);
  * the tips can be shown again from anywhere. Last, a Developer section: the frame counter (app/perf.ts).
  */
+/** A gamepad plugged in (2.45: its buttons' letters can be picked then). */
+const padHere = () => [...(navigator.getGamepads?.() ?? [])].some((p) => p?.connected && p.mapping === 'standard');
+
 export function showSettings(settings: Settings, apply: () => void, click: () => void, fromTitle = false): Promise<void> {
   const el = h('div', 'modal');
-  const canVibrate = typeof navigator.vibrate === 'function';
+  const canVibrate = typeof navigator.vibrate === 'function' || canRumble();
   // (Session 9: the Keys card where there's likely a keyboard: not a phone, or a tablet with a trackpad.)
   const keyboard = !MOBILE || matchMedia('(any-pointer: fine)').matches;
   /** The Keys card is up over this one: the keys are its. */
@@ -62,7 +74,7 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
   let done = '';
   const toggle = (k: Toggle, label: Key, ic: string) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><button class="switch ${settings[k] ? 'on' : ''}" role="switch" aria-checked="${settings[k]}" data-toggle="${k}" aria-label="${t(label)}"><i></i></button></div>`;
-  const choice = <K extends 'quality' | 'lang' | 'chatter' | 'pa' | 'holidays' | 'holidayPick'>(
+  const choice = <K extends 'quality' | 'lang' | 'chatter' | 'pa' | 'holidays' | 'holidayPick' | 'padButtons'>(
     k: K,
     label: Key,
     ic: string,
@@ -109,6 +121,7 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         ${choice('quality', 'settings.quality', 'sun', QUALITY)}
         ${scaleRow()}
         ${choice('lang', 'settings.language', 'chat', LANGS)}
+        ${padHere() || settings.padButtons !== 'auto' ? `${choice('padButtons', 'settings.padButtons', 'gamepad', PAD_BUTTONS).replace('class="set-row"', 'class="set-row set-wide"')}<p class="set-note">${t('settings.padButtonsNote')}</p>` : ''}
         ${keyboard ? `<div class="set-row"><span class="set-name">${icon('keyboard', 17)}${t('settings.keys')}</span><button class="link-btn set-open" data-act="keys">${t('settings.keysChange')}${icon('chevronRight', 15)}</button></div>` : ''}
         <h3 class="set-head">${icon('wrench', 14)}${t('settings.developer')}</h3>
         <div class="set-row"><span class="set-name">${icon('monitor', 17)}${t('settings.perf')}</span><button class="switch ${perfOn() ? 'on' : ''}" role="switch" aria-checked="${perfOn()}" data-dev="perf" aria-label="${t('settings.perf')}"><i></i></button></div>

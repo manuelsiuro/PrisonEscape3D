@@ -15,7 +15,7 @@ import { banner, closeSocial, hud, itemsUI, ratPanel, sound } from './context';
 import { play, sendOp } from './game';
 import { ratName, thingName } from './labels';
 import { coachOnce } from './tips';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { inmateInCell } from '../sim/systems/inmates';
 import { guardWord, inmateName } from '../ui/names';
 
@@ -287,7 +287,7 @@ export function announceRat(sim: Sim, e: Extract<SimEvent, { type: 'rat' }>) {
     case 'tamed':
       sound.squeak(1);
       banner.toast(t('toast.ratTamed', { name }), 'good');
-      coachOnce('rat', TOUCH ? 'hint.rat' : 'hint.ratKeys');
+      coachOnce('rat', touchWords() ? 'hint.rat' : 'hint.ratKeys');
       break;
     case 'hungry':
       sound.sting();

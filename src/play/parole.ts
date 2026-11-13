@@ -41,7 +41,7 @@ import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { releaseChip } from './paperwork';
 import { sitterPortraitOf } from '../render/portrait';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { floatUp } from './floats';
 import { refusedText } from './refusals';
 import { announcePa, dayTime } from './warden';
@@ -197,7 +197,7 @@ export function paroleNow(sim: Sim): ParoleView | null {
     const left = answerLeft(s);
     v.left = o.until ? 0 : left / ANSWER_STEPS;
     v.secs = Math.ceil(left / STEPS_PER_SECOND);
-    v.note = o.until ? '' : t(TOUCH ? 'parole.askTouch' : 'parole.askKeys');
+    v.note = o.until ? '' : t(touchWords() ? 'parole.askTouch' : 'parole.askKeys');
     return v;
   }
   const now = playNow();

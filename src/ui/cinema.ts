@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { fadeOut, h, TOUCH } from './dom';
+import { fadeOut, h, touchWords } from './dom';
 
 /**
  * The escape camera's dressing (P16): letterbox bars slide in, ESCAPED is stamped across the
@@ -13,7 +13,7 @@ export async function showCinema(played: Promise<void>, skip: () => void, reduce
     `<i class="cine-bar top"></i><i class="cine-bar bottom"></i><b class="cine-stamp"></b><small class="cine-skip"></small>`,
   );
   el.querySelector('.cine-stamp')!.textContent = t('cinema.escaped');
-  el.querySelector('.cine-skip')!.textContent = t(TOUCH ? 'cinema.skip' : 'cinema.skipKeys');
+  el.querySelector('.cine-skip')!.textContent = t(touchWords() ? 'cinema.skip' : 'cinema.skipKeys');
   // The picture's dressing: the victory card right after says it all to a screen reader.
   el.setAttribute('aria-hidden', 'true');
   const key = (e: KeyboardEvent) => {

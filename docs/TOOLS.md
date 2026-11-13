@@ -41,3 +41,10 @@ goals, beds, the rat track, Irongate's drawbridge up; nothing that comes with an
 A topic's picture is a `SHOTS` entry in `scripts/dev/helpshot.ts`: a bot's run or a lesson replayed
 in the dev build, posted to `public/help/` through the shot sink. A topic seen from the start is
 pictured at Center Perks. Retake a picture when what it shows changes.
+
+## A gamepad without one
+
+`scripts/dev/fakepad.ts` (2.45) plugs a pretend standard gamepad into the dev build: `install('xbox' | 'ps' |
+'nintendo')`, then `press(B.A)`, `hold`/`release`, `stick('left' | 'right', x, y)`, and `rumbles()` for what the
+game asked of its motors. It drives the game as a real pad would (`play/pad.ts` reads `navigator.getGamepads`
+each frame); a real pad's feel, and the browsers' own mappings, still need one in hand (`BACKLOG.md` §2).

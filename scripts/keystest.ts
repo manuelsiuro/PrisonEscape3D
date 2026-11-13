@@ -93,10 +93,16 @@ for (const [lang, t, word] of [
   for (const [k, v] of t) {
     if (NAMING.test(k)) continue;
     check(!word.test(v), `${lang} ${k} writes the space bar in words: "${v.slice(0, 80)}"`);
-    for (const m of v.matchAll(/%([A-Za-z0-9]+)%/g)) check(/^(Key[A-Z]|Space)$/.test(m[1]), `${lang} ${k}: unknown key %${m[1]}%`);
+    for (const m of v.matchAll(/%([A-Za-z0-9]+)%/g))
+      check(
+        // (2.45: Escape too, and a pad's own buttons in the words written for a pad: Pad twins, the gamepad's topic.)
+        /^(Key[A-Z]|Space|Escape)$/.test(m[1]) ||
+          ((k.endsWith('Pad') || k.startsWith('help.gamepad.')) && /^Pad(A|B|X|Y|LB|RB|LT|RT|VIEW|MENU|L3|R3)$/.test(m[1])),
+        `${lang} ${k}: unknown key %${m[1]}%`,
+      );
   }
 for (const [k, v] of en) {
-  const keys = (s: string) => [...s.matchAll(/%(Key[A-Z]|Space)%/g)].map((m) => m[1]).sort();
+  const keys = (s: string) => [...s.matchAll(/%(Key[A-Z]|Space|Escape|Pad[A-Z0-9]+)%/g)].map((m) => m[1]).sort();
   placeholders += keys(v).length;
   const f = fr.get(k);
   if (f !== undefined) check(eq(keys(v), keys(f)), `${k}: English names ${keys(v).join(' ')}, French ${keys(f).join(' ')}`);

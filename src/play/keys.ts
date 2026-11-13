@@ -71,6 +71,34 @@ export function act() {
   sendOp(OP.INTERACT);
 }
 
+/**
+ * Escape's first job, in play: let go of an aim, close a panel or card, leave a game. False when
+ * nothing was open (Escape pauses then; 2.45: a pad's B does nothing).
+ */
+export function closeSomething(): boolean {
+  const game = play.game;
+  if (!game) return false;
+  if (aiming()) cancelThrow();
+  else if (itemsUI.panelOpen) itemsUI.closePanels();
+  else if (socialOpen()) closeSocial();
+  else if (game.rec.sim.state.train >= 0 || game.rec.sim.state.ratRun?.length) sendOp(OP.TRAIN, 3);
+  // (2.44: out of a penalty shootout, or the ball picked up off the spot.)
+  else if (game.rec.sim.state.pens) sendOp(OP.EXT, EXT.KICK, 3);
+  // (2.32: away from the vending machine's card.)
+  else if (game.rec.sim.state.vendOpen) sendOp(OP.EXT, EXT.VEND, VEND.CLOSE);
+  // (2.33: away from the menu board's card.)
+  else if (game.rec.sim.state.menuOpen) menuAct();
+  // (P22: out of an arm-wrestle, away from a lock.)
+  else if (game.rec.sim.state.bout.length) sendOp(OP.TRAIN, 3);
+  else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
+  // (P29: a tattoo sitting, either chair: given up, as its card's Give up button does.)
+  else if (game.rec.sim.state.ink) sendOp(OP.EXT, EXT.INK, 0);
+  // (P40: the board's card, or the job's own opened from its chip or B: closed, the focus back on the chip.)
+  else if (jobCardShown()) closeOddJobsCard();
+  else return false;
+  return true;
+}
+
 function onKeyDown(e: KeyboardEvent) {
   const game = play.game;
   if (!game || game.paused || game.replay || e.metaKey || e.ctrlKey || e.repeat) return;
@@ -97,24 +125,7 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Escape closes a panel first (or lets go of an aim), and pauses only when none is open.
   if (code === 'Escape') {
-    if (aiming()) cancelThrow();
-    else if (itemsUI.panelOpen) itemsUI.closePanels();
-    else if (socialOpen()) closeSocial();
-    else if (game.rec.sim.state.train >= 0 || game.rec.sim.state.ratRun?.length) sendOp(OP.TRAIN, 3);
-    // (2.44: out of a penalty shootout, or the ball picked up off the spot.)
-    else if (game.rec.sim.state.pens) sendOp(OP.EXT, EXT.KICK, 3);
-    // (2.32: away from the vending machine's card.)
-    else if (game.rec.sim.state.vendOpen) sendOp(OP.EXT, EXT.VEND, VEND.CLOSE);
-    // (2.33: away from the menu board's card.)
-    else if (game.rec.sim.state.menuOpen) menuAct();
-    // (P22: out of an arm-wrestle, away from a lock.)
-    else if (game.rec.sim.state.bout.length) sendOp(OP.TRAIN, 3);
-    else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
-    // (P29: a tattoo sitting, either chair: given up, as its card's Give up button does.)
-    else if (game.rec.sim.state.ink) sendOp(OP.EXT, EXT.INK, 0);
-    // (P40: the board's card, or the job's own opened from its chip or B: closed, the focus back on the chip.)
-    else if (jobCardShown()) closeOddJobsCard();
-    else void pause();
+    if (!closeSomething()) void pause();
     return;
   }
   const g = game;
@@ -252,12 +263,13 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (code === 'Space') {
-    // (A button in the rat's panel with the focus: Space presses it.)
-    if (ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
-    if (phonePanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.phone-panel')) return;
-    if (crewPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.crew-panel')) return;
+    // (A button in the rat's panel with the focus: Space presses it; a real key's Space, 2.45.)
+    if (e.isTrusted && ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
+    if (e.isTrusted && phonePanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.phone-panel')) return;
+    if (e.isTrusted && crewPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.crew-panel')) return;
     // (P22: a die, a bet or a game's button in the talk panel with the focus: Space presses it.)
-    if ((document.activeElement as HTMLElement | null)?.closest('.talk-panel, .train-card')) return;
+    // (2.45: a real key only. A pad's Space is synthetic: it presses nothing by itself, so it's the tool, the shot.)
+    if (e.isTrusted && (document.activeElement as HTMLElement | null)?.closest('.talk-panel, .train-card')) return;
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
     // (2.31: reading, Space underlines too; 2.43: the rat's training, Space is pressed as it passes the bait.)

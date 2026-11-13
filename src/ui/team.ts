@@ -1,7 +1,7 @@
 import { DESIGNS } from '../content/team';
 import { t, textStamp } from '../i18n';
 import { EXT, OP } from '../sim/command';
-import { h, type Send, setText, TOUCH } from './dom';
+import { h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /**
@@ -162,7 +162,7 @@ export class InkCard {
       const left = v.left ? ` · ${t('ink.left', { n: v.left })}` : '';
       setText(
         this.note,
-        v.mine ? `${t('ink.mineNote', { name: v.name })}${seen}` : `${t(TOUCH ? 'ink.traceTouch' : 'ink.traceDraw')}${left}${seen}`,
+        v.mine ? `${t('ink.mineNote', { name: v.name })}${seen}` : `${t(touchWords() ? 'ink.traceTouch' : 'ink.traceDraw')}${left}${seen}`,
       );
       this.note.classList.toggle('ink-hurry', !!v.left);
       setText(this.quit.querySelector('span')!, t('ink.quit'));

@@ -1,7 +1,7 @@
 import { en, type Strings } from './en';
 import type { Barks } from './barks/en';
 import { setKeyNames, withKeys } from './keys';
-import { keysVersion } from '../input/bindings';
+import { keysVersion, padLabels } from '../input/bindings';
 
 /**
  * Translations. `t('key', { n: 3 })` looks the key up in the current language (falling back
@@ -51,16 +51,21 @@ export function setLang(l: Lang | 'auto') {
   // The game speaks French itself: the browser shouldn't translate it again. English pages
   // stay translatable for players of other languages.
   document.documentElement.setAttribute('translate', lang === 'en' ? 'yes' : 'no');
-  setKeyNames({ Space: t('key.space') });
+  setKeyNames({ Space: t('key.space'), Escape: t('key.escape') });
 }
 
 export const currentLang = () => lang;
 /** Whether a key exists (a prison's own wording, looked for before the usual one). */
 export const hasKey = (k: string): k is Key => k in en;
-/** What text drawn earlier depends on: the language and the player's keys (session 9). A cache keyed on it redraws after either changes. */
+/** What text drawn earlier depends on: the language and the player's keys (session 9; 2.45: and a pad picked up or put down). A cache keyed on it redraws after either changes. */
 export const textStamp = () => `${lang}:${keysVersion()}`;
 
 export function t(key: Key, vars: Record<string, string | number> = {}): string {
+  // (2.45: a pad in hand, a text's Pad twin where it has one: words for the stick and buttons, not the mouse or keys.)
+  if (padLabels()) {
+    const twin = `${key}Pad`;
+    if (twin in en) key = twin as Key;
+  }
   const s = TABLES[lang]?.[key] ?? en[key];
   if (lang === 'fr') return withKeys(s.replace(FR_HOLE, (_, pre: string | undefined, k: string) => frFill(pre, String(vars[k] ?? `{${k}}`))));
   return withKeys(s.replace(/\{(\w+)\}/g, (_, k: string, at: number) => enFill(s, at, String(vars[k] ?? `{${k}}`))));

@@ -6,7 +6,7 @@
 import { QUIZ_QUESTIONS } from '../content/nights';
 import { t, textStamp } from '../i18n';
 import { EXT, OP } from '../sim/command';
-import { esc, h, type Send, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /** Quiz night as its card shows it. */
@@ -213,7 +213,7 @@ export class QuizCard {
             : v.phase === 'ask'
               ? v.said[0] >= 0
                 ? t('quiz.outYou')
-                : `${v.reading ? t('quiz.reading', { n: v.reading }) : t(TOUCH ? 'quiz.askTouch' : 'quiz.askKeys')}${
+                : `${v.reading ? t('quiz.reading', { n: v.reading }) : t(touchWords() ? 'quiz.askTouch' : 'quiz.askKeys')}${
                     v.struck.length ? ` · ${t('quiz.ruled')}` : ''
                   }`
               : v.end === 'won'
