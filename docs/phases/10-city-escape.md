@@ -84,11 +84,37 @@ The city generated, walked and mapped.
 
 ### C2. Survival
 
-Health, hunger and energy; the city's items and loot by place; searching furniture; the pockets and
-crafting panels on the city's lists; weapons and the fight; the dead (shamblers first: by day in the
-dark, at night everywhere), noise and light; shelters (claim, bar, light, stash, sleep); dusk and
-night's warnings; death in both modes; the night's picture (unlit interiors dark, a torch's cone).
-Proved by a survival bot: seven days alive on many seeds without leaving two districts.
+In three slices, each a release.
+
+**C2a. Scavenging (v2.47.0): built.**
+- **The meters** (`sim/City.ts`): health (0–100), hunger and energy (kept in thousandths). Awake, a
+  full stomach lasts about 30 hours and energy about 18; asleep, hunger falls at half the pace and
+  energy comes back. At no hunger, a point of health every three minutes; over half fed, health
+  mends. Under a quarter fed, or worn out, the walk is slower.
+- **The city's things** (`content/items.ts`): 26 of its own (food and drink, a bandage and
+  painkillers, materials, three tools, two weapons whose blows come with C2b), drawn with the item
+  models' shapes. Nothing added to the prisons' items.
+- **Loot** (`content/loot.ts`): desks, shelves, counters, bins, freezers, crates, workbenches,
+  vending machines, beds and tables are searched: one to three draws from the building's list plus
+  the furniture's own, 56 in 100 coming up empty, the same for a city's seed, district and piece. A
+  first search takes a second and a half; what's put back stays.
+- **Pockets:** eight, things of a kind stacking (food 3, materials 4); Eat or Use, Store in the open
+  box, Drop (a pile on the ground, looked at like a box).
+- **Sleep:** in any bed already searched, from 20:00 or when tired, to 06:00 (the night runs 40 times
+  as fast), woken by a move, by hunger, or rested by day; the last bed slept in is **home**.
+- **Death:** a Survivor wakes at home the next morning with 40 health, what they carried in a pile
+  where they fell; in Hardcore the city is lost (the end's card, the save gone).
+- **On screen:** three meters under the HUD's row, the pockets along the bottom (a tap or 1–8: the
+  thing's card), the open box's panel, the action button (Search, Look, Sleep, Close; a search's
+  ring), the floor's brackets round what it would use, toasts.
+- **Proved:** `citysurvivetest`: a scavenger bot (`scripts/citybots.ts`) lives a week on 10 cities
+  without falling or starving; the rules one by one; saves (one from C1 loads, the meters fresh).
+
+**C2b. The dead:** shamblers (by day in the dark, at night everywhere), sight and noise, the fight
+with the city's weapons, bites and bandages, dusk and night's warnings, the night's picture.
+
+**C2c. Shelters and making:** claiming a building (barring its doors, light, a stash), the
+workbench and the city's recipes, cooking, the torch.
 
 ### C3. The story and the ways out
 
@@ -108,4 +134,5 @@ everyone.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
+| C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall |
 | C1 | 2.46.0 | `citygentest`, `citytest` | `docstest` counts, `tokentest` (a stylesheet), `i18ntest` (keys) | desktop, 412×915, 915×412: new city, the Intake, the story card, walking, three checkpoints, the map, Continue |

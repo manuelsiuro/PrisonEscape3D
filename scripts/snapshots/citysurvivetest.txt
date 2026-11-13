@@ -1,0 +1,10 @@
+10 cities, a scavenger bot 7 days in each: none fell
+a week, on average: 389.9 pieces searched, 61.2 things found (30.4 food), 19.4 eaten, 6.8 nights slept, starving 0.0 times
+  1: 382 searched, 87 things (35 food), 20 eaten, 7 nights slept, health never under 100, 4c67f2aa
+  2: 365 searched, 55 things (31 food), 17 eaten, 7 nights slept, health never under 100, c969e68e
+  3: 418 searched, 42 things (32 food), 18 eaten, 7 nights slept, health never under 100, ed8013f4
+  4: 346 searched, 101 things (34 food), 20 eaten, 7 nights slept, health never under 100, 03871a17
+hunger: a third of the bar in ten hours awake; at nothing, health goes; a tin is 30 points, a bandage 28 health; nothing wasted on a full bar
+a Survivor who falls wakes at home the next morning with 40 health, their things where they fell; in Hardcore the city is lost
+seed 2's first six searches: 64=soda×1+water×1, 65=empty, 66=dried×1, 67=empty, 73=tin×1, 72=dried×1
+a save carries the pockets, the meters and every box looked into; one from stage 1 loads with the meters fresh; a thing that is not is refused

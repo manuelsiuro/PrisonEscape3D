@@ -1,7 +1,8 @@
 import { itemNumber } from '../../content/items';
 import { readPrisoner } from '../../game/prisoner';
 import { t, type Key } from '../../i18n';
-import { banner, click, controls, hint, settings, sound, view } from '../../play/context';
+import { buzz } from '../../app/haptics';
+import { banner, click, controls, hint, settings, sleepVeil, sound, view } from '../../play/context';
 import { play, tickPlayClock, type SideRun } from '../../play/game';
 import { inPlace } from '../../play/lazy';
 import { settingsChanged } from '../../play/tips';
@@ -17,11 +18,14 @@ import { showHelp } from '../../ui/screens/help';
 import { showPause } from '../../ui/screens/pause';
 import { showSettings } from '../../ui/screens/settings';
 import { CityView } from '../render/CityView';
-import { writeCitySave } from '../save';
-import type { City, CityEvent } from '../sim/City';
+import { cityItem } from '../content/items';
+import { SEARCH_STEPS } from '../content/loot';
+import { deleteCitySave, writeCitySave } from '../save';
+import { COP, FULL, type City, type CityEvent } from '../sim/City';
 import { CityHud, type CityHudState } from '../ui/hud';
 import { paintDistrict } from '../ui/mapPaint';
-import { showCityIntro, showCityMap } from '../ui/screens';
+import { CityPockets, type PocketsState } from '../ui/pockets';
+import { showCityIntro, showCityMap, showCityOver } from '../ui/screens';
 
 /**
  * City Escape in play (C1): its own simulation (city/sim/City.ts) stepped at the prisons' pace from
@@ -35,6 +39,8 @@ interface CityRun extends SideRun {
   /** Where the player was before the last step (the view eases between the two). */
   prev: { x: number; z: number };
   pilot: Autopilot;
+  /** One-step operations waiting for the next steps (one a step): [op, a]. */
+  ops: Array<[number, number]>;
   paused: boolean;
   /** Written to storage since it last changed district or was paused. */
   saved: boolean;
@@ -42,15 +48,27 @@ interface CityRun extends SideRun {
 }
 
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
+/** What lies on the ground is drawn as a parcel (the view's items are the prisons'). */
+const PILE = itemNumber('parcel');
+/** Asleep, the night runs fast (as the prisons' does). */
+const SLEEP_SPEED = 40;
 
 // (Made as its code comes in, after the rest of the page: put where they'd have been made, see lazy.ts.)
-const [cityView, cityHud, veil] = inPlace('city', () => {
+const [cityView, cityHud, veil, pockets] = inPlace('city', () => {
   const v = new CityView();
   view.scene.add(v.group);
   const veilEl = h('div', 'city-veil');
   document.body.append(veilEl);
-  return [v, new CityHud(), veilEl] as const;
+  return [v, new CityHud(), veilEl, new CityPockets()] as const;
 });
+pockets.onOp = (op, a = 0) => {
+  click();
+  run()?.ops.push([op, a]);
+};
+pockets.onAct = () => {
+  click();
+  act();
+};
 cityHud.onPause = () => void pauseCity();
 cityHud.onMap = () => void openMap();
 
@@ -71,6 +89,7 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
       city,
       prev: { x: s.player.x, z: s.player.z },
       pilot: new Autopilot(city.world, () => city.grid),
+      ops: [],
       paused: false,
       saved: false,
       resolve,
@@ -82,6 +101,7 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     view.setPrisoner(readPrisoner());
     view.zoomTo(1.1);
     cityHud.show(true);
+    pockets.show(true);
     hint.hide();
     document.body.classList.add('is-playing', 'city-on');
     controls.reset();
@@ -125,6 +145,8 @@ function arrive(r: CityRun) {
 /** The city in progress written to its slot. */
 function save(r: CityRun) {
   const c = r.city;
+  // (A city lost, Hardcore: nothing to carry on.)
+  if (c.state.over) return void deleteCitySave();
   r.saved = writeCitySave({
     v: 1,
     at: Date.now(),
@@ -185,6 +207,8 @@ export function stopCity() {
   save(r);
   play.side = null;
   cityHud.show(false);
+  pockets.show(false);
+  sleepVeil.classList.remove('on');
   cityView.clear();
   banner.clear();
   controls.enabled = false;
@@ -196,9 +220,26 @@ export function stopCity() {
 }
 
 // ------------------------------------------------------------------ the player's input
+/** The action button / E: what's in reach searched, looked at, slept in. */
+function act() {
+  const r = run();
+  if (!r || r.paused) return;
+  r.pilot.stop();
+  pockets.pick(-1);
+  r.ops.push([COP.ACT, 0]);
+}
+
 function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
-  if (code === 'Escape') void pauseCity();
-  else if (code === 'KeyM') {
+  // Escape shuts a thing's card, then the open box, and only then pauses.
+  if (code === 'Escape') {
+    if (pockets.open) pockets.pick(-1);
+    else if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
+    else void pauseCity();
+  } else if (code === 'KeyE' || code === 'Enter') act();
+  else if (/^Digit[1-8]$/.test(e.code)) {
+    const k = Number(e.code.slice(5)) - 1;
+    if (r.city.state.inv[k]?.[0]) pockets.pick(k);
+  } else if (code === 'KeyM') {
     e.preventDefault();
     void openMap();
   } else if (code === 'KeyH') void under(r, () => showHelp(click, {}));
@@ -233,24 +274,100 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   const p = c.state.player;
   if (!r.paused) {
     tickPlayClock(dt * 1000);
-    play.acc += dt;
+    const speed = c.state.sleeping ? SLEEP_SPEED : 1;
+    play.acc += dt * speed;
     let steps = 0;
-    while (play.acc >= 1 / STEPS_PER_SECOND && steps++ < 40) {
+    while (play.acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * speed) {
       play.acc -= 1 / STEPS_PER_SECOND;
       r.prev.x = p.x;
       r.prev.z = p.z;
       if (controls.steering) r.pilot.stop();
-      c.step(command(controls.steering ? controls.dir() : r.pilot.dir(p)));
+      const op = r.ops.shift();
+      c.step(command(controls.steering ? controls.dir() : r.pilot.dir(p), op?.[0] ?? 0, op?.[1] ?? 0));
       for (const e of c.events) cityEvent(r, e);
+      // (Over, or carried home: what was waiting is dropped, and nothing slides from the old place.)
+      if (c.state.over || c.events.some((e) => e.type === 'dead')) break;
     }
     if (play.acc > 1) play.acc = 0;
   }
   const a = r.paused ? 1 : play.acc * STEPS_PER_SECOND;
   view.draw(frameOf(r, a), dt, now / 1000);
   cityHud.update(hudOf(r));
+  pockets.update(pocketsOf(r));
+  sleepVeil.classList.toggle('on', c.state.sleeping);
 }
 
 function cityEvent(r: CityRun, e: CityEvent) {
+  const c = r.city;
+  switch (e.type) {
+    case 'search':
+      sound.stow(true);
+      break;
+    case 'open':
+      if (e.first) sound.stow(false);
+      break;
+    case 'took':
+      sound.pickup();
+      break;
+    case 'stored':
+    case 'dropped':
+      sound.stow(true);
+      break;
+    case 'used':
+      if (cityItem(e.item)?.kind === 'med') sound.chime();
+      else if (cityItem(e.item)?.shape === 'bottle' || cityItem(e.item)?.shape === 'can') sound.gulp();
+      else sound.munch(true);
+      break;
+    case 'full':
+      banner.toast(t('city.toast.full'), 'info', 2200);
+      break;
+    case 'refused':
+      banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400);
+      break;
+    case 'starving':
+      banner.toast(t('city.toast.starving'), 'bad', 3600);
+      buzz('missed');
+      break;
+    case 'sleep':
+      r.pilot.stop();
+      r.ops.length = 0;
+      if (e.on) {
+        sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
+        sound.yawn();
+        save(r);
+      } else {
+        play.acc = 0;
+        if (e.why && e.why !== 'stirred') banner.toast(t(`city.toast.woke.${e.why}` as Key), e.why === 'hungry' ? 'bad' : 'good', 3000);
+        save(r);
+      }
+      break;
+    case 'dead':
+      r.ops.length = 0;
+      r.pilot.stop();
+      sound.sting();
+      buzz('missed');
+      if (e.final) {
+        save(r);
+        void under(r, () => showCityOver(c.day, c.plan.names[c.state.district], click)).then(() => stopCity());
+        break;
+      }
+      // A Survivor: home, the next morning, behind a blink of dark.
+      veil.classList.remove('on');
+      void veil.offsetWidth;
+      veil.classList.add('on');
+      if (e.moved) stage(r);
+      else {
+        view.snapTo(c.state.player.x / UNIT, c.state.player.z / UNIT);
+        r.prev.x = c.state.player.x;
+        r.prev.z = c.state.player.z;
+      }
+      play.acc = 0;
+      banner.show(t('city.fell.title'), t('city.fell.sub'), 'alarm', 5200);
+      save(r);
+      break;
+    default:
+      break;
+  }
   if (e.type === 'travel') {
     // Through a checkpoint: the next district put up behind a blink of dark, then said.
     veil.classList.remove('on');
@@ -287,7 +404,50 @@ function frameOf(r: CityRun, a: number): Frame {
     tapAt.z = Math.floor(dest / MAP_W) + 0.5;
   }
   f.tap = dest >= 0 ? tapAt : null;
+  // What the action button would use, framed on the floor; what lies on the ground.
+  const tg = c.state.sleeping ? null : c.target();
+  if (tg) {
+    const tiles = tg.kind === 'pile' ? [tg.tile] : c.tilesOf(Number(tg.key));
+    focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
+    focus.x1 = Math.max(...tiles.map((i) => i % MAP_W));
+    focus.z0 = Math.min(...tiles.map((i) => Math.floor(i / MAP_W)));
+    focus.z1 = Math.max(...tiles.map((i) => Math.floor(i / MAP_W)));
+  }
+  f.focus = tg ? focus : null;
+  const boxes = Object.keys(c.state.boxes).length;
+  if (boxes !== pilesFor.n || c.state.district !== pilesFor.d) {
+    pilesFor.n = boxes;
+    pilesFor.d = c.state.district;
+    const mine = `${c.state.district}:g`;
+    piles = Object.keys(c.state.boxes)
+      .filter((k) => k.startsWith(mine))
+      .map((k) => Number(k.slice(mine.length)))
+      .map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5, item: PILE }));
+    f.groundRev++;
+  }
+  f.ground = piles;
   return f;
+}
+const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
+let piles: Array<{ x: number; z: number; item: number }> = [];
+const pilesFor = { n: -1, d: -1 };
+
+const pocketsState = {} as PocketsState;
+function pocketsOf(r: CityRun): PocketsState {
+  const c = r.city;
+  const s = c.state;
+  const st = pocketsState;
+  const tg = c.target();
+  st.inv = s.inv;
+  const open = s.open;
+  st.box = !open ? '' : open.startsWith('g') ? 'city.box.pile' : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
+  st.slots = c.box();
+  st.target = tg;
+  st.targetOpen = !!tg && tg.key === open;
+  st.searched = !!tg && c.searched(tg.key);
+  st.searching = s.search ? 1 - s.searchLeft / SEARCH_STEPS : 0;
+  st.asleep = s.sleeping;
+  return st;
 }
 
 /** The district's picture as seen so far, painted again when more of it is. */
@@ -310,6 +470,9 @@ function hudOf(r: CityRun): CityHudState {
   st.pictureRev = picture.rev + d * 100003;
   st.x = c.state.player.x / UNIT;
   st.z = c.state.player.z / UNIT;
+  st.health = c.state.health / 100;
+  st.hunger = c.state.hunger / FULL;
+  st.energy = c.state.energy / FULL;
   return st;
 }
 
