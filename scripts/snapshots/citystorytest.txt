@@ -1,0 +1,32 @@
+60 cities: 11 things and 10 notes each in furniture of its own that can be stood beside, the radio at the start, the aerial next door, every way out's tile open floor in its landmark, a pier's end 56 tiles from the boathouse on average
+the acts: eat, sleep and the radio; the aerial and two batteries from the pockets mend it; a way out is chosen only once scouted; set going only with its three things, the beacon only after dark; walked away from, it goes out and the things are kept; held 120 minutes, away
+Dispatch, in order: radio got.aerial fixed people scout1 way1 locked got.beacon got.avgas got.flare all1 night ready1 win1
+the beacon: 8 more of the dead than the night's, one arriving every 5 minutes and making for whoever lit it; a barred door torn open (the building stood in first) every 20 minutes (2 of 2)
+the generator: started at any hour, the gates open 90 minutes on, the dead up into the station meanwhile (15 in it at the most)
+the boat: fitted at any hour and left fitted, taken from the pier's end between 23:00 and 02:00 only, in fog (the dead see two tiles, a blow carries twice as far); a fall keeps the engine fitted, and a pile on the pier's end doesn't take the button
+a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act with what its searched furniture held; 7 damaged stories start again with the city kept
+60 cities: four survivors each in a building of theirs, on open floor, cutting nothing off (fence mall 60, nurse clinic 44, mechanic garage 57, ranger rangers 60, nurse hospital 16, mechanic factory 3)
+the survivors: met, then an errand each in turn (things brought, or the dead put down since it was asked); the fence's first pays the armoury's key, the others' teach a recipe; swaps only beside them and only with the things; a word hands nothing over, their card's button does; pay that doesn't fit lies underfoot and they keep the button; none of the dead put down in their buildings; a save carries them
+runners from night 3 and one brute from night 5 where the danger is 2 or more, at night only; a brute at a barred door pounds it open in 80 steps without seeing through it, a shambler never; one brute a district a night; a thing of the armoury's in an emptied bed is still looked into
+the records: a way out counted, the quickest kept, ten feats each had once
+a bot follows the story to each way out on 4 cities (the dead away): 12 of 12 left, by day 5.5 (helicopter), 5.3 (boat), 5.5 (metro) on average
+  1 heli: day 5, 569c9809
+  1 boat: day 5, c3a1d33a
+  1 metro: day 5, 1ad6fa46
+  2 heli: day 3, 5ec42525
+  2 boat: day 3, ae87f1cf
+  2 metro: day 3, 73dd6a2a
+  3 heli: day 8, 41ecac33
+  3 boat: day 8, 8d6b13a8
+  3 metro: day 8, 348a0fc2
+  4 heli: day 6, bef7dfde
+  4 boat: day 5, 1fa90433
+  4 metro: day 6, 55a21be7
+the holds alone with the dead about (a bat, three bandages, the first night, a bot that keeps moving): the helicopter 6 of 6, the metro 5 of 6
+with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 2 of 6 left, 28 falls in all
+  1 heli: still there on day 13 (act 4), fell 5, 86 put down
+  1 boat: left on day 8, fell 1, 54 put down
+  1 metro: still there on day 13 (act 4), fell 6, 68 put down
+  2 heli: still there on day 13 (act 4), fell 7, 102 put down
+  2 boat: left on day 5, fell 1, 41 put down
+  2 metro: still there on day 13 (act 4), fell 8, 66 put down
