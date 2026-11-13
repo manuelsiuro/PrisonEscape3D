@@ -1,12 +1,13 @@
+import { cityBeat, CITY_TEMPO, isCityMood, type CityMood } from './cityScore';
 import { SoundCore } from './soundCore';
 
 // The score (out of Sound.ts, v2.34.2): one progression in D minor in the mood of the moment, on its
 // own output under the effects.
 
-export type Mood = 'off' | 'title' | 'day' | 'night' | 'tension';
+export type Mood = 'off' | 'title' | 'day' | 'night' | 'tension' | CityMood;
 
 /** Eighth notes a beat's half: beats a minute for each mood. */
-const TEMPO: Record<Mood, number> = { off: 60, title: 70, day: 88, night: 60, tension: 126 };
+const TEMPO: Record<Mood, number> = { off: 60, title: 70, day: 88, night: 60, tension: 126, ...CITY_TEMPO };
 /** The music's loudest, under the effects at full volume. */
 export const MUSIC_LEVEL = 0.55;
 /** Chords in semitones above D3 (root first): Dm, Bb, Gm, A. */
@@ -84,6 +85,14 @@ export class SoundMusic extends SoundCore {
     this.musicTimer = 0;
   }
 
+  /** The voices as the city's score asks for them. */
+  private readonly voices = {
+    note: (f: number, at: number, dur: number, type: OscillatorType, gain: number, attack?: number, cutoff?: number) =>
+      this.note(f, at, dur, type, gain, attack, cutoff),
+    tick: (at: number, gain: number) => this.tick(at, gain),
+    thump: (at: number, gain: number) => this.thump(at, gain),
+  };
+
   /** A note of the score: one oscillator through an envelope (attack, hold, release) into the music. */
   protected note(f: number, at: number, dur: number, type: OscillatorType, gain: number, attack = 0.01, cutoff = 0) {
     const c = this.ctx;
@@ -111,6 +120,8 @@ export class SoundMusic extends SoundCore {
   protected musicBeat(at: number, k: number) {
     const mood = this.mood;
     if (mood === 'off') return;
+    // (City Escape's own score, 2.51: cityScore.ts, through these same voices.)
+    if (isCityMood(mood)) return cityBeat(this.voices, mood, at, k);
     const eighth = 60 / TEMPO[mood] / 2;
     const bar = Math.floor(k / 8);
     const inBar = k % 8;
