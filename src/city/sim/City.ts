@@ -210,6 +210,8 @@ export type CityEvent =
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
   | { type: 'talk'; who: number; what: 'met' | 'done' | 'chat' }
   | { type: 'traded'; who: number; item: number }
+  /** C4: a brute's blow on a barred door (said every so many of its steps there). */
+  | { type: 'pound'; tile: number }
   /** C3, the story: a thing or a note found; the radio mended; Dispatch speaks; the act moves on; a way out scouted, chosen, set going (or gone out), the metro's gates open, a barred door torn open; away. */
   | { type: 'found'; thing: number }
   | { type: 'note'; n: number }

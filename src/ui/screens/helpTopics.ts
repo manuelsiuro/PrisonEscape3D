@@ -12,7 +12,7 @@
  * - a diagram's own lines: `.meter`, `.tl` (a timeline), `.bars` ("n|what").
  * A prison's own rules name it, and show once it's open (no spoilers of the campaign ahead).
  */
-export type HelpTab = 'basics' | 'life' | 'escape' | 'controls';
+export type HelpTab = 'basics' | 'life' | 'escape' | 'city' | 'controls';
 
 type Diagram = 'schedule' | 'meter' | 'timeline' | 'bars' | 'pockets' | 'pins' | 'medals';
 
@@ -51,6 +51,7 @@ const T = (id: string, icon: string, tone: string, more: Omit<HelpTopic, 'id' | 
 });
 
 export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = {
+  city: [],
   basics: [
     {
       id: 'start',
@@ -396,6 +397,49 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     },
   ],
 };
+
+// (City Escape's pages, 2.49: a tab of their own, there when the mode is.)
+HELP.city = [
+  {
+    id: 'cityLive',
+    topics: [
+      T('cityGoal', 'map', '#f2c230', { pic: true, see: ['cityFood', 'cityStory', 'cityWays'] }),
+      T('cityFood', 'utensils', '#e08a2a', { pic: true, stepIcons: ['search', 'hand', 'box', 'save'], see: ['cityMake', 'cityShelter'] }),
+      T('cityDead', 'siren', '#c24a3a', {
+        pic: true,
+        listIcons: ['eye', 'ear', 'heart', 'walk', 'run', 'shield'],
+        see: ['cityFight', 'cityShelter'],
+      }),
+      T('cityFight', 'fist', '#5a8ee0', {
+        pic: true,
+        listIcons: ['fist', 'sword', 'route', 'bolt', 'wrench'],
+        see: ['cityDead', 'cityMake'],
+      }),
+      T('cityShelter', 'home', '#6fb06a', { pic: true, stepIcons: ['hammer', 'lock', 'walk', 'moon'], see: ['cityMake', 'cityDead'] }),
+      T('cityMake', 'hammer', '#d9822b', { pic: true, listIcons: ['hand', 'wrench', 'flame', 'users'], see: ['cityFood', 'cityPeople'] }),
+    ],
+  },
+  {
+    id: 'cityOut',
+    topics: [
+      T('cityStory', 'megaphone', '#f2c230', {
+        pic: true,
+        stepIcons: ['utensils', 'plug', 'eye', 'search', 'flag'],
+        see: ['cityWays', 'cityPeople'],
+      }),
+      T('cityWays', 'route', '#58d0c4', {
+        pic: true,
+        listIcons: ['heli', 'boat', 'lock'],
+        see: ['cityStory', 'cityPeople', 'cityShelter'],
+      }),
+      T('cityPeople', 'users', '#6fd0c4', { pic: true, listIcons: ['key', 'heart', 'wrench', 'tree'], see: ['cityWays', 'cityMake'] }),
+      T('cityKeys', 'keyboard', '#8a94a6', {
+        listIcons: ['hand', 'fist', 'hammer', 'book', 'box', 'gamepad'],
+        see: ['cityGoal', 'cityStory'],
+      }),
+    ],
+  },
+];
 
 /** What the pockets diagram holds: six pockets (the contraband marked), the weapon, the outfit. */
 export const POCKET_SAMPLE = {
