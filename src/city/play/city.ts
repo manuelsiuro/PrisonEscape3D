@@ -34,7 +34,8 @@ import { NOTES } from '../content/story';
 import { recordRun, type Feat } from '../record';
 import { MODE } from '../sim/City';
 import { STORY, THINGS } from '../content/story';
-import { gatesOpen, marks, objectives, type Objective } from '../sim/story';
+import { gatesOpen, going, marks, objectives, type Objective } from '../sim/story';
+import { CityMusic } from '../music';
 import { landmarkPlan } from '../render/landmarkPlan';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
@@ -128,7 +129,8 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     play.side = r;
     play.acc = 0;
     play.last = performance.now();
-    sound.music('tension');
+    cityMusic.reset();
+    sound.music(nightAt(r.city.minute) ? 'cityNight' : 'cityDay');
     sound.ambience(true);
     sound.setCoast(false);
     sound.setForest(false);
@@ -291,6 +293,7 @@ export function stopCity() {
   controls.enabled = false;
   controls.reset();
   sound.ambience(false);
+  sound.duck(false);
   veil.classList.remove('on');
   bitten.classList.remove('on');
   document.body.classList.remove('is-playing', 'city-on');
@@ -414,6 +417,27 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   view.draw(f, dt, now / 1000);
   cityView.facePeople(f.x, f.z);
   cityView.drawLandmark(landmarkOf(r, now / 1000));
+  // (Its own score, 2.51: the mood of the moment; what plays when the city is left stays as it was.)
+  // A card or the pause over it: the music steps back. Left for good: the shelter's warmth; fallen for good: the night.
+  sound.duck(r.paused && !c.state.over);
+  if (c.state.over) sound.music(c.state.over === 2 ? 'cityShelter' : 'cityNight');
+  else {
+    const lot = c.lot;
+    // (The boat is the quiet way out: its music only while the tide is in, not every night it lies ready.)
+    const way = going(c);
+    const tide = c.minute >= STORY.tideFrom || c.minute < STORY.tideTo;
+    sound.music(
+      cityMusic.pick(
+        {
+          going: way === 1 || (way === 2 && tide),
+          chasing: c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0),
+          night: nightAt(c.minute),
+          safe: lot >= 0 && (c.shelter(lot) || c.safeLots.has(lot)),
+        },
+        now / 1000,
+      ),
+    );
+  }
   cityHud.update(hudOf(r));
   pockets.update(pocketsOf(r));
   sleepVeil.classList.toggle('on', c.state.sleeping);
@@ -628,7 +652,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
         void under(r, () => showCityOver(c.day, c.plan.names[c.state.district], click)).then(() => stopCity());
         break;
       }
-      // A Survivor: home, the next morning, behind a blink of dark.
+      // A Survivor: home, the next morning, behind a blink of dark (and the chase's music left where they fell).
+      cityMusic.reset();
       veil.classList.remove('on');
       void veil.offsetWidth;
       veil.classList.add('on');
@@ -761,6 +786,8 @@ function pocketsOf(r: CityRun): PocketsState {
 let goalAt = -1;
 let marksShown = '';
 const goalNow = { text: '', marks: [] as number[], key: '' };
+const cityMusic = new CityMusic();
+
 /** The helicopter is seen (and heard) coming in over the last game minutes of the hold. */
 const HELI_IN = 14;
 let heliHeard = -1;
