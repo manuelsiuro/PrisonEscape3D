@@ -194,6 +194,8 @@ export interface DeadFrame {
   reeling: boolean;
   /** Its own number (its clothes and its gait). */
   seed: number;
+  /** What it is (ZKIND: 0 a shambler, 1 a runner, 2 a brute). */
+  kind: number;
 }
 
 /** The most of the dead drawn at once. */
@@ -220,6 +222,8 @@ function deadBody(): THREE.BufferGeometry {
   ];
   return merge(parts);
 }
+/** The survivors' colours (the fence, the nurse, the mechanic, the ranger). */
+const FOLK = [0xf2a03a, 0x6fd0c4, 0x5a8ee0, 0x7fc46a];
 const TINTS = [0xb9c2c9, 0xa9b89a, 0xc9b79a, 0x9aa9c2, 0xc29a9a, 0xb0a6c4, 0x8f9a8a];
 
 export class CityView {
@@ -256,7 +260,28 @@ export class CityView {
     );
     this.glow.renderOrder = 0.4;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks);
+    this.folk = new THREE.InstancedMesh(deadBody(), kitMaterial, 4);
+    this.folk.castShadow = true;
+    this.folk.count = 0;
+    this.folk.frustumCulled = false;
+    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk);
+  }
+
+  /** The survivors in this district: the dead's own body, standing straight in the colours of the living. */
+  private readonly folk: THREE.InstancedMesh;
+  setPeople(list: ReadonlyArray<{ who: number; tile: number }>, facing: (tile: number) => number) {
+    list.forEach((p, k) => {
+      this.e.set(0, facing(p.tile), 0, 'YXZ');
+      this.q.setFromEuler(this.e);
+      this.at.set((p.tile % W) + 0.5, 0, Math.floor(p.tile / W) + 0.5);
+      this.size.setScalar(1.3);
+      this.m.compose(this.at, this.q, this.size);
+      this.folk.setMatrixAt(k, this.m);
+      this.folk.setColorAt(k, this.tint.set(FOLK[p.who % FOLK.length]));
+    });
+    this.folk.count = list.length;
+    this.folk.instanceMatrix.needsUpdate = true;
+    if (this.folk.instanceColor) this.folk.instanceColor.needsUpdate = true;
   }
 
   /** Where the story points in this district: a lit diamond turning over each tile, a ring on the floor under it. */
@@ -328,10 +353,12 @@ export class CityView {
       this.e.set(d.reeling ? -0.45 : d.chasing ? 0.2 : 0.08, d.facing, sway, 'YXZ');
       this.q.setFromEuler(this.e);
       this.at.set(d.x, d.moving ? Math.abs(Math.sin(beat)) * 0.05 : 0, d.z);
+      // (A runner is slight and pale, a brute half as big again and dark.)
+      this.size.setScalar(d.kind === 2 ? 1.85 : d.kind === 1 ? 1.16 : 1.3);
       this.m.compose(this.at, this.q, this.size);
       this.dead.setMatrixAt(k, this.m);
       if (night) this.eyes.setMatrixAt(k, this.m);
-      this.dead.setColorAt(k, this.tint.set(TINTS[d.seed % TINTS.length]));
+      this.dead.setColorAt(k, this.tint.set(d.kind === 2 ? 0x5a4a52 : d.kind === 1 ? 0xe6d8c8 : TINTS[d.seed % TINTS.length]));
     }
     this.dead.count = n;
     this.eyes.count = night ? n : 0;
@@ -432,5 +459,6 @@ export class CityView {
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();
     this.marks.clear();
+    this.folk.count = 0;
   }
 }

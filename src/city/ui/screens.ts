@@ -7,7 +7,12 @@ import { CITY_N, CITY_W, gateOpen, LANES, laneAt, neighbour, ROAD_W, SIDE } from
 import { FLAG, NOTES, THINGS, WAYS, thingBit } from '../content/story';
 import type { City } from '../sim/City';
 import { MODE } from '../sim/City';
-import { objectives } from '../sim/story';
+import { errandOf, objectives, wants } from '../sim/story';
+import { cityItemNumber } from '../content/items';
+import { PEOPLE } from '../content/people';
+import { CITY_RECIPES } from '../content/recipes';
+import { FEATS, readRecord, type Feat } from '../record';
+import { itemName } from './pockets';
 import { LANDMARKS, paintDistrict, useColour } from './mapPaint';
 import { mapXY, objectiveText } from './story';
 
@@ -43,7 +48,7 @@ function modal<T extends string>(html: string, esc: T, focus: string, setup?: (e
 /** A new city: what it is, and how death is taken (chosen once). Null: not now. */
 export async function showNewCity(click: () => void): Promise<number | null> {
   let mode: number = MODE.SURVIVOR;
-  const choice = await modal<'start' | 'back'>(
+  const choice = await modal<'start' | 'back' | 'feats'>(
     `<div class="card city-new">
       <h2>${icon('map', 20)}${t('city.title')}</h2>
       <p class="card-note">${t('city.new.about')}</p>
@@ -54,6 +59,7 @@ export async function showNewCity(click: () => void): Promise<number | null> {
       <p class="card-note city-preview">${icon('wrench', 14)}${t('city.preview')}</p>
       <div class="actions">
         <button class="big-btn ghost" data-c="back">${icon('chevronLeft', 18)}${t('city.new.back')}</button>
+        <button class="big-btn ghost" data-c="feats">${icon('trophy', 18)}${t('city.feats.title')}</button>
         <button class="big-btn primary" data-c="start">${icon('play', 18)}${t('city.new.start')}</button>
       </div>
     </div>`,
@@ -69,6 +75,10 @@ export async function showNewCity(click: () => void): Promise<number | null> {
       }),
   );
   click();
+  if (choice === 'feats') {
+    await showCityFeats(click);
+    return showNewCity(click);
+  }
   return choice === 'start' ? mode : null;
 }
 
@@ -81,12 +91,16 @@ export async function showCityMenu(where: string, click: () => void): Promise<'c
         <button class="hero-card play-card" data-c="continue"><span class="hero-ic">${icon('play', 22)}</span><span class="hero-text"><b>${t('title.continue')}</b><small></small></span></button>
         <button class="menu-btn" data-c="new" style="--tone:var(--orange);--tone-2:var(--orange-2)"><span class="menu-ic">${icon('replay', 18)}</span><span class="menu-text"><span class="menu-label">${t('city.new.title')}</span></span>${icon('chevronRight', 16)}</button>
       </div>
-      <div class="actions"><button class="big-btn ghost" data-c="back">${icon('chevronLeft', 18)}${t('city.new.back')}</button></div>
+      <div class="actions"><button class="big-btn ghost" data-c="back">${icon('chevronLeft', 18)}${t('city.new.back')}</button><button class="big-btn ghost" data-c="feats">${icon('trophy', 18)}${t('city.feats.title')}</button></div>
     </div>`;
-  const choice = await modal<'continue' | 'new' | 'back'>(el, 'back', '[data-c="continue"]', (m) => {
+  const choice = await modal<'continue' | 'new' | 'back' | 'feats'>(el, 'back', '[data-c="continue"]', (m) => {
     m.querySelector('.hero-text small')!.textContent = where;
   });
   click();
+  if (choice === 'feats') {
+    await showCityFeats(click);
+    return showCityMenu(where, click);
+  }
   return choice;
 }
 
@@ -150,7 +164,7 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       <h2>${icon('map', 20)}${t('city.map.title')}</h2>
       <div class="city-map-body">
         <div class="city-map-pic"><canvas width="${size}" height="${size}" role="img" aria-label="${t('city.map.title')}"></canvas><ol class="city-map-names" aria-hidden="true">${names}</ol></div>
-        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
+        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-person"></i>${t('city.map.person')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
       </div>
       <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.map.close')}</button></div>
     </div>`,
@@ -194,6 +208,18 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
         c.closePath();
         c.fill();
       }
+      // The survivors known of (Dispatch names them once the radio works; else those met): a dot each.
+      city.story.people.forEach((p, k) => {
+        if (!(city.state.flags & FLAG.FIXED) && !(city.state.met & (1 << k))) return;
+        const { x, y } = mapXY(p.district, p.tile, GAP);
+        c.fillStyle = '#6fd0c4';
+        c.strokeStyle = '#07090c';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.arc(x, y, 3.2, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      });
       // Where the journal points: a diamond each.
       for (const o of objectives(city)) {
         if (o.done || !o.at) continue;
@@ -275,12 +301,24 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
         .join('')
     : `<p class="card-note">${t('city.journal.noNotes')}</p>`;
   const kit = THINGS.filter((id) => s.kit & thingBit(id)).map((id) => t(`city.kit.${id}` as Key));
+  const known = PEOPLE.map((_, k) => k).filter((k) => fixed || s.met & (1 << k));
+  const people = !known.length
+    ? ''
+    : `<section><h3>${icon('users', 16)}${t('city.journal.people')}</h3><ul class="cj-people">${known
+        .map((k) => {
+          const p = city.story.people[k];
+          const dist = city.districtOf(p.district);
+          const met = (s.met & (1 << k)) !== 0;
+          return `<li><b>${t(`city.person.${PEOPLE[k].id}.name` as Key)}<small>${t(`city.person.${PEOPLE[k].id}.role` as Key)}</small></b><span>${t(`city.use.${dist.lots[p.lot].use}` as Key)}, ${city.plan.names[p.district]}</span><small>${met ? errandLine(city, k) || t('city.journal.errands', { n: s.errand[k] }) : t('city.journal.unmet')}</small></li>`;
+        })
+        .join('')}</ul></section>`;
   const choice = await modal<'close' | 'way1' | 'way2' | 'way3'>(
     `<div class="card city-journal">
       <h2>${icon('book', 20)}${t('city.journal.title')}<small>${t('city.act.n', { n: s.act })} · ${t(`city.act.${s.act}` as Key)}</small></h2>
       <div class="cj-body">
         <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit')}: ${kit.join(', ')}</p>` : ''}</section>
         ${ways}
+        ${people}
         <section><h3>${icon('megaphone', 16)}${t('city.journal.radio')}</h3>${radio}</section>
         <section><h3>${icon('letter', 16)}${t('city.journal.notes', { n: found.length, of: NOTES })}</h3>${notes}</section>
       </div>
@@ -294,7 +332,7 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
 }
 
 /** Out of the city: by which way, how it went, and the last thing on the radio. */
-export async function showCityEscaped(city: City, click: () => void): Promise<void> {
+export async function showCityEscaped(city: City, feats: readonly Feat[], click: () => void): Promise<void> {
   const s = city.state;
   let notes = 0;
   for (let n = 0; n < NOTES; n++) if (s.notes & (1 << n)) notes++;
@@ -304,10 +342,96 @@ export async function showCityEscaped(city: City, click: () => void): Promise<vo
       <p>${t(`city.escaped.${s.won}` as Key)}</p>
       <p class="city-over-line">${t('city.escaped.line', { n: city.day, kills: s.kills, deaths: s.deaths, notes, of: NOTES })}</p>
       <blockquote><small>${t('city.escaped.last')}</small>${t(`city.say.win${s.won}` as Key)}</blockquote>
+      ${feats.length ? `<ul class="city-feats new">${feats.map((f) => featRow(f, true, true)).join('')}</ul>` : ''}
       <div class="actions"><button class="big-btn primary" data-c="back">${icon('home', 18)}${t('pause.quit')}</button></div>
     </div>`,
     'back',
     '[data-c="back"]',
+  );
+  click();
+}
+
+/** What a survivor's open errand wants, in a line ('' none open). */
+function errandLine(city: City, k: number): string {
+  const e = errandOf(city, k);
+  const w = wants(city, k);
+  if (!e || !w) return '';
+  return e.bring
+    ? t('city.person.wants.bring', { n: w.n, what: itemName(w.item), have: w.have })
+    : t('city.person.wants.kills', { n: w.n, have: w.have });
+}
+
+/**
+ * A survivor's card (C3b): what they say (first met, an errand just handed in, or a word), the errand
+ * open and what it pays, their swaps. Resolves with the swap asked for (0–2), 3: the errand handed over, or -1: left.
+ */
+export async function showCityPerson(city: City, k: number, what: 'met' | 'done' | 'chat', click: () => void): Promise<number> {
+  const s = city.state;
+  const who = PEOPLE[k];
+  const stage = s.errand[k];
+  const e = errandOf(city, k);
+  const w = wants(city, k);
+  // (Just met: hello, then what they ask. Just paid: their thanks, then the next thing. Else what they ask, or a word.)
+  const lines =
+    what === 'met'
+      ? [`${who.id}.met`, `${who.id}.ask0`]
+      : what === 'done'
+        ? [`${who.id}.done${stage - 1}`, ...(e ? [`${who.id}.ask${stage}`] : [])]
+        : [e ? `${who.id}.ask${stage}` : `${who.id}.idle`];
+  const taught = CITY_RECIPES.find((r) => r.taught === k);
+  const pay = !e
+    ? ''
+    : [
+        ...(e.key ? [t('city.person.key')] : []),
+        ...e.gives.map(([id, n]) => `${itemName(cityItemNumber(id))}${n > 1 ? ` × ${n}` : ''}`),
+        ...(stage === 0 && taught ? [t('city.person.teaches', { what: itemName(cityItemNumber(taught.makes)) })] : []),
+      ].join(', ');
+  const errand = !e
+    ? `<p class="card-note">${t('city.person.noMore')}</p>`
+    : `<div class="cp-errand${w && w.have >= w.n ? ' ready' : ''}"><b>${errandLine(city, k)}</b><small>${t('city.person.gives', { what: pay })}</small>${w && w.have >= w.n ? `<button class="big-btn primary cp-give" data-c="t3">${icon('check', 16)}${t('city.person.ready')}</button>` : ''}</div>`;
+  const swaps = who.trades
+    .map(([give, get], n) => {
+      const g = cityItemNumber(give[0]);
+      const can = city.count(g) >= give[1];
+      const a = `${itemName(g)}${give[1] > 1 ? ` × ${give[1]}` : ''}`;
+      const b = `${itemName(cityItemNumber(get[0]))}${get[1] > 1 ? ` × ${get[1]}` : ''}`;
+      return `<button class="cp-swap" data-c="t${n}"${can ? '' : ' disabled'} aria-label="${t('city.person.swap', { give: a, get: b })}"><span>${a}</span>${icon('chevronRight', 14)}<b>${b}</b></button>`;
+    })
+    .join('');
+  const choice = await modal<'close' | 't0' | 't1' | 't2' | 't3'>(
+    `<div class="card city-person">
+      <h2>${icon('chat', 20)}${t(`city.person.${who.id}.name` as Key)}<small>${t(`city.person.${who.id}.role` as Key)}</small></h2>
+      ${lines.map((l) => `<p class="cj-line">${t(`city.person.${l}` as Key)}</p>`).join('')}
+      ${errand}
+      <h3>${icon('hand', 16)}${t('city.person.swaps')}</h3>
+      <div class="cp-swaps">${swaps}</div>
+      <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.person.close')}</button></div>
+    </div>`,
+    'close',
+    '[data-c="close"]',
+  );
+  click();
+  return choice === 'close' ? -1 : Number(choice.slice(1));
+}
+
+/** A feat's row: had or not (`fresh`: just had, on the end card). */
+function featRow(f: Feat, had: boolean, fresh = false): string {
+  return `<li class="${had ? 'had' : ''}">${icon(had ? 'trophy' : 'lock', 16)}<span><b>${t(`city.feat.${f}` as Key)}${fresh ? `<i>${t('city.feats.new')}</i>` : ''}</b><small>${t(`city.feat.${f}.sub` as Key)}</small></span></li>`;
+}
+
+/** City Escape's records: the ways out taken over every city, the quickest, its feats. */
+export async function showCityFeats(click: () => void): Promise<void> {
+  const r = readRecord();
+  const any = r.wins.some((n) => n > 0);
+  await modal<'close'>(
+    `<div class="card city-journal city-records">
+      <h2>${icon('trophy', 20)}${t('city.feats.title')}<small>${r.feats.length} / ${FEATS.length}</small></h2>
+      <p class="card-note">${any ? `${t('city.feats.wins', { a: r.wins[0], b: r.wins[1], c: r.wins[2] })} · ${t('city.feats.best', { n: r.best })}` : t('city.feats.none')}</p>
+      <div class="cj-body"><ul class="city-feats">${FEATS.map((f) => featRow(f, r.feats.includes(f))).join('')}</ul></div>
+      <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.journal.close')}</button></div>
+    </div>`,
+    'close',
+    '[data-c="close"]',
   );
   click();
 }

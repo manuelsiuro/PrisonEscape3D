@@ -4,6 +4,7 @@ import { MAP_H, MAP_W } from '../../sim/world/World';
 import { DISTRICTS, type LotUse } from '../content/districts';
 import { cityItemNumber } from '../content/items';
 import { SEARCHED } from '../content/loot';
+import { LOCKED, PEOPLE, type Errand } from '../content/people';
 import { BEATS, FLAG, isBeat, NOTES, STORY, THING_IN, THINGS, thingBit, WAYS, wayOf, type Beat, type Thing } from '../content/story';
 import type { District } from '../gen/district';
 import { CITY_N, gateOpen, LANES, neighbour, streamOf } from '../gen/plan';
@@ -33,6 +34,8 @@ export interface StoryPlaces {
   exits: number[];
   /** The end of the pier the boat leaves from (the docks; -1: no pier, the boathouse's own tile serves). */
   pier: number;
+  /** Where each of PEOPLE stands: their district, the building they hold (its lot) and their tile. */
+  people: Array<{ district: number; lot: number; tile: number }>;
 }
 
 const N = MAP_W * MAP_H;
@@ -157,7 +160,40 @@ export function storyPlaces(c: City): StoryPlaces {
         queue.push(j);
       }
   }
-  return { things, notes, wayDistrict, wayLot, exits, pier };
+  // The survivors: each in the first building of theirs the city has, on a floor with open floor all round (nothing is cut off by them).
+  const people = PEOPLE.map((who) => {
+    for (const use of who.uses)
+      for (let d = 0; d < plan.kinds.length; d++) {
+        const lot = lotOf(d, use);
+        if (lot < 0) continue;
+        const dist = c.districtOf(d);
+        const grid = gridOf(d);
+        const l = dist.lots[lot];
+        const floor = (i: number) => {
+          const ch = dist.rows[Math.floor(i / MAP_W)][i % MAP_W];
+          return !grid[i] && dist.lotAt[i] === lot + 1 && (ch === 'w' || ch === ':' || ch === '_');
+        };
+        const mid = Math.floor((l.z0 + l.z1) / 2) * MAP_W + Math.floor((l.x0 + l.x1) / 2);
+        let best = -1;
+        let bestD = Infinity;
+        for (let z = l.z0 + 1; z < l.z1; z++)
+          for (let x = l.x0 + 1; x < l.x1; x++) {
+            const i = z * MAP_W + x;
+            if (!floor(i) || exits.some((e, w) => wayDistrict[w] === d && far(e, i) <= 2)) continue;
+            let open = 0;
+            for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (floor(i + dz * MAP_W + dx)) open++;
+            if (open < 9) continue;
+            const score = far(i, mid);
+            if (score < bestD) {
+              bestD = score;
+              best = i;
+            }
+          }
+        if (best >= 0) return { district: d, lot, tile: best };
+      }
+    throw new Error(`city ${plan.seed}: nowhere for the ${who.id}`);
+  });
+  return { things, notes, wayDistrict, wayLot, exits, pier, people };
 }
 
 /** The story's fields of a new city (and of a save from before them). */
@@ -173,6 +209,9 @@ export function freshStory() {
     readyAt: 0,
     won: 0,
     heard: [] as Beat[],
+    met: 0,
+    errand: PEOPLE.map(() => 0),
+    mark: PEOPLE.map(() => 0),
   };
 }
 
@@ -185,7 +224,16 @@ export function soundStory(c: City) {
     s.act >= 1 &&
     s.act <= 5 &&
     s.flags >= 0 &&
-    s.flags < 8 &&
+    s.flags < 16 &&
+    Number.isInteger(s.met) &&
+    s.met >= 0 &&
+    s.met < 1 << PEOPLE.length &&
+    Array.isArray(s.errand) &&
+    s.errand.length === PEOPLE.length &&
+    s.errand.every((e) => e === 0 || e === 1 || e === 2) &&
+    Array.isArray(s.mark) &&
+    s.mark.length === PEOPLE.length &&
+    s.mark.every((m) => Number.isInteger(m) && m >= 0) &&
     s.kit >= 0 &&
     s.kit < 1 << THINGS.length &&
     s.scouted >= 0 &&
@@ -205,7 +253,7 @@ export function soundStory(c: City) {
   if (!ok) Object.assign(s, freshStory());
   // (A save from before the story, or one started again: what lies in furniture already searched is found, or it never could be.)
   c.story.things.forEach((sp, k) => {
-    if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined) s.kit |= 1 << k;
+    if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined && !shut(c, k)) s.kit |= 1 << k;
   });
   c.story.notes.forEach((sp, n) => {
     if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined) s.notes |= 1 << n;
@@ -215,6 +263,9 @@ export function soundStory(c: City) {
 
 const has = (c: City, id: Thing) => (c.state.kit & thingBit(id)) !== 0;
 const missing = (c: City, way: number) => (wayOf(way)?.needs ?? []).filter((id) => !has(c, id));
+
+/** A thing kept in the police armoury, its key not yet had. */
+const shut = (c: City, k: number) => LOCKED.includes(THINGS[k]) && !(c.state.flags & FLAG.KEY);
 
 /** Dispatch says a line, once (only with the radio found to hear her on). */
 function say(c: City, beat: Beat) {
@@ -252,12 +303,15 @@ const since = (c: City) => Math.floor((c.state.step - c.state.readyAt) / STEPS_P
 /** The metro's gates are open. */
 export const gatesOpen = (c: City) => c.state.ready === 1 && c.state.way === 3 && since(c) >= STORY.metroHold;
 
-/** A piece of furniture searched for the first time: what the story hid in it. */
+/** A piece of furniture looked into: what the story hid in it (the armoury's, only with its key). */
 export function storyFound(c: City, prop: number) {
   const s = c.state;
   const at = (sp: Spot) => sp.district === s.district && sp.prop === prop;
   const k = c.story.things.findIndex(at);
-  if (k >= 0 && !(s.kit & (1 << k))) {
+  if (k >= 0 && !(s.kit & (1 << k)) && shut(c, k)) {
+    c.events.push({ type: 'refused', why: 'locked' });
+    say(c, 'locked');
+  } else if (k >= 0 && !(s.kit & (1 << k))) {
     s.kit |= 1 << k;
     c.events.push({ type: 'found', thing: k });
     say(c, k === 0 ? 'radio' : (`got.${THINGS[k]}` as Beat));
@@ -280,6 +334,7 @@ function fix(c: City) {
   s.flags |= FLAG.FIXED;
   c.events.push({ type: 'fixed' });
   say(c, 'fixed');
+  say(c, 'people');
 }
 
 /** Something eaten, a bed slept in, a shelter made: the first act's doings, and what Dispatch says of them. */
@@ -436,7 +491,21 @@ export function objectives(c: City): Objective[] {
   const w = s.way;
   if (s.act === 4) {
     const ready = !missing(c, w).length;
-    return [...wayOf(w)!.needs.map((id) => thing(id)), { id: `begin${w}`, done: false, at: ready ? exit(w) : undefined }];
+    const key = (s.flags & FLAG.KEY) !== 0;
+    // (A thing in the armoury: the fence's key first, and no place for the thing until it's had.)
+    const needsKey = wayOf(w)!.needs.some((id) => LOCKED.includes(id) && !has(c, id));
+    const fence = P.people[0];
+    const want = wants(c, 0);
+    return [
+      ...(needsKey || (key && wayOf(w)!.needs.some((id) => LOCKED.includes(id)))
+        ? [{ id: 'key', done: key, n: want?.have, of: want?.n, at: key ? undefined : { district: fence.district, tile: fence.tile } }]
+        : []),
+      ...wayOf(w)!.needs.map((id) => {
+        const o = thing(id);
+        return LOCKED.includes(id) && !key ? { ...o, at: undefined } : o;
+      }),
+      { id: `begin${w}`, done: false, at: ready ? exit(w) : undefined },
+    ];
   }
   if (s.won) return [];
   if (w === 1) return [{ id: 'hold1', done: false, left: Math.max(0, STORY.heliHold - since(c)), at: exit(1) }];
@@ -481,4 +550,56 @@ export function marks(c: City, list: readonly Objective[] = objectives(c)): numb
     if (!out.includes(tile)) out.push(tile);
   }
   return out;
+}
+
+// ------------------------------------------------------------------ the survivors (C3b)
+/** The errand a survivor has open (null: not met, or both done). */
+export function errandOf(c: City, k: number): Errand | null {
+  const s = c.state;
+  return s.met & (1 << k) && s.errand[k] < 2 ? PEOPLE[k].errands[s.errand[k]] : null;
+}
+
+/** What a survivor's open errand still wants: how many, and how many are in hand (things in the pockets, or the dead put down since). */
+export function wants(c: City, k: number): { item: number; n: number; have: number } | null {
+  const e = errandOf(c, k);
+  if (!e) return null;
+  if (e.bring) {
+    const item = cityItemNumber(e.bring[0]);
+    return { item, n: e.bring[1], have: Math.min(e.bring[1], c.count(item)) };
+  }
+  return { item: 0, n: e.kills ?? 0, have: Math.min(e.kills ?? 0, c.state.kills - c.state.mark[k]) };
+}
+
+/** The action at a survivor: met the first time (their first errand asked); an errand done is handed in and paid; else a word. */
+export function meet(c: City, k: number) {
+  const s = c.state;
+  if (!(s.met & (1 << k))) {
+    s.met |= 1 << k;
+    s.mark[k] = s.kills;
+    say(c, 'met');
+    return void c.events.push({ type: 'talk', who: k, what: 'met' });
+  }
+  const e = errandOf(c, k);
+  const w = wants(c, k);
+  if (!e || !w || w.have < w.n) return void c.events.push({ type: 'talk', who: k, what: 'chat' });
+  if (e.bring) c.spend(w.item, w.n);
+  for (const [id, n] of e.gives) c.hand(cityItemNumber(id), n);
+  if (e.key) {
+    s.flags |= FLAG.KEY;
+    say(c, 'key');
+  }
+  s.errand[k]++;
+  s.mark[k] = s.kills;
+  c.events.push({ type: 'talk', who: k, what: 'done' });
+}
+
+/** A swap with the survivor beside the player: refused without the things. */
+export function trade(c: City, k: number, offer: number) {
+  const t = PEOPLE[k]?.trades[offer];
+  if (!t || !(c.state.met & (1 << k)) || c.target()?.key !== `n${k}`) return;
+  const give = cityItemNumber(t[0][0]);
+  if (c.count(give) < t[0][1]) return void c.events.push({ type: 'refused', why: 'noTrade' });
+  c.spend(give, t[0][1]);
+  c.hand(cityItemNumber(t[1][0]), t[1][1]);
+  c.events.push({ type: 'traded', who: k, item: cityItemNumber(t[1][0]) });
 }

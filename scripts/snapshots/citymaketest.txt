@@ -1,4 +1,4 @@
-8 recipes, each refused without its parts and made with them: bandage, boards, nail_bat, spear (bench), knife (bench), stove (bench), cooked_fish (stove), stew (stove)
+11 recipes, each refused without its parts and made with them: bandage, boards, nail_bat, spear (bench), knife (bench), stove (bench), cooked_fish (stove), stew (stove), medkit, cleaver (bench), ration
 every part is found somewhere in the city or made; a thing made with no room in the pockets lies underfoot
 a weapon loses a blow each time it lands and breaks at none; found, it has between half and all of them left
 a street door is barred in 2 seconds with a set of boards (the player still walks through, the dead don't); every door barred makes a shelter; taken down, the boards come back; a save carries it

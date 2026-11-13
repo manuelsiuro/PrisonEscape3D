@@ -1,3 +1,3 @@
 44 stylesheets, 0 raw colours outside tokens
-681 tokens on :root (501 colours, 176 -rgb twins), 472 of them a file's own
-632 custom properties used, every one defined; 47 inline styles in the code, none with a colour
+682 tokens on :root (502 colours, 176 -rgb twins), 473 of them a file's own
+633 custom properties used, every one defined; 47 inline styles in the code, none with a colour

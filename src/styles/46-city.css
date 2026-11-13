@@ -12,6 +12,7 @@
   --city-wall-55: #b8443a;
   --city-moon-86: #c4d4f0;
   --city-home-86: #6ff0a8;
+  --city-folk-78: #6fd0c4;
   --city-health-70: #ff6b6b;
   --city-energy-80: #7fc8ff;
   --city-you-65: #ff5a4a;
@@ -900,7 +901,7 @@
   font-size: 12.5px;
 }
 
-.cj-way .big-btn {
+.city-journal .cj-way .big-btn {
   min-height: 0;
   margin-top: auto;
   padding: 7px 10px;
@@ -1025,5 +1026,204 @@
 
   .city-make {
     top: calc(max(8px, env(safe-area-inset-top)) + 128px);
+  }
+}
+
+/* ------------------------------------------------------------ the survivors, the records (2.48) */
+.city-map-legend .lg-person {
+  border-radius: 50%;
+  background: var(--city-folk-78);
+}
+
+.cj-people {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cj-people li {
+  display: grid;
+  gap: 1px 10px;
+  grid-template-columns: minmax(110px, auto) 1fr;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.cj-people li b small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.cj-people li > small {
+  grid-column: 2;
+  color: var(--city-amber-83);
+}
+
+.city-person {
+  width: min(94vw, 460px);
+  text-align: left;
+}
+
+.city-person h2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 26px;
+}
+
+.city-person h2 small {
+  margin-left: auto;
+  font: 700 13px var(--font-ui);
+  text-shadow: none;
+  color: var(--city-folk-78);
+}
+
+.city-person h3 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 12px 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.cp-errand {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border: 1px solid rgba(var(--city-amber-83-rgb), 0.45);
+  border-radius: 12px;
+  font-size: 13.5px;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.cp-errand.ready {
+  border-color: var(--city-home-86);
+}
+
+.cp-errand small {
+  opacity: 0.85;
+}
+
+.cp-errand .cp-give {
+  justify-self: start;
+  min-height: 0;
+  margin-top: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.cp-swaps {
+  display: grid;
+  gap: 6px;
+}
+
+.cp-swap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(var(--white-rgb), 0.16);
+  border-radius: 10px;
+  font: 600 13.5px var(--font-ui);
+  color: var(--white);
+  background: rgba(var(--city-night-26-rgb), 0.6);
+  cursor: pointer;
+}
+
+.cp-swap b {
+  margin-left: auto;
+  color: var(--city-amber-83);
+}
+
+.cp-swap:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.city-feats {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.city-feats.new {
+  margin-top: 12px;
+}
+
+.city-feats li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  opacity: 0.55;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.city-feats li.had {
+  opacity: 1;
+}
+
+.city-feats li.had svg {
+  color: var(--city-amber-83);
+}
+
+.city-feats li small {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.city-feats li i {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-style: normal;
+  text-transform: uppercase;
+  color: var(--city-night-17);
+  background: var(--city-amber-83);
+}
+
+.city-recipe.locked {
+  cursor: default;
+}
+
+@media (max-height: 480px) {
+  .city-person h2 {
+    margin-bottom: 4px;
+    font-size: 20px;
+  }
+
+  .city-person {
+    width: min(94vw, 640px);
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+
+  .cp-swaps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cp-swap {
+    flex-wrap: wrap;
+    padding: 6px 9px;
+    font-size: 12.5px;
   }
 }

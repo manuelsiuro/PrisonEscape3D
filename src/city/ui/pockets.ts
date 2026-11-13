@@ -4,6 +4,7 @@ import { photos } from '../../render/itemIcons';
 import { h, setText } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../content/items';
+import { PEOPLE } from '../content/people';
 import { CITY_RECIPES } from '../content/recipes';
 import { COP, POCKETS, type Stack, type Target } from '../sim/City';
 
@@ -23,7 +24,9 @@ export interface PocketsState {
   /** A door in reach is barred (the button takes its boards down). */
   barred: boolean;
   /** What each recipe lacks now ('ok': it can be made). */
-  recipes: ReadonlyArray<'ok' | 'parts' | 'bench' | 'stove'>;
+  recipes: ReadonlyArray<'ok' | 'parts' | 'bench' | 'stove' | 'unknown'>;
+  /** The survivor in reach (their id; '' none). */
+  person: string;
   /** The way out in reach: what the button does with it ('begin1'–'3', 'go2', 'go3'; '' none). */
   way: string;
 }
@@ -222,6 +225,9 @@ export class CityPockets {
           <ul class="city-recipes">${CITY_RECIPES.map((r, k) => {
             const why = s.recipes[k] ?? 'parts';
             const made = cityItemNumber(r.makes);
+            // (Not shown how yet: who can.)
+            if (why === 'unknown')
+              return `<li><div class="city-recipe cant locked"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="lack">${icon('lock', 12)} ${t('city.make.taught', { who: t(`city.person.${PEOPLE[r.taught ?? 0].id}.name` as Key) })}</small></span></div></li>`;
             const parts = r.from
               .map(
                 ([id, n]) =>
@@ -237,34 +243,38 @@ export class CityPockets {
     const tg = s.asleep ? null : s.target;
     const verb = !tg
       ? ''
-      : tg.kind === 'way'
-        ? `city.act.${s.way}`
-        : tg.kind === 'door'
-          ? s.barred
-            ? 'city.act.unbar'
-            : 'city.act.bar'
-          : s.targetOpen
-            ? 'city.act.close'
-            : tg.kind === 'bed'
-              ? 'city.act.sleep'
-              : tg.kind === 'pile' || s.searched
-                ? 'city.act.look'
-                : 'city.act.search';
-    const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}`;
+      : tg.kind === 'npc'
+        ? 'city.act.talk'
+        : tg.kind === 'way'
+          ? `city.act.${s.way}`
+          : tg.kind === 'door'
+            ? s.barred
+              ? 'city.act.unbar'
+              : 'city.act.bar'
+            : s.targetOpen
+              ? 'city.act.close'
+              : tg.kind === 'bed'
+                ? 'city.act.sleep'
+                : tg.kind === 'pile' || s.searched
+                  ? 'city.act.look'
+                  : 'city.act.search';
+    const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${s.person}`;
     if (key !== this.shownAct) {
       this.shownAct = key;
       this.act.classList.toggle('hidden', !tg);
       if (tg) {
         const what = t(
-          tg.kind === 'way'
-            ? (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
-            : tg.kind === 'door'
-              ? 'city.box.door'
-              : tg.prop
-                ? (`city.box.${tg.prop}` as Key)
-                : 'city.box.pile',
+          tg.kind === 'npc'
+            ? (`city.person.${s.person}.name` as Key)
+            : tg.kind === 'way'
+              ? (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
+              : tg.kind === 'door'
+                ? 'city.box.door'
+                : tg.prop
+                  ? (`city.box.${tg.prop}` as Key)
+                  : 'city.box.pile',
         );
-        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'way' ? 'flag' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);

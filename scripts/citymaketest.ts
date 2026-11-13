@@ -55,6 +55,8 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
   const c = new City(2);
   c.peace = true;
   c.step(0);
+  // (What the survivors teach is known here: their errands are citystorytest's.)
+  c.state.errand = [1, 1, 1, 1];
   const bench = c.district.props.findIndex((p, k) => p.kind === 'workbench' && beside(c, c.tilesOf(k)) !== undefined);
   check(bench >= 0, 'seed 2 start: a workbench to stand beside');
   const atBench = beside(c, c.tilesOf(bench))!;

@@ -12,9 +12,17 @@ import { cityItemNumber } from '../src/city/content/items';
 import { SEARCHED } from '../src/city/content/loot';
 import { BEATS, FLAG, NOTES, STORY, THING_IN, THINGS, WAYS, thingBit } from '../src/city/content/story';
 import { neighbour } from '../src/city/gen/plan';
+import { BRUTE, RUNNER, ZKIND } from '../src/city/content/dead';
+import { PEOPLE } from '../src/city/content/people';
+import { CITY_RECIPES } from '../src/city/content/recipes';
+import { reachFrom } from '../src/city/gen/district';
+import { withRun, type CityRecord } from '../src/city/record';
+import { START_MINUTE } from '../src/city/sim/City';
+import { danger, populate } from '../src/city/sim/dead';
 import { City, COP, loadCity, MODE, type CityEvent } from '../src/city/sim/City';
 import { noise, quota, stepDead, ZED, type Zed } from '../src/city/sim/dead';
 import { going, objectives } from '../src/city/sim/story';
+import { nearestDir } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
 import { fnv1a } from '../src/sim/rng';
 import { bodyAt } from '../src/sim/systems/movement';
@@ -25,7 +33,7 @@ const say = (s: string) => lines.push(s);
 const MIN = 20;
 const BATTERY = cityItemNumber('battery');
 const xz = (i: number) => bodyAt(i % MAP_W, Math.floor(i / MAP_W));
-const far = (a: number, b: number) => Math.abs((a % MAP_W) - (b % MAP_W)) + Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W));
+const far2 = (a: number, b: number) => Math.abs((a % MAP_W) - (b % MAP_W)) + Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W));
 /** Put somewhere in the city (the tests' own way about: no walking). */
 const stand = (c: City, d: number, tile: number) => {
   if (d !== c.state.district) (c as unknown as { enter(d: number): void }).enter(d);
@@ -50,11 +58,13 @@ function fetch(c: City, k: number): CityEvent[] {
   const at = beside(c, sp.district, tiles);
   stand(c, sp.district, at);
   // (Turned to it: what's faced is what's searched.)
-  const to = tiles.find((i) => far(i, at) === 1)!;
+  const to = tiles.find((i) => far2(i, at) === 1)!;
   const dir = to === at - 1 ? 13 : to === at + 1 ? 5 : to === at - MAP_W ? 9 : 1;
   c.state.player.facing = dir;
   const all: CityEvent[] = [];
-  for (let k2 = 0; k2 < 60 && !c.searched(`${sp.prop}`); k2++) all.push(...press(c, k2 === 0 ? COP.ACT : 0));
+  // (Looked into before: a second look, at once.)
+  if (c.searched(`${sp.prop}`)) all.push(...press(c, COP.ACT));
+  else for (let k2 = 0; k2 < 60 && !c.searched(`${sp.prop}`); k2++) all.push(...press(c, k2 === 0 ? COP.ACT : 0));
   check(
     c.target()?.key === `${sp.prop}` || c.state.open === `${sp.prop}`,
     `seed ${c.state.seed}: ${THINGS[k]}'s furniture isn't what the button takes`,
@@ -110,7 +120,7 @@ const ids = (c: City) =>
     });
     const docks = c.districtOf(P.wayDistrict[1]);
     check(P.pier >= 0 && docks.rows[Math.floor(P.pier / MAP_W)][P.pier % MAP_W] === 'P', `${at}: no pier's end at the docks`);
-    pierWalk += far(P.pier, P.exits[1]);
+    pierWalk += far2(P.pier, P.exits[1]);
     // (Twice the same.)
     check(JSON.stringify(new City(seed).story) === JSON.stringify(P), `${at}: the story's places differ on a second making`);
   }
@@ -158,7 +168,17 @@ const ids = (c: City) =>
   check((s.scouted & 1) === 1 && ev.some((e) => e.type === 'say' && e.beat === 'scout1'), 'the hospital walked into is scouted');
   press(c, COP.CHOOSE, 1);
   check(s.way === 1 && s.act === 4, 'the helicopter chosen');
-  check(ids(c) === '·kit.beacon ·kit.avgas ·kit.flare ·begin1', `the fourth act: ${ids(c)}`);
+  check(ids(c) === '·key ·kit.beacon ·kit.avgas ·kit.flare ·begin1', `the fourth act: ${ids(c)}`);
+  // The flare gun is in the police armoury: looked at without the key, it stays there; with the key, a second look has it.
+  ev = fetch(c, THINGS.indexOf('flare'));
+  check(ev.some((e) => e.type === 'refused' && e.why === 'locked') && !(s.kit & thingBit('flare')), 'the armoury opened without its key');
+  check(
+    objectives(c).find((o) => o.id === 'kit.flare')?.at === undefined && !!objectives(c).find((o) => o.id === 'key')?.at,
+    'the list points at the flare gun before the key',
+  );
+  s.flags |= FLAG.KEY;
+  check(ids(c).startsWith('✓key') && !!objectives(c).find((o) => o.id === 'kit.flare')?.at, `with the key: ${ids(c)}`);
+  stand(c, c.story.wayDistrict[0], c.story.exits[0]);
   // Set going without its things: refused.
   check(c.target()?.kind === 'way', 'the way out is not what the button takes at its tile');
   check(
@@ -485,6 +505,231 @@ const ids = (c: City) =>
     `a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act with what its searched furniture held; ${bad.length} damaged stories start again with the city kept`,
   );
   check(new Set(BEATS).size === BEATS.length, 'a line of Dispatch named twice');
+}
+
+// ------------------------------------------------------------------ the survivors (C3b)
+{
+  const SEEDS = 60;
+  const where: Record<string, number> = {};
+  for (let seed = 1; seed <= SEEDS; seed++) {
+    const c = new City(seed);
+    const at = `seed ${seed}`;
+    c.story.people.forEach((p, k) => {
+      const who = PEOPLE[k];
+      const dist = c.districtOf(p.district);
+      const use = dist.lots[p.lot].use;
+      where[`${who.id} ${use}`] = (where[`${who.id} ${use}`] ?? 0) + 1;
+      check(who.uses.includes(use) && dist.lotAt[p.tile] === p.lot + 1, `${at}: the ${who.id} isn't in a building of theirs (${use})`);
+      check(
+        !c.story.things.some(
+          (t) =>
+            t.district === p.district &&
+            c.districtOf(t.district).props[t.prop].z * MAP_W + c.districtOf(t.district).props[t.prop].x === p.tile,
+        ),
+        `${at}: the ${who.id} stands on a thing`,
+      );
+      // Standing there, they cut nothing off: every tile walked to before still is.
+      const open = c.districtGrid(p.district);
+      const sp = dist.spawn.z * MAP_W + dist.spawn.x;
+      const before = reachFrom(sp, (i) => !open[i]);
+      const after = reachFrom(sp, (i) => !open[i] && i !== p.tile);
+      let lost = 0;
+      for (let i = 0; i < before.length; i++) if (before[i] && !after[i] && i !== p.tile) lost++;
+      check(lost === 0, `${at}: the ${who.id} cuts ${lost} tiles off`);
+    });
+  }
+  say(
+    `${SEEDS} cities: four survivors each in a building of theirs, on open floor, cutting nothing off (${Object.entries(where)
+      .map(([k, n]) => `${k} ${n}`)
+      .join(', ')})`,
+  );
+
+  const c = new City(3);
+  c.peace = true;
+  c.step(0);
+  const s = c.state;
+  const N = (id: string) => cityItemNumber(id);
+  const by = (k: number) => {
+    const p = c.story.people[k];
+    stand(c, p.district, p.tile + 1);
+    c.state.player.facing = nearestDir(-1, 0);
+    c.step(0);
+  };
+  // The fence: met, a word, then three bits of cloth for the armoury's key and two tins.
+  by(0);
+  check(c.target()?.kind === 'npc' && c.grid[c.story.people[0].tile] === 1, `beside the fence the button is ${c.target()?.kind}`);
+  let ev = press(c, COP.ACT);
+  check(s.met === 1 && ev.some((e) => e.type === 'talk' && e.what === 'met'), 'the fence met');
+  ev = press(c, COP.ACT);
+  check(ev.some((e) => e.type === 'talk' && e.what === 'chat') && !(s.flags & FLAG.KEY), 'an errand paid with nothing brought');
+  s.inv[0] = [N('cloth'), 4];
+  ev = press(c, COP.ACT);
+  check(
+    ev.some((e) => e.type === 'talk' && e.what === 'done') &&
+      (s.flags & FLAG.KEY) !== 0 &&
+      c.count(N('cloth')) === 1 &&
+      c.count(N('tin')) === 2 &&
+      s.errand[0] === 1,
+    `the fence's first errand: key ${s.flags & FLAG.KEY}, cloth ${c.count(N('cloth'))}, tins ${c.count(N('tin'))}`,
+  );
+  // His swaps: refused without the things, made with them, and only beside him.
+  ev = press(c, COP.TRADE, 1);
+  check(
+    ev.some((e) => e.type === 'refused' && e.why === 'noTrade'),
+    'a swap with nothing to give',
+  );
+  s.inv[3] = [N('scrap'), 2];
+  ev = press(c, COP.TRADE, 1);
+  check(ev.some((e) => e.type === 'traded') && c.count(N('scrap')) === 0 && c.count(N('nails')) === 1, 'two scrap for nails');
+  s.inv[3] = [N('scrap'), 2];
+  stand(
+    c,
+    c.story.people[0].district,
+    c.districtOf(c.story.people[0].district).spawn.z * MAP_W + c.districtOf(c.story.people[0].district).spawn.x,
+  );
+  press(c, COP.TRADE, 1);
+  check(c.count(N('scrap')) === 2, 'a swap from across the district');
+  // The nurse: her recipe unknown until her first errand; her second counts the dead put down since it was asked.
+  const medkit = CITY_RECIPES.findIndex((r) => r.makes === 'medkit');
+  check(c.canMake(medkit) === 'unknown', 'the medkit known before the nurse shows it');
+  ev = press(c, COP.MAKE, medkit);
+  check(
+    ev.some((e) => e.type === 'cantMake' && e.why === 'unknown'),
+    'the medkit made unknown',
+  );
+  by(1);
+  press(c, COP.ACT);
+  s.inv[4] = [N('bottle'), 2];
+  press(c, COP.ACT);
+  check(s.errand[1] === 1 && c.canMake(medkit) !== 'unknown' && c.count(N('bandage')) === 2, "the nurse's first errand teaches the medkit");
+  s.kills += 9;
+  press(c, COP.ACT);
+  check(s.errand[1] === 1, 'nine put down pays for ten');
+  s.kills += 1;
+  press(c, COP.ACT);
+  check(s.errand[1] === 2 && c.count(N('pills')) === 3, 'ten put down since it was asked');
+  ev = press(c, COP.ACT);
+  check(
+    ev.some((e) => e.type === 'talk' && e.what === 'chat'),
+    'a third errand',
+  );
+  // A save carries them; nonsense in them starts the story again.
+  const again = loadCity(JSON.parse(JSON.stringify(c.snapshot())))!;
+  check(
+    again.state.met === 3 && again.state.errand.join() === '1,2,0,0' && (again.state.flags & FLAG.KEY) !== 0,
+    'a save loses the survivors',
+  );
+  const bad = JSON.parse(JSON.stringify(c.snapshot()));
+  bad.state.errand = [3, 0, 0, 0];
+  check(loadCity(bad)!.state.met === 0, 'an errand past its last is kept');
+  // None of the dead are put down in a building one of them holds.
+  c.peace = false;
+  by(1);
+  s.step = ((2 - 1) * 1440 + 23 * 60 - START_MINUTE) * MIN;
+  let inside = 0;
+  for (let k = 0; k < 40; k++) {
+    populate(c);
+    inside += s.zeds.filter((z) =>
+      c.safeLots.has(c.district.lotAt[Math.floor(z.body.z / 1024) * MAP_W + Math.floor(z.body.x / 1024)] - 1),
+    ).length;
+  }
+  check(inside === 0, `${inside} of the dead put down in the nurse's building`);
+  say(
+    `the survivors: met, then an errand each in turn (things brought, or the dead put down since it was asked); the fence's first pays the armoury's key, the others' teach a recipe; swaps only beside them and only with the things; none of the dead put down in their buildings; a save carries them`,
+  );
+}
+
+// ------------------------------------------------------------------ runners and brutes (C3b)
+{
+  const c = new City(4);
+  c.step(0);
+  const s = c.state;
+  const far = [0, 1, 2, 3, 4, 5, 6, 7, 8].find((d) => danger(c, d) >= BRUTE.danger)!;
+  stand(c, far, c.districtOf(far).spawn.z * MAP_W + c.districtOf(far).spawn.x);
+  const census = (night: number) => {
+    s.step = ((night - 1) * 1440 + 23 * 60 - START_MINUTE) * MIN;
+    let runners = 0;
+    let brutes = 0;
+    let most = 0;
+    for (let k = 0; k < 30; k++) {
+      populate(c);
+      runners += s.zeds.filter((z) => z.kind === ZKIND.RUNNER).length;
+      const b = s.zeds.filter((z) => z.kind === ZKIND.BRUTE).length;
+      brutes += b;
+      most = Math.max(most, b);
+    }
+    return { runners, brutes, most, all: 30 };
+  };
+  const n2 = census(2);
+  const n3 = census(RUNNER.fromNight);
+  const n5 = census(BRUTE.fromNight);
+  check(n2.runners === 0 && n2.brutes === 0, `night 2: ${n2.runners} runners, ${n2.brutes} brutes`);
+  check(n3.runners > 0 && n3.brutes === 0, `night 3: ${n3.runners} runners, ${n3.brutes} brutes`);
+  check(
+    n5.brutes === 30 && n5.most === 1 && n5.runners > 0,
+    `night 5: ${n5.brutes} brutes in 30 nights (${n5.most} at once), ${n5.runners} runners`,
+  );
+  s.step = ((5 - 1) * 1440 + 12 * 60 - START_MINUTE) * MIN;
+  populate(c);
+  check(!s.zeds.some((z) => z.kind), 'runners or brutes by day');
+  // A brute at a barred door pounds it open; a shambler stands there all night.
+  const lot = c.district.lots.findIndex((l, k) => l.doors.length === 1 && c.zedPlaces.indoors.some((i) => c.district.lotAt[i] === k + 1));
+  const door = c.district.lots[lot].doors[0];
+  const inTile = c.zedPlaces.indoors.filter((i) => c.district.lotAt[i] === lot + 1).sort((a, b) => far2(a, door) - far2(b, door))[0];
+  const out = [door - 1, door + 1, door - MAP_W, door + MAP_W].find((i) => !c.grid[i] && c.district.lotAt[i] !== lot + 1)!;
+  const siege = (kind: number) => {
+    s.step = ((5 - 1) * 1440 + 23 * 60 - START_MINUTE) * MIN;
+    s.bars[far] = [door];
+    c.rebar();
+    stand(c, far, inTile);
+    s.zeds = [
+      {
+        body: xz(out),
+        hp: 90,
+        mode: ZED.CHASE,
+        goal: -1,
+        path: [],
+        seen: s.step,
+        last: inTile,
+        bit: -9999,
+        reel: 0,
+        near: 0,
+        pace: 1000,
+        ...(kind ? { kind } : {}),
+      },
+    ];
+    for (let k = 0; k < BRUTE.pound * 4; k++) {
+      s.health = 100;
+      if (s.zeds[0]) s.zeds[0].seen = s.step;
+      s.zeds.length = Math.min(1, s.zeds.length);
+      c.step(0);
+      if (c.events.some((e) => e.type === 'breach')) return k;
+    }
+    return -1;
+  };
+  const shambler = siege(0);
+  const brute = siege(ZKIND.BRUTE);
+  check(shambler < 0, 'a shambler broke a barred door');
+  check(brute >= BRUTE.pound - 1, `a brute at a barred door: ${brute} steps`);
+  say(
+    `runners from night ${RUNNER.fromNight} and one brute from night ${BRUTE.fromNight} where the danger is ${BRUTE.danger} or more, at night only; a brute pounds a barred door open in ${BRUTE.pound} steps, a shambler never`,
+  );
+}
+
+// ------------------------------------------------------------------ the records (C3b)
+{
+  const none: CityRecord = { v: 1, wins: [0, 0, 0], best: 0, feats: [] };
+  const a = withRun(none, { way: 2, day: 9, hardcore: false, deaths: 2, kills: 12, notes: 4, errands: 3 });
+  check(a.fresh.join() === 'boat' && a.record.wins.join() === '0,1,0' && a.record.best === 9, `a first way out: ${a.fresh.join()}`);
+  const b = withRun(a.record, { way: 1, day: 5, hardcore: true, deaths: 0, kills: 44, notes: 10, errands: 8 });
+  check(b.fresh.join() === 'heli,hardcore,swift,reader,friend,clean,hunter' && b.record.best === 5, `a second: ${b.fresh.join()}`);
+  const d = withRun(b.record, { way: 3, day: 20, hardcore: false, deaths: 1, kills: 0, notes: 0, errands: 0 });
+  check(d.fresh.join() === 'metro,three' && d.record.feats.length === 10 && d.record.best === 5, `a third: ${d.fresh.join()}`);
+  check(
+    withRun(d.record, { way: 3, day: 2, hardcore: true, deaths: 0, kills: 99, notes: 10, errands: 8 }).fresh.length === 0,
+    'a feat had twice',
+  );
+  say('the records: a way out counted, the quickest kept, ten feats each had once');
 }
 
 // ------------------------------------------------------------------ a bot to each way out
