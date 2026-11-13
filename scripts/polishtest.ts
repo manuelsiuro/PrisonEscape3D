@@ -38,12 +38,13 @@ check(!unlinked.length, `How to play leads to every lesson (not: ${unlinked.join
 console.log(`${LESSONS.length} lessons, each linked from How to play`);
 
 // ------------------------------------------------------------------ the pictures
-const shots = readFileSync('scripts/dev/helpshot.ts', 'utf8');
+// (The prisons' in helpshot.ts; City Escape's, staged in a city under way, in cityshot.ts.)
+const shots = readFileSync('scripts/dev/helpshot.ts', 'utf8') + readFileSync('scripts/dev/cityshot.ts', 'utf8');
 const pictured = ALL_TOPICS.filter((t) => t.pic);
 // (The manhunt's is played outside, where helpshot's scenes don't go: taken by hand, from __manhunt() in the dev build.)
 const BY_HAND = new Set(['manhunt']);
 const noRecipe = pictured.filter((t) => !BY_HAND.has(t.id) && !new RegExp(`^\\s+'?${t.id}'?: \\{`, 'm').test(shots)).map((t) => t.id);
-check(!noRecipe.length, `every picture can be retaken: a SHOTS entry in helpshot.ts (not: ${noRecipe.join(', ')})`);
+check(!noRecipe.length, `every picture can be retaken: a SHOTS entry in helpshot.ts or cityshot.ts (not: ${noRecipe.join(', ')})`);
 console.log(`${pictured.length} pictures, each with its recipe`);
 
 // ------------------------------------------------------------------ rule changes
