@@ -56,7 +56,6 @@ export async function showNewCity(click: () => void): Promise<number | null> {
         <button class="city-mode" data-c="mode" data-pick="${MODE.SURVIVOR}" aria-pressed="true">${icon('heart', 20)}<b>${t('city.mode.survivor')}</b><small>${t('city.mode.survivorSub')}</small></button>
         <button class="city-mode" data-c="mode" data-pick="${MODE.HARDCORE}" aria-pressed="false">${icon('flame', 20)}<b>${t('city.mode.hardcore')}</b><small>${t('city.mode.hardcoreSub')}</small></button>
       </div>
-      <p class="card-note city-preview">${icon('wrench', 14)}${t('city.preview')}</p>
       <div class="actions">
         <button class="big-btn ghost" data-c="back">${icon('chevronLeft', 18)}${t('city.new.back')}</button>
         <button class="big-btn ghost" data-c="feats">${icon('trophy', 18)}${t('city.feats.title')}</button>
@@ -316,7 +315,7 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
     `<div class="card city-journal">
       <h2>${icon('book', 20)}${t('city.journal.title')}<small>${t('city.act.n', { n: s.act })} · ${t(`city.act.${s.act}` as Key)}</small></h2>
       <div class="cj-body">
-        <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit')}: ${kit.join(', ')}</p>` : ''}</section>
+        <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit', { what: kit.join(', ') })}</p>` : ''}</section>
         ${ways}
         ${people}
         <section><h3>${icon('megaphone', 16)}${t('city.journal.radio')}</h3>${radio}</section>

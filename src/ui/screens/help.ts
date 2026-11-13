@@ -10,6 +10,7 @@ import { withKeys } from '../../i18n/keys';
 import { itemIcons } from '../../render/itemIcons';
 import { esc, h, TOUCH } from '../dom';
 import { icon } from '../icons';
+import { cityOn } from '../../city/save';
 import { HELP, POCKET_SAMPLE, topicById, type HelpTab, type HelpTopic } from './helpTopics';
 import { medalDisc } from './trophies';
 import { pad2 } from '../../sim/systems/clock';
@@ -24,7 +25,8 @@ import { BTN, btnLabel, type PadKind } from '../../input/pad';
  * card and H. Resolves when closed: with a lesson to play when one was picked (offered only
  * where `lessons` is set, the title's: in a game it would end the game).
  */
-const TABS: HelpTab[] = ['basics', 'life', 'escape', 'controls'];
+/** (City Escape's tab shows where the mode does: `cityOn`.) */
+const TABS: HelpTab[] = (['basics', 'life', 'escape', 'city', 'controls'] as HelpTab[]).filter((k) => k !== 'city' || cityOn());
 
 /** The keys, in groups (read when shown: the language and the keyboard's labels may change). */
 const keys = (): Array<[string, Array<[string, Key]>]> => [

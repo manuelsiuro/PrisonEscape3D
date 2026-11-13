@@ -5,7 +5,7 @@ import { buzz } from '../../app/haptics';
 import { banner, click, controls, hint, settings, sleepVeil, sound, view } from '../../play/context';
 import { play, tickPlayClock, type SideRun } from '../../play/game';
 import { inPlace } from '../../play/lazy';
-import { settingsChanged } from '../../play/tips';
+import { coachOnce, seenTip, settingsChanged } from '../../play/tips';
 import { emptyFrame, type Frame } from '../../render/viewFrame';
 import { Autopilot } from '../../sim/ai/autopilot';
 import { command, headingAngle } from '../../sim/command';
@@ -132,7 +132,11 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     sound.setForest(false);
     hideLoading();
     save(r);
-    if (fresh) void under(r, () => showCityIntro(click)).then(() => arrive(r));
+    if (fresh)
+      void under(r, () => showCityIntro(click)).then(() => {
+        arrive(r);
+        tip('city.search', 'city.tip.search');
+      });
     else arrive(r);
   });
 }
@@ -216,6 +220,16 @@ async function openJournal() {
   if (way && play.side === r) r.ops.push([COP.CHOOSE, way]);
 }
 
+/** One tip at a time: a second within eight seconds waits for its next occasion (it isn't spent). */
+let tipped = -1e9;
+let crackled = -1e9;
+const now = () => performance.now();
+function tip(name: string, key: Key) {
+  if (seenTip(name) || now() - tipped < 8000) return;
+  tipped = now();
+  coachOnce(name, key);
+}
+
 /** A survivor's card: what they say, their errand, their swaps (each a command; the card comes back after it). */
 async function talk(r: CityRun, who: number, what: 'met' | 'done' | 'chat') {
   if (r.paused) return;
@@ -245,7 +259,7 @@ async function pauseCity() {
       const place = `${t('city.title')} · ${c.plan.names[c.state.district]} · ${t('city.hud.day', { n: c.day })}`;
       const choice = await showPause(click, r.saved, false, '', false, place);
       if (choice === 'settings') await showSettings(settings, settingsChanged, click);
-      else if (choice === 'help') await showHelp(click, {});
+      else if (choice === 'help') await showHelp(click, { tab: 'city' });
       else if (choice === 'quit') return stopCity();
       else return;
     }
@@ -318,7 +332,7 @@ function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
   } else if (code === 'KeyJ') {
     e.preventDefault();
     void openJournal();
-  } else if (code === 'KeyH') void under(r, () => showHelp(click, {}));
+  } else if (code === 'KeyH') void under(r, () => showHelp(click, { tab: 'city' }));
 }
 
 /** A tap on the ground: walk there (the nearest open tile where the spot itself is taken). */
@@ -387,6 +401,7 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
   view.draw(f, dt, now / 1000);
+  cityView.facePeople(f.x, f.z);
   cityHud.update(hudOf(r));
   pockets.update(pocketsOf(r));
   sleepVeil.classList.toggle('on', c.state.sleeping);
@@ -404,6 +419,10 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'took':
       sound.pickup();
+      // (The first things in the pockets: what to do with them.)
+      if (cityItem(e.item)?.use) tip('city.eat', 'city.tip.eat');
+      else if (cityItem(e.item)?.attack) tip('city.weapon', 'city.tip.weapon');
+      else if (cityItem(e.item)?.id === 'plank' || cityItem(e.item)?.id === 'nails') tip('city.boards', 'city.tip.boards');
       break;
     case 'stored':
     case 'dropped':
@@ -439,8 +458,16 @@ function cityEvent(r: CityRun, e: CityEvent) {
         save(r);
       }
       break;
-    case 'spotted':
-      sound.grunt();
+    case 'spotted': {
+      const kind = c.state.zeds[e.zed]?.kind ?? 0;
+      if (kind === 2) sound.roar();
+      else if (kind === 1) sound.screech();
+      else sound.moan();
+      tip('city.spotted', 'city.tip.spotted');
+      break;
+    }
+    case 'pound':
+      sound.pound();
       break;
     case 'bite':
       sound.slap();
@@ -455,6 +482,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (e.dead) sound.dud();
       break;
     case 'dusk':
+      tip('city.dusk', 'city.tip.dusk');
       banner.show(t('city.dusk.title'), t(e.soon > 60 ? 'city.dusk.two' : 'city.dusk.half'), 'alarm', 5200);
       sound.chime();
       break;
@@ -510,6 +538,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       banner.toast(t('city.toast.traded', { what: itemName(e.item) }), 'good', 2200);
       break;
     case 'found':
+      if (e.thing === 0) tip('city.journal', 'city.tip.journal');
       sound.chime();
       banner.toast(t('city.toast.found', { what: t(`city.kit.${THINGS[e.thing]}` as Key) }), 'good', 3200);
       save(r);
@@ -523,6 +552,9 @@ function cityEvent(r: CityRun, e: CityEvent) {
       banner.toast(t('city.toast.fixed'), 'good', 3600);
       break;
     case 'say':
+      // (Two or three lines in a step: one crackle.)
+      if (now() - crackled > 400) sound.crackle();
+      crackled = now();
       cityHud.say(t(`city.say.${e.beat}` as Key));
       break;
     case 'act':
@@ -762,7 +794,14 @@ function hudOf(r: CityRun): CityHudState {
 }
 
 // (Dev builds: the city under way, for the browser checks, as `__game()` is the prisons'.)
-if (import.meta.env.DEV) (window as unknown as { __city: () => CityRun | null }).__city = run;
+if (import.meta.env.DEV) {
+  (window as unknown as { __city: () => CityRun | null }).__city = run;
+  // (A district changed by hand, the tests' way about: put up again.)
+  (window as unknown as { __cityStage: () => void }).__cityStage = () => {
+    const r = run();
+    if (r) stage(r);
+  };
+}
 
 // A hidden page pauses the city and saves it (phones switching apps); the tab closing: one last save.
 document.addEventListener('visibilitychange', () => {

@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { disposeTree } from '../../render/batch';
 import { box, cyl, kitMaterial, merge, rod, type Part } from '../../render/kit';
+import { WALL_H } from '../../render/WorldView';
 import { mix32 } from '../../sim/rng';
+import { DISTRICTS } from '../content/districts';
 import { MAP_H, MAP_W } from '../../sim/world/grid';
 import { DECO, type District } from '../gen/district';
 import { MAP_H as H, MAP_W as W } from '../../sim/world/grid';
@@ -222,8 +224,93 @@ function deadBody(): THREE.BufferGeometry {
   ];
   return merge(parts);
 }
-/** The survivors' colours (the fence, the nurse, the mechanic, the ranger). */
-const FOLK = [0xf2a03a, 0x6fd0c4, 0x5a8ee0, 0x7fc46a];
+/**
+ * A survivor (C4): one of the living, standing straight, arms at their sides, dressed for what they are:
+ * the fence in the bus's orange with a wool cap, the nurse in teal scrubs and a white cap with its cross,
+ * the mechanic in blue overalls and a peaked cap, the ranger in a green jacket and a brimmed hat.
+ */
+function folk(who: number): Part[] {
+  const SKINS = [0xc98f6a, 0x8a5a3c, 0xe2b48c, 0xd6a878];
+  const skin = SKINS[who % SKINS.length];
+  const cloth = [0xe8762a, 0x4fb8ae, 0x3f6fc0, 0x5f8f4a][who % 4];
+  const legs = [0xc9601e, 0x3f948c, 0x2f528e, 0x5a4a36][who % 4];
+  const parts = [
+    box(0.16, 0.46, 0.18, legs, -0.11, 0, 0),
+    box(0.16, 0.46, 0.18, legs, 0.11, 0, 0),
+    box(0.46, 0.5, 0.26, cloth, 0, 0.46, 0),
+    box(0.12, 0.44, 0.14, cloth, -0.29, 0.5, 0),
+    box(0.12, 0.44, 0.14, cloth, 0.29, 0.5, 0),
+    box(0.12, 0.1, 0.14, skin, -0.29, 0.4, 0),
+    box(0.12, 0.1, 0.14, skin, 0.29, 0.4, 0),
+    box(0.36, 0.34, 0.34, skin, 0, 0.98, 0.02),
+    box(0.07, 0.06, 0.02, 0x241a14, -0.09, 1.14, 0.2),
+    box(0.07, 0.06, 0.02, 0x241a14, 0.09, 1.14, 0.2),
+    box(0.12, 0.03, 0.02, 0x6a3a2a, 0, 1.05, 0.2),
+  ];
+  if (who % 4 === 0) parts.push(box(0.4, 0.14, 0.38, 0x2c3440, 0, 1.3, 0.01), box(0.2, 0.05, 0.02, 0xf4f1ea, 0, 0.78, 0.14));
+  else if (who % 4 === 1)
+    parts.push(
+      box(0.38, 0.1, 0.36, 0xf4f1ea, 0, 1.3, 0.01),
+      box(0.12, 0.04, 0.02, 0xc24a3a, 0, 1.33, 0.2),
+      box(0.04, 0.09, 0.02, 0xc24a3a, 0, 1.305, 0.2),
+      box(0.3, 0.3, 0.02, 0xf4f1ea, 0, 0.5, 0.14),
+    );
+  else if (who % 4 === 2)
+    parts.push(
+      box(0.38, 0.09, 0.36, 0x2f528e, 0, 1.3, 0.01),
+      box(0.3, 0.03, 0.16, 0x24406e, 0, 1.3, 0.24),
+      box(0.1, 0.5, 0.02, 0x24406e, -0.12, 0.46, 0.14),
+      box(0.1, 0.5, 0.02, 0x24406e, 0.12, 0.46, 0.14),
+    );
+  else
+    parts.push(
+      box(0.56, 0.03, 0.54, 0x6a5236, 0, 1.3, 0.01),
+      box(0.34, 0.12, 0.32, 0x6a5236, 0, 1.32, 0.01),
+      box(0.1, 0.1, 0.02, 0xd8b04a, -0.12, 0.8, 0.14),
+    );
+  return parts;
+}
+
+/** An awning over a street door, in the colour of what the building is (C4): the city read from above. A landmark's is wider, with a white band. */
+function awning(color: number, big: boolean): Part[] {
+  const w = big ? 1.5 : 0.96;
+  const out = [box(w, 0.06, 0.62, color, 0, WALL_H - 0.34, 0.2), box(w, 0.2, 0.05, color, 0, WALL_H - 0.5, 0.5)];
+  if (big) out.push(box(w, 0.07, 0.16, 0xf4f1ea, 0, WALL_H - 0.335, 0.28));
+  return out;
+}
+const AWNINGS: Partial<Record<string, number>> = {
+  house: 0x9a7a58,
+  shop: 0x3f8f88,
+  office: 0x5f7298,
+  warehouse: 0x6d655a,
+  clinic: 0xd9e2e6,
+  garage: 0x7a7264,
+  station: 0xe0913a,
+  tower: 0x8fa4d8,
+  factory: 0xa06a3c,
+  hospital: 0xf0f2f2,
+  boathouse: 0x4fa0c8,
+  rangers: 0x6fb45a,
+  mall: 0x48c0b4,
+  police: 0x4a6ed0,
+  metro: 0xd6b83a,
+};
+
+/** Weeds through the paving, litter on the road (C4): never in the way. */
+function weeds(h: number): Part[] {
+  const g = [0x4f7a3a, 0x5f8a44, 0x6a7a3a][(h >> 3) % 3];
+  const out = [
+    box(0.06, 0.2 + ((h >> 5) & 3) * 0.05, 0.06, g, -0.2, 0, 0.12),
+    box(0.05, 0.16, 0.05, g, 0.1, 0, -0.18),
+    box(0.07, 0.26, 0.05, g, 0.24, 0, 0.2),
+  ];
+  if (h & 64) out.push(box(0.05, 0.3, 0.05, 0x7a8a3a, -0.05, 0, -0.02));
+  return out;
+}
+function litter(h: number): Part[] {
+  const c = [0xd8d2c0, 0xb8b0a0, 0xc9b79a][(h >> 3) % 3];
+  return [box(0.26, 0.012, 0.18, c, -0.14, 0.004, 0.1), box(0.16, 0.012, 0.22, 0xa8a090, 0.2, 0.004, -0.16)];
+}
 const TINTS = [0xb9c2c9, 0xa9b89a, 0xc9b79a, 0x9aa9c2, 0xc29a9a, 0xb0a6c4, 0x8f9a8a];
 
 export class CityView {
@@ -260,28 +347,31 @@ export class CityView {
     );
     this.glow.renderOrder = 0.4;
     this.glow.visible = false;
-    this.folk = new THREE.InstancedMesh(deadBody(), kitMaterial, 4);
-    this.folk.castShadow = true;
-    this.folk.count = 0;
-    this.folk.frustumCulled = false;
     this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk);
   }
 
   /** The survivors in this district: the dead's own body, standing straight in the colours of the living. */
-  private readonly folk: THREE.InstancedMesh;
+  private readonly folk = new THREE.Group();
   setPeople(list: ReadonlyArray<{ who: number; tile: number }>, facing: (tile: number) => number) {
-    list.forEach((p, k) => {
-      this.e.set(0, facing(p.tile), 0, 'YXZ');
-      this.q.setFromEuler(this.e);
-      this.at.set((p.tile % W) + 0.5, 0, Math.floor(p.tile / W) + 0.5);
-      this.size.setScalar(1.3);
-      this.m.compose(this.at, this.q, this.size);
-      this.folk.setMatrixAt(k, this.m);
-      this.folk.setColorAt(k, this.tint.set(FOLK[p.who % FOLK.length]));
-    });
-    this.folk.count = list.length;
-    this.folk.instanceMatrix.needsUpdate = true;
-    if (this.folk.instanceColor) this.folk.instanceColor.needsUpdate = true;
+    disposeTree(this.folk, () => false, new Set([kitMaterial]));
+    this.folk.clear();
+    for (const p of list) {
+      const mesh = new THREE.Mesh(merge(folk(p.who)), kitMaterial);
+      mesh.castShadow = true;
+      mesh.scale.setScalar(1.3);
+      mesh.position.set((p.tile % W) + 0.5, 0, Math.floor(p.tile / W) + 0.5);
+      mesh.rotation.y = facing(p.tile);
+      this.folk.add(mesh);
+    }
+  }
+
+  /** A survivor turns to the player when they come near (within four tiles). */
+  facePeople(x: number, z: number) {
+    for (const m of this.folk.children) {
+      const dx = x - m.position.x;
+      const dz = z - m.position.z;
+      if (dx * dx + dz * dz < 16 && dx * dx + dz * dz > 0.04) m.rotation.y = Math.atan2(dx, dz);
+    }
   }
 
   /** Where the story points in this district: a lit diamond turning over each tile, a ring on the floor under it. */
@@ -424,6 +514,35 @@ export class CityView {
           break;
       }
     }
+    // (C4) What time did to it: weeds through the paving and litter on the roads, one tile in nine or so; an awning over every street door.
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (district.deco[i]) continue;
+      const ch = district.rows[Math.floor(i / MAP_W)][i % MAP_W];
+      if (ch !== 'a' && ch !== ',') continue;
+      const h = mix32(plan.seed ^ Math.imul(i + 77 + district.index * 8192, 0x85ebca6b));
+      if ((h & 255) > (ch === 'a' ? 34 : 16)) continue;
+      put(parts, ch === 'a' ? weeds(h) : litter(h), (i % MAP_W) + 0.5, Math.floor(i / MAP_W) + 0.5, ((h >> 9) & 7) * (Math.PI / 4));
+    }
+    const landmark = DISTRICTS[district.kind].landmark;
+    district.lots.forEach((l, k) => {
+      const color = AWNINGS[l.use];
+      if (color === undefined) return;
+      for (const door of l.doors) {
+        // (Out over the street: the side of the door that isn't the building's.)
+        const out = [
+          [0, 1],
+          [0, -1],
+          [1, 0],
+          [-1, 0],
+        ].find(([dx, dz]) => {
+          const t = door + dz * MAP_W + dx;
+          const c = district.rows[Math.floor(t / MAP_W)]?.[t % MAP_W];
+          return district.lotAt[t] !== k + 1 || c === 'a' || c === ',';
+        });
+        if (!out) continue;
+        put(parts, awning(color, l.use === landmark), (door % MAP_W) + 0.5, Math.floor(door / MAP_W) + 0.5, Math.atan2(out[0], out[1]));
+      }
+    });
     beyond(
       plan,
       district.index,
@@ -459,6 +578,7 @@ export class CityView {
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();
     this.marks.clear();
-    this.folk.count = 0;
+    disposeTree(this.folk, () => false, new Set([kitMaterial]));
+    this.folk.clear();
   }
 }

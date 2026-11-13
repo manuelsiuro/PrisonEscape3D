@@ -363,6 +363,7 @@ export function stepDead(c: City) {
     if (b.x === bx && b.z === bz) {
       if (brute && c.bars.includes(next)) {
         z.pound = (z.pound ?? 0) + 1;
+        if (z.pound % 16 === 1) c.events.push({ type: 'pound', tile: next });
         // (At the boards, it knows where they went: the chase isn't given up while it pounds.)
         z.seen = s.step;
         if (z.pound >= BRUTE.pound) {

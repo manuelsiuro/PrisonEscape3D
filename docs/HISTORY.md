@@ -209,3 +209,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape, stage 1: the city generated, walked and mapped (v2.46.0)
 - City Escape, survival: scavenging, the dead, shelters and making (v2.47.0)
 - City Escape, the story and the ways out (v2.48.0)
+- City Escape, the finish: shown to everyone (v2.49.0, not released yet)
