@@ -352,6 +352,9 @@ export function padFrame(now: number) {
     controls.padStick = f.left;
     if (f.right.y) view.zoomBy(Math.exp(-f.right.y * 1.6 * dt));
     if (pressed(BTN.A)) tap(act('act'));
+    if (pressed(BTN.X) || pressed(BTN.RT)) tap(act('use'));
+    // (B shuts what's open, as in the prisons; with nothing open it does nothing: Menu pauses.)
+    if (pressed(BTN.B) && document.querySelector('.city-thing:not(.hidden), .city-box:not(.hidden)')) tap('Escape');
     if (pressed(BTN.MENU)) tap('Escape');
     if (pressed(BTN.VIEW)) tap('KeyM');
     return;

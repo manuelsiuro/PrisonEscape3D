@@ -1,0 +1,9 @@
+the start's district (danger 0): day 1 noon: 3 indoors + 0 in the streets; day 1 night: 1 indoors + 5 in the streets; day 4 noon: 6 indoors + 0 in the streets; day 4 night: 3 indoors + 9 in the streets; day 9 night: 5 indoors + 17 in the streets
+danger by district: market 2, precinct 2, docks 3, metro 3, downtown 1, park 1, hospital 3, industrial 1, suburbs 0
+sight, with a clear line: six tiles by day, four at night, two for a sleeper; never through a wall
+one in reach lunges 9 steps, then bites (8 health) every 24; walked away from, it falls behind (2.6 tiles to 5.1 in two seconds)
+the blow: 5 with fists to put one down, 2 with a bat; one alone, struck as it comes, lands no bite; the noise carries 7 tiles
+bodies: the player does not walk through one of the dead, and a pack along a street stays in file
+a night at the start: 3 by day, 6 by 03:00 (the night's 6), one more every 20 minutes
+dawn: 4 in the streets at 05:00, 2 by 06:30
+a bot's first 18 hours, 3 put down, 6 about at the end: 076b2795; saved half way, the same; damaged dead put down afresh

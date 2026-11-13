@@ -11,6 +11,9 @@
   --city-amber-83-rgb: 242, 194, 48;
   --city-wall-55: #b8443a;
   --city-moon-86: #c4d4f0;
+  --city-home-86: #6ff0a8;
+  --city-health-70: #ff6b6b;
+  --city-energy-80: #7fc8ff;
   --city-you-65: #ff5a4a;
   --city-you-65-rgb: 255, 90, 74;
 }
@@ -319,5 +322,344 @@
     width: 88px;
     height: 88px;
     top: calc(max(8px, env(safe-area-inset-top)) + 52px);
+  }
+}
+
+/* ------------------------------------------------------------ survival (2.47) */
+/* Health, hunger and energy: three short bars under the HUD's row. */
+.city-meters {
+  gap: 8px;
+}
+
+.city-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 999px;
+  background: rgba(var(--city-night-26-rgb), 0.78);
+}
+
+.city-meter > i {
+  display: block;
+  width: 62px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(var(--white-rgb), 0.16);
+  overflow: hidden;
+}
+
+.city-meter > i > i {
+  display: block;
+  width: var(--v, 100%);
+  height: 100%;
+  border-radius: 4px;
+  background: currentcolor;
+  transition: width 0.4s;
+}
+
+.cm-health {
+  color: var(--city-health-70);
+}
+
+.cm-hunger {
+  color: var(--city-amber-83);
+}
+
+.cm-energy {
+  color: var(--city-energy-80);
+}
+
+.city-meter.low {
+  animation: city-low 1s ease-in-out infinite;
+}
+
+@keyframes city-low {
+  50% {
+    background: rgba(var(--city-you-65-rgb), 0.55);
+  }
+}
+
+/* How many of a thing a pocket holds. */
+.slot-n {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font: 800 12px/1 var(--font-ui);
+  font-style: normal;
+  color: var(--white);
+  text-shadow: 0 1px 2px var(--city-night-17);
+}
+
+.city-pockets .slot:disabled {
+  cursor: default;
+}
+
+/* The open box, and a thing's card over the pockets. */
+.city-box {
+  top: calc(max(12px, env(safe-area-inset-top)) + 206px);
+}
+
+.city-box .icon-btn {
+  width: 34px;
+  height: 34px;
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.12);
+  box-shadow: none;
+}
+
+.city-box .box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font: 800 16px var(--font-ui);
+}
+
+.city-box .ct-actions,
+.city-thing .ct-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.city-thing {
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 76px);
+  width: min(340px, calc(100vw - 24px));
+  transform: translateX(-50%);
+  animation: none;
+}
+
+.city-thing .ct-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.city-thing .ct-head small {
+  display: block;
+  opacity: 0.8;
+}
+
+.city-thing .big-btn,
+.city-box .big-btn {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* A first search: the action button fills round as it goes. */
+.city-act.cutting .act-round {
+  background: conic-gradient(var(--ok) calc(var(--cut, 0) * 360deg), var(--orange-2) 0);
+}
+
+.city-over-line {
+  font-weight: 700;
+  color: var(--city-amber-83);
+}
+
+@media (max-width: 620px) {
+  .city-meter > i {
+    width: 44px;
+  }
+
+  /* (Under the HUD, not the prisons' bottom sheet: the pockets and a thing's card are below.) */
+  .city-box {
+    top: calc(max(12px, env(safe-area-inset-top)) + 172px);
+    bottom: auto;
+    max-height: 40vh;
+  }
+
+  /* (Clear of the action button.) */
+  .city-thing {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 168px);
+  }
+}
+
+/* A phone turned: the box beside the play, under the corner map. */
+@media (max-height: 480px) {
+  .city-box {
+    top: calc(max(8px, env(safe-area-inset-top)) + 146px);
+    bottom: auto;
+    left: auto;
+    width: min(300px, 44vw);
+    max-height: calc(100vh - 160px);
+  }
+
+  .city-thing {
+    top: auto;
+    left: 34%;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 66px);
+    padding: 10px 12px;
+  }
+}
+
+/* ------------------------------------------------------------ the dead (2.47) */
+.city-chased {
+  color: var(--white);
+  background: rgba(var(--city-you-65-rgb), 0.85);
+}
+
+/* A bite: the screen's edges flash red. */
+.city-bitten {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 120px 30px rgba(var(--city-you-65-rgb), 0.75);
+}
+
+.city-bitten.on {
+  animation: city-bite 0.5s ease-out;
+}
+
+@keyframes city-bite {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* The blow's button, over the action button. */
+.city-hit {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
+}
+
+/* A phone turned: beside the action button, not over it (there's no height for two). */
+@media (max-height: 480px) {
+  .city-hit {
+    right: calc(max(16px, env(safe-area-inset-right)) + 92px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 62px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-bitten.on {
+    animation-duration: 0.01s;
+  }
+}
+
+/* ------------------------------------------------------------ shelters and making (2.47) */
+/* The Make panel: a row a recipe (what's made, its name, what it takes). */
+.city-make {
+  top: calc(max(12px, env(safe-area-inset-top)) + 206px);
+  width: min(400px, calc(100vw - 32px));
+}
+
+.city-make .box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font: 800 16px var(--font-ui);
+}
+
+.city-make .box-head b {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.city-make .icon-btn {
+  width: 34px;
+  height: 34px;
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.12);
+  box-shadow: none;
+}
+
+.city-recipes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.city-recipe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 14px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: rgba(var(--white-rgb), 0.08);
+  cursor: pointer;
+}
+
+.city-recipe .slot {
+  --s: 38px;
+}
+
+.city-recipe.cant {
+  opacity: 0.62;
+}
+
+.city-recipe .cr-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.city-recipe .cr-text small {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.city-recipe .cr-text small.lack {
+  color: var(--city-amber-83);
+  opacity: 1;
+}
+
+.city-recipe .cr-parts {
+  display: flex;
+  gap: 4px;
+}
+
+.city-recipe .slot.short {
+  box-shadow: inset 0 0 0 2px var(--city-you-65);
+}
+
+.city-recipe .slot.short img {
+  opacity: 0.45;
+}
+
+.city-map-legend .lg-home {
+  background: var(--city-home-86);
+  clip-path: polygon(50% 0, 100% 50%, 85% 50%, 85% 100%, 15% 100%, 15% 50%, 0 50%);
+}
+
+@media (max-width: 620px) {
+  .city-make {
+    top: calc(max(12px, env(safe-area-inset-top)) + 172px);
+    bottom: auto;
+    max-height: 52vh;
+  }
+}
+
+@media (max-height: 480px) {
+  .city-make {
+    top: calc(max(8px, env(safe-area-inset-top)) + 100px);
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 66px);
+    left: auto;
+    width: min(360px, 48vw);
+  }
+
+  .city-recipe .slot {
+    --s: 32px;
   }
 }
