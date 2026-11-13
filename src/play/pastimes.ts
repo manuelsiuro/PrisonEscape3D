@@ -16,7 +16,6 @@ import type { BoardView, CheatView, CourtView } from '../ui/pastimes';
 import { banner, itemsUI, sound } from './context';
 import { gameCards, whenCards } from './lazy';
 import { lanePress, setLaneFlash } from './nights';
-import { kickKey } from './team';
 import { play, playLater, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { director } from './chatter';
@@ -445,7 +444,7 @@ export function shootKey(down: boolean): boolean {
     sendOp(OP.EXT, EXT.SHOOT, 1);
     return true;
   }
-  if (s.match || s.ink || spotAt(sim) < 0 || (s.shootout && (s.shootout.turn !== 0 || spotAt(sim) !== spotOf(s.shootout.k)))) return false;
+  if (s.pens || s.ink || spotAt(sim) < 0 || (s.shootout && (s.shootout.turn !== 0 || spotAt(sim) !== spotOf(s.shootout.k)))) return false;
   shooting = true;
   sendOp(OP.EXT, EXT.SHOOT, 0);
   return true;
@@ -455,10 +454,8 @@ let shooting = false;
 
 export function wirePastimes() {
   // (The cards' buttons, once they're made: lazy.ts.)
-  whenCards(({ courtCard, matchCard, stageCard }) => {
+  whenCards(({ courtCard, stageCard }) => {
     courtCard.onHold = (down) => shootKey(down);
-    // (P29: the match's Kick pad.)
-    matchCard.onHold = (down) => kickKey(down);
     // (P30: the stage's lane pads, and their flash from the keys.)
     stageCard.onLane = (lane) => lanePress(lane);
     setLaneFlash((lane) => stageCard.flash(lane));

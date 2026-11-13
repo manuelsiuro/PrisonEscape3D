@@ -1,14 +1,17 @@
 /**
- * A match's camera (P29, src/render/pitchFrame.ts): on every prison's pitch and every screen
- * shape (desktop, a phone upright and sideways, a narrow phone), the camera eased in as View
- * eases it (zoom, look-ahead, target) frames both goals with the player on the pitch, and keeps
- * the player on screen when he strays off it (a match goes on PITCH_LEAVE tiles away), without
- * a look-ahead long enough to cut the camera back to him every frame.
+ * A penalty shootout's camera (2.44; P29's match before, src/render/pitchFrame.ts): on every
+ * prison's pitch and every screen shape (desktop, a phone upright and sideways, a narrow phone),
+ * the camera eased in as View eases it (zoom, look-ahead, target) holds the shootout's box (the
+ * spot, the goal and its net: penalties.ts shootoutBox) with the player at either place, and keeps
+ * the player on screen while walking on from as far as a shootout starts (PEN_RANGE tiles off the
+ * pitch), without a look-ahead long enough to cut the camera back to him every frame.
  */
 import { check } from './assert';
 import { PRISONS } from '../src/content/prisons';
-import { PITCH_LEAVE } from '../src/content/team';
-import { PITCH_PULL, pitchFraming, screenTiles } from '../src/render/pitchFrame';
+import { PEN_RANGE } from '../src/content/penalties';
+import { PENS_ZOOM, PITCH_PULL, pitchFraming, screenTiles } from '../src/render/pitchFrame';
+import { goalOf, keeperPlace, kickerPlace, shootoutBox } from '../src/sim/systems/penalties';
+import { UNIT } from '../src/sim/tuning';
 
 /** The player's own zoom (the default). */
 const GOAL = 1.25;
@@ -39,7 +42,8 @@ function settle(p: { x: number; z: number; w: number; d: number }, px: number, p
       target.x += (px + ahead.x - target.x) * Math.min(1, dt * 7);
       target.z += (pz + ahead.z - target.z) * Math.min(1, dt * 7);
     }
-    const to = Math.min(GOAL, aim.fit);
+    // (viewCamera.ease: in or out to the box, no closer than PENS_ZOOM.)
+    const to = Math.min(PENS_ZOOM, aim.fit);
     zoom += (to - zoom) * Math.min(1, dt * 3);
   }
   const { wide, deep } = screenTiles(aspect);
@@ -53,26 +57,22 @@ const lines: string[] = [];
 for (const prison of PRISONS) {
   const p = prison.leisure?.pitch;
   if (!p) continue;
+  const b = shootoutBox(p);
+  const g = goalOf(p);
   const row: string[] = [];
   for (const [name, w, h] of SCREENS) {
     const aspect = w / h;
-    // On the pitch (the middle, each goal mouth): the whole pitch in the picture.
-    const spots: Array<[number, number]> = [
-      [p.x + p.w / 2, p.z + p.d / 2],
-      [p.x + 0.5, p.z + p.d / 2],
-      [p.x + p.w - 0.5, p.z + p.d / 2],
-      [p.x + p.w / 2, p.z + 0.5],
-      [p.x + p.w / 2, p.z + p.d - 0.5],
-    ];
+    // At either place (behind the ball, on the line): the whole box in the picture.
+    const places = [kickerPlace(g, { x: 0, z: 0 }), keeperPlace(g, { x: 0, z: 0 })].map((q) => [q.x / UNIT, q.z / UNIT]);
     let zoomOn = 0;
-    for (const [px, pz] of spots) {
-      const r = settle(p, px, pz, aspect);
+    for (const [px, pz] of places) {
+      const r = settle(b, px, pz, aspect);
       zoomOn = Math.max(zoomOn, r.zoom);
-      const all = r.sees(p.x, p.z) && r.sees(p.x + p.w, p.z) && r.sees(p.x, p.z + p.d) && r.sees(p.x + p.w, p.z + p.d);
-      check(all, `${prison.id} ${name}: the player at ${px},${pz} on the pitch, both goals in the picture`);
-      check(r.sees(px, pz), `${prison.id} ${name}: the player at ${px},${pz} on screen`);
+      const all = r.sees(b.x, b.z) && r.sees(b.x + b.w, b.z) && r.sees(b.x, b.z + b.d) && r.sees(b.x + b.w, b.z + b.d);
+      check(all, `${prison.id} ${name}: the player at ${px.toFixed(1)},${pz.toFixed(1)}, the spot and the goal in the picture`);
+      check(r.sees(px, pz), `${prison.id} ${name}: the player at ${px.toFixed(1)},${pz.toFixed(1)} on screen`);
     }
-    // Off the pitch, as far as a match goes on: the player stays on screen.
+    // Walking on from as far off the pitch as a shootout starts: the player stays on screen.
     let pull = 0;
     for (const [dx, dz] of [
       [-1, 0],
@@ -82,13 +82,13 @@ for (const prison of PRISONS) {
       [-1, -1],
       [1, 1],
     ]) {
-      const px = dx < 0 ? p.x - PITCH_LEAVE : dx > 0 ? p.x + p.w + PITCH_LEAVE : p.x + p.w / 2;
-      const pz = dz < 0 ? p.z - PITCH_LEAVE : dz > 0 ? p.z + p.d + PITCH_LEAVE : p.z + p.d / 2;
-      const r = settle(p, px, pz, aspect);
+      const px = dx < 0 ? p.x - PEN_RANGE : dx > 0 ? p.x + p.w + PEN_RANGE : p.x + p.w / 2;
+      const pz = dz < 0 ? p.z - PEN_RANGE : dz > 0 ? p.z + p.d + PEN_RANGE : p.z + p.d / 2;
+      const r = settle(b, px, pz, aspect);
       pull = Math.max(pull, r.maxPull);
       check(
         r.sees(px - 0.5, pz - 0.5) && r.sees(px + 0.5, pz + 0.5),
-        `${prison.id} ${name}: the player ${PITCH_LEAVE} tiles off the pitch (${px},${pz}) still on screen`,
+        `${prison.id} ${name}: the player ${PEN_RANGE} tiles off the pitch (${px},${pz}) still on screen`,
       );
       check(
         r.maxPull <= PITCH_PULL + 1e-6,
@@ -97,7 +97,7 @@ for (const prison of PRISONS) {
     }
     row.push(`${name} ${zoomOn.toFixed(2)}`);
   }
-  lines.push(`${prison.id} ${p.w}×${p.d}: zoom on the pitch ${row.join(', ')}`);
+  lines.push(`${prison.id} box ${b.w}×${b.d}: zoom at the places ${row.join(', ')}`);
 }
 console.log(lines.join('\n'));
-console.log(`both goals in the picture on every pitch and screen; the player on screen up to ${PITCH_LEAVE} tiles off it`);
+console.log(`the spot and the goal in the picture on every pitch and screen; the player on screen up to ${PEN_RANGE} tiles off the pitch`);

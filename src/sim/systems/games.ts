@@ -64,7 +64,7 @@ import { energyCost } from './weather';
 import { keepCheat } from './cards';
 import { keepHoops } from './hoops';
 import { keepCheckers } from './checkers';
-import { keepMatch } from './football';
+import { keepPens } from './penalties';
 import { keepInk } from './tattoo';
 import { centerX, centerZ } from '../world/grid';
 import { overlapsTile } from './movement';
@@ -120,8 +120,16 @@ export function eyesOn(s: Pick<SimState, 'guards'>, at: number): boolean {
 }
 
 /** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout, the player at the old-timer's board; P29: a match, a tattoo sitting). */
-export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'match' | 'ink' | 'show' | 'quiz'>) =>
-  s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink || !!s.show || !!s.quiz;
+export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'pens' | 'ink' | 'show' | 'quiz'>) =>
+  s.dice.length > 0 ||
+  s.bout.length > 0 ||
+  !!s.cheat ||
+  !!s.shootout ||
+  !!s.board?.seated ||
+  (!!s.pens && s.pens.who >= 0) ||
+  !!s.ink ||
+  !!s.show ||
+  !!s.quiz;
 
 // ------------------------------------------------------------------ dice
 
@@ -517,7 +525,7 @@ export function games(sim: SimContext) {
   keepCheat(sim);
   keepHoops(sim);
   keepCheckers(sim);
-  keepMatch(sim);
+  keepPens(sim);
   keepInk(sim);
   // Stage nights (P30): which acts stood, the player's act.
   keepActs(sim);

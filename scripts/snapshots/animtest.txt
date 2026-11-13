@@ -1,7 +1,7 @@
 every change of activity (a knockout a fall): 2756 pairs, 0 jumping (the most a frame 0.32 rad, KNOCKED_OUT→CRAWL)
 setting off from each activity and stopping again: 53 activities, 0 jumping (the most a frame 0.24 rad)
 never stuck: 1456 runs (each activity, holding each way, a tray, blows, a wash), 0 left in a pose 6 s after
-reduced motion: 50 activities still posed (SLEEP EAT EXERCISE SHOWER SEARCH KNOCKED_OUT CRAWL WORK LIFT RUN READ SIT SIT_READ DOZE WRESTLE PICK DICE BRAWL LOOKOUT CARDS SHOOT BOARD FOOTBALL TATTOO DRUMS GUITAR QUIZ PHONE QUEUE KIOSK DIG SERVE SHOWER_WAIT TOWEL COUNT BENCH PULLUP PUSHUP BAG MOP VEND THUMP SNACK DRINK SCRIBBLE CHAT WATCH HOST GARDEN RATS); stood as they are: NOTHING LINE_UP JOG
+reduced motion: 50 activities still posed (SLEEP EAT EXERCISE SHOWER SEARCH KNOCKED_OUT CRAWL WORK LIFT RUN READ SIT SIT_READ DOZE WRESTLE PICK DICE BRAWL LOOKOUT CARDS SHOOT BOARD KICK TATTOO DRUMS GUITAR QUIZ PHONE QUEUE KIOSK DIG SERVE SHOWER_WAIT TOWEL COUNT BENCH PULLUP PUSHUP BAG MOP VEND THUMP SNACK DRINK SCRIBBLE CHAT WATCH HOST GARDEN RATS); stood as they are: NOTHING LINE_UP JOG
 a planted foot's slide against the ground at the stride's middle: a slow walker 1%, the walk 1%, a chase 1%, catching up 2%, a jog 2%, a flight 2%
 a fight, arms folded before it, a blow every 0.8 s: back in the stance at most 0.00 between blows; the most a frame 0.07 rad, the punch's own move aside
 in hand at a blow: a mop swung out of the fist (0.00 rad off a tool's grip), upright again after; a bundle: NOTHING shown, WORK shown, EXERCISE hidden, KNOCKED_OUT hidden

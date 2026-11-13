@@ -19,7 +19,7 @@
  */
 import { cakeAtVisit } from './phone';
 import { birthdayAtVisit } from './oddjobs';
-import { sightFor } from './football';
+import { sightFor } from './penalties';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Rect, SmugglingDef } from '../../content/prisons/types';
 import {

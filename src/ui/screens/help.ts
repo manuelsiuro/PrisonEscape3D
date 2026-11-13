@@ -110,7 +110,7 @@ const TOUCHES: Array<[string, Array<[string, Key]>]> = [
   [
     'games',
     [
-      ['ball', 'help.t.kick'],
+      ['football', 'help.t.kick'],
       ['music', 'help.t.lanes'],
       ['brain', 'help.t.answer'],
     ],

@@ -143,6 +143,11 @@ export class Crowd {
       // 2.39.1: an inmates' game of dice: the one whose turn it is shakes the pair in its hand, then flings them (the
       // player's partner's own below). Anyone else's hand is still: reset every frame, never left shaking.
       c.diceShake = false;
+      // (2.44: the shootout's inmate in goal, diving; anyone else standing.)
+      const kp = f.pitch.keeper;
+      c.dive = kp && kp.who === k ? kp.dive : 0;
+      c.diveX = kp?.x ?? 0;
+      c.diveZ = kp?.z ?? 0;
       const crowd = f.games.crowd;
       if (crowd)
         for (const d of crowd) {

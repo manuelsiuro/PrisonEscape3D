@@ -1,4 +1,4 @@
-/* ------------------------------------------------------------ team & ink (P29) */
+/* ------------------------------------------------------------ penalties (2.44; P29's football before) & ink (P29) */
 :root {
   /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
   --team-slate-31: #2b3038;
@@ -15,39 +15,7 @@
   --team-indigo-37: #3a3f5a;
 }
 
-/* The match's card: the pitch's green; the teams; the clock running down; the Kick pad and its power. */
-.match-card .train-ic {
-  background: var(--team-green-62);
-}
-.match-score {
-  flex: none;
-  white-space: nowrap;
-  font: 800 20px var(--font-display);
-  letter-spacing: 0.02em;
-}
-.match-card .train-head b,
-.ink-card .train-head b {
-  min-width: 0;
-}
-.match-teams {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 6px;
-  margin: 6px 0 0;
-  font: 600 11.5px var(--font-ui);
-  color: rgba(var(--white-rgb), 0.6);
-}
-.match-teams .ours {
-  color: var(--green-87);
-}
-.match-teams em {
-  font-style: normal;
-  color: rgba(var(--white-rgb), 0.4);
-}
-.match-card .train-note {
-  text-wrap: pretty;
-}
+/* A card's clock running down (P29's match card's, now the phone's, the stage's, the parole board's, the kiosk's and the quiz's). */
 .match-clock {
   display: block;
   height: 5px;
@@ -62,51 +30,8 @@
   border-radius: 3px;
   background: linear-gradient(90deg, var(--green-75), var(--green-87));
 }
-.match-card[data-phase='gather'] .match-clock > i {
-  background: rgba(var(--white-rgb), 0.35);
-}
-.match-card[data-phase='goal'] {
-  box-shadow:
-    0 20px 50px -14px rgba(var(--black-rgb), 0.7),
-    inset 0 0 0 2px var(--team-yellow-87);
-}
-.match-pad {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(var(--team-green-65), var(--team-green-53));
-}
-.match-card.at-feet .match-pad {
-  background: linear-gradient(var(--green-75), var(--green-60));
-  box-shadow:
-    inset 0 1px 0 rgba(var(--white-rgb), 0.3),
-    0 0 0 3px rgba(var(--team-yellow-87-rgb), 0.75);
-}
-.match-power {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 7px;
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(var(--black-rgb), 0.25);
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-.match-card.holding .match-power {
-  opacity: 1;
-}
-.match-power > i {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--team-yellow-87), var(--orange-68));
-}
-/* In a match the Kick pad takes the tool button's place; the lock-on, with nothing to strike with, steps
-   aside too (on a tablet upright the pad sat over it, session 8). */
-body.matching .tool-btn,
-body.matching .tool-prompt,
-body.matching .lock-btn {
-  display: none;
+.ink-card .train-head b {
+  min-width: 0;
 }
 
 /* The tattoo's card: the design on skin, the pen's ring, the needle's dot and its line in the design's ink. */
@@ -215,35 +140,15 @@ body.matching .lock-btn {
   white-space: nowrap;
 }
 
-/* Phones upright: the match's card small above the hotbar at the left, the Kick pad at the right thumb (above the action and lock buttons). */
+/* Phones upright: the tattoo's card above the hotbar. */
 @media (max-width: 899px) and (min-height: 521px) {
-  .match-card {
-    left: max(12px, env(safe-area-inset-left));
-    right: auto;
-    margin: 0;
-    width: min(250px, calc(100vw - 180px));
-    padding: 10px 12px;
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
-  }
-  .match-card .match-teams {
-    display: none;
-  }
-  .match-card .match-pad {
-    position: fixed;
-    right: max(14px, env(safe-area-inset-right));
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 214px);
-    width: 120px;
-    height: 84px;
-    margin: 0;
-  }
   .ink-card {
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
   }
 }
 
-/* Landscape phones: the cards docked to the left; the Kick pad at the right thumb; the hotbar steps aside for the tattoo. */
+/* Landscape phones: the card docked to the left; the hotbar steps aside for the tattoo. */
 @media (max-height: 520px) {
-  .match-card,
   .ink-card {
     animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
@@ -254,18 +159,6 @@ body.matching .lock-btn {
     max-height: calc(100vh - 90px);
     overflow-y: auto;
     padding: 8px 12px;
-  }
-  .match-card .match-teams {
-    display: none;
-  }
-  .match-card .match-pad {
-    position: fixed;
-    right: max(14px, env(safe-area-inset-right));
-    /* (Lower on a very short window, clear of the pause button, as the hoops' pad.) */
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + min(136px, 100dvh - 166px));
-    width: 150px;
-    height: 92px;
-    margin: 0;
   }
   .ink-card {
     display: grid;
@@ -327,7 +220,6 @@ body.matching .lock-btn {
 
 /* Wide screens: docked left, clear of the players in the middle. */
 @media (min-width: 900px) and (min-height: 521px) {
-  .match-card,
   .ink-card {
     left: max(24px, env(safe-area-inset-left));
     right: auto;
@@ -344,7 +236,6 @@ body.matching .lock-btn {
   }
 }
 
-body.reduced-motion .match-card,
 body.reduced-motion .ink-card,
 body.reduced-motion .ink-card.lead .ink-pen {
   animation: none !important;
@@ -352,9 +243,6 @@ body.reduced-motion .ink-card.lead .ink-pen {
 }
 .cash-btn.design span::first-letter {
   text-transform: uppercase;
-}
-.match-teams span:last-child {
-  color: var(--team-red-80);
 }
 
 /* Touch: a drag on the tattoo's card steers the needle as a drag on the picture would; the design itself (2.22: drawn on) and Give up take the touch. */
@@ -401,4 +289,276 @@ body.reduced-motion .ink-card.lead .ink-pen {
   text-overflow: clip;
   line-height: 1.15;
   text-align: left;
+}
+
+/* 2.44: the penalties' card: the goal seen from the spot (its net, the corners in gold, the keeper, the marker sweeping
+   over it, the ball), the tally, Kick, or the three dives and his run-up's bar while the player keeps goal. */
+.pens-card .train-ic {
+  background: var(--team-green-62);
+}
+.pens-card .train-head b {
+  min-width: 0;
+}
+.pens-score {
+  flex: none;
+  white-space: nowrap;
+  font: 800 18px var(--font-display);
+  letter-spacing: 0.02em;
+}
+.pens-tally {
+  display: grid;
+  gap: 3px;
+  margin: 6px 0 2px;
+}
+.pens-tally:empty {
+  display: none;
+}
+.pens-tally span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 600 11.5px var(--font-ui);
+  color: rgba(var(--white-rgb), 0.65);
+}
+.pens-tally em {
+  flex: 0 0 64px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pens-tally i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: rgba(var(--white-rgb), 0.14);
+}
+.pens-tally i.goal {
+  background: var(--green-75);
+}
+.pens-tally i.miss {
+  background: var(--team-red-80);
+  box-shadow: inset 0 0 0 3px rgba(var(--black-rgb), 0.25);
+}
+.pens-goal {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 4px auto 0;
+  touch-action: none;
+  cursor: pointer;
+}
+.pens-grass {
+  fill: var(--team-green-53);
+  opacity: 0.55;
+}
+.pens-net {
+  fill: none;
+  stroke: rgba(var(--white-rgb), 0.18);
+  stroke-width: 1;
+}
+.pens-frame {
+  fill: none;
+  stroke: var(--white);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.pens-line {
+  stroke: rgba(var(--white-rgb), 0.5);
+  stroke-width: 1.5;
+}
+.pens-spot {
+  fill: rgba(var(--white-rgb), 0.6);
+}
+.pens-corners rect {
+  fill: rgba(var(--team-yellow-87-rgb), 0.22);
+}
+.pens-keeper {
+  fill: var(--team-red-80);
+  stroke: var(--team-red-80);
+}
+.pens-keeper.me {
+  fill: var(--cyan-71);
+  stroke: var(--cyan-71);
+}
+.pens-keeper path {
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+}
+.pens-look {
+  fill: rgba(var(--team-yellow-87-rgb), 0.35);
+  animation: pens-look 0.6s ease-in-out infinite alternate;
+}
+@keyframes pens-look {
+  to {
+    fill: rgba(var(--team-yellow-87-rgb), 0.12);
+  }
+}
+body.reduced-motion .pens-look {
+  animation: none;
+}
+.pens-ball {
+  fill: var(--white);
+  stroke: rgba(var(--black-rgb), 0.55);
+  stroke-width: 1.5;
+}
+.pens-marker {
+  fill: var(--team-yellow-87);
+  stroke: rgba(var(--black-rgb), 0.5);
+  stroke-width: 1;
+}
+.pens-word {
+  font: 800 26px var(--font-display);
+  letter-spacing: 0.03em;
+  fill: var(--white);
+  stroke: rgba(var(--black-rgb), 0.6);
+  stroke-width: 4;
+  paint-order: stroke;
+}
+.pens-word.goal.me,
+.pens-word.saved.him {
+  fill: var(--green-87);
+}
+.pens-word.goal.him {
+  fill: var(--team-red-80);
+}
+.pens-run {
+  position: relative;
+  height: 8px;
+  margin: 6px 0 2px;
+  border-radius: 4px;
+  background: rgba(var(--white-rgb), 0.12);
+  overflow: hidden;
+}
+.pens-run > i {
+  display: block;
+  height: 100%;
+  background: rgba(var(--white-rgb), 0.45);
+}
+.pens-card.late .pens-run > i {
+  background: var(--team-green-65);
+}
+/* (Where a dive stops being early: the bar's last stretch, marked.) */
+.pens-run > b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  border-left: 2px solid var(--team-yellow-87);
+  background: rgba(var(--team-yellow-87-rgb), 0.18);
+}
+.pens-card .train-note {
+  text-align: center;
+  text-wrap: pretty;
+}
+.pens-kick {
+  width: 100%;
+  margin-top: 8px;
+  touch-action: none;
+}
+.pens-dives {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pens-dive {
+  touch-action: none;
+  justify-content: center;
+}
+.pens-dive.chosen {
+  box-shadow: 0 0 0 3px var(--team-yellow-87);
+}
+.pens-card.dived .pens-dive:not(.chosen) {
+  opacity: 0.45;
+}
+.pens-card.clock .pens-kick {
+  background: linear-gradient(90deg, var(--team-green-65) calc(var(--pens-clock) * 100%), var(--team-green-53) 0);
+}
+.pens-card .hidden {
+  display: none !important;
+}
+/* In a shootout or at the spot the card's buttons take the tool button's place; the lock-on steps aside too. */
+body.kicking .tool-btn,
+body.kicking .tool-prompt,
+body.kicking .lock-btn {
+  display: none;
+}
+/* Phones upright: the card above the hotbar, full width, its buttons under the thumbs. */
+@media (max-width: 899px) and (min-height: 521px) {
+  .pens-card {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    width: auto;
+    margin: 0;
+    padding: 10px 12px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+  }
+}
+/* Landscape phones: docked to the left, the goal beside the tally and the buttons. */
+@media (max-height: 520px) {
+  .pens-card {
+    animation: fade 0.25s ease-out;
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: min(420px, calc(100vw - 230px));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    padding: 8px 12px;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(140px, 1fr);
+    grid-template-areas:
+      'head head'
+      'goal tally'
+      'goal run'
+      'goal note'
+      'btn btn';
+    column-gap: 12px;
+    align-items: center;
+  }
+  .pens-card .train-head {
+    grid-area: head;
+  }
+  .pens-card .pens-goal {
+    grid-area: goal;
+    margin: 0;
+    max-width: min(240px, calc(100vh - 110px) * 2);
+  }
+  .pens-card .pens-tally {
+    grid-area: tally;
+  }
+  .pens-card .pens-run {
+    grid-area: run;
+  }
+  .pens-card .train-note {
+    grid-area: note;
+    margin: 2px 0;
+    font-size: 12px;
+  }
+  .pens-card .pens-kick,
+  .pens-card .pens-dives {
+    grid-area: btn;
+    margin-top: 4px;
+  }
+  /* (The hotbar steps aside in a shootout: the dives and Kick at the card's foot, nothing to use meanwhile.) */
+  body.kicking .hotbar,
+  body.kicking .energy {
+    display: none;
+  }
+}
+/* Wide screens: docked left, clear of the goal in the middle. */
+@media (min-width: 900px) and (min-height: 521px) {
+  .pens-card {
+    left: max(24px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: 340px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+  }
+}
+body.reduced-motion .pens-card {
+  animation: none !important;
 }

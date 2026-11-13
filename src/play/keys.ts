@@ -28,7 +28,7 @@ import { openObjectives } from './lazy';
 import { openDay } from './daycard';
 import { pastimeKey, shootKey } from './pastimes';
 import { diceKey } from './games';
-import { kickKey } from './team';
+import { diveKey, kickKey, pensHasKeys } from './penalties';
 import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
@@ -101,6 +101,8 @@ function onKeyDown(e: KeyboardEvent) {
     else if (itemsUI.panelOpen) itemsUI.closePanels();
     else if (socialOpen()) closeSocial();
     else if (game.rec.sim.state.train >= 0 || game.rec.sim.state.ratRun?.length) sendOp(OP.TRAIN, 3);
+    // (2.44: out of a penalty shootout, or the ball picked up off the spot.)
+    else if (game.rec.sim.state.pens) sendOp(OP.EXT, EXT.KICK, 3);
     // (2.32: away from the vending machine's card.)
     else if (game.rec.sim.state.vendOpen) sendOp(OP.EXT, EXT.VEND, VEND.CLOSE);
     // (2.33: away from the menu board's card.)
@@ -134,11 +136,25 @@ function onKeyDown(e: KeyboardEvent) {
   }
   if (g.rec.sim.state.ko > 0) return;
   if (g.rec.sim.state.sleeping && code !== 'KeyE') return;
+  // (2.44: in goal at a penalty, the moves dive: left and right as the card shows them; down stays.)
+  if (pensHasKeys(g.rec.sim)) {
+    const c =
+      code === 'KeyA' || code === 'ArrowLeft'
+        ? 0
+        : code === 'KeyD' || code === 'ArrowRight'
+          ? 2
+          : code === 'KeyS' || code === 'ArrowDown'
+            ? 1
+            : -1;
+    if (c >= 0 && diveKey(c)) return;
+  }
   if (code === 'KeyE') {
     // E again closes what it opened (a container, a talk, the board) and steps off the equipment.
     const st = g.rec.sim.state;
     // (2.31: not while reading: it underlines; X or a step closes the book.)
     if (reading(g.rec.sim) || st.ratRun?.length) sendOp(OP.TRAIN, 1);
+    // (2.44: in a penalty shootout, E kicks too.)
+    else if (pensHasKeys(g.rec.sim)) kickKey();
     else if (st.items.open >= 0 || st.talk >= 0 || st.train >= 0 || st.pick.length) sendOp(OP.CLOSE);
     else if (board.isOpen) board.close();
     else act();
@@ -250,8 +266,8 @@ function onKeyDown(e: KeyboardEvent) {
       return;
     }
     // (P27: on a spot at the hoop, Space raises the ball for a shot; let go, it goes.)
-    // (P29: in a match, Space held is a kick, let go it goes; before the hoop's shot, whose spots lie on some pitches.)
-    if (kickKey(true)) return;
+    // (2.44: at the penalty spot or in a shootout, Space is the kick.)
+    if (kickKey()) return;
     if (shootKey(true)) return;
     tools.held = true;
     usePress();
@@ -283,13 +299,11 @@ export function listenKeys() {
       tools.release();
       tools.releaseUp();
       tools.holdBlock(false);
-      kickKey(false);
       shootKey(false);
     }
     const code = keyCode(e.code);
     if (code === 'Space') {
       shootKey(false);
-      kickKey(false);
       tools.release();
     }
     if (code === 'KeyU') tools.releaseUp();
@@ -299,7 +313,6 @@ export function listenKeys() {
   addEventListener('blur', () => {
     tools.release();
     tools.holdBlock(false);
-    kickKey(false);
     shootKey(false);
   });
   // A hidden page pauses the game (phones switching apps, a closed laptop).

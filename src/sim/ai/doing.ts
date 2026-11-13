@@ -24,7 +24,8 @@ export const DOING = {
   CARDS: 21,
   SHOOT: 22,
   BOARD: 23,
-  FOOTBALL: 24,
+  // (2.44: a penalty wound up, the kicking leg back: P29's football kick before.)
+  KICK: 24,
   TATTOO: 25,
   DRUMS: 26,
   GUITAR: 27,

@@ -164,7 +164,12 @@ function dressForMap(v: MapShotParts): () => void {
     );
   }
   const ls = def.leisure;
-  if (v.pitch) v.pieces.teamView.update({ pitch: v.pitch, theme: def.theme ?? 'suburban', ball: null, mates: [], rivals: [] }, [], 0, true);
+  if (v.pitch)
+    v.pieces.pitchView.update(
+      { pitch: v.pitch, theme: def.theme ?? 'suburban', spot: null, ball: null, keeper: null, frame: null },
+      0,
+      true,
+    );
   if (ls) {
     const beds: LongFrame['beds'] = [];
     for (let z = ls.garden.z; z < ls.garden.z + ls.garden.d; z++)
@@ -184,7 +189,7 @@ function dressForMap(v: MapShotParts): () => void {
   return () => {
     if (v.turf) for (const m of v.turf.children) m.visible = false;
     if (sec) sec.group.visible = false;
-    v.pieces.teamView.update(null, [], 0, false);
+    v.pieces.pitchView.update(null, 0, false);
     v.pieces.longView.update(null, 0, false, false);
   };
 }

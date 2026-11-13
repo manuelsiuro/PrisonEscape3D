@@ -10,7 +10,9 @@ import { ROUTINE } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
-import { command, OP, SLOT } from '../src/sim/command';
+import { command, EXT, OP, SLOT } from '../src/sim/command';
+import { AIM_POST, KEEPER_BASE, KEEPER_SPREAD, RUN_UP } from '../src/content/penalties';
+import { markerOf, PH } from '../src/sim/systems/penalties';
 import { canAnswer } from '../src/sim/systems/rollcall';
 import { keyAt, keyFrom } from '../src/content/books';
 import { freeReadSeat } from '../src/sim/systems/training';
@@ -54,6 +56,21 @@ export function boutPress(sim: Sim): number {
   if (sim.rules239) return command(0, OP.TRAIN, side);
   if (s.step + 1 < s.bout[3] || boutBeat(s.step + 1, s.bout[3]).off !== 0) return 0;
   return command(0, OP.TRAIN, side);
+}
+
+/**
+ * The command for this step of a penalty shootout (2.44): the kick as the marker crosses a corner (past any keeper's
+ * reach, inside the post), the dive the way he looked a few steps before his kick; else nothing.
+ */
+export function pensBot(sim: Sim): number {
+  const o = sim.state.pens;
+  if (!o || o.phase !== PH.SET) return 0;
+  if (o.turn === 0) {
+    if (sim.state.step - o.at < 9) return 0;
+    const a = Math.abs(markerOf(o, sim.state.step + 1, sim.state.spd));
+    return a > KEEPER_BASE + KEEPER_SPREAD && a <= AIM_POST - 30 ? command(0, OP.EXT, EXT.KICK, 0) : 0;
+  }
+  return !o.dived && sim.state.step + 1 - o.at === RUN_UP - 6 ? command(0, OP.EXT, EXT.KICK, 2, o.look + 1) : 0;
 }
 
 export class Bot {

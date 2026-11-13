@@ -20,7 +20,7 @@ import type { Shootout } from './systems/hoops';
 import type { Board } from './systems/checkers';
 import { bedCount, gardenByOk, newGardenBy } from './systems/garden';
 import { BETS, CROP, ODDS_MAX, ODDS_MIN, RAT_LAP, RAT_LAPS, RAT_START_SPEED } from '../content/long';
-import type { Match } from './systems/football';
+import { pensOk } from './systems/penalties';
 import type { Ink } from './systems/tattoo';
 import type { Show } from './systems/talent';
 import type { Quiz } from './systems/quiz';
@@ -89,7 +89,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
         k === 'watchEnd' ||
         k === 'kioskBy' ||
         k === 'gardenBy' ||
-        k === 'ratRun') &&
+        k === 'ratRun' ||
+        k === 'pens' ||
+        k === 'penCorners') &&
       st[k] !== undefined
     )
       (s as unknown as Record<string, unknown>)[k] = st[k];
@@ -284,8 +286,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
         fed: Number.isInteger(r.fed) ? r.fed : 0,
         lap: Number.isInteger(r.lap) ? r.lap : 0,
       });
-  // P29: a match or a sitting as they can be (else over), the designs on the player's arms.
-  if (!matchOk(s.match, n, s.step)) s.match = null;
+  // P29: a sitting as it can be (else over), the designs on the player's arms. (A match saved before 2.44: over.)
+  s.match = null;
   // (2.22: a sitting saved before the line was traced by hand: nothing traced yet.)
   if (s.ink && typeof s.ink === 'object')
     Object.assign(s.ink, {
@@ -547,6 +549,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     )
   )
     s.ratRun = [];
+  // 2.44: penalties as they can be (else over), the corners on one's own today.
+  if (s.pens !== undefined && !pensOk(s.pens, s.inmates.length, s.step)) s.pens = null;
+  if (s.penCorners !== undefined && (!Number.isInteger(s.penCorners) || s.penCorners < 0)) s.penCorners = 0;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];
@@ -556,29 +561,6 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
 }
 
 /** A match as a save holds it (P29): five different inmates, its numbers whole. */
-function matchOk(o: Match | null, n: number, step: number): boolean {
-  if (o === null) return true;
-  if (!o || typeof o !== 'object') return false;
-  const int = (x: unknown) => Number.isInteger(x);
-  return (
-    int(o.who) &&
-    ints(o.team, 5) &&
-    o.team.every((k, i, all) => k >= 0 && k < n && all.indexOf(k) === i) &&
-    o.team[2] === o.who &&
-    [o.from, o.at, o.last, o.pause, o.hold, o.scored, o.restart, o.kick].every(int) &&
-    o.kick >= -1 &&
-    o.kick <= 1 &&
-    ints(o.goals, 2) &&
-    o.goals.every((g) => g >= 0) &&
-    ints(o.ball, 4) &&
-    ints(o.cool, 6) &&
-    o.last >= -2 &&
-    o.last < 5 &&
-    (o.late === undefined || (int(o.late) && o.late >= 0 && o.late <= step)) &&
-    (o.feet === undefined || o.feet === 0 || o.feet === 1)
-  );
-}
-
 /** An act as a save holds it (P30): a song and an instrument there are, a judgement for each of its notes. */
 function showOk(o: Show | null, step: number): boolean {
   if (o === null) return true;
