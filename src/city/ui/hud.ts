@@ -22,6 +22,8 @@ export interface CityHudState {
   health: number;
   hunger: number;
   energy: number;
+  /** How many of the dead are after the player. */
+  chasing: number;
 }
 
 /** How much the corner map is enlarged: about a third of the district's width shows. */
@@ -42,6 +44,7 @@ export class CityHud {
   private readonly mapBtn: HTMLButtonElement;
   private readonly canvas: HTMLCanvasElement;
   private shownRev = -1;
+  private shownChasing = -1;
   private meters: Record<string, number> = {};
   private shownNight: boolean | null = null;
   private lang = '';
@@ -61,6 +64,7 @@ export class CityHud {
         <span class="city-meter cm-health" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('heart', 14)}<i><i></i></i></span>
         <span class="city-meter cm-hunger" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('utensils', 14)}<i><i></i></i></span>
         <span class="city-meter cm-energy" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('bolt', 14)}<i><i></i></i></span>
+        <span class="pill hud-alert city-chased hidden" role="status">${icon('siren', 15)}<span></span></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -80,6 +84,7 @@ export class CityHud {
     this.el.classList.toggle('hidden', !on);
     this.mapBtn.classList.toggle('hidden', !on);
     this.shownRev = -1;
+    this.shownChasing = -1;
     this.shownNight = null;
     this.meters = {};
   }
@@ -113,6 +118,12 @@ export class CityHud {
       el.classList.toggle('low', pct <= 25);
       el.setAttribute('aria-valuenow', String(pct));
       el.setAttribute('aria-label', t(label));
+    }
+    if (s.chasing !== this.shownChasing) {
+      this.shownChasing = s.chasing;
+      const pill = this.el.querySelector<HTMLElement>('.city-chased')!;
+      pill.classList.toggle('hidden', !s.chasing);
+      if (s.chasing) setText(pill.querySelector('span')!, t(s.chasing === 1 ? 'city.chased.one' : 'city.chased.many', { n: s.chasing }));
     }
     if (s.pictureRev !== this.shownRev) {
       this.shownRev = s.pictureRev;

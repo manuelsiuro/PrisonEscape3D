@@ -5624,7 +5624,7 @@ export const en = {
   "city.mode.survivorSub": "Fall, and you wake at your last shelter. What you carried lies where you fell.",
   "city.mode.hardcore": "Hardcore",
   "city.mode.hardcoreSub": "One life. Fall, and the city is lost.",
-  "city.preview": "In the making: for now you scavenge, eat and sleep in an empty city. The dead and the ways out come next.",
+  "city.preview": "In the making: scavenge, eat, sleep, and keep clear of the dead. Shelters, crafting and the ways out come next.",
   "city.newSure": "Start a new city? The one in progress ({where}, day {n}) will be lost.",
   "city.newYes": "New city",
   "city.intro.title": "The transport never arrived",
@@ -5745,6 +5745,17 @@ export const en = {
   "city.item.cutters": "Bolt cutters",
   "city.item.bat": "Baseball bat",
   "city.item.knife": "Kitchen knife",
+  "city.act.hit": "Hit",
+  "city.chased.one": "1 after you",
+  "city.chased.many": "{n} after you",
+  "city.toast.woke.attacked": "Something is on you!",
+  "city.dusk.title": "The light is going",
+  "city.dusk.two": "Two hours to dark. Think about where you'll sleep.",
+  "city.dusk.half": "Half an hour to dark. Get indoors.",
+  "city.night.title": "Night",
+  "city.night.sub": "They're out in the streets now.",
+  "city.dawn.title": "Dawn",
+  "city.dawn.sub": "They go to ground. Indoors is theirs by day.",
 };
 
 export type Strings = typeof en;

@@ -5,6 +5,7 @@
 import { cityItem } from '../src/city/content/items';
 import { COP, FULL, SLEEP_FROM, SLEEP_TO, type City } from '../src/city/sim/City';
 import { Autopilot } from '../src/sim/ai/autopilot';
+import { nearestDir } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
 import { MAP_W } from '../src/sim/world/grid';
 
@@ -32,6 +33,39 @@ export function scavenger(c: City) {
       goal = -1;
     }
     if (s.sleeping) return 0;
+    // One of the dead within arm's reach: turned on and struck, before anything else.
+    let near = -1;
+    let nearD = (1.5 * 1024) ** 2;
+    s.zeds.forEach((z, k) => {
+      const d = (z.body.x - s.player.x) ** 2 + (z.body.z - s.player.z) ** 2;
+      if (d < nearD) {
+        nearD = d;
+        near = k;
+      }
+    });
+    // Hurt, and one of them coming (within four tiles, not yet in reach): away from it, they're slower.
+    if (near < 0 && s.health < 50) {
+      let from = -1;
+      let fromD = (4 * 1024) ** 2;
+      s.zeds.forEach((z, k) => {
+        const d = (z.body.x - s.player.x) ** 2 + (z.body.z - s.player.z) ** 2;
+        if (z.mode === 3 && d < fromD) {
+          fromD = d;
+          from = k;
+        }
+      });
+      if (from >= 0) {
+        const z = s.zeds[from].body;
+        goal = -1;
+        return command(nearestDir(s.player.x - z.x, s.player.z - z.z));
+      }
+    }
+    if (near >= 0) {
+      pilot.stop();
+      goal = -1;
+      const z = s.zeds[near].body;
+      return command(nearestDir(z.x - s.player.x, z.z - s.player.z), COP.HIT);
+    }
     // (A piece it has been walking to for a game hour can't be got to: left alone.)
     if (goal >= 0 && ++since > 60 * MIN) {
       skip.add(`${s.district}:${goal}`);
@@ -58,7 +92,7 @@ export function scavenger(c: City) {
     }
     // Pockets full of what isn't eaten: the first such thing left behind.
     if (!s.inv.some((st) => !st[0])) {
-      const k = s.inv.findIndex((st) => !cityItem(st[0])?.use);
+      const k = s.inv.findIndex((st) => !cityItem(st[0])?.use && !cityItem(st[0])?.attack);
       if (k >= 0) return command(0, COP.DROP, k);
     }
     // (Night is for sleeping, unless the stomach is nearly empty: then food first.)

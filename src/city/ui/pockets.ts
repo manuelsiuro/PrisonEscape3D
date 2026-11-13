@@ -51,6 +51,8 @@ export class CityPockets {
   readonly panel: HTMLElement;
   readonly card: HTMLElement;
   readonly act: HTMLButtonElement;
+  /** The blow: always there in play (Space). */
+  readonly hit: HTMLButtonElement;
   private shownInv = '';
   private shownBox = '';
   private shownAct = '';
@@ -60,6 +62,7 @@ export class CityPockets {
   /** A command for the simulation (op, a), and the action button. */
   onOp: (op: number, a?: number) => void = () => {};
   onAct: () => void = () => {};
+  onHit: () => void = () => {};
 
   constructor() {
     this.bar = h('div', 'hotbar city-pockets hidden');
@@ -68,6 +71,12 @@ export class CityPockets {
     this.card = h('div', 'item-panel city-thing hidden');
     this.act = h('button', 'act-btn city-act hidden');
     this.act.addEventListener('click', () => this.onAct());
+    this.hit = h(
+      'button',
+      'tool-btn city-hit hidden',
+      `<i class="tool-round"><i class="tool-ring"></i>${icon('fist', 22)}<span></span></i>`,
+    );
+    this.hit.addEventListener('click', () => this.onHit());
     this.bar.addEventListener('click', (e) => {
       const k = (e.target as HTMLElement).closest<HTMLElement>('[data-k]')?.dataset.k;
       if (k !== undefined) this.pick(Number(k));
@@ -87,11 +96,12 @@ export class CityPockets {
       else if (c === 'store') this.onOp(COP.STORE, this.picked);
       if (c !== 'use') this.pick(-1);
     });
-    document.body.append(this.bar, this.panel, this.card, this.act);
+    document.body.append(this.bar, this.panel, this.card, this.act, this.hit);
   }
 
   show(on: boolean) {
     this.bar.classList.toggle('hidden', !on);
+    this.hit.classList.toggle('hidden', !on);
     if (!on) for (const el of [this.panel, this.card, this.act]) el.classList.add('hidden');
     this.shownInv = this.shownBox = this.shownAct = '';
     this.picked = -1;
@@ -113,6 +123,8 @@ export class CityPockets {
       this.lang = textStamp();
       this.shownInv = this.shownBox = this.shownAct = '';
       this.bar.setAttribute('aria-label', t('city.pockets'));
+      setText(this.hit.querySelector('span')!, t('city.act.hit'));
+      this.hit.setAttribute('aria-keyshortcuts', keyLabel('Space'));
     }
     // (The thing whose card was up is gone: the card too.)
     if (this.picked >= 0 && !s.inv[this.picked]?.[0]) this.picked = -1;

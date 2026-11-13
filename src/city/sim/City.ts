@@ -10,6 +10,8 @@ import { CITY_N, cityPlan, OPPOSITE, SIDE, type CityPlan } from '../gen/plan';
 import { cityItem } from '../content/items';
 import { BOX_SLOTS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED } from '../content/loot';
 import { streamOf } from '../gen/plan';
+import { BLOW } from '../content/dead';
+import { noise, places, populate, stepDead, strike, type Zed } from './dead';
 import { districtWorld } from './world';
 
 /**
@@ -31,7 +33,7 @@ const N = MAP_W * MAP_H;
 const DAY_MINUTES = 1440;
 
 /** What a command asks beside a direction (its op; `a` the pocket or the slot). Never renumber. */
-export const COP = { NONE: 0, ACT: 1, TAKE: 2, STORE: 3, USE: 4, DROP: 5, CLOSE: 6, TAKE_ALL: 7 } as const;
+export const COP = { NONE: 0, ACT: 1, TAKE: 2, STORE: 3, USE: 4, DROP: 5, CLOSE: 6, TAKE_ALL: 7, HIT: 8 } as const;
 
 /** The pockets. */
 export const POCKETS = 8;
@@ -98,6 +100,12 @@ export interface CityState {
   /** Times fallen; `over` 1 once the city is lost (Hardcore). */
   deaths: number;
   over: number;
+  // C2b (2.47), optional on load.
+  /** The dead in the district the player is in; the draws their rules make; how many were put down for good; the step of the player's last blow. */
+  zeds: Zed[];
+  rng: number;
+  kills: number;
+  swung: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -118,7 +126,13 @@ export type CityEvent =
   | { type: 'used'; item: number }
   | { type: 'dropped'; item: number }
   | { type: 'full' }
-  | { type: 'sleep'; on: boolean; why?: 'morning' | 'rested' | 'hungry' | 'stirred' }
+  | { type: 'sleep'; on: boolean; why?: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked' }
+  /** The dead: one has seen the player; a bite; the player's blow (landed, and whether it put one down, where); dusk coming (minutes), night fallen or over. */
+  | { type: 'spotted'; zed: number }
+  | { type: 'bite'; harm: number }
+  | { type: 'swing'; hit: boolean; dead: boolean; x?: number; z?: number }
+  | { type: 'dusk'; soon: number }
+  | { type: 'night'; on: boolean }
   | { type: 'refused'; why: 'notTired' | 'tooHungry' | 'notHungry' | 'noUse' }
   /** Hunger bites (once each time it reaches nothing). */
   | { type: 'starving' }
@@ -148,10 +162,11 @@ export class City {
       for (const [k, v] of Object.entries(freshSurvival()))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < CITY_N && unpackBits(text, this.seen[d]));
-      this.enter(this.state.district);
+      this.enter(this.state.district, true);
     } else {
       const d = this.plan.start;
       this.state = { v: 1, seed: this.plan.seed, mode, step: 0, district: d, player: bodyAt(0, 0), visited: 0, ...freshSurvival() };
+      this.state.rng = this.salt(77) | 0;
       this.enter(d);
       const s = this.district.spawn;
       this.state.player = bodyAt(s.x, s.z);
@@ -167,7 +182,8 @@ export class City {
     return made;
   }
 
-  private enter(d: number) {
+  /** Into a district (`kept`: a save's, its dead as they were). */
+  private enter(d: number, kept = false) {
     this.district = this.districtOf(d);
     this.world = districtWorld(this.plan, d, this.district);
     this.state.district = d;
@@ -179,9 +195,23 @@ export class City {
       if (SEARCHED[p.kind] === undefined) return;
       for (let z = p.z; z < p.z + (p.d ?? 1); z++) for (let x = p.x; x < p.x + (p.w ?? 1); x++) this.propAt[z * MAP_W + x] = k + 1;
     });
+    this.zedPlaces = places(this);
+    this.zedIndoor = new Uint8Array(N);
+    this.zedStreet = new Uint8Array(N);
+    for (const i of this.zedPlaces.indoors) this.zedIndoor[i] = 1;
+    for (const i of this.zedPlaces.streets) this.zedStreet[i] = 1;
+    if (!kept) this.arrived = true;
   }
+  /** A district just entered: its dead are put down once the player stands in it. */
+  private arrived = false;
+  /** No dead at all (the tests of everything else; never set in play). */
+  peace = false;
   /** Per tile: the searchable piece of furniture standing there, + 1. */
   private propAt = new Int16Array(N);
+  /** Where the dead are put down and go to ground: the district's open floors indoors and its streets, and each as a mask. */
+  zedPlaces: { indoors: number[]; streets: number[] } = { indoors: [], streets: [] };
+  zedIndoor = new Uint8Array(N);
+  zedStreet = new Uint8Array(N);
 
   /** What blocks walking in the district (the world's own grid: walls, water, furniture, what stands on the streets). */
   get grid(): Uint8Array {
@@ -213,8 +243,9 @@ export class City {
     if (s.step % STEPS_PER_MINUTE === 0) this.minutePassed();
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
     if (s.sleeping) {
-      // (A push on the stick wakes them.)
+      // (A push on the stick wakes them; the dead go on about the streets meanwhile.)
       if (dir) this.wake('stirred');
+      else if (!this.peace) stepDead(this);
       return;
     }
     const weak = s.hunger < FULL / 4 || s.energy <= 0;
@@ -229,6 +260,12 @@ export class City {
       }
     }
     this.act(opOf(cmd), argA(cmd));
+    if (this.arrived) {
+      this.arrived = false;
+      if (!this.peace) populate(this);
+    }
+    if (!this.peace) stepDead(this);
+    if (s.over || this.events.some((e) => e.type === 'dead')) return;
     const here = this.tile;
     if (here === this.lastTile) return;
     // (Walked away from the open box: shut.)
@@ -259,7 +296,11 @@ export class City {
   }
   private starved = false;
 
-  private wake(why: 'morning' | 'rested' | 'hungry' | 'stirred') {
+  /** Woken (the dead's bite). */
+  wakeNow(why: 'attacked') {
+    if (this.state.sleeping) this.wake(why);
+  }
+  private wake(why: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked') {
     this.state.sleeping = false;
     this.events.push({ type: 'sleep', on: false, why });
   }
@@ -288,6 +329,8 @@ export class City {
     const [d, tile] = s.home;
     const moved = d !== s.district;
     if (moved) this.enter(d);
+    else this.arrived = true;
+    s.zeds = [];
     s.player = bodyAt(tile % MAP_W, Math.floor(tile / MAP_W));
     // (To the next 06:30.)
     const now = (START_MINUTE + Math.floor(s.step / STEPS_PER_MINUTE)) % DAY_MINUTES;
@@ -440,10 +483,13 @@ export class City {
       if (t.kind === 'pile' || this.searched(t.key)) return this.openBox(t.key, false);
       s.search = t.key;
       s.searchLeft = SEARCH_STEPS;
+      // (Drawers pulled out: heard nearby.)
+      noise(this, this.tile, BLOW.rustle);
       this.close();
       return void this.events.push({ type: 'search', key: t.key });
     }
     if (op === COP.CLOSE) return this.close();
+    if (op === COP.HIT) return strike(this);
     if (op === COP.TAKE || op === COP.TAKE_ALL) {
       const box = this.box();
       let full = false;
@@ -562,6 +608,10 @@ function freshSurvival() {
     home: [0, 0] as [number, number],
     deaths: 0,
     over: 0,
+    zeds: [] as Zed[],
+    rng: 1,
+    kills: 0,
+    swung: -9999,
   };
 }
 
@@ -582,6 +632,25 @@ const stacksOk = (list: unknown, most: number): list is Stack[] =>
       st[1] >= 0 &&
       st[1] <= 99 &&
       (st[0] === 0 || !!cityItem(st[0] as number)),
+  );
+
+/** Whether a save's dead are sound: bodies on the map, whole numbers, ways of tiles. */
+const zedsOk = (list: unknown): list is Zed[] =>
+  Array.isArray(list) &&
+  list.length <= 200 &&
+  list.every(
+    (z: Zed) =>
+      !!z &&
+      !!z.body &&
+      [z.body.x, z.body.z, z.body.facing, z.hp, z.mode, z.goal, z.seen, z.last, z.bit, z.reel, z.near, z.pace].every(Number.isInteger) &&
+      z.body.x >= 0 &&
+      z.body.z >= 0 &&
+      z.body.x < MAP_W * UNIT &&
+      z.body.z < MAP_H * UNIT &&
+      z.mode >= 0 &&
+      z.mode <= 3 &&
+      Array.isArray(z.path) &&
+      z.path.every((i) => Number.isInteger(i) && i >= 0 && i < N),
   );
 
 /** A city from a snapshot, or null if it isn't one (a damaged save). */
@@ -617,6 +686,14 @@ export function loadCity(snap: unknown): City | null {
     if (old) {
       const sp = city.districtOf(city.plan.start).spawn;
       city.state.home = [city.plan.start, sp.z * MAP_W + sp.x];
+    }
+    // (The dead as the save had them, if it's sound; else the district's put down afresh.)
+    if (!zedsOk(st.zeds)) {
+      city.state.zeds = [];
+      city.state.rng = city.salt(77) | 0;
+      city.state.kills = 0;
+      city.state.swung = -9999;
+      populate(city);
     }
     // (A box open or a search under way isn't carried over a load.)
     city.state.open = city.state.search = '';

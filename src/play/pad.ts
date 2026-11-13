@@ -352,6 +352,8 @@ export function padFrame(now: number) {
     controls.padStick = f.left;
     if (f.right.y) view.zoomBy(Math.exp(-f.right.y * 1.6 * dt));
     if (pressed(BTN.A)) tap(act('act'));
+    if (pressed(BTN.X) || pressed(BTN.RT)) tap(act('use'));
+    if (pressed(BTN.B)) tap('Escape');
     if (pressed(BTN.MENU)) tap('Escape');
     if (pressed(BTN.VIEW)) tap('KeyM');
     return;
