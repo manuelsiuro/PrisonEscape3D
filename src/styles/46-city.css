@@ -171,14 +171,6 @@
   background: rgba(var(--city-amber-83-rgb), 0.14);
 }
 
-.city-preview {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  text-align: left;
-  font-size: 12px;
-}
-
 .city-menu {
   display: grid;
   gap: 10px;

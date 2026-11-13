@@ -5686,7 +5686,6 @@ export const fr: Partial<Strings> = {
   "city.mode.survivorSub": "Tombez, et vous vous réveillez à votre dernier abri. Ce que vous portiez reste là où vous êtes tombé.",
   "city.mode.hardcore": "Sans retour",
   "city.mode.hardcoreSub": "Une seule vie. Tombez, et la ville est perdue.",
-  "city.preview": "En chantier : fouillez, fabriquez, barricadez une maison contre les morts et tenez les nuits. Une voix à la radio, quatre vivants, et trois sorties. Son habillage, ses sons et ses leçons arrivent ensuite.",
   "city.newSure": "Commencer une nouvelle ville ? Celle en cours ({where}, jour {n}) sera perdue.",
   "city.newYes": "Nouvelle ville",
   "city.intro.title": "Le convoi n’est jamais arrivé",

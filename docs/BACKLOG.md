@@ -48,15 +48,17 @@ All sixteen sessions the user picked on 2026-11-06 are done (v2.34.2–v2.36.0, 
 `history/v2.30-v2.34.md` and `history/v2.35-v2.39.md`); 10, gamepad support, came last (v2.45.0); 9's
 colour-blind palette was left out by the user.
 
-## 4b. City Escape: the stages to come
+## 4b. City Escape: what's left
 
-The second mode (`phases/10-city-escape.md`, its design in `source/city_escape_design.md`): C1, the
-foundations, C2, survival (scavenging, the dead, shelters and making), and C3, the story (the radio, the
-acts, the three ways out, the survivors) are built (v2.46.0, v2.47.0, v2.48.0).
-Open, in order, each a release behind `?city`:
+The second mode is whole and on the title (`phases/10-city-escape.md`, v2.46.0 to v2.49.0). Parked,
+none planned:
 
-- **C4. The finish:** the look, sounds, How to play, a tutorial, pad and phone passes, the French, an
-  independent review; then the menu entry shown to everyone.
+- **The landmarks' own models** (a helipad, a boat at the pier, the metro's gates, a mall's sign) and
+  **music of its own** (the prisons' tension theme plays).
+- **Light and fire** (a torch, a fire barrel, a generator), **cars searched**, weapons thrown or shot.
+- **The tunnel walked** as a tenth map for the metro's last night.
+- By hand (§2): touch on a real phone, a real pad, a real phone's speed in a busy district at night,
+  the French read by a native speaker, its sounds listened to.
 
 ## 5. Upkeep
 

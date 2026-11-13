@@ -5688,7 +5688,6 @@ export const en = {
   "city.mode.survivorSub": "Fall, and you wake at your last shelter. What you carried lies where you fell.",
   "city.mode.hardcore": "Hardcore",
   "city.mode.hardcoreSub": "One life. Fall, and the city is lost.",
-  "city.preview": "In the making: scavenge, make what you need, bar a house against the dead and last the nights. A voice on a radio, four people still alive, and three ways out. Its look, its sounds and its lessons come next.",
   "city.newSure": "Start a new city? The one in progress ({where}, day {n}) will be lost.",
   "city.newYes": "New city",
   "city.intro.title": "The transport never arrived",
