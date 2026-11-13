@@ -333,13 +333,14 @@ export const ITEMS: readonly ItemDef[] = [
   gear('glider', 80, 'glider', 0x9fb7d0, 0xe8d2a0),
   // P28 (long games): fruit off the canteen counter at meals, sugar from the kitchen, seed packets off the library shelf (the merchants sell both);
   // a bag of pruno fermenting (its uses: the prison days left), ripe pruno; what a bed in the garden gives; a track for the rat.
-  m('fruit', false, 4, 'fruit', 0xe0573a, ['meal', 'garden'], 0x4f8a2e),
+  // (2.43: fruit and vegetables eaten from the hand too, a little energy, a vegetable some health; not in a run from before, World.oldLong.)
+  { ...m('fruit', false, 4, 'fruit', 0xe0573a, ['meal', 'garden'], 0x4f8a2e), food: { energy: 12 } },
   m('sugar', false, 6, 'sack', 0xf4f0e6, ['freezer', 'staple'], 0x3a6fd8),
   { ...m('pruno_bag', true, 10, 'brew', 0xd9c27a, [], 0x9aa2ad), uses: BREW_DAYS },
   m('pruno', true, 40, 'brew', 0xc98a2e, ['brew'], 0x6a3f22),
   m('veg_seeds', false, 5, 'packet', 0x5aa846, ['library', 'staple'], 0xf2d23c),
   m('fruit_seeds', false, 5, 'packet', 0xd23f6a, ['library', 'staple'], 0xf2d23c),
-  m('vegetable', false, 8, 'veg', 0xe8862e, ['garden'], 0x4f8a2e),
+  { ...m('vegetable', false, 8, 'veg', 0xe8862e, ['garden'], 0x4f8a2e), food: { energy: 10, health: 10 } },
   m('rat_track', false, 12, 'track', 0xe0574a, [], 0x9aa2ad),
   // P29 (team & ink): a homemade tattoo gun (a toothbrush, a battery's motor, a razor blade's needle); each tattoo uses a jar of ink.
   gear('tattoo_gun', 30, 'inkGun', 0x3fb8a8, 0x2b3038),

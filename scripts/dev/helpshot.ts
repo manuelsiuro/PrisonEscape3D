@@ -565,6 +565,20 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 2.4,
     dz: -2,
   },
+  // (2.43: pruno's picture: the bag just brewed from two fruit and the sugar, in hand in the cell, before it's hidden.)
+  pruno: {
+    lesson: 'pruno',
+    moves: (bot) => {
+      bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
+      bot.hold('pruno_bag');
+      bot.face(DIR.SOUTH);
+      bot.until(() => false, 20);
+    },
+    when: at(0.98),
+    zoom: 2.6,
+    // (Lights Out's dark cell drawn in the evening's light.)
+    light: 20 * 60,
+  },
   garden: {
     lesson: 'garden',
     moves: (bot) => {

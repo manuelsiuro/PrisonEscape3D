@@ -413,6 +413,31 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.armRx += -0.95 * ga;
     l.armLz += 0.55 * ga;
     l.armRz -= 0.55 * ga;
+  } else if (doing === DOING.GARDEN) {
+    // A neighbour at his bed in the garden (2.43): crouched low over it, the cup in the right hand held out and tipped
+    // over the plant (the cup's own tilt, Character), a little to and fro as he waters; the left hand on the knee.
+    // (Reduced motion: held still, the cup tipped.)
+    const ga = m.act;
+    const pour = motion ? Math.sin(t * 1.6) * 0.08 : 0;
+    l.armRx += (-1.2 + pour) * ga;
+    l.armRz -= 0.08 * ga;
+    l.armLx += -0.55 * ga;
+    l.armLz += 0.18 * ga;
+    l.legL += 0.5 * ga;
+    l.legR += 0.5 * ga;
+    l.bob -= 0.16 * ga;
+  } else if (doing === DOING.RATS) {
+    // Training the rat (2.43): crouched by its ring, hands on the knees, watching it round; a pass caught throws the right
+    // fist up (`pumped`, the view's). (Reduced motion: the crouch, the fist still up for a catch.)
+    const ga = m.act;
+    const up = m.pumped;
+    l.armLx += -0.6 * ga;
+    l.armLz += 0.2 * ga;
+    l.armRx += (-0.6 - up * 1.9) * ga;
+    l.armRz -= (0.2 - up * 0.1) * ga;
+    l.legL += 0.45 * ga;
+    l.legR += 0.45 * ga;
+    l.bob -= (0.14 - up * 0.05) * ga;
   } else if (doing === DOING.WATCH) {
     // Watching the player's game (2.40): arms folded as in a queue, the weight on its heels; a cheer (`pumped`, the view's)
     // throws the right fist up over the head and lifts the body a little. (Reduced motion: the arms stay folded.)

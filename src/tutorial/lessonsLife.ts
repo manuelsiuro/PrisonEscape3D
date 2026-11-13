@@ -516,7 +516,13 @@ export const LIFE: readonly Lesson[] = [
       sim.state.rats = [pet];
     },
     steps: [
-      { text: 'lesson.ratRace.train', touch: 'lesson.ratRace.trainTouch', done: (c) => petOf(c.sim.state)?.fed === 1, fail: raceFail },
+      // (2.43: its laps a timing game: done once they're over, or walked away from.)
+      {
+        text: 'lesson.ratRace.train',
+        touch: 'lesson.ratRace.trainTouch',
+        done: (c) => petOf(c.sim.state)?.fed === 1 && !c.sim.state.ratRun?.length,
+        fail: raceFail,
+      },
       { text: 'lesson.ratRace.go', done: (c) => atTrack(c.sim), goal: (sim) => trackStart(sim), fail: raceFail },
       {
         text: 'lesson.ratRace.card',
