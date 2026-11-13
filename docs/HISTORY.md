@@ -205,4 +205,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 ## [v2.45 to v2.49](history/v2.45-v2.49.md)
 
-- Gamepad support (v2.45.0, not released yet)
+- Gamepad support (v2.45.0)
