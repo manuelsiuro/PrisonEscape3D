@@ -181,6 +181,8 @@ function frameWork(now: number) {
   padFrame(now);
   const dt = Math.min(0.1, (now - play.last) / 1000);
   play.last = now;
+  // (2.46: a mode of its own, City Escape: its own steps and picture.)
+  if (play.side) return play.side.frame(dt, now);
   const g = play.game;
   if (!g) {
     view.drawTitle(dt, now / 1000);

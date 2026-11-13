@@ -12,6 +12,7 @@ record. Nothing was rewritten: rows and entries moved word for word.
 | What one release changed, what its reviews found | [`HISTORY.md`](HISTORY.md), one line per release, then its range's file in [`history/`](history/) |
 | How a phase was planned and proved (P0–P42, the polish series, the Six Hunter) | [`phases/`](phases/), one file per roadmap (the list is in `PLAN.md` §4) |
 | A review of the game's pictures or another part, with its findings and what was picked | [`reviews/`](reviews/) (`picture-review-2.36.md`: day and night, materials, light) |
+| City Escape, the second mode: its design, its roadmap and how it sits apart from the prison game | [`source/city_escape_design.md`](source/city_escape_design.md), [`phases/10-city-escape.md`](phases/10-city-escape.md), [`decisions/city.md`](decisions/city.md) |
 | What's open: areas not polished yet, checks only a person can do, parked ideas, the improvement queue (sessions picked by the user, in order) | [`BACKLOG.md`](BACKLOG.md) |
 | The dev tools' procedures: the screen sweep, the render probes, the map viewer, How to play's pictures | [`TOOLS.md`](TOOLS.md) |
 | How the code is checked: types, lint, layout, the tests | [`PLAN.md`](PLAN.md) §6, [`.oxlintrc.json`](../.oxlintrc.json) (each rule turned off, why) |

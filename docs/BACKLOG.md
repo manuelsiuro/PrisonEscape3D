@@ -48,6 +48,16 @@ All sixteen sessions the user picked on 2026-11-06 are done (v2.34.2–v2.36.0, 
 `history/v2.30-v2.34.md` and `history/v2.35-v2.39.md`); 10, gamepad support, came last (v2.45.0); 9's
 colour-blind palette was left out by the user.
 
+## 4b. City Escape: the stages to come
+
+The second mode (`phases/10-city-escape.md`, its design in `source/city_escape_design.md`): C1, the
+foundations, is built (v2.46.0). Open, in order, each a release behind `?city`:
+
+- **C2. Survival:** hunger, loot, crafting, weapons, the dead, light and noise, shelters, death.
+- **C3. The story and the ways out:** the radio, the five acts, survivors, the three ways out, the end.
+- **C4. The finish:** the look, sounds, How to play, a tutorial, pad and phone passes, the French, an
+  independent review; then the menu entry shown to everyone.
+
 ## 5. Upkeep
 
 - **The repository's size:** 705 MB, nearly all of it old versions of the map viewer's pictures.
@@ -63,3 +73,5 @@ colour-blind palette was left out by the user.
   stall about 80 ms once each (the shower water, a night mesh, a holiday piece's shadow, the team view).
   Drawing them at load would change pixels; warming their materials on a hidden mesh would not.
   `scripts/dev/hitchprobe.ts` now counts these (`waited`).
+- **`released.sh` when the API is rate-limited** (found 2026-11-13): it reads "no deploy for this push" while
+  the tests are still running (the deploy job doesn't exist yet). It should wait for the tests first.

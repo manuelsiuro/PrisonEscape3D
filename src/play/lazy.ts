@@ -71,6 +71,24 @@ export function fetchParts() {
   fetchCards();
 }
 
+/** City Escape's code (2.46: city/play/flow.ts and all it uses), fetched when the mode is first opened. */
+type CityPart = typeof import('../city/play/flow');
+export const loadCity = loader<CityPart>(
+  () => import('../city/play/flow'),
+  () => {},
+);
+/** City Escape from the title: its code fetched first (not fetched: false, back to the title). */
+export async function cityFlow(): Promise<boolean> {
+  let m: CityPart;
+  try {
+    m = await loadCity();
+  } catch {
+    return false;
+  }
+  await m.cityFlow();
+  return true;
+}
+
 // ------------------------------------------------------------------ their places on the page
 /**
  * Where each part's pieces go on the page: a part makes its HUD, cards and bubbles when it's

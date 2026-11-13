@@ -10,6 +10,7 @@ import { drillOn } from '../sim/systems/calendar';
 import { seeded } from './rand';
 import { canvasTexture } from './canvas';
 import { isOutside } from '../sim/hunt/world';
+import { isCity } from '../city/id';
 
 /**
  * Two baked layers over the floors, drawn once per prison on canvases:
@@ -155,7 +156,7 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
 
   // Road: a dashed yellow center line along the ring (an island has no road round it, nor the manhunt's outside, P41; the forest's is a muddy track, 2.36).
   c.fillStyle = 'rgba(242, 194, 48, 0.85)';
-  const lined = world.def.theme !== 'island' && world.def.theme !== 'forest' && !isOutside(world.def);
+  const lined = world.def.theme !== 'island' && world.def.theme !== 'forest' && !isOutside(world.def) && !isCity(world.def);
   for (let i = 2; i < MAP_W - 2 && lined; i += 2) {
     c.fillRect(i * R + 2, 1 * R - 1, R - 4, 2);
     c.fillRect(i * R + 2, (MAP_H - 1) * R - 1, R - 4, 2);

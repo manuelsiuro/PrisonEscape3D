@@ -39,6 +39,7 @@ import type { Carry } from './sim/hunt/state';
  */
 // The places on the page of the parts fetched later (lazy.ts): where they were made before.
 holdPlace('hunt');
+holdPlace('city');
 holdPlace('lesson', hud.el);
 // (A replay, P25: the HUD's pause waits the replay.)
 hooks.pause = () => (play.game?.replay ? pauseReplay() : pause());

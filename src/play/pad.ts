@@ -103,6 +103,8 @@ function modeNow(): Mode {
   // (The screens over everything: the modals, and the intake's card beside the new prisoner.)
   const modals = [...document.querySelectorAll<HTMLElement>('.modal, .intake')].filter(shown);
   if (modals.length) return { kind: 'menu', layers: [modals.at(-1)!] };
+  // (2.46: a mode of its own, City Escape: played, unless a screen of its own is up.)
+  if (play.side) return play.side.paused ? { kind: 'none' } : { kind: 'play', arrows: false };
   const g = play.game;
   if (!g) {
     const title = document.querySelector<HTMLElement>('.title-screen');
@@ -345,6 +347,15 @@ export function padFrame(now: number) {
     return;
   }
 
+  // (2.46: a mode of its own, City Escape: the stick walks, the right one zooms, A acts, Menu pauses, View opens its map.)
+  if (play.side) {
+    controls.padStick = f.left;
+    if (f.right.y) view.zoomBy(Math.exp(-f.right.y * 1.6 * dt));
+    if (pressed(BTN.A)) tap(act('act'));
+    if (pressed(BTN.MENU)) tap('Escape');
+    if (pressed(BTN.VIEW)) tap('KeyM');
+    return;
+  }
   // In play (and on cards in play).
   const g = play.game!;
   const arrows = m.kind === 'play' && m.arrows;
