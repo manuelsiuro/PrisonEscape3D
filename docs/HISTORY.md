@@ -213,4 +213,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 ## [v2.50 to v2.54](history/v2.50-v2.54.md)
 
-- City Escape: the landmarks' own models (v2.50.0, not released yet)
+- City Escape: the landmarks' own models (v2.50.0)
