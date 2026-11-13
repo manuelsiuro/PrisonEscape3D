@@ -1,0 +1,15 @@
+# Decisions: City Escape
+
+The second mode (v2.46 on). Its design is [`../source/city_escape_design.md`](../source/city_escape_design.md);
+a row here is where the build departs from it or settles what it leaves open, as it stands now.
+
+| Topic (version) | The design says | The decision |
+|---|---|---|
+| A mode beside the prisons (2.46) | "a new mode accessible from the main menu … while preserving the original game mode" | **Its own simulation, no prison game in progress** while it runs (`play.side`), in `src/city/`, fetched when first opened. Nothing added to the prisons' lists or state; the title's button is the one visible change, and it is **hidden without `?city`** until stage C4 (the user's choice, 2026-11-13). |
+| The city's size (2.46) | "several 64x64 maps with transition points" | **3 × 3 districts** (the user's choice), each its own 64 × 64 `World` built when entered; one is in memory at a time. A crossing is a checkpoint: stepping on a street's two border tiles puts the player a tile inside the neighbour, on the same street. |
+| What a district is drawn from (2.46) | §2: blocks, buildings, landmarks | **The prisons' own tiles and furniture**: walls, floors, doors and props as the legend has them (`rows` in the map's characters), so the view draws them with no new tile kind; streets are `ROAD`, pavements and car parks `ASPHALT` (an indoor kind would be roofed). What stands on the streets is the city's own (`DECO`), solid through `World.parked`. Street doors are yellow: open to all. |
+| Lanes (2.46) | §2: streets meet at the border | **Three lanes each way per grid column and row**, at 11, 30 and 49 tiles ±2, two tiles wide; a district has every lane a checkpoint uses and three in four of the others, two at least each way. |
+| The clock (2.46) | §3: a day is 24 real minutes | The prisons' pace (20 steps a game minute), from **06:30 on day 1**. Night is the prisons' (21:00 to 05:00, `NIGHT_FROM`/`NIGHT_TO`). |
+| The map's fog (2.46) | §2: districts fill in as they are walked | **A disc of 7 tiles** round the player, through walls (a map of where they have been, not of what they saw); a bit a tile per district in the save. |
+| Saving (2.46) | not said | **One city in progress**, in its own slot (`pe3d.city.save`), written on entering a district, on pausing and when the page is hidden or closed; Reset progress wipes it. No run log or replay. The Intake is asked before a first city, as before a first prison. |
+| Death's two modes (2.46) | §4.6 | **Chosen on the new city's card and stored** (`MODE`); nothing kills until stage C2. |

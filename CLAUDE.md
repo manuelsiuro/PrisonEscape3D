@@ -17,6 +17,11 @@ Reworking, polishing or reviewing any part of the gameplay: use the `polish-game
 from `docs/POLISH.md`, the record of what's been done, the user's choices and the known limits, and ends by
 updating it.
 
+**City Escape** (`src/city/`, v2.46 on) is a second mode with its own simulation, generator and screens,
+built in stages behind `?city`: its design is `docs/source/city_escape_design.md`, its roadmap and the
+seams it shares with the prison game `docs/phases/10-city-escape.md`. It adds nothing to the prisons'
+lists or state; dev builds expose `window.__city()`.
+
 Rules that matter every time:
 - **The simulation is deterministic** (`src/sim/`): fixed 20 Hz steps, integer positions
   (`UNIT` per tile), PRNG in the state, no `Math.random`/`Date`/DOM/Three.js. Every input is a

@@ -19,11 +19,12 @@ import { startGame, takePlayAgain, untilQuit } from '../play/session';
 import { settingsChanged } from '../play/tips';
 import { lessonsDone } from '../game/lessons';
 import { LESSON_IDS } from '../tutorial/lessonIds';
-import { tutorialFlow } from '../play/lazy';
+import { cityFlow, tutorialFlow } from '../play/lazy';
 import { dailyFlow } from './daily';
 import { dailyNumber, dailyOf } from '../content/daily';
 import { dailyRecord, streakOf } from '../game/daily';
 import { intakeFlow } from './intake';
+import { cityOn, readCitySave } from '../city/save';
 import { hideLoading, showLoading, withLoading } from '../ui/loading';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { readPrisoner } from '../game/prisoner';
@@ -57,6 +58,7 @@ export async function titleFlow() {
     syncCareer();
     const earned = Object.keys(earnedTrophies()).length;
     const resume = readSave('auto');
+    const citySaved = cityOn() ? readCitySave() : null;
     const choice: TitleChoice =
       again || next
         ? 'play'
@@ -77,6 +79,12 @@ export async function titleFlow() {
               daily: dailyCard(found > 0),
               trophies: { n: earned, of: ACHIEVEMENTS.length },
               trophiesNew: unseenTrophies().length > 0,
+              // (2.46: City Escape, shown only where it's asked for until it's whole: city/save.ts.)
+              city: cityOn()
+                ? citySaved
+                  ? `${citySaved.name} · ${t('city.hud.day', { n: citySaved.day })}`
+                  : t('city.titleSub')
+                : undefined,
               focus: back,
               muted: settings.muted,
               toggleSound: () => {
@@ -136,6 +144,11 @@ export async function titleFlow() {
     }
     if (choice === 'daily') {
       await dailyFlow();
+      continue;
+    }
+    if (choice === 'city') {
+      // (Its code fetched as it's opened; back here, the prison behind the title again.)
+      if (await cityFlow()) await withLoading(() => view.setWorld(new Sim(backdrop).world));
       continue;
     }
     if (choice === 'tutorial') {

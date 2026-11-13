@@ -41,6 +41,8 @@ export const KEYS = {
   daily: `${PREFIX}.daily`,
   saveDaily: `${PREFIX}.save.daily`,
   logDaily: `${PREFIX}.log.daily`,
+  /** 2.46: City Escape's city in progress (city/save.ts). */
+  citySave: `${PREFIX}.city.save`,
 } as const;
 
 /** The quickest escape's run log for a prison (P16). */
@@ -66,6 +68,7 @@ export const PROGRESS_KEYS: StorageKey[] = [
   KEYS.daily,
   KEYS.saveDaily,
   KEYS.logDaily,
+  KEYS.citySave,
 ];
 
 function readText(key: StorageKey): string | null {

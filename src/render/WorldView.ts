@@ -12,6 +12,7 @@ import { lampParts, propGeometry } from './props';
 import { stoneCap, TEX } from './textures';
 import { seeded } from './rand';
 import { isOutside } from '../sim/hunt/world';
+import { isCity } from '../city/id';
 
 /** A cone standing on y (a pine's tier): radius, height, color. */
 const cone = (r: number, h: number, color: number, x: number, y: number) =>
@@ -661,28 +662,32 @@ export class WorldView {
     const alpine = theme === 'alpine';
     // (The manhunt's outside, P41 review: its ground runs on out as the map's own grass, the same shade as its floors, no seam at the edge; its woods and roads past the edge are the HuntView's, clear of each other.)
     const outside = isOutside(this.world.def);
+    // (2.46: a district of City Escape: trodden ground past its fences, the next district's roofs the city view's own.)
+    const city = isCity(this.world.def);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2),
       new THREE.MeshStandardMaterial({
         map: tex,
         color: outside
           ? new THREE.Color().setScalar(0.985)
-          : alpine
-            ? 0xe6edf5
-            : theme === 'industrial'
-              ? 0xa7a298
-              : theme === 'desert'
-                ? 0xe8d2ae
-                : theme === 'forest'
-                  ? 0xd2d8c4
-                  : 0xa9bd98,
+          : city
+            ? 0x6f6c64
+            : alpine
+              ? 0xe6edf5
+              : theme === 'industrial'
+                ? 0xa7a298
+                : theme === 'desert'
+                  ? 0xe8d2ae
+                  : theme === 'forest'
+                    ? 0xd2d8c4
+                    : 0xa9bd98,
         roughness: outside ? 0.95 : 1,
       }),
     );
     ground.position.set(MAP_W / 2, -0.02, MAP_H / 2);
     ground.receiveShadow = true;
     this.group.add(ground);
-    if (outside) return;
+    if (outside || city) return;
 
     // Trees in a ring outside the road: a seeded scatter, in squares the camera skips out of sight (chunks.ts).
     const rand = seeded(12345);

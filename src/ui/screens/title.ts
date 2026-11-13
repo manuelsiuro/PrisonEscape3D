@@ -5,7 +5,7 @@ import { installWay, onInstallChange } from '../../app/install';
 import { showInstall } from './install';
 import { showShare } from './share';
 
-export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings' | 'daily';
+export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings' | 'daily' | 'city';
 
 export interface TitleInfo {
   /** Where Play goes: the prison and its security level, or how many prisons are open to choose from. */
@@ -24,6 +24,8 @@ export interface TitleInfo {
   /** Achievements earned (12 of 42), and whether some are new since the shelf was last opened (P16). */
   trophies: { n: number; of: number };
   trophiesNew: boolean;
+  /** City Escape (2.46), where it shows: its line (the city in progress, or what it is). */
+  city?: string;
   muted: boolean;
   /** The button to focus (the one that opened the screen just closed: Play, Settings…), so a keyboard picks up where it was. */
   focus?: TitleChoice | null;
@@ -75,6 +77,15 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           <span class="menu-text"><span class="menu-label">${t('daily.title')}</span><small></small></span>
           ${info.daily.locked ? '' : info.daily.done ? `<span class="daily-pill done">${icon('check', 12)}${info.daily.streak > 1 ? t('daily.streakShort', { n: info.daily.streak }) : t('daily.doneShort')}</span>` : info.daily.streak ? `<span class="daily-pill" aria-label="${t('daily.streakShort', { n: info.daily.streak })}">${icon('flame', 12)}${info.daily.streak}</span>` : `<span class="daily-pill new">${t('daily.new')}</span>`}
         </button>
+        ${
+          info.city
+            ? `<button class="menu-btn city-btn" data-c="city" style="--tone:var(--city-rust-62);--tone-2:var(--city-rust-45)">
+          <span class="menu-ic">${icon('map', 18)}</span>
+          <span class="menu-text"><span class="menu-label">${t('city.title')}</span><small></small></span>
+          ${icon('chevronRight', 16)}
+        </button>`
+            : ''
+        }
         <button class="menu-btn${info.newcomer ? ' suggest' : ''}" data-c="tutorial" style="--tone:var(--purple-56);--tone-2:var(--title-purple-45)">
           <span class="menu-ic">${icon('book', 18)}</span>
           <span class="menu-text"><span class="menu-label">${t('title.tutorial')}</span><small>${info.tutorial}</small></span>
@@ -149,6 +160,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
       resolve(c);
     };
     el.querySelector('.daily-btn small')!.textContent = info.daily.line;
+    if (info.city) el.querySelector('.city-btn small')!.textContent = info.city;
     // Install shows until the game runs installed (the browser's own dialog can arrive later, or be used up).
     const installBtn = el.querySelector<HTMLElement>('[data-install]')!;
     const showInstallBtn = () => (installBtn.hidden = installWay() === null);

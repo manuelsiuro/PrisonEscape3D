@@ -71,7 +71,8 @@ while :; do
     r=$(jobs)
     case "$r" in
       *deploy:failure*) echo "DEPLOY FAILED ($r)"; exit 1 ;;
-      *deploy:skipped*|*deploy:none*) live "s$i" && { echo "live: $VERSION"; exit 0; }
+      # (Only once the tests are through: before that there's no deploy job yet, which isn't "none".)
+      *tests:success*deploy:skipped*|*tests:success*deploy:none*) live "s$i" && { echo "live: $VERSION"; exit 0; }
         echo "no deploy for this push (docs and tools only), and the site isn't at $VERSION: was that release deployed?"; exit 1 ;;
     esac
   fi
