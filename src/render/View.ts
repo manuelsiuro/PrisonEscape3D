@@ -1267,6 +1267,8 @@ export class View {
     // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)
     this.showerWater.update(dt, time, !this.reducedMotion, this.running, this.cam.camera);
     if (this.layer === LAYER.UNDER) this.showerWater.group.visible = false;
+    // (2.43: tipsy, the camera sways too, eased in and out with the walk's sway.)
+    this.cam.sway = this.shakeOn ? this.tipsySway : 0;
     this.cam.place(dt, time, this.previewBlend, this.shakeOn && !this.reducedMotion);
     this.lighting.placeSun(minute, this.cam.target, this.cam.shadowHalf);
     const stage = this.onStage;

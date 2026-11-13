@@ -108,6 +108,8 @@ export class World {
     if (b) this.propSolid[b.z * MAP_W + b.x] = on ? 0 : 1;
     this.refreshBlock();
   }
+  /** Replaying a run from before 2.43: the long games as they were (Sim.rules242): fruit and vegetables can't be eaten. */
+  oldLong = false;
   /** Tiles covered by solid props on the ground floor (and the checkpoint's booth, 2.33.2). */
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 where the player can't walk on the ground floor right now (the ground layer's block). */

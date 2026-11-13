@@ -15,6 +15,7 @@ import { canAnswer } from '../src/sim/systems/rollcall';
 import { keyAt, keyFrom } from '../src/content/books';
 import { freeReadSeat } from '../src/sim/systems/training';
 import { boutBeat } from '../src/sim/systems/games';
+import { ratPass } from '../src/sim/systems/races';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
@@ -137,6 +138,22 @@ export class Bot {
     const test = done ?? (() => this.st.train < 0 || this.st.str + this.st.spd + this.st.items.int !== trained);
     for (let k = 0; k < limit && !test(); k++) this.step(beatPress(this.sim));
     return test();
+  }
+  /**
+   * 2.43: the rat's laps of its ring run out, pressed for on each pass as it reaches the bait, but those in `miss` (by
+   * number, from 0) left alone. (A step's press lands as it runs, one on from `step` now.) Whether they're over.
+   */
+  ratLaps(miss: readonly number[] = [], limit = 400): boolean {
+    return this.until(
+      () => !this.st.ratRun?.length,
+      limit,
+      () => {
+        const r = this.st.ratRun;
+        if (!r?.length) return 0;
+        const { n, off } = ratPass(this.st.step + 1, r);
+        return off === 0 && n >= 0 && !miss.includes(n) ? command(0, OP.TRAIN, 1) : 0;
+      },
+    );
   }
   /** At a library shelf with its panel open (2.31): a book of the subject, and on to a free chair with it, reading there. */
   read(subject = 0) {

@@ -35,7 +35,7 @@ import { foodUse } from '../sim/systems/vending';
 import type { ToolView } from '../ui/tool';
 import { drinkArmed, press } from './reach';
 import { trackCheck } from '../sim/systems/races';
-import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
+import { BED, bedAt, bedOf, bedOwner, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
 import { planOf } from '../sim/systems/calendar';
 import { guardWord, inmateName } from '../ui/names';
@@ -610,7 +610,13 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   if (tt.action === 'plant' || tt.action === 'water' || tt.action === 'harvest') {
     const k = bedAt(w, tt.tile);
     const b = bedOf(sim.state.plots, k);
-    const crop = t(b[BED.CROP] === CROP.FRUIT ? 'thing.fruitBed' : 'thing.vegBed');
+    // (2.43: a neighbour's bed says whose; his ripe one is taken, not harvested.)
+    const owner = bedOwner(sim.state, k);
+    const crop =
+      owner >= 0
+        ? t(b[BED.CROP] === CROP.FRUIT ? 'thing.theirFruit' : 'thing.theirVeg', { name: inmateName(sim, owner) })
+        : t(b[BED.CROP] === CROP.FRUIT ? 'thing.fruitBed' : 'thing.vegBed');
+    if (owner >= 0 && tt.action === 'harvest') v.verb = t('act.harvestTheirs');
     v.what =
       tt.action === 'plant'
         ? t('thing.gardenBed')

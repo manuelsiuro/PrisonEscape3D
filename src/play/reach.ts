@@ -131,7 +131,7 @@ export function updateTargets(sim: Sim, busy: boolean, panel: boolean, held: num
     memo.tool =
       busy || panel
         ? null
-        : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv, airOf(sim), st.plots, hiddenIn(it.inv[it.hand]));
+        : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv, airOf(sim), st.plots, hiddenIn(it.inv[it.hand]), st.gardenBy);
     // The ear on the tool button (P14): a guard awake would hear this strike (the sim's own rule).
     const tool = memo.tool;
     memo.heard = !!tool && STRIKES.has(tool.action) && tool.fits && tool.hp > 0 && wouldHear(sim, strikeNoise(st.layer, tool, held));

@@ -47,7 +47,7 @@ import { smuggleFrame } from './smuggle';
 import { diceRival, gamesDoing, gamesFrameOf, placeCrate, cheersSoFar } from './games';
 import { crowdGames } from './huddles';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
-import { longFrameOf, petOnTrack } from './long';
+import { longFrameOf, petOnTrack, ratRingAt, swigUntil } from './long';
 import { teamFrameOf } from './team';
 import { nightsFrameOf } from './nights';
 import { INSTRUMENT } from '../content/nights';
@@ -98,6 +98,7 @@ const MAGAZINE = itemNumber('magazine');
 const BOOK = itemNumber('thick_book');
 /** 2.33: the water cooler's paper cup (the plastic cup's look). */
 const CUP = itemNumber('plastic_cup');
+const PRUNO = itemNumber('pruno');
 
 /** Whether the player's bed holds a dummy: read again when the items change, never every frame. */
 const dummyMemo: { sim: Sim | null; rev: number; there: boolean } = { sim: null, rev: -1, there: false };
@@ -259,8 +260,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       o.held = m.snack;
       if (o.doing === DOING.NOTHING && !m.body.moving) o.doing = DOING.SNACK;
     }
-    // (2.33: a paper cup at the water cooler.)
-    if (o.doing === DOING.DRINK) o.held = CUP;
+    // (2.33: a paper cup at the water cooler; 2.43: a neighbour's at his bed in the garden, tipped over the plant.)
+    if (o.doing === DOING.DRINK || o.doing === DOING.GARDEN) o.held = CUP;
     if (job >= 0) {
       const carry = dutyCarry(sim.world, m, job);
       if (carry) o.held = itemNumber(carry);
@@ -545,6 +546,14 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     f.facing = Math.PI;
     if (st.menu.until) f.doing = DOING.SCRIBBLE;
   }
+  // (2.43: training the rat, crouched by its ring, facing it; pruno drunk, the bag at the lips a moment.)
+  const ring = st.ratRun?.length && !seated ? ratRingAt() : null;
+  if (ring) {
+    f.doing = DOING.RATS;
+    f.facing = Math.atan2(ring.x - f.x, ring.z - f.z);
+  }
+  const swig = !seated && !p.moving && performance.now() < swigUntil();
+  if (swig) f.doing = DOING.DRINK;
   if (!seated && st.ink) {
     f.doing = DOING.TATTOO;
     const m = st.inmates[st.ink.who];
@@ -556,7 +565,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     machinePose(sim.world.props[st.train], trainAt);
     f.trainAt = trainAt;
   } else if (!seated || seated.kind === 'bed') f.trainAt = null;
-  f.reps = trainReps(st.reps, st.train >= 0);
+  // (2.43: training the rat, a fist up for each pass caught.)
+  f.reps = ring ? 100000 + st.ratRun![1] : trainReps(st.reps, st.train >= 0);
   f.puddles = st.puddles;
   // (P31: the gardener's planters growing what was planted in them.)
   const cycleOf = sim.jobActive() >= 0 ? (jobRooms(sim.world)[sim.jobActive()]?.def.cycle ?? 3) : 3;
@@ -572,7 +582,20 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
   // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)
   // (2.31: the book, read or carried to a chair.)
-  f.held = st.show || st.quiz ? 0 : st.book > 0 ? BOOK : trainKind === 'shelf' ? MAGAZINE : f.doing === DOING.DRINK ? CUP : held;
+  f.held =
+    st.show || st.quiz
+      ? 0
+      : st.book > 0
+        ? BOOK
+        : trainKind === 'shelf'
+          ? MAGAZINE
+          : swig && f.doing === DOING.DRINK
+            ? PRUNO
+            : f.doing === DOING.DRINK
+              ? CUP
+              : ring
+                ? 0
+                : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   // 2.36: the player's gang's colours, the turf's paint (held now, or faint), a word the first time on held turf.

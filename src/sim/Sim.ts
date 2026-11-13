@@ -35,6 +35,7 @@ import { rats } from './systems/rats';
 import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
+import { neighbours } from './systems/garden';
 import { vending } from './systems/vending';
 import { menu } from './systems/menu';
 import { cooler } from './systems/cooler';
@@ -56,7 +57,7 @@ import { gangs } from './systems/gangs';
 import { checkpointGates } from './systems/getaway';
 import { watch } from './systems/watch';
 import { tipsy, tipsyNow } from './systems/pruno';
-import { races } from './systems/races';
+import { races, ratLaps } from './systems/races';
 import { TIPSY_PACE } from '../content/long';
 import { coolEvery, dayOneTwists, LAST_DAY, OWL_CHECKS, twist } from './systems/twists';
 import { BED_CHECK_MINUTES, BLOCK_WALK, BODY_HALF, CRAWL_SPEED, LOW_COOL, STEPS_PER_MINUTE, TUNNEL_SPEED, walkSpeed } from './tuning';
@@ -237,6 +238,16 @@ export class Sim {
   rules240 = false;
   /** Replaying a run from before 2.42: the kiosk as it was (no inmate ever used it). Not state. */
   rules241 = false;
+  /**
+   * Replaying a run from before 2.43: the long games as they were (fruit and vegetables not eaten, nobody but the player
+   * in the garden's beds, the rat's training a press and a watch). World.oldLong, read where only the world is at hand.
+   */
+  get rules242() {
+    return this.world.oldLong;
+  }
+  set rules242(on: boolean) {
+    this.world.oldLong = on;
+  }
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -346,6 +357,8 @@ export class Sim {
     phone(this);
     // The internet kiosk (P35): mail call's goods and drawings, the time paid for, a course.
     kiosk(this);
+    // The neighbours in the garden (2.43, from the player's first bed): who goes to his bed, who's done.
+    neighbours(this);
     // The vending machine (2.32): the day's stock, the queue, what's dropping.
     vending(this);
     // The menu board and the water cooler (2.33): the scribble, its laughs; who's drinking.
@@ -363,6 +376,8 @@ export class Sim {
     oddjobs(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
+    // (2.43: the rat's laps of its ring, a timing game: over when they're run, or broken off.)
+    ratLaps(this);
     bribesWearOff(this);
     // The checkpoint (P24): waved through, its gates shut again after their minute (or at once, wanted).
     checkpointGates(this);

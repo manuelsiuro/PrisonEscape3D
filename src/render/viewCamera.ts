@@ -32,6 +32,8 @@ export class CameraRig {
   readonly offset = new THREE.Vector3();
   /** A strike's jolt (0–1), easing away. */
   private shake = 0;
+  /** 2.43: how far the tipsy sway is in (0–1, View sets it each frame; 0 with the shake setting off or reduced motion). */
+  sway = 0;
   /** The escape camera (P16): time in, length, turn (signed), the zoom it starts from; resolved once played (or skipped). */
   private cine: { t: number; dur: number; turn: number; zoom0: number; still: boolean; done: (() => void) | null; held: boolean } | null =
     null;
@@ -226,6 +228,13 @@ export class CameraRig {
     }
     this.camera.position.copy(this.target).add(this.offset);
     this.camera.lookAt(this.target);
+    if (this.sway > 0.001) {
+      // 2.43: tipsy, the world rolls a little and drifts, slowly (View: none with the shake setting off or reduced motion).
+      this.camera.position.x += Math.sin(time * 0.7) * 0.22 * this.sway;
+      this.camera.position.z += Math.sin(time * 0.53 + 1) * 0.12 * this.sway;
+      this.camera.lookAt(this.target);
+      this.camera.rotateZ(Math.sin(time * 0.9) * 0.03 * this.sway);
+    }
     if (this.shake > 0.001) {
       // A short jolt on a strike, eased away (none with the setting off or reduced motion).
       const a = shakes ? this.shake * 0.06 : 0;

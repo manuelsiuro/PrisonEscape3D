@@ -48,8 +48,21 @@ export const CROP = { NONE: 0, VEG: 1, FRUIT: 2 } as const;
 export const RAT_START_SPEED = 20;
 export const TRACK_GAIN = 3;
 export const TRACK_SLOW = 10;
-/** A session on the track lasts this long (steps: the 3D shows the rat's laps). */
+/** A session on the track lasts this long (steps: the 3D shows the rat's laps). Before 2.43 (Sim.rules242): since, the timing game's own. */
 export const TRACK_STEPS = 8 * 20;
+/**
+ * 2.43, training as a timing game (races.ts): the rat runs RAT_LAPS laps of its ring, a lap's count-in first; a lap
+ * takes RAT_LAP steps less a step for every RAT_LAP_PACE of speed (a faster rat, a quicker beat). A press within
+ * RAT_WINDOW steps of its passing the bait catches that pass (one press a lap). The session gives the old gain
+ * (trackGain) times (RAT_BASE + passes caught) / (RAT_BASE + RAT_PAR): none caught, three eighths of it; RAT_PAR, all
+ * of it; every one, a little more; never less than 1.
+ */
+export const RAT_LAPS = 6;
+export const RAT_LAP = 30;
+export const RAT_LAP_PACE = 10;
+export const RAT_WINDOW = 4;
+export const RAT_BASE = 3;
+export const RAT_PAR = 5;
 
 /** Race nights: odd prison days, at RACE_MINUTE (21:00); the card is up from CARD_MINUTE (19:00; 20:00 before 2.16, Sim.rules215); bets at most BET_RANGE tiles from the track. */
 export const RACE_MINUTE = 21 * 60;
@@ -88,3 +101,25 @@ export const PURSE = 10;
 export const RACE_NOISE = 6;
 /** The rats' names (i18n `ratName.<n>`): an inmate's rat is named by its cell. */
 export const RAT_NAMES = 12;
+
+/**
+ * 2.43, neighbours in the garden (garden.ts, not in a run from before: Sim.rules242): once the player has planted a bed
+ * in this run, inmates keep beds of their own, at most one in GARDEN_SHARE of the plot, only ones nobody has planted.
+ * In a free time an inmate whose bed wants water (or picking) goes to it, at a minute of his own within GARDEN_WITHIN;
+ * one with none starts one GARDEN_WANT times in 100. One at a time, GARDEN_PER_BLOCK a free time, for GARDEN_USE_MIN +
+ * up to GARDEN_USE_SPAN minutes, crouched at it with a cup; not in a free time's last GARDEN_LATE minutes.
+ */
+export const GARDEN_SHARE = 3;
+export const GARDEN_WANT = 15;
+export const GARDEN_WITHIN = 80;
+export const GARDEN_PER_BLOCK = 4;
+export const GARDEN_LATE = 15;
+export const GARDEN_USE_MIN = 6;
+export const GARDEN_USE_SPAN = 7;
+/** How long one on his way may take to reach his bed (steps) before he gives it up. */
+export const GARDEN_REACH = 20 * STEPS_PER_MINUTE;
+/** A neighbour's bed watered by the player when it wanted it: his opinion, once a prison day each. */
+export const GARDEN_FAVOR = 3;
+/** A neighbour's ripe bed picked by the player while he sees it (within GARDEN_SEE tiles, a clear line): his opinion. */
+export const GARDEN_THEFT = -15;
+export const GARDEN_SEE = 10;

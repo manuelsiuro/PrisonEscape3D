@@ -427,6 +427,16 @@ export interface SimState {
    * the sessions begun in the morning's free time, in the evening's].
    */
   kioskBy?: number[];
+  /**
+   * 2.43, neighbours in the garden (garden.ts GB): absent until the player first plants a bed (a run that never does
+   * hashes and plays as before); then [who's at his bed or on his way (-1 nobody), the step he's done (0: on his way),
+   * the step he set off, the bed, that prison day, who's been drawn in the morning's free time (bits), in the
+   * evening's, the visits begun in each, whose beds the player watered today (bits)], then each bed's owner (an
+   * inmate, -1 nobody's: the player's to plant).
+   */
+  gardenBy?: number[];
+  /** 2.43, the rat's training as a timing game (races.ts RR): absent until the first session; empty when none is running. */
+  ratRun?: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

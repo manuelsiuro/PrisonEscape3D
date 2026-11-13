@@ -54,6 +54,10 @@ export const DOING = {
   WATCH: 51,
   /** 2.41: quiz night's host reading out the questions (systems/quiz.ts): the card up in one hand, the other out to the contestants. */
   HOST: 52,
+  /** 2.43: a neighbour at his bed in the garden (systems/garden.ts): crouched, a cup tipped over the plant. */
+  GARDEN: 53,
+  /** 2.43: the player crouched by the rat's ring, training it (systems/races.ts): hands on the knees, a fist up as it takes the bait. */
+  RATS: 54,
 } as const;
 
 /** Using a machine (2.29): an inmate doing one of these is on it, and is asked for a turn rather than talked to. (RUN: on an inmate, only ever the treadmill; a jogger's stride is the view's.) */
