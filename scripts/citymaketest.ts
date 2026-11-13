@@ -301,4 +301,156 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
   );
 }
 
+// ------------------------------------------------------------------ what the review found (2.47)
+{
+  const c = new City(1);
+  c.step(0);
+  c.state.zeds = [];
+  const lot = c.district.lots.findIndex((l) => l.use === 'house' && l.doors.length === 1);
+  const door = c.district.lots[lot].doors[0];
+  const inside = [door - 1, door + 1, door - MAP_W, door + MAP_W].find((i) => c.district.lotAt[i] - 1 === lot && !c.grid[i])!;
+  const outside = [door - 1, door + 1, door - MAP_W, door + MAP_W].find((i) => c.district.lotAt[i] - 1 !== lot && !c.grid[i])!;
+  const face = () =>
+    (c.state.player.facing = nearestDir((door % MAP_W) - (inside % MAP_W), Math.floor(door / MAP_W) - Math.floor(inside / MAP_W)));
+  // A press on the very step the work ends doesn't begin the opposite.
+  stand(c, inside);
+  face();
+  give(c, [['boards', 1]]);
+  c.step(command(0, COP.ACT));
+  for (let k = 0; k < BAR_STEPS - 1; k++) c.step(0);
+  c.step(command(0, COP.ACT));
+  check(
+    c.events.some((e) => e.type === 'barred') && !c.events.some((e) => e.type === 'barring') && c.state.search === '',
+    'a press on the step the door is barred begins nothing',
+  );
+  for (let k = 0; k < BAR_STEPS + 2; k++) c.step(0);
+  check(c.bars.includes(door), 'and the door stays barred');
+  // The dead don't see through a barred door.
+  const z = {
+    body: bodyAt(outside % MAP_W, Math.floor(outside / MAP_W)),
+    hp: 30,
+    mode: ZED.IDLE,
+    goal: -1,
+    path: [],
+    seen: -9999,
+    last: -1,
+    bit: -9999,
+    reel: 0,
+    near: 0,
+    pace: 1000,
+  };
+  c.state.zeds = [z];
+  for (let k = 0; k < 60; k++) c.step(0);
+  check(c.state.zeds[0].mode !== ZED.CHASE, 'one of the dead outside a barred door does not see the player behind it');
+  // Nothing is barred with one of them standing in the doorway.
+  c.state.bars[c.state.district] = [];
+  c.rebar();
+  c.state.zeds = [{ ...z, body: bodyAt(door % MAP_W, Math.floor(door / MAP_W)), hp: 9999 }];
+  give(c, [['boards', 1]]);
+  face();
+  c.step(command(0, COP.ACT));
+  let refused = false;
+  for (let k = 0; k <= BAR_STEPS; k++) {
+    c.state.zeds[0].body = bodyAt(door % MAP_W, Math.floor(door / MAP_W));
+    c.state.zeds[0].mode = ZED.IDLE;
+    c.state.health = 100;
+    c.step(0);
+    if (c.events.some((e) => e.type === 'refused' && e.why === 'doorway')) refused = true;
+  }
+  check(refused && !c.bars.includes(door) && has(c, 'boards') === 1, 'one of the dead in the doorway: nothing barred, the boards kept');
+
+  // One weapon strikes: the strongest; a spear beside it lends no reach and takes no wear.
+  c.state.zeds = [];
+  give(c, [
+    ['nail_bat', 1],
+    ['spear', 1],
+  ]);
+  const east = nearestDir(1, 0);
+  const [d2, run] = (() => {
+    const w = new City(4);
+    w.step(0);
+    w.state.zeds = [];
+    let best: number[] = [];
+    for (let zz = 1; zz < 63; zz++) {
+      let r: number[] = [];
+      for (let x = 1; x < 63; x++) {
+        const i = zz * MAP_W + x;
+        if (w.zedStreet[i]) r.push(i);
+        else {
+          if (r.length > best.length) best = r;
+          r = [];
+        }
+      }
+    }
+    return [w, best] as const;
+  })();
+  const blow = (weapons: Array<[string, number]>, tiles: number) => {
+    stand(d2, run[0]);
+    d2.state.zeds = [{ ...z, body: bodyAt(run[tiles] % MAP_W, Math.floor(run[tiles] / MAP_W)), hp: 9999, mode: ZED.IDLE }];
+    give(d2, weapons);
+    d2.state.player.facing = east;
+    d2.state.swung = -9999;
+    d2.step(command(0, COP.HIT));
+    return d2.events.some((e) => e.type === 'swing' && e.hit);
+  };
+  check(
+    !blow([['nail_bat', 1]], 2) &&
+      !blow(
+        [
+          ['nail_bat', 1],
+          ['spear', 1],
+        ],
+        2,
+      ),
+    'a spear in the pockets lends the nailed bat no reach',
+  );
+  check(blow([['spear', 1]], 2), 'a spear alone reaches two tiles');
+  blow(
+    [
+      ['nail_bat', 1],
+      ['spear', 1],
+    ],
+    1,
+  );
+  check(
+    d2.state.inv[0][1] === 49 && d2.state.inv[1][1] === 35,
+    `the weapon that strikes wears, the other doesn't: ${d2.state.inv[0][1]} and ${d2.state.inv[1][1]}`,
+  );
+  // Of two bats, the nailed bat is made from the most worn.
+  give(c, [
+    ['bat', 1],
+    ['bat', 1],
+    ['nails', 2],
+    ['tape', 1],
+  ]);
+  c.state.inv[0][1] = 38;
+  c.state.inv[1][1] = 1;
+  c.step(command(0, COP.MAKE, 2));
+  check(
+    c.state.inv.some((st) => st[0] === N('bat') && st[1] === 38) && has(c, 'nail_bat') === 1,
+    'the nailed bat is made from the more worn of two bats',
+  );
+  // A save from before wear: its weapons have their blows.
+  const old = JSON.parse(JSON.stringify(c.snapshot()));
+  delete old.state.bars;
+  old.state.inv[0] = [N('knife'), 1];
+  const from = loadCity(old)!;
+  check(
+    from.state.inv[0][1] === cityItem(N('knife'))!.wear,
+    `a weapon in a save from before wear has all its blows: ${from.state.inv[0][1]}`,
+  );
+  // Damaged bars: not doors, twice, not a record.
+  const bad = JSON.parse(JSON.stringify(c.snapshot()));
+  bad.state.bars = { [c.state.district]: [door, door, 5], x: [1] };
+  check(
+    JSON.stringify(loadCity(bad)!.state.bars) === JSON.stringify({ [c.state.district]: [door] }),
+    'a save keeps barred only what are street doors, once each',
+  );
+  bad.state.bars = null;
+  check(!!loadCity(bad) && Object.keys(loadCity(bad)!.state.bars).length === 0, 'bars that are no record: none, the save still loads');
+  say(
+    'a press as the work ends begins nothing; boards stop sight; nothing is barred with one of the dead in the doorway; one weapon strikes (the strongest), alone to wear; the nailed bat takes the more worn bat; old and damaged saves load sound',
+  );
+}
+
 console.log(lines.join('\n'));

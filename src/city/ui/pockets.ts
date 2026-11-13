@@ -86,6 +86,7 @@ export class CityPockets {
   onOp: (op: number, a?: number) => void = () => {};
   onAct: () => void = () => {};
   onHit: () => void = () => {};
+  onMake: () => void = () => {};
 
   constructor() {
     this.bar = h('div', 'hotbar city-pockets hidden');
@@ -108,7 +109,7 @@ export class CityPockets {
     );
     this.hit.addEventListener('click', () => this.onHit());
     this.bar.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('.craft-btn')) return this.toggleMake();
+      if ((e.target as HTMLElement).closest('.craft-btn')) return this.onMake();
       const k = (e.target as HTMLElement).closest<HTMLElement>('[data-k]')?.dataset.k;
       if (k !== undefined) this.pick(Number(k));
     });
@@ -182,7 +183,7 @@ export class CityPockets {
       }).join('');
       this.bar.insertAdjacentHTML(
         'beforeend',
-        `<i class="hotbar-gap"></i><button class="slot craft-btn${this.makeOpen ? ' picked' : ''}" aria-label="${t('city.make.title')}" aria-keyshortcuts="C">${icon('hammer', 22)}<span>${t('city.make.open')}</span></button>`,
+        `<i class="hotbar-gap"></i><button class="slot craft-btn${this.makeOpen ? ' picked' : ''}" aria-label="${t('city.make.title')}" aria-keyshortcuts="${keyLabel('KeyC')}">${icon('hammer', 22)}<span>${t('city.make.open')}</span></button>`,
       );
       this.card.classList.toggle('hidden', this.picked < 0);
       if (this.picked >= 0) {

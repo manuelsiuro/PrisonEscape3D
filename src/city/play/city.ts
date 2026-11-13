@@ -76,6 +76,10 @@ pockets.onAct = () => {
   act();
 };
 pockets.onHit = () => hit();
+pockets.onMake = () => {
+  click();
+  toggleMake();
+};
 cityHud.onPause = () => void pauseCity();
 cityHud.onMap = () => void openMap();
 
@@ -236,6 +240,14 @@ function act() {
   r.ops.push([COP.ACT, 0]);
 }
 
+/** The Make panel opened or shut (C, its button): the open box shuts for it, and it's not for a sleeper. */
+function toggleMake() {
+  const r = run();
+  if (!r || r.paused || r.city.state.sleeping) return;
+  if (!pockets.makeOpen && r.city.state.open) r.ops.push([COP.CLOSE, 0]);
+  pockets.toggleMake();
+}
+
 /** The blow (Space, its button): as often as the arm allows. */
 function hit() {
   const r = run();
@@ -254,7 +266,7 @@ function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
   else if (code === 'Space' || code === 'KeyF') {
     e.preventDefault();
     hit();
-  } else if (code === 'KeyC') pockets.toggleMake();
+  } else if (code === 'KeyC') toggleMake();
   else if (/^Digit[1-8]$/.test(e.code)) {
     const k = Number(e.code.slice(5)) - 1;
     if (r.city.state.inv[k]?.[0]) pockets.pick(k);
@@ -336,6 +348,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       sound.stow(true);
       break;
     case 'open':
+      pockets.toggleMake(false);
       if (e.first) sound.stow(false);
       break;
     case 'took':
@@ -361,6 +374,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       buzz('missed');
       break;
     case 'sleep':
+      pockets.shut();
       r.pilot.stop();
       r.ops.length = 0;
       if (e.on) {
@@ -425,6 +439,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       save(r);
       break;
     case 'dead':
+      pockets.shut();
       r.ops.length = 0;
       r.pilot.stop();
       sound.sting();
