@@ -1,7 +1,8 @@
+import { padLabels } from '../input/bindings';
 import { t, textStamp } from '../i18n';
 import { APPS, COURSE_QUESTIONS, KIOSK } from '../content/kiosk';
 import { EXT, OP } from '../sim/command';
-import { esc, h, type Send, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /**
@@ -223,7 +224,7 @@ export class KioskCard {
           : this.app !== 'course'
             ? ''
             : v.course === 'ask'
-              ? t(TOUCH ? 'kiosk.course.askTouch' : 'kiosk.course.askKeys')
+              ? t(touchWords() ? 'kiosk.course.askTouch' : 'kiosk.course.askKeys')
               : v.course === 'reveal' && v.said === -2
                 ? t('kiosk.course.tooSlow')
                 : '',
@@ -279,7 +280,7 @@ export class KioskCard {
             const right = v.course === 'reveal' && k === v.answer;
             const mine = v.said === k;
             const cls = ['quiz-choice', right ? 'right' : '', mine && !right ? 'wrong' : '', mine ? 'mine' : ''].join(' ');
-            return `<button class="${cls}" data-choice="${k}" ${v.course === 'reveal' ? 'disabled' : ''}>${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}<span>${esc(c)}</span></button>`;
+            return `<button class="${cls}" data-choice="${k}" ${v.course === 'reveal' ? 'disabled' : ''}>${TOUCH || padLabels() ? '' : `<kbd>${k + 1}</kbd>`}<span>${esc(c)}</span></button>`;
           })
           .join('');
         return `${head}<p class="quiz-q">${esc(v.question)}</p><div class="quiz-choices">${choices}</div>`;

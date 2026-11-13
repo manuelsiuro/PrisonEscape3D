@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 import { t, textStamp } from '../i18n';
 import { itemIcons } from '../render/itemIcons';
 import { confirmed, esc, h, setText, TOUCH } from './dom';
@@ -138,7 +139,7 @@ export class PhonePanel {
       : '';
     const had = this.body.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
     const was = had ? `${had.dataset.phone}|${had.dataset.way ?? had.dataset.k ?? ''}` : '';
-    this.body.innerHTML = `<div class="phone-ways" role="radiogroup" aria-label="${esc(t('phone.ways'))}">${ways}</div>${note}<div class="board-list">${rows}</div>${TOUCH ? '' : `<p class="rat-keys">${t('phone.keys')}</p>`}`;
+    this.body.innerHTML = `<div class="phone-ways" role="radiogroup" aria-label="${esc(t('phone.ways'))}">${ways}</div>${note}<div class="board-list">${rows}</div>${TOUCH || padLabels() ? '' : `<p class="rat-keys">${t('phone.keys')}</p>`}`;
     if (was) {
       const [what, arg] = was.split('|');
       const sel =

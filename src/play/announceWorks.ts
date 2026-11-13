@@ -9,7 +9,7 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { itemOf, ownerOf } from '../sim/systems/items';
 import { underMyDesk } from '../sim/systems/structure';
 import { LAYER } from '../sim/world/World';
-import { TOUCH, h } from '../ui/dom';
+import { touchWords, h } from '../ui/dom';
 import { itemName } from '../ui/items';
 import { banner, itemsUI, ratPanel, phonePanel, crewPanel, settings, sound, tools, view } from './context';
 import { play } from './game';
@@ -194,7 +194,7 @@ export function announceWorks(e: SimEvent, sim: Sim) {
         document.body.append(fade);
         fade.addEventListener('animationend', () => fade.remove());
       }
-      if (e.layer === LAYER.UNDER) coachOnce('tunnel', TOUCH ? 'hint.tunnelTouch' : 'hint.tunnel');
+      if (e.layer === LAYER.UNDER) coachOnce('tunnel', touchWords() ? 'hint.tunnelTouch' : 'hint.tunnel');
       if (e.layer === LAYER.VENTS || e.layer === LAYER.ROOF) coachOnce('restrictedUp', 'hint.restrictedUp');
       break;
     case 'covered':
@@ -296,7 +296,7 @@ export function announceWorks(e: SimEvent, sim: Sim) {
       // The lock letting go of someone just knocked out: the knockout says it.
       if (e.who >= 0 || !sim.events.some((x) => x.type === 'koed')) sound.lockOn(e.who >= 0);
       // (2.35: told again, with the block: a new id, those who've played have seen the old hint.)
-      if (e.who >= 0) coachOnce('fight235', TOUCH ? 'hint.fightTouch' : 'hint.fightKeys');
+      if (e.who >= 0) coachOnce('fight235', touchWords() ? 'hint.fightTouch' : 'hint.fightKeys');
       break;
   }
 }

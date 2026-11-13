@@ -1,3 +1,4 @@
+import type { PadKind } from './pad';
 /**
  * The keys of the main actions, which the player may change (session 9, v2.35.0). The game reads
  * physical keys (`e.code`) and every handler still tests an action's default key ('KeyE' acts):
@@ -78,6 +79,26 @@ export function clean(raw: unknown): Bindings {
 let version = 0;
 /** Counts the changes of keys: text drawn with a key's label redraws when it moves (i18n's textStamp). */
 export const keysVersion = () => version;
+
+/** The pad in use (2.45): its kind as read from it, null while the keyboard or a finger is; and the labels the player picked (null: as read). */
+let pad: PadKind | null = null;
+let picked: PadKind | null = null;
+/** The labels the texts give the pad's buttons, while a pad is in hand (null: not in hand). */
+export const padLabels = () => (pad === null ? null : (picked ?? pad));
+/** The labels to show a pad's buttons with even when none is in hand (How to play's list): the pick, else Xbox's. */
+export const padLabelsShown = () => padLabels() ?? picked ?? 'xbox';
+/** The player's pick of labels (Settings, Gamepad buttons; null: as the pad says). */
+export function setPadPick(kind: PadKind | null) {
+  if (kind === picked) return;
+  picked = kind;
+  version++;
+}
+/** The pad picked up (its kind) or put down (null): texts redraw with its buttons, or the keys again. */
+export function setPadLabels(kind: PadKind | null) {
+  if (kind === pad) return;
+  pad = kind;
+  version++;
+}
 
 /** The keys in play from now on. */
 export function setBindings(b: Bindings) {

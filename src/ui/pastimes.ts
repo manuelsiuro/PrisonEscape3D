@@ -1,6 +1,7 @@
+import { padLabels } from '../input/bindings';
 import { t, textStamp, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
-import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
+import { confirmed, esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 
 /**
@@ -178,7 +179,7 @@ export class CheatCard {
       .join('');
     const n = bitsOf(this.sel);
     const layLabel = n ? t(n === 1 ? 'cheat.lay1' : 'cheat.lay', { n, card: esc(cardName(v.table, n > 1)) }) : t('cheat.pick');
-    const acts = `<div class="dice-acts cheat-acts"><button class="big-btn ${n && v.canPlay ? 'primary' : 'ghost'} small" data-do="lay" ${n && v.canPlay ? '' : 'disabled'}>${icon('cards', 16)}<span>${layLabel}</span></button><button class="big-btn ${v.canCall ? 'danger' : 'ghost'} small" data-do="liar" ${v.canCall ? '' : 'disabled'}>${icon('siren', 16)}<span>${t('cheat.liar')}</span>${TOUCH ? '' : '<kbd>L</kbd>'}</button></div>`;
+    const acts = `<div class="dice-acts cheat-acts"><button class="big-btn ${n && v.canPlay ? 'primary' : 'ghost'} small" data-do="lay" ${n && v.canPlay ? '' : 'disabled'}>${icon('cards', 16)}<span>${layLabel}</span></button><button class="big-btn ${v.canCall ? 'danger' : 'ghost'} small" data-do="liar" ${v.canCall ? '' : 'disabled'}>${icon('siren', 16)}<span>${t('cheat.liar')}</span>${TOUCH || padLabels() ? '' : '<kbd>L</kbd>'}</button></div>`;
     this.el.innerHTML = `<div class="train-head"><i class="train-ic">${icon('cards', 18)}</i><b>${esc(t('cheat.title', { name: v.name }))}</b><span class="train-value">${icon('coin', 13)}$${v.stake}</span><button class="icon-btn small train-stop" data-do="fold" data-confirm="${esc(t('cheat.foldConfirm', { n: v.stake }))}" aria-label="${esc(t('cheat.fold'))}">${icon('close', 16)}</button></div>
       <div class="cheat-chips"><span><em>${t('games.you')}</em><span class="chips">${chips(v.chips[0])}</span></span><span class="pile">${cardFace(0, 'pile')}<b>${v.pile}</b></span><span class="them"><span class="chips">${chips(v.chips[1])}</span><em>${esc(v.name)}</em><small>${t(v.theirs === 1 ? 'cheat.cards1' : 'cheat.cards', { n: v.theirs })}</small></span></div>
       ${table}<div class="cheat-now">${now}</div><div class="cheat-hand" role="group" aria-label="${esc(t('cheat.hand'))}">${hand}</div>${acts}`;
@@ -515,7 +516,7 @@ export class BoardCard {
                 ? t('checkers.jumpOn')
                 : v.steps.some((s) => Math.abs(s.to - s.from) > 5)
                   ? t('checkers.mustJump')
-                  : t(TOUCH ? 'checkers.yourMoveTouch' : 'checkers.yourMove');
+                  : t(touchWords() ? 'checkers.yourMoveTouch' : 'checkers.yourMove');
     const acts =
       v.over > 0
         ? `<button class="big-btn primary small" data-do="new">${icon('replay', 16)}<span>${t('checkers.newGame')}</span></button><button class="big-btn ghost small" data-do="up">${icon('close', 16)}<span>${t('checkers.getUp')}</span></button>`

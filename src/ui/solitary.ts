@@ -1,6 +1,6 @@
 import { t } from '../i18n';
 import { POTATO_PRESSES } from '../sim/tuning';
-import { h, setText, TOUCH } from './dom';
+import { h, setText, touchWords } from './dom';
 import { icon } from './icons';
 import { spanText } from '../sim/systems/clock';
 
@@ -46,7 +46,7 @@ export class SolitaryPanel {
     if (!on) return;
     setText(this.title, t('solitary.title'));
     setText(this.time, spanText(minutes));
-    setText(this.how, TOUCH ? t('solitary.hintTouch') : t('solitary.hintKeys'));
+    setText(this.how, touchWords() ? t('solitary.hintTouch') : t('solitary.hintKeys'));
     if (peeled === this.peeled) return;
     // A stroke on the potato; back to no strokes: one more potato in the pot.
     if (this.peeled >= 0) this.potato.classList.add(peeled === 0 ? 'done' : 'stroke');

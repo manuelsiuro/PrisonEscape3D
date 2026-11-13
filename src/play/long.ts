@@ -47,7 +47,7 @@ import { LAYER } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import type { LongFrame } from '../render/Long';
 import type { RaceLane, RaceView, RatRunView } from '../ui/long';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { gameCards } from './lazy';
 import { itemName } from '../ui/items';
 import { banner, itemsUI, settings, sound } from './context';
@@ -214,7 +214,7 @@ export function announceLong(sim: Sim, e: SimEvent) {
         runMarks.fill('');
         sound.squeak(1);
         window.setTimeout(() => play.game === g && sound.patter(0.8), 300);
-        coachOnce('ratRun', TOUCH ? 'hint.ratRunTouch' : 'hint.ratRunKeys');
+        coachOnce('ratRun', touchWords() ? 'hint.ratRunTouch' : 'hint.ratRunKeys');
       } else if (e.what === 'tap') {
         const r = ratRunning(sim.state);
         if (r && r[RR.LAST] >= 0) runMarks[r[RR.LAST]] = e.hit ? 'hit' : 'miss';
@@ -735,7 +735,7 @@ export function ratRunNow(sim: Sim): RatRunView | null {
   v.speed = r[RR.SPEED];
   v.turn = runTurn(at, r);
   v.count = at < r[RR.FROM] - RAT_WINDOW ? 1 : 0;
-  v.how = t(TOUCH ? 'track.howTouch' : 'track.howKeys', { name: v.name });
+  v.how = t(touchWords() ? 'track.howTouch' : 'track.howKeys', { name: v.name });
   return v;
 }
 

@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { setHaptics } from '../app/haptics';
 import { TIERS, tierFor } from '../app/quality';
 import { onScale, setUiScale, uiScale } from '../app/scale';
-import { setBindings } from '../input/bindings';
+import { setBindings, setPadPick } from '../input/bindings';
 import { Sound } from '../audio/Sound';
 import { loadSettings, saveSettings } from '../game/settings';
 import { migrateStorage } from '../game/storage';
@@ -75,6 +75,8 @@ export function applySettings() {
   document.body.classList.toggle('reduced-motion', settings.reducedMotion);
   view.setQuality(TIERS[tierFor(settings.quality)]);
   setBindings(settings.keys);
+  // (2.45: the pad's labels, as it says or as picked.)
+  setPadPick(settings.padButtons === 'auto' ? null : settings.padButtons);
   setUiScale(settings.uiScale);
   saveSettings(settings);
 }

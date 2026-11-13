@@ -196,8 +196,8 @@ feel) and the known limits.
 **Status (2026-11-13): v2.43.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
-45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 68 help topics,
-5,492 text keys in English and French, 85 test scripts.
+45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 69 help topics,
+5,588 text keys in English and French, 86 test scripts.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

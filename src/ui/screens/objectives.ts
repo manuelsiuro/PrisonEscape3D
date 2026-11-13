@@ -1,5 +1,6 @@
+import { stepKey } from '../lessonText';
 import { t, type Key } from '../../i18n';
-import { TOUCH, h } from '../dom';
+import { h } from '../dom';
 import { icon } from '../icons';
 import { keyCode } from '../../input/bindings';
 
@@ -21,7 +22,7 @@ export interface Objectives {
  * steps ahead stay unsaid (each makes sense once the one before is done): only how many are left.
  */
 export function showObjectives(o: Objectives, click: () => void): Promise<void> {
-  const step = (s: { text: Key; touch?: Key }) => t(TOUCH && s.touch ? s.touch : s.text);
+  const step = (s: { text: Key; touch?: Key }) => t(stepKey(s));
   const rows = o.steps
     .slice(0, o.done + 1)
     .map(

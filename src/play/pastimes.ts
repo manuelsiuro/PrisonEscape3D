@@ -19,7 +19,7 @@ import { lanePress, setLaneFlash } from './nights';
 import { play, playLater, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { director } from './chatter';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { floatUp } from './floats';
 import { cheer } from './games';
 import { inmateName } from '../ui/names';
@@ -219,7 +219,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
     }
     case 'checkers': {
       const name = inmateName(sim, e.who);
-      if (e.what === 'sat') coachOnce('checkers', TOUCH ? 'hint.checkersTouch' : 'hint.checkers');
+      if (e.what === 'sat') coachOnce('checkers', touchWords() ? 'hint.checkersTouch' : 'hint.checkers');
       else if (e.what === 'moved') sound.checker((e.path?.length ?? 0) > 2 || Math.abs((e.path?.[1] ?? 0) - (e.path?.[0] ?? 0)) > 5);
       else if (e.what === 'won') {
         cheer();

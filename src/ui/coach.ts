@@ -1,5 +1,5 @@
 import { t, textStamp } from '../i18n';
-import { TOUCH, h } from './dom';
+import { touchWords, h } from './dom';
 import { icon } from './icons';
 
 /** What the first-day guide watches, read from the game every frame. */
@@ -57,9 +57,9 @@ const STEPS: Step[] = [
     done: (s) => s.routine === 'breakfast' && !s.tray && s.attended,
     gone: (s) => s.routine !== 'breakfast',
   },
-  { id: 'desk', ic: 'briefcase', text: () => t(TOUCH ? 'coach.desk' : 'coach.deskKeys'), done: (s) => s.openMine, own: true },
+  { id: 'desk', ic: 'briefcase', text: () => t(touchWords() ? 'coach.desk' : 'coach.deskKeys'), done: (s) => s.openMine, own: true },
   { id: 'loot', ic: 'hand', text: () => t('coach.loot'), done: (s) => s.openOther || s.pickedUp, own: true },
-  { id: 'craft', ic: 'hammer', text: () => t(TOUCH ? 'coach.craft' : 'coach.craftKeys'), done: (s) => s.craftOpen, own: true },
+  { id: 'craft', ic: 'hammer', text: () => t(touchWords() ? 'coach.craft' : 'coach.craftKeys'), done: (s) => s.craftOpen, own: true },
   { id: 'board', ic: 'board', text: () => t('coach.board'), done: (s) => s.boardOpen, own: true },
 ];
 

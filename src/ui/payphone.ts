@@ -1,7 +1,8 @@
+import { padLabels } from '../input/bindings';
 import { t, textStamp } from '../i18n';
 import { CALLEE, JOB, LAWYER } from '../content/phone';
 import { EXT, LINE, OP } from '../sim/command';
-import { esc, h, type Send, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH, touchWords } from './dom';
 import { icon } from './icons';
 import { pad2 } from '../sim/systems/clock';
 
@@ -227,7 +228,7 @@ export class PayphoneCard {
       // The notes: a turn, a place, the mail; Lou's how-to.
       const note =
         v.phase === 'lou'
-          ? t(TOUCH ? 'phone.pickTouch' : 'phone.pickKeys')
+          ? t(touchWords() ? 'phone.pickTouch' : 'phone.pickKeys')
           : v.phase === 'result' || v.phase === 'call'
             ? ''
             : v.closed
@@ -273,7 +274,7 @@ export class PayphoneCard {
         <div class="phone-says">${v.phrases
           .map(
             (p, k) =>
-              `<button class="phone-say${v.known[k] ? ' known' : ''}" data-say="${k}">${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}<span>${esc(p)}</span>${v.known[k] ? `<i class="phone-known" title="${esc(t('phone.known'))}">${icon('star', 12)}</i>` : ''}</button>`,
+              `<button class="phone-say${v.known[k] ? ' known' : ''}" data-say="${k}">${TOUCH || padLabels() ? '' : `<kbd>${k + 1}</kbd>`}<span>${esc(p)}</span>${v.known[k] ? `<i class="phone-known" title="${esc(t('phone.known'))}">${icon('star', 12)}</i>` : ''}</button>`,
           )
           .join('')}</div>`;
     }

@@ -1,3 +1,4 @@
+import { padFrame } from './pad';
 import { dailyTimeUp } from './daily';
 import { governQuality } from '../app/quality';
 import { perfHook } from '../app/perf';
@@ -176,6 +177,8 @@ export function frame(now: number) {
 }
 
 function frameWork(now: number) {
+  // (2.45: a pad read first, on the title and the screens too: its stick steers this frame's steps.)
+  padFrame(now);
   const dt = Math.min(0.1, (now - play.last) / 1000);
   play.last = now;
   const g = play.game;

@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 import { t, textStamp } from '../i18n';
 import { esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -160,7 +161,7 @@ export class RatPanel {
     // (A rebuild keeps the focus on the same button, walking or not: keyboard and screen reader never lose their place.)
     const had = this.body.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
     const was = had ? `${had.dataset.rat}|${had.dataset.box ?? ''}` : '';
-    this.body.innerHTML = `${loose}${carry}${list}${TOUCH ? '' : `<p class="rat-keys">${t('rat.keys')}</p>`}`;
+    this.body.innerHTML = `${loose}${carry}${list}${TOUCH || padLabels() ? '' : `<p class="rat-keys">${t('rat.keys')}</p>`}`;
     if (was) {
       const [what, box] = was.split('|');
       const again =

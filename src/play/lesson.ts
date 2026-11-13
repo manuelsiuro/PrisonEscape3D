@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 import { markLessonDone } from '../game/lessons';
 import { ESCAPES } from '../sim/Sim';
 import { LAYER } from '../sim/world/World';
@@ -124,8 +125,9 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
     ch.of,
     ch.id,
     lesson.id,
+    // (2.45: a pad in hand, the keyboard's words, as their Pad twin: never the touch ones.)
     step.text,
-    step.touch,
+    padLabels() ? undefined : step.touch,
     lesson.steps.length,
     Math.min(run.shown, lesson.steps.length),
     run.tick > 0,

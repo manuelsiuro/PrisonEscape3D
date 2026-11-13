@@ -11,7 +11,7 @@ import type { Sim } from '../sim/Sim';
 import { nextUnlock, suggestSubject, toLearn } from '../sim/systems/recipes';
 import { headFull, readPace } from '../sim/systems/training';
 import { READ_LEAD, READ_SETS_A_DAY, READ_WAIT, READ_WINDOW } from '../sim/tuning';
-import { setText, TOUCH } from './dom';
+import { setText, touchWords } from './dom';
 import { icon } from './icons';
 import type { ShelfBooks } from './items';
 
@@ -209,7 +209,7 @@ export class ReadCard {
       this.value.textContent = `${t('attr.int')} ${s.items.int}`;
       setText(
         this.note,
-        `${TOUCH ? t('read.touch') : t('read.keys')} · ${t('train.cost', { n: sim.setCost('int') })} · ${t('read.today', { n: s.readToday, max: READ_SETS_A_DAY })}`,
+        `${touchWords() ? t('read.touch') : t('read.keys')} · ${t('train.cost', { n: sim.setCost('int') })} · ${t('read.today', { n: s.readToday, max: READ_SETS_A_DAY })}`,
       );
       this.next.textContent = nextLine(sim);
       this.el.querySelector('.train-stop')!.setAttribute('aria-label', t('read.stop'));

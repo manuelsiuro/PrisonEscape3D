@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { h, setText, TOUCH } from './dom';
+import { h, setText, touchWords } from './dom';
 import { icon } from './icons';
 
 /** What the hidden player's card shows (P18). */
@@ -101,7 +101,7 @@ export class StowPanel {
           : t('stow.search', { guard: v.guard, time: v.search }),
     );
     this.search.classList.toggle('good', v.searched !== 'ahead');
-    setText(this.hint, TOUCH ? t('stow.hintTouch') : t(v.canWait ? 'stow.hintKeys' : 'stow.hintKeysLate'));
+    setText(this.hint, touchWords() ? t('stow.hintTouch') : t(v.canWait ? 'stow.hintKeys' : 'stow.hintKeysLate'));
     this.bar.style.transform = `scaleX(${Math.max(0, Math.min(1, v.done)).toFixed(4)})`;
     // The Wait button: off once the search is near (the clock runs at its own pace then).
     const key = `${v.waiting}|${v.searched}|${v.canWait}`;

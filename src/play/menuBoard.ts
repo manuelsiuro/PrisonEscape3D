@@ -14,7 +14,7 @@ import { dishOn, feastOn, menuOf, mealNow } from '../sim/systems/menu';
 import { freshMeals } from '../sim/systems/grounds';
 import { FRESH_ENERGY, FRESH_HEALTH, UNIT } from '../sim/tuning';
 import { twoAtCooler } from '../sim/systems/cooler';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { powered } from '../sim/systems/power';
 import type { Frame } from '../render/viewFrame';
 import type { MenuMeal, MenuView } from '../ui/menuBoard';
@@ -89,7 +89,7 @@ export function menuNow(sim: Sim): MenuView | null {
   view.scribble = s.menu.until ? 'doing' : s.menu.scribbled === day ? 'done' : 'can';
   view.progress = s.menu.until ? Math.min(1, 1 - (s.menu.until - s.step) / SCRIBBLE_STEPS) : 0;
   view.seen = s.guards.some((g) => awake(g) && canSee(sim.world, g.body, s.player));
-  view.note = TOUCH ? t('menu.noteTouch') : t('menu.noteKeys');
+  view.note = touchWords() ? t('menu.noteTouch') : t('menu.noteKeys');
   return view;
 }
 
