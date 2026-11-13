@@ -49,7 +49,9 @@ line is something that was missed or broke at some point.
   in `labels.ts`'s `describePlan`, marked in `play/focus.ts`, and given its effect and verb in `buttontest`'s tables.
   Never decide it again in the play layer (before, four copies drifted: a meal's tray at the counter at the
   player's back took the press while the button said "Read").
-- Keyboard and touch; the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
+- Keyboard, touch and a gamepad (2.45: `play/pad.ts` sends the keys and moves the focus on cards; a card played with
+  the arrows goes in `modeNow`'s list; a text naming the mouse, a click, the digits, Esc or X gets a `…Pad` twin, which
+  `t()` shows while a pad is in hand; a text picked by touch goes through `touchWords()`); the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
 - Who gets in the way: a crowd changes what the button targets and who stands where.
 - A warning promises time: measure the whole job from nothing, from where people really are, against it. 30 s looked generous for a job a bot does in 18 s, and a third of the jobs couldn't finish.
 - A new reason a guard reacts may count as being spotted (`FEAT.spotted`, the Ghost medal, a commendation lost). A telling-off that isn't a fault needs its own event.
@@ -142,7 +144,7 @@ await p.to(50, 12); await p.press('KeyE');      // real keys
 p.freeze(); p.zoom(3);                          // held still and enlarged for a close look
 ```
 
-Cover: all six prisons; desktop, 412×915 and 915×412; keyboard and touch; English and French; every lesson
+Cover: all six prisons; desktop, 412×915 and 915×412; keyboard, touch and a pad (`scripts/dev/fakepad.ts`); English and French; every lesson
 from the Tutorial menu, start to finish; light and reduced motion where it matters.
 
 What will trip you up:
@@ -176,7 +178,7 @@ seen and where), or "not checked". Never tick a line from memory.
 | Lesson played from the menu; first-day guide | |
 | How to play page and picture; other pages that mention it | |
 | English and French read through, on screen on a phone | |
-| Desktop and both phone sizes; keyboard and touch; console clean | |
+| Desktop and both phone sizes; keyboard, touch and a pad; console clean | |
 | Bot snapshot changes read and classified, listed in `docs/phases/8-polish.md` | |
 | Old saves load, old logs replay, a log from before isn't carried on | |
 | Map viewer: `npm run maps`, overlays, photos of what changed | |

@@ -201,7 +201,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The pay phone, the kiosk and the paperwork polished (v2.42.0)
 - The docs trimmed for context (after v2.42.0)
 - The long games polished: pruno, the garden and the rats (v2.43.0)
-- Football rebuilt as penalties (v2.44.0, not released yet)
+- Football rebuilt as penalties (v2.44.0)
 
 ## [v2.45 to v2.49](history/v2.45-v2.49.md)
 
