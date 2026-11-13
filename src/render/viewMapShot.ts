@@ -169,7 +169,7 @@ function dressForMap(v: MapShotParts): () => void {
     const beds: LongFrame['beds'] = [];
     for (let z = ls.garden.z; z < ls.garden.z + ls.garden.d; z++)
       for (let x = ls.garden.x; x < ls.garden.x + ls.garden.w; x++)
-        beds.push({ tile: tile(x, z), crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false });
+        beds.push({ tile: tile(x, z), crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false, theirs: false });
     const a = ((ls.race.dir - 1) * Math.PI) / 8;
     const track = Array.from({ length: ls.race.len }, (_, k) =>
       tile(ls.race.x + Math.round(Math.cos(a)) * k, ls.race.z + Math.round(Math.sin(a)) * k),

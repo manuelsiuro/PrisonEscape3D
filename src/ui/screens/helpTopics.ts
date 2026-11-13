@@ -235,8 +235,14 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'pastimes',
       topics: [
-        T('pruno', 'brew', '#c98a2e', { recipes: ['pruno_bag'], lessons: ['pruno'], listIcons: ['coin', 'gift', 'brew'], see: ['garden'] }),
-        T('garden', 'sprout', '#4f9a3a', { pic: true, lessons: ['garden'], listIcons: ['rain', 'sun'], see: ['pruno'] }),
+        T('pruno', 'brew', '#c98a2e', {
+          pic: true,
+          recipes: ['pruno_bag'],
+          lessons: ['pruno'],
+          listIcons: ['coin', 'gift', 'brew'],
+          see: ['garden'],
+        }),
+        T('garden', 'sprout', '#4f9a3a', { pic: true, lessons: ['garden'], listIcons: ['rain', 'sun', 'users'], see: ['pruno'] }),
         T('tattoo', 'needle', '#3a3f5a', { pic: true, recipes: ['tattoo_gun'], lessons: ['tattoo'] }),
       ],
     },

@@ -269,3 +269,104 @@ export class RaceCard {
     return true;
   }
 }
+
+// ------------------------------------------------------------------ 2.43: the rat's training card
+
+/** The rat's laps as shown (play/long.ts ratRunNow). */
+export interface RatRunView {
+  name: string;
+  /** Its speed as it set off. */
+  speed: number;
+  /** Each lap's pass: 'hit' caught, 'miss' missed, '' still to come. */
+  marks: Array<'hit' | 'miss' | ''>;
+  /** Round the ring (0–1 from the bait, the way it runs), where the frame has it. */
+  turn: number;
+  /** Laps still to come before the first pass (the count-in), 0 once it's on. */
+  count: number;
+  /** How it's played, in the player's own keys or by touch. */
+  how: string;
+}
+
+/**
+ * The rat's training (2.43), as the gym's card is: a ring with the bait at its foot and the rat running round it, a pip a
+ * lap (caught, missed, to come), the one big button (a press anywhere on the ring or the button: OP.TRAIN 1, on the way
+ * down to be on time), and the close button (OP.TRAIN 3: what's caught so far still counts).
+ */
+export class RatRunCard {
+  private readonly el: HTMLElement;
+  private readonly title: HTMLElement;
+  private readonly value: HTMLElement;
+  private readonly ring: HTMLElement;
+  private readonly dot: HTMLElement;
+  private readonly pips: HTMLElement;
+  private readonly note: HTMLElement;
+  private readonly countEl: HTMLElement;
+  private drawn = '';
+
+  constructor(private readonly send: Send) {
+    this.el = h(
+      'div',
+      'train-card rat-card hidden',
+      `<div class="train-head"><i class="train-ic">${icon('rat', 18)}</i><b></b><span class="train-value"></span><button class="icon-btn small train-stop">${icon('close', 16)}</button></div>
+      <div class="rat-ring" aria-hidden="true"><i class="rat-ring-track"></i><i class="rat-bait"></i><i class="rat-dot"></i><b class="rat-count" aria-live="assertive"></b></div>
+      <div class="rat-pips" role="img"></div>
+      <p class="train-note"></p>
+      <button class="big-btn primary rat-btn">${icon('rat', 20)}<span></span></button>`,
+    );
+    this.title = this.el.querySelector('.train-head b')!;
+    this.value = this.el.querySelector('.train-value')!;
+    this.ring = this.el.querySelector('.rat-ring')!;
+    this.dot = this.el.querySelector('.rat-dot')!;
+    this.pips = this.el.querySelector('.rat-pips')!;
+    this.note = this.el.querySelector('.train-note')!;
+    this.countEl = this.el.querySelector('.rat-count')!;
+    for (const b of [this.ring, this.el.querySelector<HTMLElement>('.rat-btn')!]) {
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        this.send(OP.TRAIN, 1);
+      });
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+      // (A key on the focused button: its press too. Pointer presses were sent on the way down.)
+      b.addEventListener('click', (e) => {
+        if (e.detail === 0) this.send(OP.TRAIN, 1);
+      });
+    }
+    this.el.querySelector('.train-stop')!.addEventListener('click', () => this.send(OP.TRAIN, 3));
+    this.el.addEventListener('mousedown', (e) => e.preventDefault());
+    document.body.append(this.el);
+  }
+
+  get open() {
+    return !this.el.classList.contains('hidden');
+  }
+
+  /** A press that counted: the bait lights up for a catch, the ring dims for a miss. */
+  flash(hit: boolean) {
+    this.ring.classList.remove('hit', 'miss');
+    void this.ring.offsetWidth;
+    this.ring.classList.add(hit ? 'hit' : 'miss');
+  }
+
+  update(v: RatRunView | null) {
+    this.el.classList.toggle('hidden', !v);
+    if (!v) {
+      this.drawn = '';
+      return;
+    }
+    const key = `${textStamp()}|${v.name}|${v.speed}|${v.marks.join(',')}|${v.how}`;
+    if (key !== this.drawn) {
+      this.drawn = key;
+      setText(this.title, t('track.title', { name: v.name }));
+      setText(this.value, t('track.speedNow', { n: v.speed }));
+      setText(this.note, v.how);
+      setText(this.el.querySelector('.rat-btn span')!, t('track.tap'));
+      this.pips.innerHTML = v.marks.map((m) => `<i class="${m}"></i>`).join('');
+      const caught = v.marks.filter((m) => m === 'hit').length;
+      this.pips.setAttribute('aria-label', t('track.caught', { n: caught, of: v.marks.length }));
+    }
+    // (Round the ring from its foot, where the bait is: the way the rat runs in the picture.)
+    this.dot.style.transform = `rotate(${(v.turn * 360).toFixed(1)}deg)`;
+    setText(this.countEl, v.count > 0 ? t('track.ready') : '');
+    this.el.classList.toggle('counting', v.count > 0);
+  }
+}

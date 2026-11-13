@@ -11,14 +11,30 @@ import { MAP_W } from '../sim/world/World';
  * pet's laps on its home track at the player's feet.
  */
 export interface LongFrame {
-  /** Each bed: its tile, crop (0 none), stages grown, wilted, watered today, ripe, a hole dug through it (the soil gone: the plant grows out of the shaft's mouth). */
-  beds: Array<{ tile: number; crop: number; grown: number; wilted: boolean; watered: boolean; ripe: boolean; hole: boolean }>;
+  /**
+   * Each bed: its tile, crop (0 none), stages grown, wilted, watered today, ripe, a hole dug through it (the soil gone: the
+   * plant grows out of the shaft's mouth); 2.43, a neighbour's (a name stake at its back).
+   */
+  beds: Array<{
+    tile: number;
+    crop: number;
+    grown: number;
+    wilted: boolean;
+    watered: boolean;
+    ripe: boolean;
+    hole: boolean;
+    theirs: boolean;
+  }>;
   /** The track's tiles from the start (null: none). */
   track: number[] | null;
   /** Rats racing: the lane, how many lanes, how far along (0–1), the player's pet. */
   rats: Array<{ lane: number; of: number; pos: number; pet: boolean }>;
-  /** The pet's laps on its track at home: the middle of the floor tile it's set down on (tiles). */
-  laps: { x: number; z: number } | null;
+  /**
+   * The pet's laps on its track at home: the middle of the floor tile it's set down on (tiles). 2.43, training as a timing
+   * game: where it is round the ring (0–1 from the bait at the ring's front; null: round at its own pace, as before), and
+   * the bait (null: none; from 1 a catch, from -1 a miss, fading to 0).
+   */
+  laps: { x: number; z: number; turn: number | null; bait: number | null } | null;
   /** The player tipsy (the walk sways). */
   tipsy: boolean;
   /** 2.41: a photo finish's flash at the line (1 as they cross it, fading to 0). */
@@ -36,6 +52,9 @@ const CHALK = 0xece6d6;
 /** The lane colours (the race card's: ui/long.ts LANE_COLORS), and the player's pet's (gold). */
 const LANES = [0xe0574a, 0x3a8ed8, 0x9a5ad8, 0x5aa846];
 const PET = 0xffd34a;
+/** 2.43: the bait on the training ring (a potato's lump), and its glow at a catch. */
+const BAIT = 0xe8d29a;
+const BAIT_GLOW = 0x7fd18a;
 const MAX_BEDS = 12;
 const MAX_RACERS = 4;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -65,6 +84,11 @@ export function cropGeometry(): THREE.BufferGeometry {
     parts.push(paint(g, 0xffffff));
   }
   return merge(parts, false);
+}
+
+/** 2.43: a neighbour's name stake: a little post with a white tag on it, at the back of his bed. */
+export function stakeGeometry(): THREE.BufferGeometry {
+  return merge([box(0.03, 0.3, 0.03, 0x8a6a42, 0, 0.15, 0), box(0.14, 0.08, 0.015, 0xf2efe6, 0, 0.27, 0.02)], false);
 }
 
 /** The pet's home track: a little oval run of magazine pages (unit: a tile across). */
@@ -108,6 +132,8 @@ export class LongView {
   private readonly soilWet: THREE.InstancedMesh;
   private readonly plants: THREE.InstancedMesh;
   private readonly crops: THREE.InstancedMesh;
+  /** 2.43: the neighbours' name stakes. */
+  private readonly stakes: THREE.InstancedMesh;
   private readonly growing: Bed[] = [];
   private readonly racerBody: THREE.InstancedMesh;
   private readonly racerRim: THREE.InstancedMesh;
@@ -129,6 +155,11 @@ export class LongView {
     new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }),
   );
   private readonly lapRat: Racer;
+  /** 2.43: the bait on the ring (a potato's lump), swelling and glowing at a catch. */
+  private readonly bait = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.07, 0),
+    new THREE.MeshStandardMaterial({ color: BAIT, emissive: BAIT_GLOW, emissiveIntensity: 0, roughness: 0.8 }),
+  );
   private shown = '';
 
   constructor() {
@@ -150,6 +181,8 @@ export class LongView {
     this.soilWet = instanced(soil, new THREE.MeshStandardMaterial({ roughness: 0.35, vertexColors: true }), MAX_BEDS, true);
     this.plants = instanced(plant, new THREE.MeshStandardMaterial({ roughness: 0.8, vertexColors: true }), MAX_BEDS, true);
     this.crops = instanced(crop, new THREE.MeshStandardMaterial({ roughness: 0.5, vertexColors: true }), MAX_BEDS, true);
+    this.stakes = instanced(stakeGeometry(), new THREE.MeshStandardMaterial({ roughness: 0.9, vertexColors: true }), MAX_BEDS);
+    this.stakes.castShadow = true;
     this.soilDry.receiveShadow = this.soilWet.receiveShadow = true;
     this.plants.castShadow = this.crops.castShadow = true;
     this.group.add(this.track);
@@ -185,6 +218,12 @@ export class LongView {
     this.lapRat = rig(LANES[0]);
     this.lapRat.stripe.visible = false;
     this.lap.add(this.lapRat.root);
+    // (2.43: the bait at the ring's front, where the rat is timed passing it.)
+    this.bait.position.set(0, 0.05, 0.28);
+    this.bait.scale.y = 0.75;
+    this.bait.castShadow = true;
+    this.bait.visible = false;
+    this.lap.add(this.bait);
     this.lap.visible = false;
     this.group.add(this.lap);
     this.flash.rotation.x = -Math.PI / 2;
@@ -249,12 +288,13 @@ export class LongView {
     this.group.visible = !!f && ground;
     if (!f || !ground) return;
     // The beds: redrawn when one changes (never every frame).
-    const key = f.beds.map((b) => `${b.tile}:${b.crop}:${b.grown}:${b.wilted}:${b.watered}:${b.ripe}:${b.hole}`).join('|');
+    const key = f.beds.map((b) => `${b.tile}:${b.crop}:${b.grown}:${b.wilted}:${b.watered}:${b.ripe}:${b.hole}:${b.theirs}`).join('|');
     if (key !== this.shown) {
       this.shown = key;
       let dry = 0;
       let wet = 0;
       let crops = 0;
+      let stakes = 0;
       this.growing.length = 0;
       for (const b of f.beds.slice(0, MAX_BEDS)) {
         const x = (b.tile % MAP_W) + 0.5;
@@ -266,6 +306,8 @@ export class LongView {
           soil.setMatrixAt(n, this.m.makeTranslation(x, 0, z));
           soil.setColorAt(n, this.tint.setHex(b.watered ? SOIL_WET : SOIL));
         }
+        // (A neighbour's: his name stake at the bed's back corner, seen from the camera's side.)
+        if (b.theirs) this.stakes.setMatrixAt(stakes++, this.m.makeTranslation(x - 0.32, 0, z - 0.34));
         const scale = b.crop ? 0.65 + Math.min(3, b.grown) * 0.3 : 0;
         if (b.crop > 0) {
           this.plants.setColorAt(this.growing.length, this.tint.setHex(b.wilted ? LEAF_DRY : LEAF));
@@ -283,6 +325,7 @@ export class LongView {
         [this.soilDry, dry],
         [this.soilWet, wet],
         [this.crops, crops],
+        [this.stakes, stakes],
         [this.plants, this.growing.length],
       ] as const) {
         mesh.count = n;
@@ -340,11 +383,19 @@ export class LongView {
       (this.flash.material as THREE.MeshBasicMaterial).opacity = 0.75 * f.flash * f.flash;
     }
     // The pet's laps at home: round the oval, a lap every second and a half.
+    // (2.43: the timing game's, where the sim has it round the ring, from the bait at its front: run even with reduced
+    // motion, as the card's dot is, since it's what the press is timed by.)
     const l = f.laps;
     this.lap.visible = !!l;
     if (l) {
       this.lap.position.set(l.x, 0, l.z);
-      const a = motion ? time * 4.2 : 0;
+      const a = l.turn !== null ? Math.PI / 2 + l.turn * Math.PI * 2 : motion ? time * 4.2 : 0;
+      this.bait.visible = l.bait !== null;
+      if (l.bait !== null) {
+        const k = 1 + Math.max(0, l.bait) * 0.9 - Math.max(0, -l.bait) * 0.3;
+        this.bait.scale.set(k, k * 0.75, k);
+        (this.bait.material as THREE.MeshStandardMaterial).emissiveIntensity = Math.max(0, l.bait) * 0.8;
+      }
       const rx = 0.28 * 1.4;
       const rz = 0.28;
       this.lapRat.root.position.set(Math.cos(a) * rx, 0.012, Math.sin(a) * rz);

@@ -168,6 +168,8 @@ const CAUGHT_RAT = itemNumber('caught_rat');
 /** P28: ripe pruno (drunk), the rat's track. */
 const PRUNO = itemNumber('pruno');
 const RAT_TRACK = itemNumber('rat_track');
+/** 2.43: what the garden gives, eaten from the hand (not in a run from before: World.oldLong). */
+const PRODUCE: ReadonlySet<number> = new Set([itemNumber('fruit'), itemNumber('vegetable')]);
 /** P22: the lockpick (a keyed door ahead). */
 const LOCKPICK = itemNumber('lockpick');
 /** P24: the glider (off a roof's edge). */
@@ -364,15 +366,16 @@ export function toolTarget(
   air?: Air,
   plots?: readonly number[][],
   inside = 0,
+  owners?: readonly number[],
 ): ToolTarget | null {
   const def = held ? itemDef(held) : null;
   // The garden (P28): a ripe bed ahead (or underfoot) harvested whatever is in hand; seeds planted, a cup watering.
-  const bed = plots ? bedTarget(w, layer, b, held, plots) : null;
+  const bed = plots ? bedTarget(w, layer, b, held, plots, owners) : null;
   if (bed) return { action: bed.action, layer: LAYER.GROUND, tile: bed.tile, fits: bed.fits, hp: 0 };
   // Ripe pruno drunk; the rat's track (P28).
   if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
   if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
-  if (held === CHOCOLATE || held === CAKE || held === CHOC_EGG || held === ICE_LOLLY || def?.food)
+  if (held === CHOCOLATE || held === CAKE || held === CHOC_EGG || held === ICE_LOLLY || (def?.food && !(w.oldLong && PRODUCE.has(held))))
     return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   // P42: a pumpkin carved into a lantern, in the kitchen only.
   if (held === PUMPKIN)

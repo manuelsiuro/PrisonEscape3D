@@ -1,0 +1,17 @@
+produce: fruit +12 energy, a vegetable +10 energy +10 health, kept when it would do nothing; not before 2.43
+beds tended from the floor in front of them (else from the bed itself): center-perks 12 of 12, stalag-flucht 0 of 12, shankton 7 of 12, san-pancho 8 of 12, irongate 6 of 12, six-hunter 6 of 12, training 12 of 12
+center-perks: 3 seeds, days 1–4: 10 set off, 10 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 19 min
+stalag-flucht: 3 seeds, days 1–4: 9 set off, 8 tended, 1 gave up or called away, at most 1 a free time, the slowest there in 17 min
+shankton: 3 seeds, days 1–4: 14 set off, 14 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 12 min
+san-pancho: 3 seeds, days 1–4: 21 set off, 21 tended, 1 gave up or called away, at most 3 a free time, the slowest there in 19 min
+irongate: 3 seeds, days 1–4: 19 set off, 19 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 14 min
+six-hunter: 3 seeds, days 1–4: 17 set off, 17 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 17 min
+before 2.43: nobody but the player in the beds
+a neighbour's bed: never planted, his ripe crop taken only empty-handed (-15 seen, nothing unseen), watered when it wanted it +3 once a day
+a rainy day: no favour for watering what the rain already has
+laps: speed 20 (a lap 1.40 s): every pass 6/6 +12, 9.1 s, 2 steps late 6/6 +12, 5 late 0/6 +4, one missed 5/6 +11, none 0/6 +4, mashing 1/6 +6
+laps: speed 60 (a lap 1.20 s): every pass 6/6 +8, 7.8 s, 2 steps late 6/6 +8, 5 late 0/6 +3, one missed 5/6 +7, none 0/6 +3, mashing 1/6 +4
+laps: speed 95 (a lap 1.05 s): every pass 6/6 +3, 6.8 s, 2 steps late 6/6 +3, 5 late 0/6 +1, one missed 5/6 +3, none 0/6 +1, mashing 1/6 +2
+laps: given up, walked away from or knocked out, what was caught counts; nothing in the count-in; once a day
+saves: mid-session loads and plays on the same; damaged ones set afresh; older ones have neither
+before 2.43: the rat trained at once

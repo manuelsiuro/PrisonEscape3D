@@ -97,7 +97,7 @@ import { endBout, pickLock, push, stopPick } from './games';
 import { aimShot, releaseShot } from './hoops';
 import { energyCost } from './weather';
 import { drink } from './pruno';
-import { raceOp, trainRat } from './races';
+import { endRatRun, raceOp, ratTap, trainRat } from './races';
 import { bedTarget, tend } from './garden';
 import { take } from './pantry';
 import { holdKick, releaseKick } from './football';
@@ -149,8 +149,12 @@ export function useItems(sim: SimContext, cmd: number) {
       jobOp(sim, a);
       break;
     case OP.TRAIN:
-      // An arm-wrestle (P22): the presses push, 3 gives up.
-      if (s.bout.length) {
+      // (2.43: the rat's training: a press for the bait, 3 stops.)
+      if (s.ratRun?.length) {
+        if (a === 3) endRatRun(sim);
+        else if (a === 1 || a === 2) ratTap(sim);
+      } else if (s.bout.length) {
+        // An arm-wrestle (P22): the presses push, 3 gives up.
         if (a === 3) endBout(sim, 'gaveUp');
         else if (a === 1 || a === 2) push(sim, a);
       } else if (a === 0) study(sim, argB(cmd));
@@ -393,7 +397,9 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   const held = itemOf(it.inv[it.hand]);
   // (`up`: the Dig up button's own target, whichever way the player faces.)
   const target =
-    up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots, hiddenIn(it.inv[it.hand]));
+    up !== undefined
+      ? up
+      : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots, hiddenIn(it.inv[it.hand]), s.gardenBy);
   if (!target) return;
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
@@ -436,7 +442,7 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
     return;
   }
   if (target.action === 'plant' || target.action === 'water' || target.action === 'harvest') {
-    const bed = bedTarget(w, s.layer, p, held, s.plots);
+    const bed = bedTarget(w, s.layer, p, held, s.plots, s.gardenBy);
     if (bed) tend(sim, bed);
     return;
   }

@@ -1010,7 +1010,10 @@ export class Character {
       (doing === DOING.BOARD ? 0.18 * this.act : 0) +
       (doing === DOING.BRAWL ? 0.08 * this.act : 0) +
       (doing === DOING.KIOSK ? 0.05 * this.act : 0) +
-      (doing === DOING.DIG ? 0.32 * this.act : 0);
+      (doing === DOING.DIG ? 0.32 * this.act : 0) +
+      // (2.43: bent over a garden bed with a cup; over the rat's ring.)
+      (doing === DOING.GARDEN ? 0.3 * this.act : 0) +
+      (doing === DOING.RATS ? 0.22 * this.act : 0);
     // The head's nod (the activity's: a book read, a rinse, a towel; dozing; a blow's snap), blended with the rest.
     const n = (t * 0.2) % 1;
     const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
@@ -1293,12 +1296,23 @@ export class Character {
       return;
     }
     m.visible = true;
-    if (g === GRIP.UPRIGHT || doing === DOING.DRINK || doing === DOING.SNACK) {
+    if (g === GRIP.UPRIGHT || doing === DOING.DRINK || doing === DOING.SNACK || doing === DOING.GARDEN) {
       // (2.33: a cup or a can at the mouth, or a snack, stays upright in the fist whatever the arm does, tipped toward the
       // lips for a sip; session 15: a cup, a can or a bottle carried about too, not tipped over as the arm swings.)
       UPRIGHT.copy(this.armR.quaternion).invert();
       TIP.setFromEuler(
-        TIP_E.set(doing === DOING.DRINK ? -0.25 - 0.55 * this.moves.sip : doing === DOING.SNACK ? -0.2 : 0, -Math.PI / 2, 0),
+        TIP_E.set(
+          doing === DOING.DRINK
+            ? -0.25 - 0.55 * this.moves.sip
+            : doing === DOING.SNACK
+              ? -0.2
+              : // (2.43: a neighbour's cup tipped out over the plant, pouring.)
+                doing === DOING.GARDEN
+                ? 1.1
+                : 0,
+          -Math.PI / 2,
+          0,
+        ),
       );
       m.quaternion.copy(UPRIGHT).multiply(TIP);
       m.position.set(0, -0.46, 0.03);

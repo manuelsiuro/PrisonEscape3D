@@ -1,9 +1,27 @@
 import { buzz } from '../app/haptics';
-import { BETS, CROP, GROWN, LEGS, RACE_MINUTE, RACE_STEPS, TAKE, TIPSY_HEAT, WATER_MAX } from '../content/long';
+import {
+  BETS,
+  CROP,
+  GROWN,
+  HEATWAVE_WATER,
+  LEGS,
+  RACE_MINUTE,
+  RACE_STEPS,
+  RAT_LAPS,
+  RAT_WINDOW,
+  TAKE,
+  TIPSY_HEAT,
+  WATER_MAX,
+} from '../content/long';
 import { type Key, lowerFirst, t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt, formatTime, hhmm, prisonDay } from '../sim/systems/clock';
-import { BED, bedCount, bedOf, bedTile, ripe, wilted } from '../sim/systems/garden';
+import { BED, bedCount, bedOf, bedOwner, bedTile, ripe, wilted } from '../sim/systems/garden';
+import { lineOfSight } from '../sim/ai/sight';
+import { planOf } from '../sim/systems/calendar';
+import { DOING } from '../sim/ai/doing';
+import { itemNumber } from '../content/items';
+import { itemOf } from '../sim/systems/items';
 import { takeCheck } from '../sim/systems/pantry';
 import {
   atTrack,
@@ -12,6 +30,9 @@ import {
   oddsOf,
   petLane,
   RACE,
+  ratLap,
+  ratRunning,
+  RR,
   raceCard,
   raceCheck,
   runRace,
@@ -25,9 +46,11 @@ import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import type { LongFrame } from '../render/Long';
-import type { RaceLane, RaceView } from '../ui/long';
+import type { RaceLane, RaceView, RatRunView } from '../ui/long';
+import { TOUCH } from '../ui/dom';
+import { gameCards } from './lazy';
 import { itemName } from '../ui/items';
-import { banner, itemsUI, sound } from './context';
+import { banner, itemsUI, settings, sound } from './context';
 import { play } from './game';
 import { coachOnce } from './tips';
 import { treatOffers } from './holidays';
@@ -110,6 +133,10 @@ const RESULT_MS = 6000;
 export function resetLong() {
   result = null;
   lapAt = null;
+  swigEnd = 0;
+  remindedDay = 0;
+  nextTipsyLine = 0;
+  nextSwigLine = 0;
 }
 
 export function announceLong(sim: Sim, e: SimEvent) {
@@ -124,8 +151,9 @@ export function announceLong(sim: Sim, e: SimEvent) {
       } else if (e.what === 'drunk') {
         sound.gulp();
         buzz('attended');
-        banner.toast(t('toast.drunk', { n: TIPSY_HEAT }), 'info', 5000);
-        coachOnce('tipsy', 'hint.tipsy');
+        // (2.43: the bag at the lips a moment; one message, not a toast and a hint saying the same.)
+        swigEnd = performance.now() + SWIG_MS;
+        banner.toast(t('toast.drunk', { n: TIPSY_HEAT }), 'info', 6000);
       } else if (e.what === 'stumble') sound.hiccup();
       else if (e.what === 'sober') itemsUI.toast(t('toast.sober'));
       break;
@@ -144,7 +172,29 @@ export function announceLong(sim: Sim, e: SimEvent) {
         sound.pluck();
         buzz('attended');
         itemsUI.toast(t(e.crop === CROP.FRUIT ? 'toast.harvestFruit' : 'toast.harvestVeg', { n: e.n ?? 2 }));
+      } else if (e.what === 'favour' && e.who !== undefined) {
+        sound.chime();
+        // (At the top of his opinion already: thanked all the same, no number.)
+        if (e.n) floatUp(`+${e.n}`, 'gain');
+        itemsUI.toast(t(e.n ? 'toast.gardenFavour' : 'toast.gardenFavourTop', { name: inmateName(sim, e.who), n: e.n ?? 0 }));
+        neighbourLine(sim, e.who, 'garden.thanks');
+      } else if (e.what === 'stolen' && e.who !== undefined) {
+        // (2.43: a neighbour's crop taken, not harvested; seen or not, as the sim says.)
+        const seen = !!e.seen;
+        sound.pluck();
+        if (seen) sound.sting();
+        banner.toast(
+          t(seen ? 'toast.gardenStolenSeen' : 'toast.gardenStolen', { name: inmateName(sim, e.who), n: e.n ?? 0 }),
+          seen ? 'bad' : 'info',
+          4500,
+        );
+        if (seen) neighbourLine(sim, e.who, 'garden.thief', 'shout');
+      } else if (e.what === 'neighbourWatered' && e.who !== undefined) {
+        // (Now and then, with the player close by to hear it: a word to the plants.)
+        if (near(sim, e.who, 8) && Math.random() < 0.6) neighbourLine(sim, e.who, 'garden.tending');
       } else if (e.what === 'ripe' || e.what === 'wilted' || e.what === 'died') {
+        // (2.43: a neighbour's bed is his business: the player hears only of their own.)
+        if (bedOwner(sim.state, e.bed) >= 0) break;
         // (Once a kind a morning, however many beds.)
         const key = `${e.what}:${sim.state.step}`;
         if (gardenSaid.has(key)) break;
@@ -158,12 +208,35 @@ export function announceLong(sim: Sim, e: SimEvent) {
       }
       break;
     case 'track':
-      if (e.what === 'trained') {
+      // (2.43: the laps a timing game: the ring set down, the passes marked as they're pressed for, the gain at the end.)
+      if (e.what === 'start') {
         lapAt = lapSpot(sim);
+        runMarks.fill('');
         sound.squeak(1);
         window.setTimeout(() => play.game === g && sound.patter(0.8), 300);
+        coachOnce('ratRun', TOUCH ? 'hint.ratRunTouch' : 'hint.ratRunKeys');
+      } else if (e.what === 'tap') {
+        const r = ratRunning(sim.state);
+        if (r && r[RR.LAST] >= 0) runMarks[r[RR.LAST]] = e.hit ? 'hit' : 'miss';
+        if (e.hit) {
+          sound.squeak(1.3);
+          buzz('attended');
+        } else sound.setBeat();
+        baitAt = performance.now();
+        baitHit = !!e.hit;
+        gameCards()?.ratCard.flash(!!e.hit);
+      } else if (e.what === 'trained') {
+        if (e.hits === undefined) {
+          lapAt = lapSpot(sim);
+          sound.squeak(1);
+          window.setTimeout(() => play.game === g && sound.patter(0.8), 300);
+        } else if (e.hits >= RAT_LAPS) cheer();
         floatUp(`+${e.gain} ${t('race.speedShort')}`, 'gain');
-        itemsUI.toast(t('toast.ratTrained', { name: ratName(sim), item: lowerFirst(itemName(e.item ?? 0)), n: e.speed ?? 0 }));
+        itemsUI.toast(
+          e.hits === undefined
+            ? t('toast.ratTrained', { name: ratName(sim), item: lowerFirst(itemName(e.item ?? 0)), n: e.speed ?? 0 })
+            : t('toast.ratRan', { name: ratName(sim), hits: e.hits, of: RAT_LAPS, n: e.speed ?? 0, gain: e.gain ?? 0 }),
+        );
       } else {
         sound.sting();
         itemsUI.toast(t(`track.${e.why}` as Key, { name: ratName(sim) }));
@@ -472,7 +545,8 @@ export function longFrameOf(sim: Sim, a: number): LongFrame {
   const n = bedCount(w);
   for (let k = 0; k < n; k++) {
     const b = bedOf(s.plots, k);
-    const v = (bedPool[k] ??= { tile: 0, crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false });
+    const v = (bedPool[k] ??= { tile: 0, crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false, theirs: false });
+    v.theirs = bedOwner(s, k) >= 0;
     v.tile = bedTile(w, k);
     v.hole = w.ground.kind[v.tile] === TILE.SHAFT;
     v.crop = b[BED.CROP];
@@ -519,6 +593,11 @@ export function longFrameOf(sim: Sim, a: number): LongFrame {
     lapAt ??= lapSpot(sim);
     lapFrame.x = lapAt.x;
     lapFrame.z = lapAt.z;
+    // (2.43: round the ring as the sim has it, the bait at its front; a catch lights the bait a moment.)
+    const r = ratRunning(s);
+    lapFrame.turn = r ? runTurn(s.step + a, r) : null;
+    const since = performance.now() - baitAt;
+    lapFrame.bait = r ? (since < BAIT_MS ? (baitHit ? 1 : -1) * (1 - since / BAIT_MS) : 0) : null;
     f.laps = lapFrame;
   } else {
     lapAt = null;
@@ -526,6 +605,138 @@ export function longFrameOf(sim: Sim, a: number): LongFrame {
   }
   f.tipsy = tipsyNow(s);
   return f;
+}
+
+// ------------------------------------------------------------------ 2.43: the neighbours and pruno, out loud
+
+/** An inmate within `tiles` of the player. */
+function near(sim: Sim, who: number, tiles: number): boolean {
+  const m = sim.state.inmates[who];
+  const p = sim.state.player;
+  return !!m && Math.hypot(m.body.x - p.x, m.body.z - p.z) <= tiles * UNIT;
+}
+
+/** One of a bank's lines ('|' between them), said by an inmate as a bubble (none with the chatter off). */
+function neighbourLine(sim: Sim, who: number, bank: Key, style: 'say' | 'shout' = 'say') {
+  if (settings.chatter === 'off' || !sim.state.inmates[who]) return;
+  const lines = t(bank).split('|');
+  director.line(performance.now() / 1000, who, lines[Math.floor(Math.random() * lines.length)], 3, style, 0.2, 3);
+}
+
+/** When the next word about the player's state may come (performance.now()). */
+let nextTipsyLine = 0;
+let nextSwigLine = 0;
+const PRUNO_ITEM = itemNumber('pruno');
+
+/**
+ * 2.43, every frame: tipsy, an inmate who can see the player has something to say about it now and then; with ripe pruno
+ * in hand, a friend close by asks for a swig (a gift, the talk's own). Bubbles only, nothing in the sim.
+ */
+export function longTalk(sim: Sim, busy: boolean) {
+  const s = sim.state;
+  const now = performance.now();
+  if (!busy) gardenReminder(sim);
+  if (busy || settings.chatter === 'off' || s.layer !== LAYER.GROUND) return;
+  const tipsy = tipsyNow(s);
+  const swig = itemOf(s.items.inv[s.items.hand]) === PRUNO_ITEM;
+  if (!tipsy && !swig) return;
+  if (tipsy && now < nextTipsyLine) return;
+  if (!tipsy && now < nextSwigLine) return;
+  const p = s.player;
+  let best = -1;
+  let bestD = Infinity;
+  s.inmates.forEach((m, k) => {
+    if (m.ko > 0 || m.angry > 0 || m.doing === DOING.SLEEP || s.talk === k) return;
+    const d = Math.hypot(m.body.x - p.x, m.body.z - p.z);
+    if (d > (tipsy ? 6 : 4) * UNIT || d >= bestD || (!tipsy && m.opinion < SWIG_OPINION)) return;
+    if (!lineOfSight(sim.world, m.body.x, m.body.z, p.x, p.z)) return;
+    best = k;
+    bestD = d;
+  });
+  if (best < 0) return;
+  if (tipsy) {
+    nextTipsyLine = now + 7000 + Math.random() * 5000;
+    neighbourLine(sim, best, 'pruno.seen', Math.random() < 0.5 ? 'shout' : 'say');
+  } else {
+    nextSwigLine = now + 40000;
+    neighbourLine(sim, best, 'pruno.ask');
+  }
+}
+/** The opinion a friend asks for a swig at. */
+const SWIG_OPINION = 50;
+
+/** The prison day the evening's reminder about the garden was last given. */
+let remindedDay = 0;
+
+/**
+ * 2.43: from 18:00, once a day, the player's own beds still wanting water today (not ripe, not rained on, fewer cupfuls
+ * than the day needs): a word, while there's still time (the garden's open until 22:00). Not in a run from before.
+ */
+function gardenReminder(sim: Sim) {
+  const s = sim.state;
+  if (sim.rules242 || !s.plots.length || clockAt(s.step).minuteOfDay < REMIND_MINUTE) return;
+  const day = prisonDay(s.step);
+  if (remindedDay === day) return;
+  const weather = planOf(sim).weather;
+  if (weather === 'rain' || weather === 'storm') return;
+  const need = weather === 'heatwave' ? HEATWAVE_WATER : 1;
+  const dry = s.plots.filter((b, k) => b[BED.CROP] !== CROP.NONE && !ripe(b) && b[BED.WATER] < need && bedOwner(s, k) < 0).length;
+  remindedDay = day;
+  if (!dry || s.lockdown) return;
+  sound.chime();
+  // (A heatwave: two cups a day, so a bed watered once is still short; said so.)
+  const key = need > 1 ? 'toast.gardenThirstyHeat' : dry === 1 ? 'toast.gardenThirstyOne' : 'toast.gardenThirsty';
+  banner.toast(t(key, { n: dry }), 'info', 5000);
+}
+const REMIND_MINUTE = 18 * 60;
+
+// ------------------------------------------------------------------ 2.43: the rat's training, a timing game
+
+/** Where the rat's ring is set down (tiles), while its laps are run. */
+export const ratRingAt = (): { x: number; z: number } | null => lapAt;
+
+/** 2.43: pruno drunk: the bag held at the lips until then (performance.now()). */
+let swigEnd = 0;
+const SWIG_MS = 1600;
+export const swigUntil = () => swigEnd;
+
+/** Each lap's pass as the player pressed for it (the sim keeps the count; the card shows which). */
+const runMarks: Array<'hit' | 'miss' | ''> = new Array<'hit' | 'miss' | ''>(RAT_LAPS).fill('');
+/** The last press's moment and whether it caught the bait (the bait lights or dims a moment in the picture). */
+let baitAt = -Infinity;
+let baitHit = false;
+const BAIT_MS = 350;
+const ratView: RatRunView = { name: '', speed: 0, marks: runMarks, turn: 0, count: 0, how: '' };
+let runStepSeen = -1;
+let runStepAt = 0;
+
+/** Round the ring at a step (between steps too): 0 at the bait, the way it runs. */
+const runTurn = (at: number, r: readonly number[]) => {
+  const lap = ratLap(r[RR.SPEED]);
+  return ((((at - r[RR.FROM]) / lap) % 1) + 1) % 1;
+};
+
+/** The rat's laps on the card (null: none running): its passes caught or missed so far, where it is round the ring. */
+export function ratRunNow(sim: Sim): RatRunView | null {
+  const s = sim.state;
+  const r = ratRunning(s);
+  if (!r) return null;
+  const now = performance.now();
+  if (s.step !== runStepSeen) {
+    runStepSeen = s.step;
+    runStepAt = now;
+  }
+  const at = s.step + Math.min(1, (now - runStepAt) / 50);
+  const lap = ratLap(r[RR.SPEED]);
+  // (A pass gone by unpressed for: missed.)
+  for (let k = 0; k < RAT_LAPS; k++) if (!runMarks[k] && at > r[RR.FROM] + k * lap + RAT_WINDOW) runMarks[k] = 'miss';
+  const v = ratView;
+  v.name = ratName(sim);
+  v.speed = r[RR.SPEED];
+  v.turn = runTurn(at, r);
+  v.count = at < r[RR.FROM] - RAT_WINDOW ? 1 : 0;
+  v.how = t(TOUCH ? 'track.howTouch' : 'track.howKeys', { name: v.name });
+  return v;
 }
 
 /** The pet is away running on the track (a race, its laps): not on the shoulder in the picture. */
@@ -539,7 +750,7 @@ export function petOnTrack(sim: Sim): boolean {
   return (s.race[RACE.DAY] === day && s.race[RACE.ON] === 1 && s.race[RACE.ENTERED] === 1) || (pet.lap ?? 0) > s.step || finish;
 }
 
-const lapFrame = { x: 0, z: 0 };
+const lapFrame: NonNullable<LongFrame['laps']> = { x: 0, z: 0, turn: null, bait: null };
 /** A free floor tile beside the player (east, south, west, north; else their own), for the home track: its middle, in tiles. */
 function lapSpot(sim: Sim): { x: number; z: number } {
   const w = sim.world;

@@ -34,8 +34,14 @@ import {
   RACE_MINUTE,
   RACE_NOISE,
   RACE_STEPS,
+  RAT_BASE,
+  RAT_LAP,
+  RAT_LAP_PACE,
+  RAT_LAPS,
   RAT_NAMES,
+  RAT_PAR,
   RAT_START_SPEED,
+  RAT_WINDOW,
   RIVAL_FED,
   RIVAL_SPEED,
   RIVAL_SPREAD,
@@ -55,6 +61,7 @@ import { LAYER, MAP_W, type World } from '../world/World';
 import { clockAt, prisonDay } from './clock';
 import { eyesOn } from './games';
 import { itemOf } from './items';
+import { beatAt } from './training';
 import { makeNoise } from './noise';
 import { baitSlot, petOf, RAT } from './rats';
 import { refuse } from './social';
@@ -341,9 +348,13 @@ export function trackCheck(sim: SimContext): TrackRefusal | null {
 /** The speed a session on the track adds to a rat this fast. */
 export const trackGain = (speed: number) => Math.min(100 - speed, TRACK_GAIN + Math.floor((100 - speed) / TRACK_SLOW));
 
-/** The use button with the track in hand: the rat eats the bait and runs its laps (faster for it). */
+/**
+ * The use button with the track in hand: the rat eats the bait and runs its laps (faster for it). 2.43 (not in a run
+ * from before, Sim.rules242): the laps are a timing game (`ratRun`, RR), the gain worked out when they're over.
+ */
 export function trainRat(sim: SimContext) {
   const s = sim.state;
+  if (s.ratRun?.length) return;
   const why = trackCheck(sim);
   if (why) {
     sim.events.push({ type: 'track', what: 'refused', why });
@@ -355,9 +366,78 @@ export function trainRat(sim: SimContext) {
   s.items.inv[k] = 0;
   s.items.rev++;
   const speed = pet.speed ?? RAT_START_SPEED;
+  pet.fed = prisonDay(s.step);
+  if (!sim.rules242) {
+    s.ratRun = [s.step + ratLap(speed), 0, -1, speed, food];
+    pet.lap = ratRunEnd(s.ratRun);
+    s.player.moving = false;
+    sim.events.push({ type: 'track', what: 'start', speed, item: food });
+    return;
+  }
   const gain = trackGain(speed);
   pet.speed = speed + gain;
-  pet.fed = prisonDay(s.step);
   pet.lap = s.step + TRACK_STEPS;
   sim.events.push({ type: 'track', what: 'trained', speed: pet.speed, gain, item: food });
+}
+
+// ------------------------------------------------------------------ 2.43: the laps as a timing game
+
+/**
+ * `ratRun`'s places (state.ts): the step the rat first passes the bait (after a lap's count-in), the passes caught,
+ * the last pass pressed for (-1 none), its speed as it set off, the bait it ate.
+ */
+export const RR = { FROM: 0, HITS: 1, LAST: 2, SPEED: 3, BAIT: 4 } as const;
+
+/** A lap of the ring at this speed (steps): a faster rat, a quicker beat. */
+export const ratLap = (speed: number) => RAT_LAP - Math.floor(Math.max(0, Math.min(100, speed)) / RAT_LAP_PACE);
+
+/** The step a session's over: half a lap after the last pass. */
+export const ratRunEnd = (r: readonly number[]) => r[RR.FROM] + (RAT_LAPS - 1) * ratLap(r[RR.SPEED]) + (ratLap(r[RR.SPEED]) >> 1);
+
+/** What a session gives a rat this fast, with this many passes caught (never less than 1, never past 100). */
+export const ratGain = (speed: number, hits: number) =>
+  Math.min(100 - speed, Math.max(1, Math.round((trackGain(speed) * (RAT_BASE + hits)) / (RAT_BASE + RAT_PAR))));
+
+/** Where a step falls among the passes: the pass's number (0 the first), how far off it (steps). */
+export const ratPass = (step: number, r: readonly number[]) => beatAt(step - r[RR.FROM], ratLap(r[RR.SPEED]));
+
+/** Training now (2.43): the session's state, or null. */
+export const ratRunning = (s: Pick<SimState, 'ratRun'>): readonly number[] | null => (s.ratRun?.length ? s.ratRun : null);
+
+/** A press while it runs (OP.TRAIN 1 or 2): the first press for a pass counts, caught within RAT_WINDOW of it; none in the count-in. */
+export function ratTap(sim: SimContext) {
+  const s = sim.state;
+  const r = s.ratRun;
+  if (!r?.length || s.step < r[RR.FROM] - RAT_WINDOW) return;
+  const { n, off } = ratPass(s.step, r);
+  if (n < 0 || n >= RAT_LAPS || n === r[RR.LAST]) return;
+  r[RR.LAST] = n;
+  const hit = Math.abs(off) <= RAT_WINDOW;
+  if (hit) r[RR.HITS]++;
+  sim.events.push({ type: 'track', what: 'tap', hit, hits: r[RR.HITS] });
+}
+
+/** The session over (its laps run, given up, or broken off): the speed it earned. */
+export function endRatRun(sim: SimContext) {
+  const s = sim.state;
+  const r = s.ratRun;
+  if (!r?.length) return;
+  s.ratRun = [];
+  const pet = petOf(s);
+  if (!pet) return;
+  const gain = ratGain(r[RR.SPEED], r[RR.HITS]);
+  pet.speed = r[RR.SPEED] + gain;
+  pet.lap = Math.min(pet.lap ?? 0, s.step);
+  sim.events.push({ type: 'track', what: 'trained', speed: pet.speed, gain, item: r[RR.BAIT], hits: r[RR.HITS] });
+}
+
+/** Each step: the session runs out, or ends when the player walks off, is knocked out, called away or locked down. */
+export function ratLaps(sim: SimContext) {
+  const s = sim.state;
+  const r = s.ratRun;
+  if (!r?.length) return;
+  const pet = petOf(s);
+  const broken =
+    !pet || pet.mode !== RAT.SHOULDER || s.ko > 0 || sim.away || s.sleeping || s.lockdown || s.player.moving || s.layer !== LAYER.GROUND;
+  if (broken || s.step >= ratRunEnd(r)) endRatRun(sim);
 }

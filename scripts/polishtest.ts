@@ -5,6 +5,7 @@
  * the list is the polish-gameplay skill's: it needs eyes.)
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import { Sim } from '../src/sim/Sim';
@@ -47,7 +48,8 @@ console.log(`${pictured.length} pictures, each with its recipe`);
 
 // ------------------------------------------------------------------ rule changes
 const num = (v: string) => v.split('.').reduce((sum, x) => sum * 1000 + Number(x), 0);
-const flags = Object.keys(new Sim(CENTER_PERKS, 1)).filter((k) => /^rules\d+$/.test(k));
+// (2.43: the flags kept on the world too are getters on the prototype: rules232, rules2331, rules236, rules242.)
+const flags = [...Object.keys(new Sim(CENTER_PERKS, 1)), ...Object.getOwnPropertyNames(Sim.prototype)].filter((k) => /^rules\d+$/.test(k));
 /** The plan, with its decisions and phases, and the history: each split into files (2026-11-06). */
 const docs = (...dirs: string[]) =>
   dirs
@@ -65,11 +67,13 @@ const version = (flag: string) =>
     : flag.length === 9
       ? [Number(flag[5]), Number(flag.slice(6, 8)), Number(flag[8])]
       : [Number(flag[5]), Number(flag.slice(6)), 0];
-const log = (game: string): RunLog => ({ v: 1, prison: CENTER_PERKS.id, seed: 1, game, from: 0, steps: 0, data: '', sums: [] });
+const log = (game: string, prison = CENTER_PERKS.id): RunLog => ({ v: 1, prison, seed: 1, game, from: 0, steps: 0, data: '', sums: [] });
 for (const flag of flags) {
   check(plan.includes(`Sim.${flag}`), `${flag}: written down in the plan (PLAN.md, docs/decisions/, docs/phases/)`);
   const [a, b, c] = version(flag);
-  const set = prepareReplay(log(`${a}.${b}.${c}`), CENTER_PERKS);
+  // (rules236 is the roll call's as it was where 2.37 moved it: a prison that has one before 2.37.)
+  const def = flag === 'rules236' ? PRISONS.find((d) => d.rollCallBefore237)! : CENTER_PERKS;
+  const set = prepareReplay(log(`${a}.${b}.${c}`, def.id), def);
   check(!!set && (set.sim as unknown as Record<string, boolean>)[flag] === true, `${flag}: a log from ${a}.${b}.${c} replays under it`);
 }
 const latest = [...flags].sort((a, b) => num(version(a).join('.')) - num(version(b).join('.'))).at(-1)!;

@@ -112,13 +112,15 @@ function stepSim(g: Game, dt: number) {
     // (P29: at a tattoo the moves steer the needle: the stick or the keys, never a tap's walk.)
     let dir = controls.steering ? controls.dir() : sim.state.ink || sim.state.show ? 0 : g.pilot.dir(p);
     // (2.29: a direction still held from walking up to a machine doesn't step off it: that takes a fresh one.)
-    const onGear = sim.state.train >= 0 || sim.state.askTurn.length > 0;
+    // (2.43: nor from the rat's training: the stick or a key still down as it began would end it at once, the day's spent.)
+    const onGear = sim.state.train >= 0 || sim.state.askTurn.length > 0 || !!sim.state.ratRun?.length;
     if (onGear && !press.onGear && dir !== 0) press.gearHeld = true;
     press.onGear = onGear;
     if (!onGear || dir === 0) press.gearHeld = false;
     if (press.gearHeld) dir = 0;
     // On the equipment, left and right are reps (sent as ops): only up or down steps off.
-    if ((onGear || sim.state.bout.length) && (dir === 1 || dir === 9)) dir = 0;
+    // (The rat's training isn't: any way steps off.)
+    if (((onGear && !sim.state.ratRun?.length) || sim.state.bout.length) && (dir === 1 || dir === 9)) dir = 0;
     // (P24: still in the air on a glider, on screen: down first, then the stick.)
     if (view.gliding) {
       dir = 0;
