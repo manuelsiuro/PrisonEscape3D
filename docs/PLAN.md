@@ -203,7 +203,7 @@ feel) and the known limits.
 
 ## 8. Progress
 
-**Status (2026-11-13): v2.47.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
+**Status (2026-11-13): v2.48.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 79 help topics,
