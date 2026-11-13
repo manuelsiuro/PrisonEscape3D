@@ -243,7 +243,8 @@ export function quester(c: City, way: number) {
     if (t?.kind === 'npc' && o.id === 'key' && t.tile === o.at.tile) {
       pilot.stop();
       goal = '';
-      return command(0, COP.ACT);
+      // (Met first; then what he asks handed over, as his card's button does.)
+      return s.met & 1 ? command(0, COP.GIVE, 0) : command(0, COP.ACT);
     }
     if (t?.kind === 'way') {
       pilot.stop();

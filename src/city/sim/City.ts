@@ -18,6 +18,8 @@ import type { Beat } from '../content/story';
 import {
   choose,
   freshStory,
+  giveErrand,
+  holds,
   meet,
   trade,
   soundStory,
@@ -64,6 +66,7 @@ export const COP = {
   MAKE: 9,
   CHOOSE: 10,
   TRADE: 11,
+  GIVE: 12,
 } as const;
 
 /** The pockets. */
@@ -165,6 +168,8 @@ export interface CityState {
   met: number;
   errand: number[];
   mark: number[];
+  /** The last brute put down in the streets: its district × 1000 + its night (-1: none yet). One a district a night. */
+  brute: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -549,6 +554,10 @@ export class City {
     // (Standing on the way out's own tile: it is what's meant, whatever lies there.)
     const way = storyTarget(this);
     if (way && way.tile === here) return way;
+    // (Beside a survivor: them, before what lies underfoot, or a reward dropped there would take them away.)
+    for (const p of this.people)
+      if (Math.abs((p.tile % MAP_W) - (here % MAP_W)) + Math.abs(Math.floor(p.tile / MAP_W) - Math.floor(here / MAP_W)) === 1)
+        return { kind: 'npc', key: `n${p.who}`, tile: p.tile, prop: null };
     if (this.boxOf(`g${here}`)?.some((st) => st[0])) return { kind: 'pile', key: `g${here}`, tile: here, prop: null };
     const p = this.state.player;
     const x = here % MAP_W;
@@ -579,14 +588,13 @@ export class City {
       const tz = z + dz;
       if (tx < 0 || tz < 0 || tx >= MAP_W || tz >= MAP_H) continue;
       const t = tz * MAP_W + tx;
-      const who = this.people.find((p) => p.tile === t);
-      if (who) return { kind: 'npc', key: `n${who.who}`, tile: t, prop: null };
       const k = this.propAt[t];
       if (k) {
         const kind = this.district.props[k - 1].kind;
         // (A bed looked into and empty is slept in; with something in it, looked into again first.)
         const empty = this.boxOf(`${k - 1}`)?.every((st) => !st[0]) ?? false;
-        return { kind: kind === 'bed' && empty ? 'bed' : 'box', key: `${k - 1}`, tile: t, prop: kind };
+        // (One the story still has something in, the armoury's: looked into, never slept in.)
+        return { kind: kind === 'bed' && empty && !holds(this, k - 1) ? 'bed' : 'box', key: `${k - 1}`, tile: t, prop: kind };
       }
       if (this.boxOf(`g${t}`)?.some((st) => st[0]) && !this.grid[t]) return { kind: 'pile', key: `g${t}`, tile: t, prop: null };
     }
@@ -731,6 +739,7 @@ export class City {
     if (op === COP.MAKE) return this.make(a);
     if (op === COP.CHOOSE) return choose(this, a);
     if (op === COP.TRADE) return trade(this, a >> 2, a & 3);
+    if (op === COP.GIVE) return giveErrand(this, a);
     if (op === COP.TAKE || op === COP.TAKE_ALL) {
       const box = this.box();
       let full = false;
@@ -865,11 +874,16 @@ export class City {
   /** Things handed to the player: into the pockets, what doesn't fit on the ground underfoot. */
   hand(item: number, n: number) {
     const each = cityItem(item)?.wear !== undefined;
+    let dropped = false;
     for (let k = 0; k < (each ? n : 1); k++) {
       const left = this.give(this.state.inv, POCKETS, item, each ? 1 : n);
-      if (left) this.give(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, item, left);
+      if (left) {
+        this.give(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, item, left);
+        dropped = true;
+      }
     }
     this.events.push({ type: 'took', item, n });
+    if (dropped) this.events.push({ type: 'full' });
   }
 
   /** New things into slots: a weapon each in a slot of its own with all its blows, the rest as `put`. */
@@ -1070,7 +1084,7 @@ export function loadCity(snap: unknown): City | null {
     city.soundBars(before);
     city.rebar();
     soundStory(city);
-    if (!zedsOk(st.zeds) || ![st.rng, st.kills, st.swung, st.arrive].every(Number.isInteger)) {
+    if (!zedsOk(st.zeds) || ![st.rng, st.kills, st.swung, st.arrive].every(Number.isInteger) || st.kills < 0) {
       city.state.zeds = [];
       city.state.rng = city.salt(77) | 0;
       city.state.kills = 0;
@@ -1078,6 +1092,8 @@ export function loadCity(snap: unknown): City | null {
       city.state.arrive = 0;
       populate(city);
     }
+    // (An errand counted from more of the dead than were ever put down: from now.)
+    city.state.mark = city.state.mark.map((m) => Math.min(m, city.state.kills));
     // (A home nobody can stand on, the map changed under an old save: beside where the city starts.)
     if (city.districtGrid(city.state.home[0])[city.state.home[1]]) {
       const sp = city.districtOf(city.plan.start).spawn;

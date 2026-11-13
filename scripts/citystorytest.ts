@@ -562,8 +562,14 @@ const ids = (c: City) =>
   check(s.met === 1 && ev.some((e) => e.type === 'talk' && e.what === 'met'), 'the fence met');
   ev = press(c, COP.ACT);
   check(ev.some((e) => e.type === 'talk' && e.what === 'chat') && !(s.flags & FLAG.KEY), 'an errand paid with nothing brought');
+  // Talk hands nothing over (the radio's batteries are safe in the pockets): his card's button does.
   s.inv[0] = [N('cloth'), 4];
   ev = press(c, COP.ACT);
+  check(
+    ev.some((e) => e.type === 'talk' && e.what === 'chat') && c.count(N('cloth')) === 4 && s.errand[0] === 0,
+    'a word hands the errand over',
+  );
+  ev = press(c, COP.GIVE, 0);
   check(
     ev.some((e) => e.type === 'talk' && e.what === 'done') &&
       (s.flags & FLAG.KEY) !== 0 &&
@@ -600,14 +606,25 @@ const ids = (c: City) =>
   by(1);
   press(c, COP.ACT);
   s.inv[4] = [N('bottle'), 2];
-  press(c, COP.ACT);
+  press(c, COP.GIVE, 1);
   check(s.errand[1] === 1 && c.canMake(medkit) !== 'unknown' && c.count(N('bandage')) === 2, "the nurse's first errand teaches the medkit");
   s.kills += 9;
-  press(c, COP.ACT);
+  press(c, COP.GIVE, 1);
   check(s.errand[1] === 1, 'nine put down pays for ten');
   s.kills += 1;
-  press(c, COP.ACT);
-  check(s.errand[1] === 2 && c.count(N('pills')) === 3, 'ten put down since it was asked');
+  // (Her pay with the pockets full: on the ground underfoot, said, and she is still who the button means.)
+  for (const st of s.inv)
+    if (!st[0]) {
+      st[0] = N('scrap');
+      st[1] = 4;
+    }
+  ev = press(c, COP.GIVE, 1);
+  check(
+    s.errand[1] === 2 && ev.some((e) => e.type === 'full') && c.target()?.kind === 'npc',
+    `paid with full pockets: the button is ${c.target()?.kind}`,
+  );
+  press(c, COP.GIVE, 1);
+  check(s.errand[1] === 2, 'an errand handed over twice');
   ev = press(c, COP.ACT);
   check(
     ev.some((e) => e.type === 'talk' && e.what === 'chat'),
@@ -623,19 +640,29 @@ const ids = (c: City) =>
   bad.state.errand = [3, 0, 0, 0];
   check(loadCity(bad)!.state.met === 0, 'an errand past its last is kept');
   // None of the dead are put down in a building one of them holds.
+  // (Counted from across the district, by day, when they stand indoors; with the rule off they are there.)
   c.peace = false;
-  by(1);
-  s.step = ((2 - 1) * 1440 + 23 * 60 - START_MINUTE) * MIN;
-  let inside = 0;
-  for (let k = 0; k < 40; k++) {
-    populate(c);
-    inside += s.zeds.filter((z) =>
-      c.safeLots.has(c.district.lotAt[Math.floor(z.body.z / 1024) * MAP_W + Math.floor(z.body.x / 1024)] - 1),
-    ).length;
-  }
-  check(inside === 0, `${inside} of the dead put down in the nurse's building`);
+  const nurse = c.story.people[1];
+  stand(c, nurse.district, c.districtOf(nurse.district).spawn.z * MAP_W + c.districtOf(nurse.district).spawn.x);
+  s.step = ((2 - 1) * 1440 + 12 * 60 - START_MINUTE) * MIN;
+  const count = () => {
+    let n = 0;
+    for (let k = 0; k < 60; k++) {
+      populate(c);
+      n += s.zeds.filter(
+        (z) => c.district.lotAt[Math.floor(z.body.z / 1024) * MAP_W + Math.floor(z.body.x / 1024)] === nurse.lot + 1,
+      ).length;
+    }
+    return n;
+  };
+  const inside = count();
+  const kept = c.safeLots;
+  c.safeLots = new Set();
+  const without = count();
+  c.safeLots = kept;
+  check(inside === 0 && without > 0, `${inside} of the dead put down in the nurse's building (${without} with the rule off)`);
   say(
-    `the survivors: met, then an errand each in turn (things brought, or the dead put down since it was asked); the fence's first pays the armoury's key, the others' teach a recipe; swaps only beside them and only with the things; none of the dead put down in their buildings; a save carries them`,
+    `the survivors: met, then an errand each in turn (things brought, or the dead put down since it was asked); the fence's first pays the armoury's key, the others' teach a recipe; swaps only beside them and only with the things; a word hands nothing over, their card's button does; pay that doesn't fit lies underfoot and they keep the button; none of the dead put down in their buildings; a save carries them`,
   );
 }
 
@@ -666,8 +693,8 @@ const ids = (c: City) =>
   check(n2.runners === 0 && n2.brutes === 0, `night 2: ${n2.runners} runners, ${n2.brutes} brutes`);
   check(n3.runners > 0 && n3.brutes === 0, `night 3: ${n3.runners} runners, ${n3.brutes} brutes`);
   check(
-    n5.brutes === 30 && n5.most === 1 && n5.runners > 0,
-    `night 5: ${n5.brutes} brutes in 30 nights (${n5.most} at once), ${n5.runners} runners`,
+    n5.brutes === 1 && n5.most === 1 && n5.runners > 0,
+    `night 5: ${n5.brutes} brutes over 30 puttings down in one night (one a district a night), ${n5.runners} runners`,
   );
   s.step = ((5 - 1) * 1440 + 12 * 60 - START_MINUTE) * MIN;
   populate(c);
@@ -700,7 +727,6 @@ const ids = (c: City) =>
     ];
     for (let k = 0; k < BRUTE.pound * 4; k++) {
       s.health = 100;
-      if (s.zeds[0]) s.zeds[0].seen = s.step;
       s.zeds.length = Math.min(1, s.zeds.length);
       c.step(0);
       if (c.events.some((e) => e.type === 'breach')) return k;
@@ -710,9 +736,30 @@ const ids = (c: City) =>
   const shambler = siege(0);
   const brute = siege(ZKIND.BRUTE);
   check(shambler < 0, 'a shambler broke a barred door');
+  // A thing of the armoury's in a bed looked into and emptied before the key was had: still looked into after, never slept in.
+  {
+    let seed = 1;
+    while (seed < 80) {
+      const t = new City(seed);
+      const sp = t.story.things[THINGS.indexOf('flare')];
+      if (t.districtOf(sp.district).props[sp.prop].kind === 'bed') break;
+      seed++;
+    }
+    const t = new City(seed);
+    t.peace = true;
+    t.step(0);
+    fetch(t, THINGS.indexOf('flare'));
+    const sp = t.story.things[THINGS.indexOf('flare')];
+    for (const st of t.state.boxes[`${sp.district}:${sp.prop}`]) st[0] = st[1] = 0;
+    t.step(0);
+    check(t.target()?.kind === 'box', `seed ${seed}: the armoury's bed, emptied, is a ${t.target()?.kind}`);
+    t.state.flags |= FLAG.KEY;
+    const got = fetch(t, THINGS.indexOf('flare'));
+    check(got.some((e) => e.type === 'found') && t.target()?.kind === 'bed', `seed ${seed}: the flare gun out of its bed with the key`);
+  }
   check(brute >= BRUTE.pound - 1, `a brute at a barred door: ${brute} steps`);
   say(
-    `runners from night ${RUNNER.fromNight} and one brute from night ${BRUTE.fromNight} where the danger is ${BRUTE.danger} or more, at night only; a brute pounds a barred door open in ${BRUTE.pound} steps, a shambler never`,
+    `runners from night ${RUNNER.fromNight} and one brute from night ${BRUTE.fromNight} where the danger is ${BRUTE.danger} or more, at night only; a brute at a barred door pounds it open in ${BRUTE.pound} steps without seeing through it, a shambler never; one brute a district a night; a thing of the armoury's in an emptied bed is still looked into`,
   );
 }
 
