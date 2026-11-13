@@ -1,4 +1,5 @@
 import { t, type Key } from '../../i18n';
+import { keyCode } from '../../input/bindings';
 import { h } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { MAP_H, MAP_W } from '../../sim/world/grid';
@@ -21,7 +22,8 @@ function modal<T extends string>(html: string, esc: T, focus: string, setup?: (e
       resolve(c);
     };
     const key = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' || (esc === 'close' && (e.code === 'KeyM' || e.code === 'KeyJ') && !e.repeat)) done(esc);
+      const code = keyCode(e.code);
+      if (e.code === 'Escape' || (esc === 'close' && (code === 'KeyM' || code === 'KeyJ') && !e.repeat)) done(esc);
     };
     addEventListener('keydown', key);
     el.onclick = (e) => {

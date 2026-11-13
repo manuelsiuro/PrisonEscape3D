@@ -377,6 +377,8 @@ export class City {
     if (s.sleeping) {
       // (A push on the stick wakes them; the dead go on about the streets meanwhile.)
       if (dir) this.wake('stirred');
+      // (The journal is read in bed: a way out chosen there is chosen.)
+      if (opOf(cmd) === COP.CHOOSE) choose(this, argA(cmd));
       if (!this.peace) stepDead(this);
       return;
     }
@@ -506,6 +508,9 @@ export class City {
   /** What the action button would do now: what lies underfoot, else the furniture faced, else any beside. */
   target(): Target | null {
     const here = this.tile;
+    // (Standing on the way out's own tile: it is what's meant, whatever lies there.)
+    const way = storyTarget(this);
+    if (way && way.tile === here) return way;
     if (this.boxOf(`g${here}`)?.some((st) => st[0])) return { kind: 'pile', key: `g${here}`, tile: here, prop: null };
     const p = this.state.player;
     const x = here % MAP_W;
@@ -527,10 +532,10 @@ export class City {
         : null;
     const faced = (fx ? doorAt(here + fx) : null) ?? (fz ? doorAt(here + fz * MAP_W) : null);
     if (faced) return faced;
-    // (The way out's own tile: kept clear of furniture, so it takes nothing's place.)
-    const way = storyTarget(this);
-    if (way) return way;
-    for (const [dx, dz] of around) {
+    // (Beside the way out's tile: it comes after the furniture faced, before the furniture merely beside.)
+    for (let a = 0; a < around.length; a++) {
+      const [dx, dz] = around[a];
+      if (a === 2 && way) return way;
       if (!dx && !dz) continue;
       const tx = x + dx;
       const tz = z + dz;
@@ -978,6 +983,8 @@ export function loadCity(snap: unknown): City | null {
   const old = st.health === undefined;
   if (!old) {
     if (![st.health, st.hunger, st.energy, st.deaths, st.over, st.searchLeft].every(Number.isInteger)) return null;
+    // (A city that's over is never saved: lost or left, there's nothing to carry on.)
+    if (st.over !== 0) return null;
     if (st.mode !== MODE.SURVIVOR && st.mode !== MODE.HARDCORE) return null;
     if (st.health < 0 || st.health > 100 || st.hunger < 0 || st.hunger > FULL || st.energy < 0 || st.energy > FULL) return null;
     if (!stacksOk(st.inv, POCKETS) || st.inv.length !== POCKETS) return null;
