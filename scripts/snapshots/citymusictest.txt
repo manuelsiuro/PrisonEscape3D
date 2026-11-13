@@ -1,0 +1,19 @@
+cityDay: 72 bpm, 440 notes, 0 drums, 0 hats in 64 bars; 0 untuned partials, the rest within 11 cents of the scale
+cityNight: 54 bpm, 456 notes, 64 drums, 0 hats in 64 bars; 48 untuned partials, the rest within 11 cents of the scale
+cityShelter: 60 bpm, 544 notes, 0 drums, 0 hats in 64 bars; 0 untuned partials, the rest within 11 cents of the scale
+cityChase: 140 bpm, 768 notes, 320 drums, 512 hats in 64 bars; 0 untuned partials, the rest within 11 cents of the scale
+cityHold: 132 bpm, 1280 notes, 128 drums, 512 hats in 64 bars; 0 untuned partials, the rest within 11 cents of the scale
+a street by day: cityDay
+indoors by day, the door barred: cityDay
+seen by one of the dead: cityChase
+it loses the player: a second on: cityChase
+4 seconds on: cityDay
+dusk: cityNight
+behind a barred door: cityShelter
+the door torn open, three after the player: cityChase
+the beacon lit: cityHold
+the beacon lit, chased: cityHold
+the district left with them behind: cityChase
+dawn, long after: cityDay
+seen again: cityChase
+fallen, and home the next morning (the chase forgotten): cityDay
