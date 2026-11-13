@@ -23,9 +23,7 @@ import { isTrue } from '../src/sim/systems/cards';
 import { courtOf, powerAt, shotWindow } from '../src/sim/systems/hoops';
 import { squareAt } from '../src/sim/systems/checkers';
 import { cardUp, RACE_ENTER, raceCard } from '../src/sim/systems/races';
-import { fieldOf, pitchOf } from '../src/sim/systems/football';
 import { pointAt } from '../src/sim/systems/tattoo';
-import { nearestDir } from '../src/sim/ai/path';
 import { thorough } from '../src/sim/systems/delivery';
 import { jobRooms, priceOf } from '../src/sim/systems/economy';
 import { itemDef } from '../src/content/items';
@@ -47,7 +45,7 @@ import { CALLEE, JOB, TIER } from '../src/content/phone';
 import { phrasesOf } from '../src/sim/systems/phone';
 import { KIOSK, SHOP } from '../src/content/kiosk';
 import { courseQuestion } from '../src/sim/systems/kiosk';
-import { boutPress, Bot, DIR, n } from './bots';
+import { boutPress, Bot, DIR, n, pensBot } from './bots';
 import { HEARINGS } from '../src/content/parole';
 import { answerWorth, recordCounts } from '../src/sim/systems/parole';
 import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
@@ -615,33 +613,14 @@ play('ratRace', (bot) => {
 });
 
 play('football', (bot) => {
-  // Talked into a match; kicks at the far net (a simple player), to the final whistle.
-  check(talkTo(bot, bot.st.inmates[0].body), 'football: talking to the captain');
-  bot.op(OP.TALK, TALK.FOOTBALL);
-  check(!!bot.st.match, 'football: a match on');
-  const f = fieldOf(pitchOf(bot.sim)!);
-  let held = 0;
+  // Penalties (2.44, the lesson's id kept): talked into a shootout; kicks as the marker crosses a corner, dives on his look late, to the end.
+  check(talkTo(bot, bot.st.inmates[0].body), 'football: talking to Rusty');
+  bot.op(OP.TALK, TALK.PENALTIES);
+  check(!!bot.st.pens && bot.st.pens.who === 0, 'football: a shootout on');
   bot.until(
-    () => !bot.st.match,
+    () => !bot.st.pens,
     4000,
-    () => {
-      const o = bot.st.match;
-      if (!o) return 0;
-      const [bx, bz] = o.ball;
-      const gx = f.along ? f.a1 + UNIT : f.mid;
-      const gz = f.along ? f.mid : f.a1 + UNIT;
-      const pl = bot.st.player;
-      const toGoal = nearestDir(gx - pl.x, gz - pl.z);
-      if (held) return ++held > 10 ? ((held = 0), command(toGoal, OP.EXT, EXT.KICK, 1)) : command(toGoal);
-      if (o.at && !o.pause && Math.hypot(bx - pl.x, bz - pl.z) < 600) {
-        held = 1;
-        return command(toGoal, OP.EXT, EXT.KICK, 0);
-      }
-      const d = Math.hypot(gx - bx, gz - bz) || 1;
-      const sx = bx - ((gx - bx) * 450) / d;
-      const sz = bz - ((gz - bz) * 450) / d;
-      return command(nearestDir(sx - pl.x, sz - pl.z));
-    },
+    () => pensBot(bot.sim),
   );
 });
 

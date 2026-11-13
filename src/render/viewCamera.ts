@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { LAYER, MAP_H, MAP_W } from '../sim/world/World';
-import { pitchFraming, SCREEN_COLS, SCREEN_ROWS, ZOOM_MAX, ZOOM_MIN } from './pitchFrame';
+import { PENS_ZOOM, pitchFraming, SCREEN_COLS, SCREEN_ROWS, ZOOM_MAX, ZOOM_MIN } from './pitchFrame';
 import type { Frame } from './viewFrame';
 
 // The camera of play (out of View.ts, v2.34.2): the classic angle on a target, the zoom and the
@@ -99,15 +99,14 @@ export class CameraRig {
   }
 
   /**
-   * A match on (P29): both goals stay in the picture. The zoom eases out until the pitch (a tile
-   * round it) fits across the screen, as on a phone held upright, and the look-ahead is bent so
-   * the camera stays between the goals (following the player as far as the pitch allows). The
-   * player is kept in the box too: off the pitch (up to PITCH_LEAVE tiles while the match is on),
-   * the picture widens to hold both, and where it can't, the player stays on screen.
+   * A penalty shootout on (2.44; P29's match before): the spot, the goal and its net stay in the
+   * picture. The zoom eases to fit that box (a tile round it) across the screen, and the look-ahead
+   * is bent so the camera stays on it. The player is kept in the box too: walking on from up to
+   * PEN_RANGE tiles off, the picture widens to hold both, and where it can't, the player stays on screen.
    */
   framePitch(f: Frame, dt: number, reducedMotion: boolean) {
-    const p = f.team.pitch;
-    if (!p || !f.team.ball || f.layer !== LAYER.GROUND) {
+    const p = f.pitch.frame;
+    if (!p || f.layer !== LAYER.GROUND) {
       this.fitZoom = 0;
       return;
     }
@@ -197,10 +196,10 @@ export class CameraRig {
     this.zoomGoal = c.zoom0;
   }
 
-  /** The frame's start: the picture's slide and the zoom eased (P29: in a match, out as far as the pitch needs; the player's zoom comes back after). */
+  /** The frame's start: the picture's slide and the zoom eased (2.44: in a shootout, in or out to the spot and the goal; the player's zoom comes back after). */
   ease(dt: number, reducedMotion: boolean) {
     this.easeShift(dt, reducedMotion);
-    const zoomTo = this.fitZoom ? Math.min(this.zoomGoal, this.fitZoom) : this.zoomGoal;
+    const zoomTo = this.fitZoom ? Math.min(PENS_ZOOM, this.fitZoom) : this.zoomGoal;
     if (Math.abs(this.zoom - zoomTo) > 1e-4) {
       this.zoom += (zoomTo - this.zoom) * Math.min(1, dt * (this.fitZoom ? 3 : 10));
       this.applyZoom();

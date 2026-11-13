@@ -214,7 +214,7 @@ export function keepActs(sim: SimContext) {
   const held =
     s.talk === a.who ||
     s.followers.includes(a.who) ||
-    s.match?.team.includes(a.who) ||
+    s.pens?.who === a.who ||
     s.ink?.who === a.who ||
     s.quiz?.who.includes(a.who) ||
     s.shootout?.who === a.who ||
@@ -394,7 +394,7 @@ export function stageTargets(sim: SimContext, so: { follow: Array<Body | null>; 
     const m = s.inmates[a.who];
     if (!m || m.ko > 0 || m.angry > 0 || m.doing === DOING.SLEEP || s.talk === a.who) return;
     // (Busy with the player at something else: the act's a no-show.)
-    if (s.followers.includes(a.who) || s.match?.team.includes(a.who) || s.ink?.who === a.who || s.quiz?.who.includes(a.who)) return;
+    if (s.followers.includes(a.who) || s.pens?.who === a.who || s.ink?.who === a.who || s.quiz?.who.includes(a.who)) return;
     // (2.5.1: called now, whatever he was lingering over.)
     if (!sim.rules250) m.wait = 0;
     // (The wings: the boards' tile to the performer's left.)

@@ -61,7 +61,11 @@ export const EXT = {
   /** Long games (P28): fruit, sugar or a seed packet taken from the open furniture (b = TAKE); a race night's bet (b = the lane, c = the stake's place in BETS) or the pet entered (b = RACE_ENTER). */
   TAKE: 9,
   RACE: 10,
-  /** Team & ink (P29): a football kick, Space held (b = 0) and let go (b = 1); a tattoo sitting given up (b = 0). */
+  /**
+   * Penalties (2.44; P29's football kick before, Space held b = 0 and let go b = 1): the kick (b = 0), a dive in goal
+   * (b = 2, c: 0 left, 1 stay, 2 right, as the kicker sees it), the shootout or the spot left (b = 3). Ink (P29): a
+   * tattoo sitting given up (b = 0).
+   */
   KICK: 11,
   INK: 12,
   /** Stage nights (P30): the player's act on talent night (b = the song, c = the instrument), a press in a lane (b = 0–2); quiz night joined (b = 0) or given up (b = 1), an answer (b = the choice, 0–3). */
@@ -122,7 +126,7 @@ export const LINE = { JOIN: 0, LEAVE: 1, CUT: 2 } as const;
  * Cheat, b = the stake's place in STAKES; PLAY, cards laid, b = which of the hand (bit per card);
  * LIAR, the inmate's last play called; HOOPS, a shootout; CHECKERS, b = 1 to the old-timer's
  * board, 0 up from it, 2 resigning; MOVE, a step on the board, b = from, c = to; P28's SELL, b =
- * the hotbar slot sold to a merchant; BUY's b past the shop's slots, a staple; P29's FOOTBALL, a match captained by the inmate;
+ * the hotbar slot sold to a merchant; BUY's b past the shop's slots, a staple; 2.44's PENALTIES (P29's FOOTBALL before), a penalty shootout with the inmate;
  * TATTOO, b = the design inked on him; INK_ME, b = the design he inks on the player; P34's SWAP,
  * his place in the pay phone's queue bought; P40's ODD_JOB, the fixer's own odd job taken; JOB_IN, the odd job held
  * handed in to the one who asked; CALL_IN, the debt he owes the player called in: a tool; 2.36's DROP, the
@@ -150,7 +154,8 @@ export const TALK = {
   CHECKERS: 19,
   MOVE: 20,
   SELL: 21,
-  FOOTBALL: 22,
+  /** 2.44: a penalty shootout with the inmate (P29's football match before). */
+  PENALTIES: 22,
   TATTOO: 23,
   INK_ME: 24,
   SWAP: 25,

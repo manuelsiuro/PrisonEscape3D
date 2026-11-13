@@ -17,7 +17,7 @@ import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import { DAY_EVENTS, WEATHERS } from '../src/content/days';
 import { routineAt } from '../src/content/routine';
 import { Sim } from '../src/sim/Sim';
-import { pitchOf } from '../src/sim/systems/football';
+import { pitchOf } from '../src/sim/systems/penalties';
 import { drillOn, planOf } from '../src/sim/systems/calendar';
 import { clockAt, DAY_STEPS } from '../src/sim/systems/clock';
 import { STEPS_PER_MINUTE } from '../src/sim/tuning';
@@ -169,7 +169,7 @@ const ALL = [...PRISONS, TRAINING];
 
 // ------------------------------------------------------------------ a 2.5.0 replay's pitch
 {
-  // A replay of a 2.5.0 run plays on the pitch it had (football.ts pitchOf): the paint keeps off that one.
+  // A replay of a 2.5.0 run plays on the pitch it had (penalties.ts pitchOf): the paint keeps off that one.
   const def = STALAG_FLUCHT;
   const was = def.leisure!.pitchWas!;
   const old = new Sim(def, 3);

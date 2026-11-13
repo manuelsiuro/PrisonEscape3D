@@ -41,7 +41,7 @@ import { DIRT, underMyDesk, WALL_CHUNK } from './structure';
 import { lookingAway } from './ways';
 import { tipsyNow } from './pruno';
 import { underPlant } from './garden';
-import { sightFor } from './football';
+import { sightFor } from './penalties';
 import { TIPSY_HEAT } from '../../content/long';
 import { centerX, centerZ } from '../world/grid';
 import { snooping } from './snoop';

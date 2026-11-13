@@ -403,9 +403,9 @@ for (const def of PRISONS) {
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'a log from 2.26 is not carried on');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules226 === true, 'and replays whole under the old rules');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.43.0' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.44.0' });
   for (let k = 0; k < (1440 + 30) * STEPS_PER_MINUTE; k++) now.step(0);
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.43.0' }).toLog().seed === 25, "a log of today's is carried on");
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 25, "a log of today's is carried on");
   const again = replayLog(now.toLog(), CENTER_PERKS);
   check(!!again?.ok && again.sim.rules226 === false, "and replays under today's");
 

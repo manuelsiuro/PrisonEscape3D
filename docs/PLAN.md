@@ -43,7 +43,7 @@ Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the
 - [Energy, health and attributes](decisions/attributes.md): the bars, training at the gym and in the library, decay (8 rows)
 - [Ways out](decisions/escapes.md): every escape route, the takeover, the getaways, parole and the paperwork (16 rows)
 - [Inmates, talk and crews](decisions/people.md): cells and visitors, opinion, followers, speech, the crew, the pet rat (6 rows)
-- [Free time and games](decisions/free-time.md): the side games, cards, long games, football, the tattoo parlour, stage nights (6 rows)
+- [Free time and games](decisions/free-time.md): the side games, cards, long games, penalties, the tattoo parlour, stage nights (6 rows)
 - [Modes, progress and saves](decisions/modes.md): saving, the campaign's unlocks, achievements, lessons, the Daily Escape, replays (7 rows)
 
 Any further conflict found during the build is added to its area's file in the same commit.
@@ -197,7 +197,7 @@ feel) and the known limits.
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 68 help topics,
-5,474 text keys in English and French, 84 test scripts.
+5,492 text keys in English and French, 85 test scripts.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

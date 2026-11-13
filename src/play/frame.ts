@@ -48,10 +48,10 @@ import { diceRival, gamesDoing, gamesFrameOf, placeCrate, cheersSoFar } from './
 import { crowdGames } from './huddles';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
 import { longFrameOf, petOnTrack, ratRingAt, swigUntil } from './long';
-import { teamFrameOf } from './team';
+import { pitchFrameOf, windingUp } from './penalties';
 import { nightsFrameOf } from './nights';
 import { INSTRUMENT } from '../content/nights';
-import { sightFor } from '../sim/systems/football';
+import { sightFor } from '../sim/systems/penalties';
 import { carWaiting, commsOf } from '../sim/systems/phone';
 import { phoneSide } from '../render/Phone';
 import { CALLEE } from '../content/phone';
@@ -336,7 +336,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.awayLeft = o.away ? m.bribed - st.step : 0;
     o.stir = m.doze > 0 ? Math.min(1, m.stir / stirSteps(sim.state)) : 0;
     // How far it sees now (P17): the cone is drawn exactly that long.
-    // (P29: watching a match, half that for the player off the pitch.)
+    // (2.44: watching a penalty shootout, half that for the player off the pitch.)
     o.range = sightFor(sim, m, st.player.x, st.player.z) / UNIT;
     const chasing = m.mode === GUARD.CHASE;
     o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
@@ -496,8 +496,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const rim = rimInTiles(sim);
     if (rim) f.facing = Math.atan2(rim.x - f.x, rim.z - f.z);
   }
-  // (P29: a kick wound up; at work on a tattoo, or being inked, facing the other.)
-  if (!seated && st.match?.hold) f.doing = DOING.FOOTBALL;
+  // (2.44: a penalty wound up; P29: at work on a tattoo, or being inked, facing the other.)
+  if (!seated && windingUp(sim) === -1) f.doing = DOING.KICK;
   // (P30: on the stage, the instrument played; at the quiz, the buzzer, facing the way the places do.)
   if (!seated && st.show) f.doing = st.show.inst === INSTRUMENT.GUITAR ? DOING.GUITAR : DOING.DRUMS;
   if (!seated && st.quiz) {
@@ -696,8 +696,10 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   crowdGames(sim, f.inmates, f.x, f.z, f.games, f.pastimes, a);
   // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
   f.long = longFrameOf(sim, a);
-  // Team & ink (P29): the pitch, the ball.
-  f.team = teamFrameOf(sim, a);
+  // The pitch (P29; 2.44: penalties): its paint and goals, the spot, the ball, the keeper's dive.
+  f.pitch = pitchFrameOf(sim, a);
+  const kicker = windingUp(sim);
+  if (kicker >= 0 && f.inmates[kicker]) f.inmates[kicker].doing = DOING.KICK;
   // Stage nights (P30): the stage set up, the buzzers.
   f.nights = nightsFrameOf(sim);
   // The pay phone (P34): off the hook while an inmate's call has begun or the player's is on; Lou's car on its night.

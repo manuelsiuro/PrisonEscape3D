@@ -389,14 +389,7 @@ function upFor(sim: SimContext, k: number): boolean {
   const s = sim.state;
   const m = s.inmates[k];
   if (!m || m.ko > 0 || m.angry > 0 || BUSY.has(m.doing) || s.talk === k || s.followers.includes(k)) return false;
-  return !(
-    s.match?.team.includes(k) ||
-    s.ink?.who === k ||
-    s.cheat?.who === k ||
-    s.shootout?.who === k ||
-    s.dice[0] === k ||
-    s.bout[0] === k
-  );
+  return !(s.pens?.who === k || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k);
 }
 
 /** 2.41: the host: the librarian if he's up and about within QUIZ_CALL, else -1 (the nearest after the contestants is taken then: `joinQuiz`). */

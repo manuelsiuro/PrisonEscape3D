@@ -100,7 +100,7 @@ import { drink } from './pruno';
 import { endRatRun, raceOp, ratTap, trainRat } from './races';
 import { bedTarget, tend } from './garden';
 import { take } from './pantry';
-import { holdKick, releaseKick } from './football';
+import { pensCommand } from './penalties';
 import { drawNeedle, endInk } from './tattoo';
 import { answerCount } from './rollcall';
 import { startWash, stopWash } from './showers';
@@ -231,8 +231,7 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.RACE && s.solitary <= 0) raceOp(sim, argB(cmd), argC(cmd));
       // Team & ink (P29): a kick held and let go; a tattoo given up.
       else if (a === EXT.KICK && s.solitary <= 0) {
-        if (argB(cmd) === 0) holdKick(sim);
-        else releaseKick(sim);
+        pensCommand(sim, argB(cmd), argC(cmd));
       } else if (a === EXT.INK) endInk(sim, 'quit');
       // (2.22: the tattoo drawn by hand, the needle drawn or set down.)
       else if (a === EXT.NEEDLE || a === EXT.NEEDLE_DOWN) drawNeedle(sim, argB(cmd), argC(cmd), a === EXT.NEEDLE_DOWN);

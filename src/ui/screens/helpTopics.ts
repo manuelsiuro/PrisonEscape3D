@@ -226,7 +226,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('cheat', 'cards', '#2e8a5e', { pic: true, lessons: ['cards'] }),
         T('hoops', 'ball', '#e8742c', { pic: true, lessons: ['hoops'] }),
         T('checkers', 'checkers', '#8a5a2e', { pic: true, lessons: ['checkers'] }),
-        T('football', 'ball', '#2f9e5a', { pic: true, lessons: ['football'] }),
+        T('football', 'football', '#2f9e5a', { pic: true, lessons: ['football'] }),
         T('race', 'race', '#b0602e', { pic: true, diagram: 'timeline', recipes: ['rat_track'], lessons: ['ratRace'], see: ['rat'] }),
         T('talent', 'music', '#ff6fb5', { pic: true, diagram: 'timeline', recipes: ['guitar'], lessons: ['talent'] }),
         T('quiz', 'brain', '#5fb3ff', { pic: true, lessons: ['quiz'] }),

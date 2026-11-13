@@ -1167,7 +1167,7 @@ function tileData(def: PrisonDef, n: number) {
   const area = (r: readonly [number, number, number, number], s: string) => rectTiles(r).forEach(([x, z]) => mark(x, z, s));
   if (ls) {
     const box = (q: { x: number; z: number; w: number; d: number }) => [q.x, q.z, q.x + q.w - 1, q.z + q.d - 1] as const;
-    area(box(ls.pitch), 'football pitch');
+    area(box(ls.pitch), 'football pitch (penalties at its far goal)');
     area(box(ls.garden), 'garden bed (grows over days; a hole under a planted bed does not show)');
     if (ls.track) {
       const t = ls.track;

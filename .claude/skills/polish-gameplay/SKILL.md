@@ -34,7 +34,7 @@ line is something that was missed or broke at some point.
 - Day events, holidays and Daily twists (`src/content/days.ts`, `holidays.ts`, `twists.ts`).
 - What interrupts it: lockdown, knockout, solitary, `sim.away`, being led off, a fight, a rat, a drill, a
   block change, the parole hearing. Then what happens when it's taken up again.
-- What else reads the same state: `DOING.*` in `games.ts`, `football.ts`, `talk/mood.ts`, `talk/director.ts`.
+- What else reads the same state: `DOING.*` in `games.ts`, `penalties.ts`, `talk/mood.ts`, `talk/director.ts`.
 - Saves (`load.ts`: fields at the end, optional, checked) and values whose meaning changed. Old logs
   (`Sim.rulesNNN`, `prepareReplay`, the `stale` gate in `RunRecorder`).
 - A prison that lacks the thing (Training has no serving counter).

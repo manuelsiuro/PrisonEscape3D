@@ -331,8 +331,8 @@ export function activityPose(doing: number, l: Limbs, m: Moves) {
     l.armRx += -1.0 * ga;
     l.armRz -= 0.35 * ga;
     l.armLx += -0.15 * ga;
-  } else if (doing === DOING.FOOTBALL && !moving) {
-    // A kick wound up (P29): the kicking leg back, the arms out for balance.
+  } else if (doing === DOING.KICK && !moving) {
+    // A kick wound up (P29; 2.44: a penalty): the kicking leg back, the arms out for balance.
     const ga = m.act;
     l.legR += 0.75 * ga;
     l.legL -= 0.12 * ga;

@@ -253,7 +253,7 @@ const NARROW_GAME = '(max-height: 520px) and (orientation: landscape) and (max-w
 const DOCK_CARD = ':is(.dice-card, .cheat-card, .board-card):not(.hidden)';
 /** Any other game's card, up: no room for the step (above the pads, or the hotbar). */
 const GAME_CARD =
-  ':is(.wrestle-card, .pick-card, .ink-card, .court-card, .match-card, .race-card, .stage-card, .quiz-card, .phone-card, .kiosk-card, .oddjobs-card, .parole-card):not(.hidden)';
+  ':is(.wrestle-card, .pick-card, .ink-card, .court-card, .pens-card:not([data-mode=ready]), .race-card, .stage-card, .quiz-card, .phone-card, .kiosk-card, .oddjobs-card, .parole-card):not(.hidden)';
 
 let narrowQuery: MediaQueryList | null = null;
 const narrowGame = () => (narrowQuery ??= matchMedia(NARROW_GAME)).matches && document.body.matches(OWN_PLACE);

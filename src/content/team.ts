@@ -1,89 +1,14 @@
 /**
- * Team & ink (P29, docs/phases/3-free-time.md): yard football (three a side on the yard's pitch, and the
- * cover it gives) and the tattoo parlour (a homemade gun, a design traced for an inmate's money,
+ * Team & ink (P29, docs/phases/3-free-time.md): the yard's pitch (its football match went in 2.44:
+ * penalties, content/penalties.ts) and the tattoo parlour (a homemade gun, a design traced for an inmate's money,
  * a friend's work on the player's own arm). Nothing here happens without the player asking, and
  * nothing draws on the state's RNG: the escape bots' runs stay as they were.
  */
 import type { Pitch } from './prisons/types';
-import { STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { STEPS_PER_SECOND } from '../sim/tuning';
 
 /** A pitch from (x, z), w across and d deep; its goals at the two ends of its longer side, in the end tiles' middle two (the nets). */
 export const pitch = (x: number, z: number, w: number, d: number): Pitch => ({ x, z, w, d });
-
-// ------------------------------------------------------------------ football
-
-/** A match: 90 seconds of play from the whistle (45 before 2.16, Sim.rules215). */
-export const MATCH_STEPS = 90 * STEPS_PER_SECOND;
-export const MATCH_STEPS_215 = 45 * STEPS_PER_SECOND;
-/** Before the whistle, the players walk on: it blows once all are on the field, or after this long. */
-export const GATHER_STEPS = 15 * STEPS_PER_SECOND;
-/** After a goal, the ball stays in the net this long, then it's back on the spot. */
-export const GOAL_PAUSE = 2 * STEPS_PER_SECOND;
-/** The goal's mouth: this far either side of the end's middle (units: the nets' two tiles wide). */
-export const GOAL_HALF = UNIT;
-/** The ball: its radius; what it keeps of its speed each step (per cent); below this it stops (units a step); what a bounce off the boards keeps (per cent). */
-export const BALL_R = 160;
-export const BALL_KEEP = 95;
-export const BALL_STOP = 6;
-export const BOUNCE_KEEP = 60;
-/** Close enough to touch the ball (centre to centre): run into it to dribble, at the walk's pace and this much more. */
-export const TOUCH = 480;
-export const DRIBBLE_PUSH = 40;
-/** A kick (Space held, let go): from KICK_MIN to KICK_MAX (units a step), held up to KICK_HOLD steps; the ball within KICK_REACH of the player. */
-export const KICK_MIN = 240;
-export const KICK_MAX = 560;
-export const KICK_HOLD = 30;
-export const KICK_REACH = 700;
-/**
- * 2.16 (not under Sim.rules215), the kick on contact: Kick held KICK_TAP steps or more goes the
- * moment the ball is in reach (as hard as it was held); let go with the ball out of reach, it waits
- * KICK_GRACE steps for it. Every kick of the player's goes KICK_LIFT harder. A rival's kick at the
- * player's feet takes the ball off them for TACKLE_COOL steps.
- */
-export const KICK_TAP = 4;
-export const KICK_GRACE = 6;
-export const KICK_LIFT = 60;
-export const TACKLE_COOL = 10;
-/**
- * 2.16, aim help: a kick within AIM_HELP of the way to the far net (its cosine, ×1024: 60°) goes at
- * the mouth, where the player's way crosses its line, AIM_IN at most from its middle (units); one
- * at their own net's mouth is cleared out wide instead.
- */
-export const AIM_HELP = 512;
-export const AIM_IN = 700;
-/** A kick's thud, heard this many tiles away. */
-export const KICK_NOISE = 3;
-/** The inmates: a kick's speed (KICK_INMATE + up to KICK_SPREAD by roll()), how wide of the goal's middle they aim (up to, units), and the steps before one kicks again. */
-export const KICK_INMATE = 260;
-export const KICK_SPREAD = 220;
-export const AIM_WIDE = 800;
-export const KICK_COOL = 12;
-/** At a kick-off the other side keeps off the ball until the side kicking off has touched it, this long at most (steps). */
-export const KICKOFF_STEPS = 3 * STEPS_PER_SECOND;
-/** An inmate shoots from within SHOOT_RANGE of the goal (units); further out he knocks it on up the field. A keeper reaches KEEPER_REACH. */
-export const SHOOT_RANGE = 4 * UNIT;
-export const KEEPER_REACH = 440;
-/** A keeper is ready again sooner after a save (steps). */
-export const KEEPER_COOL = 5;
-/** A team-mate passes to the player ahead of him this many times in 100. */
-export const PASS_ODDS = 50;
-/** A keeper comes off his line for a ball this close to his goal (units). */
-export const KEEPER_RUSH = 2600;
-/** How far before the ball an inmate gets ready to kick it (units, behind it on the way to the goal). */
-export const BEHIND = 300;
-/** Who'll play: inmates within this many tiles of the pitch's middle; the player and the captain within PITCH_RANGE tiles of the pitch to start. */
-export const CALL_RANGE = 40;
-export const PITCH_RANGE = 3;
-/** The match goes on while the player is within this many tiles of the pitch (on the ground floor). */
-export const PITCH_LEAVE = 10;
-/** Guards watching a match: those outdoors within this many tiles of the pitch's middle. Anything off the pitch they see at half their range. */
-export const YARD_EYES = 16;
-/** A goal turns every guard watching to look at it for this long. */
-export const GOAL_LOOK = 5 * STEPS_PER_SECOND;
-/** A won match: opinion with each team-mate, with each inmate watching (once a day each, as the crowd at arm-wrestling); a point of Speed. Played: each team-mate this much. */
-export const TEAM_WIN_OPINION = 3;
-export const TEAM_CROWD_OPINION = 1;
-export const TEAM_PLAY_OPINION = 1;
 
 // ------------------------------------------------------------------ tattoos
 

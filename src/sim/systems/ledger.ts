@@ -14,6 +14,7 @@ import { ORDER } from '../command';
 import { CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { ROUTINE } from '../../content/routine';
 import { fireworksOn } from './holiday';
+import { KICK } from './penalties';
 
 /** P28: ripe pruno (sold), and the odds (tenths) a won bet counts as a long shot from. */
 const PRUNO = itemNumber('pruno');
@@ -143,7 +144,7 @@ export const FEATS = [
   'betsWon',
   'longShots',
   'raceWins',
-  // v2.4 (P29, team & ink): matches played to full time, won; the player's goals, matches with three of them; tattoos traced for inmates, those traced cleanly (90+); the player's own.
+  // v2.4 (P29, team & ink): matches played to full time, won; the player's goals, matches with three of them (2.44: penalty shootouts played out, won; the player's penalties scored in them, shootouts won without a miss); tattoos traced for inmates, those traced cleanly (90+); the player's own.
   'matches',
   'matchWins',
   'goals',
@@ -409,12 +410,13 @@ export function ledger(sim: Sim, x: number, z: number) {
           if (e.purse) f[FEAT.raceWins]++;
         }
         break;
-      case 'football':
-        if (e.what === 'goal' && e.mine && e.by === -1) f[FEAT.goals]++;
+      case 'pens':
+        // (2.44: P29's match counters, for penalties: a shootout played out, won, the player's goals in one, one won without a miss.)
+        if (e.what === 'result' && e.by === -1 && e.who >= 0 && e.result === KICK.GOAL) f[FEAT.goals]++;
         else if (e.what === 'won' || e.what === 'lost' || e.what === 'draw') {
           f[FEAT.matches]++;
           if (e.what === 'won') f[FEAT.matchWins]++;
-          if ((e.scored ?? 0) >= 3) f[FEAT.hatTricks]++;
+          if (e.what === 'won' && e.mine === e.taken) f[FEAT.hatTricks]++;
         }
         break;
       case 'tattoo':

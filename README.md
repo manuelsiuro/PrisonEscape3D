@@ -52,7 +52,7 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
 - **Work and money.** Ten jobs (three of them only at the Six Hunter), merchants among the inmates, favors to do for cash, a black market with a
   fixer, a burner phone, drone drops and visitors. A cork board in the canteen has odd jobs every day, and
   a story to follow in each prison, a vending machine sells snacks that sometimes need a thump, the menu board changes every day, and the water cooler is where the gossip is.
-- **Free time.** Card games of Cheat, checkers, dice, arm-wrestling, hoops, football matches, rat
+- **Free time.** Card games of Cheat, checkers, dice, arm-wrestling, hoops, penalty shootouts, rat
   racing, a prison garden, tattoos, talent nights, quiz nights, a pay phone and an internet kiosk.
 - **Friends and a crew.** Win people over, recruit them, and post a lookout who whistles when a guard comes.
   Tame a rat to fetch things for you. Make friends with the guard dog.
@@ -135,8 +135,8 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
 
 | | |
 |:---:|:---:|
-| ![Five-a-side football on the sports field](public/help/football.webp) | ![An inmate knocked down in a fight](public/help/fight.webp) |
-| *Football in the yard* | *Fights leave someone on the floor* |
+| ![A penalty going into the corner on the sports field](public/help/football.webp) | ![An inmate knocked down in a fight](public/help/fight.webp) |
+| *Penalties in the yard* | *Fights leave someone on the floor* |
 | ![An inmate on stage at talent night](public/help/talent.webp) | ![Gliding off the roof over the fence](public/help/glider.webp) |
 | *Talent night* | *Off the roof on the glider* |
 | ![The delivery truck at the gate](public/help/delivery.webp) | ![The guard dog in the corridor](public/help/dogs.webp) |
@@ -193,7 +193,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 84 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 85 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

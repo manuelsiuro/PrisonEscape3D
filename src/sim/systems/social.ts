@@ -83,7 +83,7 @@ import { checkersOp, elderOf, getUp, moveOn } from './checkers';
 import { HOOPS_GAP } from '../../content/games';
 import { SHOP_SLOTS } from '../../content/loot';
 import { buyStaple, sell } from './pantry';
-import { matchTargets, startMatch } from './football';
+import { pensTargets, startPens } from './penalties';
 import { inkPartner, startInk } from './tattoo';
 import { stageTargets } from './talent';
 import { quizTargets } from './quiz';
@@ -363,8 +363,8 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       startShootout(sim, who);
       return;
     // Team & ink (P29): a match he captains; a tattoo for him, or one from him.
-    case TALK.FOOTBALL:
-      startMatch(sim, who);
+    case TALK.PENALTIES:
+      startPens(sim, who);
       return;
     case TALK.TATTOO:
     case TALK.INK_ME:
@@ -618,8 +618,8 @@ export function socialNow(sim: SimContext): Social {
     so.follow[inker] = s.player;
     so.gap[inker] = INK_GAP;
   }
-  // A match's players (P29) where the match wants them (crew or not: it comes first).
-  matchTargets(sim, so);
+  // A penalty shootout's inmate (2.44) where it wants him: in goal, or at his mark (crew or not: it comes first).
+  pensTargets(sim, so);
   // Quiz night (P30): the contestants at their places.
   quizTargets(sim, so);
   return so;

@@ -160,7 +160,7 @@ export function ringsOf(w: World): Ring[] {
   if (l) {
     mark(l.hoop.x, l.hoop.z, 1);
     for (const q of l.hoop.spots) mark(q.x, q.z, 1);
-    // (The pitch's goals, not its middle: a ring there parts when a match kicks off.)
+    // (The pitch's goals, not its middle: a ring there parts when a penalty shootout starts.)
     for (const gx of [l.pitch.x, l.pitch.x + l.pitch.w - 1]) mark(gx, l.pitch.z + (l.pitch.d >> 1), 2);
     rect(l.garden.x, l.garden.z, l.garden.w, l.garden.d, 1);
     // (The track's lanes, its edge tiles: the ground inside it is the pitch's, outside it open.)
@@ -275,11 +275,11 @@ const dist2 = (x: number, z: number, tx: number, tz: number) => {
 function hoopFree(sim: SimContext, starting: boolean): boolean {
   const s = sim.state;
   const c = sim.world.def.leisure?.hoop;
-  if (!c || c.spots.length < 2 || s.shootout || s.match || s.shot.length) return false;
+  if (!c || c.spots.length < 2 || s.shootout || (s.pens && s.pens.who >= 0) || s.shot.length) return false;
   return !starting || dist2(s.player.x, s.player.z, c.x, c.z) > 49 * UNIT * UNIT;
 }
 
-/** A ring on the football pitch (its place in ringsOf): parted when a match kicks off. */
+/** A ring on the pitch (its place in ringsOf): parted when a penalty shootout starts (2.44; a football match before). */
 function onPitch(sim: SimContext, place: number): boolean {
   const p = sim.world.def.leisure?.pitch;
   const r = ringsOf(sim.world)[place];
@@ -405,7 +405,7 @@ function form(sim: SimContext, h: HuddleState, g: number, day: number, b: number
     const rings = ringsOf(sim.world);
     const free = rings
       .map((_, i) => i)
-      .filter((i) => !h.place.some((p, q) => q !== g && active(h, q) && p === i) && !(s.match && onPitch(sim, i)));
+      .filter((i) => !h.place.some((p, q) => q !== g && active(h, q) && p === i) && !(s.pens && s.pens.who >= 0 && onPitch(sim, i)));
     if (!free.length) return part(sim, h, g, minute);
     place = free[draw(sim, day, b, g, n, 2, free.length)];
     cx = rings[place].x;
@@ -501,7 +501,7 @@ export function huddles(sim: SimContext) {
         }
         left++;
       }
-      const hoopGone = h.kind[g] === HUDDLE.HOOPS ? !hoopFree(sim, false) : !!s.match && onPitch(sim, h.place[g]);
+      const hoopGone = h.kind[g] === HUDDLE.HOOPS ? !hoopFree(sim, false) : !!s.pens && s.pens.who >= 0 && onPitch(sim, h.place[g]);
       if (left < 2 || hoopGone || (onMinute && minute >= h.until[g])) part(sim, h, g, minute);
       continue;
     }

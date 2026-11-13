@@ -340,7 +340,7 @@ export function freeToGo(sim: SimContext, k: number, waiting = false, kiosk = fa
   if (!waiting && s.huddle?.who.includes(k)) return false;
   if (!waiting && s.watch?.includes(k)) return false;
   if (
-    s.match?.team.includes(k) ||
+    s.pens?.who === k ||
     s.ink?.who === k ||
     s.cheat?.who === k ||
     s.shootout?.who === k ||
