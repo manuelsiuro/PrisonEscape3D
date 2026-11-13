@@ -224,7 +224,7 @@ async function talk(r: CityRun, who: number, what: 'met' | 'done' | 'chat') {
     const offer = await under(r, () => showCityPerson(r.city, who, said, click));
     if (offer < 0 || play.side !== r) return;
     // (Handed over: the action at them, whose answer brings the card back.)
-    if (offer === 3) return void r.ops.push([COP.ACT, 0]);
+    if (offer === 3) return void r.ops.push([COP.GIVE, who]);
     r.ops.push([COP.TRADE, who * 4 + offer]);
     said = 'chat';
     // (The swap is the next step's: the card again once it's made.)
@@ -493,7 +493,13 @@ function cityEvent(r: CityRun, e: CityEvent) {
       r.pilot.stop();
       if (e.what === 'done') {
         sound.chime();
-        banner.toast(t('city.toast.errand', { who: t(`city.person.${PEOPLE[e.who].id}.name` as Key) }), 'good', 3000);
+        banner.toast(
+          PEOPLE[e.who].errands[c.state.errand[e.who] - 1]?.key
+            ? t('city.toast.key')
+            : t('city.toast.errand', { who: t(`city.person.${PEOPLE[e.who].id}.name` as Key) }),
+          'good',
+          3600,
+        );
         save(r);
       }
       void talk(r, e.who, e.what);

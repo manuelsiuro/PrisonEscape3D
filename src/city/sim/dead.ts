@@ -109,9 +109,12 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
     let kind: number = ZKIND.SHAMBLER;
     const nightNo = (c.minute < NIGHT_TO ? c.day - 1 : c.day) + c.state.deaths;
     if (mode === ZED.WANDER && nightAt(c.minute) && nightNo >= RUNNER.fromNight) {
-      if (nightNo >= BRUTE.fromNight && danger(c, c.state.district) >= BRUTE.danger && !c.state.zeds.some((z) => z.kind === ZKIND.BRUTE))
+      // (One brute a district a night: put down, it isn't followed by another before the next.)
+      const stamp = c.state.district * 1000 + nightNo;
+      if (nightNo >= BRUTE.fromNight && danger(c, c.state.district) >= BRUTE.danger && c.state.brute !== stamp) {
         kind = ZKIND.BRUTE;
-      else if (randomInt(c.state, RUNNER.oneIn) === 0) kind = ZKIND.RUNNER;
+        c.state.brute = stamp;
+      } else if (randomInt(c.state, RUNNER.oneIn) === 0) kind = ZKIND.RUNNER;
     }
     c.state.zeds.push({
       body: bodyAt(tile % MAP_W, Math.floor(tile / MAP_W), 1 + randomInt(c.state, 16)),
@@ -278,6 +281,7 @@ export function stepDead(c: City) {
         z.mode = ZED.SEEK;
         z.goal = z.last;
         z.path = [];
+        z.pound = undefined;
       } else {
         // On them: a bite, as often as it can.
         if (d2 <= DEAD.reach * DEAD.reach && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
@@ -359,6 +363,8 @@ export function stepDead(c: City) {
     if (b.x === bx && b.z === bz) {
       if (brute && c.bars.includes(next)) {
         z.pound = (z.pound ?? 0) + 1;
+        // (At the boards, it knows where they went: the chase isn't given up while it pounds.)
+        z.seen = s.step;
         if (z.pound >= BRUTE.pound) {
           z.pound = 0;
           c.breach(next);

@@ -212,6 +212,7 @@ export function freshStory() {
     met: 0,
     errand: PEOPLE.map(() => 0),
     mark: PEOPLE.map(() => 0),
+    brute: -1,
   };
 }
 
@@ -234,6 +235,8 @@ export function soundStory(c: City) {
     Array.isArray(s.mark) &&
     s.mark.length === PEOPLE.length &&
     s.mark.every((m) => Number.isInteger(m) && m >= 0) &&
+    Number.isInteger(s.brute) &&
+    s.brute >= -1 &&
     s.kit >= 0 &&
     s.kit < 1 << THINGS.length &&
     s.scouted >= 0 &&
@@ -251,6 +254,13 @@ export function soundStory(c: City) {
     s.heard.every(isBeat) &&
     new Set(s.heard).size === s.heard.length;
   if (!ok) Object.assign(s, freshStory());
+  // (A pile left where a survivor now stands, a save from before them: beside them.)
+  c.story.people.forEach((p) => {
+    const at = `${p.district}:g${p.tile}`;
+    if (!s.boxes[at]) return;
+    (s.boxes[`${p.district}:g${p.tile + 1}`] ??= []).push(...s.boxes[at]);
+    delete s.boxes[at];
+  });
   // (A save from before the story, or one started again: what lies in furniture already searched is found, or it never could be.)
   c.story.things.forEach((sp, k) => {
     if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined && !shut(c, k)) s.kit |= 1 << k;
@@ -266,6 +276,10 @@ const missing = (c: City, way: number) => (wayOf(way)?.needs ?? []).filter((id) 
 
 /** A thing kept in the police armoury, its key not yet had. */
 const shut = (c: City, k: number) => LOCKED.includes(THINGS[k]) && !(c.state.flags & FLAG.KEY);
+
+/** Whether a piece of furniture of this district still holds a thing of the story not yet had (a bed that does is looked into, not slept in). */
+export const holds = (c: City, prop: number) =>
+  c.story.things.some((sp, k) => sp.district === c.state.district && sp.prop === prop && !(c.state.kit & (1 << k)));
 
 /** Dispatch says a line, once (only with the radio found to hear her on). */
 function say(c: City, beat: Beat) {
@@ -495,10 +509,9 @@ export function objectives(c: City): Objective[] {
     // (A thing in the armoury: the fence's key first, and no place for the thing until it's had.)
     const needsKey = wayOf(w)!.needs.some((id) => LOCKED.includes(id) && !has(c, id));
     const fence = P.people[0];
-    const want = wants(c, 0);
     return [
       ...(needsKey || (key && wayOf(w)!.needs.some((id) => LOCKED.includes(id)))
-        ? [{ id: 'key', done: key, n: want?.have, of: want?.n, at: key ? undefined : { district: fence.district, tile: fence.tile } }]
+        ? [{ id: 'key', done: key, at: key ? undefined : { district: fence.district, tile: fence.tile } }]
         : []),
       ...wayOf(w)!.needs.map((id) => {
         const o = thing(id);
@@ -567,21 +580,26 @@ export function wants(c: City, k: number): { item: number; n: number; have: numb
     const item = cityItemNumber(e.bring[0]);
     return { item, n: e.bring[1], have: Math.min(e.bring[1], c.count(item)) };
   }
-  return { item: 0, n: e.kills ?? 0, have: Math.min(e.kills ?? 0, c.state.kills - c.state.mark[k]) };
+  return { item: 0, n: e.kills ?? 0, have: Math.max(0, Math.min(e.kills ?? 0, c.state.kills - c.state.mark[k])) };
 }
 
-/** The action at a survivor: met the first time (their first errand asked); an errand done is handed in and paid; else a word. */
+/** The action at a survivor: met the first time (their first errand asked), else a word. Nothing is handed over by it. */
 export function meet(c: City, k: number) {
   const s = c.state;
-  if (!(s.met & (1 << k))) {
-    s.met |= 1 << k;
-    s.mark[k] = s.kills;
-    say(c, 'met');
-    return void c.events.push({ type: 'talk', who: k, what: 'met' });
-  }
+  if (s.met & (1 << k)) return void c.events.push({ type: 'talk', who: k, what: 'chat' });
+  s.met |= 1 << k;
+  s.mark[k] = s.kills;
+  say(c, 'met');
+  c.events.push({ type: 'talk', who: k, what: 'met' });
+}
+
+/** The open errand of the survivor beside the player handed over (their card's button) and paid; nothing happens short of what it asks. */
+export function giveErrand(c: City, k: number) {
+  const s = c.state;
+  if (c.target()?.key !== `n${k}`) return;
   const e = errandOf(c, k);
   const w = wants(c, k);
-  if (!e || !w || w.have < w.n) return void c.events.push({ type: 'talk', who: k, what: 'chat' });
+  if (!e || !w || w.have < w.n) return;
   if (e.bring) c.spend(w.item, w.n);
   for (const [id, n] of e.gives) c.hand(cityItemNumber(id), n);
   if (e.key) {
