@@ -245,6 +245,37 @@ export class Sound extends SoundEffects {
       this.tone(1450 + Math.random() * 500, 1100, 0.03, 'square', 0.05 * g * gain, d);
   }
 
+  /** City Escape (2.49): one of the dead has seen you: a low, dragging moan. */
+  moan() {
+    const f = 88 + Math.random() * 30;
+    this.tone(f, f * 0.72, 0.7, 'sawtooth', 0.04);
+    this.tone(f * 1.5, f * 1.1, 0.6, 'triangle', 0.02, 0.05);
+    this.hiss(0.6, 'lowpass', 380, 0.9, 0.03);
+  }
+  /** A runner: a thin, rising shriek. */
+  screech() {
+    this.tone(520, 1180, 0.28, 'sawtooth', 0.035);
+    this.tone(1180, 760, 0.3, 'sawtooth', 0.03, 0.26);
+    this.hiss(0.5, 'bandpass', 2400, 2.5, 0.03);
+  }
+  /** A brute: a roar from the chest. */
+  roar() {
+    this.tone(70, 46, 1.1, 'sawtooth', 0.08);
+    this.tone(105, 60, 0.9, 'square', 0.03, 0.05);
+    this.hiss(1.0, 'lowpass', 300, 0.7, 0.07);
+  }
+  /** A brute at a barred door: a heavy blow on wood. */
+  pound() {
+    this.tone(95, 48, 0.16, 'sine', 0.14);
+    this.hiss(0.09, 'lowpass', 700, 0.8, 0.09);
+  }
+  /** The radio opening: a burst of static, then the carrier's tone. */
+  crackle() {
+    this.hiss(0.22, 'bandpass', 3200, 1.2, 0.035);
+    this.hiss(0.1, 'highpass', 5000, 0.8, 0.02, undefined, 0.2);
+    this.tone(880, 880, 0.09, 'sine', 0.02, 0.26);
+  }
+
   /** Straining at an arm-wrestle (P22): a short throaty grunt. */
   grunt() {
     const f = 130 + Math.random() * 40;
