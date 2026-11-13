@@ -24,6 +24,8 @@ export interface PocketsState {
   barred: boolean;
   /** What each recipe lacks now ('ok': it can be made). */
   recipes: ReadonlyArray<'ok' | 'parts' | 'bench' | 'stove'>;
+  /** The way out in reach: what the button does with it ('begin1'–'3', 'go2', 'go3'; '' none). */
+  way: string;
 }
 
 /** The city's things photographed (by item number; 0 unused), once. */
@@ -235,24 +237,34 @@ export class CityPockets {
     const tg = s.asleep ? null : s.target;
     const verb = !tg
       ? ''
-      : tg.kind === 'door'
-        ? s.barred
-          ? 'city.act.unbar'
-          : 'city.act.bar'
-        : s.targetOpen
-          ? 'city.act.close'
-          : tg.kind === 'bed'
-            ? 'city.act.sleep'
-            : tg.kind === 'pile' || s.searched
-              ? 'city.act.look'
-              : 'city.act.search';
+      : tg.kind === 'way'
+        ? `city.act.${s.way}`
+        : tg.kind === 'door'
+          ? s.barred
+            ? 'city.act.unbar'
+            : 'city.act.bar'
+          : s.targetOpen
+            ? 'city.act.close'
+            : tg.kind === 'bed'
+              ? 'city.act.sleep'
+              : tg.kind === 'pile' || s.searched
+                ? 'city.act.look'
+                : 'city.act.search';
     const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}`;
     if (key !== this.shownAct) {
       this.shownAct = key;
       this.act.classList.toggle('hidden', !tg);
       if (tg) {
-        const what = t(tg.kind === 'door' ? 'city.box.door' : tg.prop ? (`city.box.${tg.prop}` as Key) : 'city.box.pile');
-        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        const what = t(
+          tg.kind === 'way'
+            ? (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
+            : tg.kind === 'door'
+              ? 'city.box.door'
+              : tg.prop
+                ? (`city.box.${tg.prop}` as Key)
+                : 'city.box.pile',
+        );
+        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'way' ? 'flag' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);

@@ -3,9 +3,12 @@ import { h } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { MAP_H, MAP_W } from '../../sim/world/grid';
 import { CITY_N, CITY_W, gateOpen, LANES, laneAt, neighbour, ROAD_W, SIDE } from '../gen/plan';
+import { FLAG, NOTES, THINGS, WAYS, thingBit } from '../content/story';
 import type { City } from '../sim/City';
 import { MODE } from '../sim/City';
+import { objectives } from '../sim/story';
 import { LANDMARKS, paintDistrict, useColour } from './mapPaint';
+import { mapXY, objectiveText } from './story';
 
 /** A screen over the game: shown until one of its `[data-c]` buttons is pressed (Escape: `esc`). */
 function modal<T extends string>(html: string, esc: T, focus: string, setup?: (el: HTMLElement) => void): Promise<T> {
@@ -18,7 +21,7 @@ function modal<T extends string>(html: string, esc: T, focus: string, setup?: (e
       resolve(c);
     };
     const key = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' || (esc === 'close' && e.code === 'KeyM' && !e.repeat)) done(esc);
+      if (e.code === 'Escape' || (esc === 'close' && (e.code === 'KeyM' || e.code === 'KeyJ') && !e.repeat)) done(esc);
     };
     addEventListener('keydown', key);
     el.onclick = (e) => {
@@ -145,7 +148,7 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       <h2>${icon('map', 20)}${t('city.map.title')}</h2>
       <div class="city-map-body">
         <div class="city-map-pic"><canvas width="${size}" height="${size}" role="img" aria-label="${t('city.map.title')}"></canvas><ol class="city-map-names" aria-hidden="true">${names}</ol></div>
-        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
+        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
       </div>
       <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.map.close')}</button></div>
     </div>`,
@@ -189,6 +192,22 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
         c.closePath();
         c.fill();
       }
+      // Where the journal points: a diamond each.
+      for (const o of objectives(city)) {
+        if (o.done || !o.at) continue;
+        const { x, y } = mapXY(o.at.district, o.at.tile, GAP);
+        c.fillStyle = '#f2c230';
+        c.strokeStyle = '#07090c';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(x, y - 4.5);
+        c.lineTo(x + 4.5, y);
+        c.lineTo(x, y + 4.5);
+        c.lineTo(x - 4.5, y);
+        c.closePath();
+        c.fill();
+        c.stroke();
+      }
       // The player: a ring round a dot, in their district.
       const d = city.state.district;
       const px = GAP + (d % CITY_W) * (MAP_W + GAP) + (city.tile % MAP_W) + 0.5;
@@ -203,6 +222,90 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       c.arc(px, pz, 4.5, 0, Math.PI * 2);
       c.stroke();
     },
+  );
+  click();
+}
+
+/**
+ * The journal (C3): the act and what it asks, the ways out (each chosen here once seen), what Dispatch
+ * has said, the notes found. Resolves with the way out chosen (0: none).
+ */
+export async function showCityJournal(city: City, click: () => void): Promise<number> {
+  const s = city.state;
+  const list = objectives(city);
+  const todo = list
+    .map(
+      (o) =>
+        `<li class="${o.done ? 'done' : ''}">${icon(o.done ? 'check' : 'chevronRight', 14)}<span>${objectiveText(city, o)}</span></li>`,
+    )
+    .join('');
+  const fixed = (s.flags & FLAG.FIXED) !== 0;
+  const ways = !fixed
+    ? ''
+    : `<section><h3>${icon('route', 16)}${t('city.journal.ways')}</h3><div class="cj-ways">${WAYS.map((w, k) => {
+        const n = k + 1;
+        const seen = (s.scouted & (1 << k)) !== 0;
+        const needs = w.needs
+          .map(
+            (id) =>
+              `<li class="${s.kit & thingBit(id) ? 'done' : ''}">${icon(s.kit & thingBit(id) ? 'check' : 'chevronRight', 12)}${t(`city.kit.${id}` as Key)}</li>`,
+          )
+          .join('');
+        const state =
+          s.way === n
+            ? `<span class="cj-state on">${icon('check', 14)}${t(s.ready ? 'city.journal.locked' : 'city.journal.chosen')}</span>`
+            : !seen
+              ? `<span class="cj-state">${icon('eyeOff', 14)}${t('city.journal.unseen')}</span>`
+              : s.ready
+                ? ''
+                : `<button class="big-btn primary" data-c="way${n}">${t('city.journal.choose')}</button>`;
+        return `<div class="cj-way${s.way === n ? ' chosen' : ''}"><b>${icon(w.id === 'heli' ? 'heli' : w.id === 'boat' ? 'boat' : 'lock', 16)}${t(`city.way.${n}` as Key)}<small>${city.plan.names[city.story.wayDistrict[k]]}</small></b><p>${t(`city.way.sub.${n}` as Key)}</p><ul>${needs}</ul>${state}</div>`;
+      }).join('')}</div></section>`;
+  const hasRadio = (s.kit & thingBit('radio')) !== 0;
+  const heard = [...s.heard].reverse();
+  const radio = !hasRadio
+    ? `<p class="card-note">${t('city.journal.noRadio')}</p>`
+    : `${fixed ? '' : `<p class="card-note">${t('city.journal.static')}</p>`}${heard.map((b) => `<p class="cj-line">${t(`city.say.${b}` as Key)}</p>`).join('')}`;
+  const found = Array.from({ length: NOTES }, (_, n) => n).filter((n) => s.notes & (1 << n));
+  const notes = found.length
+    ? found
+        .map((n) => `<details><summary>${t(`city.note.${n}.title` as Key)}</summary><p>${t(`city.note.${n}.text` as Key)}</p></details>`)
+        .join('')
+    : `<p class="card-note">${t('city.journal.noNotes')}</p>`;
+  const kit = THINGS.filter((id) => s.kit & thingBit(id)).map((id) => t(`city.kit.${id}` as Key));
+  const choice = await modal<'close' | 'way1' | 'way2' | 'way3'>(
+    `<div class="card city-journal">
+      <h2>${icon('book', 20)}${t('city.journal.title')}<small>${t('city.act.n', { n: s.act })} · ${t(`city.act.${s.act}` as Key)}</small></h2>
+      <div class="cj-body">
+        <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit')}: ${kit.join(', ')}</p>` : ''}</section>
+        ${ways}
+        <section><h3>${icon('megaphone', 16)}${t('city.journal.radio')}</h3>${radio}</section>
+        <section><h3>${icon('letter', 16)}${t('city.journal.notes', { n: found.length, of: NOTES })}</h3>${notes}</section>
+      </div>
+      <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.journal.close')}</button></div>
+    </div>`,
+    'close',
+    '[data-c="close"]',
+  );
+  click();
+  return choice === 'close' ? 0 : Number(choice.slice(3));
+}
+
+/** Out of the city: by which way, how it went, and the last thing on the radio. */
+export async function showCityEscaped(city: City, click: () => void): Promise<void> {
+  const s = city.state;
+  let notes = 0;
+  for (let n = 0; n < NOTES; n++) if (s.notes & (1 << n)) notes++;
+  await modal<'back'>(
+    `<div class="card city-intro city-escaped">
+      <h2>${icon('flag', 20)}${t('city.escaped.title')}<small>${t(`city.way.${s.won}` as Key)}</small></h2>
+      <p>${t(`city.escaped.${s.won}` as Key)}</p>
+      <p class="city-over-line">${t('city.escaped.line', { n: city.day, kills: s.kills, deaths: s.deaths, notes, of: NOTES })}</p>
+      <blockquote><small>${t('city.escaped.last')}</small>${t(`city.say.win${s.won}` as Key)}</blockquote>
+      <div class="actions"><button class="big-btn primary" data-c="back">${icon('home', 18)}${t('pause.quit')}</button></div>
+    </div>`,
+    'back',
+    '[data-c="back"]',
   );
   click();
 }

@@ -34,6 +34,8 @@ export const DEAD = {
   /** Never put down nearer the player than this (tiles); the night's come a few at a time, this many game minutes apart. */
   clear: 10,
   trickle: 20,
+  /** Up out of the metro's tunnel (C3): this near at the least. */
+  clearUp: 5,
 } as const;
 
 /** The player's blow (C2b; the city's weapons add their own). */
