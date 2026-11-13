@@ -7,11 +7,15 @@
  * Chrome tells the layout (navigator.keyboard); elsewhere a French (France, Belgium)
  * browser is taken to mean AZERTY.
  */
-import { boundKey } from '../input/bindings';
+import { boundKey, padLabels, padLabelsShown } from '../input/bindings';
+import { BTN, btnLabel, type Btn } from '../input/pad';
 
 const labels = new Map<string, string>();
 /** Keys named in words, in the language shown (set by setLang). */
-const names = new Map<string, string>([['Space', 'Space']]);
+const names = new Map<string, string>([
+  ['Space', 'Space'],
+  ['Escape', 'Esc'],
+]);
 
 const AZERTY: Record<string, string> = { KeyQ: 'A', KeyW: 'Z', KeyA: 'Q', KeyZ: 'W', KeyM: ',', Semicolon: 'M' };
 if (/^fr(-(fr|be|lu|mc))?$/i.test(globalThis.navigator?.language ?? '')) for (const [k, v] of Object.entries(AZERTY)) labels.set(k, v);
@@ -56,8 +60,46 @@ export const rawKeyLabel = (code: string) =>
     ? code.slice(5)
     : (names.get(code) ?? labels.get(code) ?? (code.startsWith('Key') ? code.slice(3) : (SIGNS[code] ?? code)));
 
-/** The label on the key the player uses for the action whose default key is this one ('KeyE' → 'E', or the key moved to). */
-export const keyLabel = (code: string) => rawKeyLabel(boundKey(code));
+/**
+ * The pad's button for each action (2.45: a fixed layout, by the action's default key): the panels all
+ * open from the wheel (View), the moves are the stick's or the D-pad's.
+ */
+const PAD: Record<string, Btn | string> = {
+  KeyE: BTN.A,
+  Space: BTN.X,
+  KeyR: BTN.Y,
+  KeyV: BTN.LT,
+  KeyF: BTN.RT,
+  KeyQ: BTN.L3,
+  KeyU: BTN.R3,
+  KeyC: BTN.VIEW,
+  KeyI: BTN.VIEW,
+  KeyJ: BTN.VIEW,
+  KeyB: BTN.VIEW,
+  KeyT: BTN.VIEW,
+  KeyP: BTN.VIEW,
+  KeyG: BTN.VIEW,
+  KeyO: BTN.VIEW,
+  KeyH: BTN.VIEW,
+  KeyW: '↑',
+  KeyA: '←',
+  KeyS: '↓',
+  KeyD: '→',
+  Escape: BTN.B,
+};
+/** The pad's button for the action whose default key this is (undefined: none). */
+export const padButton = (code: string): Btn | string | undefined => PAD[code];
 
-/** Fills `%KeyW%` and `%Space%` placeholders with the player's keys, as labelled on this keyboard. */
-export const withKeys = (s: string) => (s.includes('%') ? s.replace(/%(Key[A-Z]|Space)%/g, (_, c: string) => keyLabel(c)) : s);
+/** The label on the key the player uses for the action whose default key is this one ('KeyE' → 'E', or the key moved to); with a pad in hand, its button. */
+export function keyLabel(code: string, keyboard = false): string {
+  // (`%PadRT%` and the like: a pad's own button, in the texts written for a pad only.)
+  if (code.startsWith('Pad') && code.slice(3) in BTN) return btnLabel(padLabelsShown(), BTN[code.slice(3) as keyof typeof BTN]);
+  const kind = keyboard ? null : padLabels();
+  const b = kind ? PAD[code] : undefined;
+  if (kind && b !== undefined) return typeof b === 'string' ? b : btnLabel(kind, b);
+  return rawKeyLabel(boundKey(code));
+}
+
+/** Fills `%KeyW%`, `%Space%` (and, 2.45, `%Escape%`: B on a pad) placeholders with the player's keys, as labelled on this keyboard. */
+export const withKeys = (s: string, keyboard = false) =>
+  s.includes('%') ? s.replace(/%(Key[A-Z]|Space|Escape|Pad[A-Z0-9]+)%/g, (_, c: string) => keyLabel(c, keyboard)) : s;

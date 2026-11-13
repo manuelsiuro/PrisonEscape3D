@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 import { itemDef } from '../content/items';
 import { t, type Key } from '../i18n';
 import type { AimView } from '../render/Noise';
@@ -28,6 +29,8 @@ const aim = {
   px: 0,
   py: 0,
   pointer: false,
+  /** A pad's aim (2.45): the spot in tiles from the player, moved by the right stick; null, the pointer's. */
+  pad: null as { x: number; z: number } | null,
   dx: 0,
   dz: 0,
 };
@@ -55,12 +58,15 @@ export function armThrow() {
   if (!g || g.paused) return;
   aim.how = 'armed';
   aim.pointer = false;
+  // (2.45: a pad in hand aims with its right stick, from 3 tiles ahead.)
+  aim.pad = padLabels() ? padStart() : null;
   controls.aimArmed = true;
   g.pilot.stop();
 }
 
 export function cancelThrow() {
   aim.how = null;
+  aim.pad = null;
   controls.aimArmed = false;
   view.setAim(null);
   aimUI.show(null);
@@ -86,6 +92,7 @@ export function onAim(phase: 'down' | 'move' | 'up' | 'cancel', x: number, y: nu
   aim.px = x;
   aim.py = y;
   aim.pointer = true;
+  aim.pad = null;
   if (phase === 'down') {
     aim.how ??= 'held';
     g.pilot.stop();
@@ -93,6 +100,56 @@ export function onAim(phase: 'down' | 'move' | 'up' | 'cancel', x: number, y: nu
   }
   if (phase !== 'up' || !aim.how) return;
   // Let go: thrown if it can go. A held aim ends either way; an armed one waits for another try.
+  target();
+  if (!result.why) {
+    send(aim.dx, aim.dz);
+    cancelThrow();
+    return;
+  }
+  refuse(result.why, aim.how === 'armed');
+  if (aim.how === 'held') cancelThrow();
+}
+
+/** How fast a pad's right stick moves the aim (tiles a second, pushed all the way). */
+const PAD_AIM_SPEED = 7;
+
+/** The spot a pad's aim starts at: 3 tiles ahead, as with no pointer. */
+function padStart() {
+  const p = play.game!.rec.sim.state.player;
+  return { x: (DIR_X[p.facing] / 1024) * 3, z: (DIR_Z[p.facing] / 1024) * 3 };
+}
+
+/** A pad's RT held (2.45): the aim shows, 3 tiles ahead, for the right stick to move. */
+export function padAimStart() {
+  const g = play.game;
+  if (!g || g.paused) return;
+  aim.how ??= 'held';
+  aim.pointer = false;
+  aim.pad = padStart();
+  g.pilot.stop();
+}
+
+/** The right stick moving a pad's aim (or starting it, armed from the item's menu). */
+export function padAimMove(sx: number, sz: number, dt: number) {
+  const g = play.game;
+  if (!aim.how || !g) return;
+  aim.pad ??= padStart();
+  aim.pointer = false;
+  aim.pad.x += sx * PAD_AIM_SPEED * dt;
+  aim.pad.z += sz * PAD_AIM_SPEED * dt;
+  // (Kept a little past the throw's reach: target() brings it in to what can be reached.)
+  const most = tossRange(g.rec.sim.state.str) + 0.5;
+  const len = Math.hypot(aim.pad.x, aim.pad.z);
+  if (len > most) {
+    aim.pad.x *= most / len;
+    aim.pad.z *= most / len;
+  }
+}
+
+/** RT let go (or A, armed): thrown where the pad aims, as the mouse's let-go throws. */
+export function padAimThrow() {
+  if (!aim.how || !play.game || play.game.paused) return;
+  aim.pad ??= padStart();
   target();
   if (!result.why) {
     send(aim.dx, aim.dz);
@@ -150,7 +207,10 @@ function target() {
   const pz = p.z / UNIT;
   let vx = (DIR_X[p.facing] / 1024) * 3;
   let vz = (DIR_Z[p.facing] / 1024) * 3;
-  if (aim.pointer) {
+  if (aim.pad) {
+    vx = aim.pad.x;
+    vz = aim.pad.z;
+  } else if (aim.pointer) {
     const at = view.groundAt(aim.px, aim.py);
     if (at) {
       vx = at.x - px;
@@ -207,7 +267,7 @@ export function updateAim(busy: boolean) {
   shown.range = tossRange(st.str);
   shown.tiles = tiles;
   view.setAim(shown);
-  aimUI.show(aim.how === 'held' ? 'mouse' : TOUCH ? 'touch' : 'click');
+  aimUI.show(aim.pad ? 'pad' : aim.how === 'held' ? 'mouse' : TOUCH ? 'touch' : 'click');
   const spot = view.screenAt(shown.toX, 0, shown.toZ, spotAt);
   const text = result.why
     ? t(`toss.${result.why}` as Key)

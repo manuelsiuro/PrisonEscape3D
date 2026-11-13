@@ -36,8 +36,10 @@ const achNames = (dict: Partial<Record<string, string>>) => {
   return dup;
 };
 const dupAch = [...achNames(en).map((d) => `en ${d}`), ...achNames(fr).map((d) => `fr ${d}`)];
-// A lesson step naming a key (%KeyX%) has a *Touch twin for phones.
-const keyNoTouch = keys.filter((k) => k.startsWith('lesson.') && /%\w+%/.test(en[k]) && !(`${k}Touch` in en));
+// A lesson step naming a key (%KeyX%) has a *Touch twin for phones (2.45: not a pad's own words, *Pad).
+const keyNoTouch = keys.filter((k) => k.startsWith('lesson.') && !k.endsWith('Pad') && /%\w+%/.test(en[k]) && !(`${k}Touch` in en));
+// (2.45) A text's Pad twin (t() shows it while a pad is in hand) has the text it stands for, and names no mouse, click or wheel.
+const padOdd = keys.filter((k) => k.endsWith('Pad') && (!(k.slice(0, -3) in en) || /click|mouse|wheel/i.test(en[k])));
 const problems = [
   missing.length ? `missing in fr: ${missing.join(', ')}` : '',
   badHoles.length ? `holes differ: ${badHoles.join(', ')}` : '',
@@ -45,6 +47,7 @@ const problems = [
   names.length ? `names without a key: ${names.join(', ')}` : '',
   dupAch.length ? `achievements sharing a name: ${dupAch.join('; ')}` : '',
   keyNoTouch.length ? `lesson steps with a key and no Touch twin: ${keyNoTouch.join(', ')}` : '',
+  padOdd.length ? `Pad twins without their text, or naming the mouse: ${padOdd.join(', ')}` : '',
 ].filter(Boolean);
 if (problems.length) throw new Error(problems.join('\n'));
 console.log(`${keys.length} keys, all in French with the same holes`);

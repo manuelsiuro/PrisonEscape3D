@@ -16,7 +16,7 @@ import { TILE } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { shelfBooks } from '../ui/reading';
 import { vendAction, vendingNow } from './vending';
 import { coolerHint, menuAction, menuNow } from './menuBoard';
@@ -470,7 +470,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it (not over the warden's morning card: after it).
   if (!busy && reachesSomething(memo.plan) && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk'))
-    hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
+    hint.show([touchWords() ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   hudFrame(g, a, tile, busy);
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
   // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)

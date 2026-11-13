@@ -1,0 +1,11 @@
+makers: xbox ps ps nintendo xbox 8bitdo 8bitdo xbox
+the bottom button: A ✕ B B; the right: B ○ A A
+presses: edges only; a pad found or chosen, or the page back: what is held waits to be let go; a drifting pad never takes over
+sticks: dead zone 0.25, an arrow past 0.6, let go under 0.4
+the D-pad: rows walked along, down and up to what is in line
+the pick (Settings, Gamepad buttons) wins over what the pad says; How to play shows it with no pad in hand
+texts (KeyE Space KeyR KeyV KeyF KeyQ KeyU KeyC KeyW Escape PadLB PadRT):
+  xbox: A X Y LT RT LS RS View ↑ B LB RT
+  ps: ✕ □ △ L2 R2 L3 R3 Create ↑ ○ L1 R2
+  nintendo: B Y X ZL ZR LS RS − ↑ A L ZR
+  8bitdo: B Y X L2 R2 LS RS Select ↑ A L R2

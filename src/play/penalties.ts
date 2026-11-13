@@ -35,7 +35,7 @@ import { LAYER } from '../sim/world/World';
 import type { PitchFrame } from '../render/Pitch';
 import type { Pitch } from '../content/prisons/types';
 import type { PenMark, PensView } from '../ui/pens';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { inmateName } from '../ui/names';
 import { banner, itemsUI, sound } from './context';
 import { floatUp } from './floats';
@@ -210,7 +210,7 @@ export function pensNow(sim: Sim, a: number): PensView | null {
     });
     v.mine.length = v.theirs.length = 0;
     v.corners = cornersToday(s);
-    v.note = TOUCH ? t('pens.readyTouch') : t('pens.readyKeys');
+    v.note = touchWords() ? t('pens.readyTouch') : t('pens.readyKeys');
     return v;
   }
   const step = s.step;
@@ -257,10 +257,10 @@ export function pensNow(sim: Sim, a: number): PensView | null {
       ? t(o.turn === 0 ? 'pens.toSpot' : 'pens.toGoal')
       : o.phase === PH.SET
         ? o.turn === 0
-          ? t(o.who < 0 ? (TOUCH ? 'pens.practiceTouch' : 'pens.practiceKeys') : TOUCH ? 'pens.kickTouch' : 'pens.kickKeys')
+          ? t(o.who < 0 ? (touchWords() ? 'pens.practiceTouch' : 'pens.practiceKeys') : touchWords() ? 'pens.kickTouch' : 'pens.kickKeys')
           : o.dived
             ? t('pens.dived')
-            : t(TOUCH ? 'pens.keepTouch' : 'pens.keepKeys')
+            : t(touchWords() ? 'pens.keepTouch' : 'pens.keepKeys')
         : v.result === 'goal' && o.who < 0
           ? Math.abs(o.aim) > KEEPER_BASE
             ? t('pens.cornerGoal')
@@ -310,7 +310,7 @@ export function announcePens(sim: Sim, e: Extract<SimEvent, { type: 'pens' }>) {
   const score = { m: e.mine ?? 0, n: e.theirs ?? 0 };
   switch (e.what) {
     case 'start':
-      coachOnce('pens', TOUCH ? 'hint.pensTouch' : 'hint.pens');
+      coachOnce('pens', touchWords() ? 'hint.pensTouch' : 'hint.pens');
       sound.whistle();
       itemsUI.toast(t('toast.pensStart', { name }));
       break;

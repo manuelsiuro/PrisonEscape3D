@@ -1,3 +1,4 @@
+import { PAD_KINDS, type PadKind } from '../input/pad';
 import { PRISONS } from '../content/prisons';
 import { clean, type Bindings } from '../input/bindings';
 import { PICKABLE } from './holidays';
@@ -48,6 +49,8 @@ export interface Settings {
   uiScale: number;
   /** Session 9: the main actions moved off their default keys (input/bindings.ts). */
   keys: Bindings;
+  /** 2.45: the letters a gamepad's buttons are named with: as the pad says, or the player's pick (a pad that passes for another). */
+  padButtons: 'auto' | PadKind;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -67,6 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   holidayPick: 'christmas',
   uiScale: 1,
   keys: {},
+  padButtons: 'auto',
 };
 
 /** Stored settings, each field checked against its default's type (a bad value gets the default). */
@@ -83,6 +87,7 @@ export function loadSettings(): Settings {
   if (!PICKABLE.includes(out.holidayPick)) out.holidayPick = 'christmas';
   if (!UI_SCALES.includes(out.uiScale)) out.uiScale = 1;
   out.keys = clean(out.keys);
+  if (out.padButtons !== 'auto' && !PAD_KINDS.includes(out.padButtons)) out.padButtons = 'auto';
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
   out.musicVolume = Math.min(1, Math.max(0, Number.isFinite(out.musicVolume) ? out.musicVolume : DEFAULT_SETTINGS.musicVolume));
   return out;

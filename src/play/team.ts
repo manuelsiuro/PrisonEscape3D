@@ -22,7 +22,7 @@ import type { InkView } from '../ui/team';
 import { banner, itemsUI, sound } from './context';
 import { gameCards } from './lazy';
 import { coachOnce } from './tips';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { floatUp } from './floats';
 import { refusedText } from './refusals';
 import { inmateName } from '../ui/names';
@@ -190,7 +190,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
         trail.length = 0;
         trailStep = -1;
         trailInked = 0;
-        coachOnce(e.mine ? 'inkMe' : 'tattoo', e.mine ? 'hint.inkMe' : TOUCH ? 'hint.tattooTouch' : 'hint.tattoo');
+        coachOnce(e.mine ? 'inkMe' : 'tattoo', e.mine ? 'hint.inkMe' : touchWords() ? 'hint.tattooTouch' : 'hint.tattoo');
         sound.needle();
       } else if (e.what === 'done') {
         sound.coin((e.pay ?? 0) >= 30);

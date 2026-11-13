@@ -6,7 +6,7 @@ import { hasSeen, markSeen } from '../game/settings';
 import { t, type Key } from '../i18n';
 import { containersOf } from '../sim/world/containers';
 import { FirstDay } from '../ui/coach';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { applySettings, banner, board, click, hint, hud, itemsUI, settings, socialOpen } from './context';
 import { play, type Game } from './game';
 
@@ -54,7 +54,7 @@ export function coachItems(held: number, outfit: number) {
     // The first tool: how to use it first; the warning about contraband in hand the next time.
     if (d?.tool && !seenTip('tools')) {
       markTip('tools');
-      banner.toast(TOUCH ? t('hint.toolsTouch') : t('hint.toolsKeys'), 'info', 7000);
+      banner.toast(touchWords() ? t('hint.toolsTouch') : t('hint.toolsKeys'), 'info', 7000);
     } else if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !seenTip('contrabandHand')) {
       markTip('contrabandHand');
       banner.toast(t('hint.contrabandHand'), 'info', 6500);
@@ -74,7 +74,7 @@ export const firstDay = new FirstDay(
   hud.el,
   () => {
     markTip('guide');
-    coachOnce('help', TOUCH ? 'hint.help' : 'hint.helpKeys');
+    coachOnce('help', touchWords() ? 'hint.help' : 'hint.helpKeys');
   },
   click,
 );

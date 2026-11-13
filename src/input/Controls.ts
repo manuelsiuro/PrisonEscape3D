@@ -30,6 +30,8 @@ export class Controls {
     this.held.clear();
   }
   private readonly held = new Set<string>();
+  /** A pad's left stick (2.45), the dead zone taken off: steers like the touch stick, in any of the 16 ways. */
+  padStick = { x: 0, y: 0 };
   private readonly stick: HTMLElement;
   private readonly knob: HTMLElement;
   private stickId: number | null = null;
@@ -211,6 +213,7 @@ export class Controls {
     }
     this.press = null;
     this.held.clear();
+    this.padStick = { x: 0, y: 0 };
     this.pointers.clear();
     this.pinch = 0;
     this.endStick();
@@ -224,6 +227,7 @@ export class Controls {
   /** The direction asked for right now: the stick if a thumb is on it, else the keys. */
   dir(): number {
     if (this.stickId !== null) return Math.hypot(this.vec.x, this.vec.y) < DEAD_ZONE ? 0 : dirFromVector(this.vec.x, this.vec.y);
+    if (this.padStick.x !== 0 || this.padStick.y !== 0) return dirFromVector(this.padStick.x, this.padStick.y);
     let x = 0;
     let z = 0;
     for (const k of this.held) {

@@ -40,7 +40,7 @@ import { director } from './chatter';
 import { cheer } from './games';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { floatUp } from './floats';
 import { guardWord, inmateName } from '../ui/names';
 import type { StageView } from '../ui/stage';
@@ -364,7 +364,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
     case 'stage': {
       if (e.what === 'start') {
         judged = { grade: 0, at: 0 };
-        coachOnce('talent', TOUCH ? 'hint.talentTouch' : 'hint.talent');
+        coachOnce('talent', touchWords() ? 'hint.talentTouch' : 'hint.talent');
       } else if (e.what === 'hit') {
         judged = { grade: e.grade ?? 2, at: performance.now() };
         const o = sim.state.show;
@@ -399,7 +399,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
     }
     case 'quiz': {
       quizTalk(e, sim);
-      if (e.what === 'start') coachOnce('quiz', TOUCH ? 'hint.quizTouch' : 'hint.quiz');
+      if (e.what === 'start') coachOnce('quiz', touchWords() ? 'hint.quizTouch' : 'hint.quiz');
       else if (e.what === 'question') sound.blip();
       else if (e.what === 'right') {
         sound.chime();

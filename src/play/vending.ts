@@ -5,7 +5,7 @@ import { t, type Key } from '../i18n';
 import { OP, EXT } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { atVending, cutPast, peopleAhead, vendRefusal, vendShut, VEND_NOBODY, VEND_PLAYER } from '../sim/systems/vending';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { itemName } from '../ui/items';
 import type { VendRow, VendView } from '../ui/vending';
 import { itemsUI, sound, vendCard } from './context';
@@ -87,7 +87,7 @@ export function vendingNow(sim: Sim): VendView | null {
     view.screen = atVending(sim) ? t('vend.screen.choose') : t('vend.screen.stepUp');
     view.tone = 'idle';
   }
-  view.note = TOUCH ? t('vend.noteTouch') : t('vend.noteKeys');
+  view.note = touchWords() ? t('vend.noteTouch') : t('vend.noteKeys');
   return view;
 }
 

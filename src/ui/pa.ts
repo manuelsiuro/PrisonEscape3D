@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { esc, fadeOut, h, TOUCH } from './dom';
+import { esc, fadeOut, h, touchWords } from './dom';
 import { icon } from './icons';
 
 /** A row of the morning card: what's on, the weather. */
@@ -128,7 +128,7 @@ export class PaBoard {
             `<div class="pa-row${k === rows.length - 1 ? ' last' : ''}"><span class="pa-ic" style="--c:${r.color}">${icon(r.icon, 18)}</span><span class="pa-text"><small>${esc(r.label)}</small><b>${esc(r.title)}${r.when ? `<em>${esc(r.when)}</em>` : ''}</b><span>${esc(r.sub)}</span>${r.note ? `<i class="pa-note">${icon('wind', 13)}${esc(r.note)}</i>` : ''}</span></div>`,
         )
         .join('')}</div>
-      <small class="pa-hint" aria-hidden="true">${t(TOUCH ? 'pa.dismiss' : 'pa.dismissKeys')}</small>`,
+      <small class="pa-hint" aria-hidden="true">${t(touchWords() ? 'pa.dismiss' : 'pa.dismissKeys')}</small>`,
     );
     el.querySelector('.pa-from')!.textContent = from;
     el.addEventListener('pointerdown', (e) => {

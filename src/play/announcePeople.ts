@@ -6,7 +6,7 @@ import { lowerFirst, t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { FIRECRACKER } from '../sim/systems/structure';
 import { tossFlight } from '../render/Noise';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { itemName } from '../ui/items';
 import { press } from './reach';
 import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, sound, tools, view } from './context';
@@ -95,7 +95,7 @@ export function announcePeople(e: SimEvent, sim: Sim) {
         sound.coin(e.n >= 20);
         floatAt(-1, `+$${e.n}`, 'cash');
         if (e.why === 'loot') itemsUI.toast(t('toast.foundCash', { n: e.n }));
-        coachOnce('file', TOUCH ? 'hint.fileTouch' : 'hint.fileKeys');
+        coachOnce('file', touchWords() ? 'hint.fileTouch' : 'hint.fileKeys');
         if (e.why === 'wage') {
           buzz('attended');
           banner.show(t('banner.paid', { n: e.n }), t('banner.paidSub', { job: jobName(sim, sim.playerJob) }), 'routine', 3600);

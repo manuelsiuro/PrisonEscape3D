@@ -10,7 +10,7 @@ import { nextWork } from '../sim/systems/jobs';
 import type { Sim } from '../sim/Sim';
 import { itemIcons } from '../render/itemIcons';
 import { t, textStamp, type Key } from '../i18n';
-import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
+import { confirmed, esc, h, type Send, setText, touchWords } from './dom';
 import { icon } from './icons';
 import { inmateName } from './names';
 
@@ -225,7 +225,7 @@ export class TrainCard {
       setText(this.el.querySelector<HTMLElement>('.train-cost')!, `−${cost}`);
       setText(
         this.note,
-        `${TOUCH ? t('train.touch') : t('train.keys')} · ${t('train.cost', { n: cost })} · ${t(`train.gives.${a}` as Key)}`,
+        `${touchWords() ? t('train.touch') : t('train.keys')} · ${t('train.cost', { n: cost })} · ${t(`train.gives.${a}` as Key)}`,
       );
       this.el.querySelector('.train-stop')!.setAttribute('aria-label', t('train.stop'));
       this.sides[0].setAttribute('aria-label', t('train.left'));

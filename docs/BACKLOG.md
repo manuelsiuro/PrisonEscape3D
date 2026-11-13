@@ -22,6 +22,7 @@ date and version here when one is done.
 | Check | Why a person | Last done |
 |---|---|---|
 | Play on a real phone, portrait and landscape: the reading game, the beat of a set, the tattoo, the action button, the joystick | Touch is simulated in the browser: a finger's timing and reach aren't | not recorded |
+| A real gamepad (2.45): an Xbox and a PlayStation pad at least, in Chrome, Firefox and Safari; the stick's feel, the rumble, a lesson start to finish | No pad here: a pretend one (`scripts/dev/fakepad.ts`) drove the browser checks | not recorded |
 | A real phone's speed: the `?perf` counter read in a busy yard, day and night, the phone's model noted | A computer's graphics card is 10–20 times a phone's: only a phone says whether a lighter look is needed | 2026-11-06, v2.35.0: a Galaxy S24 (flagship), 60 fps everywhere at every tier; a mid-range phone still to do |
 | An iPhone, upright and turned: every screen and card (`scripts/dev/screensweep.ts` in its Safari) | No iPhone here (the tools drive Android by adb); its Safari can't go full screen, so turned it has only the height its own bars leave | not recorded |
 | Listen: sounds, music, a phone's vibration | Nobody has heard them since they were made; no test can | not recorded |
@@ -38,17 +39,14 @@ re-tuned, as the sports grounds were; gangs, 2.36, start once the player meets t
   grumbling barks) the player can spark (a canteen food fight, a yard brawl). Guards fall back to
   hold doors, some doors jam, storerooms are looted: an escape window. Then the riot squad, a full
   shakedown, a lockdown day. Built on the gangs (2.36): a gang war can tip into a riot.
-- **Gamepad support** (session 10 of the queue, moved here by the user on 2026-11-06): no controller input
-  (`getGamepads` nowhere); it would build on the actions table of 2.35.0 (`input/bindings.ts`), the block
-  of 2.35 included.
 - **Photo mode and postcards**, **a custom escape** (a twist sandbox and Hard time), **the escape
   planner corkboard**, **a story through the prisons** (2026-10-23, offered with parole, not picked).
 
 ## 4. The improvement queue
 
 All sixteen sessions the user picked on 2026-11-06 are done (v2.34.2–v2.36.0, their entries in
-`history/v2.30-v2.34.md` and `history/v2.35-v2.39.md`), except 10, gamepad support (moved to §3 by
-the user); 9's colour-blind palette was left out by the user.
+`history/v2.30-v2.34.md` and `history/v2.35-v2.39.md`); 10, gamepad support, came last (v2.45.0); 9's
+colour-blind palette was left out by the user.
 
 ## 5. Upkeep
 

@@ -1,3 +1,4 @@
+import { padLabels } from '../input/bindings';
 /** Small DOM helpers shared by the HUD and the screens. */
 
 export const h = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = '') => {
@@ -18,6 +19,8 @@ export const MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh
 
 /** Phones and tablets: no keyboard, no hover. The `touch` class on body mirrors it. */
 export const TOUCH = MOBILE || matchMedia('(pointer: coarse)').matches;
+/** Whether a text names touch controls: a touch screen, unless a pad is in hand (2.45: then the keyboard's words, as their Pad twins). */
+export const touchWords = () => TOUCH && !padLabels();
 document.body.classList.toggle('touch', TOUCH);
 
 /** Text made safe to put in markup (& < > " escaped). */

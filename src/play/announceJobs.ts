@@ -7,7 +7,7 @@ import { mealOn, mealSteps, TRAY, traysHere } from '../sim/systems/canteen';
 import { DOING } from '../sim/systems/inmates';
 import { workPose } from './frame';
 import { wardenOf } from '../sim/systems/rollcall';
-import { TOUCH } from '../ui/dom';
+import { touchWords } from '../ui/dom';
 import { banner, board, closeSocial, itemsUI, profile, ratPanel, phonePanel, crewPanel, readCard, sound, trainCard } from './context';
 import { play } from './game';
 import { coachOnce, seenInteract } from './tips';
@@ -87,8 +87,8 @@ export function announceJobs(e: SimEvent, sim: Sim) {
         seenInteract();
         sound.click();
         play.game?.pilot.stop();
-        if (sim.rules230 || e.use !== 'study') coachOnce('trainBeat', TOUCH ? 'hint.trainBeatTouch' : 'hint.trainBeatKeys');
-        else coachOnce('readWait', TOUCH ? 'hint.readTouch' : 'hint.readKeys');
+        if (sim.rules230 || e.use !== 'study') coachOnce('trainBeat', touchWords() ? 'hint.trainBeatTouch' : 'hint.trainBeatKeys');
+        else coachOnce('readWait', touchWords() ? 'hint.readTouch' : 'hint.readKeys');
       }
       break;
     case 'count':

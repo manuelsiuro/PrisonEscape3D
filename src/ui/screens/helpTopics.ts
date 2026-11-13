@@ -136,6 +136,12 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('trophies', 'trophy', '#e2a21b', { diagram: 'medals', listIcons: ['star', 'trophy', 'shirt'] }),
         T('daily', 'calendar', '#2fb6c8', { listIcons: ['bolt', 'replay', 'flame'] }),
         T('replay', 'film', '#7b6fd6', { listIcons: ['play', 'moon', 'route', 'save'] }),
+        // 2.45: a gamepad, its layout, the wheel; the full list is the Controls tab's Gamepad.
+        T('gamepad', 'gamepad', '#4f7fd8', {
+          stepIcons: ['walk', 'hand', 'dots', 'route'],
+          listIcons: ['vibrate', 'gamepad', 'keyboard', 'help'],
+          see: ['items', 'replay'],
+        }),
       ],
     },
   ],
