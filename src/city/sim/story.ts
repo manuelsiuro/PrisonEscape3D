@@ -43,7 +43,7 @@ const BATTERY = cityItemNumber('battery');
 const far = (a: number, b: number) => Math.abs((a % MAP_W) - (b % MAP_W)) + Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W));
 
 /** The tiles a piece of furniture stands on. */
-function tilesOf(d: District, prop: number): number[] {
+export function tilesOf(d: District, prop: number): number[] {
   const p = d.props[prop];
   const out: number[] = [];
   for (let z = p.z; z < p.z + (p.d ?? 1); z++) for (let x = p.x; x < p.x + (p.w ?? 1); x++) out.push(z * MAP_W + x);

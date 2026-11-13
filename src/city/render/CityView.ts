@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { disposeTree } from '../../render/batch';
 import { box, cyl, kitMaterial, merge, rod, type Part } from '../../render/kit';
+import { seeThrough } from '../../render/occlusion';
 import { WALL_H } from '../../render/WorldView';
 import { mix32 } from '../../sim/rng';
 import { DISTRICTS } from '../content/districts';
@@ -8,6 +9,8 @@ import { MAP_H, MAP_W } from '../../sim/world/grid';
 import { DECO, type District } from '../gen/district';
 import { MAP_H as H, MAP_W as W } from '../../sim/world/grid';
 import { neighbour, ROAD_W, SIDE, type CityPlan } from '../gen/plan';
+import { LandmarkLive, landmarkParts, type LandmarkFrame } from './landmarks';
+import type { LandmarkPlan } from './landmarkPlan';
 
 /**
  * A district's own pieces in the picture (C1, render only): what the World's floors, walls and
@@ -347,7 +350,14 @@ export class CityView {
     );
     this.glow.renderOrder = 0.4;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk);
+    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk, this.live.group);
+  }
+
+  /** The landmark's pieces that change with the story (2.50). */
+  private readonly live = new LandmarkLive();
+  private readonly landMat = seeThrough(kitMaterial.clone(), 0.6);
+  drawLandmark(f: LandmarkFrame) {
+    this.live.draw(f);
   }
 
   /** The survivors in this district: the dead's own body, standing straight in the colours of the living. */
@@ -459,9 +469,19 @@ export class CityView {
     if (this.dead.instanceColor) this.dead.instanceColor.needsUpdate = true;
   }
 
-  /** A district's pieces put up (the last one's taken down). */
-  set(plan: CityPlan, district: District) {
+  /** A district's pieces put up (the last one's taken down); `landmark`: its landmark's own (landmarkPlan). */
+  set(plan: CityPlan, district: District, own: LandmarkPlan | null = null) {
     this.clear();
+    this.live.set(own);
+    if (own) {
+      // (A model of its own: cut away round the player like the walls it stands on, so nobody is lost behind a sign.)
+      const lp: Part[] = [];
+      landmarkParts(own, lp);
+      const lm = new THREE.Mesh(merge(lp), this.landMat);
+      lm.castShadow = true;
+      lm.receiveShadow = true;
+      this.group.add(lm);
+    }
     const parts: Part[] = [];
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const kind = district.deco[i];
@@ -570,7 +590,7 @@ export class CityView {
   }
 
   clear() {
-    disposeTree(this.group, () => false, new Set([kitMaterial]));
+    disposeTree(this.group, () => false, new Set([kitMaterial, this.landMat]));
     this.group.clear();
     this.dead.count = 0;
     this.eyes.count = 0;
@@ -580,5 +600,6 @@ export class CityView {
     this.marks.clear();
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();
+    this.live.clear();
   }
 }
