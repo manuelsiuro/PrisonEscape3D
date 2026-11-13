@@ -51,7 +51,7 @@ Rules that matter every time:
   (`docs/TOOLS.md`).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()`, `__view`, `__sound`, `__firstDay` and `__offerUpdate`; `scripts/dev/playat.ts` puts the game at any
-  prison and moment and drives it by real keys. A render change is measured: `drawhash` (meant to draw
+  prison and moment and drives it by real keys; `scripts/dev/fakepad.ts` plugs in a pretend gamepad. A render change is measured: `drawhash` (meant to draw
   nothing new), `perfprobe` (draws more), `hitchprobe` (slow frames, memory); how, in `docs/TOOLS.md`.
 - **The real phone** (an Android phone on USB, adb): testing, measuring or playing by touch on it, the
   `real-phone` skill (`scripts/dev/phone.ts`).

@@ -100,20 +100,20 @@ key or a finger is used again. It rumbles where a phone vibrates.
 
 ### Controls inside activities
 
-| Activity | Keyboard and mouse | Touch |
-|---|---|---|
-| Training | A and D (or ← →) in turn, in time with the beat | Left and right buttons |
-| Arm-wrestling | A and D (or ← →) in turn, on the beat | Left and right buttons |
-| Dice | 1 or 2 choose a die, Enter throws it again or stands | Tap a die and the buttons |
-| Cheat | 1–5 choose, Enter lays, L calls Liar! | Tap cards and buttons |
-| Hoops | Hold Space, let go | Shoot button |
-| Penalties | Space as the marker crosses; A or D to dive | Kick button; the Dive buttons |
-| Talent night | A S D or ← ↓ → | Three pads |
-| Quiz, courses | 1–4 | Tap an answer |
-| Parole board, Lou's phone line | 1–3 | Tap an answer |
-| Tattoo | Mouse button held, or arrow keys | Draw with a finger |
-| Manhunt | Walk as usual, E acts, Space or F throws a stone | Stick, tap, Stone button |
-| Replay | ← → an hour, Page Up/Down highlights, Space pause, Esc close | On-screen bar, pinch |
+| Activity | Keyboard and mouse | Touch | Gamepad |
+|---|---|---|---|
+| Training | A and D (or ← →) in turn, in time with the beat | Left and right buttons | ← → (stick or D-pad) in turn |
+| Arm-wrestling | A and D (or ← →) in turn, on the beat | Left and right buttons | ← → in turn |
+| Dice | 1 or 2 choose a die, Enter throws it again or stands | Tap a die and the buttons | D-pad to a die, A |
+| Cheat | 1–5 choose, Enter lays, L calls Liar! | Tap cards and buttons | D-pad to cards, A; Lay, Liar! the same |
+| Hoops | Hold Space, let go | Shoot button | Hold X, let go |
+| Penalties | Space as the marker crosses; A or D to dive | Kick button; the Dive buttons | X as the marker crosses; ← or → to dive |
+| Talent night | A S D or ← ↓ → | Three pads | ← ↓ → (stick or D-pad) |
+| Quiz, courses | 1–4 | Tap an answer | D-pad to an answer, A |
+| Parole board, Lou's phone line | 1–3 | Tap an answer | D-pad to an answer, A |
+| Tattoo | Mouse button held, or arrow keys | Draw with a finger | Left stick steers the needle |
+| Manhunt | Walk as usual, E acts, Space or F throws a stone | Stick, tap, Stone button | Left stick, A acts, X or RT throws a stone |
+| Replay | ← → an hour, Page Up/Down highlights, Space pause, Esc close | On-screen bar, pinch | D-pad and A on its bar, B closes |
 
 ## Game modes
 
