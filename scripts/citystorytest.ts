@@ -10,10 +10,10 @@ import { check } from './assert';
 import { quester } from './citybots';
 import { cityItemNumber } from '../src/city/content/items';
 import { SEARCHED } from '../src/city/content/loot';
-import { BEATS, FLAG, NOTES, STORY, THINGS, WAYS, thingBit } from '../src/city/content/story';
+import { BEATS, FLAG, NOTES, STORY, THING_IN, THINGS, WAYS, thingBit } from '../src/city/content/story';
 import { neighbour } from '../src/city/gen/plan';
 import { City, COP, loadCity, MODE, type CityEvent } from '../src/city/sim/City';
-import { quota } from '../src/city/sim/dead';
+import { noise, quota, stepDead, ZED, type Zed } from '../src/city/sim/dead';
 import { going, objectives } from '../src/city/sim/story';
 import { command } from '../src/sim/command';
 import { fnv1a } from '../src/sim/rng';
@@ -71,7 +71,6 @@ const ids = (c: City) =>
 {
   const SEEDS = 60;
   let pierWalk = 0;
-  let sameLot = 0;
   for (let seed = 1; seed <= SEEDS; seed++) {
     const c = new City(seed);
     const P = c.story;
@@ -98,12 +97,7 @@ const ids = (c: City) =>
       const dist = c.districtOf(P.things[k].district);
       const p = dist.props[P.things[k].prop];
       const lot = dist.lotAt[p.z * MAP_W + p.x];
-      if (
-        lot &&
-        dist.lots[lot - 1].use ===
-          dist.lots.find((l) => l.use !== 'none' && c.plan.kinds[P.things[k].district] && l === dist.lots[lot - 1])?.use
-      )
-        sameLot++;
+      check(!!lot && dist.lots[lot - 1].use === THING_IN[THINGS[k]], `${at}: ${THINGS[k]} isn't in the ${THING_IN[THINGS[k]]}`);
     }
     WAYS.forEach((w, k) => {
       const d = P.wayDistrict[k];
@@ -123,7 +117,6 @@ const ids = (c: City) =>
   say(
     `${SEEDS} cities: ${THINGS.length} things and ${NOTES} notes each in furniture of its own that can be stood beside, the radio at the start, the aerial next door, every way out's tile open floor in its landmark, a pier's end ${(pierWalk / SEEDS).toFixed(0)} tiles from the boathouse on average`,
   );
-  void sameLot;
 }
 
 // ------------------------------------------------------------------ the acts, one by one
@@ -246,6 +239,24 @@ const ids = (c: City) =>
     torn += c.events.filter((e) => e.type === 'breach').length;
   }
   check(torn === doors.length && c.bars.length === 0, `${torn} of ${doors.length} barred doors torn open`);
+  // Another building boarded up and stood in: its doors are torn open first.
+  const other = c.district.lots.findIndex(
+    (l, k) => k !== c.story.wayLot[0] && l.doors.length > 0 && c.zedPlaces.indoors.some((i) => c.district.lotAt[i] === k + 1),
+  );
+  s.bars[d] = [...c.district.lots[other].doors, doors[0]];
+  c.rebar();
+  stand(
+    c,
+    d,
+    c.zedPlaces.indoors.find((i) => c.district.lotAt[i] === other + 1)!,
+  );
+  let first = -1;
+  for (let k = 0; k < STORY.breachEvery * MIN + MIN && first < 0; k++) {
+    c.step(0);
+    for (const e of c.events) if (e.type === 'breach') first = e.tile;
+  }
+  check(c.district.lots[other].doors.includes(first), 'boarded into another building, the beacon lit: its doors hold');
+  stand(c, d, c.story.exits[0]);
   // The dead on: they come for it, a few at a time, and the count is the night's.
   c.peace = false;
   s.health = 100;
@@ -255,11 +266,11 @@ const ids = (c: City) =>
     c.step(0);
     s.health = 100;
     most = Math.max(most, s.zeds.length);
-    seek += s.zeds.filter((z) => z.goal === c.story.exits[0]).length ? 1 : 0;
+    seek += s.zeds.filter((z) => z.mode === ZED.SEEK || z.mode === ZED.CHASE).length ? 1 : 0;
   }
   check(most > 6 && seek > 0, `the beacon lit 40 minutes: ${most} of the dead at the most, ${seek} steps with one making for it`);
   say(
-    `the beacon: ${STORY.extra} more of the dead than the night's, one arriving every ${STORY.trickle} minutes and making for it; a barred door torn open every ${STORY.breachEvery} minutes (${doors.length} of ${doors.length})`,
+    `the beacon: ${STORY.extra} more of the dead than the night's, one arriving every ${STORY.trickle} minutes and making for whoever lit it; a barred door torn open (the building stood in first) every ${STORY.breachEvery} minutes (${doors.length} of ${doors.length})`,
   );
 }
 {
@@ -333,10 +344,56 @@ const ids = (c: City) =>
   stand(c, d, c.story.pier);
   while (c.minute !== STORY.tideFrom) c.step(0);
   check(going(c) === 2, 'no fog on the docks at night with the boat ready');
+  // The fog: one of the dead three tiles off down a clear plank doesn't see the player (four by a clear night); a blow is heard at twice the reach.
+  const zed = (tile: number): Zed => ({
+    body: xz(tile),
+    hp: 30,
+    mode: ZED.WANDER,
+    goal: -1,
+    path: [],
+    seen: -9999,
+    last: -1,
+    bit: -9999,
+    reel: 0,
+    near: 0,
+    pace: 1000,
+  });
+  const line = [1, -1, MAP_W, -MAP_W].find((dd) => [1, 2, 3].every((k) => !c.grid[c.story.pier + dd * k]))!;
+  check(line !== undefined, 'seed 5: three clear tiles off the pier end');
+  s.zeds = [zed(c.story.pier + line * 3)];
+  for (let k = 0; k < 10; k++) stepDead(c);
+  check(s.zeds[0].mode !== ZED.CHASE, 'seen from three tiles in the fog');
+  s.ready = 0;
+  s.zeds = [zed(c.story.pier + line * 3)];
+  for (let k = 0; k < 10; k++) stepDead(c);
+  check(s.zeds[0].mode === ZED.CHASE, 'not seen from three tiles on a clear night');
+  const off = (n: number) =>
+    zed(
+      c.zedPlaces.streets.find(
+        (i) => Math.max(Math.abs((i % MAP_W) - (c.tile % MAP_W)), Math.abs(Math.floor(i / MAP_W) - Math.floor(c.tile / MAP_W))) === n,
+      )!,
+    );
+  s.zeds = [off(12)];
+  noise(c, c.tile, 7);
+  check(s.zeds[0].mode !== ZED.SEEK, 'a blow heard twelve tiles off on a clear night');
+  s.ready = 1;
+  noise(c, c.tile, 7);
+  check(s.zeds[0].mode === ZED.SEEK, 'a blow not heard twelve tiles off in the fog');
+  s.zeds = [];
+  // A fall on the pier's end (a Survivor): the engine stays fitted, and back on the tile the button is the boat, not the pile.
+  s.inv[0] = [cityItemNumber('tin'), 2];
+  c.hurt(200);
+  check(s.ready === 1 && s.way === 2 && !s.over, 'a fall with the engine fitted takes it out');
+  stand(c, d, c.story.pier);
+  check(c.target()?.kind === 'way', `on the pier's end with a pile underfoot the button is ${c.target()?.kind}`);
+  while (c.minute !== STORY.tideFrom) {
+    s.hunger = 90_000;
+    c.step(0);
+  }
   press(c, COP.ACT);
   check(s.over === 2 && s.won === 2, 'the boat not taken on the tide');
   say(
-    `the boat: fitted at any hour and left fitted, taken from the pier's end between ${STORY.tideFrom / 60}:00 and 0${STORY.tideTo / 60}:00 only, in fog`,
+    `the boat: fitted at any hour and left fitted, taken from the pier's end between ${STORY.tideFrom / 60}:00 and 0${STORY.tideTo / 60}:00 only, in fog (the dead see two tiles, a blow carries twice as far); a fall keeps the engine fitted, and a pile on the pier's end doesn't take the button`,
   );
 }
 
@@ -358,6 +415,23 @@ const ids = (c: City) =>
     !s.over && !s.ready && s.way === 3 && s.kit === (1 << THINGS.length) - 1 && s.act === 4,
     'a Survivor fell: the kit and the way kept, the generator stopped',
   );
+  // Lit and fallen: the beacon out too. Asleep, a way out is still chosen from the journal.
+  {
+    const b = new City(7, MODE.SURVIVOR);
+    b.peace = true;
+    b.step(0);
+    Object.assign(b.state, { kit: (1 << THINGS.length) - 1, flags: 7, scouted: 7 });
+    stand(b, b.story.wayDistrict[0], b.story.exits[0]);
+    b.state.sleeping = true;
+    press(b, COP.CHOOSE, 1);
+    check(b.state.way === 1, 'a way out chosen in bed is dropped');
+    b.state.sleeping = false;
+    while (b.minute !== 22 * 60) b.step(0);
+    press(b, COP.ACT);
+    check(b.state.ready === 1, 'the beacon lit');
+    b.hurt(200);
+    check(!b.state.ready && b.state.way === 1 && b.state.heard.includes('fell'), 'a fall leaves the beacon lit');
+  }
   const again = loadCity(JSON.parse(JSON.stringify(c.snapshot())))!;
   check(
     again.state.kit === s.kit && again.state.way === 3 && again.state.notes === 5 && again.state.act === 4 && again.state.scouted === 7,
@@ -368,6 +442,20 @@ const ids = (c: City) =>
   for (const k of ['act', 'flags', 'kit', 'scouted', 'way', 'notes', 'ready', 'readyAt', 'won', 'heard']) delete old.state[k];
   const from = loadCity(old)!;
   check(!!from && from.state.act === 1 && from.state.kit === 0 && from.state.heard.length === 0, 'a save from before the story');
+  // One whose player had already searched the radio's furniture and a note's: both are found, or they never could be.
+  const looted = JSON.parse(JSON.stringify(old));
+  const r0 = c.story.things[0];
+  const n3 = c.story.notes[3];
+  looted.state.boxes[`${r0.district}:${r0.prop}`] = [];
+  looted.state.boxes[`${n3.district}:${n3.prop}`] = [];
+  const kept = loadCity(looted)!;
+  check(
+    kept.state.kit === 1 && kept.state.notes === 8,
+    `a save that had searched the radio's furniture: kit ${kept.state.kit}, notes ${kept.state.notes}`,
+  );
+  const over = JSON.parse(JSON.stringify(c.snapshot()));
+  over.state.over = 2;
+  check(loadCity(over) === null, 'a save of a city that is over loads');
   const bad: Array<[string, unknown]> = [
     ['kit', 1 << 20],
     ['way', 9],
@@ -394,7 +482,7 @@ const ids = (c: City) =>
   hard.hurt(200);
   check(hard.state.over === 1 && hard.state.won === 0, 'Hardcore: a fall is not the end');
   say(
-    `a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act; ${bad.length} damaged stories start again with the city kept`,
+    `a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act with what its searched furniture held; ${bad.length} damaged stories start again with the city kept`,
   );
   check(new Set(BEATS).size === BEATS.length, 'a line of Dispatch named twice');
 }
@@ -425,6 +513,34 @@ const ids = (c: City) =>
     `a bot follows the story to each way out on ${CITIES.length} cities (the dead away): ${won} of ${CITIES.length * 3} left, by day ${(days[0] / CITIES.length).toFixed(1)} (helicopter), ${(days[1] / CITIES.length).toFixed(1)} (boat), ${(days[2] / CITIES.length).toFixed(1)} (metro) on average`,
   );
   for (const r of rows) say(r);
+}
+{
+  // The holds alone, the dead about: a bot with a bat and three bandages on the first night, never standing still.
+  const tally = [0, 0];
+  for (const way of [1, 3])
+    for (let seed = 1; seed <= 6; seed++) {
+      const c = new City(seed);
+      c.peace = true;
+      c.step(0);
+      const s = c.state;
+      Object.assign(s, { kit: (1 << THINGS.length) - 1, flags: 7, scouted: 7 });
+      s.inv[0] = [cityItemNumber('bat'), 40];
+      s.inv[1] = [cityItemNumber('bandage'), 3];
+      s.inv[2] = [cityItemNumber('tin'), 3];
+      stand(c, c.story.wayDistrict[way - 1], c.story.exits[way - 1]);
+      press(c, COP.CHOOSE, way);
+      while (c.minute !== 21 * 60 + 30) c.step(0);
+      s.hunger = s.energy = 90_000;
+      c.peace = false;
+      s.arrive = 1;
+      const bot = quester(c, way);
+      for (let k = 0; k < 260 * MIN && !s.over && !s.deaths; k++) c.step(bot());
+      if (s.over === 2) tally[way === 1 ? 0 : 1]++;
+    }
+  check(tally[0] >= 4 && tally[1] >= 4, `the holds with the dead about: the helicopter ${tally[0]} of 6, the metro ${tally[1]} of 6`);
+  say(
+    `the holds alone with the dead about (a bat, three bandages, the first night, a bot that keeps moving): the helicopter ${tally[0]} of 6, the metro ${tally[1]} of 6`,
+  );
 }
 {
   // The same with the dead about, as a Survivor: told, not required (a bot that fights what comes and never hides).

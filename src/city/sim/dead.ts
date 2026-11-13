@@ -231,7 +231,8 @@ export function stepDead(c: City) {
       if (s.zeds.length < q.indoors + q.streets && put(c, from, ZED.WANDER, up) && set === 1) {
         const z = s.zeds[s.zeds.length - 1];
         z.mode = ZED.SEEK;
-        z.goal = c.story.exits[s.way - 1];
+        // (They make for whoever set it going, wherever in the district they are.)
+        z.goal = here;
       }
     }
   }

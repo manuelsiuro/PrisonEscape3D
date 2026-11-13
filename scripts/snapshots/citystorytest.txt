@@ -1,27 +1,28 @@
 60 cities: 11 things and 10 notes each in furniture of its own that can be stood beside, the radio at the start, the aerial next door, every way out's tile open floor in its landmark, a pier's end 56 tiles from the boathouse on average
 the acts: eat, sleep and the radio; the aerial and two batteries from the pockets mend it; a way out is chosen only once scouted; set going only with its three things, the beacon only after dark; walked away from, it goes out and the things are kept; held 120 minutes, away
 Dispatch, in order: radio got.aerial fixed scout1 way1 got.beacon got.avgas got.flare all1 night ready1 win1
-the beacon: 8 more of the dead than the night's, one arriving every 5 minutes and making for it; a barred door torn open every 20 minutes (2 of 2)
+the beacon: 8 more of the dead than the night's, one arriving every 5 minutes and making for whoever lit it; a barred door torn open (the building stood in first) every 20 minutes (2 of 2)
 the generator: started at any hour, the gates open 90 minutes on, the dead up into the station meanwhile (15 in it at the most)
-the boat: fitted at any hour and left fitted, taken from the pier's end between 23:00 and 02:00 only, in fog
-a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act; 7 damaged stories start again with the city kept
+the boat: fitted at any hour and left fitted, taken from the pier's end between 23:00 and 02:00 only, in fog (the dead see two tiles, a blow carries twice as far); a fall keeps the engine fitted, and a pile on the pier's end doesn't take the button
+a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act with what its searched furniture held; 7 damaged stories start again with the city kept
 a bot follows the story to each way out on 4 cities (the dead away): 12 of 12 left, by day 5.3 (helicopter), 5.3 (boat), 5.3 (metro) on average
   1 heli: day 5, d6fb2174
-  1 boat: day 5, 12095dfd
+  1 boat: day 5, fa7e4505
   1 metro: day 5, 1be0437e
   2 heli: day 3, 6af94295
   2 boat: day 3, a2a928c1
   2 metro: day 3, a336e0fc
-  3 heli: day 5, e762a298
+  3 heli: day 5, bf126de9
   3 boat: day 5, e8fe4ccf
   3 metro: day 5, f079df1a
-  4 heli: day 8, c53b10c9
+  4 heli: day 8, 7d63f920
   4 boat: day 8, 0ad65615
-  4 metro: day 8, 05f860f7
+  4 metro: day 8, 07f8ce72
+the holds alone with the dead about (a bat, three bandages, the first night, a bot that keeps moving): the helicopter 6 of 6, the metro 5 of 6
 with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 2 of 6 left, 29 falls in all
-  1 heli: still there on day 13 (act 4), fell 6, 72 put down
+  1 heli: still there on day 13 (act 4), fell 6, 84 put down
   1 boat: left on day 7, fell 0, 48 put down
-  1 metro: still there on day 13 (act 4), fell 6, 62 put down
+  1 metro: still there on day 13 (act 4), fell 6, 63 put down
   2 heli: still there on day 13 (act 4), fell 8, 59 put down
   2 boat: left on day 5, fell 1, 43 put down
-  2 metro: still there on day 13 (act 4), fell 8, 37 put down
+  2 metro: still there on day 13 (act 4), fell 8, 41 put down

@@ -203,6 +203,13 @@ export function soundStory(c: City) {
     s.heard.every(isBeat) &&
     new Set(s.heard).size === s.heard.length;
   if (!ok) Object.assign(s, freshStory());
+  // (A save from before the story, or one started again: what lies in furniture already searched is found, or it never could be.)
+  c.story.things.forEach((sp, k) => {
+    if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined) s.kit |= 1 << k;
+  });
+  c.story.notes.forEach((sp, n) => {
+    if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined) s.notes |= 1 << n;
+  });
   s.act = actOf(c);
 }
 
@@ -337,10 +344,10 @@ export function storyMinute(c: City) {
       c.events.push({ type: 'gates' });
       say(c, 'gates');
     }
-    // The beacon lit: boards don't hold for long.
-    if (s.way === 1 && m > 0 && m % STORY.breachEvery === 0) {
-      const doors = c.district.lots[c.story.wayLot[0]].doors.filter((t) => c.bars.includes(t));
-      if (doors.length) c.breach(doors[0]);
+    // The beacon lit, the generator running: boards don't hold for long, anywhere in the district (the building the player is in first).
+    if (m > 0 && m % STORY.breachEvery === 0 && c.bars.length) {
+      const mine = c.lot >= 0 ? c.district.lots[c.lot].doors.filter((t) => c.bars.includes(t)) : [];
+      c.breach(mine[0] ?? Math.min(...c.bars));
     }
     arrived(c);
   }
@@ -380,6 +387,8 @@ export function choose(c: City, way: number) {
   if (!wayOf(way) || !(s.flags & FLAG.FIXED) || !(s.scouted & (1 << (way - 1))) || s.ready || s.way === way) return;
   s.way = way;
   c.events.push({ type: 'chose', way });
+  // (Seen before the radio worked: what it takes is said now.)
+  say(c, `scout${way}` as Beat);
   say(c, `way${way}` as Beat);
   if (!missing(c, way).length) say(c, `all${way}` as Beat);
   refreshAct(c);
@@ -429,7 +438,7 @@ export function objectives(c: City): Objective[] {
     const ready = !missing(c, w).length;
     return [...wayOf(w)!.needs.map((id) => thing(id)), { id: `begin${w}`, done: false, at: ready ? exit(w) : undefined }];
   }
-  if (s.won) return [{ id: `won${s.won}`, done: true }];
+  if (s.won) return [];
   if (w === 1) return [{ id: 'hold1', done: false, left: Math.max(0, STORY.heliHold - since(c)), at: exit(1) }];
   if (w === 3)
     return gatesOpen(c)

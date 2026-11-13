@@ -176,6 +176,7 @@ export class CityHud {
       this.goal.classList.toggle('hidden', !s.goal);
       setText(this.goal.querySelector('span')!, s.goal);
       this.goal.setAttribute('aria-keyshortcuts', keyLabel('KeyJ'));
+      this.goal.title = t('city.journal.open');
     }
     if (s.marksKey !== this.shownMarks) {
       this.shownMarks = s.marksKey;

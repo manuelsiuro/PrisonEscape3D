@@ -148,6 +148,7 @@ function stage(r: CityRun, first = false) {
   picture = null;
   barsShown = -1;
   goalAt = -1;
+  marksShown = '?';
   sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
 }
 

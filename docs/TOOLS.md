@@ -56,7 +56,10 @@ In a dev build `window.__city()` is the city under way (null on the title, and u
 has been fetched by opening it once): `.city` is the simulation (`state`, `district`, `plan`, `target()`,
 `minute`, `day`), `.pilot.goTo(tile)` walks the player by ordinary commands, `.paused` says a screen of its own is
 up. Keys are sent as for the prisons (`KeyE` act, `Space` hit, `KeyC` make, `KeyM` the map, `Digit1`–`Digit8` a
-pocket, `Escape`). Headless, a city is driven as the tests do: `new City(seed)`, `city.step(command(dir, COP.ACT))`,
-`city.peace = true` for no dead, and `scripts/citybots.ts`'s `scavenger(city)` for a player made of commands.
+pocket, `KeyJ` the journal, `Escape`). Headless, a city is driven as the tests do: `new City(seed)`, `city.step(command(dir, COP.ACT))`,
+`city.peace = true` for no dead, and `scripts/citybots.ts`'s `scavenger(city)` for a player made of commands (`quester(city, way)` follows
+the story to a way out). The story's places are `city.story` (`things`, `notes`, `exits`, `pier`), what it asks
+now `objectives(city)` (`city/sim/story.ts`); a test puts the player in another district with the private
+`city.enter(d)` and a new `state.player`.
 A page that falls to the background pauses the city (as the prisons do): a script that finds `.paused` true
 with no pause card should look for another screen up (the map).

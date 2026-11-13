@@ -18,18 +18,22 @@ src/city/
   id.ts               isCity(def): the view's one question about a city's world (no city code comes with it)
   save.ts             the city's save slot and whether the mode shows on the title (read by the title: no city code)
   content/            data: districts.ts (kinds, names, blocks), items.ts (the city's own things), loot.ts (what's
-                      found where), dead.ts (the dead's numbers), recipes.ts (later: quests)
+                      found where), dead.ts (the dead's numbers), recipes.ts, story.ts (the story's things, the
+                      ways out, Dispatch's lines by name, its numbers)
   gen/                the generator, pure: plan.ts (the 3 × 3 plan from a seed), district.ts (one 64 × 64 district)
   sim/                the rules, deterministic as src/sim: City.ts (step(cmd), events, snapshot: walking, the
                       meters, pockets, boxes, sleep, death, making, barred doors), dead.ts (the dead and the
-                      player's blow), world.ts (a district's World)
+                      player's blow), story.ts (where the story's things lie, the acts and their objectives, the
+                      ways out and their last nights), world.ts (a district's World)
   render/             CityView: what the World doesn't draw (wrecks, the bus, trees, the roofs past the fences,
-                      the dead, boards on barred doors, the player's light after dark)
+                      the dead, boards on barred doors, the player's light after dark, the story's marks)
   ui/                 its HUD, the map's painter, pockets.ts (pockets, a thing's card, the box, the Make panel,
-                      the action and hit buttons), its screens (new city, the story card, the city's map, the end)
+                      the action and hit buttons), its screens (new city, the story card, the city's map, the
+                      journal, both ends), story.ts (an objective in words)
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
 src/styles/46-city.css
-scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymaketest.ts; citybots.ts (the scavenger)
+scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymaketest.ts, citystorytest.ts;
+citybots.ts (the scavenger, the quester)
 ```
 
 **The seams in the shared code** (each a few lines, none changing a prison's behaviour):
@@ -39,6 +43,7 @@ scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymak
 - `play/lazy.ts`: `cityFlow()`, the city's part fetched when first opened; `main.ts` holds its place
   on the page.
 - `flows/title.ts`, `ui/screens/title.ts`: the `city` choice and its button (only where `cityOn()`).
+- `play/pad.ts`: in a city, Y is the journal's key and LB the Make panel's (2.48).
 - `game/storage.ts`: `KEYS.citySave` (wiped by Reset progress with the rest).
 - `render/ground.ts`, `render/WorldView.ts`: for a city's world, no ring road line, no ring of trees,
   duller ground past the edge.
@@ -163,10 +168,49 @@ In three slices, each a release.
 
 ### C3. The story and the ways out
 
-The radio and Dispatch, the five acts and their objectives (the objectives screen, markers on the
-map), notes and logs, survivors with errands and trade, runners and brutes, the three ways out with
-their parts and last nights, the end card, the city's own achievements. Proved by a bot winning each
-way out on many seeds, and a validator that every part can be reached before it is needed.
+In two slices.
+
+**C3a. The radio, the acts, the ways out (v2.48.0): built.**
+- **The kit** (`content/story.ts`, `sim/story.ts`): eleven things the story needs (the radio, its
+  aerial, three for each way out), each hidden in one piece of furniture chosen from the city's seed
+  (the radio in the nearest house to the start with a bed, the aerial in the landmark next door, the
+  rest in the landmarks of six districts), found when that piece is first searched. Never in the
+  pockets, kept through a fall. Ten **notes** lie the same way, one to a district and one more.
+- **The acts:** 1, eat, sleep, find the radio; 2, the aerial and two batteries (taken from the
+  pockets as soon as all three are in hand: the radio works); 3, the three ways out seen for oneself
+  (walking into the hospital, the boathouse, the metro station, at any time) and one **chosen in the
+  journal** (`COP.CHOOSE`; another may be chosen until one is set going); 4, its three things; 5, the
+  last night.
+- **Dispatch** speaks once the radio is found: a line for each thing found, each way out seen and
+  chosen, the first night, a first shelter, a fall, each way out set going and taken (`BEATS`; heard
+  lines are kept in order for the journal).
+- **The ways out**, each set going from a tile of its landmark (the action button there, refused
+  without its three things):
+  - **The helicopter** (the hospital): the beacon lit **after dark only**; the helicopter comes 120
+    game minutes later, to whoever is in the hospital then. Meanwhile the night's count of the dead
+    and eight more, one arriving every five minutes and making for whoever lit it, and a barred door
+    torn open every twenty minutes anywhere in the district (the building stood in first). Leaving the district, or falling, puts it out.
+  - **The metro tunnel** (the station): the generator started at any hour; the gates open 90 minutes
+    later, and the button takes the tunnel. The same count of the dead by day too, every other one
+    coming up inside the station whatever its doors, boards torn off as for the beacon. Leaving the district, or falling, stops it.
+  - **The boat** (the docks): the engine fitted at any hour and left fitted; the boat taken from the
+    pier's end between 23:00 and 02:00. On those nights the docks are in fog: the dead see two tiles,
+    hear twice as far, and are eight more.
+- **On screen:** the journal (J, or the goal's line under the meters: the act's list, the ways out
+  with what each takes and its Choose button, what Dispatch has said, the notes), Dispatch's bubble
+  under the HUD, a diamond on the corner map (at its edge when the place is further off, or the
+  checkpoint on the way), on the city's map and turning over the tile in the world, the way out on
+  the action button, banners for an act and a way out set going, the end card (the way, the day, the
+  dead put down, falls, notes, Dispatch's last line). A pad: Y the journal, LB the Make panel.
+- **Proved:** `citystorytest`: on 60 cities every thing and note in furniture of its own that can be
+  stood beside, every way out's tile open floor, a pier at the docks; the acts and each refusal; each
+  last night's rules; a fall and a save; `quester`, a bot following the journal, leaves by each way
+  on 4 cities with the dead away (12 of 12, by day 5 on average); the two holds alone with the dead
+  about, a bat and three bandages (6 of 6 and 5 of 6); its whole runs with the dead about are told,
+  not required. An independent review's ten findings fixed, each with its check.
+
+**C3b. To come:** survivors with errands and trade, runners and brutes, the city's own achievements
+and a record of ways out taken, the police armoury's locked door.
 
 ### C4. The finish
 
@@ -179,6 +223,7 @@ everyone.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
+| C3a | 2.48.0 | `citystorytest` (`quester` in `citybots.ts`) | `citytest`, `citysurvivetest`, `cityzedtest` (the state's fingerprints only: its new fields; every count as before), `i18ntest`, `docstest` counts | 915×412: a new city, the radio found and Dispatch's line, the journal in act 3, the helicopter chosen there, the beacon lit at the hospital at night, the end card; 500×878: the goal's line, the bubble, the corner map's marks |
 | C2c | 2.47.0 | `citymaketest` | `citysurvivetest` (weapons wear: 1.8 falls a week), `cityzedtest`, `citytest` (the state's fingerprints), `i18ntest`, `tokentest`, `docstest` counts | desktop: the Make panel, boards made twice, a house's door barred, the shelter said and shown, the boards on the door |
 | C2b | 2.47.0 | `cityzedtest` | `citysurvivetest` (the week with the dead about), `i18ntest`, `tokentest`, `docstest` counts | desktop: one of the dead indoors unseen through its wall, seen and chasing, put down with fists, nightfall's banner, their eyes and the player's light at night |
 | C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall; 412×915 and 915×412: the pockets, the box, the card |
