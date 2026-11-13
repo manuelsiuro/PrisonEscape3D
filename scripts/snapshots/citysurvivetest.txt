@@ -1,10 +1,12 @@
-10 cities, a scavenger bot 7 days in each, the dead about: it fell 1.7 times a week (it fights what comes in reach and never hides)
-a week, on average: 256.0 pieces searched, 48.9 things found (28.5 food), 12.6 eaten, asleep 25.8 times, starving 0.0 times, 56.1 of the dead put down, 63.0 bites taken
-  1: 300 searched, 72 things (29 food), 18 eaten, 37 times asleep, 84 put down, 58 bites, fell 0, 6afc7ee0
-  2: 228 searched, 38 things (25 food), 15 eaten, 34 times asleep, 56 put down, 72 bites, fell 1, 139af608
-  3: 236 searched, 31 things (24 food), 7 eaten, 15 times asleep, 36 put down, 53 bites, fell 3, a38d9197
-  4: 174 searched, 26 things (18 food), 7 eaten, 7 times asleep, 29 put down, 46 bites, fell 4, 48fd8285
+10 cities, a scavenger bot 7 days in each, the dead about: it fell 1.3 times a week (it fights what comes in reach and never hides)
+a week, on average: 252.6 pieces searched, 58.9 things found (29.6 food), 13.7 eaten, asleep 22.2 times, starving 0.0 times, 52.0 of the dead put down, 59.7 bites taken
+  1: 267 searched, 47 things (24 food), 14 eaten, 27 times asleep, 86 put down, 54 bites, fell 0, 82f244d5
+  2: 180 searched, 52 things (39 food), 9 eaten, 12 times asleep, 32 put down, 79 bites, fell 3, c2472d1e
+  3: 285 searched, 48 things (33 food), 11 eaten, 29 times asleep, 58 put down, 69 bites, fell 1, c88e1e59
+  4: 166 searched, 49 things (31 food), 9 eaten, 17 times asleep, 41 put down, 56 bites, fell 3, 63bf08e7
 hunger: a third of the bar in ten hours awake; at nothing, health goes; a tin is 30 points, a bandage 28 health; nothing wasted on a full bar
 a Survivor who falls wakes at home the next morning with 40 health, their things where they fell; in Hardcore the city is lost
 seed 2's first six searches: 64=soda×1+water×1, 65=empty, 66=dried×1, 67=empty, 73=tin×1, 72=dried×1
 a save carries the pockets, the meters and every box looked into; one from stage 1 loads with the meters fresh; a thing that is not is refused
+saves made at the start and at 3 crossings and falls: 4 of 4 play on as the live city did
+a bed holding something is looked into before it is slept in; a second press mid-search starts nothing over; medicine is kept at full health; an empty-handed fall leaves no pile and mends hunger only to 15

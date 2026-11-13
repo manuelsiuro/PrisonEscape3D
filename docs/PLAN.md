@@ -45,7 +45,7 @@ Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the
 - [Inmates, talk and crews](decisions/people.md): cells and visitors, opinion, followers, speech, the crew, the pet rat (6 rows)
 - [Free time and games](decisions/free-time.md): the side games, cards, long games, penalties, the tattoo parlour, stage nights (6 rows)
 - [Modes, progress and saves](decisions/modes.md): saving, the campaign's unlocks, achievements, lessons, the Daily Escape, replays (7 rows)
-- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (17 rows)
+- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (18 rows)
 
 Any further conflict found during the build is added to its area's file in the same commit.
 
@@ -202,7 +202,7 @@ feel) and the known limits.
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 69 help topics,
-5,732 text keys in English and French, 90 test scripts. A second mode, City Escape, is being built in
+5,733 text keys in English and French, 90 test scripts. A second mode, City Escape, is being built in
 stages behind `?city` (`phases/10-city-escape.md`: C1 and two of C2's three slices done).
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user

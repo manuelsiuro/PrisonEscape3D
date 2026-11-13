@@ -204,6 +204,35 @@ const toMinute = (c: City, minute: number) => {
   );
 }
 
+// ------------------------------------------------------------------ bodies
+{
+  // The player doesn't walk through one of the dead (a doorway is held); two of a pack don't stand in one place.
+  const [c, run] = street(4);
+  toMinute(c, 12 * 60);
+  c.state.zeds = [zedAt(run[3], ZED.CHASE)];
+  c.state.zeds[0].seen = c.state.step;
+  for (let k = 0; k < 120; k++) {
+    c.step(command(EAST));
+    c.state.health = 100;
+    c.state.zeds[0].seen = c.state.step;
+  }
+  check(
+    c.state.player.x < c.state.zeds[0].body.x,
+    `walking at one of the dead, the player stays on their side of it: ${c.state.player.x} and ${c.state.zeds[0].body.x}`,
+  );
+  const [d, r2] = street(4);
+  toMinute(d, 12 * 60);
+  d.state.zeds = [zedAt(r2[4], ZED.CHASE), zedAt(r2[5], ZED.CHASE), zedAt(r2[6], ZED.CHASE)];
+  for (let k = 0; k < 100; k++) {
+    d.step(0);
+    d.state.health = 100;
+    for (const z of d.state.zeds) z.seen = d.state.step;
+  }
+  const xs = d.state.zeds.map((z) => z.body.x).sort((a, b) => a - b);
+  check(xs[1] - xs[0] > 300 && xs[2] - xs[1] > 300, `a pack coming along a street stays in file: ${xs}`);
+  say('bodies: the player does not walk through one of the dead, and a pack along a street stays in file');
+}
+
 // ------------------------------------------------------------------ nightfall and dawn
 {
   const c = new City(5);

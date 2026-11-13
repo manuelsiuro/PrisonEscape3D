@@ -105,6 +105,7 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     view.zoomTo(1.1);
     cityHud.show(true);
     pockets.show(true);
+    sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
     hint.hide();
     document.body.classList.add('is-playing', 'city-on');
     controls.reset();
@@ -247,7 +248,7 @@ function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
     if (pockets.open) pockets.pick(-1);
     else if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
     else void pauseCity();
-  } else if (code === 'KeyE' || code === 'Enter') act();
+  } else if (code === 'KeyE' || (code === 'Enter' && !(document.activeElement instanceof HTMLButtonElement))) act();
   else if (code === 'Space' || code === 'KeyF') {
     e.preventDefault();
     hit();
@@ -415,6 +416,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
         r.prev.z = c.state.player.z;
       }
       play.acc = 0;
+      sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
       banner.show(t('city.fell.title'), t('city.fell.sub'), 'alarm', 5200);
       save(r);
       break;
@@ -467,13 +469,12 @@ function frameOf(r: CityRun, a: number): Frame {
     focus.z1 = Math.max(...tiles.map((i) => Math.floor(i / MAP_W)));
   }
   f.focus = tg ? focus : null;
-  const boxes = Object.keys(c.state.boxes).length;
-  if (boxes !== pilesFor.n || c.state.district !== pilesFor.d) {
-    pilesFor.n = boxes;
-    pilesFor.d = c.state.district;
-    const mine = `${c.state.district}:g`;
-    piles = Object.keys(c.state.boxes)
-      .filter((k) => k.startsWith(mine))
+  const mine = `${c.state.district}:g`;
+  const lying = Object.keys(c.state.boxes).filter((k) => k.startsWith(mine) && c.state.boxes[k].some((st) => st[0]));
+  const key = lying.join();
+  if (key !== pilesFor.key) {
+    pilesFor.key = key;
+    piles = lying
       .map((k) => Number(k.slice(mine.length)))
       .map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5, item: PILE }));
     f.groundRev++;
@@ -503,7 +504,7 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
   return deadList;
 }
 let piles: Array<{ x: number; z: number; item: number }> = [];
-const pilesFor = { n: -1, d: -1 };
+const pilesFor = { key: '?' };
 
 const pocketsState = {} as PocketsState;
 function pocketsOf(r: CityRun): PocketsState {

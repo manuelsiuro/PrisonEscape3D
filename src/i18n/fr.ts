@@ -5754,4 +5754,5 @@ export const fr: Partial<Strings> = {
   "city.night.sub": "Ils sont dans les rues, maintenant.",
   "city.dawn.title": "L’aube",
   "city.dawn.sub": "Ils se terrent. Le jour, les intérieurs sont à eux.",
+  "city.toast.noNeed": "Vous n’en avez pas besoin maintenant.",
 };

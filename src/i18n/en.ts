@@ -5756,6 +5756,7 @@ export const en = {
   "city.night.sub": "They're out in the streets now.",
   "city.dawn.title": "Dawn",
   "city.dawn.sub": "They go to ground. Indoors is theirs by day.",
+  "city.toast.noNeed": "You don't need that now.",
 };
 
 export type Strings = typeof en;

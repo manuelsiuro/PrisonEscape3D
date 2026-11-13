@@ -129,9 +129,11 @@ In three slices, each a release.
 - **On screen:** the dead as one instanced body with its own gait (`render/CityView.ts`), their eyes
   lit and a faint pool of light round the player after dark; "n after you" in the HUD; the screen's
   edges red at a bite; dusk's two warnings (19:00, 20:30), night and dawn said.
-- **Proved:** `cityzedtest` (the counts, sight, the chase, the lunge, the blow, noise, nightfall and
-  dawn, the same commands the same dead, saves); `citysurvivetest`'s scavenger, which fights what
-  comes in reach and never hides, falls 1.7 times a week on 10 cities.
+- **Bodies:** nobody walks through the dead, and a chasing pack keeps in file.
+- **Proved:** `cityzedtest` (the counts, sight, the chase, the lunge, the blow, noise, bodies,
+  nightfall and dawn, the same commands the same dead, saves); `citysurvivetest`'s scavenger, which
+  fights what comes in reach and never hides, falls 1.3 times a week on 10 cities; an independent
+  review's nine findings fixed, each with its check.
 
 **C2c. Shelters and making:** claiming a building (barring its doors, light, a stash), the
 workbench and the city's recipes, cooking, the torch.

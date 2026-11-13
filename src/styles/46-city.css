@@ -533,6 +533,14 @@
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
 }
 
+/* A phone turned: beside the action button, not over it (there's no height for two). */
+@media (max-height: 480px) {
+  .city-hit {
+    right: calc(max(16px, env(safe-area-inset-right)) + 92px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 62px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .city-bitten.on {
     animation-duration: 0.01s;

@@ -10,7 +10,7 @@ import { BLOW, DEAD } from '../content/dead';
 import { ESCAPE_KINDS, isBuilding } from '../content/districts';
 import { cityItem } from '../content/items';
 import { districtX, districtZ } from '../gen/plan';
-import type { City } from './City';
+import { crowded, type City } from './City';
 
 /**
  * The dead (C2b), a part of the city's simulation (City.step calls it after the player has moved):
@@ -57,7 +57,8 @@ export function quota(c: City): { indoors: number; streets: number } {
   const dg = danger(c, c.state.district);
   if (nightAt(c.minute)) {
     // (The night that began on day n is night n, through to its dawn.)
-    const night = c.minute < NIGHT_TO ? c.day - 1 : c.day;
+    // (A Survivor's falls count as nights more: the city doesn't wait for them.)
+    const night = (c.minute < NIGHT_TO ? c.day - 1 : c.day) + c.state.deaths;
     const all = DEAD.nightBase + DEAD.nightPerDanger * dg + Math.min(DEAD.nightMost, DEAD.nightPerNight * Math.max(0, night - 1));
     return { indoors: Math.floor(all / 4), streets: all - Math.floor(all / 4) };
   }
@@ -237,7 +238,7 @@ export function stepDead(c: City) {
         z.path = [];
       } else {
         // On them: a bite, as often as it can.
-        if (d2 <= DEAD.reach * DEAD.reach) {
+        if (d2 <= DEAD.reach * DEAD.reach && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
           b.moving = false;
           b.facing = nearestDir(dx, dz);
           if (++z.near >= DEAD.lunge && s.step - z.bit >= DEAD.biteEvery) {
@@ -299,6 +300,17 @@ export function stepDead(c: City) {
     const bx = b.x;
     const bz = b.z;
     walk(c.world, b, nearestDir(wx, wz), Math.trunc((speed * z.pace) / 1000));
+    // (Bodies don't pass through each other: a step into the player isn't taken, nor one of a pack's into another of it.)
+    const pd = (p.x - b.x) ** 2 + (p.z - b.z) ** 2;
+    if (
+      (z.mode === ZED.CHASE && crowded(s.zeds, bx, bz, b.x, b.z, k, ZED.CHASE)) ||
+      (pd < 560 * 560 && pd < (p.x - bx) ** 2 + (p.z - bz) ** 2)
+    ) {
+      b.x = bx;
+      b.z = bz;
+      // (Held up behind another: it waits its turn; only the world in its way sends it looking again.)
+      continue;
+    }
     // (Against something that wasn't there when the way was found: looked for again.)
     if (b.x === bx && b.z === bz) z.path = [];
   }
