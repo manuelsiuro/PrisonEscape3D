@@ -183,8 +183,105 @@ function beyond(plan: CityPlan, d: number, out: Part[], streets: ReadonlyArray<{
   }
 }
 
+/** One of the dead as the view is handed it (tiles, radians; eased by the play layer). */
+export interface DeadFrame {
+  x: number;
+  z: number;
+  facing: number;
+  moving: boolean;
+  /** After the player; reeling from a blow. */
+  chasing: boolean;
+  reeling: boolean;
+  /** Its own number (its clothes and its gait). */
+  seed: number;
+}
+
+/** The most of the dead drawn at once. */
+const MOST = 80;
+/** Grey skin, eyes like coals, arms held out: one body for all of them, their clothes tinted each its own. */
+function deadBody(): THREE.BufferGeometry {
+  const SKIN = 0x9aad94;
+  const CLOTH = 0xf2f2f2;
+  const parts = [
+    box(0.16, 0.46, 0.18, 0x4a4f58, -0.11, 0, 0),
+    box(0.16, 0.46, 0.18, 0x4a4f58, 0.11, 0, 0),
+    box(0.46, 0.5, 0.26, CLOTH, 0, 0.46, 0),
+    box(0.4, 0.12, 0.24, 0x7a2a26, 0, 0.6, 0.02),
+    box(0.36, 0.34, 0.34, SKIN, 0, 0.98, 0.02),
+    box(0.38, 0.1, 0.36, 0x3a3630, 0, 1.3, 0),
+    box(0.07, 0.06, 0.02, 0x1a1414, -0.09, 1.14, 0.2),
+    box(0.07, 0.06, 0.02, 0x1a1414, 0.09, 1.14, 0.2),
+    box(0.16, 0.05, 0.02, 0x5a1c1a, 0, 1.03, 0.2),
+    // The arms, held out ahead.
+    box(0.12, 0.12, 0.5, CLOTH, -0.29, 0.78, 0.2),
+    box(0.12, 0.12, 0.5, CLOTH, 0.29, 0.74, 0.2),
+    box(0.12, 0.12, 0.12, SKIN, -0.29, 0.78, 0.5),
+    box(0.12, 0.12, 0.12, SKIN, 0.29, 0.74, 0.5),
+  ];
+  return merge(parts);
+}
+const TINTS = [0xb9c2c9, 0xa9b89a, 0xc9b79a, 0x9aa9c2, 0xc29a9a, 0xb0a6c4, 0x8f9a8a];
+
 export class CityView {
   readonly group = new THREE.Group();
+  /** The dead: one instanced body, kept across districts. */
+  private readonly dead: THREE.InstancedMesh;
+  private readonly m = new THREE.Matrix4();
+  private readonly q = new THREE.Quaternion();
+  private readonly e = new THREE.Euler();
+  private readonly at = new THREE.Vector3();
+  private readonly size = new THREE.Vector3(1.3, 1.3, 1.3);
+  private readonly tint = new THREE.Color();
+  readonly root = new THREE.Group();
+  /** After dark: their eyes, lit (the same places as the bodies), and a faint pool of light round the player. */
+  private readonly eyes: THREE.InstancedMesh;
+  private readonly glow: THREE.Mesh;
+
+  constructor() {
+    this.dead = new THREE.InstancedMesh(deadBody(), kitMaterial, MOST);
+    this.dead.castShadow = true;
+    this.dead.count = 0;
+    this.dead.frustumCulled = false;
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xd8ff6a, toneMapped: false });
+    this.eyes = new THREE.InstancedMesh(
+      merge([box(0.08, 0.07, 0.03, 0xffffff, -0.09, 1.135, 0.215), box(0.08, 0.07, 0.03, 0xffffff, 0.09, 1.135, 0.215)], false),
+      eyeMat,
+      MOST,
+    );
+    this.eyes.count = 0;
+    this.eyes.frustumCulled = false;
+    this.glow = new THREE.Mesh(
+      new THREE.CircleGeometry(2.6, 28).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x9fb8ff, transparent: true, opacity: 0.09, depthWrite: false, toneMapped: false }),
+    );
+    this.glow.renderOrder = 0.4;
+    this.glow.visible = false;
+    this.root.add(this.group, this.dead, this.eyes, this.glow);
+  }
+
+  /** The dead where they stand now: a shamble's sway, a lean into the chase, thrown back by a blow. */
+  drawDead(list: readonly DeadFrame[], time: number, still: boolean, night: boolean, me: { x: number; z: number }) {
+    const n = Math.min(MOST, list.length);
+    for (let k = 0; k < n; k++) {
+      const d = list[k];
+      const beat = still ? 0 : time * (d.chasing ? 7 : 4) + d.seed;
+      const sway = d.moving ? Math.sin(beat) * 0.09 : Math.sin(beat * 0.4) * 0.03;
+      this.e.set(d.reeling ? -0.45 : d.chasing ? 0.2 : 0.08, d.facing, sway, 'YXZ');
+      this.q.setFromEuler(this.e);
+      this.at.set(d.x, d.moving ? Math.abs(Math.sin(beat)) * 0.05 : 0, d.z);
+      this.m.compose(this.at, this.q, this.size);
+      this.dead.setMatrixAt(k, this.m);
+      if (night) this.eyes.setMatrixAt(k, this.m);
+      this.dead.setColorAt(k, this.tint.set(TINTS[d.seed % TINTS.length]));
+    }
+    this.dead.count = n;
+    this.eyes.count = night ? n : 0;
+    this.eyes.instanceMatrix.needsUpdate = true;
+    this.glow.visible = night;
+    this.glow.position.set(me.x, 0.03, me.z);
+    this.dead.instanceMatrix.needsUpdate = true;
+    if (this.dead.instanceColor) this.dead.instanceColor.needsUpdate = true;
+  }
 
   /** A district's pieces put up (the last one's taken down). */
   set(plan: CityPlan, district: District) {
@@ -270,5 +367,8 @@ export class CityView {
   clear() {
     disposeTree(this.group, () => false, new Set([kitMaterial]));
     this.group.clear();
+    this.dead.count = 0;
+    this.eyes.count = 0;
+    this.glow.visible = false;
   }
 }

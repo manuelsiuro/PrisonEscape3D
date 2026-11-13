@@ -498,3 +498,43 @@
     padding: 10px 12px;
   }
 }
+
+/* ------------------------------------------------------------ the dead (2.47) */
+.city-chased {
+  color: var(--white);
+  background: rgba(var(--city-you-65-rgb), 0.85);
+}
+
+/* A bite: the screen's edges flash red. */
+.city-bitten {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 120px 30px rgba(var(--city-you-65-rgb), 0.75);
+}
+
+.city-bitten.on {
+  animation: city-bite 0.5s ease-out;
+}
+
+@keyframes city-bite {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* The blow's button, over the action button. */
+.city-hit {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-bitten.on {
+    animation-duration: 0.01s;
+  }
+}

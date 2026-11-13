@@ -24,18 +24,22 @@ interface Tally {
   slept: number;
   starved: number;
   deaths: number;
+  kills: number;
+  bites: number;
 }
+const none = (): Tally => ({ searched: 0, found: 0, food: 0, eaten: 0, slept: 0, starved: 0, deaths: 0, kills: 0, bites: 0 });
 
 const SEEDS = 10;
 const DAYS = 7;
-const total: Tally = { searched: 0, found: 0, food: 0, eaten: 0, slept: 0, starved: 0, deaths: 0 };
+const per = (n: number) => (n / SEEDS).toFixed(1);
+const total = none();
 const rows: string[] = [];
 for (let seed = 1; seed <= SEEDS; seed++) {
   const c = new City(seed);
-  const tally: Tally = { searched: 0, found: 0, food: 0, eaten: 0, slept: 0, starved: 0, deaths: 0 };
+  const tally = none();
   const next = scavenger(c);
-  let low = 100;
-  for (let step = 0; step < DAYS * 1440 * MIN && !c.state.over; step++) {
+  // (A week by the city's own days: a fall skips to the next morning.)
+  for (let step = 0; step < 3 * DAYS * 1440 * MIN && !c.state.over && c.day <= DAYS; step++) {
     c.step(next());
     for (const e of c.events) {
       if (e.type === 'open' && e.first) tally.searched++;
@@ -47,22 +51,27 @@ for (let seed = 1; seed <= SEEDS; seed++) {
       if (e.type === 'sleep' && e.on) tally.slept++;
       if (e.type === 'starving') tally.starved++;
       if (e.type === 'dead') tally.deaths++;
+      if (e.type === 'bite') tally.bites++;
+      if (e.type === 'swing' && e.dead) tally.kills++;
     }
-    low = Math.min(low, c.state.health);
   }
-  check(tally.deaths === 0, `seed ${seed}: the scavenger fell ${tally.deaths} times in ${DAYS} days`);
-  check(tally.slept >= DAYS - 2, `seed ${seed}: slept only ${tally.slept} nights of ${DAYS}`);
+  // (It fights whatever comes within reach and never hides: a player does better. More than this, the dead are too many.)
+  check(tally.deaths <= 5, `seed ${seed}: the scavenger fell ${tally.deaths} times in ${DAYS} days`);
+  check(tally.slept >= DAYS - 2, `seed ${seed}: asleep only ${tally.slept} times in ${DAYS} days`);
   check(c.day >= DAYS, `seed ${seed}: only reached day ${c.day}`);
   for (const k of Object.keys(total) as Array<keyof Tally>) total[k] += tally[k];
   if (seed <= 4)
     rows.push(
-      `  ${seed}: ${tally.searched} searched, ${tally.found} things (${tally.food} food), ${tally.eaten} eaten, ${tally.slept} nights slept, health never under ${low}, ${fnv1a(JSON.stringify(c.snapshot().state))}`,
+      `  ${seed}: ${tally.searched} searched, ${tally.found} things (${tally.food} food), ${tally.eaten} eaten, ${tally.slept} times asleep, ${tally.kills} put down, ${tally.bites} bites, fell ${tally.deaths}, ${fnv1a(JSON.stringify(c.snapshot().state))}`,
     );
 }
-const per = (n: number) => (n / SEEDS).toFixed(1);
-say(`${SEEDS} cities, a scavenger bot ${DAYS} days in each: none fell`);
+check(total.deaths <= SEEDS * 2.5, `the scavenger fell ${total.deaths} times in ${SEEDS} weeks: the dead are too many`);
+check(total.kills >= SEEDS * 5, `the scavenger put down only ${total.kills} of the dead in ${SEEDS} weeks: where are they?`);
 say(
-  `a week, on average: ${per(total.searched)} pieces searched, ${per(total.found)} things found (${per(total.food)} food), ${per(total.eaten)} eaten, ${per(total.slept)} nights slept, starving ${per(total.starved)} times`,
+  `${SEEDS} cities, a scavenger bot ${DAYS} days in each, the dead about: it fell ${per(total.deaths)} times a week (it fights what comes in reach and never hides)`,
+);
+say(
+  `a week, on average: ${per(total.searched)} pieces searched, ${per(total.found)} things found (${per(total.food)} food), ${per(total.eaten)} eaten, asleep ${per(total.slept)} times, starving ${per(total.starved)} times, ${per(total.kills)} of the dead put down, ${per(total.bites)} bites taken`,
 );
 for (const r of rows) say(r);
 
@@ -77,6 +86,7 @@ const idle = (c: City, minutes: number) => {
 // Hunger: a full bar lasts about 30 hours awake; at nothing, health goes; food brings it back.
 {
   const c = new City(3);
+  c.peace = true;
   c.state.hunger = FULL;
   c.state.energy = FULL;
   idle(c, 600);
@@ -109,6 +119,7 @@ const idle = (c: City, minutes: number) => {
 // Both ways of dying.
 {
   const c = new City(5, MODE.SURVIVOR);
+  c.peace = true;
   c.state.inv[0] = [TIN, 3];
   for (let k = 0; k < 200; k++) c.step(command(9));
   const fell = c.tile;
@@ -136,6 +147,7 @@ const idle = (c: City, minutes: number) => {
 {
   const stockOf = (seed: number) => {
     const c = new City(seed);
+    c.peace = true;
     const next = scavenger(c);
     const got: string[] = [];
     for (let k = 0; k < 4000 && got.length < 6; k++) {

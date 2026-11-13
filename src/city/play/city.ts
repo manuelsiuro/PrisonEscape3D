@@ -10,14 +10,16 @@ import { emptyFrame, type Frame } from '../../render/viewFrame';
 import { Autopilot } from '../../sim/ai/autopilot';
 import { command, headingAngle } from '../../sim/command';
 import { hhmm } from '../../sim/systems/clock';
-import { NIGHT_FROM, NIGHT_TO, STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
+import { STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
 import { MAP_W } from '../../sim/world/World';
 import { h } from '../../ui/dom';
 import { hideLoading } from '../../ui/loading';
 import { showHelp } from '../../ui/screens/help';
 import { showPause } from '../../ui/screens/pause';
 import { showSettings } from '../../ui/screens/settings';
-import { CityView } from '../render/CityView';
+import { BLOW } from '../content/dead';
+import { CityView, type DeadFrame } from '../render/CityView';
+import { nightAt, ZED, type Zed } from '../sim/dead';
 import { cityItem } from '../content/items';
 import { SEARCH_STEPS } from '../content/loot';
 import { deleteCitySave, writeCitySave } from '../save';
@@ -56,11 +58,14 @@ const SLEEP_SPEED = 40;
 // (Made as its code comes in, after the rest of the page: put where they'd have been made, see lazy.ts.)
 const [cityView, cityHud, veil, pockets] = inPlace('city', () => {
   const v = new CityView();
-  view.scene.add(v.group);
+  view.scene.add(v.root);
   const veilEl = h('div', 'city-veil');
   document.body.append(veilEl);
   return [v, new CityHud(), veilEl, new CityPockets()] as const;
 });
+/** A bite: the screen's edges flash red. */
+const bitten = h('div', 'city-bitten');
+document.body.append(bitten);
 pockets.onOp = (op, a = 0) => {
   click();
   run()?.ops.push([op, a]);
@@ -69,13 +74,11 @@ pockets.onAct = () => {
   click();
   act();
 };
+pockets.onHit = () => hit();
 cityHud.onPause = () => void pauseCity();
 cityHud.onMap = () => void openMap();
 
 const run = (): CityRun | null => play.side as CityRun | null;
-
-/** Night, as the prisons' lamps have it (21:00 to 05:00). */
-const nightAt = (minute: number) => minute >= NIGHT_FROM || minute < NIGHT_TO;
 
 /**
  * A city on screen: the district the player is in, their prisoner as they look, the HUD and the
@@ -215,6 +218,7 @@ export function stopCity() {
   controls.reset();
   sound.ambience(false);
   veil.classList.remove('on');
+  bitten.classList.remove('on');
   document.body.classList.remove('is-playing', 'city-on');
   r.resolve();
 }
@@ -229,6 +233,14 @@ function act() {
   r.ops.push([COP.ACT, 0]);
 }
 
+/** The blow (Space, its button): as often as the arm allows. */
+function hit() {
+  const r = run();
+  if (!r || r.paused || r.city.state.sleeping) return;
+  if (r.city.state.step - r.city.state.swung < BLOW.every) return;
+  if (!r.ops.some((o) => o[0] === COP.HIT)) r.ops.push([COP.HIT, 0]);
+}
+
 function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
   // Escape shuts a thing's card, then the open box, and only then pauses.
   if (code === 'Escape') {
@@ -236,7 +248,10 @@ function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
     else if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
     else void pauseCity();
   } else if (code === 'KeyE' || code === 'Enter') act();
-  else if (/^Digit[1-8]$/.test(e.code)) {
+  else if (code === 'Space' || code === 'KeyF') {
+    e.preventDefault();
+    hit();
+  } else if (/^Digit[1-8]$/.test(e.code)) {
     const k = Number(e.code.slice(5)) - 1;
     if (r.city.state.inv[k]?.[0]) pockets.pick(k);
   } else if (code === 'KeyM') {
@@ -281,6 +296,13 @@ function cityFrame(r: CityRun, dt: number, now: number) {
       play.acc -= 1 / STEPS_PER_SECOND;
       r.prev.x = p.x;
       r.prev.z = p.z;
+      for (const z of c.state.zeds) {
+        const q = was.get(z);
+        if (q) {
+          q.x = z.body.x;
+          q.z = z.body.z;
+        } else was.set(z, { x: z.body.x, z: z.body.z });
+      }
       if (controls.steering) r.pilot.stop();
       const op = r.ops.shift();
       c.step(command(controls.steering ? controls.dir() : r.pilot.dir(p), op?.[0] ?? 0, op?.[1] ?? 0));
@@ -291,7 +313,9 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     if (play.acc > 1) play.acc = 0;
   }
   const a = r.paused ? 1 : play.acc * STEPS_PER_SECOND;
-  view.draw(frameOf(r, a), dt, now / 1000);
+  const f = frameOf(r, a);
+  cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
+  view.draw(f, dt, now / 1000);
   cityHud.update(hudOf(r));
   pockets.update(pocketsOf(r));
   sleepVeil.classList.toggle('on', c.state.sleeping);
@@ -337,9 +361,38 @@ function cityEvent(r: CityRun, e: CityEvent) {
         save(r);
       } else {
         play.acc = 0;
-        if (e.why && e.why !== 'stirred') banner.toast(t(`city.toast.woke.${e.why}` as Key), e.why === 'hungry' ? 'bad' : 'good', 3000);
+        if (e.why && e.why !== 'stirred')
+          banner.toast(t(`city.toast.woke.${e.why}` as Key), e.why === 'hungry' || e.why === 'attacked' ? 'bad' : 'good', 3000);
         save(r);
       }
+      break;
+    case 'spotted':
+      sound.grunt();
+      break;
+    case 'bite':
+      sound.slap();
+      buzz('missed');
+      bitten.classList.remove('on');
+      void bitten.offsetWidth;
+      bitten.classList.add('on');
+      break;
+    case 'swing':
+      sound.swish();
+      if (e.hit) sound.scuffle();
+      if (e.dead) sound.dud();
+      break;
+    case 'dusk':
+      banner.show(t('city.dusk.title'), t(e.soon > 60 ? 'city.dusk.two' : 'city.dusk.half'), 'alarm', 5200);
+      sound.chime();
+      break;
+    case 'night':
+      banner.show(
+        t(e.on ? 'city.night.title' : 'city.dawn.title'),
+        t(e.on ? 'city.night.sub' : 'city.dawn.sub'),
+        e.on ? 'alarm' : 'routine',
+        5200,
+      );
+      sound.setScene(e.on ? 'outdoorNight' : 'outdoorDay');
       break;
     case 'dead':
       r.ops.length = 0;
@@ -429,6 +482,26 @@ function frameOf(r: CityRun, a: number): Frame {
   return f;
 }
 const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
+
+/** Where each of the dead was before the last step, and what the view is handed of them. */
+const was = new WeakMap<Zed, { x: number; z: number }>();
+const deadList: DeadFrame[] = [];
+function deadOf(r: CityRun, a: number): DeadFrame[] {
+  const zeds = r.city.state.zeds;
+  deadList.length = zeds.length;
+  zeds.forEach((z, k) => {
+    const q = was.get(z) ?? z.body;
+    const o = (deadList[k] ??= { x: 0, z: 0, facing: 0, moving: false, chasing: false, reeling: false, seed: 0 });
+    o.x = (q.x + (z.body.x - q.x) * a) / UNIT;
+    o.z = (q.z + (z.body.z - q.z) * a) / UNIT;
+    o.facing = headingAngle(z.body.facing);
+    o.moving = z.body.moving && !r.paused;
+    o.chasing = z.mode === ZED.CHASE;
+    o.reeling = z.reel > 0;
+    o.seed = z.pace;
+  });
+  return deadList;
+}
 let piles: Array<{ x: number; z: number; item: number }> = [];
 const pilesFor = { n: -1, d: -1 };
 
@@ -473,6 +546,7 @@ function hudOf(r: CityRun): CityHudState {
   st.health = c.state.health / 100;
   st.hunger = c.state.hunger / FULL;
   st.energy = c.state.energy / FULL;
+  st.chasing = c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0);
   return st;
 }
 

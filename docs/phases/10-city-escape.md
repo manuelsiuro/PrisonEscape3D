@@ -110,8 +110,28 @@ In three slices, each a release.
 - **Proved:** `citysurvivetest`: a scavenger bot (`scripts/citybots.ts`) lives a week on 10 cities
   without falling or starving; the rules one by one; saves (one from C1 loads, the meters fresh).
 
-**C2b. The dead:** shamblers (by day in the dark, at night everywhere), sight and noise, the fight
-with the city's weapons, bites and bandages, dusk and night's warnings, the night's picture.
+**C2b. The dead (v2.47.0, with C2a): built.**
+- **Who's about** (`sim/dead.ts`, numbers in `content/dead.ts`): shamblers, in the district the
+  player is in only, put down afresh each time it's entered (never within ten tiles). By day they
+  stand indoors (three, two more a step of a district's danger, one more a day up to six) and the
+  danger's worth wander the streets; at 21:00 those indoors come out and more arrive one every 20
+  minutes up to the night's count (six, three more a step of danger, two more a night up to
+  sixteen); at 05:00 those in the streets go to ground. A district's danger is its distance from the
+  start in districts, one more where a way out begins.
+- **Sight and noise:** six tiles by day, four at night, two for a sleeper, with a clear line (never
+  through a wall); out of sight six seconds, one goes to where it saw the player last. A blow is heard
+  seven tiles off, a search's rustle four: those not already chasing go and look.
+- **The chase and the bite:** two thirds of the player's walk; in reach it lunges nine steps, then
+  bites (8 health) every 24; struck, it reels, is pushed back and starts its lunge again, so one alone
+  can be fought off clean and two or three can't. A bite wakes a sleeper.
+- **The blow** (Space, its button, a pad's X): the nearest ahead in reach; fists 6, a weapon twice its
+  `attack` more (a bat puts one down in two); a little energy each, half the harm when worn out.
+- **On screen:** the dead as one instanced body with its own gait (`render/CityView.ts`), their eyes
+  lit and a faint pool of light round the player after dark; "n after you" in the HUD; the screen's
+  edges red at a bite; dusk's two warnings (19:00, 20:30), night and dawn said.
+- **Proved:** `cityzedtest` (the counts, sight, the chase, the lunge, the blow, noise, nightfall and
+  dawn, the same commands the same dead, saves); `citysurvivetest`'s scavenger, which fights what
+  comes in reach and never hides, falls 1.7 times a week on 10 cities.
 
 **C2c. Shelters and making:** claiming a building (barring its doors, light, a stash), the
 workbench and the city's recipes, cooking, the torch.
@@ -134,5 +154,6 @@ everyone.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
+| C2b | 2.47.0 | `cityzedtest` | `citysurvivetest` (the week with the dead about), `i18ntest`, `tokentest`, `docstest` counts | desktop: one of the dead indoors unseen through its wall, seen and chasing, put down with fists, nightfall's banner, their eyes and the player's light at night |
 | C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall; 412×915 and 915×412: the pockets, the box, the card |
 | C1 | 2.46.0 | `citygentest`, `citytest` | `docstest` counts, `tokentest` (a stylesheet), `i18ntest` (keys) | desktop, 412×915, 915×412: new city, the Intake, the story card, walking, three checkpoints, the map, Continue |

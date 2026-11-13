@@ -45,7 +45,7 @@ Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the
 - [Inmates, talk and crews](decisions/people.md): cells and visitors, opinion, followers, speech, the crew, the pet rat (6 rows)
 - [Free time and games](decisions/free-time.md): the side games, cards, long games, penalties, the tattoo parlour, stage nights (6 rows)
 - [Modes, progress and saves](decisions/modes.md): saving, the campaign's unlocks, achievements, lessons, the Daily Escape, replays (7 rows)
-- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (13 rows)
+- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (17 rows)
 
 Any further conflict found during the build is added to its area's file in the same commit.
 
@@ -149,7 +149,7 @@ Every phase is built and released. The plans, phase by phase with what each ship
 - [How to play, laid out again (P37–P38, v2.13–v2.17)](phases/6-how-to-play.md): P37 How to play, laid out again, P38 How to play II, The day's card, easier games, Share
 - [Parole, odd jobs, the manhunt, holidays (P39–P42, v2.18–v2.21)](phases/7-after-hours.md): P39 The parole board, P40 The odd jobs board, P41 The manhunt, P42 Holidays
 - [The Six Hunter (v2.36)](phases/9-six-hunter.md): the sixth prison past the five, its pack of six, jobs, items, ways out, its look and its finish, as built
-- [City Escape (v2.46 on)](phases/10-city-escape.md): the second mode, a generated city to survive and escape, in four stages (C1 Foundations and C2a Scavenging built; the rest of C2 Survival, C3 The story and the ways out, C4 The finish to come), hidden behind `?city` until the last
+- [City Escape (v2.46 on)](phases/10-city-escape.md): the second mode, a generated city to survive and escape, in four stages (C1 Foundations, C2a Scavenging and C2b The dead built; C2c Shelters and making, C3 The story and the ways out, C4 The finish to come), hidden behind `?city` until the last
 - [Reviews and the gameplay polish series (v2.21.1 on)](phases/8-polish.md): every review and polish pass, one row each with the snapshots it moved (each area's choices and limits: `POLISH.md`)
 
 ## 5. Mapping the GDD to phases
@@ -202,8 +202,8 @@ feel) and the known limits.
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 69 help topics,
-5,721 text keys in English and French, 89 test scripts. A second mode, City Escape, is being built in
-stages behind `?city` (`phases/10-city-escape.md`: C1 and the first slice of C2 done).
+5,732 text keys in English and French, 90 test scripts. A second mode, City Escape, is being built in
+stages behind `?city` (`phases/10-city-escape.md`: C1 and two of C2's three slices done).
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).
