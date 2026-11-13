@@ -468,8 +468,16 @@
     width: 44px;
   }
 
+  /* (Under the HUD, not the prisons' bottom sheet: the pockets and a thing's card are below.) */
   .city-box {
     top: calc(max(12px, env(safe-area-inset-top)) + 172px);
+    bottom: auto;
+    max-height: 40vh;
+  }
+
+  /* (Clear of the action button.) */
+  .city-thing {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 168px);
   }
 }
 
@@ -477,7 +485,16 @@
 @media (max-height: 480px) {
   .city-box {
     top: calc(max(8px, env(safe-area-inset-top)) + 146px);
+    bottom: auto;
+    left: auto;
     width: min(300px, 44vw);
     max-height: calc(100vh - 160px);
+  }
+
+  .city-thing {
+    top: auto;
+    left: 34%;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 66px);
+    padding: 10px 12px;
   }
 }

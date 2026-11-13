@@ -134,5 +134,5 @@ everyone.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
-| C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall |
+| C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall; 412×915 and 915×412: the pockets, the box, the card |
 | C1 | 2.46.0 | `citygentest`, `citytest` | `docstest` counts, `tokentest` (a stylesheet), `i18ntest` (keys) | desktop, 412×915, 915×412: new city, the Intake, the story card, walking, three checkpoints, the map, Continue |
