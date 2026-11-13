@@ -175,6 +175,10 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
   `ONLY=<id>` runs one prison); `tutorialtest` plays every lesson and its dead ends;
   `paroletest`, `holidaybotstest`, `hunttest` (the hunt's balance: a limited bot caught
   about a quarter of the time, an expert bot away from every start).
+- **City Escape** (`city*test`, v2.46 on): `citygentest` (60 generated cities: legal maps, everything
+  walked to), `citytest` (a bot round all nine districts, saves, determinism), `citysurvivetest` (a
+  scavenger bot's week, hunger, sleep, death), `cityzedtest` (the dead), `citymaketest` (recipes, wear,
+  barred doors, a night in a shelter); their bot is in `citybots.ts`.
 - **Speech** (`chattertest`, `gossiptest`): the phrase banks in both languages, the director
   over days of play, every piece of gossip checked against the running game.
 - **The action button** (`buttontest`, v2.34.2): in every prison, at a time in each block, beside every

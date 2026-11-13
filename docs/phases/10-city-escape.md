@@ -17,14 +17,19 @@ is in progress while it runs.
 src/city/
   id.ts               isCity(def): the view's one question about a city's world (no city code comes with it)
   save.ts             the city's save slot and whether the mode shows on the title (read by the title: no city code)
-  content/            data: the districts' kinds, names and blocks (later: items, recipes, the dead, quests)
+  content/            data: districts.ts (kinds, names, blocks), items.ts (the city's own things), loot.ts (what's
+                      found where), dead.ts (the dead's numbers), recipes.ts (later: quests)
   gen/                the generator, pure: plan.ts (the 3 × 3 plan from a seed), district.ts (one 64 × 64 district)
-  sim/                the rules, deterministic as src/sim: City.ts (step(cmd), events, snapshot), world.ts (a district's World)
-  render/             CityView: what the World doesn't draw (wrecks, the bus, trees, the roofs past the fences)
-  ui/                 its HUD, the map's painter, its screens (new city, the story card, the city's map)
+  sim/                the rules, deterministic as src/sim: City.ts (step(cmd), events, snapshot: walking, the
+                      meters, pockets, boxes, sleep, death, making, barred doors), dead.ts (the dead and the
+                      player's blow), world.ts (a district's World)
+  render/             CityView: what the World doesn't draw (wrecks, the bus, trees, the roofs past the fences,
+                      the dead, boards on barred doors, the player's light after dark)
+  ui/                 its HUD, the map's painter, pockets.ts (pockets, a thing's card, the box, the Make panel,
+                      the action and hit buttons), its screens (new city, the story card, the city's map, the end)
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
 src/styles/46-city.css
-scripts/citygentest.ts, citytest.ts
+scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymaketest.ts; citybots.ts (the scavenger)
 ```
 
 **The seams in the shared code** (each a few lines, none changing a prison's behaviour):
@@ -37,6 +42,7 @@ scripts/citygentest.ts, citytest.ts
 - `game/storage.ts`: `KEYS.citySave` (wiped by Reset progress with the rest).
 - `render/ground.ts`, `render/WorldView.ts`: for a city's world, no ring road line, no ring of trees,
   duller ground past the edge.
+- `render/itemIcons.ts`: `photos`, the icon studio for things that aren't the prisons' items (2.47).
 - `World` is used as it is, through a definition with no cells, guards, jobs or zones
   (`city/sim/world.ts`), what stands on the streets set in `parked` and `veil` as the manhunt does.
 
@@ -46,8 +52,9 @@ scripts/citygentest.ts, citytest.ts
   fields at the end, optional on load.
 - Nothing is added to `PRISONS`, `ITEMS`, `RECIPES`, `ZONES` or the prisons' state: the escape bots
   stay byte-identical (`escapetest`'s snapshot is the proof at each stage).
-- The city's own items and recipes (stage 2) live in `src/city/content/`, with the prisons' item
-  model (`ItemState`, `craft`) reused where it takes a table.
+- The city's own items and recipes live in `src/city/content/`, and its pockets are its own (a `Stack`:
+  an item and a count): the prisons' `ItemState` and `craft` are not used (`decisions/city.md`).
+- `City.peace` switches the dead off for tests of everything else; it is never set in play.
 
 ## The stages
 
@@ -79,8 +86,8 @@ The city generated, walked and mapped.
   street door walked to, the plan's rules, twice the same) and `citytest` (a bot round all nine
   districts of 12 cities, the same commands the same city, saved and loaded the same, damaged saves
   refused, the clock).
-- **Not in it yet** (the new city's card says so): hunger, loot, the dead, shelters, quests, the
-  ways out; death's two modes are chosen and stored but nothing kills.
+- **Not in it at 2.46.0:** hunger, loot, the dead, shelters (all C2, below), quests and the ways out
+  (C3); death's two modes were chosen and stored, and nothing killed yet.
 
 ### C2. Survival
 

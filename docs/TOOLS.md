@@ -48,3 +48,15 @@ pictured at Center Perks. Retake a picture when what it shows changes.
 'nintendo')`, then `press(B.A)`, `hold`/`release`, `stick('left' | 'right', x, y)`, and `rumbles()` for what the
 game asked of its motors. It drives the game as a real pad would (`play/pad.ts` reads `navigator.getGamepads`
 each frame); a real pad's feel, and the browsers' own mappings, still need one in hand (`BACKLOG.md` §2).
+
+## City Escape
+
+The mode shows on the title only with `?city` in the address (`http://localhost:5310/?city`) until it is whole.
+In a dev build `window.__city()` is the city under way (null on the title, and undefined until the mode's code
+has been fetched by opening it once): `.city` is the simulation (`state`, `district`, `plan`, `target()`,
+`minute`, `day`), `.pilot.goTo(tile)` walks the player by ordinary commands, `.paused` says a screen of its own is
+up. Keys are sent as for the prisons (`KeyE` act, `Space` hit, `KeyC` make, `KeyM` the map, `Digit1`–`Digit8` a
+pocket, `Escape`). Headless, a city is driven as the tests do: `new City(seed)`, `city.step(command(dir, COP.ACT))`,
+`city.peace = true` for no dead, and `scripts/citybots.ts`'s `scavenger(city)` for a player made of commands.
+A page that falls to the background pauses the city (as the prisons do): a script that finds `.paused` true
+with no pause card should look for another screen up (the map).
