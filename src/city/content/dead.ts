@@ -38,6 +38,15 @@ export const DEAD = {
   clearUp: 5,
 } as const;
 
+/**
+ * The dead's other kinds (C3b), at night only: runners from the third night (one arrival in five: as
+ * fast as a tired player, frail), and from the fifth one brute in a district two or more steps of
+ * danger (slow, hard to put down, a worse bite; it pounds a barred door in its way open). Never renumber.
+ */
+export const ZKIND = { SHAMBLER: 0, RUNNER: 1, BRUTE: 2 } as const;
+export const RUNNER = { health: 16, chase: 168, bite: 6, fromNight: 3, oneIn: 5 } as const;
+export const BRUTE = { health: 90, chase: 108, bite: 14, fromNight: 5, danger: 2, reel: 4, shove: 140, pound: 80 } as const;
+
 /** The player's blow (C2b; the city's weapons add their own). */
 export const BLOW = {
   /** Bare hands; a weapon adds twice its `attack`. */

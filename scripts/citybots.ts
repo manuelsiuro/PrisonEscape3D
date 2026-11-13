@@ -4,7 +4,7 @@
  */
 import { cityItem, cityItemNumber } from '../src/city/content/items';
 import { STORY } from '../src/city/content/story';
-import { gatesOpen, objectives, towards } from '../src/city/sim/story';
+import { gatesOpen, objectives, towards, wants } from '../src/city/sim/story';
 import { COP, FULL, SLEEP_FROM, SLEEP_TO, type City } from '../src/city/sim/City';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { nearestDir } from '../src/sim/ai/path';
@@ -155,7 +155,9 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
  */
 export function quester(c: City, way: number) {
   const BATTERY = cityItemNumber('battery');
-  const forage = scavenger(c, (item) => item === BATTERY && !(c.state.flags & 4));
+  // (What the fence asks for the armoury's key: kept from the first day.)
+  const CLOTH = cityItemNumber('cloth');
+  const forage = scavenger(c, (item) => (item === BATTERY && !(c.state.flags & 4)) || (!(c.state.flags & 8) && item === CLOTH));
   let pilot = new Autopilot(c.world, () => c.grid);
   let world = c.world;
   let goal = '';
@@ -222,6 +224,11 @@ export function quester(c: City, way: number) {
     const o = s.act === 3 ? list.find((x) => x.id === `scout${way}`) : list.find((x) => !x.done && x.at);
     // (The list's waiting lines: the parts held and the way out not yet to be set going. Stood by it.)
     if (!o?.at) return last ? 0 : aside();
+    // (The armoury's key: the fence met, then what he asks found as the scavenger finds things, then handed over.)
+    if (o.id === 'key') {
+      const w = wants(c, 0);
+      if (w && w.have < w.n) return aside();
+    }
     if (o.at.district !== s.district) {
       const to = towards(c, s.district, o.at.district);
       const gate = c.district.gates.find((g) => g.to === to);
@@ -233,6 +240,11 @@ export function quester(c: City, way: number) {
       return command(pilot.dir(s.player));
     }
     const t = c.target();
+    if (t?.kind === 'npc' && o.id === 'key' && t.tile === o.at.tile) {
+      pilot.stop();
+      goal = '';
+      return command(0, COP.ACT);
+    }
     if (t?.kind === 'way') {
       pilot.stop();
       // (The beacon by night, the boat on the tide: pressed when it can be.)

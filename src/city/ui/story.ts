@@ -11,7 +11,10 @@ export function objectiveText(c: City, o: Objective): string {
   if (o.id === 'batteries') return t('city.obj.batteries', { n: o.n ?? 0, of: o.of ?? 0 });
   if (o.id.startsWith('kit.')) {
     const what = t(`city.${o.id}` as Key);
-    if (o.done || !o.at) return what.charAt(0).toUpperCase() + what.slice(1);
+    const named = what.charAt(0).toUpperCase() + what.slice(1);
+    if (o.done) return named;
+    // (No place given: it's behind the armoury's lock.)
+    if (!o.at) return t('city.obj.locked', { what: named });
     const dist = c.districtOf(o.at.district);
     const lot = dist.lotAt[o.at.tile];
     return t('city.obj.kit', {
@@ -20,6 +23,7 @@ export function objectiveText(c: City, o: Objective): string {
       where: plan.names[o.at.district],
     });
   }
+  if (o.id === 'key') return t('city.obj.key', { where: plan.names[P.people[0].district] });
   if (o.id.startsWith('scout')) return t(`city.obj.${o.id}` as Key, { where: plan.names[P.wayDistrict[Number(o.id.slice(5)) - 1]] });
   if (o.id === 'hold1' || o.id === 'hold3') return t(`city.obj.${o.id}` as Key, { n: o.left ?? 0 });
   return t(`city.obj.${o.id}` as Key);

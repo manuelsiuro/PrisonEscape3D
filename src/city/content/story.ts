@@ -42,7 +42,7 @@ export const WAYS: readonly WayOut[] = [
 export const wayOf = (n: number): WayOut | undefined => WAYS[n - 1];
 
 /** What the story remembers beside the kit (bits). */
-export const FLAG = { ATE: 1, SLEPT: 2, FIXED: 4 } as const;
+export const FLAG = { ATE: 1, SLEPT: 2, FIXED: 4, KEY: 8 } as const;
 
 /** Notes, logs and signs left about the city: how many (one to a district, the rest anywhere). */
 export const NOTES = 10;
@@ -69,6 +69,11 @@ export const BEATS = [
   'fell',
   'shelter',
   'night',
+  // (C3b.)
+  'people',
+  'met',
+  'key',
+  'locked',
   'win1',
   'win2',
   'win3',

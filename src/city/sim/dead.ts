@@ -6,7 +6,7 @@ import { bodyAt, walk, type Body } from '../../sim/systems/movement';
 import { NIGHT_FROM, NIGHT_TO, STEPS_PER_MINUTE, UNIT } from '../../sim/tuning';
 import { centerX, centerZ, tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
-import { BLOW, DEAD } from '../content/dead';
+import { BLOW, BRUTE, DEAD, RUNNER, ZKIND } from '../content/dead';
 import { ESCAPE_KINDS, isBuilding } from '../content/districts';
 import { cityItem } from '../content/items';
 import { districtX, districtZ } from '../gen/plan';
@@ -41,6 +41,9 @@ export interface Zed {
   near: number;
   /** Its own pace, a little off the others' (thousandths). */
   pace: number;
+  /** C3b, optional: what it is (ZKIND; none: a shambler), and a brute's steps at a barred door. */
+  kind?: number;
+  pound?: number;
 }
 
 const N = MAP_W * MAP_H;
@@ -101,10 +104,18 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
     if (!farEnough(c, tile, up ? DEAD.clearUp : DEAD.clear)) continue;
     // (Never inside a shelter: its doors are barred against them.)
     const lot = c.district.lotAt[tile] - 1;
-    if (!up && lot >= 0 && c.shelter(lot)) continue;
+    if (!up && lot >= 0 && (c.shelter(lot) || c.safeLots.has(lot))) continue;
+    // (C3b: at night, in the streets: a runner now and then from the third night, one brute from the fifth where it's bad. No draw before.)
+    let kind: number = ZKIND.SHAMBLER;
+    const nightNo = (c.minute < NIGHT_TO ? c.day - 1 : c.day) + c.state.deaths;
+    if (mode === ZED.WANDER && nightAt(c.minute) && nightNo >= RUNNER.fromNight) {
+      if (nightNo >= BRUTE.fromNight && danger(c, c.state.district) >= BRUTE.danger && !c.state.zeds.some((z) => z.kind === ZKIND.BRUTE))
+        kind = ZKIND.BRUTE;
+      else if (randomInt(c.state, RUNNER.oneIn) === 0) kind = ZKIND.RUNNER;
+    }
     c.state.zeds.push({
       body: bodyAt(tile % MAP_W, Math.floor(tile / MAP_W), 1 + randomInt(c.state, 16)),
-      hp: DEAD.health,
+      hp: kind === ZKIND.BRUTE ? BRUTE.health : kind === ZKIND.RUNNER ? RUNNER.health : DEAD.health,
       mode,
       goal: -1,
       path: [],
@@ -114,6 +125,7 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
       reel: 0,
       near: 0,
       pace: 900 + randomInt(c.state, 200),
+      ...(kind ? { kind } : {}),
     });
     return true;
   }
@@ -176,14 +188,14 @@ export function strike(c: City) {
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
   const z = s.zeds[best];
   z.hp -= harm;
-  z.reel = DEAD.reel;
+  z.reel = z.kind === ZKIND.BRUTE ? BRUTE.reel : DEAD.reel;
   z.near = 0;
   z.mode = ZED.CHASE;
   z.seen = s.step;
   z.last = c.tile;
   // Pushed back along the blow, as far as there's room.
   const dir = nearestDir(z.body.x - p.x, z.body.z - p.z);
-  walk(c.zedWorld, z.body, dir, DEAD.shove);
+  walk(c.zedWorld, z.body, dir, z.kind === ZKIND.BRUTE ? BRUTE.shove : DEAD.shove);
   z.body.facing = nearestDir(p.x - z.body.x, p.z - z.body.z);
   const dead = z.hp <= 0;
   if (dead) {
@@ -257,8 +269,11 @@ export function stepDead(c: City) {
       z.last = here;
     }
     let speed: number = DEAD.wander;
+    const brute = z.kind === ZKIND.BRUTE;
+    // (A brute goes by the doors as if nothing barred them, and pounds its way through.)
+    const grid = brute ? c.world.npcBlock : c.zedGrid;
     if (z.mode === ZED.CHASE) {
-      speed = DEAD.chase;
+      speed = brute ? BRUTE.chase : z.kind === ZKIND.RUNNER ? RUNNER.chase : DEAD.chase;
       if (s.step - z.seen > DEAD.lose) {
         z.mode = ZED.SEEK;
         z.goal = z.last;
@@ -270,9 +285,10 @@ export function stepDead(c: City) {
           b.facing = nearestDir(dx, dz);
           if (++z.near >= DEAD.lunge && s.step - z.bit >= DEAD.biteEvery) {
             z.bit = s.step;
-            c.events.push({ type: 'bite', harm: DEAD.bite });
+            const harm = brute ? BRUTE.bite : z.kind === ZKIND.RUNNER ? RUNNER.bite : DEAD.bite;
+            c.events.push({ type: 'bite', harm });
             if (s.sleeping) c.wakeNow('attacked');
-            c.hurt(DEAD.bite);
+            c.hurt(harm);
             if (s.over || c.events.some((e) => e.type === 'dead')) return;
           }
           continue;
@@ -281,7 +297,7 @@ export function stepDead(c: City) {
         // Straight at them in the open, else the way round (looked for now and then).
         if (z.goal !== here || (!z.path.length && (s.step + k) % 12 === 0)) {
           z.goal = here;
-          z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, c.zedGrid) ?? [];
+          z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, grid) ?? [];
         }
       }
     }
@@ -339,6 +355,15 @@ export function stepDead(c: City) {
       continue;
     }
     // (Against something that wasn't there when the way was found: looked for again.)
-    if (b.x === bx && b.z === bz) z.path = [];
+    // (A brute at a barred door: it pounds, and the boards give.)
+    if (b.x === bx && b.z === bz) {
+      if (brute && c.bars.includes(next)) {
+        z.pound = (z.pound ?? 0) + 1;
+        if (z.pound >= BRUTE.pound) {
+          z.pound = 0;
+          c.breach(next);
+        }
+      } else z.path = [];
+    }
   }
 }
