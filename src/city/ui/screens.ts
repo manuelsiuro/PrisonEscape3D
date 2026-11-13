@@ -56,7 +56,6 @@ export async function showNewCity(click: () => void): Promise<number | null> {
         <button class="city-mode" data-c="mode" data-pick="${MODE.SURVIVOR}" aria-pressed="true">${icon('heart', 20)}<b>${t('city.mode.survivor')}</b><small>${t('city.mode.survivorSub')}</small></button>
         <button class="city-mode" data-c="mode" data-pick="${MODE.HARDCORE}" aria-pressed="false">${icon('flame', 20)}<b>${t('city.mode.hardcore')}</b><small>${t('city.mode.hardcoreSub')}</small></button>
       </div>
-      <p class="card-note city-preview">${icon('wrench', 14)}${t('city.preview')}</p>
       <div class="actions">
         <button class="big-btn ghost" data-c="back">${icon('chevronLeft', 18)}${t('city.new.back')}</button>
         <button class="big-btn ghost" data-c="feats">${icon('trophy', 18)}${t('city.feats.title')}</button>

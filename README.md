@@ -222,7 +222,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 | `src/game/` | Saves, settings, records, trophies, stats, replays and storage |
 | `src/replay/` | Watching an escape again |
 | `src/audio/`, `src/app/` | Synthesized sound; haptics, graphics quality, the service worker, installing |
-| `src/city/` | City Escape, a second mode in the making (shown only with `?city` in the address): its own generator, simulation, screens and 3D pieces, fetched when opened ([`docs/phases/10-city-escape.md`](docs/phases/10-city-escape.md)) |
+| `src/city/` | City Escape, the second mode (on the title since 2.49): its own generator, simulation, screens and 3D pieces, fetched when opened ([`docs/phases/10-city-escape.md`](docs/phases/10-city-escape.md)) |
 | `src/i18n/` | English and French text, the inmates' and guards' lines (`barks/`), keyboard labels |
 | `src/styles/` | CSS, one file per part of the game |
 | `scripts/` | Tests (`*test*.ts`), escape bots (`escapes.ts`), and dev tools in `scripts/dev/` (map viewer, How to play pictures, map photos, the release check, trailer tools) |

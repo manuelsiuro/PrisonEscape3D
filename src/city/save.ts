@@ -29,7 +29,8 @@ export const writeCitySave = (f: CitySave): boolean => writeJSON(KEYS.citySave, 
 export const deleteCitySave = () => removeKey(KEYS.citySave);
 
 /**
- * Whether City Escape shows on the title. Hidden until it's whole (the user's choice, 2026-11-13: each
- * stage is released, the entry shown only with `?city` in the address).
+ * Whether City Escape shows on the title and in How to play. It was hidden until whole (the user's choice,
+ * 2026-11-13: each stage released, the entry shown only with `?city` in the address); since 2.49 it is
+ * there for everyone. Kept as the one place that says so.
  */
-export const cityOn = () => new URLSearchParams(location.search).has('city');
+export const cityOn = () => true;
