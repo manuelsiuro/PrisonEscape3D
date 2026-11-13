@@ -17,7 +17,6 @@ import { click, controls, tools } from './context';
 import { dayRows, EVENT_COLOR, eventIcon, FORECAST_AT, hasDays, whenOf } from './day';
 import { play, type Game } from './game';
 import { shootKey } from './pastimes';
-import { kickKey } from './team';
 import { HEARING_FROM, HEARING_TO } from '../content/parole';
 import { P } from '../sim/systems/parole';
 import { roomOf } from './parole';
@@ -269,8 +268,7 @@ export async function openDay() {
   if (!g || g.paused || g.over || g.replay) return;
   const v = dayView(g);
   click();
-  // (A kick or a shot held on Space is let go: its key-up would come while paused.)
-  kickKey(false);
+  // (A shot held on Space is let go: its key-up would come while paused.)
   shootKey(false);
   g.paused = true;
   controls.enabled = false;

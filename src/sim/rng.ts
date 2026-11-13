@@ -91,6 +91,8 @@ export const SALT = {
   HUDDLE: 50,
   /** 2.43: the neighbours in the garden (who goes when, for how long, what he plants). */
   GARDEN: 51,
+  /** 2.44: penalties (an inmate's reach and misses by cell, his kicks and dives, the marker's start). */
+  PENS: 52,
 } as const;
 
 /** A number in [0, 2³²) for a draw of a kind (SALT) and its arguments: pure, never the same stream as another kind. */

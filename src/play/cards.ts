@@ -1,7 +1,8 @@
 import { PickCard, DiceCard, WrestleCard } from '../ui/games';
 import { BoardCard, CheatCard, CourtCard } from '../ui/pastimes';
 import { RaceCard, RatRunCard } from '../ui/long';
-import { InkCard, MatchCard } from '../ui/team';
+import { InkCard } from '../ui/team';
+import { PensCard } from '../ui/pens';
 import { StageCard } from '../ui/stage';
 import { QuizCard } from '../ui/quiz';
 import { click } from './context';
@@ -27,12 +28,12 @@ export function makeCards() {
   const raceCard = new RaceCard(sendOp, click);
   /** 2.43: the rat's training, a timing game. */
   const ratCard = new RatRunCard(sendOp);
-  /** Team & ink (P29): the match's card, the tattoo's. */
-  const matchCard = new MatchCard();
+  /** 2.44: penalties at the pitch's spot. Ink (P29): the tattoo's card. */
+  const pensCard = new PensCard(sendOp);
   const inkCard = new InkCard(sendOp, click);
   /** Stage nights (P30): talent night's card, quiz night's. */
   const stageCard = new StageCard(sendOp, click);
   const quizCard = new QuizCard(sendOp, click);
   quizCard.onDone = quizDone;
-  return { wrestleCard, pickCard, diceCard, cheatCard, courtCard, boardCard, raceCard, ratCard, matchCard, inkCard, stageCard, quizCard };
+  return { wrestleCard, pickCard, diceCard, cheatCard, courtCard, boardCard, raceCard, ratCard, pensCard, inkCard, stageCard, quizCard };
 }

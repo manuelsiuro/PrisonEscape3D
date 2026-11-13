@@ -1,3 +1,4 @@
+import { announcePens } from './penalties';
 import { STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
@@ -82,10 +83,12 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'sold':
       announceLong(sim, e);
       break;
-    // Team & ink (P29): a match, a tattoo.
-    case 'football':
+    // Ink (P29): a tattoo. Penalties (2.44).
     case 'tattoo':
       announceTeam(sim, e);
+      break;
+    case 'pens':
+      announcePens(sim, e);
       break;
     // Stage nights (P30): an act on the stage, a quiz.
     case 'stage':

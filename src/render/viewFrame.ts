@@ -15,7 +15,7 @@ import type { SmuggleFrame } from './Smuggling';
 import type { GamesFrame } from './Games';
 import type { PastimesFrame } from './Pastimes';
 import type { LongFrame } from './Long';
-import type { TeamFrame } from './Team';
+import type { PitchFrame } from './Pitch';
 import type { NightsFrame } from './Nights';
 import type { PhoneFrame } from './Phone';
 import type { KioskFrame } from './Kiosk';
@@ -134,8 +134,8 @@ export interface Frame {
   pastimes: PastimesFrame;
   /** Long games (P28): the garden, the rat track and its racers, the pet's laps, tipsy (null: none yet). */
   long: LongFrame | null;
-  /** Team & ink (P29): the pitch and the ball. */
-  team: TeamFrame;
+  /** The pitch (P29; 2.44: penalties): its paint and goals, the spot, the ball, the keeper's dive, the box the camera keeps in view. */
+  pitch: PitchFrame;
   /** Stage nights (P30): the stage set up, the quiz's buzzers. */
   nights: NightsFrame;
   /** The pay phone (P34): its handset off the hook, Lou's car waiting on the road. */
@@ -288,7 +288,7 @@ export function emptyFrame(): Frame {
     cheer: 0,
     pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
     long: null,
-    team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
+    pitch: { pitch: null, theme: '', spot: null, ball: null, keeper: null, frame: null },
     nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
     phone: { offHook: false, car: false, side: -1, ear: -1 },
     kiosk: { on: false, photos: [], side: 0, app: 0 },

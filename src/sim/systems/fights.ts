@@ -3,6 +3,7 @@
  * coming round (a guard's missing key raises the alarm, keys.ts), blows on the player and what
  * happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
  */
+import { pensHit } from './penalties';
 import { twist } from './twists';
 import { allyDamage } from './crew';
 import { byCanteen, inFoodFight } from './calendar';
@@ -333,8 +334,9 @@ export function hurt(sim: SimContext, dmg0: number, by: number) {
   }
   // (2.32: and the vending machine's card, whose keys and hidden buttons would leave no way to answer it.)
   if (s.vendOpen) closeCard(sim);
-  // (2.33: and the menu board's.)
+  // (2.33: and the menu board's. 2.44: and a penalty shootout, or the ball at the spot: the keys theirs again.)
   if (s.menuOpen || s.menu.until) closeMenu(sim);
+  if (s.pens) pensHit(sim);
   sim.events.push(by >= 0 && dmg !== dmg0 ? { type: 'hurt', by, dmg, blocked: true } : { type: 'hurt', by, dmg });
   if (s.health > 0) return;
   // Put down by a guard: caught (solitary or the infirmary). By anyone else: the infirmary.

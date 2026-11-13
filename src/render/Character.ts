@@ -134,6 +134,11 @@ const TOWEL_EDGE = 0xc9d4de;
  * Poses: walking, standing (with glances), and what inmates do at their spots: lining up,
  * eating, exercising, showering and sleeping in bed.
  */
+/** A keeper's dive (2.44): how far across the body goes (tiles), how far over it rolls (radians), how far down (tiles). */
+const DIVE_REACH = 0.55;
+const DIVE_ROLL = 1.2;
+const DIVE_DROP = 0.22;
+
 export class Character {
   readonly root = new THREE.Group();
   // The pivots are bones of one skinned mesh (the whole body is one draw call, and one in the shadow pass).
@@ -219,6 +224,18 @@ export class Character {
   shudder = false;
   /** Dice in a cupped hand, not thrown yet (P22): it shakes them. */
   diceShake = false;
+  /**
+   * A keeper's dive (2.44, penalties), from the frame: how far down (0–1) and the way across the world (diveX, diveZ:
+   * -1, 0 or 1). Set before the pose; 0 stands.
+   */
+  dive = 0;
+  diveX = 0;
+  diveZ = 0;
+  /** Which side of the body the dive goes to (1 its own +x, -1 the other), from its facing. */
+  private diveSide(facing: number): number {
+    const d = this.diveX * Math.cos(facing) - this.diveZ * Math.sin(facing);
+    return d > 0.01 ? 1 : d < -0.01 ? -1 : 0;
+  }
   private hit = 0;
   /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
@@ -921,6 +938,11 @@ export class Character {
       this.root.position.x += -Math.sin(r) * o + Math.cos(r) * side;
       this.root.position.z += -Math.cos(r) * o - Math.sin(r) * side;
     }
+    // A keeper's dive (2.44): thrown across the goal, its way in the world (eased by the frame).
+    if (this.dive > 0) {
+      this.root.position.x += this.diveX * DIVE_REACH * this.dive;
+      this.root.position.z += this.diveZ * DIVE_REACH * this.dive;
+    }
     // (Session 15: with reduced motion too, held still: a pose that says what they're doing never vanishes.)
     const a = this.act;
     const t = time + this.offset;
@@ -1108,6 +1130,11 @@ export class Character {
     }
     this.legL.rotation.set(l.legL, 0, -l.legZ);
     this.legR.rotation.set(l.legR, 0, l.legZ);
+    // (2.44: diving, the arms flung up over the head.)
+    if (this.dive > 0) {
+      l.armLz += 2.3 * this.dive;
+      l.armRz -= 2.3 * this.dive;
+    }
     this.armL.rotation.set(l.armLx, 0, l.armLz);
     this.armR.rotation.set(l.armRx, 0, l.armRz);
     // (A blow or a strike swings what's in hand as a tool, a mop's handle too.)
@@ -1125,7 +1152,12 @@ export class Character {
     // foot walking, each its own, and a fidget's roll.)
     const shift = doing === DOING.QUEUE && motion ? Math.sin(t * 0.55) * 0.04 * this.act : 0;
     this.body.rotation.z =
-      (motion ? Math.sin(t * 0.7) * 0.06 * dz : 0) + shift + this.extra.roll + Math.sin(this.phase) * sty.sway * this.swing * (1 - running);
+      (motion ? Math.sin(t * 0.7) * 0.06 * dz : 0) +
+      shift +
+      this.extra.roll +
+      Math.sin(this.phase) * sty.sway * this.swing * (1 - running) -
+      this.diveSide(facing) * DIVE_ROLL * this.dive;
+    if (this.dive > 0) this.body.position.y -= DIVE_DROP * this.dive;
     this.body.rotation.x =
       (sty.lean + 0.1 * running) * this.swing -
       (Math.PI / 2) * this.lie +

@@ -24,7 +24,7 @@ import type { ForcedDay } from './systems/calendar';
 import type { Cheat } from './systems/cards';
 import type { Shootout } from './systems/hoops';
 import type { Board } from './systems/checkers';
-import type { Match } from './systems/football';
+import type { Pens } from './systems/penalties';
 import type { Ink } from './systems/tattoo';
 import type { Show } from './systems/talent';
 import type { Quiz } from './systems/quiz';
@@ -249,10 +249,11 @@ export interface SimState {
   plots: number[][];
   race: number[];
   /**
-   * P29: a football match under way (football.ts), null none; a tattoo sitting (tattoo.ts), null
-   * none; the designs on the player's arms (DESIGNS places, in the order inked).
+   * P29's football match, gone in 2.44 (penalties.ts took its place): always null, kept so a state hashes as it did
+   * (the escape bots' snapshots stay byte-identical).
    */
-  match: Match | null;
+  match: null;
+  /** P29: a tattoo sitting (tattoo.ts), null none; the designs on the player's arms (DESIGNS places, in the order inked). */
   ink: Ink | null;
   inked: number[];
   /** The prison day each inmate last had a tattoo from the player (by inmate index; 0 never). */
@@ -437,6 +438,12 @@ export interface SimState {
   gardenBy?: number[];
   /** 2.43, the rat's training as a timing game (races.ts RR): absent until the first session; empty when none is running. */
   ratRun?: number[];
+  /**
+   * 2.44, penalties (penalties.ts, in the place of P29's football match): a shootout or kicks on one's own under way
+   * (absent or null: none); the goals in a corner on one's own that prison day (day × 16 + n; absent: none yet).
+   */
+  pens?: Pens | null;
+  penCorners?: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */

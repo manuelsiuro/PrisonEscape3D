@@ -104,7 +104,7 @@ export function handsBusy(s: SimContext['state']): boolean {
     !!s.cheat ||
     !!s.shootout ||
     !!s.board?.seated ||
-    !!s.match ||
+    !!s.pens ||
     !!s.ink ||
     !!s.show ||
     !!s.quiz ||

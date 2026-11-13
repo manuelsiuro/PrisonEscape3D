@@ -11,7 +11,7 @@ import type { CheatNews } from './systems/cards';
 import type { ShotResult } from './systems/hoops';
 import type { CheckersNews } from './systems/checkers';
 import type { TrackRefusal } from './systems/races';
-import type { FootballNews } from './systems/football';
+import type { PensNews } from './systems/penalties';
 import type { VoidWhy } from './systems/parole';
 import type { HolidayDay } from '../content/holidays';
 import type { LayerMove } from './state';
@@ -451,28 +451,30 @@ export type SimEvent =
     }
   | { type: 'race'; what: RaceNews; lane?: number; stake?: number; odds?: number; order?: number[]; won?: number; purse?: number }
   /**
-   * P29 (football.ts, tattoo.ts): a match begun (the `team`), its whistle, a goal (`mine` the
-   * player's side's, `by` the scorer: an inmate, -1 the player; the `score`), play on again, a
-   * kick of the player's (its `power`) or one at the air, and its end (won with the `crowd`, `spd`
-   * and sports day's `wins`; lost, drawn, off, or a foul and the `guards` it drew; `scored` the
-   * player's own goals); a tattoo begun, traced (its `quality`, the `pay`, the opinion `gain`),
-   * given up or off, or inked on the player's arm (`mine`).
+   * 2.44 (penalties.ts): a shootout begun, kicks on one's own begun; a kick struck (`by` an inmate, -1 the player; its
+   * `aim`, the keeper's `dive`; `early`: a dive he saw coming, put the other way), its `result` as it arrives (KICK, the
+   * tally `mine` and `theirs`); the end (won with the `crowd`, the `fans` whose opinion rose, `spd` and sports day's
+   * `wins`; lost, drawn, off; `gain` his opinion, `taken` the player's kicks); a point of Speed for the corners (`spd`).
    */
   | {
-      type: 'football';
-      what: FootballNews;
-      who?: number;
-      team?: number[];
-      mine?: boolean;
+      type: 'pens';
+      what: PensNews;
+      who: number;
       by?: number;
-      score?: number[];
-      power?: number;
+      aim?: number;
+      dive?: number;
+      early?: boolean;
+      result?: number;
+      mine?: number;
+      theirs?: number;
+      taken?: number;
+      gain?: number;
       crowd?: number;
+      fans?: number[];
       spd?: number;
       wins?: number;
-      guards?: number[];
-      scored?: number;
     }
+  /** P29 (tattoo.ts): a tattoo begun, traced (its `quality`, the `pay`, the opinion `gain`), given up or off, or inked on the player's arm (`mine`). */
   | {
       type: 'tattoo';
       what: 'start' | 'done' | 'quit' | 'off' | 'inked';
@@ -895,7 +897,6 @@ export type Refusal =
   | 'enterFirst'
   | 'soldEnough'
   | 'noPitch'
-  | 'fewPlayers'
   | 'inkOpinion'
   | 'inkFriend'
   | 'noGun'
