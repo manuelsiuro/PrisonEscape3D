@@ -316,7 +316,7 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
     `<div class="card city-journal">
       <h2>${icon('book', 20)}${t('city.journal.title')}<small>${t('city.act.n', { n: s.act })} · ${t(`city.act.${s.act}` as Key)}</small></h2>
       <div class="cj-body">
-        <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit')}: ${kit.join(', ')}</p>` : ''}</section>
+        <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit', { what: kit.join(', ') })}</p>` : ''}</section>
         ${ways}
         ${people}
         <section><h3>${icon('megaphone', 16)}${t('city.journal.radio')}</h3>${radio}</section>
