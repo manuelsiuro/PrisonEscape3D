@@ -14,6 +14,8 @@ export interface CityRecipe {
   /** Made only beside a workbench; only with a camp stove in the pockets. */
   bench?: true;
   stove?: true;
+  /** Known only once a survivor's first errand is done (their place in PEOPLE). */
+  taught?: number;
 }
 
 export const CITY_RECIPES: readonly CityRecipe[] = [
@@ -82,6 +84,38 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
       ['water', 1],
     ],
     stove: true,
+  },
+  // C3b: taught by the nurse, the mechanic, the ranger.
+  {
+    makes: 'medkit',
+    n: 1,
+    from: [
+      ['bandage', 2],
+      ['pills', 1],
+      ['tape', 1],
+    ],
+    taught: 1,
+  },
+  {
+    makes: 'cleaver',
+    n: 1,
+    from: [
+      ['blade', 2],
+      ['pipe', 1],
+      ['tape', 1],
+    ],
+    bench: true,
+    taught: 2,
+  },
+  {
+    makes: 'ration',
+    n: 1,
+    from: [
+      ['dried', 1],
+      ['fruit', 1],
+      ['chocolate', 1],
+    ],
+    taught: 3,
   },
 ];
 

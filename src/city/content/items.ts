@@ -85,6 +85,10 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'stove', kind: 'tool', stack: 1, shape: 'pack', color: 0x4a5560, accent: 0xc24a3a },
   food('cooked_fish', 'fish', 0xc98a4a, 32, { health: 3 }),
   food('stew', 'bowl', 0xb5673a, 55, { health: 5, energy: 8 }, 0xe8e2d0),
+  // C3b: what the survivors teach.
+  { id: 'medkit', kind: 'med', stack: 2, shape: 'pack', color: 0xf0ece2, accent: 0xc24a3a, use: { health: 70 } },
+  { id: 'cleaver', kind: 'weapon', stack: 1, shape: 'knife', color: 0x9aa1ab, accent: 0x5a3320, attack: 14, wear: 60 },
+  food('ration', 'packet', 0x6a7a4a, 60, { energy: 20 }, 0xd8b04a),
 ];
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];

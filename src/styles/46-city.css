@@ -12,6 +12,7 @@
   --city-wall-55: #b8443a;
   --city-moon-86: #c4d4f0;
   --city-home-86: #6ff0a8;
+  --city-folk-78: #6fd0c4;
   --city-health-70: #ff6b6b;
   --city-energy-80: #7fc8ff;
   --city-you-65: #ff5a4a;
@@ -661,5 +662,568 @@
 
   .city-recipe .slot {
     --s: 32px;
+  }
+}
+
+/* ------------------------------------------------------------ the story (2.48) */
+/* What the story asks now: a line under the meters; it opens the journal. */
+.city-goal-row {
+  margin-top: 6px;
+}
+
+.city-goal {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(calc(100% - 132px), 460px);
+  gap: 6px;
+  padding: 5px 11px 5px 8px;
+  border: 1px solid rgba(var(--city-amber-83-rgb), 0.5);
+  font-size: 12.5px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.2;
+  color: var(--white);
+  background: rgba(var(--city-night-26-rgb), 0.86);
+  cursor: pointer;
+}
+
+.city-goal svg {
+  flex: none;
+  color: var(--city-amber-83);
+}
+
+.city-goal span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Dispatch on the radio: a line at a time, under the goal. */
+.city-radio {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: min(100%, 520px);
+  margin: 8px auto 0;
+  padding: 9px 13px;
+  border: 1px solid rgba(var(--city-amber-83-rgb), 0.45);
+  border-radius: 14px;
+  color: var(--white);
+  background: rgba(var(--city-night-17-rgb), 0.93);
+}
+
+.city-radio.in {
+  animation: city-radio-in 0.25s ease-out;
+}
+
+.city-radio > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--city-amber-83);
+}
+
+.city-radio b {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--city-amber-83);
+}
+
+.city-radio p {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+
+@keyframes city-radio-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* Where the story points, on the corner map (at its edge when it's further off). */
+.city-minimap .cm-mark {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  background: var(--city-amber-83);
+  box-shadow: 0 0 0 1.5px var(--city-night-17);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.city-minimap .cm-mark.off {
+  opacity: 0.75;
+  transform: rotate(45deg) scale(0.75);
+}
+
+.city-map-legend .lg-goal {
+  background: var(--city-amber-83);
+  transform: rotate(45deg) scale(0.8);
+}
+
+/* The journal. */
+.city-journal {
+  width: min(94vw, 620px);
+  text-align: left;
+}
+
+.city-journal h2,
+.city-escaped h2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 26px;
+}
+
+.city-escaped h2 {
+  justify-content: center;
+}
+
+.city-journal h2 small,
+.city-escaped h2 small {
+  font: 700 13px var(--font-ui);
+  text-shadow: none;
+  color: var(--city-amber-83);
+}
+
+.city-journal h2 small {
+  margin-left: auto;
+}
+
+.cj-body {
+  display: grid;
+  gap: 14px;
+  max-height: min(62vh, 560px);
+  padding-right: 4px;
+  overflow-y: auto;
+}
+
+.cj-body h3 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.cj-todo,
+.cj-way ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cj-todo li,
+.cj-way li {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.cj-todo li svg,
+.cj-way li svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--city-amber-83);
+}
+
+.cj-todo li.done,
+.cj-way li.done {
+  opacity: 0.6;
+}
+
+.cj-todo li.done svg,
+.cj-way li.done svg {
+  color: var(--city-home-86);
+}
+
+.cj-kit {
+  margin: 8px 0 0;
+}
+
+.cj-ways {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cj-way {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(var(--white-rgb), 0.16);
+  border-radius: 12px;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.cj-way.chosen {
+  border-color: var(--city-amber-83);
+}
+
+.cj-way > b {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.cj-way > b small {
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.cj-way p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+
+.cj-way li {
+  font-size: 12.5px;
+}
+
+.city-journal .cj-way .big-btn {
+  min-height: 0;
+  margin-top: auto;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.cj-state {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.cj-state.on {
+  color: var(--city-amber-83);
+  opacity: 1;
+}
+
+.cj-line {
+  margin: 0 0 7px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(var(--city-amber-83-rgb), 0.55);
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.cj-body details {
+  margin-bottom: 5px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.cj-body summary {
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cj-body details p {
+  margin: 6px 0 2px;
+  font-size: 13.5px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Out of the city. */
+.city-escaped .actions {
+  margin-top: 16px;
+}
+
+.city-escaped blockquote {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-left: 3px solid var(--city-amber-83);
+  border-radius: 0 10px 10px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.city-escaped blockquote small {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--city-amber-83);
+}
+
+@media (max-width: 620px) {
+  .cj-ways {
+    grid-template-columns: 1fr;
+  }
+
+  .city-goal {
+    max-width: calc(100% - 112px);
+  }
+
+  .city-radio {
+    width: calc(100% - 108px);
+    margin-left: 0;
+  }
+
+  .city-make {
+    top: calc(max(12px, env(safe-area-inset-top)) + 204px);
+  }
+}
+
+/* A phone turned: the goal's line kept to one line, the journal within the height there is. */
+@media (max-height: 480px) {
+  .city-goal-row {
+    margin-top: 4px;
+  }
+
+  .city-goal span {
+    -webkit-line-clamp: 1;
+  }
+
+  .city-radio {
+    width: min(calc(100% - 330px), 440px);
+    margin-left: 0;
+    padding: 6px 11px;
+  }
+
+  .city-radio p {
+    font-size: 12.5px;
+  }
+
+  .cj-body {
+    max-height: calc(100vh - 168px);
+  }
+
+  .city-journal h2 {
+    margin-bottom: 4px;
+    font-size: 20px;
+  }
+
+  .city-make {
+    top: calc(max(8px, env(safe-area-inset-top)) + 128px);
+  }
+}
+
+/* ------------------------------------------------------------ the survivors, the records (2.48) */
+.city-map-legend .lg-person {
+  border-radius: 50%;
+  background: var(--city-folk-78);
+}
+
+.cj-people {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cj-people li {
+  display: grid;
+  gap: 1px 10px;
+  grid-template-columns: minmax(110px, auto) 1fr;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.cj-people li b small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.cj-people li > small {
+  grid-column: 2;
+  color: var(--city-amber-83);
+}
+
+.city-person {
+  width: min(94vw, 460px);
+  text-align: left;
+}
+
+.city-person h2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 26px;
+}
+
+.city-person h2 small {
+  margin-left: auto;
+  font: 700 13px var(--font-ui);
+  text-shadow: none;
+  color: var(--city-folk-78);
+}
+
+.city-person h3 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 12px 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.cp-errand {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border: 1px solid rgba(var(--city-amber-83-rgb), 0.45);
+  border-radius: 12px;
+  font-size: 13.5px;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.cp-errand.ready {
+  border-color: var(--city-home-86);
+}
+
+.cp-errand small {
+  opacity: 0.85;
+}
+
+.cp-errand .cp-give {
+  justify-self: start;
+  min-height: 0;
+  margin-top: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.cp-swaps {
+  display: grid;
+  gap: 6px;
+}
+
+.cp-swap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(var(--white-rgb), 0.16);
+  border-radius: 10px;
+  font: 600 13.5px var(--font-ui);
+  color: var(--white);
+  background: rgba(var(--city-night-26-rgb), 0.6);
+  cursor: pointer;
+}
+
+.cp-swap b {
+  margin-left: auto;
+  color: var(--city-amber-83);
+}
+
+.cp-swap:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.city-feats {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.city-feats.new {
+  margin-top: 12px;
+}
+
+.city-feats li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  opacity: 0.55;
+  background: rgba(var(--city-night-26-rgb), 0.6);
+}
+
+.city-feats li.had {
+  opacity: 1;
+}
+
+.city-feats li.had svg {
+  color: var(--city-amber-83);
+}
+
+.city-feats li small {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.city-feats li i {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-style: normal;
+  text-transform: uppercase;
+  color: var(--city-night-17);
+  background: var(--city-amber-83);
+}
+
+.city-recipe.locked {
+  cursor: default;
+}
+
+@media (max-height: 480px) {
+  .city-person h2 {
+    margin-bottom: 4px;
+    font-size: 20px;
+  }
+
+  .city-person {
+    width: min(94vw, 640px);
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+
+  .cp-swaps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cp-swap {
+    flex-wrap: wrap;
+    padding: 6px 9px;
+    font-size: 12.5px;
   }
 }
