@@ -40,6 +40,8 @@ const tapPoint = { x: 0, y: 0 };
 
 /** Tap or click a spot: walk there (the nearest free floor if the spot itself is taken). */
 export function onTap(cx: number, cy: number) {
+  // (2.46: a mode of its own, City Escape: a walk on its own ground.)
+  if (play.side) return play.side.paused ? undefined : play.side.tap(cx, cy);
   const game = play.game;
   if (!game || game.paused) return;
   // (The manhunt, P41: a walk on its own ground.)

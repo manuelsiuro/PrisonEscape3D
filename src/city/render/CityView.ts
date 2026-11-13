@@ -1,0 +1,274 @@
+import * as THREE from 'three';
+import { disposeTree } from '../../render/batch';
+import { box, cyl, kitMaterial, merge, rod, type Part } from '../../render/kit';
+import { mix32 } from '../../sim/rng';
+import { MAP_H, MAP_W } from '../../sim/world/grid';
+import { DECO, type District } from '../gen/district';
+import { MAP_H as H, MAP_W as W } from '../../sim/world/grid';
+import { neighbour, ROAD_W, SIDE, type CityPlan } from '../gen/plan';
+
+/**
+ * A district's own pieces in the picture (C1, render only): what the World's floors, walls and
+ * furniture don't draw. The cars left on the streets and the burnt ones, rubble, sandbags, trees
+ * alive and dead, bushes, crates, dumpsters, barrels, tyres, cones, the prison bus on its side; and
+ * past a sector's fence, the next district's rooftops, so the city goes on. One merged model a
+ * district: a single draw. Built when a district is entered; reads its plan, never the simulation.
+ */
+
+/** Dusty paint for the cars left behind. */
+const PAINTS = [0x7c8794, 0x8f4a42, 0x4d6a82, 0xa39a84, 0x5c6b58, 0x9a8a4a, 0x6b5a72, 0xb9b4a8];
+const RUST = 0x6b4630;
+const TYRE = 0x16181b;
+const GLASS = 0x1e2a36;
+const BURNT = 0x2a2624;
+/** A street past the border, as the map's own streets read from above. */
+const ROAD = 0x4a4b4f;
+
+/** A model's parts turned about the upright and set down on a tile's middle. */
+function put(out: Part[], parts: Part[], x: number, z: number, angle = 0) {
+  for (const p of parts) {
+    if (angle) p.rotateY(angle);
+    p.translate(x, 0, z);
+    out.push(p);
+  }
+}
+
+/** A car two tiles long, nose along +z from the middle of its first tile; `burnt`: a shell, its roof down. */
+function car(paint: number, burnt: boolean, flat: number): Part[] {
+  const body = burnt ? BURNT : paint;
+  const w = 0.86;
+  const wheels = [0.05, 0.95].flatMap((z, k) =>
+    [-1, 1].map((s, j) => rod(k * 2 + j === flat ? 0.1 : 0.15, 0.14, TYRE, s * (w / 2 - 0.04), k * 2 + j === flat ? 0.1 : 0.15, z, 8)),
+  );
+  return [
+    box(w, 0.26, 1.8, body, 0, 0.14, 0.5),
+    box(w - 0.1, burnt ? 0.16 : 0.26, 0.9, burnt ? 0x1c1a19 : paint, 0, 0.4, 0.4),
+    ...(burnt
+      ? [box(w - 0.3, 0.05, 0.5, 0x3a322c, 0.05, 0.4, 1.1)]
+      : [
+          box(w - 0.14, 0.18, 0.04, GLASS, 0, 0.43, 0.86),
+          box(w - 0.14, 0.18, 0.04, GLASS, 0, 0.43, -0.06),
+          box(w - 0.08, 0.16, 0.7, GLASS, 0, 0.44, 0.4),
+          box(w - 0.12, 0.03, 0.86, paint, 0, 0.64, 0.4),
+        ]),
+    box(w + 0.02, 0.06, 0.06, burnt ? 0x151413 : 0x8b9098, 0, 0.16, 1.41),
+    box(w + 0.02, 0.06, 0.06, burnt ? 0x151413 : 0x8b9098, 0, 0.16, -0.41),
+    ...wheels,
+  ];
+}
+
+/** The prison bus on its side, three tiles long from the middle of its first tile, along +z: the grey of the service, its barred windows up at the sky. */
+function bus(): Part[] {
+  const len = 2.8;
+  const parts = [
+    box(0.95, 1.0, len, 0xc9cdd0, 0, 0.3, 0),
+    box(0.97, 0.16, len, 0x2f5f8f, 0, 0.5, 0),
+    box(0.97, 0.3, len - 0.5, GLASS, 0, 0.85, -0.1),
+    ...Array.from({ length: 9 }, (_, k) => box(0.99, 0.32, 0.03, 0x3b4046, 0, 0.84, -1.2 + k * 0.27)),
+    box(0.8, 0.4, 0.04, GLASS, 0, 0.8, len / 2 + 0.01),
+    box(0.9, 0.05, len, 0xe9ebec, 0, 1.3, 0),
+    ...[-0.9, 0.9].flatMap((z) => [-1, 1].map((s) => rod(0.22, 0.16, TYRE, s * 0.44, 0.22, z, 10))),
+  ];
+  // Onto its side, lying on the street, its middle a tile along from where it starts.
+  for (const p of parts) {
+    p.translate(0, -0.8, 0);
+    p.rotateZ(Math.PI / 2 - 0.06);
+    p.translate(-0.25, 0.5, 1);
+  }
+  return parts;
+}
+
+/** Broken masonry: a few blocks thrown down, seeded by the tile. */
+function rubble(h: number): Part[] {
+  const out: Part[] = [];
+  for (let k = 0; k < 6; k++) {
+    const r = mix32(h + k * 977);
+    const s = 0.14 + ((r >> 4) & 7) / 28;
+    const p = box(s * 1.3, s * 0.8, s, [0x77706a, 0x8a7a70, 0x5f5a56, 0x94493d][(r >> 9) & 3], 0, 0, 0);
+    p.rotateY(((r >> 12) & 31) / 5);
+    p.translate((((r >> 17) & 15) - 7.5) / 24, 0, (((r >> 21) & 15) - 7.5) / 24);
+    out.push(p);
+  }
+  return out;
+}
+
+function sandbags(): Part[] {
+  const SACK = 0xb6a47c;
+  const row = (y: number, n: number, off: number) =>
+    Array.from({ length: n }, (_, k) => box(0.3, 0.16, 0.42, k % 2 ? 0xa9976f : SACK, -0.33 * ((n - 1) / 2) + k * 0.33 + off, y, 0));
+  return [...row(0, 3, 0), ...row(0.16, 2, 0.02), ...row(0.32, 1, 0)];
+}
+
+function tree(h: number, dead: boolean): Part[] {
+  const tall = 1.5 + ((h >> 3) & 7) / 8;
+  const trunk = cyl(0.11, tall * (dead ? 1 : 0.55), dead ? 0x4b4138 : 0x5a4530, 0, 0, 0, 7);
+  if (dead) {
+    const limbs = [0, 1, 2, 3].map((k) => {
+      const p = box(0.05, 0.6, 0.05, 0x4b4138, 0, 0, 0);
+      p.rotateZ(0.7 + k * 0.2);
+      p.rotateY(k * 1.7 + ((h >> 6) & 7));
+      p.translate(0, tall * (0.55 + k * 0.1), 0);
+      return p;
+    });
+    return [trunk, ...limbs];
+  }
+  const leaf = [0x3f6b34, 0x4a7a3a, 0x6f7a34, 0x8a6a2c][(h >> 9) & 3];
+  return [
+    trunk,
+    cyl(0.62, tall * 0.42, leaf, 0, tall * 0.42, 0, 7),
+    cyl(0.44, tall * 0.34, leaf, 0.06, tall * 0.74, -0.04, 7),
+    cyl(0.24, tall * 0.2, leaf, 0, tall * 1.0, 0, 6),
+  ];
+}
+
+function bush(h: number): Part[] {
+  const c = [0x3f6b34, 0x55703a, 0x4a6030][((h >> 5) & 3) % 3];
+  return [box(0.7, 0.34, 0.6, c, 0, 0, 0), box(0.44, 0.24, 0.42, c, 0.08, 0.3, -0.05)];
+}
+
+function crates(h: number): Part[] {
+  const WOOD = 0x8d6b42;
+  const out = [box(0.58, 0.52, 0.58, WOOD, -0.12, 0, 0.1), box(0.42, 0.4, 0.42, 0x7a5c38, 0.22, 0, -0.2)];
+  if (h & 16) out.push(box(0.44, 0.4, 0.44, 0x9a7748, -0.1, 0.52, 0.08));
+  // (Their slats.)
+  out.push(box(0.6, 0.05, 0.6, 0x5f4729, -0.12, 0.24, 0.1));
+  return out;
+}
+
+const dumpster = (): Part[] => [
+  box(0.92, 0.6, 0.66, 0x3c6b52, 0, 0.06, 0),
+  box(0.96, 0.07, 0.7, 0x2c4f3c, 0, 0.66, 0),
+  box(0.06, 0.12, 0.06, TYRE, -0.36, 0, 0.24),
+  box(0.06, 0.12, 0.06, TYRE, 0.36, 0, 0.24),
+];
+const barrel = (): Part[] => [
+  cyl(0.24, 0.62, RUST, 0, 0, 0, 10),
+  cyl(0.25, 0.05, 0x40403c, 0, 0.2, 0, 10),
+  cyl(0.25, 0.05, 0x40403c, 0, 0.44, 0, 10),
+];
+const tyres = (): Part[] => [0, 1, 2].map((k) => cyl(0.26, 0.13, k === 1 ? 0x1f2226 : TYRE, k === 2 ? 0.04 : 0, k * 0.13, 0, 12));
+const cone = (): Part[] => [
+  box(0.3, 0.03, 0.3, 0x2a2a2a, 0, 0, 0),
+  cyl(0.1, 0.18, 0xe0762a, 0, 0.03, 0, 8),
+  cyl(0.06, 0.16, 0xf2f2ee, 0, 0.21, 0, 8),
+  cyl(0.03, 0.1, 0xe0762a, 0, 0.37, 0, 8),
+];
+
+/** The next district's rooftops past a sector's fence: blocks of grey at a distance, seeded by the place. */
+function beyond(plan: CityPlan, d: number, out: Part[], streets: ReadonlyArray<{ side: number; at: number }>) {
+  const TONES = [0x55585e, 0x64605a, 0x4a4e55, 0x6e665e, 0x5a5348];
+  for (let side = 0; side < 4; side++) {
+    if (neighbour(d, side) < 0) continue;
+    for (let k = 1; k < MAP_W - 1;) {
+      const r = mix32(plan.seed ^ (d * 7919 + side * 104729 + k * 31));
+      const w = 3 + (r & 3);
+      const deep = 3 + ((r >> 3) & 3);
+      const tall = 1.6 + ((r >> 6) & 7) * 0.45;
+      const far = 2.5 + ((r >> 10) & 3);
+      const mid = k + w / 2;
+      const off = far + deep / 2;
+      const [x, z, bw, bd] =
+        side === SIDE.N
+          ? [mid, -off, w, deep]
+          : side === SIDE.S
+            ? [mid, MAP_H + off, w, deep]
+            : side === SIDE.W
+              ? [-off, mid, deep, w]
+              : [MAP_W + off, mid, deep, w];
+      // (A gap left now and then; never over a street that runs on past the border.)
+      const onStreet = streets.some((s) => s.side === side && Math.abs(s.at - mid) < w / 2 + 1.5);
+      if ((r >> 13) & 3 && !onStreet) out.push(box(bw - 0.4, tall, bd - 0.4, TONES[(r >> 16) % TONES.length], x, 0, z));
+      k += w + ((r >> 20) & 1);
+    }
+  }
+}
+
+export class CityView {
+  readonly group = new THREE.Group();
+
+  /** A district's pieces put up (the last one's taken down). */
+  set(plan: CityPlan, district: District) {
+    this.clear();
+    const parts: Part[] = [];
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      const kind = district.deco[i];
+      if (!kind || kind === DECO.PART) continue;
+      const x = (i % MAP_W) + 0.5;
+      const z = Math.floor(i / MAP_W) + 0.5;
+      const h = mix32(plan.seed ^ Math.imul(i + 1 + district.index * 4096, 0x9e3779b1));
+      // (Long things lie along z as built: turned a quarter for a street running along x.)
+      const along = district.turn[i] ? 0 : Math.PI / 2;
+      const any = ((h >> 8) & 255) / 40;
+      switch (kind) {
+        case DECO.CAR:
+          put(parts, car(PAINTS[h % PAINTS.length], false, (h >> 4) & 7), x, z, along);
+          break;
+        case DECO.WRECK:
+          put(parts, car(0, true, (h >> 4) & 3), x, z, along);
+          break;
+        case DECO.BUS:
+          put(parts, bus(), x, z, along);
+          break;
+        case DECO.RUBBLE:
+          put(parts, rubble(h), x, z);
+          break;
+        case DECO.SANDBAGS:
+          put(parts, sandbags(), x, z, along + Math.PI / 2);
+          break;
+        case DECO.TREE:
+          put(parts, tree(h, false), x, z, any);
+          break;
+        case DECO.DEAD_TREE:
+          put(parts, tree(h, true), x, z, any);
+          break;
+        case DECO.BUSH:
+          put(parts, bush(h), x, z, any);
+          break;
+        case DECO.CRATES:
+          put(parts, crates(h), x, z, (h & 3) * (Math.PI / 2));
+          break;
+        case DECO.DUMPSTER:
+          put(parts, dumpster(), x, z, along);
+          break;
+        case DECO.BARREL:
+          put(parts, barrel(), x, z);
+          break;
+        case DECO.TYRES:
+          put(parts, tyres(), x, z);
+          break;
+        case DECO.CONE:
+          put(parts, cone(), x, z);
+          break;
+      }
+    }
+    beyond(
+      plan,
+      district.index,
+      parts,
+      district.gates.map((g) => ({
+        side: g.side,
+        at: g.side === SIDE.N || g.side === SIDE.S ? (g.tiles[0] % W) + 1 : Math.floor(g.tiles[0] / W) + 1,
+      })),
+    );
+    // Each street that crosses a border runs on past it, between the roofs.
+    for (const g of district.gates) {
+      const along = ((g.tiles[0] % W) + (g.tiles[1] % W)) / 2 + 0.5;
+      const down = (Math.floor(g.tiles[0] / W) + Math.floor(g.tiles[1] / W)) / 2 + 0.5;
+      const far = 14;
+      if (g.side === SIDE.N) parts.push(box(ROAD_W, 0.012, far, ROAD, along, 0, -far / 2));
+      else if (g.side === SIDE.S) parts.push(box(ROAD_W, 0.012, far, ROAD, along, 0, H + far / 2));
+      else if (g.side === SIDE.W) parts.push(box(far, 0.012, ROAD_W, ROAD, -far / 2, 0, down));
+      else parts.push(box(far, 0.012, ROAD_W, ROAD, W + far / 2, 0, down));
+    }
+    if (!parts.length) return;
+    const mesh = new THREE.Mesh(merge(parts), kitMaterial);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    this.group.add(mesh);
+  }
+
+  clear() {
+    disposeTree(this.group, () => false, new Set([kitMaterial]));
+    this.group.clear();
+  }
+}

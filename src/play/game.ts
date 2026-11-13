@@ -60,7 +60,28 @@ export interface DailyRun {
  * stepped, `last` the previous frame's time. Fields of one object rather than module `let`s,
  * because every play module reads them and several replace them (an import can't be reassigned).
  */
-export const play: { game: Game | null; acc: number; last: number } = { game: null, acc: 0, last: performance.now() };
+export const play: { game: Game | null; acc: number; last: number; side: SideRun | null } = {
+  game: null,
+  acc: 0,
+  last: performance.now(),
+  side: null,
+};
+
+/**
+ * A mode of its own on screen in place of a game (City Escape, 2.46): it steps and draws itself and
+ * takes the keys and taps; no `game` is in progress meanwhile. What the loop, the keys and the pad
+ * need of it, so that none of them knows the mode.
+ */
+export interface SideRun {
+  /** One animation frame: its steps, its picture. */
+  frame(dt: number, now: number): void;
+  /** A key down, as the action it's bound to (input/bindings.ts). */
+  key(code: string, e: KeyboardEvent): void;
+  /** A tap on the ground. */
+  tap(cx: number, cy: number): void;
+  /** Stopped under a screen (the pause, the map): the controls aren't its own. */
+  readonly paused: boolean;
+}
 
 /** Queues a one-step operation (sent with the next simulation step). */
 export function sendOp(op: number, a = 0, b = 0, c = 0) {
