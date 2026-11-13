@@ -73,5 +73,3 @@ foundations, is built (v2.46.0). Open, in order, each a release behind `?city`:
   stall about 80 ms once each (the shower water, a night mesh, a holiday piece's shadow, the team view).
   Drawing them at load would change pixels; warming their materials on a hidden mesh would not.
   `scripts/dev/hitchprobe.ts` now counts these (`waited`).
-- **`released.sh` when the API is rate-limited** (found 2026-11-13): it reads "no deploy for this push" while
-  the tests are still running (the deploy job doesn't exist yet). It should wait for the tests first.
