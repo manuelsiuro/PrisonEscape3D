@@ -10,7 +10,7 @@ import { emptyFrame, type Frame } from '../../render/viewFrame';
 import { Autopilot } from '../../sim/ai/autopilot';
 import { command, headingAngle } from '../../sim/command';
 import { hhmm } from '../../sim/systems/clock';
-import { STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
+import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
 import { MAP_W } from '../../sim/world/World';
 import { h } from '../../ui/dom';
 import { hideLoading } from '../../ui/loading';
@@ -33,8 +33,10 @@ import { PEOPLE } from '../content/people';
 import { NOTES } from '../content/story';
 import { recordRun, type Feat } from '../record';
 import { MODE } from '../sim/City';
-import { THINGS } from '../content/story';
-import { marks, objectives, type Objective } from '../sim/story';
+import { STORY, THINGS } from '../content/story';
+import { gatesOpen, marks, objectives, type Objective } from '../sim/story';
+import { landmarkPlan } from '../render/landmarkPlan';
+import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
 
 /**
@@ -148,7 +150,16 @@ function stage(r: CityRun, first = false) {
   view.setWorld(c.world, null);
   view.setCast(0);
   view.setGuards([], []);
-  cityView.set(c.plan, c.district);
+  cityView.set(
+    c.plan,
+    c.district,
+    landmarkPlan(
+      c.district,
+      c.story,
+      c.grid,
+      c.people.map((q) => q.tile),
+    ),
+  );
   // (The survivors face the nearest street door of their building: whoever comes in.)
   cityView.setPeople(c.people, (tile) => {
     const lot = c.district.lots[c.district.lotAt[tile] - 1];
@@ -402,6 +413,7 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
   view.draw(f, dt, now / 1000);
   cityView.facePeople(f.x, f.z);
+  cityView.drawLandmark(landmarkOf(r, now / 1000));
   cityHud.update(hudOf(r));
   pockets.update(pocketsOf(r));
   sleepVeil.classList.toggle('on', c.state.sleeping);
@@ -749,6 +761,32 @@ function pocketsOf(r: CityRun): PocketsState {
 let goalAt = -1;
 let marksShown = '';
 const goalNow = { text: '', marks: [] as number[], key: '' };
+/** The helicopter is seen (and heard) coming in over the last game minutes of the hold. */
+const HELI_IN = 14;
+let heliHeard = -1;
+/** What the story has done to this district's landmark (2.50): the beacon lit, the helicopter near, the boat fitted out, the grille open. */
+function landmarkOf(r: CityRun, time: number): LandmarkFrame {
+  const c = r.city;
+  const s = c.state;
+  // (Left by helicopter: it stays over the pad, its beacon lit, behind the last card.)
+  const gone = s.won === 1;
+  const here = gone || (s.ready === 1 && !s.over && s.district === c.story.wayDistrict[s.way - 1]);
+  const held = (s.step - s.readyAt) / STEPS_PER_MINUTE;
+  const heli = gone ? 1 : here && s.way === 1 ? Math.max(0, Math.min(1, (held - (STORY.heliHold - HELI_IN)) / (HELI_IN - 2))) : 0;
+  if (heli > 0 && heliHeard !== s.readyAt) {
+    heliHeard = s.readyAt;
+    sound.rotor();
+  }
+  return {
+    time,
+    still: r.paused || settings.reducedMotion,
+    beacon: here && s.way === 1,
+    heli,
+    boat: s.ready === 1 && s.way === 2,
+    open: gatesOpen(c),
+  };
+}
+
 function goalOf(r: CityRun) {
   const c = r.city;
   const minute = Math.floor(c.state.step / STEPS_PER_SECOND);
