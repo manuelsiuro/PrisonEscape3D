@@ -176,7 +176,7 @@ const toMinute = (c: City, minute: number) => {
   const fight = (weapon: string | null) => {
     const [c, run] = street(4);
     toMinute(c, 12 * 60);
-    if (weapon) c.state.inv[0] = [cityItemNumber(weapon), 1];
+    if (weapon) c.state.inv[0] = [cityItemNumber(weapon), 40];
     c.state.zeds = [zedAt(run[1], ZED.CHASE), zedAt(run[7])];
     c.state.zeds[0].seen = c.state.step;
     c.state.player.facing = EAST;

@@ -22,11 +22,12 @@ import { CityView, type DeadFrame } from '../render/CityView';
 import { nightAt, ZED, type Zed } from '../sim/dead';
 import { cityItem } from '../content/items';
 import { SEARCH_STEPS } from '../content/loot';
+import { CITY_RECIPES } from '../content/recipes';
 import { deleteCitySave, writeCitySave } from '../save';
-import { COP, FULL, type City, type CityEvent } from '../sim/City';
+import { BAR_STEPS, COP, FULL, type City, type CityEvent } from '../sim/City';
 import { CityHud, type CityHudState } from '../ui/hud';
 import { paintDistrict } from '../ui/mapPaint';
-import { CityPockets, type PocketsState } from '../ui/pockets';
+import { CityPockets, itemName, type PocketsState } from '../ui/pockets';
 import { showCityIntro, showCityMap, showCityOver } from '../ui/screens';
 
 /**
@@ -137,6 +138,7 @@ function stage(r: CityRun, first = false) {
   r.prev.x = p.x;
   r.prev.z = p.z;
   picture = null;
+  barsShown = -1;
   sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
 }
 
@@ -245,14 +247,15 @@ function hit() {
 function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
   // Escape shuts a thing's card, then the open box, and only then pauses.
   if (code === 'Escape') {
-    if (pockets.open) pockets.pick(-1);
+    if (pockets.open) pockets.shut();
     else if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
     else void pauseCity();
   } else if (code === 'KeyE' || (code === 'Enter' && !(document.activeElement instanceof HTMLButtonElement))) act();
   else if (code === 'Space' || code === 'KeyF') {
     e.preventDefault();
     hit();
-  } else if (/^Digit[1-8]$/.test(e.code)) {
+  } else if (code === 'KeyC') pockets.toggleMake();
+  else if (/^Digit[1-8]$/.test(e.code)) {
     const k = Number(e.code.slice(5)) - 1;
     if (r.city.state.inv[k]?.[0]) pockets.pick(k);
   } else if (code === 'KeyM') {
@@ -315,6 +318,10 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   const a = r.paused ? 1 : play.acc * STEPS_PER_SECOND;
   const f = frameOf(r, a);
+  if (barsShown !== c.barsRev) {
+    barsShown = c.barsRev;
+    cityView.setBars(c.bars, c.district);
+  }
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
   view.draw(f, dt, now / 1000);
   cityHud.update(hudOf(r));
@@ -395,6 +402,28 @@ function cityEvent(r: CityRun, e: CityEvent) {
       );
       sound.setScene(e.on ? 'outdoorNight' : 'outdoorDay');
       break;
+    case 'made':
+      sound.stow(false);
+      banner.toast(t('city.toast.made', { what: itemName(e.item) }), 'good', 2200);
+      break;
+    case 'cantMake':
+      banner.toast(t(`city.toast.cant.${e.why}` as Key), 'info', 2400);
+      break;
+    case 'broke':
+      sound.dud();
+      banner.toast(t('city.toast.broke', { what: itemName(e.item) }), 'bad', 3000);
+      break;
+    case 'barring':
+      sound.scuffle();
+      break;
+    case 'barred':
+      sound.stow(false);
+      if (e.on && e.shelter) {
+        banner.show(t('city.shelter.title'), t('city.shelter.sub'), 'routine', 5200);
+        sound.chime();
+      } else banner.toast(t(e.on ? 'city.toast.barred' : 'city.toast.unbarred'), 'good', 2400);
+      save(r);
+      break;
     case 'dead':
       r.ops.length = 0;
       r.pilot.stop();
@@ -462,7 +491,7 @@ function frameOf(r: CityRun, a: number): Frame {
   // What the action button would use, framed on the floor; what lies on the ground.
   const tg = c.state.sleeping ? null : c.target();
   if (tg) {
-    const tiles = tg.kind === 'pile' ? [tg.tile] : c.tilesOf(Number(tg.key));
+    const tiles = tg.kind === 'pile' || tg.kind === 'door' ? [tg.tile] : c.tilesOf(Number(tg.key));
     focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
     focus.x1 = Math.max(...tiles.map((i) => i % MAP_W));
     focus.z0 = Math.min(...tiles.map((i) => Math.floor(i / MAP_W)));
@@ -483,6 +512,8 @@ function frameOf(r: CityRun, a: number): Frame {
   return f;
 }
 const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
+/** The barred doors the view last put its boards on (`City.barsRev`). */
+let barsShown = -1;
 
 /** Where each of the dead was before the last step, and what the view is handed of them. */
 const was = new WeakMap<Zed, { x: number; z: number }>();
@@ -507,6 +538,7 @@ let piles: Array<{ x: number; z: number; item: number }> = [];
 const pilesFor = { key: '?' };
 
 const pocketsState = {} as PocketsState;
+const NO_RECIPES: PocketsState['recipes'] = [];
 function pocketsOf(r: CityRun): PocketsState {
   const c = r.city;
   const s = c.state;
@@ -519,8 +551,11 @@ function pocketsOf(r: CityRun): PocketsState {
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
   st.searched = !!tg && c.searched(tg.key);
-  st.searching = s.search ? 1 - s.searchLeft / SEARCH_STEPS : 0;
+  st.searching = s.search ? 1 - s.searchLeft / (s.search.startsWith('d') ? BAR_STEPS : SEARCH_STEPS) : 0;
   st.asleep = s.sleeping;
+  st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
+  // (What each recipe lacks: looked at only while the panel is up.)
+  st.recipes = pockets.makeOpen ? CITY_RECIPES.map((_, k) => c.canMake(k)) : NO_RECIPES;
   return st;
 }
 
@@ -536,7 +571,7 @@ function hudOf(r: CityRun): CityHudState {
   const st = hudState;
   st.name = c.plan.names[d];
   st.kind = t(`city.kind.${c.plan.kinds[d]}` as Key);
-  st.place = lot ? t(`city.use.${c.district.lots[lot - 1].use}` as Key) : '';
+  st.place = lot ? (c.shelter(lot - 1) ? t('city.shelter.place') : t(`city.use.${c.district.lots[lot - 1].use}` as Key)) : '';
   st.day = c.day;
   st.time = hhmm(c.minute);
   st.night = nightAt(c.minute);

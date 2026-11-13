@@ -145,7 +145,7 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       <h2>${icon('map', 20)}${t('city.map.title')}</h2>
       <div class="city-map-body">
         <div class="city-map-pic"><canvas width="${size}" height="${size}" role="img" aria-label="${t('city.map.title')}"></canvas><ol class="city-map-names" aria-hidden="true">${names}</ol></div>
-        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
+        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
       </div>
       <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.map.close')}</button></div>
     </div>`,
@@ -171,6 +171,23 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
             else c.fillRect(ox + at, oz + MAP_H, ROAD_W, GAP);
           }
         }
+      }
+      // Home (the last bed slept in): a small house.
+      const [hd, ht] = city.state.home;
+      if (city.state.step > 0 && ((city.state.visited >> hd) & 1) === 1) {
+        const hx = GAP + (hd % CITY_W) * (MAP_W + GAP) + (ht % MAP_W) + 0.5;
+        const hz = GAP + Math.floor(hd / CITY_W) * (MAP_H + GAP) + Math.floor(ht / MAP_W) + 0.5;
+        c.fillStyle = '#6ff0a8';
+        c.beginPath();
+        c.moveTo(hx, hz - 4);
+        c.lineTo(hx + 4, hz);
+        c.lineTo(hx + 3, hz);
+        c.lineTo(hx + 3, hz + 3.5);
+        c.lineTo(hx - 3, hz + 3.5);
+        c.lineTo(hx - 3, hz);
+        c.lineTo(hx - 4, hz);
+        c.closePath();
+        c.fill();
       }
       // The player: a ring round a dot, in their district.
       const d = city.state.district;

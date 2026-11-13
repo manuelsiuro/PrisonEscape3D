@@ -135,8 +135,24 @@ In three slices, each a release.
   fights what comes in reach and never hides, falls 1.3 times a week on 10 cities; an independent
   review's nine findings fixed, each with its check.
 
-**C2c. Shelters and making:** claiming a building (barring its doors, light, a stash), the
-workbench and the city's recipes, cooking, the torch.
+**C2c. Shelters and making (v2.47.0, with C2a and C2b): built.**
+- **Making** (`content/recipes.ts`, `COP.MAKE`): eight recipes, all known from the start, made from
+  the pockets (C, or the pockets' Make button): a bandage, boards, the nailed bat; at a workbench
+  beside the player, the pipe spear, a knife and the camp stove; with a stove carried, cooked fish and
+  stew. Refused without the parts, the bench or the stove; what doesn't fit the pockets lies underfoot.
+- **Wear:** a weapon's count in its pocket is the blows left in it (a bat 40, a knife 30, the nailed
+  bat 50, the spear 35): one fewer each time it lands, broken at none; found, it has half to all.
+- **Barring doors:** with boards in the pockets (or at a barred door), the action at a building's
+  street door bars it or takes the boards down, two seconds' work heard as a blow is. The player
+  walks through their own barred door; the dead don't (`City.zedGrid`), and none are put down inside.
+- **A shelter** is a building whose every street door is barred: said when the last one goes up,
+  shown as the place in the HUD. Home is still the last bed slept in, marked on the city's map.
+- **On screen:** the Make panel (each recipe, what it takes, what's short ringed, what it needs
+  beside), a weapon's bar in its pocket, boards across barred doors, Bar and Unbar on the button.
+- **Proved:** `citymaketest`: every recipe; wear; a door barred and opened; a first night asleep in a
+  house on 12 cities, bitten in none with its doors barred, woken by a bite in 3 with them open.
+- **Left for later:** light and fire (a torch, a fire barrel, a generator), a stash's own screen,
+  cars searched, the weapons thrown or shot.
 
 ### C3. The story and the ways out
 
@@ -156,6 +172,7 @@ everyone.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
+| C2c | 2.47.0 | `citymaketest` | `citysurvivetest` (weapons wear: 1.8 falls a week), `cityzedtest`, `citytest` (the state's fingerprints), `i18ntest`, `tokentest`, `docstest` counts | desktop: the Make panel, boards made twice, a house's door barred, the shelter said and shown, the boards on the door |
 | C2b | 2.47.0 | `cityzedtest` | `citysurvivetest` (the week with the dead about), `i18ntest`, `tokentest`, `docstest` counts | desktop: one of the dead indoors unseen through its wall, seen and chasing, put down with fists, nightfall's banner, their eyes and the player's light at night |
 | C2a | 2.47.0 | `citysurvivetest` (`citybots.ts`) | `citytest` (the state's fingerprints: its new fields), `i18ntest`, `docstest` counts | desktop: a new city, searches, Take all, a thing's card, eating, a bed refused by day, sleep and waking, a Survivor's fall; 412×915 and 915×412: the pockets, the box, the card |
 | C1 | 2.46.0 | `citygentest`, `citytest` | `docstest` counts, `tokentest` (a stylesheet), `i18ntest` (keys) | desktop, 412×915, 915×412: new city, the Intake, the story card, walking, three checkpoints, the map, Continue |

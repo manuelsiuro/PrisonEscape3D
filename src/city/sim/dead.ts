@@ -90,6 +90,9 @@ function put(c: City, from: readonly number[], mode: number): boolean {
   for (let tries = 0; tries < 12; tries++) {
     const tile = from[randomInt(c.state, from.length)];
     if (!farEnough(c, tile)) continue;
+    // (Never inside a shelter: its doors are barred against them.)
+    const lot = c.district.lotAt[tile] - 1;
+    if (lot >= 0 && c.shelter(lot)) continue;
     c.state.zeds.push({
       body: bodyAt(tile % MAP_W, Math.floor(tile / MAP_W), 1 + randomInt(c.state, 16)),
       hp: DEAD.health,
@@ -167,7 +170,7 @@ export function strike(c: City) {
   z.last = c.tile;
   // Pushed back along the blow, as far as there's room.
   const dir = nearestDir(z.body.x - p.x, z.body.z - p.z);
-  walk(c.world, z.body, dir, DEAD.shove);
+  walk(c.zedWorld, z.body, dir, DEAD.shove);
   z.body.facing = nearestDir(p.x - z.body.x, p.z - z.body.z);
   const dead = z.hp <= 0;
   if (dead) {
@@ -175,6 +178,7 @@ export function strike(c: City) {
     s.kills++;
   }
   c.events.push({ type: 'swing', hit: true, dead, x: z.body.x, z: z.body.z });
+  c.wearWeapon();
 }
 
 /** One step of the dead: the night's come and the day's go, each one looks, walks and bites. */
@@ -254,7 +258,7 @@ export function stepDead(c: City) {
         // Straight at them in the open, else the way round (looked for now and then).
         if (z.goal !== here || (!z.path.length && (s.step + k) % 12 === 0)) {
           z.goal = here;
-          z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, c.world.npcBlock) ?? [];
+          z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, c.zedGrid) ?? [];
         }
       }
     }
@@ -262,10 +266,10 @@ export function stepDead(c: City) {
       speed = DEAD.chase - 20;
       if (z.goal === -2) {
         // (To ground: the nearest floor indoors.)
-        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => c.zedIndoor[i] === 1, -1, 2500, undefined, c.world.npcBlock) ?? [];
+        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => c.zedIndoor[i] === 1, -1, 2500, undefined, c.zedGrid) ?? [];
         z.goal = z.path.length ? z.path[z.path.length - 1] : -1;
       } else if (z.goal >= 0 && !z.path.length && tileAt(b.x, b.z) !== z.goal) {
-        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === z.goal, z.goal, 900, undefined, c.world.npcBlock) ?? [];
+        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === z.goal, z.goal, 900, undefined, c.zedGrid) ?? [];
         if (!z.path.length) z.goal = -1;
       }
       if (z.goal < 0 || tileAt(b.x, b.z) === z.goal) {
@@ -283,7 +287,7 @@ export function stepDead(c: City) {
         Math.abs((to % MAP_W) - (tileAt(b.x, b.z) % MAP_W)) + Math.abs(Math.floor(to / MAP_W) - Math.floor(tileAt(b.x, b.z) / MAP_W)) <
           (night ? 24 : 6)
       )
-        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === to, to, 700, undefined, c.world.npcBlock) ?? [];
+        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === to, to, 700, undefined, c.zedGrid) ?? [];
     }
     if (z.mode === ZED.IDLE || !z.path.length) {
       b.moving = false;
@@ -299,7 +303,7 @@ export function stepDead(c: City) {
     }
     const bx = b.x;
     const bz = b.z;
-    walk(c.world, b, nearestDir(wx, wz), Math.trunc((speed * z.pace) / 1000));
+    walk(c.zedWorld, b, nearestDir(wx, wz), Math.trunc((speed * z.pace) / 1000));
     // (Bodies don't pass through each other: a step into the player isn't taken, nor one of a pack's into another of it.)
     const pd = (p.x - b.x) ** 2 + (p.z - b.z) ** 2;
     if (
