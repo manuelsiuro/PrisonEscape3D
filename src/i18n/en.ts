@@ -5782,6 +5782,7 @@ export const en = {
   "city.item.stove": "Camp stove",
   "city.item.cooked_fish": "Cooked fish",
   "city.item.stew": "Stew",
+  "city.toast.doorway": "Something is in the doorway.",
 };
 
 export type Strings = typeof en;

@@ -137,8 +137,10 @@ export function strike(c: City) {
   const s = c.state;
   if (s.step - s.swung < BLOW.every || s.sleeping) return;
   s.swung = s.step;
-  const weapon = s.inv.reduce((best, st) => Math.max(best, cityItem(st[0])?.attack ?? 0), 0);
-  const long = s.inv.reduce((best, st) => Math.max(best, cityItem(st[0])?.attack ? (cityItem(st[0])!.reach ?? 0) : 0), 0);
+  // (One weapon strikes: its blow, its reach, its wear.)
+  const held = cityItem(c.weapon()?.[0] ?? 0);
+  const weapon = held?.attack ?? 0;
+  const long = held?.reach ?? 0;
   const tired = s.energy <= 0;
   s.energy = Math.max(0, s.energy - BLOW.energy);
   const harm = Math.ceil((BLOW.fists + weapon * 2) / (tired ? 2 : 1));

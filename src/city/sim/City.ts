@@ -5,7 +5,7 @@ import { bodyAt, walk, type Body } from '../../sim/systems/movement';
 import { STEPS_PER_MINUTE, UNIT, WALK_SPEED } from '../../sim/tuning';
 import { tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W, type World } from '../../sim/world/World';
-import { generateDistrict, type District, type Gate } from '../gen/district';
+import { decoVeils, generateDistrict, type District, type Gate } from '../gen/district';
 import { CITY_N, cityPlan, OPPOSITE, SIDE, type CityPlan } from '../gen/plan';
 import { cityItem, cityItemNumber } from '../content/items';
 import { BOX_SLOTS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED } from '../content/loot';
@@ -151,7 +151,7 @@ export type CityEvent =
   | { type: 'barred'; on: boolean; tile: number; shelter: boolean }
   | { type: 'dusk'; soon: number }
   | { type: 'night'; on: boolean }
-  | { type: 'refused'; why: 'notTired' | 'tooHungry' | 'notHungry' | 'noNeed' | 'noUse' }
+  | { type: 'refused'; why: 'notTired' | 'tooHungry' | 'notHungry' | 'noNeed' | 'noUse' | 'doorway' }
   /** Hunger bites (once each time it reaches nothing). */
   | { type: 'starving' }
   /** Fallen: `final` in Hardcore (the city is lost); a Survivor wakes at home (`moved`: in another district). */
@@ -249,8 +249,27 @@ export class City {
   }
   private refreshBars() {
     this.zedGrid.set(this.world.npcBlock);
-    for (const i of this.bars) this.zedGrid[i] = 1;
+    // (Boards stop sight as well as the dead: what stands on the streets veils as it did, and each barred door too.)
+    for (let i = 0; i < N; i++) this.world.veil[i] = decoVeils(this.district.deco[i]) ? 1 : 0;
+    for (const i of this.bars) this.zedGrid[i] = this.world.veil[i] = 1;
     this.barsRev++;
+  }
+  /** After a load: only street doors stay barred, each once; `old`: a save from before wear, its weapons given their blows. */
+  soundBars(old: boolean) {
+    const s = this.state;
+    const sound: Record<string, number[]> = {};
+    for (const [d, list] of Object.entries(s.bars)) {
+      if (!/^[0-8]$/.test(d) || !Array.isArray(list)) continue;
+      const doors = new Set(this.districtOf(Number(d)).lots.flatMap((l) => l.doors));
+      const kept = [...new Set(list)].filter((i) => doors.has(i));
+      if (kept.length) sound[d] = kept;
+    }
+    s.bars = sound;
+    if (!old) return;
+    for (const st of [...s.inv, ...Object.values(s.boxes).flat()]) {
+      const wear = cityItem(st[0])?.wear;
+      if (wear !== undefined) st[1] = wear;
+    }
   }
   /** After a load: the barred doors as the save has them. */
   rebar() {
@@ -315,16 +334,19 @@ export class City {
       s.player.z = pz;
     }
     // A first search takes a moment, standing still; walking off leaves it.
+    let ended = false;
     if (s.search) {
       if (dir || this.target()?.key !== s.search) s.search = '';
       else if (--s.searchLeft <= 0) {
         const key = s.search;
         s.search = '';
+        ended = true;
         if (key.startsWith('d')) this.bar(Number(key.slice(1)));
         else this.openBox(key, true);
       }
     }
-    this.act(opOf(cmd), argA(cmd));
+    // (A press on the very step the work ends was a press at the work: it doesn't begin the opposite, or shut the box just opened.)
+    if (!(ended && opOf(cmd) === COP.ACT)) this.act(opOf(cmd), argA(cmd));
     // (A district just entered: its dead are put down once the player stands in it. In the state: a save made at a crossing loads to the same.)
     if (s.arrive) {
       s.arrive = 0;
@@ -501,7 +523,7 @@ export class City {
       const same = wear === undefined ? out.find((st) => st[0] === item && st[1] < (cityItem(item)?.stack ?? 1)) : undefined;
       if (same) same[1]++;
       // (A weapon found has been used: between half and all of its blows left.)
-      else out.push([item, wear === undefined ? 1 : Math.ceil(wear / 2) + Math.floor((rnd() * wear) / 2)]);
+      else out.push([item, wear === undefined ? 1 : Math.ceil(wear / 2) + Math.floor(rnd() * (Math.floor(wear / 2) + 1))]);
     }
     return out;
   }
@@ -651,7 +673,9 @@ export class City {
   /** That many of an item out of the pockets. */
   private spend(item: number, n: number) {
     const each = cityItem(item)?.wear !== undefined;
-    for (const st of this.state.inv) {
+    // (Of several weapons alike, the most worn goes first.)
+    const stacks = each ? [...this.state.inv].sort((a, b) => a[1] - b[1]) : this.state.inv;
+    for (const st of stacks) {
       if (!n) break;
       if (st[0] !== item) continue;
       const take = each ? 1 : Math.min(n, st[1]);
@@ -700,6 +724,8 @@ export class City {
       if (this.put(s.inv, POCKETS, BOARDS, 1)) this.put(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, BOARDS, 1);
     } else {
       if (!this.count(BOARDS)) return;
+      // (One of the dead in the doorway: nothing to nail across.)
+      if (s.zeds.some((z) => tileAt(z.body.x, z.body.z) === tile)) return void this.events.push({ type: 'refused', why: 'doorway' });
       this.spend(BOARDS, 1);
       list.push(tile);
     }
@@ -714,9 +740,19 @@ export class City {
   }
 
   /** The player's weapon took a blow: the best in the pockets (the one that strikes) loses one, and breaks at none. */
-  wearWeapon() {
+  /** The weapon that strikes: the strongest in the pockets (of two as strong, the one with the longer reach, then the first); null: fists. */
+  weapon(): Stack | null {
     let best: Stack | null = null;
-    for (const st of this.state.inv) if ((cityItem(st[0])?.attack ?? 0) > (best ? (cityItem(best[0])?.attack ?? 0) : 0)) best = st;
+    for (const st of this.state.inv) {
+      const d = cityItem(st[0]);
+      if (!d?.attack) continue;
+      const b = best ? cityItem(best[0])! : null;
+      if (!b || d.attack > b.attack! || (d.attack === b.attack && (d.reach ?? 0) > (b.reach ?? 0))) best = st;
+    }
+    return best;
+  }
+  wearWeapon() {
+    const best = this.weapon();
     if (!best || cityItem(best[0])?.wear === undefined) return;
     if (--best[1] > 0) return;
     this.events.push({ type: 'broke', item: best[0] });
@@ -877,6 +913,9 @@ export function loadCity(snap: unknown): City | null {
     )
       return null;
   }
+  // (C2c's barred doors: a record of lists by district, or none; a save from before them: its weapons counted one each, given their blows.)
+  const before = st.bars === undefined;
+  if (typeof st.bars !== 'object' || !st.bars || Array.isArray(st.bars)) st.bars = {};
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)
@@ -885,16 +924,7 @@ export function loadCity(snap: unknown): City | null {
       city.state.home = [city.plan.start, sp.z * MAP_W + sp.x];
     }
     // (The dead as the save had them, if it's sound; else the district's put down afresh.)
-    // (C2c's barred doors: sound, or none.)
-    const bars = city.state.bars;
-    if (
-      typeof bars !== 'object' ||
-      !bars ||
-      !Object.entries(bars).every(
-        ([d, l]) => /^[0-8]$/.test(d) && Array.isArray(l) && l.length <= 64 && l.every((i) => Number.isInteger(i) && i >= 0 && i < N),
-      )
-    )
-      city.state.bars = {};
+    city.soundBars(before);
     city.rebar();
     if (!zedsOk(st.zeds) || ![st.rng, st.kills, st.swung, st.arrive].every(Number.isInteger)) {
       city.state.zeds = [];

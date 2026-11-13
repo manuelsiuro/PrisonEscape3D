@@ -5780,4 +5780,5 @@ export const fr: Partial<Strings> = {
   "city.item.stove": "Réchaud",
   "city.item.cooked_fish": "Poisson cuit",
   "city.item.stew": "Ragoût",
+  "city.toast.doorway": "Quelque chose se tient dans l’embrasure.",
 };
