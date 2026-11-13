@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ITEMS } from '../content/items';
+import { ITEMS, type ItemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
 import { kitMaterial } from './kit';
 
@@ -56,10 +56,9 @@ function closeStudio() {
 const center = new THREE.Vector3();
 const size = new THREE.Vector3();
 
-/** Photographs the next item. */
-function shootNext() {
+/** An item's photograph (its model by its shape and colours), as a data URL. */
+function shoot(d: ItemDef): string {
   const s = openStudio();
-  const d = ITEMS[icons.length - 1];
   const g = itemGeometry(d);
   s.mesh.geometry = g;
   // Centered and scaled to fill the frame, turned a little so long items read as diagonals.
@@ -69,8 +68,24 @@ function shootNext() {
   s.holder.scale.setScalar(0.56 / Math.max(size.x * 0.9, size.z, size.y * 1.4, 0.24));
   s.holder.rotation.y = size.x > size.z * 1.6 ? -0.6 : -0.25;
   s.renderer.render(s.scene, s.camera);
-  icons.push(s.canvas.toDataURL('image/png'));
+  return s.canvas.toDataURL('image/png');
+}
+
+/** Photographs the next item. */
+function shootNext() {
+  icons.push(shoot(ITEMS[icons.length - 1]));
   if (icons.length > ITEMS.length) closeStudio();
+}
+
+/**
+ * Photographs of things that aren't the prisons' items (2.47: City Escape's own list), by the same
+ * studio: each needs only an id of its own (the models are kept by id), a shape and its colours.
+ */
+export function photos(list: ReadonlyArray<Pick<ItemDef, 'id' | 'shape' | 'color' | 'accent'>>): string[] {
+  const out = list.map((d) => shoot(d as ItemDef));
+  // (The prisons' own still to take: the studio stays open for them.)
+  if (icons.length > ITEMS.length) closeStudio();
+  return out;
 }
 
 /**

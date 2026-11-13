@@ -101,6 +101,24 @@ export async function showCityIntro(click: () => void): Promise<void> {
   click();
 }
 
+/** Hardcore: the city is lost. */
+export async function showCityOver(day: number, where: string, click: () => void): Promise<void> {
+  await modal<'back'>(
+    `<div class="card city-intro city-over">
+      <h2>${t('city.over.title')}</h2>
+      <p class="city-over-line"></p>
+      <p>${t('city.over.text')}</p>
+      <div class="actions"><button class="big-btn primary" data-c="back">${icon('home', 18)}${t('pause.quit')}</button></div>
+    </div>`,
+    'back',
+    '[data-c="back"]',
+    (el) => {
+      el.querySelector('.city-over-line')!.textContent = t('city.over.line', { n: day, where });
+    },
+  );
+  click();
+}
+
 /** A tile's size on the city's map (CSS pixels are the canvas's own: it's scaled to fit). */
 const GAP = 4;
 
