@@ -60,7 +60,8 @@ pocket, `KeyJ` the journal, `Escape`). Headless, a city is driven as the tests d
 `city.peace = true` for no dead, and `scripts/citybots.ts`'s `scavenger(city)` for a player made of commands (`quester(city, way)` follows
 the story to a way out). The story's places are `city.story` (`things`, `notes`, `exits`, `pier`), what it asks
 now `objectives(city)` (`city/sim/story.ts`); the survivors are `city.story.people` (`COP.ACT` beside one, `COP.TRADE` with `who * 4 + swap`); a test puts the player in another district with the private
-`city.enter(d)` and a new `state.player` (in the browser, `window.__cityStage()` then puts the district up: how the
-help's nine city pictures were staged, taken at 1040 × 480 with the HUD hidden and converted with `cwebp -resize 1040 480`).
+`city.enter(d)` and a new `state.player` (in the browser, `window.__cityStage()` then puts the district up). The help's nine city pictures are staged by
+`scripts/dev/cityshot.ts` (`stage('cityDead')` in a city open at 1040 × 480, the page's screenshot, then
+`cwebp -q 80 -resize 1040 480`).
 A page that falls to the background pauses the city (as the prisons do): a script that finds `.paused` true
 with no pause card should look for another screen up (the map).

@@ -433,6 +433,10 @@ HELP.city = [
         see: ['cityStory', 'cityPeople', 'cityShelter'],
       }),
       T('cityPeople', 'users', '#6fd0c4', { pic: true, listIcons: ['key', 'heart', 'wrench', 'tree'], see: ['cityWays', 'cityMake'] }),
+      T('cityKeys', 'keyboard', '#8a94a6', {
+        listIcons: ['hand', 'fist', 'hammer', 'book', 'box', 'gamepad'],
+        see: ['cityGoal', 'cityStory'],
+      }),
     ],
   },
 ];
