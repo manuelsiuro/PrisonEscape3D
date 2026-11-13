@@ -208,9 +208,9 @@ export class RunRecorder {
       // (Nor one from 2.36.0, before the initiation's tribute was put back once used up, 2.36.1; nor from 2.36, before the
       // roll call's squares were centred, 2.37; nor from before free time's gatherings, 2.39; nor from before the side
       // games' polish, 2.40; nor from before quiz night and the races' polish, 2.41; nor from before inmates used the
-      // kiosk, 2.42.)
-      // (Every one of those versions comes before 2.42.0, the latest gate: one test covers them all.)
-      const stale = before242(log?.game ?? '');
+      // kiosk, 2.42; nor from before the long games' polish, 2.43.)
+      // (Every one of those versions comes before 2.43.0, the latest gate: one test covers them all.)
+      const stale = before243(log?.game ?? '');
       const runs =
         log && log.prison === sim.prison.id && log.from + log.steps === from && !stale
           ? decodeRuns(fromBase64(log.data) ?? new Uint8Array())
@@ -365,6 +365,8 @@ const before240 = (game: string) => versionBefore(game, 2, 40);
 const before241 = (game: string) => versionBefore(game, 2, 41);
 /** Before the pay phone, the kiosk and the paperwork's polish (2.42.0): Sim.rules241 plays the kiosk as it was. */
 const before242 = (game: string) => versionBefore(game, 2, 42);
+/** Before the long games' polish (2.43.0): Sim.rules242 plays pruno, the garden and the rat's training as they were. */
+const before243 = (game: string) => versionBefore(game, 2, 43);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -452,6 +454,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (before241(log.game)) sim.rules240 = true;
   // Played before 2.42: nobody but the player used the kiosk.
   if (before242(log.game)) sim.rules241 = true;
+  // Played before 2.43: the long games as they were.
+  if (before243(log.game)) sim.rules242 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

@@ -56,6 +56,7 @@ import {
   runRace,
   trackOf,
   trackTiles,
+  ratGain,
   trackGain,
   type Entrant,
 } from '../src/sim/systems/races';
@@ -668,10 +669,13 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   check(refused() === 'hungry', 'with bait in the hotbar');
   s.items.inv[1] = slot(n('jerky'));
   g.use();
+  // (2.43: the laps a timing game, left to run with no press: the least it gives; longgamestest plays it.)
+  check(pet.fed === 1 && !s.items.inv[1] && !!s.ratRun?.length, 'the laps begun, fed today, the bait eaten');
+  for (let k = 0; k < 600 && s.ratRun?.length; k++) g.step();
   const trained = of(seen, 'track').find((e) => e.what === 'trained');
   check(
-    !!trained && pet.speed === RAT_START_SPEED + trackGain(RAT_START_SPEED) && pet.fed === 1 && !s.items.inv[1],
-    `trained: ${RAT_START_SPEED} → ${pet.speed}, fed today, the bait eaten`,
+    !!trained && pet.speed === RAT_START_SPEED + ratGain(RAT_START_SPEED, 0),
+    `trained: ${RAT_START_SPEED} → ${pet.speed} with no bait caught, fed today, the bait eaten`,
   );
   s.items.inv[1] = slot(n('potato'));
   g.use();

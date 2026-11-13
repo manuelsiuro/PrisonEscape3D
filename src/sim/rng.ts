@@ -89,6 +89,8 @@ export const SALT = {
   COOLER: 48,
   GANG_WAR: 49,
   HUDDLE: 50,
+  /** 2.43: the neighbours in the garden (who goes when, for how long, what he plants). */
+  GARDEN: 51,
 } as const;
 
 /** A number in [0, 2³²) for a draw of a kind (SALT) and its arguments: pure, never the same stream as another kind. */

@@ -200,3 +200,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Quiz night and the rat races polished (v2.41.0)
 - The pay phone, the kiosk and the paperwork polished (v2.42.0)
 - The docs trimmed for context (after v2.42.0)
+- The long games polished: pruno, the garden and the rats (v2.43.0, not released yet)

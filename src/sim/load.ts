@@ -18,8 +18,8 @@ import { BAR, CHIPS, CLAIM_MAX, HAND, STAKES } from '../content/games';
 import type { Cheat } from './systems/cards';
 import type { Shootout } from './systems/hoops';
 import type { Board } from './systems/checkers';
-import { bedCount } from './systems/garden';
-import { BETS, CROP, ODDS_MAX, ODDS_MIN, RAT_START_SPEED } from '../content/long';
+import { bedCount, gardenByOk, newGardenBy } from './systems/garden';
+import { BETS, CROP, ODDS_MAX, ODDS_MIN, RAT_LAP, RAT_LAPS, RAT_START_SPEED } from '../content/long';
 import type { Match } from './systems/football';
 import type { Ink } from './systems/tattoo';
 import type { Show } from './systems/talent';
@@ -33,6 +33,7 @@ import { newVend, vendOk } from './systems/vendState';
 import { coolerOk, menuOk, newCooler, newMenu } from './systems/menuState';
 import { huddlesOk, newHuddles } from './systems/huddles';
 import { kioskByOk, newKioskBy } from './systems/kiosk';
+import { RR } from './systems/races';
 import { WATCH_ALL } from './systems/spectate';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
@@ -86,7 +87,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
         k === 'huddle' ||
         k === 'watch' ||
         k === 'watchEnd' ||
-        k === 'kioskBy') &&
+        k === 'kioskBy' ||
+        k === 'gardenBy' ||
+        k === 'ratRun') &&
       st[k] !== undefined
     )
       (s as unknown as Record<string, unknown>)[k] = st[k];
@@ -525,6 +528,25 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (s.watchEnd !== undefined && (!Number.isInteger(s.watchEnd) || s.watchEnd < 0 || s.watchEnd > s.step)) s.watchEnd = 0;
   // 2.42: inmates at the kiosk, checked (else nobody on it, nobody drawn yet today).
   if (s.kioskBy !== undefined && !kioskByOk(s.kioskBy, s.inmates.length, s.step)) s.kioskBy = newKioskBy();
+  // 2.43: the neighbours in the garden, checked (else nobody at it, every bed nobody's); the rat's laps (else none running).
+  if (s.gardenBy !== undefined && !gardenByOk(s.gardenBy, bedCount(world), s.inmates.length, s.step))
+    s.gardenBy = newGardenBy(bedCount(world));
+  if (
+    s.ratRun !== undefined &&
+    !(
+      s.ratRun.length === 0 ||
+      (ints(s.ratRun, 5) &&
+        s.ratRun[RR.FROM] <= s.step + RAT_LAP &&
+        s.ratRun[RR.HITS] >= 0 &&
+        s.ratRun[RR.HITS] <= RAT_LAPS &&
+        s.ratRun[RR.LAST] >= -1 &&
+        s.ratRun[RR.LAST] < RAT_LAPS &&
+        s.ratRun[RR.SPEED] >= 0 &&
+        s.ratRun[RR.SPEED] <= 100 &&
+        s.ratRun[RR.BAIT] > 0)
+    )
+  )
+    s.ratRun = [];
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]])
     s.askTurn = [];

@@ -163,7 +163,7 @@ On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows
 ## Technical notes
 
 Vite + TypeScript + Three.js, with **no models, textures or sound files**: the prisons, characters and
-items are built in code, and the music and sound effects are synthesized. About 122,000 lines of TypeScript
+items are built in code, and the music and sound effects are synthesized. About 129,000 lines of TypeScript
 in 437 files (formatted by Prettier), and 54,000 more in the tests and tools.
 
 ### Running it
@@ -193,7 +193,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 83 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 84 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

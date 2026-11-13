@@ -91,7 +91,7 @@ import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 import { boardNow, cheatNow, courtNow } from './pastimes';
 import { diceNow, pickNow, wrestleNow } from './games';
 import { crewChipList, crewRows } from './crew';
-import { NO_TAKE, raceNow, takeOffers } from './long';
+import { longTalk, NO_TAKE, raceNow, ratRunNow, takeOffers } from './long';
 import { inkNow, matchNow, teamSounds } from './team';
 import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
@@ -286,7 +286,15 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P27: so do a hand of Cheat and the old-timer's board.)
   // (2.40: and the dice's card: the tool and lock-on buttons step aside for it too.)
   const training =
-    st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated || !!st.ink || (!busy && !!diceNow(sim));
+    st.train >= 0 ||
+    st.bout.length > 0 ||
+    st.pick.length > 0 ||
+    !!st.cheat ||
+    !!st.board?.seated ||
+    !!st.ink ||
+    (!busy && !!diceNow(sim)) ||
+    // (2.43: the rat's training card.)
+    !!st.ratRun?.length;
   tools.update(
     training ? null : press.toolNow,
     st.energy,
@@ -327,6 +335,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (The side games' cards: once their file is in, lazy.ts.)
   const cards = gameCards();
   cards?.wrestleCard.update(bout);
+  // (2.43: the rat's laps of its ring, a timing game.)
+  const ratRun = busy ? null : ratRunNow(sim);
+  cards?.ratCard.update(ratRun);
   cards?.pickCard.update(pick, !settings.reducedMotion);
   // (2.40: a game of dice on its own card, the talk panel stepping aside for it.)
   const diceV = busy ? null : diceNow(sim);
@@ -422,7 +433,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
       ? null
       : raceNow(sim, a);
   const raceShown = cards?.raceCard.update(race) ?? false;
-  document.body.classList.toggle('gaming', !!bout || !!pick || !!diceV || !!cheat || !!boardV || !!inkV);
+  document.body.classList.toggle('gaming', !!bout || !!pick || !!diceV || !!cheat || !!boardV || !!inkV || !!ratRun);
   document.body.classList.toggle('courting', !!court);
   // (The race card up: the lesson's card steps aside in landscape; while the race is run, the hotbar too.)
   document.body.classList.toggle('racing', raceShown);
@@ -460,6 +471,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
   // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)
   chatterFrame(g, (busy && !(st.stowed && !g.paused && !g.over)) || panel || !!g.lesson);
+  // (2.43: a word about the player tipsy, a friend after a swig of their pruno.)
+  longTalk(sim, busy || panel || !!g.lesson || g.paused);
   // Throwing (P14): the aim follows the pointer; a "?" over the guards on their way to look.
   updateAim(busy || panel);
   aimUI.frame(headAt, busy || st.layer !== LAYER.GROUND);

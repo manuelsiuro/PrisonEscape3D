@@ -13,7 +13,6 @@ it). A pass on one of them follows the `polish-gameplay` skill.
 | Area | State in `POLISH.md` |
 |---|---|
 | Football | Partly |
-| Long games (pruno, garden, rats) | Not reviewed |
 
 ## 2. Checks only a person can do
 

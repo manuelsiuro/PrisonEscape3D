@@ -438,8 +438,17 @@ export type SimEvent =
    * the `purse`), or called off (`stake` back).
    */
   | { type: 'pruno'; what: PrunoNews; container?: number; mine?: boolean }
-  | { type: 'garden'; what: GardenNews; bed: number; crop?: number; n?: number; why?: 'watered' }
-  | { type: 'track'; what: 'trained' | 'refused'; speed?: number; gain?: number; item?: number; why?: TrackRefusal }
+  | { type: 'garden'; what: GardenNews; bed: number; crop?: number; n?: number; why?: 'watered'; who?: number; seen?: boolean }
+  | {
+      type: 'track';
+      what: 'trained' | 'refused' | 'start' | 'tap';
+      speed?: number;
+      gain?: number;
+      item?: number;
+      why?: TrackRefusal;
+      hit?: boolean;
+      hits?: number;
+    }
   | { type: 'race'; what: RaceNews; lane?: number; stake?: number; odds?: number; order?: number[]; won?: number; purse?: number }
   /**
    * P29 (football.ts, tattoo.ts): a match begun (the `team`), its whistle, a goal (`mine` the
@@ -691,7 +700,24 @@ type KioskNews =
 /** What pruno did (P28, the 'pruno' event). */
 type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
 /** What a garden bed did (P28, the 'garden' event). */
-type GardenNews = 'planted' | 'watered' | 'grew' | 'ripe' | 'wilted' | 'died' | 'harvested' | 'refused';
+type GardenNews =
+  | 'planted'
+  | 'watered'
+  | 'grew'
+  | 'ripe'
+  | 'wilted'
+  | 'died'
+  | 'harvested'
+  | 'refused'
+  // 2.43, the neighbours (who: the inmate): set off for his bed, given it up, done; what he did there; a favour, a theft.
+  | 'neighbourGoes'
+  | 'neighbourOff'
+  | 'neighbourDone'
+  | 'neighbourPicked'
+  | 'neighbourPlanted'
+  | 'neighbourWatered'
+  | 'favour'
+  | 'stolen';
 /** A race night (P28, the 'race' event). */
 type RaceNews = 'bet' | 'entered' | 'scratched' | 'start' | 'result' | 'off';
 

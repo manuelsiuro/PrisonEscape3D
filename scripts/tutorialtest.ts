@@ -596,9 +596,10 @@ play('garden', (bot) => {
 });
 
 play('ratRace', (bot) => {
-  // Laps on the track at home (the potato eaten), to the track, entered, $5 on the pet, the race.
+  // Laps on the track at home (the potato eaten; 2.43: pressed for as it passes the bait), to the track, entered, $5 on the pet, the race.
   bot.hold('rat_track');
   bot.use();
+  check(bot.ratLaps(), 'ratRace: the laps run');
   const r = TRAINING.leisure!.race;
   check(bot.walkTo(tile(r.x, r.z - 1)), 'ratRace: at the track');
   check(
