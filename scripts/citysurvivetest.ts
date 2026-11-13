@@ -9,8 +9,10 @@ import { check } from './assert';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../src/city/content/items';
 import { City, COP, FULL, loadCity, MODE, POCKETS, START_MINUTE } from '../src/city/sim/City';
 import { scavenger } from './citybots';
+import { nearestDir } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
 import { fnv1a } from '../src/sim/rng';
+import { MAP_W } from '../src/sim/world/grid';
 
 const lines: string[] = [];
 const say = (s: string) => lines.push(s);
@@ -190,6 +192,96 @@ const idle = (c: City, minutes: number) => {
   check(loadCity(bad) === null, 'a pocket with a thing that is not is refused');
   say(
     'a save carries the pockets, the meters and every box looked into; one from stage 1 loads with the meters fresh; a thing that is not is refused',
+  );
+}
+
+// ------------------------------------------------------------------ what the review found (2.47)
+{
+  // A save made on the step of a crossing, of a new city's start, of a fall: loaded, it plays on as the live city does.
+  const live = new City(3);
+  const next = scavenger(live);
+  const saves: Array<{ at: number; snap: unknown; why: string }> = [
+    { at: 0, snap: JSON.parse(JSON.stringify(live.snapshot())), why: 'start' },
+  ];
+  const cmds: number[] = [];
+  for (let k = 0; k < 2 * 1440 * MIN && saves.length < 8; k++) {
+    const cmd = next();
+    cmds.push(cmd);
+    live.step(cmd);
+    for (const e of live.events)
+      if (e.type === 'travel' || e.type === 'dead')
+        saves.push({ at: cmds.length, snap: JSON.parse(JSON.stringify(live.snapshot())), why: e.type });
+  }
+  const end = fnv1a(JSON.stringify(live.snapshot().state));
+  let same = 0;
+  for (const sv of saves) {
+    const c = loadCity(sv.snap)!;
+    for (let k = sv.at; k < cmds.length; k++) c.step(cmds[k]);
+    if (fnv1a(JSON.stringify(c.snapshot().state)) === end) same++;
+    else check(false, `a save made at a ${sv.why} (step ${sv.at}) played on differently`);
+  }
+  check(
+    saves.some((sv) => sv.why === 'travel'),
+    'the bot should have crossed a checkpoint in two days',
+  );
+  say(`saves made at the start and at ${saves.length - 1} crossings and falls: ${same} of ${saves.length} play on as the live city did`);
+
+  // A bed with something in it is looked into again, not slept in; empty, it's slept in.
+  const c = new City(1);
+  c.peace = true;
+  /** An open tile beside a piece of furniture (whichever of its tiles has one). */
+  const besideOf = (prop: number) =>
+    c
+      .tilesOf(prop)
+      .flatMap((i) => [i - 1, i + 1, i - MAP_W, i + MAP_W])
+      .find((i) => !c.grid[i]);
+  const bed = c.district.props.findIndex((p, k) => p.kind === 'bed' && besideOf(k) !== undefined);
+  const beside = besideOf(bed)!;
+  // (Turned to the bed: what's faced is what's meant, whatever else stands beside.)
+  const bedTile = c
+    .tilesOf(bed)
+    .find((i) => Math.abs((i % MAP_W) - (beside % MAP_W)) + Math.abs(Math.floor(i / MAP_W) - Math.floor(beside / MAP_W)) === 1)!;
+  c.state.player.facing = nearestDir((bedTile % MAP_W) - (beside % MAP_W), Math.floor(bedTile / MAP_W) - Math.floor(beside / MAP_W));
+  c.state.player.x = (beside % MAP_W) * 1024 + 512;
+  c.state.player.z = Math.floor(beside / MAP_W) * 1024 + 512;
+  c.state.boxes[`${c.state.district}:${bed}`] = [[TIN, 1]];
+  c.step(0);
+  check(c.target()?.kind === 'box' && c.target()?.key === `${bed}`, 'a bed holding something is looked into');
+  c.step(command(0, COP.ACT));
+  c.step(command(0, COP.TAKE_ALL));
+  c.step(command(0, COP.CLOSE));
+  check(c.target()?.kind === 'bed' && c.target()?.key === `${bed}` && c.state.inv[0][0] === TIN, 'emptied, it is slept in');
+  // Pressed again during a first search, the search goes on.
+  const desk = c.district.props.findIndex(
+    (p, k) => ['desk', 'shelf', 'table'].includes(p.kind) && !c.searched(`${k}`) && besideOf(k) !== undefined,
+  );
+  const by = besideOf(desk)!;
+  c.state.player.x = (by % MAP_W) * 1024 + 512;
+  c.state.player.z = Math.floor(by / MAP_W) * 1024 + 512;
+  c.step(0);
+  c.step(command(0, COP.ACT));
+  for (let k = 0; k < 10; k++) c.step(0);
+  const left = c.state.searchLeft;
+  c.step(command(0, COP.ACT));
+  check(
+    c.state.search !== '' && c.state.searchLeft === left - 1,
+    `a second press mid-search starts nothing over: ${left} then ${c.state.searchLeft}`,
+  );
+  // Medicine isn't used up at full health; a fall with empty pockets leaves no pile; hunger isn't mended by a fall.
+  c.state.search = '';
+  c.state.inv[1] = [BANDAGE, 1];
+  c.state.health = 100;
+  c.step(command(0, COP.USE, 1));
+  check(c.state.inv[1][1] === 1 && c.events.some((e) => e.type === 'refused' && e.why === 'noNeed'), 'a bandage at full health is kept');
+  for (const st of c.state.inv) st[0] = st[1] = 0;
+  const piles = () => Object.keys(c.state.boxes).filter((k) => k.includes(':g')).length;
+  const before = piles();
+  c.state.hunger = 0;
+  c.hurt(500);
+  check(piles() === before, 'a fall with empty pockets leaves no pile');
+  check(c.state.hunger === 15_000, `a fall mends hunger only to 15: ${c.state.hunger}`);
+  say(
+    'a bed holding something is looked into before it is slept in; a second press mid-search starts nothing over; medicine is kept at full health; an empty-handed fall leaves no pile and mends hunger only to 15',
   );
 }
 

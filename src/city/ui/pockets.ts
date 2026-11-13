@@ -162,10 +162,10 @@ export class CityPockets {
     const tg = s.asleep ? null : s.target;
     const verb = !tg
       ? ''
-      : tg.kind === 'bed'
-        ? 'city.act.sleep'
-        : s.targetOpen
-          ? 'city.act.close'
+      : s.targetOpen
+        ? 'city.act.close'
+        : tg.kind === 'bed'
+          ? 'city.act.sleep'
           : tg.kind === 'pile' || s.searched
             ? 'city.act.look'
             : 'city.act.search';

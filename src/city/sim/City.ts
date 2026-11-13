@@ -55,7 +55,9 @@ export const SLEEP_FROM = 20 * 60;
 export const SLEEP_TO = 6 * 60;
 const TIRED = 60_000;
 /** A Survivor who fell wakes at home the next morning with this much health, hunger and energy. */
-const WAKE = { health: 40, hunger: 35_000, energy: 60_000 };
+const WAKE = { health: 40, hunger: 15_000, energy: 60_000 };
+/** A pile's most slots (what a save takes). */
+const PILE_SLOTS = 64;
 
 /** A pocket or a slot: [item number, how many] ([0, 0]: empty). */
 export type Stack = [number, number];
@@ -106,6 +108,8 @@ export interface CityState {
   rng: number;
   kills: number;
   swung: number;
+  /** 1 from entering a district until its dead are put down (the next step). */
+  arrive: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -133,7 +137,7 @@ export type CityEvent =
   | { type: 'swing'; hit: boolean; dead: boolean; x?: number; z?: number }
   | { type: 'dusk'; soon: number }
   | { type: 'night'; on: boolean }
-  | { type: 'refused'; why: 'notTired' | 'tooHungry' | 'notHungry' | 'noUse' }
+  | { type: 'refused'; why: 'notTired' | 'tooHungry' | 'notHungry' | 'noNeed' | 'noUse' }
   /** Hunger bites (once each time it reaches nothing). */
   | { type: 'starving' }
   /** Fallen: `final` in Hardcore (the city is lost); a Survivor wakes at home (`moved`: in another district). */
@@ -200,10 +204,8 @@ export class City {
     this.zedStreet = new Uint8Array(N);
     for (const i of this.zedPlaces.indoors) this.zedIndoor[i] = 1;
     for (const i of this.zedPlaces.streets) this.zedStreet[i] = 1;
-    if (!kept) this.arrived = true;
+    if (!kept) this.state.arrive = 1;
   }
-  /** A district just entered: its dead are put down once the player stands in it. */
-  private arrived = false;
   /** No dead at all (the tests of everything else; never set in play). */
   peace = false;
   /** Per tile: the searchable piece of furniture standing there, + 1. */
@@ -213,6 +215,10 @@ export class City {
   zedIndoor = new Uint8Array(N);
   zedStreet = new Uint8Array(N);
 
+  /** What blocks walking in any district (the one the player is in: its world's own; another: built to ask). */
+  districtGrid(d: number): Uint8Array {
+    return d === this.state.district ? this.world.block : districtWorld(this.plan, d, this.districtOf(d)).block;
+  }
   /** What blocks walking in the district (the world's own grid: walls, water, furniture, what stands on the streets). */
   get grid(): Uint8Array {
     return this.world.block;
@@ -245,11 +251,18 @@ export class City {
     if (s.sleeping) {
       // (A push on the stick wakes them; the dead go on about the streets meanwhile.)
       if (dir) this.wake('stirred');
-      else if (!this.peace) stepDead(this);
+      if (!this.peace) stepDead(this);
       return;
     }
     const weak = s.hunger < FULL / 4 || s.energy <= 0;
+    const px = s.player.x;
+    const pz = s.player.z;
     walk(this.world, s.player, dir, weak ? Math.trunc((WALK_SPEED * WEAK_SPEED) / 1000) : WALK_SPEED);
+    // (Nobody walks through the dead: a step that would bring them closer to one already against them isn't taken.)
+    if (dir && crowded(s.zeds, px, pz, s.player.x, s.player.z)) {
+      s.player.x = px;
+      s.player.z = pz;
+    }
     // A first search takes a moment, standing still; walking off leaves it.
     if (s.search) {
       if (dir || this.target()?.key !== s.search) s.search = '';
@@ -260,8 +273,9 @@ export class City {
       }
     }
     this.act(opOf(cmd), argA(cmd));
-    if (this.arrived) {
-      this.arrived = false;
+    // (A district just entered: its dead are put down once the player stands in it. In the state: a save made at a crossing loads to the same.)
+    if (s.arrive) {
+      s.arrive = 0;
       if (!this.peace) populate(this);
     }
     if (!this.peace) stepDead(this);
@@ -320,22 +334,23 @@ export class City {
       return;
     }
     // A Survivor: what they carried lies where they fell; they wake at home the next morning.
-    const pile = this.boxOf(`g${this.tile}`, true);
     for (const st of s.inv) {
       if (!st[0]) continue;
-      pile.push([st[0], st[1]]);
+      // (Onto the pile already there, if they fell here before: never more slots than a save takes.)
+      this.put(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, st[0], st[1]);
       st[0] = st[1] = 0;
     }
     const [d, tile] = s.home;
     const moved = d !== s.district;
     if (moved) this.enter(d);
-    else this.arrived = true;
+    s.arrive = 1;
     s.zeds = [];
     s.player = bodyAt(tile % MAP_W, Math.floor(tile / MAP_W));
     // (To the next 06:30.)
     const now = (START_MINUTE + Math.floor(s.step / STEPS_PER_MINUTE)) % DAY_MINUTES;
     s.step += ((START_MINUTE - now + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES) * STEPS_PER_MINUTE;
     s.health = WAKE.health;
+    // (Hunger is not mended by a fall: a little, so the morning isn't spent starving again at once.)
     s.hunger = Math.max(s.hunger, WAKE.hunger);
     s.energy = Math.max(s.energy, WAKE.energy);
     this.look();
@@ -381,7 +396,9 @@ export class City {
       const k = this.propAt[t];
       if (k) {
         const kind = this.district.props[k - 1].kind;
-        return { kind: kind === 'bed' && this.searched(`${k - 1}`) ? 'bed' : 'box', key: `${k - 1}`, tile: t, prop: kind };
+        // (A bed looked into and empty is slept in; with something in it, looked into again first.)
+        const empty = this.boxOf(`${k - 1}`)?.every((st) => !st[0]) ?? false;
+        return { kind: kind === 'bed' && empty ? 'bed' : 'box', key: `${k - 1}`, tile: t, prop: kind };
       }
       if (this.boxOf(`g${t}`)?.some((st) => st[0]) && !this.grid[t]) return { kind: 'pile', key: `g${t}`, tile: t, prop: null };
     }
@@ -471,6 +488,8 @@ export class City {
       const t = this.target();
       if (!t) return;
       if (s.open === t.key) return this.close();
+      // (Pressed again while searching: the search goes on.)
+      if (s.search === t.key) return;
       if (t.kind === 'bed') {
         if (s.hunger === 0) return void this.events.push({ type: 'refused', why: 'tooHungry' });
         if (s.energy >= TIRED && this.minute < SLEEP_FROM && this.minute >= SLEEP_TO)
@@ -511,8 +530,11 @@ export class City {
       const use = cityItem(item)?.use;
       if (!use) return void this.events.push({ type: 'refused', why: 'noUse' });
       // (Nothing wasted: a full stomach isn't fed, unless the thing mends or wakes too.)
-      if (s.hunger >= FULL - 2000 && !(use.health && use.health > 0 && s.health < 100) && !(use.energy && s.energy < FULL - 5000))
-        return void this.events.push({ type: 'refused', why: 'notHungry' });
+      const needed =
+        ((use.hunger ?? 0) > 0 && s.hunger < FULL - 2000) ||
+        ((use.energy ?? 0) > 0 && s.energy < FULL - 5000) ||
+        ((use.health ?? 0) > 0 && s.health < 100);
+      if (!needed) return void this.events.push({ type: 'refused', why: cityItem(item)?.kind === 'med' ? 'noNeed' : 'notHungry' });
       s.hunger = Math.min(FULL, s.hunger + (use.hunger ?? 0) * 1000);
       s.energy = Math.min(FULL, s.energy + (use.energy ?? 0) * 1000);
       if (--st[1] <= 0) st[0] = st[1] = 0;
@@ -593,6 +615,19 @@ export class City {
   }
 }
 
+/** Whether a step from (ax, az) to (bx, bz) walks into one of the dead: within a body's width of one, and nearer it than before. */
+const BODY = 620;
+export function crowded(zeds: readonly Zed[], ax: number, az: number, bx: number, bz: number, but = -1, mode = -1): boolean {
+  for (let k = 0; k < zeds.length; k++) {
+    // (`mode`: only those doing that count: the dead wandering pass each other, or two would stand face to face in an alley for good.)
+    if (k === but || (mode >= 0 && zeds[k].mode !== mode)) continue;
+    const z = zeds[k].body;
+    const after = (z.x - bx) ** 2 + (z.z - bz) ** 2;
+    if (after < BODY * BODY && after < (z.x - ax) ** 2 + (z.z - az) ** 2) return true;
+  }
+  return false;
+}
+
 /** The survival fields of a new city (and of a save from before them). */
 function freshSurvival() {
   return {
@@ -612,6 +647,7 @@ function freshSurvival() {
     rng: 1,
     kills: 0,
     swung: -9999,
+    arrive: 0,
   };
 }
 
@@ -666,6 +702,7 @@ export function loadCity(snap: unknown): City | null {
   const old = st.health === undefined;
   if (!old) {
     if (![st.health, st.hunger, st.energy, st.deaths, st.over, st.searchLeft].every(Number.isInteger)) return null;
+    if (st.mode !== MODE.SURVIVOR && st.mode !== MODE.HARDCORE) return null;
     if (st.health < 0 || st.health > 100 || st.hunger < 0 || st.hunger > FULL || st.energy < 0 || st.energy > FULL) return null;
     if (!stacksOk(st.inv, POCKETS) || st.inv.length !== POCKETS) return null;
     if (typeof st.boxes !== 'object' || !st.boxes || !Object.values(st.boxes).every((b) => stacksOk(b, 64))) return null;
@@ -688,12 +725,18 @@ export function loadCity(snap: unknown): City | null {
       city.state.home = [city.plan.start, sp.z * MAP_W + sp.x];
     }
     // (The dead as the save had them, if it's sound; else the district's put down afresh.)
-    if (!zedsOk(st.zeds)) {
+    if (!zedsOk(st.zeds) || ![st.rng, st.kills, st.swung, st.arrive].every(Number.isInteger)) {
       city.state.zeds = [];
       city.state.rng = city.salt(77) | 0;
       city.state.kills = 0;
       city.state.swung = -9999;
+      city.state.arrive = 0;
       populate(city);
+    }
+    // (A home nobody can stand on, the map changed under an old save: beside where the city starts.)
+    if (city.districtGrid(city.state.home[0])[city.state.home[1]]) {
+      const sp = city.districtOf(city.plan.start).spawn;
+      city.state.home = [city.plan.start, sp.z * MAP_W + sp.x];
     }
     // (A box open or a search under way isn't carried over a load.)
     city.state.open = city.state.search = '';
