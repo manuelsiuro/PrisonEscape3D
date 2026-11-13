@@ -194,7 +194,7 @@ export class TalkPanel {
           gv.stakes.map((x) => x.ok).join(','),
           gv.court,
           gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : '',
-          gv.football ? `${gv.football.open}${gv.football.why}` : '',
+          gv.pens ? `${gv.pens.open}${gv.pens.why}` : '',
           gv.ink ? `${gv.ink.why}|${gv.ink.mineWhy}|${gv.ink.inked.join()}` : '',
           gv.inkHeat,
         ].join(':')

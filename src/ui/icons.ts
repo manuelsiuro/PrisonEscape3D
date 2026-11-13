@@ -130,6 +130,9 @@ const P: Record<string, string> = {
   cards:
     '<rect x="3.5" y="5.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 12.5)"/><rect x="10" y="4" width="10" height="14" rx="1.6" transform="rotate(10 15 11)"/><path d="m15.4 8.6-1.8 2.8 1.8 2.8 1.8-2.8Z"/>',
   ball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/><path d="M5.6 5.6a12 12 0 0 1 0 12.8M18.4 5.6a12 12 0 0 0 0 12.8"/>',
+  /** 2.44: a football (penalties): its middle patch and the seams out from it. */
+  football:
+    '<circle cx="12" cy="12" r="9"/><path d="m12 8 3.8 2.8-1.5 4.4H9.7l-1.5-4.4Z"/><path d="M12 3v5M15.8 10.8l4.6-1.5M14.3 15.2l2.8 3.9M9.7 15.2l-2.8 3.9M8.2 10.8 3.6 9.3"/>',
   checkers:
     '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="18" r="1.4"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',

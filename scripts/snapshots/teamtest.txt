@@ -1,16 +1,3 @@
-center-perks: pitch 14×7 at 12,48, field 12×7 along x
-stalag-flucht: pitch 14×7 at 45,51, field 12×7 along x
-shankton: pitch 12×6 at 42,15, field 10×6 along x
-san-pancho: pitch 12×6 at 27,38, field 10×6 along x
-irongate: pitch 12×6 at 9,29, field 10×6 along x
-six-hunter: pitch 10×7 at 9,47, field 8×7 along x
-training: pitch 13×8 at 35,42, field 11×8 along x
-the ball: rolled 56 steps across and stopped
-the kick: aimed at the mouth 683 from its middle (the way faced: 3696)
-walk on: the whistle after 20 steps
-a simple bot over 30 matches: won 27, lost 0, drawn 3, off 0; goals 100–18; kicks 292
-a newcomer over 30 matches: before 2.16 won 1, lost 15, drawn 14, their goals 2, own goals 0; now won 6, lost 13, drawn 11, their goals 9, own goals 0
-the cover: sight 7 tiles on the pitch, 3.5 off it; a goal holds a guard's eyes 100 steps
 heart: 168 steps, pays $7–$22
 skull: 184 steps, pays $12–$37
 eagle: 202 steps, pays $20–$60
@@ -21,4 +8,4 @@ heart drawn: by hand 100 ($22, +12, 56 steps), shaky 87 ($20), keys 100 (164 ste
 skull drawn: by hand 100 ($37, +12, 64 steps), shaky 83 ($33), keys 100 (163 steps), left still 0 ($12), scribbled 0
 eagle drawn: by hand 100 ($60, +12, 70 steps), shaky 84 ($53), keys 100 (185 steps), left still 0 ($20), scribbled 0
 hopping ahead along the heart: 799 steps (400 dabs of 10), line 49
-saves: mid-match round trip ok (score 2–0)
+saves: ok

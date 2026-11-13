@@ -10,9 +10,8 @@ detail lives; nothing here is planned until the user picks it. When something is
 From `POLISH.md`, where each area's row says what's known (`docstest` keeps this list in step with
 it). A pass on one of them follows the `polish-gameplay` skill.
 
-| Area | State in `POLISH.md` |
-|---|---|
-| Football | Partly |
+None: every area has had a pass (the last, football, rebuilt as penalties in 2.44). An area found
+wanting goes here as a row: `| Area | State in POLISH.md |`.
 
 ## 2. Checks only a person can do
 

@@ -15,7 +15,7 @@ import type { SimContext } from '../context';
 import { CHASE_HEAT, NOTICE_CLOSE, NOTICE_FAR, NOTICE_NEAR, UNIT } from '../tuning';
 import { LAYER } from '../world/World';
 import { clockAt } from './clock';
-import { sightFor } from './football';
+import { sightFor } from './penalties';
 import { awake, GUARD, sendToLook, type Guard } from './guards';
 import { cameraSeesPlayer, powered } from './power';
 import { lookingAway } from './ways';

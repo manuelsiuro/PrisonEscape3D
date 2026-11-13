@@ -19,7 +19,7 @@ import { Rats } from './Rat';
 import { ReleaseView } from './Release';
 import { SmuggleView } from './Smuggling';
 import { LEAVES, Snowfall } from './Snow';
-import { TeamView } from './Team';
+import { PitchView } from './Pitch';
 import { VendingView } from './Vending';
 import { Weather } from './Weather';
 
@@ -48,7 +48,7 @@ export class DayPieces {
   readonly gamesView = new GamesView();
   readonly pastimesView = new PastimesView();
   readonly longView = new LongView();
-  readonly teamView = new TeamView();
+  readonly pitchView = new PitchView();
   /** P31: the sports ground's track and court paint, the garden's crops. */
   readonly groundsView = new GroundsView();
   readonly nightsView = new NightsView();
@@ -76,7 +76,7 @@ export class DayPieces {
     this.events.setWorld(world, later);
     this.delivery.setWorld(world, later);
     this.gamesView.setWorld(world, later);
-    this.teamView.setWorld(pitch, world.def.theme ?? 'suburban', later);
+    this.pitchView.setWorld(pitch, world.def.theme ?? 'suburban', later);
     this.longView.setWorld(later);
     this.groundsView.setWorld(world, later);
     this.pastimesView.setWorld(world, pitch);
@@ -106,7 +106,7 @@ export class DayPieces {
     this.gamesView.update(null, 0, false, false);
     this.pastimesView.update(null, 0, 0, 0, false, false);
     this.longView.update(null, 0, false, false);
-    this.teamView.update(null, [], 0, false);
+    this.pitchView.update(null, 0, false);
     this.nightsView.update(null, 0, false, false);
     this.phoneView.update(null, dt, 0, 0, false, 0, false);
     this.kioskView.update(null, 0, false, 0, 1, false);

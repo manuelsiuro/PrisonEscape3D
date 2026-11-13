@@ -1,4 +1,5 @@
-import { footballOffer, inkHeatNow, inkOffer } from './team';
+import { inkHeatNow, inkOffer } from './team';
+import { pensOffer } from './penalties';
 import { buzz } from '../app/haptics';
 import {
   BAR,
@@ -354,7 +355,7 @@ const gamesView: GamesView = {
   hasCourt: false,
   court: false,
   elder: null,
-  football: null,
+  pens: null,
   ink: null,
   inkHeat: 0,
 };
@@ -400,8 +401,8 @@ function gamesOffer(sim: Sim): GamesView | null {
   v.hasCourt = !!courtOf(sim);
   v.court = v.hasCourt && atCourt(sim, who);
   v.elder = elderOffer(sim, who);
-  // P29: football at the pitch, the tattoo parlour.
-  v.football = footballOffer(sim, who);
+  // 2.44: penalties at the pitch; P29: the tattoo parlour.
+  v.pens = pensOffer(sim, who);
   v.ink = inkOffer(sim, who);
   v.inkHeat = v.ink ? inkHeatNow(sim) : 0;
   return v;

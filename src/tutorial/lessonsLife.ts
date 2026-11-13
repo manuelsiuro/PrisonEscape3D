@@ -45,7 +45,6 @@ import {
   cheatOff,
   clockTo,
   DAY_TWO,
-  farNet,
   fill,
   gamesFail,
   gardenBed,
@@ -53,7 +52,7 @@ import {
   inkFail,
   inkOff,
   type Lesson,
-  matchFail,
+  pensFail,
   EVENING,
   eveningOver,
   MORNING,
@@ -556,9 +555,9 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Yard football (P29): a match with Center Perks' inmates, a kick, the final whistle; the cover a match gives.
+    // Penalties (2.44; P29's yard football before, its id kept): a shootout with a Center Perks inmate, a kick, a save, the end.
     id: 'football',
-    icon: 'ball',
+    icon: 'football',
     prison: CENTER_PERKS,
     seed: 72,
     setup: (sim) => {
@@ -567,11 +566,11 @@ export const LIFE: readonly Lesson[] = [
       const cx = p.x + Math.floor(p.w / 2);
       const cz = p.z + Math.floor(p.d / 2);
       place(sim, cx, cz, 9);
-      // The captain at the player's side; everyone else by the pitch, two of them good friends (all waiting there however long the reading takes: wandered off, there'd be no match).
+      // The one to take them on at the player's side (waiting however long the reading takes); a few more by the pitch to watch.
       waitAt(sim, 0, cx - 1, cz);
       sim.state.inmates.forEach((m, k) => {
-        m.opinion = k === 1 || k === 2 ? 75 : 60;
-        if (k === 0) return;
+        m.opinion = k === 0 ? 70 : 60;
+        if (k === 0 || k > 6) return;
         const [x, z] = near(sim, p.x + 1 + ((k * 2) % (p.w - 2)), p.z + p.d + 1);
         waitAt(sim, k, x, z, 13);
         m.path = [];
@@ -581,23 +580,26 @@ export const LIFE: readonly Lesson[] = [
       {
         text: 'lesson.football.talk',
         touch: 'lesson.football.talkTouch',
-        on: (e) => e.type === 'football' && e.what === 'start',
+        on: (e) => e.type === 'pens' && e.what === 'start',
         goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z),
         fail: gamesFail,
       },
       {
         text: 'lesson.football.kick',
         touch: 'lesson.football.kickTouch',
-        on: (e) => e.type === 'football' && e.what === 'kick',
-        goal: (sim) =>
-          sim.state.match ? tile(Math.floor(sim.state.match.ball[0] / UNIT), Math.floor(sim.state.match.ball[1] / UNIT)) : null,
-        failOn: matchFail,
+        on: (e) => e.type === 'pens' && e.what === 'kick' && e.by === -1,
+        failOn: pensFail,
+      },
+      {
+        text: 'lesson.football.keep',
+        touch: 'lesson.football.keepTouch',
+        on: (e) => e.type === 'pens' && e.what === 'kick' && e.by !== -1,
+        failOn: pensFail,
       },
       {
         text: 'lesson.football.play',
-        on: (e) => e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'),
-        goal: (sim) => farNet(sim),
-        failOn: (e) => (e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw') ? null : matchFail(e)),
+        on: (e) => e.type === 'pens' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'),
+        failOn: pensFail,
       },
       { text: 'lesson.football.over', done: () => true, least: 7 },
     ],

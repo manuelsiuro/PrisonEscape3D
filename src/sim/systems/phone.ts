@@ -182,7 +182,7 @@ function freeToQueue(sim: SimContext, k: number, waiting = false): boolean {
   // (2.42: at the kiosk, or on his way: that first.)
   if (s.kioskBy?.[0] === k) return false;
   if (
-    s.match?.team.includes(k) ||
+    s.pens?.who === k ||
     s.ink?.who === k ||
     s.cheat?.who === k ||
     s.shootout?.who === k ||

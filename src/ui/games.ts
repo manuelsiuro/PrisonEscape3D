@@ -54,8 +54,8 @@ export interface GamesView {
   court: boolean;
   /** P27: the old-timer's board (null: this isn't him): he'll play now (else `why`), a game set up, over, or none. */
   elder: { open: boolean; why: string; game: 'none' | 'on' | 'over'; won: number } | null;
-  /** P29: football on the pitch (null: no pitch): he'll play now (else `why`). */
-  football: { open: boolean; why: string } | null;
+  /** 2.44: penalties at the pitch (null: no pitch, or not at it): he'll take them now (else `why`). */
+  pens: { open: boolean; why: string } | null;
   /** P29: a tattoo gun in the hotbar (null: none): a design for him (else `why`), one from him on the player's arm (else `mineWhy`), those inked already; a guard sees it (`heat`). */
   ink: { why: string; designs: Array<{ k: number; price: number }>; mineWhy: string; inked: number[] } | null;
   inkHeat: number;
@@ -176,10 +176,10 @@ export function gamesSection(v: GamesView, mask: number, now: number, invited = 
   const elder = e
     ? `<div class="bribe-row elder-row"><span class="bribe-text"><b>${t('checkers.name')}</b><small>${esc(!e.open ? own(e.why, t('checkers.note', { name: v.name })) : e.game === 'on' ? t('checkers.onNote') : t('checkers.note', { name: v.name }))}</small></span><button class="big-btn ${e.open ? 'primary' : 'ghost'} small" data-act="${TALK.CHECKERS}" data-arg="1" ${e.open ? '' : 'disabled'} aria-label="${esc(t(e.game === 'on' ? 'checkers.resumeAria' : 'checkers.playAria', { name: v.name }))}">${icon('checkers', 16)}<span>${t(e.game === 'on' ? 'checkers.resume' : 'checkers.play')}</span></button></div>`
     : '';
-  // P29: a match he captains; a tattoo for him (its price), one from him (on the player's arm).
-  const f = v.football;
+  // 2.44: penalties with him; P29: a tattoo for him (its price), one from him (on the player's arm).
+  const f = v.pens;
   const football = f
-    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('football.name')}</b><small>${esc(own(f.why, t('football.note')))}</small></span><button class="big-btn ${f.open ? 'primary' : 'ghost'} small" data-act="${TALK.FOOTBALL}" ${f.open ? '' : 'disabled'} aria-label="${esc(t('football.goAria', { name: v.name }))}">${icon('ball', 16)}<span>${t('football.go')}</span></button></div>`
+    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('pens.name')}</b><small>${esc(own(f.why, t('pens.note')))}</small></span><button class="big-btn ${f.open ? 'primary' : 'ghost'} small" data-act="${TALK.PENALTIES}" ${f.open ? '' : 'disabled'} aria-label="${esc(t('pens.goAria', { name: v.name }))}">${icon('football', 16)}<span>${t('pens.go')}</span></button></div>`
     : '';
   const ink = v.ink;
   const designName = (k: number) => t(`design.${DESIGNS[k].id}` as Key);

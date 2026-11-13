@@ -482,7 +482,6 @@ export function smuggleFail(sim: Sim): Key | null {
   return null;
 }
 
-/** The football lesson's dead ends: the match off (gone from the pitch, the sirens), a foul, the whistle before a kick. */
 /** The stage's own tile (where the performer stands). */
 export const stageTile = (sim: Sim) => {
   const st = sim.prison.leisure?.stage;
@@ -492,18 +491,9 @@ export const stageTile = (sim: Sim) => {
 export function quizFail(e: SimEvent): Key | null {
   return e.type === 'quiz' && (e.what === 'off' || e.what === 'quit') ? 'lesson.quiz.off' : null;
 }
-export function matchFail(e: SimEvent): Key | null {
-  if (e.type !== 'football') return null;
-  if (e.what === 'off') return 'lesson.football.off';
-  if (e.what === 'foul') return 'lesson.football.foul';
-  if (e.what === 'won' || e.what === 'lost' || e.what === 'draw') return 'lesson.football.noKick';
-  return null;
-}
-/** The net the player's side shoots at (the far end's middle tile). */
-export function farNet(sim: Sim): number | null {
-  const p = sim.prison.leisure?.pitch;
-  if (!p || !sim.state.match) return null;
-  return p.w >= p.d ? tile(p.x + p.w - 1, p.z + Math.floor(p.d / 2)) : tile(p.x + Math.floor(p.w / 2), p.z + p.d - 1);
+/** The penalties lesson's dead ends (2.44): the shootout off (gone from the pitch, the sirens, left). */
+export function pensFail(e: SimEvent): Key | null {
+  return e.type === 'pens' && e.what === 'off' ? 'lesson.football.off' : null;
 }
 /** The tattoo lesson's dead ends: the makings gone (the gun not made and its parts gone; no ink left for what's still to do). */
 export function inkFail(c: LessonCtx): Key | null {

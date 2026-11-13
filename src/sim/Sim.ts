@@ -1,3 +1,4 @@
+import { pensWalk } from './systems/penalties';
 import { steerNeedle } from './systems/tattoo';
 import type { PowerUse, PrisonDef } from '../content/prisons/types';
 import { OPEN_HOURS, ROUTINE, zonesOf } from '../content/routine';
@@ -147,7 +148,7 @@ export class Sim {
   /** Replaying a run logged before the pay phone (2.10, runlog.ts): nobody queued for it. Not state. */
   noQueue = false;
   /**
-   * Replaying a run logged under 2.15 or before (runlog.ts): quiz night, football and race night as
+   * Replaying a run logged under 2.15 or before (runlog.ts): quiz night, football (gone since 2.44) and race night as
    * they were before 2.16 made them easier (no reading time at the quiz, the match's ball not held
    * at the feet nor its kicks aimed, 45-second matches with seated inmates left out, the race card
    * up at 20:00, the pet scratched away from the track). Not state.
@@ -486,17 +487,20 @@ export class Sim {
     }
     // Keys in the pockets open their doors for the player (GDD §7.3).
     w.setPlayerKeys(keysCarried(this));
+    // (2.44: in a penalty shootout, the shootout walks the player to their place: their own moves aren't theirs.)
+    const auto = pensWalk(this);
+    const dir = auto >= 0 ? auto : dirOf(cmd);
     // A step off the equipment ends the training.
-    if ((s.train >= 0 || s.askTurn.length) && dirOf(cmd) !== 0) stopTraining(this);
+    if ((s.train >= 0 || s.askTurn.length) && dir !== 0) stopTraining(this);
     // (P22: a step out of a bout gives it up; a step away from a lock stops the picking.)
-    if (s.bout.length && dirOf(cmd) !== 0) endBout(this, 'gaveUp');
-    if (s.pick.length && dirOf(cmd) !== 0) stopPick(this);
+    if (s.bout.length && dir !== 0) endBout(this, 'gaveUp');
+    if (s.pick.length && dir !== 0) stopPick(this);
     // (P27: a step with the ball held up puts it down again.)
-    if (s.shot.length && dirOf(cmd) !== 0) s.shot = [];
+    if (s.shot.length && dir !== 0) s.shot = [];
     // A step gets the player up off a seat or a bed.
-    if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
+    if (s.seat >= 0 && dir !== 0) standUp(this);
     // (2.26: and out from under the water.)
-    if (dirOf(cmd) !== 0) stopWash(this);
+    if (dir !== 0) stopWash(this);
     const from = tileAt(s.player.x, s.player.z);
     // (P29: tattooing, the moves steer the needle; being inked, the player keeps still.)
     // (P30: on the stage, the player keeps still too: the keys play the lanes.)
@@ -506,7 +510,7 @@ export class Sim {
     const pace0 = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
     // (2.35: blocking, at BLOCK_WALK of it.)
     const pace = blocking(this) ? Math.floor((pace0 * BLOCK_WALK) / 100) : pace0;
-    walk(w, s.player, s.sleeping || inking ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);
+    walk(w, s.player, s.sleeping || inking ? 0 : dir, tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);
     // Onto a buried mine (P11).
     mines(this);
     wearKeys(this);

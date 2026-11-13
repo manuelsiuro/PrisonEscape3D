@@ -1,7 +1,8 @@
 /**
- * A match's camera (P29), the arithmetic alone (View.framePitch applies it): both goals in the
- * picture, and the player too when he strays off the pitch (a match goes on PITCH_LEAVE tiles
- * away). Pure, so scripts/pitchframetest.ts checks it on every prison's pitch and screen shape.
+ * A penalty shootout's camera (2.44; P29's match before), the arithmetic alone (View.framePitch
+ * applies it): a box in the picture (the spot, the goal and its net: penalties.ts shootoutBox),
+ * and the player too while walking on from off it. Pure, so scripts/pitchframetest.ts checks it on
+ * every prison's pitch and screen shape.
  */
 import type { Pitch } from '../content/prisons/types';
 
@@ -10,6 +11,8 @@ const PITCH_DEPTH = 1.18;
 /** The look-ahead's longest pull in a match (tiles, both ways summed): short of the 10 that cut the camera back to the player. */
 export const PITCH_PULL = 9;
 
+/** 2.44: the closest a shootout's picture comes in (the spot and the goal fill it, the crowd still in sight). */
+export const PENS_ZOOM = 1.7;
 /** The player's zoom range (the wheel, pinch, a match's fit). */
 export const ZOOM_MIN = 0.6;
 export const ZOOM_MAX = 1.9;

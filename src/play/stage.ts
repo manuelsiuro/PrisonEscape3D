@@ -3,7 +3,7 @@ import type { Prisoner } from '../content/prisoner';
 import type { BedPose } from '../render/Character';
 import { placesOf } from '../sim/ai/places';
 import { ESCAPES, type Sim } from '../sim/Sim';
-import { pitchOf } from '../sim/systems/football';
+import { pitchOf } from '../sim/systems/penalties';
 import { UNIT, WALK_SPEED } from '../sim/tuning';
 import { showCinema } from '../ui/cinema';
 import { settings, sound, view } from './context';

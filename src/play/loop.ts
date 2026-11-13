@@ -215,7 +215,7 @@ function frameWork(now: number) {
   document.body.classList.toggle('panel-open', panel);
   document.body.classList.toggle('items-open', itemsUI.panelOpen);
   // (P27: and a hand of Cheat's card, the old-timer's board, on a phone.)
-  keepPlayerClear((panel || document.body.classList.contains('seated-game')) && !g.paused);
+  keepPlayerClear((panel || document.body.classList.contains('seated-game') || document.body.classList.contains('kicking')) && !g.paused);
   updateTargets(sim, busy, panel, held);
   const f = buildFrame(g, a, tile, busy, held);
   // (Session 15: the strides read the ground covered in game time.)

@@ -145,7 +145,6 @@ export class View {
   private titleHoliday = 0;
   private readonly flyAt = new THREE.Vector3();
   /** The player where they're drawn this frame (the match's ring under them). */
-  private readonly meAt = { x: 0, z: 0 };
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
   private buzzClock = 0;
@@ -292,7 +291,7 @@ export class View {
       this.pieces.gamesView.group,
       this.pieces.pastimesView.group,
       this.pieces.longView.group,
-      this.pieces.teamView.group,
+      this.pieces.pitchView.group,
       this.pieces.groundsView.group,
       this.pieces.nightsView.group,
       this.pieces.phoneView.group,
@@ -699,6 +698,11 @@ export class View {
           : f.layer === LAYER.VENTS
             ? DOING.CRAWL
             : f.doing;
+    // (2.44: in goal at a penalty, the dive.)
+    const kp = f.pitch.keeper;
+    this.player.dive = kp && kp.who === -1 ? kp.dive : 0;
+    this.player.diveX = kp?.x ?? 0;
+    this.player.diveZ = kp?.z ?? 0;
     if (this.me.draw(f, dt, time, doing, this.reducedMotion)) {
       const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
       const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : theme === 'forest' ? FOREST_DUST : DUST;
@@ -773,7 +777,7 @@ export class View {
     // (P24: a glide's ring in view, the camera halfway out to it.)
     const gp = f.getaway.glide;
     if (gp) this.cam.ahead.lerp(this.v.set((gp.toX - f.x) / 2, 0, (gp.toZ - f.z) / 2), Math.min(1, dt * 3));
-    // (P29: in a match, both goals kept in the picture: see framePitch.)
+    // (2.44: in a penalty shootout, the spot and the goal kept in the picture: see framePitch.)
     this.cam.framePitch(f, dt, this.reducedMotion);
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
@@ -1041,12 +1045,12 @@ export class View {
     this.pieces.pastimesView.group.visible = f.layer === LAYER.GROUND;
     this.pieces.groundsView.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
     this.pieces.groundsView.update(f.planters);
-    this.pieces.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.team.ball, dt);
+    this.pieces.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.pitch.frame, dt);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.pieces.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // The roll call's boxes over the pitch: chalked in for roll call, gone for the rest of the day (and any match).
     if (this.rollCallPaint) {
-      const goal = f.rollCall && !f.team.ball ? 1 : 0;
+      const goal = f.rollCall && !f.pitch.frame ? 1 : 0;
       this.rollCallShown += (goal - this.rollCallShown) * (this.reducedMotion ? 1 : Math.min(1, dt * 2));
       if (Math.abs(goal - this.rollCallShown) < 0.01) this.rollCallShown = goal;
       (this.rollCallPaint.material as THREE.MeshBasicMaterial).opacity = this.rollCallShown;
@@ -1055,10 +1059,8 @@ export class View {
     // 2.36: the gangs' turf, faint all day, the tables bright at dinner, the corners in the evening.
     if (this.turfPaint)
       showTurf(this.turfPaint, f.turf, this.turfShown, dt, this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
-    // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
-    this.meAt.x = f.x;
-    this.meAt.z = f.z;
-    this.pieces.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER, this.meAt);
+    // The pitch (P29; 2.44: penalties): its paint and goals, the ball (seen from the roofs and the vents too; not from the tunnels).
+    this.pieces.pitchView.update(f.pitch, dt, f.layer !== LAYER.UNDER);
     // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
     this.pieces.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).

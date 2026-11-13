@@ -20,7 +20,7 @@
 // clear `g.guide` after freezing, or the floor arrows show. A `live` play-on runs in real time, so
 // its result varies: look at each picture.
 import { PLANS, quiet, runRoute, type Route } from '../escapes';
-import { boutPress, Bot, DIR } from '../bots';
+import { boutPress, Bot, DIR, pensBot } from '../bots';
 import { placesOf } from '../../src/sim/ai/places';
 import { TRAINING } from '../../src/content/prisons/training';
 import { WAY } from '../../src/content/smuggling';
@@ -28,14 +28,13 @@ import { CALLEE } from '../../src/content/phone';
 import { KIOSK } from '../../src/content/kiosk';
 import { CHARTS, countIn, LATE, songSteps } from '../../src/content/nights';
 import { command, dirFromVector, EXT, LINE, needleArgs, OP, ORDER, TALK, tossArgs } from '../../src/sim/command';
-import { nearestDir } from '../../src/sim/ai/path';
 import { isTrue } from '../../src/sim/systems/cards';
 import { onMachine } from '../../src/sim/systems/training';
 import { drillOn } from '../../src/sim/systems/calendar';
 import { squareAt } from '../../src/sim/systems/checkers';
 import { dayMinute } from '../../src/sim/systems/clock';
 import { jobRooms } from '../../src/sim/systems/economy';
-import { fieldOf, pitchOf } from '../../src/sim/systems/football';
+import { PH } from '../../src/sim/systems/penalties';
 import { courtOf, powerAt, shotWindow } from '../../src/sim/systems/hoops';
 import { questionNow } from '../../src/sim/systems/quiz';
 import { RACE } from '../../src/sim/systems/races';
@@ -468,36 +467,22 @@ export const SHOTS: Record<string, Shot> = {
     dz: 0.5,
   },
   football: {
+    // (2.44: penalties: the player's kick on its way past the inmate's dive, the goal and the spot in the picture.)
     lesson: 'football',
     moves: (bot) => {
       talkTo(bot, bot.st.inmates[0].body);
-      bot.op(OP.TALK, TALK.FOOTBALL);
-      const f = fieldOf(pitchOf(bot.sim)!);
-      let held = 0;
+      bot.op(OP.TALK, TALK.PENALTIES);
       bot.until(
-        () => !bot.st.match,
+        () => !bot.st.pens || (bot.st.pens.turn === 0 && bot.st.pens.phase === PH.FLIGHT && bot.st.pens.k >= 1),
         4000,
-        () => {
-          const o = bot.st.match;
-          if (!o) return 0;
-          const [bx, bz] = o.ball;
-          const gx = f.along ? f.a1 + UNIT : f.mid;
-          const gz = f.along ? f.mid : f.a1 + UNIT;
-          const pl = bot.st.player;
-          const toGoal = nearestDir(gx - pl.x, gz - pl.z);
-          if (held) return ++held > 10 ? ((held = 0), command(toGoal, OP.EXT, EXT.KICK, 1)) : command(toGoal);
-          if (o.at && !o.pause && Math.hypot(bx - pl.x, bz - pl.z) < 600) {
-            held = 1;
-            return command(toGoal, OP.EXT, EXT.KICK, 0);
-          }
-          const d = Math.hypot(gx - bx, gz - bz) || 1;
-          return command(nearestDir(bx - ((gx - bx) * 450) / d - pl.x, bz - ((gz - bz) * 450) / d - pl.z));
-        },
+        () => pensBot(bot.sim),
       );
+      // (On past the moment: the ball in the air, the keeper going.)
+      bot.until(() => false, 12);
     },
-    when: (s) => !!s.state.match,
-    after: 300,
-    zoom: 1.2,
+    when: (s) => !!s.state.pens && s.state.pens.turn === 0 && s.state.pens.phase === PH.FLIGHT && s.state.pens.k >= 1,
+    after: 7,
+    zoom: 1.7,
   },
   race: {
     // (2.41: a race night at San Pancho with a bet on: the owners at the start, a crowd either side of the track.)

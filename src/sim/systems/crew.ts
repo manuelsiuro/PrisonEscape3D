@@ -277,10 +277,7 @@ export function brawlWith(sim: SimContext, who: number): number {
   s.inmates.forEach((o, k) => {
     if (k === who || s.followers.includes(k) || o.ko > 0 || o.angry > 0 || o.doing === DOING.SLEEP || s.talk === k) return;
     if (s.dice[0] === k || s.bout[0] === k) return;
-    if (
-      !sim.rules250 &&
-      (acts.includes(k) || s.quiz?.who.includes(k) || s.match?.team.includes(k) || s.ink?.who === k || hoopsPartner(s) === k)
-    )
+    if (!sim.rules250 && (acts.includes(k) || s.quiz?.who.includes(k) || s.pens?.who === k || s.ink?.who === k || hoopsPartner(s) === k))
       return;
     const d = (o.body.x - m.body.x) ** 2 + (o.body.z - m.body.z) ** 2;
     if (d >= bestD || !lineOfSight(sim.world, m.body.x, m.body.z, o.body.x, o.body.z)) return;

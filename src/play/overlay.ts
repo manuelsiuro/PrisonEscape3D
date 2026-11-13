@@ -92,7 +92,8 @@ import { boardNow, cheatNow, courtNow } from './pastimes';
 import { diceNow, pickNow, wrestleNow } from './games';
 import { crewChipList, crewRows } from './crew';
 import { longTalk, NO_TAKE, raceNow, ratRunNow, takeOffers } from './long';
-import { inkNow, matchNow, teamSounds } from './team';
+import { inkNow, teamSounds } from './team';
+import { pensNow } from './penalties';
 import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
 import { kioskNow } from './kiosk';
@@ -168,7 +169,9 @@ export function keepPlayerClear(open: boolean) {
   }
   if (shiftCheck-- > 0) return;
   shiftCheck = 8;
-  const el = document.querySelector<HTMLElement>('.item-panel:not(.hidden), .cheat-card:not(.hidden), .board-card:not(.hidden)');
+  const el = document.querySelector<HTMLElement>(
+    '.item-panel:not(.hidden), .cheat-card:not(.hidden), .board-card:not(.hidden), .pens-card:not(.hidden)',
+  );
   if (!el) return view.setShift(0, 0);
   const r = el.getBoundingClientRect();
   const w = innerWidth;
@@ -350,16 +353,17 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   cards?.boardCard.update(boardV);
   cards?.courtCard.update(court);
   // Long games (P28): the race card at the track (not over another game's card).
-  // Team & ink (P29): the match's card, the tattoo's (the needle's buzz meanwhile).
-  const match = busy ? null : matchNow(sim, a);
+  // Penalties (2.44): the card at the spot and in a shootout. Ink (P29): the tattoo's (the needle's buzz meanwhile).
+  const match = busy || (panel && !sim.state.pens) ? null : pensNow(sim, a);
   const inkV = busy ? null : inkNow(sim, a);
-  cards?.matchCard.update(match);
+  cards?.pensCard.update(match);
   cards?.inkCard.update(inkV);
   teamSounds(sim, g.paused || g.over);
-  document.body.classList.toggle('matching', !!match);
+  // (The card at the spot with no ball down is an offer, not a game: the lesson's card and the rest stay as they are.)
+  document.body.classList.toggle('matching', !!match && match.mode !== 'ready');
   document.body.classList.toggle('inking', !!inkV);
   // Stage nights (P30): talent night's card at the stage (the lanes while playing), quiz night's at the table.
-  const otherGame = !!(bout || pick || diceV || cheat || boardV || match || inkV);
+  const otherGame = !!(bout || pick || diceV || cheat || boardV || (match && match.mode !== 'ready') || inkV);
   const stageV = busy || otherGame ? null : stageNow(sim, a);
   const quizV = busy || otherGame || stageV ? null : quizNow(sim);
   cards?.stageCard.update(stageV);
