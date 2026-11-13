@@ -365,6 +365,15 @@ export class CityView {
     }
   }
 
+  /** A survivor turns to the player when they come near (within four tiles). */
+  facePeople(x: number, z: number) {
+    for (const m of this.folk.children) {
+      const dx = x - m.position.x;
+      const dz = z - m.position.z;
+      if (dx * dx + dz * dz < 16 && dx * dx + dz * dz > 0.04) m.rotation.y = Math.atan2(dx, dz);
+    }
+  }
+
   /** Where the story points in this district: a lit diamond turning over each tile, a ring on the floor under it. */
   private readonly marks = new THREE.Group();
   private readonly markGem = new THREE.OctahedronGeometry(0.2);

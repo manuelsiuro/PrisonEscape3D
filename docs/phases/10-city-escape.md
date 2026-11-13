@@ -246,10 +246,11 @@ In two slices.
 
 ### C4. The finish (v2.49.0): built
 
-- **How to play:** a tab of its own, City (`ui/screens/helpTopics.ts`): nine topics in two groups
+- **How to play:** a tab of its own, City (`ui/screens/helpTopics.ts`): ten topics in two groups
   (the sealed city, searching and eating, the dead, hitting back, boards and beds, making; the radio
-  and the journal, the three ways out, the living), each with its picture (`public/help/city*.webp`,
-  taken in the game with `window.__cityStage()`), every number checked against the rules. The city's
+  and the journal, the three ways out, the living, the city's keys and buttons), nine with a picture
+  (`public/help/city*.webp`, each staged by `scripts/dev/cityshot.ts`), every number checked against
+  the rules. The city's
   own pause and H open on it.
 - **First steps:** seven tips said once each, at the moment they matter (the first search, the first
   food, weapon, planks or nails, the first of the dead to see the player, the first dusk, the radio
@@ -262,7 +263,7 @@ In two slices.
   through the paving and litter on the roads. All in the district's one mesh: no draw call more.
 - **The passes:** French on screen at 412 × 915 (the journal, the help; five tabs fit), a pretend pad
   (Y the journal, LB the Make panel, View the map, B closing each), the title with its new entry at
-  915 × 412 and 412 × 915, an independent review.
+  915 × 412 and 412 × 915, an independent review (ten findings, none in the rules; fixed).
 - **Shown to everyone:** `cityOn()` is true; the "in the making" note is gone from the new city's card.
 - **Left, parked in `BACKLOG.md`:** the landmarks' own models and music of the city's own, light and
   fire, cars searched, a real phone's speed, a real pad and touch by hand.
@@ -271,7 +272,7 @@ In two slices.
 
 | Stage | Version | Tests added | Moved snapshots | Played in the browser |
 |---|---|---|---|---|
-| C4 | 2.49.0 | none (`helptest` takes the nine topics) | `helptest` (78 topics, 60 pictures), `i18ntest`, `docstest` counts; the city's tests unmoved | 1143×836: a new city, the first tip, weeds, litter, an awning; 1040×480: the nine pictures; 412×915 in French: the journal, the help's City tab and a topic; a pretend pad; the title at 915×412 and 412×915 |
+| C4 | 2.49.0 | none (`helptest` takes the nine topics) | `helptest` (79 topics, 60 pictures), `i18ntest`, `docstest` counts; the city's tests unmoved | 1143×836: a new city, the first tip, weeds, litter, an awning; 1040×480: the nine pictures; 412×915 in French: the journal, the help's City tab and a topic; a pretend pad; the title at 915×412 and 412×915 |
 | C3b | 2.48.0 | (in `citystorytest`) | `citysurvivetest` (runners and brutes from the third night: the scavenger falls 2.2 times a week, from 1.8), `citymaketest` (eleven recipes), `cityzedtest`, `citytest` (fingerprints), `i18ntest`, `tokentest` (a colour), `docstest` counts | 915×412: the fence met, his card with Hand it over, the key had, a swap, the Make panel's three locked rows, the journal's People |
 | C3a | 2.48.0 | `citystorytest` (`quester` in `citybots.ts`) | `citytest`, `citysurvivetest`, `cityzedtest` (the state's fingerprints only: its new fields; every count as before), `i18ntest`, `docstest` counts | 915×412: a new city, the radio found and Dispatch's line, the journal in act 3, the helicopter chosen there, the beacon lit at the hospital at night, the end card; 500×878: the goal's line, the bubble, the corner map's marks |
 | C2c | 2.47.0 | `citymaketest` | `citysurvivetest` (weapons wear: 1.8 falls a week), `cityzedtest`, `citytest` (the state's fingerprints), `i18ntest`, `tokentest`, `docstest` counts | desktop: the Make panel, boards made twice, a house's door barred, the shelter said and shown, the boards on the door |
