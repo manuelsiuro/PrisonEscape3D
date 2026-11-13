@@ -53,8 +53,7 @@ colour-blind palette was left out by the user.
 The second mode is whole and on the title (`phases/10-city-escape.md`, v2.46.0 to v2.49.0). Parked,
 none planned:
 
-- **The landmarks' own models** (a helipad, a boat at the pier, the metro's gates, a mall's sign) and
-  **music of its own** (the prisons' tension theme plays).
+- **Music of its own** (the prisons' tension theme plays).
 - **Light and fire** (a torch, a fire barrel, a generator), **cars searched**, weapons thrown or shot.
 - **The tunnel walked** as a tenth map for the metro's last night.
 - By hand (§2): touch on a real phone, a real pad, a real phone's speed in a busy district at night,

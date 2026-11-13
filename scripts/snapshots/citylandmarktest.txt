@@ -1,0 +1,6 @@
+24 cities, 216 landmarks
+pads 24 (three tiles across: 24)
+boats 24
+grilles 24 (sliding aside: 24)
+rooftop places clear of the sign: 2299
+triangles a landmark: 1457 on average, 2660 at most
