@@ -489,7 +489,7 @@ const run = (c: City, n: number) =>
     { lights: 'x' },
     { lights: { [here]: [[at, 7, later]] } },
     { lights: { [here]: [[at, 1, 1e15]] } },
-    { lights: { 9: [[at, 1, later]] } },
+    { lights: { 10: [[at, 1, later]] } },
     { torch: -4, torchOn: 1 },
     { torch: 1.5 },
   ]) {

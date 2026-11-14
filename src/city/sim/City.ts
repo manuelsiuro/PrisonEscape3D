@@ -8,6 +8,7 @@ import { tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W, type World } from '../../sim/world/World';
 import { decoVeils, generateDistrict, type District, type Gate } from '../gen/district';
 import { CITY_N, cityPlan, OPPOSITE, SIDE, type CityPlan } from '../gen/plan';
+import { generateTunnel, PLACES, TUNNEL, type Tunnel } from '../gen/tunnel';
 import { cityItem, cityItemNumber } from '../content/items';
 import { BOX_SLOTS, carLoot, CARS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED } from '../content/loot';
 import { freshRanged, soundRanged, stepFires, useThrown } from './ranged';
@@ -277,7 +278,7 @@ export class City {
   district!: District;
   world!: World;
   /** Per district: 1 on each tile seen so far. */
-  readonly seen: Uint8Array[] = Array.from({ length: CITY_N }, () => new Uint8Array(N));
+  readonly seen: Uint8Array[] = Array.from({ length: PLACES }, () => new Uint8Array(N));
   /** Bumps when `seen` changes (the map redraws). */
   seenRev = 0;
   private readonly districts = new Map<number, District>();
@@ -290,7 +291,7 @@ export class City {
       this.state = { ...from.state, player: { ...from.state.player } };
       for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight(), ...freshCars(), ...freshRanged() }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
-      from.seen.forEach((text, d) => d < CITY_N && unpackBits(text, this.seen[d]));
+      from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
       this.enter(this.state.district, true);
     } else {
       const d = this.plan.start;
@@ -326,8 +327,33 @@ export class City {
   /** A district's plan (made once, kept). */
   districtOf(d: number): District {
     let made = this.districts.get(d);
-    if (!made) this.districts.set(d, (made = generateDistrict(this.plan, d)));
+    if (!made) this.districts.set(d, (made = d === TUNNEL ? this.tunnel.district : generateDistrict(this.plan, d)));
     return made;
+  }
+  /** 2.56: the metro's tunnel, a tenth map (made once, kept). */
+  private under: Tunnel | null = null;
+  get tunnel(): Tunnel {
+    return (this.under ??= generateTunnel(this.plan));
+  }
+  /** Up at the metro's stairs again (a save that has no business in the tunnel). */
+  surface() {
+    const s = this.state;
+    this.enter(this.story.wayDistrict[2]);
+    const exit = this.story.exits[2];
+    s.player = bodyAt(exit % MAP_W, Math.floor(exit / MAP_W), s.player.facing);
+    s.zeds = [];
+    s.arrive = 1;
+  }
+  /** Down the metro's stairs, the gates open: to the foot of them, in the tunnel (story.ts asks). */
+  descend() {
+    const s = this.state;
+    s.search = '';
+    this.close();
+    const from = s.district;
+    const first = ((s.visited >> TUNNEL) & 1) === 0;
+    this.enter(TUNNEL);
+    s.player = bodyAt(this.tunnel.start % MAP_W, Math.floor(this.tunnel.start / MAP_W), s.player.facing);
+    this.events.push({ type: 'travel', from, to: TUNNEL, side: SIDE.W, first });
   }
 
   /** Into a district (`kept`: a save's, its dead as they were). */
@@ -423,7 +449,7 @@ export class City {
     const s = this.state;
     const sound: Record<string, number[]> = {};
     for (const [d, list] of Object.entries(s.bars)) {
-      if (!/^[0-8]$/.test(d) || !Array.isArray(list)) continue;
+      if (!/^[0-9]$/.test(d) || !Array.isArray(list)) continue;
       const doors = new Set(this.districtOf(Number(d)).lots.flatMap((l) => l.doors));
       const kept = [...new Set(list)].filter((i) => doors.has(i));
       if (kept.length) sound[d] = kept;
@@ -583,10 +609,15 @@ export class City {
       return;
     }
     // A Survivor: what they carried lies where they fell; they wake at home the next morning.
+    // (2.56: fallen in the tunnel, it lies at the top of the metro's stairs: not behind another night of the generator.)
+    const under = s.district === TUNNEL;
+    // (Made only if something is carried: empty pockets leave no pile.)
+    const pile = () =>
+      under ? (s.boxes[`${this.story.wayDistrict[2]}:g${this.story.exits[2]}`] ??= []) : this.boxOf(`g${this.tile}`, true);
     for (const st of s.inv) {
       if (!st[0]) continue;
       // (Onto the pile already there, if they fell here before: never more slots than a save takes.)
-      this.put(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, st[0], st[1]);
+      this.put(pile(), PILE_SLOTS, st[0], st[1]);
       st[0] = st[1] = 0;
     }
     storyFell(this);
@@ -1173,7 +1204,7 @@ export function loadCity(snap: unknown): City | null {
   const st = s?.state;
   if (!st || st.v !== 1 || !Array.isArray(s.seen)) return null;
   const whole = [st.seed, st.mode, st.step, st.district, st.visited, st.player?.x, st.player?.z, st.player?.facing].every(Number.isInteger);
-  if (!whole || st.district < 0 || st.district >= CITY_N || st.step < 0) return null;
+  if (!whole || st.district < 0 || st.district >= PLACES || st.step < 0) return null;
   if (st.player.x < 0 || st.player.z < 0 || st.player.x >= MAP_W * UNIT || st.player.z >= MAP_H * UNIT) return null;
   if (!s.seen.every((t) => typeof t === 'string')) return null;
   // (C2's fields: there or not, a save from before them; there, they must be sound.)
@@ -1214,6 +1245,8 @@ export function loadCity(snap: unknown): City | null {
     city.soundBars(before);
     city.rebar();
     soundStory(city);
+    // (2.56: in the tunnel without the metro's way going: a damaged save. Back up at the stairs, the district's dead put down afresh.)
+    if (city.state.district === TUNNEL && !(city.state.ready === 1 && city.state.way === 3)) city.surface();
     if (!zedsOk(st.zeds) || ![st.rng, st.kills, st.swung, st.arrive].every(Number.isInteger) || st.kills < 0) {
       city.state.zeds = [];
       city.state.rng = city.salt(77) | 0;

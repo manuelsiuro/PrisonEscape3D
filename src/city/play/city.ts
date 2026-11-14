@@ -37,7 +37,8 @@ import { STORY, THINGS } from '../content/story';
 import { gatesOpen, going, marks, objectives, type Objective } from '../sim/story';
 import { CityMusic } from '../music';
 import { LEVEL, LIGHT_KIND } from '../content/light';
-import { lightLevel, lightsHere, murky, torchLit } from '../sim/light';
+import { lampLit, lightLevel, lightsHere, murky, torchLit } from '../sim/light';
+import { TUNNEL } from '../gen/tunnel';
 import { alarmCars, carTiles } from '../sim/cars';
 import { DECO } from '../gen/district';
 import { landmarkPlan } from '../render/landmarkPlan';
@@ -159,13 +160,17 @@ function stage(r: CityRun, first = false) {
   cityView.set(
     c.plan,
     c.district,
-    landmarkPlan(
-      c.district,
-      c.story,
-      c.grid,
-      c.people.map((q) => q.tile),
-    ),
+    // (The tunnel has no landmark: nothing of the station's stands down there.)
+    c.state.district === TUNNEL
+      ? null
+      : landmarkPlan(
+          c.district,
+          c.story,
+          c.grid,
+          c.people.map((q) => q.tile),
+        ),
   );
+  cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null);
   // (The survivors face the nearest street door of their building: whoever comes in.)
   cityView.setPeople(c.people, (tile) => {
     const lot = c.district.lots[c.district.lotAt[tile] - 1];
@@ -183,13 +188,20 @@ function stage(r: CityRun, first = false) {
   firesShown = -1;
   goalAt = -1;
   marksShown = '?';
-  sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
+  sound.setScene(darkNow(c) ? 'outdoorNight' : 'outdoorDay');
 }
+
+/** The place the player is in, named: a district's own name and kind, or the tunnel under them all (2.56). */
+const placeName = (c: City) => (c.state.district === TUNNEL ? t('city.tunnel.name') : c.plan.names[c.state.district]);
+const placeKind = (c: City) =>
+  c.state.district === TUNNEL ? t('city.tunnel.kind') : t(`city.kind.${c.plan.kinds[c.state.district]}` as Key);
+/** Under the ground it is night whatever the hour. */
+const darkNow = (c: City) => nightAt(c.minute) || c.state.district === TUNNEL;
 
 /** Where they've come to, said. */
 function arrive(r: CityRun) {
   const c = r.city;
-  banner.show(c.plan.names[c.state.district], t(`city.kind.${c.plan.kinds[c.state.district]}` as Key), 'routine', 3200);
+  banner.show(placeName(c), placeKind(c), 'routine', 3200);
 }
 
 /** The city in progress written to its slot. */
@@ -201,7 +213,8 @@ function save(r: CityRun) {
     v: 1,
     at: Date.now(),
     game: __APP_VERSION__,
-    name: c.plan.names[c.state.district],
+    // (In the tunnel: the district they went down in, whose name is in no language.)
+    name: c.plan.names[c.state.district === TUNNEL ? c.story.wayDistrict[2] : c.state.district],
     day: c.day,
     minute: c.minute,
     mode: c.state.mode,
@@ -276,7 +289,7 @@ async function pauseCity() {
   await under(r, async () => {
     for (;;) {
       const c = r.city;
-      const place = `${t('city.title')} · ${c.plan.names[c.state.district]} · ${t('city.hud.day', { n: c.day })}`;
+      const place = `${t('city.title')} · ${placeName(c)} · ${t('city.hud.day', { n: c.day })}`;
       const choice = await showPause(click, r.saved, false, '', false, place);
       if (choice === 'settings') await showSettings(settings, settingsChanged, click);
       else if (choice === 'help') await showHelp(click, { tab: 'city' });
@@ -443,8 +456,8 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     lightsShown = c.lightsRev;
     cityView.setLights(lightsHere(c), c.lit, c.dim);
   }
-  cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), torchLit(c));
-  cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
+  cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, darkNow(c), torchLit(c) || lampLit(c));
+  cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, darkNow(c), f);
   view.draw(f, dt, now / 1000);
   cityView.facePeople(f.x, f.z);
   cityView.drawLandmark(landmarkOf(r, now / 1000));
@@ -460,7 +473,8 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     sound.music(
       cityMusic.pick(
         {
-          going: way === 1 || (way === 2 && tide),
+          // (2.56: the tunnel is the metro's last stand going on.)
+          going: way === 1 || (way === 2 && tide) || c.state.district === TUNNEL,
           chasing: c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0),
           night: nightAt(c.minute),
           safe: lot >= 0 && (c.shelter(lot) || c.safeLots.has(lot)),
@@ -731,7 +745,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       buzz('missed');
       if (e.final) {
         save(r);
-        void under(r, () => showCityOver(c.day, c.plan.names[c.state.district], click)).then(() => stopCity());
+        void under(r, () => showCityOver(c.day, placeName(c), click)).then(() => stopCity());
         break;
       }
       // A Survivor: home, the next morning, behind a blink of dark (and the chase's music left where they fell).
@@ -779,7 +793,8 @@ function frameOf(r: CityRun, a: number): Frame {
   f.facing = headingAngle(p.facing);
   f.moving = p.moving && !r.paused;
   f.speed = 1;
-  f.minuteOfDay = c.minute + ((c.state.step % STEPS_PER_SECOND) + a) / STEPS_PER_SECOND;
+  // (2.56: no hour under the ground: midnight's dark.)
+  f.minuteOfDay = c.state.district === TUNNEL ? 0 : c.minute + ((c.state.step % STEPS_PER_SECOND) + a) / STEPS_PER_SECOND;
   f.surface = c.world.ground.kind[c.tile];
   f.tilesRev = c.world.rev;
   f.outfit = INMATE_OUTFIT;
@@ -935,12 +950,13 @@ function hudOf(r: CityRun): CityHudState {
   if (!picture || picture.rev !== c.seenRev) picture = { img: paintDistrict(c.district, c.seen[d], picture?.img), rev: c.seenRev };
   const lot = c.district.lotAt[c.tile];
   const st = hudState;
-  st.name = c.plan.names[d];
-  st.kind = t(`city.kind.${c.plan.kinds[d]}` as Key);
-  st.place = lot ? (c.shelter(lot - 1) ? t('city.shelter.place') : t(`city.use.${c.district.lots[lot - 1].use}` as Key)) : '';
+  st.name = placeName(c);
+  st.kind = placeKind(c);
+  st.place =
+    d === TUNNEL ? '' : lot ? (c.shelter(lot - 1) ? t('city.shelter.place') : t(`city.use.${c.district.lots[lot - 1].use}` as Key)) : '';
   st.day = c.day;
   st.time = hhmm(c.minute);
-  st.night = nightAt(c.minute);
+  st.night = darkNow(c);
   st.picture = picture.img;
   st.pictureRev = picture.rev + d * 100003;
   st.x = c.state.player.x / UNIT;
@@ -954,9 +970,11 @@ function hudOf(r: CityRun): CityHudState {
   // (In daylight nothing is said, but a torch left burning; out of it: in the light, by the torch, in the dark.)
   const out = murky(c, c.tile);
   st.light = out ? lightLevel(c) : torch ? LEVEL.DIM : -1;
+  // (2.56: the ranger's lamp, in the tunnel: no battery to count down.)
+  const lamp = lampLit(c) && !torch;
   // (2.53: the first time in a building's dark by day.)
-  if (out && !nightAt(c.minute) && st.light !== LEVEL.LIT && !r.paused && !c.state.sleeping) tip('city.dark', 'city.tip.dark');
-  st.torch = torch ? c.state.torch : 0;
+  if (out && !darkNow(c) && st.light !== LEVEL.LIT && !r.paused && !c.state.sleeping) tip('city.dark', 'city.tip.dark');
+  st.torch = lamp ? -1 : torch ? c.state.torch : 0;
   const goal = goalOf(r);
   st.goal = goal.text;
   st.marks = goal.marks;

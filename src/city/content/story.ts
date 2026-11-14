@@ -89,6 +89,9 @@ export const STORY = {
   heliHold: 120,
   /** The metro's gates wind open this many game minutes after the generator starts. */
   metroHold: 90,
+  /** 2.56: the tunnel: how many of the dead stand along it, and its danger (as a district's: what's asked of any place). */
+  tunnelDead: 8,
+  tunnelDanger: 3,
   /** The boat leaves on the night's high tide: from, to (minutes of the day; over midnight). */
   tideFrom: 23 * 60,
   tideTo: 2 * 60,

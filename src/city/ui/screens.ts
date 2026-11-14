@@ -4,6 +4,7 @@ import { h } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { MAP_H, MAP_W } from '../../sim/world/grid';
 import { CITY_N, CITY_W, gateOpen, LANES, laneAt, neighbour, ROAD_W, SIDE } from '../gen/plan';
+import { TUNNEL } from '../gen/tunnel';
 import { FLAG, NOTES, THINGS, WAYS, thingBit } from '../content/story';
 import type { City } from '../sim/City';
 import { MODE } from '../sim/City';
@@ -221,7 +222,8 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       });
       // Where the journal points: a diamond each.
       for (const o of objectives(city)) {
-        if (o.done || !o.at) continue;
+        // (2.56: what the tunnel asks is under the map, not on it.)
+        if (o.done || !o.at || o.at.district === TUNNEL) continue;
         const { x, y } = mapXY(o.at.district, o.at.tile, GAP);
         c.fillStyle = '#f2c230';
         c.strokeStyle = '#07090c';
@@ -236,9 +238,12 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
         c.stroke();
       }
       // The player: a ring round a dot, in their district.
-      const d = city.state.district;
-      const px = GAP + (d % CITY_W) * (MAP_W + GAP) + (city.tile % MAP_W) + 0.5;
-      const pz = GAP + Math.floor(d / CITY_W) * (MAP_H + GAP) + Math.floor(city.tile / MAP_W) + 0.5;
+      // (2.56: in the tunnel, where they went down: the metro's stairs.)
+      const under = city.state.district === TUNNEL;
+      const d = under ? city.story.wayDistrict[2] : city.state.district;
+      const tile = under ? city.story.exits[2] : city.tile;
+      const px = GAP + (d % CITY_W) * (MAP_W + GAP) + (tile % MAP_W) + 0.5;
+      const pz = GAP + Math.floor(d / CITY_W) * (MAP_H + GAP) + Math.floor(tile / MAP_W) + 0.5;
       c.fillStyle = '#ffffff';
       c.beginPath();
       c.arc(px, pz, 2.2, 0, Math.PI * 2);

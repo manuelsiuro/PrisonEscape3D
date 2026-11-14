@@ -378,6 +378,7 @@ export class CityView {
       this.alarms,
       this.fires,
       this.fx,
+      this.track,
     );
   }
 
@@ -504,6 +505,52 @@ export class CityView {
       lamp.position.set(p.x, 0.7, p.z);
       this.alarms.add(lamp);
     }
+  }
+
+  /** The metro's tunnel (2.56): sleepers and rails along its way, a ladder under a shaft of light at its end (`way`: the track's middle, tile by tile; null: not the tunnel). */
+  private readonly track = new THREE.Group();
+  private readonly shaftMat = new THREE.MeshBasicMaterial({
+    color: 0xcfe2ff,
+    transparent: true,
+    opacity: 0.22,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  setTunnel(way: readonly number[] | null) {
+    disposeTree(this.track, () => false, new Set<THREE.Material>([kitMaterial, this.shaftMat]));
+    this.track.clear();
+    if (!way?.length) return;
+    const parts: Part[] = [];
+    const SLEEPER = 0x4a3a2c;
+    const RAIL = 0x7c8794;
+    way.forEach((tile, k) => {
+      const x = (tile % W) + 0.5;
+      const z = Math.floor(tile / W) + 0.5;
+      const next = way[k + 1] ?? tile + (tile - (way[k - 1] ?? tile));
+      const prev = way[k - 1] ?? tile - (next - tile);
+      // (A straight tile: sleepers across it, a rail either side; a corner's is left bare.)
+      if (next - tile !== tile - prev) return;
+      const east = Math.abs(next - tile) === 1;
+      for (const o of [-0.25, 0.25])
+        put(parts, [box(east ? 0.16 : 0.9, 0.03, east ? 0.9 : 0.16, SLEEPER, 0, 0.005, 0)], x + (east ? o : 0), z + (east ? 0 : o));
+      for (const o of [-0.3, 0.3])
+        put(parts, [box(east ? 1 : 0.07, 0.07, east ? 0.07 : 1, RAIL, 0, 0.03, 0)], x + (east ? 0 : o), z + (east ? o : 0));
+    });
+    const end = way[way.length - 1];
+    const ex = (end % W) + 0.5;
+    const ez = Math.floor(end / W) + 0.5;
+    const ladder: Part[] = [box(0.06, 2.4, 0.06, DARK_IRON, -0.22, 0, 0), box(0.06, 2.4, 0.06, DARK_IRON, 0.22, 0, 0)];
+    for (let r = 0; r < 7; r++) ladder.push(box(0.44, 0.04, 0.04, DARK_IRON, 0, 0.25 + r * 0.32, 0));
+    put(parts, ladder, ex + 0.35, ez);
+    const mesh = new THREE.Mesh(merge(parts), kitMaterial);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    this.track.add(mesh);
+    const shaft = new THREE.Mesh(HOT_GEO, this.shaftMat);
+    shaft.position.set(ex, 0.04, ez);
+    shaft.scale.setScalar(1.3);
+    shaft.renderOrder = 0.48;
+    this.track.add(shaft);
   }
 
   /** Thrown and shot (2.55): the flames on what burns, each on a scorched tile; a bottle's arc; a bolt's streak. */
@@ -846,15 +893,17 @@ export class CityView {
         put(parts, awning(color, l.use === landmark), (door % MAP_W) + 0.5, Math.floor(door / MAP_W) + 0.5, Math.atan2(out[0], out[1]));
       }
     });
-    beyond(
-      plan,
-      district.index,
-      parts,
-      district.gates.map((g) => ({
-        side: g.side,
-        at: g.side === SIDE.N || g.side === SIDE.S ? (g.tiles[0] % W) + 1 : Math.floor(g.tiles[0] / W) + 1,
-      })),
-    );
+    // (2.56: nothing stands beyond the tunnel's rock.)
+    if (district.gates.length)
+      beyond(
+        plan,
+        district.index,
+        parts,
+        district.gates.map((g) => ({
+          side: g.side,
+          at: g.side === SIDE.N || g.side === SIDE.S ? (g.tiles[0] % W) + 1 : Math.floor(g.tiles[0] / W) + 1,
+        })),
+      );
     // Each street that crosses a border runs on past it, between the roofs.
     for (const g of district.gates) {
       const along = ((g.tiles[0] % W) + (g.tiles[1] % W)) / 2 + 0.5;
@@ -886,6 +935,7 @@ export class CityView {
     this.live.clear();
     this.setLights([], new Uint8Array(0), new Uint8Array(0));
     this.setAlarms([]);
+    this.setTunnel(null);
     this.setFires([]);
     for (const m of [...this.fx.children]) {
       this.fx.remove(m);

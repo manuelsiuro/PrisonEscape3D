@@ -290,6 +290,10 @@ In two slices.
 - **Weapons thrown or shot (2.55).** `content/ranged.ts`, `sim/ranged.ts`: a bottle and a molotov
   thrown with Use (`useThrown`), the crossbow shot from `strike` (`shoot`), what burns in `state.fires`
   (`stepFires`, after the dead's step). Three items, three recipes (fifteen). `cityrangedtest`.
+- **The metro's tunnel (2.56).** `gen/tunnel.ts`: a tenth map (`TUNNEL` 9, `PLACES` 10), made from
+  the seed, kept as a district with one lot and no gate. `City.descend` (from `storyAct` once the gates
+  are open), `lampLit`, the tunnel's own `quota`; `storyMoved` wins at the ladder. Saves take a tenth
+  map seen. `citytunneltest`.
 
 ## Proof, stage by stage
 

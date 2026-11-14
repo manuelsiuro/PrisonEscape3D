@@ -12,6 +12,9 @@ import { cityItemNumber } from '../src/city/content/items';
 import { SEARCHED } from '../src/city/content/loot';
 import { BEATS, FLAG, NOTES, STORY, THING_IN, THINGS, WAYS, thingBit } from '../src/city/content/story';
 import { neighbour } from '../src/city/gen/plan';
+import { TUNNEL } from '../src/city/gen/tunnel';
+import { LEVEL } from '../src/city/content/light';
+import { lightLevel } from '../src/city/sim/light';
 import { BRUTE, RUNNER, ZKIND } from '../src/city/content/dead';
 import { PEOPLE } from '../src/city/content/people';
 import { CITY_RECIPES } from '../src/city/content/recipes';
@@ -329,9 +332,22 @@ const ids = (c: City) =>
   stand(c, d, c.story.exits[2]);
   check(c.target()?.kind === 'way' && objectives(c)[0].id === 'down3', `the gates open: ${ids(c)}`);
   press(c, COP.ACT);
-  check(s.over === 2 && s.won === 3, 'the tunnel not taken');
+  // (2.56: down into the tunnel, a tenth map; its far end is the way out.)
+  check(s.district === TUNNEL && c.tile === c.tunnel.start && !s.over && s.ready === 1, `the gates taken: in ${s.district} at ${c.tile}`);
+  check(objectives(c)[0].id === 'through3' && objectives(c)[0].at?.tile === c.tunnel.end, `in the tunnel: ${ids(c)}`);
+  check(c.target() === null && lightLevel(c) === LEVEL.DIM, 'nothing to press down there; the lamp is the light');
+  // Every tile of its way walked, by the stick: out at the foot of the ladder.
+  let walked = 0;
+  for (const t of c.tunnel.way) {
+    if (s.over) break;
+    for (let k = 0; k < 40 && c.tile !== t && !s.over; k++) {
+      c.step(command(nearestDir((t % MAP_W) - (c.tile % MAP_W), Math.floor(t / MAP_W) - Math.floor(c.tile / MAP_W))));
+      walked++;
+    }
+  }
+  check(s.over === 2 && s.won === 3, `the tunnel walked to its end: over ${s.over}, at ${c.tile} of ${c.tunnel.end}`);
   say(
-    `the generator: started at any hour, the gates open ${STORY.metroHold} minutes on, the dead up into the station meanwhile (${inside} in it at the most)`,
+    `the generator: started at any hour, the gates open ${STORY.metroHold} minutes on, the dead up into the station meanwhile (${inside} in it at the most); then the tunnel, ${c.tunnel.way.length} tiles walked in ${walked} steps to the ladder`,
   );
 }
 {
