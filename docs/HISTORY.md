@@ -215,4 +215,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 - City Escape: the landmarks' own models (v2.50.0)
 - City Escape: music of its own (v2.51.0)
-- City Escape: light and fire (v2.52.0, not released yet)
+- City Escape: light and fire (v2.52.0)
