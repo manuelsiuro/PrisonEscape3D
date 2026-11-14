@@ -269,6 +269,12 @@ export class Sound extends SoundEffects {
     this.tone(95, 48, 0.16, 'sine', 0.14);
     this.hiss(0.09, 'lowpass', 700, 0.8, 0.09);
   }
+  /** A fire catching (City Escape, 2.52): a breath of flame, then a few snaps as it settles. */
+  ignite() {
+    this.hiss(0.55, 'bandpass', 650, 0.7, 0.2, undefined, 0, 0.12);
+    for (let k = 0; k < 5; k++) this.hiss(0.03, 'highpass', 3200, 0.8, 0.07, undefined, 0.3 + k * 0.1 + Math.random() * 0.05);
+  }
+
   /** The radio opening: a burst of static, then the carrier's tone. */
   crackle() {
     this.hiss(0.22, 'bandpass', 3200, 1.2, 0.035);

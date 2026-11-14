@@ -6,4 +6,4 @@ the blow: 5 with fists to put one down, 2 with a bat; one alone, struck as it co
 bodies: the player does not walk through one of the dead, and a pack along a street stays in file
 a night at the start: 3 by day, 6 by 03:00 (the night's 6), one more every 20 minutes
 dawn: 4 in the streets at 05:00, 2 by 06:30
-a bot's first 18 hours, 3 put down, 6 about at the end: 961cb139; saved half way, the same; damaged dead put down afresh
+a bot's first 18 hours, 3 put down, 6 about at the end: d8ef8729; saved half way, the same; damaged dead put down afresh

@@ -117,6 +117,16 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
     ],
     taught: 3,
   },
+  // 2.52: a lantern (a bottle, a wick, a can of fuel), by hand.
+  {
+    makes: 'lantern',
+    n: 1,
+    from: [
+      ['bottle', 1],
+      ['cloth', 1],
+      ['fuel', 1],
+    ],
+  },
 ];
 
 /** A recipe's ingredients and result as item numbers. */

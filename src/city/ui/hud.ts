@@ -3,6 +3,7 @@ import { keyLabel } from '../../i18n/keys';
 import { h, setText } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { MAP_H, MAP_W } from '../../sim/world/grid';
+import { LEVEL } from '../content/light';
 
 /** What City Escape's HUD shows (C1), worked out by the play layer each frame. */
 export interface CityHudState {
@@ -24,6 +25,9 @@ export interface CityHudState {
   energy: number;
   /** How many of the dead are after the player. */
   chasing: number;
+  /** 2.52: the light where the player stands (LEVEL; -1: by day, not shown), and the torch's minutes left while it's on (0: off). */
+  light: number;
+  torch: number;
   /** The story's line now ('' none), and where it points in this district (tiles; `marksKey` changes with them). */
   goal: string;
   marks: readonly number[];
@@ -48,6 +52,7 @@ export class CityHud {
   private readonly mapBtn: HTMLButtonElement;
   private readonly canvas: HTMLCanvasElement;
   private shownRev = -1;
+  private shownLight = '?';
   private shownChasing = -1;
   private meters: Record<string, number> = {};
   private shownNight: boolean | null = null;
@@ -82,6 +87,9 @@ export class CityHud {
       <div class="hud-row city-goal-row">
         <button class="pill city-goal hidden">${icon('clipboard', 15)}<span></span></button>
       </div>
+      <div class="hud-row city-light-row">
+        <span class="pill city-light hidden" role="status">${icon('flame', 14)}<span></span></span>
+      </div>
       <div class="city-radio hidden" role="status" aria-live="polite">${icon('megaphone', 18)}<div><b></b><p></p></div></div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -105,6 +113,7 @@ export class CityHud {
     this.mapBtn.classList.toggle('hidden', !on);
     this.shownRev = -1;
     this.shownChasing = -1;
+    this.shownLight = '?';
     this.shownNight = null;
     this.meters = {};
     this.shownGoal = '';
@@ -170,6 +179,23 @@ export class CityHud {
       const pill = this.el.querySelector<HTMLElement>('.city-chased')!;
       pill.classList.toggle('hidden', !s.chasing);
       if (s.chasing) setText(pill.querySelector('span')!, t(s.chasing === 1 ? 'city.chased.one' : 'city.chased.many', { n: s.chasing }));
+    }
+    const lightKey = s.light < 0 ? '' : `${s.light}:${s.light === LEVEL.DIM ? s.torch : 0}`;
+    if (lightKey !== this.shownLight) {
+      this.shownLight = lightKey;
+      const pill = this.el.querySelector<HTMLElement>('.city-light')!;
+      pill.classList.toggle('hidden', s.light < 0);
+      pill.classList.toggle('dark', s.light === LEVEL.DARK);
+      pill.classList.toggle('lit', s.light === LEVEL.LIT);
+      if (s.light >= 0)
+        setText(
+          pill.querySelector('span')!,
+          s.light === LEVEL.LIT
+            ? t('city.light.lit')
+            : s.light === LEVEL.DIM
+              ? t('city.light.dim', { t: `${Math.floor(s.torch / 60)}:${String(s.torch % 60).padStart(2, '0')}` })
+              : t('city.light.dark'),
+        );
     }
     if (s.goal !== this.shownGoal) {
       this.shownGoal = s.goal;

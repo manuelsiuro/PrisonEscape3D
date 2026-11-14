@@ -36,6 +36,8 @@ import { MODE } from '../sim/City';
 import { STORY, THINGS } from '../content/story';
 import { gatesOpen, going, marks, objectives, type Objective } from '../sim/story';
 import { CityMusic } from '../music';
+import { LEVEL, LIGHT_KIND } from '../content/light';
+import { lightLevel, lightsHere, torchLit } from '../sim/light';
 import { landmarkPlan } from '../render/landmarkPlan';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
@@ -174,6 +176,7 @@ function stage(r: CityRun, first = false) {
   r.prev.z = p.z;
   picture = null;
   barsShown = -1;
+  lightsShown = -1;
   goalAt = -1;
   marksShown = '?';
   sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
@@ -413,6 +416,11 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     marksShown = goal.key;
     cityView.setMarks(goal.marks);
   }
+  if (lightsShown !== c.lightsRev) {
+    lightsShown = c.lightsRev;
+    cityView.setLights(lightsHere(c), c.lit);
+  }
+  cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), torchLit(c));
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
   view.draw(f, dt, now / 1000);
   cityView.facePeople(f.x, f.z);
@@ -459,6 +467,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (cityItem(e.item)?.use) tip('city.eat', 'city.tip.eat');
       else if (cityItem(e.item)?.attack) tip('city.weapon', 'city.tip.weapon');
       else if (cityItem(e.item)?.id === 'plank' || cityItem(e.item)?.id === 'nails') tip('city.boards', 'city.tip.boards');
+      else if (cityItem(e.item)?.id === 'fuel' || cityItem(e.item)?.id === 'torch') tip('city.light', 'city.tip.light');
       break;
     case 'stored':
     case 'dropped':
@@ -471,6 +480,19 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'full':
       banner.toast(t('city.toast.full'), 'info', 2200);
+      break;
+    // 2.52: light and fire.
+    case 'lit':
+      if (e.kind === LIGHT_KIND.POWER) sound.engine(0.7);
+      else sound.ignite();
+      banner.toast(t(`city.toast.lit.${e.kind}` as Key), 'good', 3200);
+      break;
+    case 'burnt':
+      banner.toast(t(`city.toast.burnt.${e.kind}` as Key), 'info', 2800);
+      break;
+    case 'torch':
+      sound.click();
+      if (e.spent) banner.toast(t('city.toast.torchSpent'), 'info', 2800);
       break;
     case 'refused':
       banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400);
@@ -734,6 +756,7 @@ function frameOf(r: CityRun, a: number): Frame {
 const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
 /** The barred doors the view last put its boards on (`City.barsRev`). */
 let barsShown = -1;
+let lightsShown = -1;
 
 /** Where each of the dead was before the last step, and what the view is handed of them. */
 const was = new WeakMap<Zed, { x: number; z: number }>();
@@ -851,6 +874,10 @@ function hudOf(r: CityRun): CityHudState {
   st.hunger = c.state.hunger / FULL;
   st.energy = c.state.energy / FULL;
   st.chasing = c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0);
+  // (2.52: the light they stand in, said at night and whenever the torch is on.)
+  const torch = torchLit(c);
+  st.light = nightAt(c.minute) || torch ? (nightAt(c.minute) ? lightLevel(c) : LEVEL.DIM) : -1;
+  st.torch = torch ? c.state.torch : 0;
   const goal = goalOf(r);
   st.goal = goal.text;
   st.marks = goal.marks;
