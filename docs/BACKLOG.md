@@ -53,7 +53,7 @@ colour-blind palette was left out by the user.
 The second mode is whole and on the title (`phases/10-city-escape.md`, v2.46.0 to v2.49.0). Parked,
 none planned:
 
-- **Cars searched**, weapons thrown or shot (fire among them), interiors dark by day.
+- **Cars searched**, weapons thrown or shot (fire among them).
 - **The tunnel walked** as a tenth map for the metro's last night.
 - By hand (§2): touch on a real phone, a real pad, a real phone's speed in a busy district at night,
   the French read by a native speaker, its sounds listened to.

@@ -18,9 +18,14 @@ export const LIGHT = {
   lanternMinutes: 600,
   /** A generator: its whole building, this long on a can. */
   powerMinutes: 720,
+  /** 2.53: how far daylight comes into a building from a street door (tiles, round its walls; further in, it is dark by day too, but in a home). */
+  dayReach: 3,
   /** The most lights kept burning in a district (the oldest goes out for one more). */
   most: 12,
 } as const;
 
 /** Where the player stands: in strong light (or daylight), by their torch alone, or in the dark. */
+/** 2.53: the buildings daylight fills (homes: their windows were never bricked up); the others are dark deep inside by day. */
+export const WINDOWED: readonly string[] = ['house', 'boathouse', 'rangers'];
+
 export const LEVEL = { DARK: 0, DIM: 1, LIT: 2 } as const;

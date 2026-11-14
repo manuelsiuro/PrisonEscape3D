@@ -78,7 +78,7 @@ export function quota(c: City): { indoors: number; streets: number } {
 }
 
 /** A district's open tiles indoors and on its streets (worked out when it's entered). */
-export function places(c: City): { indoors: number[]; streets: number[] } {
+export function places(c: City): { indoors: number[]; streets: number[]; deep: number[] } {
   const d = c.district;
   const indoors: number[] = [];
   const streets: number[] = [];
@@ -89,7 +89,7 @@ export function places(c: City): { indoors: number[]; streets: number[] } {
     if (ch === ',') streets.push(i);
     else if (lot && isBuilding(d.lots[lot - 1].use) && (ch === 'w' || ch === ':' || ch === '_')) indoors.push(i);
   }
-  return { indoors, streets };
+  return { indoors, streets, deep: [] };
 }
 
 const farEnough = (c: City, tile: number, clear: number) => {
@@ -143,7 +143,13 @@ export function populate(c: City) {
   c.state.zeds = [];
   const q = quota(c);
   const at = c.zedPlaces;
-  for (let k = 0; k < q.indoors; k++) put(c, at.indoors, ZED.IDLE);
+  // (2.53: by day they wait where daylight doesn't reach; after dark, anywhere indoors.)
+  // (Only the dark they can stand in: not a shelter's, not a lit room's. No more than one to `darkEach` tiles of it: the rest indoors anywhere, as before.)
+  const dark = nightAt(c.minute)
+    ? []
+    : at.deep.filter((i) => !c.lit[i] && !c.shelter(c.district.lotAt[i] - 1) && !c.safeLots.has(c.district.lotAt[i] - 1));
+  const inDark = Math.min(q.indoors, Math.floor(dark.length / DEAD.darkEach));
+  for (let k = 0; k < q.indoors; k++) put(c, k < inDark ? dark : at.indoors, ZED.IDLE);
   for (let k = 0; k < q.streets; k++) put(c, at.streets, ZED.WANDER);
 }
 
@@ -256,8 +262,9 @@ export function stepDead(c: City) {
   }
   const fog = going(c) === 2;
   // (2.52: at night, someone in strong light or behind a torch is seen as far as by day.)
+  // (2.53: by day too, deep in a building: in the dark there they see no further than at night.)
   const shown = night && c.anyLight ? c.lit[here] === 1 : false;
-  const dark = night && !shown && !torchLit(c);
+  const dark = (night ? !shown : c.dim[here] === 1 && !c.lit[here]) && !torchLit(c);
   // (Asleep in strong light, they lie in plain view: seen as far as anyone is at night.)
   const sight =
     (s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay) * UNIT;
@@ -318,8 +325,17 @@ export function stepDead(c: City) {
     if (z.mode === ZED.SEEK) {
       speed = DEAD.chase - 20;
       if (z.goal === -2) {
-        // (To ground: the nearest floor indoors, out of any light.)
-        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => c.zedIndoor[i] === 1 && !c.lit[i], -1, 2500, undefined, c.zedGrid) ?? [];
+        // (To ground: the nearest floor indoors, out of any light; 2.53: out of the daylight too, where there's such a place near.)
+        const from = tileAt(b.x, b.z);
+        const deep =
+          c.zedPlaces.deep.length && !c.dim[from]
+            ? findPath(c.world, from, (i) => c.dim[i] === 1 && c.zedIndoor[i] === 1 && !c.lit[i], -1, 2500, undefined, c.zedGrid)
+            : null;
+        // (Only a dark room near by: the night's many don't all end the day in the district's one dark shop.)
+        z.path =
+          (deep && deep.length <= DEAD.darkNear ? deep : null) ??
+          findPath(c.world, from, (i) => c.zedIndoor[i] === 1 && !c.lit[i], -1, 2500, undefined, c.zedGrid) ??
+          [];
         z.goal = z.path.length ? z.path[z.path.length - 1] : -1;
       } else if (z.goal === -3) {
         // (2.52: out of a light just lit, to the nearest dark.)
@@ -337,7 +353,9 @@ export function stepDead(c: City) {
     }
     if (z.mode === ZED.WANDER && !z.path.length && (s.step + k * 7) % 40 === 0) {
       // Somewhere else on the streets by night (now and then through a door); a few steps off by day.
-      const from = night && randomInt(s, 5) ? c.zedPlaces.streets : c.zedPlaces.indoors;
+      // (2.53: by day, somewhere in the dark where the district has any.)
+      const from =
+        night && randomInt(s, 5) ? c.zedPlaces.streets : !night && c.zedPlaces.deep.length ? c.zedPlaces.deep : c.zedPlaces.indoors;
       const to = from.length ? from[randomInt(s, from.length)] : -1;
       if (
         to >= 0 &&

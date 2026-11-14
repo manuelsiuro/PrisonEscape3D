@@ -640,11 +640,11 @@ const ids = (c: City) =>
   bad.state.errand = [3, 0, 0, 0];
   check(loadCity(bad)!.state.met === 0, 'an errand past its last is kept');
   // None of the dead are put down in a building one of them holds.
-  // (Counted from across the district, by day, when they stand indoors; with the rule off they are there.)
+  // (Counted from across the district, after dark, when they are put down anywhere indoors; with the rule off they are there.)
   c.peace = false;
   const nurse = c.story.people[1];
   stand(c, nurse.district, c.districtOf(nurse.district).spawn.z * MAP_W + c.districtOf(nurse.district).spawn.x);
-  s.step = ((2 - 1) * 1440 + 12 * 60 - START_MINUTE) * MIN;
+  s.step = ((2 - 1) * 1440 + 23 * 60 - START_MINUTE) * MIN;
   const count = () => {
     let n = 0;
     for (let k = 0; k < 60; k++) {
