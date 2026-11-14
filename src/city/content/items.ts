@@ -89,6 +89,8 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'medkit', kind: 'med', stack: 2, shape: 'pack', color: 0xf0ece2, accent: 0xc24a3a, use: { health: 70 } },
   { id: 'cleaver', kind: 'weapon', stack: 1, shape: 'knife', color: 0x9aa1ab, accent: 0x5a3320, attack: 14, wear: 60 },
   food('ration', 'packet', 0x6a7a4a, 60, { energy: 20 }, 0xd8b04a),
+  // 2.52: a lantern, made; set down where the player stands, it burns the night through.
+  { id: 'lantern', kind: 'tool', stack: 2, shape: 'jar', color: 0xe8b04a, accent: 0x3a3a3a },
 ];
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];

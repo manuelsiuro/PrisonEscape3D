@@ -33,7 +33,7 @@ src/city/
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
   record.ts           the ways out taken and the feats, in a slot of their own (read by the city's menu)
 src/styles/46-city.css
-scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymaketest.ts, citystorytest.ts, citylandmarktest.ts, citymusictest.ts;
+scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymaketest.ts, citystorytest.ts, citylandmarktest.ts, citymusictest.ts, citylighttest.ts;
 citybots.ts (the scavenger, the quester)
 ```
 
@@ -265,8 +265,7 @@ In two slices.
   (Y the journal, LB the Make panel, View the map, B closing each), the title with its new entry at
   915 × 412 and 412 × 915, an independent review (ten findings, none in the rules; fixed).
 - **Shown to everyone:** `cityOn()` is true; the "in the making" note is gone from the new city's card.
-- **Left, parked in `BACKLOG.md`:** light and fire, cars searched, a real phone's speed, a real pad and
-  touch by hand.
+- **Left, parked in `BACKLOG.md`:** cars searched, a real phone's speed, a real pad and touch by hand.
 - **After the four stages (2.50): the landmarks' own models.** Each landmark told at a glance (a coping
   in its colour, a pictogram sign, its own corner pieces) and the ways out as things to look at (the
   helipad, the beacon and the helicopter coming in; the boat at the pier's end; the grille over the
@@ -275,6 +274,11 @@ In two slices.
 - **Music of its own (2.51).** `audio/cityScore.ts`: E Phrygian, five moods (day, night, shelter, chase,
   the last stand); `city/music.ts` picks one each frame from what is happening; `citymusictest` proves
   every pitch is of the scale and walks the picking rule. Nobody has listened to it yet.
+- **Light and fire (2.52).** `content/light.ts`, `sim/light.ts`: a fire barrel, a lantern (a twelfth
+  recipe), a generator, the torch, all lit from the pockets; `City.lit` is the tiles in strong light,
+  which the dead that aren't chasing keep out of (a brute and the last stand's called ones aside). The
+  dead's side of it is in `dead.ts` behind `City.anyLight`: a city with nothing burning plays as before.
+  `citylighttest` proves each light and the night beside a lantern; the help's `cityLight`.
 
 ## Proof, stage by stage
 

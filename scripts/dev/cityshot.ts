@@ -11,6 +11,7 @@
 // shows; look at each picture. helptest checks every topic's picture is there.
 import type { City } from '../../src/city/sim/City';
 import type { Zed } from '../../src/city/sim/dead';
+import { relight } from '../../src/city/sim/light';
 import { MAP_W as W } from '../../src/sim/world/grid';
 
 interface Run {
@@ -195,6 +196,35 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       t.go(d, back);
     },
   },
+  // A lantern on the street by the bus on the third night: the player in its light, the dead at its edge.
+  cityLight: {
+    zoom: 1.35,
+    scene: (t) => {
+      const d = t.c.plan.start;
+      const sp = t.c.districtOf(d).spawn;
+      t.time(3, 22 * 60 + 30);
+      t.go(d, sp.z * W + sp.x);
+      // (Where a lantern lights the most street, within a few tiles of the bus.)
+      let at = -1;
+      let most = 0;
+      for (const i of t.c.zedPlaces.streets) {
+        if (Math.max(Math.abs((i % W) - sp.x), Math.abs(Math.floor(i / W) - sp.z)) > 9 || t.c.grid[i + 1]) continue;
+        t.s.lights = { [d]: [[i, 1, t.s.step + 9000]] };
+        relight(t.c);
+        const n = t.c.lit.reduce((a, b) => a + b, 0);
+        if (n > most) [at, most] = [i, n];
+      }
+      t.s.lights = { [d]: [[at, 1, t.s.step + 9000]] };
+      relight(t.c);
+      t.go(d, at + 1);
+      const [cx, cz] = [at % W, Math.floor(at / W)];
+      const edge = t.c.zedPlaces.streets.filter((i) => {
+        const far = Math.max(Math.abs((i % W) - cx), Math.abs(Math.floor(i / W) - cz));
+        return !t.c.lit[i] && far >= 4 && far <= 6;
+      });
+      for (const n of [1, 9, 17, 25, 33, 41]) t.zed(edge[(n * 5) % edge.length]);
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,
@@ -215,6 +245,8 @@ export async function stage(id: string) {
   t.r.paused = false;
   t.c.peace = true;
   Object.assign(t.s, { hunger: 90_000, energy: 90_000, health: 100 });
+  t.s.lights = {};
+  relight(t.c);
   if (!hide) {
     hide = document.createElement('style');
     hide.textContent = '.hud,.hotbar,.city-minimap,.act-btn,.tool-btn,.banner,.toast,.item-panel{display:none !important}';
