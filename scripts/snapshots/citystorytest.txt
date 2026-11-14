@@ -10,18 +10,18 @@ the survivors: met, then an errand each in turn (things brought, or the dead put
 runners from night 3 and one brute from night 5 where the danger is 2 or more, at night only; a brute at a barred door pounds it open in 80 steps without seeing through it, a shambler never; one brute a district a night; a thing of the armoury's in an emptied bed is still looked into
 the records: a way out counted, the quickest kept, ten feats each had once
 a bot follows the story to each way out on 4 cities (the dead away): 12 of 12 left, by day 5.5 (helicopter), 5.3 (boat), 5.5 (metro) on average
-  1 heli: day 5, 569c9809
-  1 boat: day 5, c3a1d33a
-  1 metro: day 5, 1ad6fa46
-  2 heli: day 3, 5ec42525
-  2 boat: day 3, ae87f1cf
-  2 metro: day 3, 73dd6a2a
-  3 heli: day 8, 41ecac33
-  3 boat: day 8, 8d6b13a8
-  3 metro: day 8, 348a0fc2
-  4 heli: day 6, bef7dfde
-  4 boat: day 5, 1fa90433
-  4 metro: day 6, 55a21be7
+  1 heli: day 5, 42485599
+  1 boat: day 5, 371e02ca
+  1 metro: day 5, 82e4efee
+  2 heli: day 3, 6bc914ed
+  2 boat: day 3, 41f1cd7f
+  2 metro: day 3, 6bbd069a
+  3 heli: day 8, cea8409b
+  3 boat: day 8, 6e5f92c8
+  3 metro: day 8, e4e2a822
+  4 heli: day 6, 25826476
+  4 boat: day 5, acc4589b
+  4 metro: day 6, 2370f147
 the holds alone with the dead about (a bat, three bandages, the first night, a bot that keeps moving): the helicopter 6 of 6, the metro 5 of 6
 with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 2 of 6 left, 28 falls in all
   1 heli: still there on day 13 (act 4), fell 5, 86 put down

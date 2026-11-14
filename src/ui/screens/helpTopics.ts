@@ -417,6 +417,11 @@ HELP.city = [
       }),
       T('cityShelter', 'home', '#6fb06a', { pic: true, stepIcons: ['hammer', 'lock', 'walk', 'moon'], see: ['cityMake', 'cityDead'] }),
       T('cityMake', 'hammer', '#d9822b', { pic: true, listIcons: ['hand', 'wrench', 'flame', 'users'], see: ['cityFood', 'cityPeople'] }),
+      T('cityLight', 'flame', '#f2a23a', {
+        pic: true,
+        listIcons: ['flame', 'bulb', 'plug', 'eye'],
+        see: ['cityShelter', 'cityDead', 'cityMake'],
+      }),
     ],
   },
   {

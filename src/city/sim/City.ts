@@ -1,4 +1,5 @@
 import type { PropKind } from '../../content/props';
+import { atFire, freshLight, lightMinute, relight, soundLight, useLight, type Light } from './light';
 import { argA, DIR_X, DIR_Z, dirOf, opOf } from '../../sim/command';
 import { mix32 } from '../../sim/rng';
 import { bodyAt, walk, type Body } from '../../sim/systems/movement';
@@ -170,6 +171,10 @@ export interface CityState {
   mark: number[];
   /** The last brute put down in the streets: its district × 1000 + its night (-1: none yet). One a district a night. */
   brute: number;
+  // 2.52, optional on load: light and fire. The torch's charge (game minutes) and whether it's on; what burns, by district (sim/light.ts).
+  torch: number;
+  torchOn: number;
+  lights: Record<string, Light[]>;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -205,8 +210,26 @@ export type CityEvent =
   | { type: 'night'; on: boolean }
   | {
       type: 'refused';
-      why: 'notTired' | 'tooHungry' | 'notHungry' | 'noNeed' | 'noUse' | 'doorway' | 'parts' | 'notNight' | 'tide' | 'locked' | 'noTrade';
+      why:
+        | 'notTired'
+        | 'tooHungry'
+        | 'notHungry'
+        | 'noNeed'
+        | 'noUse'
+        | 'doorway'
+        | 'parts'
+        | 'notNight'
+        | 'tide'
+        | 'locked'
+        | 'noTrade'
+        | 'noBattery'
+        | 'noFire'
+        | 'alreadyLit';
     }
+  /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
+  | { type: 'lit'; kind: number; tile: number }
+  | { type: 'burnt'; kind: number; tile: number }
+  | { type: 'torch'; on: boolean; spent: boolean }
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
   | { type: 'talk'; who: number; what: 'met' | 'done' | 'chat' }
   | { type: 'traded'; who: number; item: number }
@@ -249,7 +272,7 @@ export class City {
     if (from) {
       // (A save from before a field has it fresh, after the ones it has: a save's own order is kept.)
       this.state = { ...from.state, player: { ...from.state.player } };
-      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory() }))
+      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight() }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < CITY_N && unpackBits(text, this.seen[d]));
       this.enter(this.state.district, true);
@@ -265,6 +288,7 @@ export class City {
         visited: 0,
         ...freshSurvival(),
         ...freshStory(),
+        ...freshLight(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -320,8 +344,13 @@ export class City {
     });
     if (this.people.length) this.world.refreshBlock();
     this.refreshBars();
+    relight(this);
     if (!kept) this.state.arrive = 1;
   }
+  /** 2.52: the tiles in strong light in the district the player is in; whether anything burns here; a count the view watches. */
+  lit = new Uint8Array(N);
+  anyLight = false;
+  lightsRev = 0;
   /** The survivors in the district the player is in, and the buildings (lots) they hold. */
   people: Array<{ who: number; tile: number }> = [];
   safeLots = new Set<number>();
@@ -482,6 +511,7 @@ export class City {
       if (s.hunger > FULL / 2 && minute % (s.sleeping ? MEND_ASLEEP : MEND_AWAKE) === 0) s.health = Math.min(100, s.health + 1);
     }
     if (!s.over) storyMinute(this);
+    if (!s.over) lightMinute(this);
     if (s.over || !s.sleeping) return;
     if (s.hunger === 0) this.wake('hungry');
     else if (this.minute === SLEEP_TO) this.wake('morning');
@@ -529,6 +559,8 @@ export class City {
     // (To the next 06:30.)
     const now = (START_MINUTE + Math.floor(s.step / STEPS_PER_MINUTE)) % DAY_MINUTES;
     s.step += ((START_MINUTE - now + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES) * STEPS_PER_MINUTE;
+    // (2.52: what burnt out in the hours passed over is out before the morning's dead are put down.)
+    relight(this);
     s.health = WAKE.health;
     // (Hunger is not mended by a fall: a little, so the morning isn't spent starving again at once.)
     s.hunger = Math.max(s.hunger, WAKE.hunger);
@@ -715,6 +747,8 @@ export class City {
         if (s.energy >= TIRED && this.minute < SLEEP_FROM && this.minute >= SLEEP_TO)
           return void this.events.push({ type: 'refused', why: 'notTired' });
         s.sleeping = true;
+        // (2.52: the torch isn't left burning through the night.)
+        s.torchOn = 0;
         s.home = [s.district, this.tile];
         storyDid(this, 'slept');
         this.close();
@@ -760,6 +794,8 @@ export class City {
     if (!st?.[0]) return;
     const item = st[0];
     if (op === COP.USE) {
+      // (2.52: a light is lit, not eaten.)
+      if (useLight(this, item)) return;
       const use = cityItem(item)?.use;
       if (!use) return void this.events.push({ type: 'refused', why: 'noUse' });
       // (Nothing wasted: a full stomach isn't fed, unless the thing mends or wakes too.)
@@ -819,7 +855,8 @@ export class City {
     if (!r) return 'parts';
     if (r.taught !== undefined && this.state.errand[r.taught] < 1) return 'unknown';
     if (recipeParts(r).from.some(([item, n]) => this.count(item) < n)) return 'parts';
-    if (r.stove && !this.count(STOVE)) return 'stove';
+    // (2.52: a fire barrel burning beside them cooks as the stove does.)
+    if (r.stove && !this.count(STOVE) && !atFire(this)) return 'stove';
     if (r.bench && !this.atBench()) return 'bench';
     return 'ok';
   }
@@ -1075,6 +1112,7 @@ export function loadCity(snap: unknown): City | null {
   // (C2c's barred doors: a record of lists by district, or none; a save from before them: its weapons counted one each, given their blows.)
   const before = st.bars === undefined;
   if (typeof st.bars !== 'object' || !st.bars || Array.isArray(st.bars)) st.bars = {};
+  soundLight(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

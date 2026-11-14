@@ -499,6 +499,28 @@
   background: rgba(var(--city-you-65-rgb), 0.85);
 }
 
+/* 2.52: the light where the player stands, at night: lit (amber), by the torch, in the dark. */
+/* (A row of its own under the goal's line: the meters' row has no room for it on a phone.) */
+.city-light-row {
+  margin-top: 5px;
+}
+
+.city-light {
+  flex: none;
+  gap: 5px;
+  padding: 3px 10px 3px 7px;
+  font-size: 12px;
+  color: var(--city-moon-86);
+  background: rgba(var(--city-night-26-rgb), 0.85);
+}
+.city-light.lit {
+  color: var(--city-night-17);
+  background: rgba(var(--city-amber-83-rgb), 0.92);
+}
+.city-light.dark {
+  opacity: 0.8;
+}
+
 /* A bite: the screen's edges flash red. */
 .city-bitten {
   position: fixed;

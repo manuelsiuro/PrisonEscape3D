@@ -36,7 +36,16 @@ let icons: string[] | null = null;
 const iconOf = (n: number) => (icons ??= ['', ...photos(CITY_ITEMS.map((d) => ({ ...d, id: `city.${d.id}` })))])[n] ?? '';
 
 /** What a thing does when used, in a line ("+30 hunger · +12 energy"); '' for what isn't used. */
+/** 2.52: the pockets' lights, used to light something: their line and their button. */
+const LIGHTS: Record<string, { line: Key; verb: Key; icon: 'flame' | 'bulb' }> = {
+  torch: { line: 'city.gives.torch', verb: 'city.thing.torch', icon: 'bulb' },
+  lantern: { line: 'city.gives.lantern', verb: 'city.thing.setDown', icon: 'flame' },
+  fuel: { line: 'city.gives.fuel', verb: 'city.thing.light', icon: 'flame' },
+};
+
 export function useLine(n: number): string {
+  const light = LIGHTS[cityItem(n)?.id ?? ''];
+  if (light) return t(light.line);
   const use = cityItem(n)?.use;
   if (!use) return '';
   const sign = (v: number) => (v > 0 ? `+${v}` : `${v}`);
@@ -195,7 +204,7 @@ export class CityPockets {
         const [item, n] = s.inv[this.picked];
         const line = useLine(item);
         this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${counted(item, n)}</b><small>${line || (cityItem(item)!.wear !== undefined ? t('city.thing.blows', { n, of: cityItem(item)!.wear! }) : t(`city.kindOf.${cityItem(item)!.kind}` as Key))}</small></div></div>
-          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(cityItem(item)!.kind === 'med' ? 'heart' : 'utensils', 16)}${t(cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
+          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat'))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
     const box = `${s.box}|${JSON.stringify(s.slots)}`;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { disposeTree } from '../../render/batch';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { box, cyl, kitMaterial, merge, rod, type Part } from '../../render/kit';
 import { seeThrough } from '../../render/occlusion';
 import { WALL_H } from '../../render/WorldView';
@@ -314,6 +315,15 @@ function litter(h: number): Part[] {
   const c = [0xd8d2c0, 0xb8b0a0, 0xc9b79a][(h >> 3) % 3];
   return [box(0.26, 0.012, 0.18, c, -0.14, 0.004, 0.1), box(0.16, 0.012, 0.22, 0xa8a090, 0.2, 0.004, -0.16)];
 }
+/** 2.52: how far the player makes out the dead at night (tiles): by the faint light round them, by their torch; and what one out of the light looks like. */
+const GLOW_SEES = 3;
+const TORCH_SEES = 6.5;
+const SHADE = 0x1c2230;
+const DARK_IRON = 0x2a2f36;
+/** A flame: a narrow cone on its foot; a work lamp: a small bright box. */
+const FLAME_GEO = new THREE.ConeGeometry(0.2, 0.55, 6).translate(0, 0.27, 0);
+const HOT_GEO = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);
+const LAMP_GEO = new THREE.BoxGeometry(0.18, 0.1, 0.18).translate(0, 0.06, 0);
 const TINTS = [0xb9c2c9, 0xa9b89a, 0xc9b79a, 0x9aa9c2, 0xc29a9a, 0xb0a6c4, 0x8f9a8a];
 
 export class CityView {
@@ -350,7 +360,108 @@ export class CityView {
     );
     this.glow.renderOrder = 0.4;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk, this.live.group);
+    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk, this.live.group, this.lights);
+  }
+
+  /**
+   * Light and fire (2.52): the tiles in strong light, washed warm (exactly the tiles the dead keep out of),
+   * and what burns: flames over a barrel, a lantern on the floor, a lamp over a running generator.
+   */
+  private readonly lights = new THREE.Group();
+  private readonly flames: THREE.Mesh[] = [];
+  private readonly poolMat = new THREE.MeshBasicMaterial({
+    color: 0xffc46a,
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  private readonly hotMat = new THREE.MeshBasicMaterial({
+    color: 0xffd890,
+    transparent: true,
+    opacity: 0.3,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  private readonly flameMat = new THREE.MeshBasicMaterial({ color: 0xffa23a, toneMapped: false });
+  private readonly coreMat = new THREE.MeshBasicMaterial({ color: 0xfff0a8, toneMapped: false });
+  private lit: Uint8Array | null = null;
+  private torch = false;
+  setLights(list: ReadonlyArray<readonly [number, number, number]>, lit: Uint8Array) {
+    const keep = new Set<THREE.Material>([kitMaterial, this.poolMat, this.hotMat, this.flameMat, this.coreMat]);
+    disposeTree(this.lights, () => false, keep);
+    this.lights.clear();
+    this.flames.length = 0;
+    this.lit = list.length ? lit : null;
+    if (!list.length) return;
+    // The pool: a quad a lit tile, in one piece.
+    const quads: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < W * H; i++) {
+      if (!lit[i]) continue;
+      const q = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+      q.translate((i % W) + 0.5, 0.034, Math.floor(i / W) + 0.5);
+      quads.push(q);
+    }
+    if (quads.length) {
+      const pool = new THREE.Mesh(mergeGeometries(quads), this.poolMat);
+      for (const q of quads) q.dispose();
+      pool.renderOrder = 0.45;
+      this.lights.add(pool);
+    }
+    const things: Part[] = [];
+    for (const [tile, kind] of list) {
+      const x = (tile % W) + 0.5;
+      const z = Math.floor(tile / W) + 0.5;
+      // (A fire: over the barrel's rim; a lantern: on the floor; a generator: a work lamp on a stand beside its top.)
+      const y = kind === 0 ? 0.62 : kind === 1 ? 0.2 : 0.95;
+      if (kind === 1)
+        put(
+          things,
+          [cyl(0.11, 0.2, 0x6a8a5a, 0, 0, 0, 8), cyl(0.13, 0.03, DARK_IRON, 0, 0, 0, 8), cyl(0.05, 0.05, DARK_IRON, 0, 0.2, 0, 6)],
+          x,
+          z,
+        );
+      if (kind === 2) put(things, [cyl(0.03, 0.95, DARK_IRON, 0.3, 0, 0.3, 6), box(0.22, 0.06, 0.22, DARK_IRON, 0.3, 0.95, 0.3)], x, z);
+      const flame = new THREE.Mesh(kind === 2 ? LAMP_GEO : FLAME_GEO, kind === 2 ? this.coreMat : this.flameMat);
+      flame.position.set(kind === 2 ? x + 0.3 : x, y, kind === 2 ? z + 0.3 : z);
+      flame.userData.kind = kind;
+      flame.userData.seed = tile * 0.37;
+      if (kind !== 2) {
+        const core = new THREE.Mesh(FLAME_GEO, this.coreMat);
+        core.scale.setScalar(0.5);
+        flame.add(core);
+      }
+      if (kind === 1) flame.scale.setScalar(0.55);
+      // (The hot middle of its light, on the floor round it.)
+      if (kind !== 2) {
+        const hot = new THREE.Mesh(HOT_GEO, this.hotMat);
+        hot.position.set(x, 0.038, z);
+        hot.scale.setScalar(kind === 0 ? 1.9 : 1.4);
+        hot.renderOrder = 0.46;
+        this.lights.add(hot);
+      }
+      this.flames.push(flame);
+      this.lights.add(flame);
+    }
+    if (things.length) {
+      const m = new THREE.Mesh(merge(things), kitMaterial);
+      m.castShadow = true;
+      this.lights.add(m);
+    }
+  }
+  /** The fires flicker, the pool is stronger after dark; `torch`: the player's own light is the torch's (wider, warm). */
+  drawLights(time: number, still: boolean, night: boolean, torch: boolean) {
+    this.torch = torch;
+    this.poolMat.opacity = night ? 0.3 : 0.06;
+    this.hotMat.opacity = night ? 0.3 : 0.08;
+    for (const f of this.flames) {
+      if (f.userData.kind === 2) continue;
+      const base = f.userData.kind === 1 ? 0.55 : 1;
+      const s = f.userData.seed as number;
+      const k = still ? 1 : 1 + Math.sin(time * 11 + s) * 0.12 + Math.sin(time * 23 + s * 2) * 0.06;
+      f.scale.set(base * (2 - k), base * k, base * (2 - k));
+      if (!still) f.rotation.y = time * 2 + s;
+    }
   }
 
   /** The landmark's pieces that change with the story (2.50). */
@@ -458,13 +569,25 @@ export class CityView {
       this.m.compose(this.at, this.q, this.size);
       this.dead.setMatrixAt(k, this.m);
       if (night) this.eyes.setMatrixAt(k, this.m);
-      this.dead.setColorAt(k, this.tint.set(d.kind === 2 ? 0x5a4a52 : d.kind === 1 ? 0xe6d8c8 : TINTS[d.seed % TINTS.length]));
+      // (2.52: at night, beyond the player's light and any other, a shape and its eyes.)
+      const dx = d.x - me.x;
+      const dz = d.z - me.z;
+      const reach = this.torch ? TORCH_SEES : GLOW_SEES;
+      const shown = !night || dx * dx + dz * dz <= reach * reach || (this.lit?.[Math.floor(d.z) * W + Math.floor(d.x)] ?? 0) === 1;
+      this.dead.setColorAt(
+        k,
+        this.tint.set(!shown ? SHADE : d.kind === 2 ? 0x5a4a52 : d.kind === 1 ? 0xe6d8c8 : TINTS[d.seed % TINTS.length]),
+      );
     }
     this.dead.count = n;
     this.eyes.count = night ? n : 0;
     this.eyes.instanceMatrix.needsUpdate = true;
     this.glow.visible = night;
     this.glow.position.set(me.x, 0.03, me.z);
+    // (The torch: a wider, warmer pool round the player.)
+    this.glow.scale.setScalar(this.torch ? TORCH_SEES / 2.6 : 1);
+    (this.glow.material as THREE.MeshBasicMaterial).color.set(this.torch ? 0xffe2a0 : 0x9fb8ff);
+    (this.glow.material as THREE.MeshBasicMaterial).opacity = this.torch ? 0.2 : 0.09;
     this.dead.instanceMatrix.needsUpdate = true;
     if (this.dead.instanceColor) this.dead.instanceColor.needsUpdate = true;
   }
@@ -601,5 +724,6 @@ export class CityView {
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();
     this.live.clear();
+    this.setLights([], new Uint8Array(0));
   }
 }
