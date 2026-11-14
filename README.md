@@ -234,7 +234,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 
 - [`docs/FEATURES.md`](docs/FEATURES.md): every feature at a high level, what the code offers as a toolkit, its limits and the ways to extend it.
 - [`docs/source/the_escapists_3d_complete_game_design_document.md`](docs/source/the_escapists_3d_complete_game_design_document.md): the game design document, the source of truth.
-- [`docs/source/city_escape_design.md`](docs/source/city_escape_design.md): the design of City Escape, the second mode being built.
+- [`docs/source/city_escape_design.md`](docs/source/city_escape_design.md): the design of City Escape, the second mode.
 - [`docs/README.md`](docs/README.md): where to find what in the documents.
 - [`docs/PLAN.md`](docs/PLAN.md): decisions, the architecture, tests, the release routine and the status; [`docs/decisions/`](docs/decisions/) what was decided, area by area; [`docs/phases/`](docs/phases/) the phases (P0 to P42 and the polish series) as planned and built.
 - [`docs/HISTORY.md`](docs/HISTORY.md): every release, one line each; the full entries, what the reviews found and what was accepted, in [`docs/history/`](docs/history/).

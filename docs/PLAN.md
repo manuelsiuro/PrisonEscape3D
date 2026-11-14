@@ -45,7 +45,7 @@ Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the
 - [Inmates, talk and crews](decisions/people.md): cells and visitors, opinion, followers, speech, the crew, the pet rat (6 rows)
 - [Free time and games](decisions/free-time.md): the side games, cards, long games, penalties, the tattoo parlour, stage nights (6 rows)
 - [Modes, progress and saves](decisions/modes.md): saving, the campaign's unlocks, achievements, lessons, the Daily Escape, replays (7 rows)
-- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (38 rows)
+- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (40 rows)
 
 Any further conflict found during the build is added to its area's file in the same commit.
 
@@ -179,7 +179,10 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
   walked to), `citytest` (a bot round all nine districts, saves, determinism), `citysurvivetest` (a
   scavenger bot's week, hunger, sleep, death), `cityzedtest` (the dead), `citymaketest` (recipes, wear,
   barred doors, a night in a shelter), `citystorytest` (where the story's things lie on 60 cities, the acts,
-  each way out's last night, the survivors, runners and brutes, the records, a bot to each way out); their bots are in `citybots.ts`.
+  each way out's last night, the survivors, runners and brutes, the records, a bot to each way out), `citylandmarktest` (2.50: where each
+  landmark's pieces stand), `citymusictest` (2.51: the score's notes and its picking), `citylighttest` (2.52, 2.53: each
+  light, the dead at its edge, interiors dark by day), `citycartest` (2.54: cars searched, the alarm), `cityrangedtest`
+  (2.55: thrown and shot, fire), `citytunneltest` (2.56: the metro's tunnel); their bots are in `citybots.ts`.
 - **Speech** (`chattertest`, `gossiptest`): the phrase banks in both languages, the director
   over days of play, every piece of gossip checked against the running game.
 - **The action button** (`buttontest`, v2.34.2): in every prison, at a time in each block, beside every
@@ -208,7 +211,9 @@ Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the game
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 80 help topics,
 6,113 text keys in English and French, 98 test scripts. A second mode, City Escape, built in four
-stages (`phases/10-city-escape.md`), is on the title since 2.49.
+stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
+2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
+metro's tunnel).
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

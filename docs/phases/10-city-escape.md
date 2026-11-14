@@ -164,8 +164,8 @@ In three slices, each a release.
   beside), a weapon's bar in its pocket, boards across barred doors, Bar and Unbar on the button.
 - **Proved:** `citymaketest`: every recipe; wear; a door barred and opened; a first night asleep in a
   house on 12 cities, bitten in none with its doors barred, woken by a bite in 3 with them open.
-- **Left for later:** light and fire (a torch, a fire barrel, a generator), a stash's own screen,
-  cars searched, the weapons thrown or shot.
+- **Left for later:** light and fire (a torch, a fire barrel, a generator: built in 2.52), a stash's
+  own screen, cars searched (2.54), the weapons thrown or shot (2.55).
 
 ### C3. The story and the ways out
 
@@ -265,7 +265,8 @@ In two slices.
   (Y the journal, LB the Make panel, View the map, B closing each), the title with its new entry at
   915 × 412 and 412 × 915, an independent review (ten findings, none in the rules; fixed).
 - **Shown to everyone:** `cityOn()` is true; the "in the making" note is gone from the new city's card.
-- **Left, parked in `BACKLOG.md`:** cars searched, a real phone's speed, a real pad and touch by hand.
+- **Left, parked in `BACKLOG.md`:** cars searched (built in 2.54), a real phone's speed, a real pad
+  and touch by hand.
 - **After the four stages (2.50): the landmarks' own models.** Each landmark told at a glance (a coping
   in its colour, a pictogram sign, its own corner pieces) and the ways out as things to look at (the
   helipad, the beacon and the helicopter coming in; the boat at the pier's end; the grille over the

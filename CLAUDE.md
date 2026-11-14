@@ -18,7 +18,8 @@ from `docs/POLISH.md`, the record of what's been done, the user's choices and th
 updating it.
 
 **City Escape** (`src/city/`, v2.46 on) is a second mode with its own simulation, generator and screens,
-built in four stages (on the title since 2.49): its design is `docs/source/city_escape_design.md`, its roadmap and the
+built in four stages (on the title since 2.49; its parked items since, to 2.56, the metro's tunnel a
+tenth map): its design is `docs/source/city_escape_design.md`, its roadmap and the
 seams it shares with the prison game `docs/phases/10-city-escape.md`. It adds nothing to the prisons'
 lists or state; dev builds expose `window.__city()`.
 
