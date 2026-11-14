@@ -8,6 +8,7 @@ import { cityItemNumber } from '../content/items';
 import { LEVEL, LIGHT, LIGHT_KIND, WINDOWED } from '../content/light';
 import { isBuilding } from '../content/districts';
 import { DECO } from '../gen/district';
+import { TUNNEL } from '../gen/tunnel';
 import type { City } from './City';
 import { ZKIND } from '../content/dead';
 import { nightAt, ZED } from './dead';
@@ -71,10 +72,13 @@ export function dayDark(c: City) {
 /** Out of the daylight: after dark anywhere, by day deep in a building. */
 export const murky = (c: City, tile: number) => nightAt(c.minute) || c.dim[tile] === 1;
 
+/** 2.56: in the metro's tunnel the ranger's lamp is carried lit (one of the three things the way takes): a dim light, as the torch's. */
+export const lampLit = (c: City) => c.state.district === TUNNEL;
+
 /** Where the player stands: lit (strong light, or daylight), dim (the torch alone), dark. */
 export function lightLevel(c: City): number {
   if (!murky(c, c.tile) || c.lit[c.tile]) return LEVEL.LIT;
-  return torchLit(c) ? LEVEL.DIM : LEVEL.DARK;
+  return torchLit(c) || lampLit(c) ? LEVEL.DIM : LEVEL.DARK;
 }
 
 /** Which tiles are lit, worked out afresh (a district entered, a light lit or gone out). */
@@ -265,7 +269,7 @@ export function soundLight(s: { step?: unknown; torch?: unknown; torchOn?: unkno
     !Array.isArray(lights) &&
     Object.entries(lights).every(
       ([d, list]) =>
-        /^[0-8]$/.test(d) &&
+        /^[0-9]$/.test(d) &&
         Array.isArray(list) &&
         list.length <= LIGHT.most &&
         list.every(

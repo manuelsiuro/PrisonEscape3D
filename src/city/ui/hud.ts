@@ -193,7 +193,9 @@ export class CityHud {
           s.light === LEVEL.LIT
             ? t('city.light.lit')
             : s.light === LEVEL.DIM
-              ? t('city.light.dim', { t: `${Math.floor(s.torch / 60)}:${String(s.torch % 60).padStart(2, '0')}` })
+              ? s.torch < 0
+                ? t('city.light.lamp')
+                : t('city.light.dim', { t: `${Math.floor(s.torch / 60)}:${String(s.torch % 60).padStart(2, '0')}` })
               : t('city.light.dark'),
         );
     }

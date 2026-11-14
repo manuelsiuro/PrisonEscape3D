@@ -137,7 +137,7 @@ say(
 const good = JSON.parse(JSON.stringify(c.snapshot()));
 const broken: Array<[string, (s: typeof good) => void]> = [
   ['no state', (s) => delete s.state],
-  ['a district that is not', (s) => (s.state.district = 9)],
+  ['a district that is not', (s) => (s.state.district = 10)],
   ['a place off the map', (s) => (s.state.player.x = MAP_W * 1024 + 5)],
   ['a place that is not a number', (s) => (s.state.player.z = 'here')],
   ['a later layout', (s) => (s.state.v = 2)],

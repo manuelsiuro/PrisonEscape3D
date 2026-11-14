@@ -8,6 +8,7 @@ import { LOCKED, PEOPLE, type Errand } from '../content/people';
 import { BEATS, FLAG, isBeat, NOTES, STORY, THING_IN, THINGS, thingBit, WAYS, wayOf, type Beat, type Thing } from '../content/story';
 import type { District } from '../gen/district';
 import { CITY_N, gateOpen, LANES, neighbour, streamOf } from '../gen/plan';
+import { TUNNEL } from '../gen/tunnel';
 import type { City, Target } from './City';
 import { nightAt, noise } from './dead';
 
@@ -368,6 +369,12 @@ export function storyMoved(c: City) {
     c.events.push({ type: 'scouted', way: w });
     if (s.flags & FLAG.FIXED) say(c, `scout${w}` as Beat);
   }
+  // (2.56: the tunnel is the metro's way going on, not walked away from; its far end is the way out.)
+  if (s.district === TUNNEL) {
+    // (At the foot of the ladder, or beside it: up and out.)
+    if (far(c.tile, c.tunnel.end) <= 1) win(c);
+    return;
+  }
   if (s.ready && s.way !== 2 && s.district !== c.story.wayDistrict[s.way - 1]) stop(c, 'lost');
   arrived(c);
 }
@@ -447,6 +454,8 @@ export function storyAct(c: City) {
     return refreshAct(c);
   }
   if (s.way === 2 && !(c.minute >= STORY.tideFrom || c.minute < STORY.tideTo)) return void c.events.push({ type: 'refused', why: 'tide' });
+  // (2.56: the metro's gates open: down into the tunnel, on foot; the way out is at its far end.)
+  if (s.way === 3) return c.descend();
   win(c);
 }
 
@@ -522,6 +531,7 @@ export function objectives(c: City): Objective[] {
   }
   if (s.won) return [];
   if (w === 1) return [{ id: 'hold1', done: false, left: Math.max(0, STORY.heliHold - since(c)), at: exit(1) }];
+  if (w === 3 && s.district === TUNNEL) return [{ id: 'through3', done: false, at: { district: TUNNEL, tile: c.tunnel.end } }];
   if (w === 3)
     return gatesOpen(c)
       ? [{ id: 'down3', done: false, at: exit(3) }]

@@ -13,7 +13,8 @@ import { districtX, districtZ } from '../gen/plan';
 import { STORY } from '../content/story';
 import { crowded, type City } from './City';
 import { going } from './story';
-import { torchLit, wayToDark } from './light';
+import { lampLit, torchLit, wayToDark } from './light';
+import { TUNNEL } from '../gen/tunnel';
 import { shoot } from './ranged';
 
 /**
@@ -55,12 +56,16 @@ export const nightAt = (minute: number) => minute >= NIGHT_FROM || minute < NIGH
 
 /** How bad a district is: its distance from the start in districts, and one more where a way out begins. */
 export function danger(c: City, d: number): number {
+  // (2.56: under the city, as bad as anywhere above.)
+  if (d === TUNNEL) return STORY.tunnelDanger;
   const far = Math.max(Math.abs(districtX(d) - districtX(c.plan.start)), Math.abs(districtZ(d) - districtZ(c.plan.start)));
   return far + (ESCAPE_KINDS.includes(c.plan.kinds[d]) ? 1 : 0);
 }
 
 /** How many there should be now: indoors and in the streets. */
 export function quota(c: City): { indoors: number; streets: number } {
+  // (2.56: the tunnel's own, whatever the hour: they stand along it in the dark.)
+  if (c.state.district === TUNNEL) return { indoors: STORY.tunnelDead, streets: 0 };
   const dg = danger(c, c.state.district);
   // (A way out set going here: the night's count by day too, and more.)
   const set = going(c);
@@ -233,13 +238,15 @@ export function stepDead(c: City) {
   // The hour's turns, on the minute.
   if (s.step % STEPS_PER_MINUTE === 0) {
     const m = c.minute;
-    if (m === 19 * 60 || m === 20 * 60 + 30) c.events.push({ type: 'dusk', soon: m === 19 * 60 ? 120 : 30 });
-    if (m === NIGHT_FROM) {
+    // (2.56: under the ground no hour turns: no dusk, no nightfall, no dawn, and those standing in the tunnel stand on.)
+    const above = s.district !== TUNNEL;
+    if (above && (m === 19 * 60 || m === 20 * 60 + 30)) c.events.push({ type: 'dusk', soon: m === 19 * 60 ? 120 : 30 });
+    if (above && m === NIGHT_FROM) {
       c.events.push({ type: 'night', on: true });
       // Those indoors come out.
       for (const z of s.zeds) if (z.mode === ZED.IDLE) z.mode = ZED.WANDER;
     }
-    if (m === NIGHT_TO) {
+    if (above && m === NIGHT_TO) {
       c.events.push({ type: 'night', on: false });
       // Daylight: those in the streets go to ground (the nearest floor indoors), all but the day's few.
       let keep = going(c) === 1 ? s.zeds.length : quota(c).streets;
@@ -270,7 +277,7 @@ export function stepDead(c: City) {
   // (2.52: at night, someone in strong light or behind a torch is seen as far as by day.)
   // (2.53: by day too, deep in a building: in the dark there they see no further than at night.)
   const shown = night && c.anyLight ? c.lit[here] === 1 : false;
-  const dark = (night ? !shown : c.dim[here] === 1 && !c.lit[here]) && !torchLit(c);
+  const dark = (night ? !shown : c.dim[here] === 1 && !c.lit[here]) && !torchLit(c) && !lampLit(c);
   // (Asleep in strong light, they lie in plain view: seen as far as anyone is at night.)
   const sight =
     (s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay) * UNIT;
