@@ -38,6 +38,8 @@ import { gatesOpen, going, marks, objectives, type Objective } from '../sim/stor
 import { CityMusic } from '../music';
 import { LEVEL, LIGHT_KIND } from '../content/light';
 import { lightLevel, lightsHere, murky, torchLit } from '../sim/light';
+import { alarmCars, carTiles } from '../sim/cars';
+import { DECO } from '../gen/district';
 import { landmarkPlan } from '../render/landmarkPlan';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
@@ -177,6 +179,7 @@ function stage(r: CityRun, first = false) {
   picture = null;
   barsShown = -1;
   lightsShown = -1;
+  carsShown = -1;
   goalAt = -1;
   marksShown = '?';
   sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
@@ -416,6 +419,21 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     marksShown = goal.key;
     cityView.setMarks(goal.marks);
   }
+  if (carsShown !== c.carsRev) {
+    carsShown = c.carsRev;
+    cityView.setAlarms(
+      alarmCars(c).map((first) => {
+        const tiles = carTiles(c, first);
+        const mid = (f: (t: number) => number) => tiles.reduce((n, t) => n + f(t), 0) / tiles.length + 0.5;
+        return { x: mid((t) => t % MAP_W), z: mid((t) => Math.floor(t / MAP_W)) };
+      }),
+    );
+  }
+  // (An alarm sounding: heard again every few seconds, never over a card.)
+  if (c.state.alarm.length && !r.paused && now - alarmHeard > 2600) {
+    alarmHeard = now;
+    sound.carAlarm();
+  }
   if (lightsShown !== c.lightsRev) {
     lightsShown = c.lightsRev;
     cityView.setLights(lightsHere(c), c.lit, c.dim);
@@ -486,6 +504,12 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (e.kind === LIGHT_KIND.POWER) sound.engine(0.7);
       else sound.ignite();
       banner.toast(t(`city.toast.lit.${e.kind}` as Key), 'good', 3200);
+      break;
+    case 'alarm':
+      if (e.on) {
+        banner.toast(t('city.toast.alarm'), 'bad', 3400);
+        tip('city.alarm', 'city.tip.alarm');
+      } else banner.toast(t('city.toast.alarmOff'), 'info', 2400);
       break;
     case 'burnt':
       banner.toast(t(`city.toast.burnt.${e.kind}` as Key), 'info', 2800);
@@ -733,7 +757,11 @@ function frameOf(r: CityRun, a: number): Frame {
   const tg = c.state.sleeping ? null : c.target();
   if (tg) {
     const tiles =
-      tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc' ? [tg.tile] : c.tilesOf(Number(tg.key));
+      tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc'
+        ? [tg.tile]
+        : tg.key.startsWith('c')
+          ? carTiles(c, Number(tg.key.slice(1)))
+          : c.tilesOf(Number(tg.key));
     focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
     focus.x1 = Math.max(...tiles.map((i) => i % MAP_W));
     focus.z0 = Math.min(...tiles.map((i) => Math.floor(i / MAP_W)));
@@ -757,6 +785,8 @@ const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
 /** The barred doors the view last put its boards on (`City.barsRev`). */
 let barsShown = -1;
 let lightsShown = -1;
+let carsShown = -1;
+let alarmHeard = -1e9;
 
 /** Where each of the dead was before the last step, and what the view is handed of them. */
 const was = new WeakMap<Zed, { x: number; z: number }>();
@@ -790,7 +820,15 @@ function pocketsOf(r: CityRun): PocketsState {
   const tg = c.target();
   st.inv = s.inv;
   const open = s.open;
-  st.box = !open ? '' : open.startsWith('g') ? 'city.box.pile' : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
+  st.box = !open
+    ? ''
+    : open.startsWith('g')
+      ? 'city.box.pile'
+      : open.startsWith('c')
+        ? c.district.deco[Number(open.slice(1))] === DECO.WRECK
+          ? 'city.box.wreck'
+          : 'city.box.car'
+        : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
   st.slots = c.box();
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;

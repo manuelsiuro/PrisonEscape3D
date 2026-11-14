@@ -217,3 +217,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape: music of its own (v2.51.0)
 - City Escape: light and fire (v2.52.0)
 - City Escape: interiors dark by day (v2.53.0)
+- City Escape: cars searched (v2.54.0, not released yet)

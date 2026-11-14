@@ -98,6 +98,39 @@ const CARE: Weights = [
   ['battery', 2],
 ];
 
+/** 2.54: what a car left in the street holds (the glovebox, the boot), and a wreck (what the fire left). */
+const CAR: Weights = [
+  ['fuel', 2],
+  ['battery', 6],
+  ['water', 6],
+  ['cloth', 5],
+  ['tape', 4],
+  ['wire', 4],
+  ['bottle', 4],
+  ['soda', 3],
+  ['chocolate', 3],
+  ['bandage', 3],
+  ['tin', 3],
+  ['torch', 2],
+  ['crowbar', 2],
+  ['knife', 1],
+];
+const WRECK: Weights = [
+  ['scrap', 10],
+  ['wire', 6],
+  ['pipe', 4],
+  ['fuel', 1],
+  ['bottle', 2],
+];
+/** Cars searched (2.54): draws for a car and for a wreck; one car in `alarmOneIn` has an alarm, heard `alarmReach` tiles off for `alarmMinutes` game minutes. */
+export const CARS = { draws: 1, wreckDraws: 1, alarmOneIn: 6, alarmReach: 12, alarmMinutes: 20 } as const;
+
+/** A car's list, or a wreck's. */
+export function carLoot(wreck: boolean): { list: Array<[number, number]>; total: number } {
+  const list: Array<[number, number]> = (wreck ? WRECK : CAR).map(([id, w]) => [cityItemNumber(id), w]);
+  return { list, total: list.reduce((n, [, w]) => n + w, 0) };
+}
+
 /** A building's list, by what it is. */
 export const LOOT_BY_USE: Partial<Record<LotUse, Weights>> = {
   house: HOME,
