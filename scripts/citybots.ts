@@ -104,7 +104,9 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
     const bedtime = night || (s.energy < FULL * 0.3 && s.hunger > FULL * 0.2);
     const want = (k: number) =>
       !skip.has(`${s.district}:${k}`) && (bedtime ? props[k].kind === 'bed' && c.searched(`${k}`) : !c.searched(`${k}`));
-    const t = c.target();
+    // (2.54: it walks past cars, as it did before they could be searched: its runs stay what they were.)
+    const beside = c.target();
+    const t = beside?.key.startsWith('c') ? null : beside;
     if (t && (t.kind === 'box' || t.kind === 'bed') && (want(Number(t.key)) || (bedtime && t.prop === 'bed' && Number(t.key) === goal))) {
       pilot.stop();
       goal = -1;

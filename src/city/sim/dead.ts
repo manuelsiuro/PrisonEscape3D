@@ -154,11 +154,13 @@ export function populate(c: City) {
 }
 
 /** A noise the dead hear: those within its reach (tiles) and not already after someone go and look. */
-export function noise(c: City, tile: number, reach: number) {
+export function noise(c: City, tile: number, reach: number, again = false) {
   // (The docks' fog, the boat ready: sound carries.)
   if (going(c) === 2) reach *= STORY.fogHearing;
   for (const z of c.state.zeds) {
     if (z.mode === ZED.CHASE) continue;
+    // (A noise that goes on, a car's alarm: one already on its way somewhere else, to ground at dawn or out of a light, isn't called back each minute.)
+    if (again && z.mode === ZED.SEEK && z.goal !== tile) continue;
     const zt = tileAt(z.body.x, z.body.z);
     if (Math.max(Math.abs((zt % MAP_W) - (tile % MAP_W)), Math.abs(Math.floor(zt / MAP_W) - Math.floor(tile / MAP_W))) > reach) continue;
     z.mode = ZED.SEEK;
