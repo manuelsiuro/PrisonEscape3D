@@ -222,5 +222,5 @@ Every release, in order, one line each; the full entry (what changed, what the r
 ## [v2.55 to v2.59](history/v2.55-v2.59.md)
 
 - City Escape: weapons thrown or shot (v2.55.0)
-- City Escape: the metro's tunnel, walked (v2.56.0, not released yet)
+- City Escape: the metro's tunnel, walked (v2.56.0)
 - City Escape: the light's line follows the language (v2.56.1, not released yet)
