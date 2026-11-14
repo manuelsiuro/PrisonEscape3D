@@ -275,6 +275,18 @@ export class Sound extends SoundEffects {
     for (let k = 0; k < 5; k++) this.hiss(0.03, 'highpass', 3200, 0.8, 0.07, undefined, 0.3 + k * 0.1 + Math.random() * 0.05);
   }
 
+  /** A bottle breaking on the road (City Escape, 2.55): a sharp crack, then the shards. */
+  shatter() {
+    this.hiss(0.05, 'highpass', 2400, 0.8, 0.3);
+    for (let k = 0; k < 6; k++) this.hiss(0.04, 'bandpass', 4200 + k * 500, 6, 0.1, undefined, 0.04 + k * 0.035 + Math.random() * 0.02);
+  }
+
+  /** A crossbow let go (2.55): the string's short twang and the bolt's whisper. */
+  twang() {
+    this.tone(210, 120, 0.12, 'triangle', 0.05);
+    this.hiss(0.14, 'highpass', 3000, 0.7, 0.05, undefined, 0.02);
+  }
+
   /** The radio opening: a burst of static, then the carrier's tone. */
   crackle() {
     this.hiss(0.22, 'bandpass', 3200, 1.2, 0.035);

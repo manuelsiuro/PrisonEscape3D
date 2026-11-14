@@ -127,6 +127,35 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
       ['fuel', 1],
     ],
   },
+  // 2.55: thrown and shot.
+  {
+    makes: 'molotov',
+    n: 1,
+    from: [
+      ['bottle', 1],
+      ['fuel', 1],
+      ['tape', 1],
+    ],
+  },
+  {
+    makes: 'crossbow',
+    n: 1,
+    from: [
+      ['plank', 1],
+      ['pipe', 1],
+      ['wire', 2],
+    ],
+    bench: true,
+  },
+  {
+    makes: 'bolt',
+    n: 3,
+    from: [
+      ['nails', 1],
+      ['scrap', 1],
+    ],
+    bench: true,
+  },
 ];
 
 /** A recipe's ingredients and result as item numbers. */

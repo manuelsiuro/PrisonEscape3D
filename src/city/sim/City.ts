@@ -10,6 +10,7 @@ import { decoVeils, generateDistrict, type District, type Gate } from '../gen/di
 import { CITY_N, cityPlan, OPPOSITE, SIDE, type CityPlan } from '../gen/plan';
 import { cityItem, cityItemNumber } from '../content/items';
 import { BOX_SLOTS, carLoot, CARS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED } from '../content/loot';
+import { freshRanged, soundRanged, stepFires, useThrown } from './ranged';
 import { carMinute, carOpened, carsHere, carTiles, freshCars, isWreck, soundCars } from './cars';
 import { streamOf } from '../gen/plan';
 import { BLOW } from '../content/dead';
@@ -179,6 +180,8 @@ export interface CityState {
   lights: Record<string, Light[]>;
   // 2.54, optional on load: a car's alarm sounding in the district the player is in (sim/cars.ts): none, or [where it's heard from, the step it stops].
   alarm: number[];
+  // 2.55, optional on load: what burns in the district the player is in (sim/ranged.ts): [tile, the step it goes out].
+  fires: number[][];
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -228,7 +231,8 @@ export type CityEvent =
         | 'noTrade'
         | 'noBattery'
         | 'noFire'
-        | 'alreadyLit';
+        | 'alreadyLit'
+        | 'noRoom';
     }
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
@@ -236,6 +240,12 @@ export type CityEvent =
   | { type: 'torch'; on: boolean; spent: boolean }
   /** 2.54: a car's alarm set off by a search (`tile`: the car's), or stopped. */
   | { type: 'alarm'; on: boolean; tile: number }
+  /** 2.55: a thing thrown (a bottle, a molotov) from a tile to another; a bolt shot at one of the dead; the dead a fire put down; the player burnt; the last fire out. */
+  | { type: 'thrown'; item: number; from: number; to: number }
+  | { type: 'shot'; from: number; x: number; z: number; dead: boolean }
+  | { type: 'scorched'; dead: number }
+  | { type: 'burn'; harm: number }
+  | { type: 'fireOut' }
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
   | { type: 'talk'; who: number; what: 'met' | 'done' | 'chat' }
   | { type: 'traded'; who: number; item: number }
@@ -278,7 +288,7 @@ export class City {
     if (from) {
       // (A save from before a field has it fresh, after the ones it has: a save's own order is kept.)
       this.state = { ...from.state, player: { ...from.state.player } };
-      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight(), ...freshCars() }))
+      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight(), ...freshCars(), ...freshRanged() }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < CITY_N && unpackBits(text, this.seen[d]));
       this.enter(this.state.district, true);
@@ -296,6 +306,7 @@ export class City {
         ...freshStory(),
         ...freshLight(),
         ...freshCars(),
+        ...freshRanged(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -354,6 +365,9 @@ export class City {
     carsHere(this);
     // (2.54: an alarm isn't heard from the next district.)
     if (!kept) this.state.alarm = [];
+    // (2.55: nor does a fire burn on behind them.)
+    if (!kept) this.state.fires = [];
+    this.firesRev++;
     dayDark(this);
     // (2.53: by day the dead wait where it's dark.)
     this.zedPlaces.deep = this.zedPlaces.indoors.filter((i) => this.dim[i] === 1);
@@ -363,6 +377,8 @@ export class City {
   /** 2.54: per tile, the car or wreck standing there (its first tile + 1); a count the view watches (a car searched, a district entered). */
   carAt = new Int16Array(N);
   carsRev = 0;
+  /** 2.55: a count the view watches (a fire lit, gone out, a district entered). */
+  firesRev = 0;
   /** 2.52: the tiles in strong light in the district the player is in; whether anything burns here; a count the view watches. */
   lit = new Uint8Array(N);
   /** 2.53: the tiles daylight doesn't reach (deep in a building): dark by day as the street is by night. */
@@ -472,6 +488,8 @@ export class City {
       // (The journal is read in bed: a way out chosen there is chosen.)
       if (opOf(cmd) === COP.CHOOSE) choose(this, argA(cmd));
       if (!this.peace) stepDead(this);
+      // (2.55: what burns goes on burning, and wakes whoever lies in it.)
+      if (!s.over && !this.events.some((e) => e.type === 'dead')) stepFires(this);
       return;
     }
     const weak = s.hunger < FULL / 4 || s.energy <= 0;
@@ -503,6 +521,9 @@ export class City {
       if (!this.peace) populate(this);
     }
     if (!this.peace) stepDead(this);
+    if (s.over || this.events.some((e) => e.type === 'dead')) return;
+    // (2.55: what burns, burns whoever stands in it.)
+    stepFires(this);
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
     const here = this.tile;
     if (here === this.lastTile) return;
@@ -571,6 +592,8 @@ export class City {
     storyFell(this);
     // (2.54: nobody is left to hear the alarm.)
     s.alarm = [];
+    s.fires = [];
+    this.firesRev++;
     const [d, tile] = s.home;
     const moved = d !== s.district;
     if (moved) this.enter(d);
@@ -848,6 +871,8 @@ export class City {
     if (op === COP.USE) {
       // (2.52: a light is lit, not eaten.)
       if (useLight(this, item)) return;
+      // (2.55: a bottle or a molotov is thrown.)
+      if (useThrown(this, item, a)) return;
       const use = cityItem(item)?.use;
       if (!use) return void this.events.push({ type: 'refused', why: 'noUse' });
       // (Nothing wasted: a full stomach isn't fed, unless the thing mends or wakes too.)
@@ -994,6 +1019,17 @@ export class City {
       if (!b || d.attack > b.attack! || (d.attack === b.attack && (d.reach ?? 0) > (b.reach ?? 0))) best = st;
     }
     return best;
+  }
+  /** 2.55: something left on a tile's pile; a thing that wears (the crossbow) used once. */
+  leave(tile: number, item: number, n: number) {
+    this.put(this.boxOf(`g${tile}`, true), PILE_SLOTS, item, n);
+  }
+  wearItem(item: number) {
+    const st = this.state.inv.find((x) => x[0] === item);
+    if (!st || cityItem(item)?.wear === undefined) return;
+    if (--st[1] > 0) return;
+    this.events.push({ type: 'broke', item });
+    st[0] = st[1] = 0;
   }
   wearWeapon() {
     const best = this.weapon();
@@ -1166,6 +1202,7 @@ export function loadCity(snap: unknown): City | null {
   if (typeof st.bars !== 'object' || !st.bars || Array.isArray(st.bars)) st.bars = {};
   soundLight(st);
   soundCars(st);
+  soundRanged(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

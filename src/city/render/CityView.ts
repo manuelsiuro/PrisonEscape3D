@@ -365,7 +365,20 @@ export class CityView {
     );
     this.glow.renderOrder = 0.44;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk, this.live.group, this.lights, this.alarms);
+    this.root.add(
+      this.group,
+      this.dead,
+      this.eyes,
+      this.glow,
+      this.bars,
+      this.marks,
+      this.folk,
+      this.live.group,
+      this.lights,
+      this.alarms,
+      this.fires,
+      this.fx,
+    );
   }
 
   /**
@@ -493,9 +506,99 @@ export class CityView {
     }
   }
 
+  /** Thrown and shot (2.55): the flames on what burns, each on a scorched tile; a bottle's arc; a bolt's streak. */
+  private readonly fires = new THREE.Group();
+  private readonly fx = new THREE.Group();
+  private readonly scorchMat = new THREE.MeshBasicMaterial({
+    color: 0xff7a1a,
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  private readonly thrownMat = new THREE.MeshBasicMaterial({ color: 0x9fc08a, toneMapped: false });
+  private readonly boltMat = new THREE.MeshBasicMaterial({ color: 0xf2efe6, toneMapped: false });
+  private firesAt = '';
+  setFires(tiles: readonly number[]) {
+    const key = tiles.join();
+    if (key === this.firesAt) return;
+    // (Those already burning keep their flames as they are: only the new ones grow in.)
+    const had = new Set(this.firesAt ? this.firesAt.split(',').map(Number) : []);
+    this.firesAt = key;
+    for (const m of [...this.fires.children]) {
+      if (tiles.includes(m.userData.tile as number)) continue;
+      this.fires.remove(m);
+      if (m.userData.own) (m as THREE.Mesh).geometry.dispose();
+    }
+    for (const tile of tiles) {
+      if (had.has(tile)) continue;
+      const x = (tile % W) + 0.5;
+      const z = Math.floor(tile / W) + 0.5;
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), this.scorchMat);
+      floor.position.set(x, 0.036, z);
+      floor.renderOrder = 0.47;
+      floor.userData = { tile, own: true };
+      this.fires.add(floor);
+      for (const [dx, dz, size] of [
+        [-0.2, -0.15, 1],
+        [0.22, 0.05, 0.8],
+        [-0.05, 0.25, 0.65],
+      ]) {
+        const flame = new THREE.Mesh(FLAME_GEO, this.flameMat);
+        flame.position.set(x + dx, 0.02, z + dz);
+        flame.userData = { tile, size, seed: tile * 0.61 + dx * 7, born: -1 };
+        const core = new THREE.Mesh(FLAME_GEO, this.coreMat);
+        core.scale.setScalar(0.5);
+        flame.add(core);
+        this.fires.add(flame);
+      }
+    }
+  }
+  /** Something thrown from a place to another (in tiles; `fire`: a molotov), or a bolt shot. */
+  throwFx(from: { x: number; z: number }, to: { x: number; z: number }, kind: 'bottle' | 'molotov' | 'bolt') {
+    const bolt = kind === 'bolt';
+    const m = new THREE.Mesh(
+      bolt ? new THREE.BoxGeometry(0.04, 0.04, 0.5) : new THREE.BoxGeometry(0.12, 0.2, 0.12),
+      bolt ? this.boltMat : kind === 'molotov' ? this.flameMat : this.thrownMat,
+    );
+    m.userData = { from, to, born: -1, dur: bolt ? 0.12 : 0.28, bolt };
+    if (bolt) m.rotation.y = Math.atan2(to.x - from.x, to.z - from.z);
+    m.visible = false;
+    this.fx.add(m);
+  }
+  private drawFx(time: number, still: boolean) {
+    for (const f of this.fires.children) {
+      const u = f.userData as { size?: number; seed: number; born: number };
+      if (u.size === undefined) continue;
+      if (u.born < 0) u.born = time;
+      const grow = Math.min(1, (time - u.born) / 0.3);
+      const k = still ? 1 : 1 + Math.sin(time * 12 + u.seed) * 0.14 + Math.sin(time * 27 + u.seed * 2) * 0.07;
+      f.scale.set(u.size * grow * (2 - k), u.size * grow * k * 1.25, u.size * grow * (2 - k));
+      if (!still) f.rotation.y = time * 2.4 + u.seed;
+    }
+    for (const m of [...this.fx.children]) {
+      const u = m.userData as { from: { x: number; z: number }; to: { x: number; z: number }; born: number; dur: number; bolt: boolean };
+      if (u.born < 0) u.born = time;
+      const t = (time - u.born) / u.dur;
+      if (t >= 1) {
+        this.fx.remove(m);
+        (m as THREE.Mesh).geometry.dispose();
+        continue;
+      }
+      m.visible = true;
+      m.position.set(
+        u.from.x + (u.to.x - u.from.x) * t,
+        u.bolt ? 0.95 : 0.9 + Math.sin(t * Math.PI) * 1.1,
+        u.from.z + (u.to.z - u.from.z) * t,
+      );
+      if (!u.bolt && !still) m.rotation.x = time * 14;
+    }
+  }
+
   /** The fires flicker, the pool is stronger after dark; `torch`: the player's own light is the torch's (wider, warm). */
   drawLights(time: number, still: boolean, night: boolean, torch: boolean) {
     this.torch = torch;
+    this.drawFx(time, still);
     // (A car's alarm light: two blinks every second and a half; held lit when nothing should move.)
     this.alarms.visible = still || time % 1.5 < 0.2 || (time % 1.5 > 0.4 && time % 1.5 < 0.6);
     // (After dark the whole district is as dark: nothing more to lay over its rooms.)
@@ -783,5 +886,10 @@ export class CityView {
     this.live.clear();
     this.setLights([], new Uint8Array(0), new Uint8Array(0));
     this.setAlarms([]);
+    this.setFires([]);
+    for (const m of [...this.fx.children]) {
+      this.fx.remove(m);
+      (m as THREE.Mesh).geometry.dispose();
+    }
   }
 }

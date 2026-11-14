@@ -14,6 +14,7 @@ import { STORY } from '../content/story';
 import { crowded, type City } from './City';
 import { going } from './story';
 import { torchLit, wayToDark } from './light';
+import { shoot } from './ranged';
 
 /**
  * The dead (C2b), a part of the city's simulation (City.step calls it after the player has moved):
@@ -172,6 +173,9 @@ export function noise(c: City, tile: number, reach: number, again = false) {
 /** The player's blow: the nearest of the dead ahead and in reach is struck; its noise carries either way. */
 export function strike(c: City) {
   const s = c.state;
+  // (2.55: a loaded crossbow shoots the one ahead that is out of arm's reach; the blow is for those in it.)
+  const arm = BLOW.reach + (cityItem(c.weapon()?.[0] ?? 0)?.reach ?? 0) * UNIT;
+  if (shoot(c, arm)) return;
   if (s.step - s.swung < BLOW.every || s.sleeping) return;
   s.swung = s.step;
   // (One weapon strikes: its blow, its reach, its wear.)
