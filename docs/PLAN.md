@@ -206,8 +206,8 @@ feel) and the known limits.
 **Status (2026-11-14): v2.51.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
-45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 79 help topics,
-6,065 text keys in English and French, 94 test scripts. A second mode, City Escape, built in four
+45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 80 help topics,
+6,093 text keys in English and French, 95 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user

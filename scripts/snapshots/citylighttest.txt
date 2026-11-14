@@ -1,0 +1,7 @@
+the torch: 240 game minutes a battery; seen at 6 tiles behind it, 4 in the dark
+a lantern: 27 tiles lit on a street, 600 game minutes; the dead caught in it gone in 14 steps
+a fire barrel: 57 tiles lit, 480 game minutes a can; stew cooked beside it
+a generator (90 in twelve cities): its building's 210 tiles lit, 720 game minutes a can; 4 of the dead indoors out in 71 steps
+one of the dead sent to a lantern: stopped at its edge on an ordinary night, through it once the beacon is lit
+a first night asleep in a house with its doors open, 12 cities: bitten on 3 in the dark, on 1 beside a lantern
+saves: the lantern and the torch kept, none from before, seven damaged ones loaded without; 12 lights a district at the most

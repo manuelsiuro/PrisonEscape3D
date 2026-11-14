@@ -194,7 +194,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 94 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 95 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

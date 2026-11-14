@@ -13,6 +13,7 @@ import { districtX, districtZ } from '../gen/plan';
 import { STORY } from '../content/story';
 import { crowded, type City } from './City';
 import { going } from './story';
+import { torchLit, wayToDark } from './light';
 
 /**
  * The dead (C2b), a part of the city's simulation (City.step calls it after the player has moved):
@@ -102,6 +103,8 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
   for (let tries = 0; tries < 12; tries++) {
     const tile = from[randomInt(c.state, from.length)];
     if (!farEnough(c, tile, up ? DEAD.clearUp : DEAD.clear)) continue;
+    // (2.52: nor in strong light, unless called up by the generator.)
+    if (!up && c.lit[tile]) continue;
     // (Never inside a shelter: its doors are barred against them.)
     const lot = c.district.lotAt[tile] - 1;
     if (!up && lot >= 0 && (c.shelter(lot) || c.safeLots.has(lot))) continue;
@@ -252,7 +255,14 @@ export function stepDead(c: City) {
     }
   }
   const fog = going(c) === 2;
-  const sight = (s.sleeping ? DEAD.sightAsleep : fog ? STORY.fogSight : night ? DEAD.sightNight : DEAD.sightDay) * UNIT;
+  // (2.52: at night, someone in strong light or behind a torch is seen as far as by day.)
+  const shown = night && c.anyLight ? c.lit[here] === 1 : false;
+  const dark = night && !shown && !torchLit(c);
+  // (Asleep in strong light, they lie in plain view: seen as far as anyone is at night.)
+  const sight =
+    (s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay) * UNIT;
+  // (The beacon's and the generator's call is stronger than any light.)
+  const shy = c.anyLight && going(c) !== 1;
   for (let k = s.zeds.length - 1; k >= 0; k--) {
     const z = s.zeds[k];
     const b = z.body;
@@ -308,8 +318,12 @@ export function stepDead(c: City) {
     if (z.mode === ZED.SEEK) {
       speed = DEAD.chase - 20;
       if (z.goal === -2) {
-        // (To ground: the nearest floor indoors.)
-        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => c.zedIndoor[i] === 1, -1, 2500, undefined, c.zedGrid) ?? [];
+        // (To ground: the nearest floor indoors, out of any light.)
+        z.path = findPath(c.world, tileAt(b.x, b.z), (i) => c.zedIndoor[i] === 1 && !c.lit[i], -1, 2500, undefined, c.zedGrid) ?? [];
+        z.goal = z.path.length ? z.path[z.path.length - 1] : -1;
+      } else if (z.goal === -3) {
+        // (2.52: out of a light just lit, to the nearest dark.)
+        z.path = wayToDark(c, tileAt(b.x, b.z));
         z.goal = z.path.length ? z.path[z.path.length - 1] : -1;
       } else if (z.goal >= 0 && !z.path.length && tileAt(b.x, b.z) !== z.goal) {
         z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === z.goal, z.goal, 900, undefined, c.zedGrid) ?? [];
@@ -327,6 +341,7 @@ export function stepDead(c: City) {
       const to = from.length ? from[randomInt(s, from.length)] : -1;
       if (
         to >= 0 &&
+        !c.lit[to] &&
         Math.abs((to % MAP_W) - (tileAt(b.x, b.z) % MAP_W)) + Math.abs(Math.floor(to / MAP_W) - Math.floor(tileAt(b.x, b.z) / MAP_W)) <
           (night ? 24 : 6)
       )
@@ -338,6 +353,16 @@ export function stepDead(c: City) {
     }
     // Along its way.
     const next = z.path[0];
+    // (2.52: one that isn't after anyone won't step out of the dark into strong light: it turns back.)
+    if (shy && !brute && z.mode !== ZED.CHASE && c.lit[next] && !c.lit[tileAt(b.x, b.z)]) {
+      z.path = [];
+      if (z.mode === ZED.SEEK) {
+        z.mode = c.zedIndoor[tileAt(b.x, b.z)] && !night ? ZED.IDLE : ZED.WANDER;
+        z.goal = -1;
+      }
+      b.moving = false;
+      continue;
+    }
     const wx = centerX(next) - b.x;
     const wz = centerZ(next) - b.z;
     if (Math.abs(wx) + Math.abs(wz) < REACHED) {
