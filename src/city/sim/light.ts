@@ -5,7 +5,8 @@ import { STEPS_PER_MINUTE } from '../../sim/tuning';
 import { centerX, centerZ, tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
 import { cityItemNumber } from '../content/items';
-import { LEVEL, LIGHT, LIGHT_KIND } from '../content/light';
+import { LEVEL, LIGHT, LIGHT_KIND, WINDOWED } from '../content/light';
+import { isBuilding } from '../content/districts';
 import { DECO } from '../gen/district';
 import type { City } from './City';
 import { ZKIND } from '../content/dead';
@@ -38,9 +39,41 @@ export const lightsHere = (c: City): readonly Light[] => c.state.lights[c.state.
 /** The torch is lit and in the pockets. */
 export const torchLit = (c: City) => c.state.torchOn === 1 && c.state.torch > 0 && c.count(TORCH) > 0;
 
+/**
+ * Interiors dark by day (2.53): which tiles of the district the player is in daylight doesn't reach.
+ * A building's floor more than a few tiles' walk in from one of its street doors: shops, offices,
+ * warehouses, the landmarks. Not a home (daylight fills it), nor a survivor's own building (they keep
+ * a lamp). Worked out from the district alone when it's entered: nothing of it is saved.
+ */
+export function dayDark(c: City) {
+  const d = c.district;
+  c.dim.fill(0);
+  const wall = (i: number) => d.rows[Math.floor(i / MAP_W)][i % MAP_W] === '#';
+  d.lots.forEach((lot, k) => {
+    if (!isBuilding(lot.use) || WINDOWED.includes(lot.use) || c.safeLots.has(k)) return;
+    for (let z = lot.z0; z <= lot.z1; z++) for (let x = lot.x0; x <= lot.x1; x++) if (!wall(z * MAP_W + x)) c.dim[z * MAP_W + x] = 1;
+    // (Daylight in at each street door, over what stands on the floor, never through a wall.)
+    let edge = lot.doors.filter((i) => d.lotAt[i] === k + 1);
+    for (const i of edge) c.dim[i] = 0;
+    for (let far = 0; far < LIGHT.dayReach && edge.length; far++) {
+      const next: number[] = [];
+      for (const i of edge)
+        for (const j of [i - MAP_W, i + 1, i + MAP_W, i - 1]) {
+          if (j < 0 || j >= N || !c.dim[j] || Math.abs((j % MAP_W) - (i % MAP_W)) > 1) continue;
+          c.dim[j] = 0;
+          next.push(j);
+        }
+      edge = next;
+    }
+  });
+}
+
+/** Out of the daylight: after dark anywhere, by day deep in a building. */
+export const murky = (c: City, tile: number) => nightAt(c.minute) || c.dim[tile] === 1;
+
 /** Where the player stands: lit (strong light, or daylight), dim (the torch alone), dark. */
 export function lightLevel(c: City): number {
-  if (!nightAt(c.minute) || c.lit[c.tile]) return LEVEL.LIT;
+  if (!murky(c, c.tile) || c.lit[c.tile]) return LEVEL.LIT;
   return torchLit(c) ? LEVEL.DIM : LEVEL.DARK;
 }
 

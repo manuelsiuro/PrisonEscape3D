@@ -26,6 +26,10 @@ export const DEAD = {
   dayPerDanger: 2,
   dayPerDay: 1,
   dayMost: 6,
+  /** 2.53: by day they wait in the dark indoors, no more than one to this many dark tiles (the rest indoors anywhere). */
+  darkEach: 8,
+  /** 2.53: at dawn one in the street goes to ground in the dark when a dark room is within this many tiles' walk; else indoors anywhere. */
+  darkNear: 10,
   /** At night: six, three more a step of danger, two more a night (sixteen more at most). */
   nightBase: 6,
   nightPerDanger: 3,

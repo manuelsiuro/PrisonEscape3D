@@ -89,16 +89,22 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
   cityFood: {
     zoom: 1.5,
     scene: (t) => {
-      const d = t.c.plan.start;
-      const dist = t.c.districtOf(d);
-      const p = dist.props.find(
-        (q) =>
-          (q.kind === 'freezer' || q.kind === 'shelf') &&
-          ['shop', 'station'].includes(dist.lots[dist.lotAt[q.z * W + q.x] - 1]?.use) &&
-          t.beside(d, q.z * W + q.x) !== undefined,
-      )!;
       t.time(1, 10 * 60);
-      t.go(d, t.beside(d, p.z * W + p.x));
+      // (2.53: a freezer in a shop that stands in daylight, near its door; the start's district first.)
+      const order = [t.c.plan.start, ...Array.from({ length: 9 }, (_, k) => k).filter((k) => k !== t.c.plan.start)];
+      for (const kinds of [['freezer'], ['freezer', 'shelf']])
+        for (const d of order) {
+          const dist = t.c.districtOf(d);
+          t.go(d, dist.spawn.z * W + dist.spawn.x);
+          const p = dist.props.find(
+            (q) =>
+              kinds.includes(q.kind) &&
+              ['shop', 'station'].includes(dist.lots[dist.lotAt[q.z * W + q.x] - 1]?.use) &&
+              t.beside(d, q.z * W + q.x) !== undefined &&
+              !t.c.dim[t.beside(d, q.z * W + q.x)],
+          );
+          if (p) return t.go(d, t.beside(d, p.z * W + p.x));
+        }
     },
   },
   // The street by the bus on the third night, five of the dead about.

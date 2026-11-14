@@ -3,5 +3,8 @@ a lantern: 27 tiles lit on a street, 600 game minutes; the dead caught in it gon
 a fire barrel: 57 tiles lit, 480 game minutes a can; stew cooked beside it
 a generator (90 in twelve cities): its building's 210 tiles lit, 720 game minutes a can; 4 of the dead indoors out in 71 steps
 one of the dead sent to a lantern: stopped at its edge on an ordinary night, through it once the beacon is lit
-a first night asleep in a house with its doors open, 12 cities: bitten on 3 in the dark, on 1 beside a lantern
+a first night asleep in a house with its doors open, 12 cities: bitten on 4 in the dark, on 0 beside a lantern
 saves: the lantern and the torch kept, none from before, seven damaged ones loaded without; 12 lights a district at the most
+dark by day, 12 cities, 108 districts: 53% of the floor indoors (daylight comes 3 tiles in at a street door, never through a wall); 66 of 108 landmarks have dark rooms (the others a survivor's, the boathouse or the rangers' post), 12 districts have none at all; no wall, street, doorway, open ground, home or survivor's building is dark; a load has the same
+the day's dead indoors, six draws a district: 5922 put down in the dark (one to 8 dark tiles at the most), 602 elsewhere indoors, none in daylight where the dark has room for all
+in a dark room at noon: dark (dim behind the torch, lit beside a lantern, light in the doorway); one of the dead five tiles off sees nobody there without a light (4 tiles) and the torch's holder (6); none is put down in a lantern's light by day, and with every dark room lit they stand indoors elsewhere; nothing of it saved
