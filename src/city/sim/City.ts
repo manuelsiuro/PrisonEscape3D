@@ -1,5 +1,5 @@
 import type { PropKind } from '../../content/props';
-import { atFire, freshLight, lightMinute, relight, soundLight, useLight, type Light } from './light';
+import { atFire, dayDark, freshLight, lightMinute, relight, soundLight, useLight, type Light } from './light';
 import { argA, DIR_X, DIR_Z, dirOf, opOf } from '../../sim/command';
 import { mix32 } from '../../sim/rng';
 import { bodyAt, walk, type Body } from '../../sim/systems/movement';
@@ -344,11 +344,16 @@ export class City {
     });
     if (this.people.length) this.world.refreshBlock();
     this.refreshBars();
+    dayDark(this);
+    // (2.53: by day the dead wait where it's dark.)
+    this.zedPlaces.deep = this.zedPlaces.indoors.filter((i) => this.dim[i] === 1);
     relight(this);
     if (!kept) this.state.arrive = 1;
   }
   /** 2.52: the tiles in strong light in the district the player is in; whether anything burns here; a count the view watches. */
   lit = new Uint8Array(N);
+  /** 2.53: the tiles daylight doesn't reach (deep in a building): dark by day as the street is by night. */
+  dim = new Uint8Array(N);
   anyLight = false;
   lightsRev = 0;
   /** The survivors in the district the player is in, and the buildings (lots) they hold. */
@@ -358,8 +363,8 @@ export class City {
   peace = false;
   /** Per tile: the searchable piece of furniture standing there, + 1. */
   private propAt = new Int16Array(N);
-  /** Where the dead are put down and go to ground: the district's open floors indoors and its streets, and each as a mask. */
-  zedPlaces: { indoors: number[]; streets: number[] } = { indoors: [], streets: [] };
+  /** Where the dead are put down and go to ground: the district's open floors indoors and its streets, and each as a mask (`deep`: the floors indoors daylight doesn't reach). */
+  zedPlaces: { indoors: number[]; streets: number[]; deep: number[] } = { indoors: [], streets: [], deep: [] };
   zedIndoor = new Uint8Array(N);
   zedStreet = new Uint8Array(N);
   /** Per tile: the building (lot + 1) whose street door it is. */

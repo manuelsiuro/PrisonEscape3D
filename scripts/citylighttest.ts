@@ -6,16 +6,18 @@
  * leave), what's refused, the last stand's call stronger than any light (one sent looking stops at a
  * lantern's edge, and comes through it once the beacon is lit), how many first nights asleep in an open
  * house end bitten beside a lantern and without, and what a save keeps (a light out on a minute's turn,
- * a fall's morning).
+ * a fall's morning). 2.53: interiors dark by day (which tiles, the level there, how far the dead see
+ * into it, where they wait).
  */
 import { check } from './assert';
 import { DEAD, ZKIND } from '../src/city/content/dead';
 import { cityItem, cityItemNumber } from '../src/city/content/items';
-import { LEVEL, LIGHT, LIGHT_KIND } from '../src/city/content/light';
+import { LEVEL, LIGHT, LIGHT_KIND, WINDOWED } from '../src/city/content/light';
 import { CITY_RECIPES } from '../src/city/content/recipes';
+import { DISTRICTS, isBuilding } from '../src/city/content/districts';
 import { DECO } from '../src/city/gen/district';
 import { City, COP, FULL, loadCity, type CityEvent, type Stack } from '../src/city/sim/City';
-import { ZED, type Zed } from '../src/city/sim/dead';
+import { populate, quota, ZED, type Zed } from '../src/city/sim/dead';
 import { lightLevel, lightsHere, torchLit } from '../src/city/sim/light';
 import { lineOfSight } from '../src/sim/ai/sight';
 import { findPath, nearestDir } from '../src/sim/ai/path';
@@ -546,6 +548,176 @@ const run = (c: City, n: number) =>
   );
   say(
     `saves: the lantern and the torch kept, none from before, seven damaged ones loaded without; ${LIGHT.most} lights a district at the most`,
+  );
+}
+// ------------------------------------------------------------------ interiors dark by day (2.53)
+{
+  const enter = (c: City, d: number) => (c as unknown as { enter(d: number): void }).enter(d);
+  let floors = 0;
+  let dark = 0;
+  let houses = 0;
+  let darkHouses = 0;
+  let bare = 0;
+  let marks = 0;
+  let darkMarks = 0;
+  let waiting = 0;
+  let elsewhere = 0;
+  let inLight = 0;
+  let lightOnly = 0;
+  let loads = 0;
+  let found: { seed: number; d: number; a: number; b: number } | null = null;
+  const CITIES = 12;
+  for (let seed = 1; seed <= CITIES; seed++) {
+    const c = new City(seed);
+    c.step(0);
+    for (let d = 0; d < 9; d++) {
+      if (d !== c.state.district) enter(c, d);
+      const dist = c.district;
+      dist.lots.forEach((lot, k) => {
+        const building = lot.doors.length > 0 || c.dim.some((v, i) => v === 1 && dist.lotAt[i] === k + 1);
+        let any = false;
+        for (let z = lot.z0; z <= lot.z1; z++)
+          for (let x = lot.x0; x <= lot.x1; x++) {
+            const i = z * W + x;
+            if (dist.rows[z][x] === '#') check(!c.dim[i], `seed ${seed} district ${d}: a wall is dark`);
+            else if (building) floors++;
+            if (c.dim[i]) {
+              dark++;
+              any = true;
+              check(!c.safeLots.has(k), `seed ${seed} district ${d}: a survivor's building is dark`);
+              check(!WINDOWED.includes(lot.use), `seed ${seed} district ${d}: a home is dark`);
+              check(isBuilding(lot.use), `seed ${seed} district ${d}: open ground (${lot.use}) is dark`);
+            }
+          }
+        for (const door of lot.doors) {
+          check(!c.dim[door], `seed ${seed} district ${d}: a street door is dark`);
+          // (Daylight straight in from it: three tiles of light, then the dark, in a building that has any.)
+          for (const o of [-W, 1, W, -1]) {
+            for (let n = 1; n <= LIGHT.dayReach; n++) {
+              const i = door + o * n;
+              if (dist.rows[Math.floor(i / W)][i % W] === '#' || dist.lotAt[i] !== k + 1) break;
+              check(!c.dim[i], `seed ${seed} district ${d}: ${n} tiles straight in from the door ${door} it is dark`);
+            }
+          }
+        }
+        if (lot.use === 'house') {
+          houses++;
+          if (any) darkHouses++;
+        }
+        if (lot.use === DISTRICTS[dist.kind].landmark) {
+          marks++;
+          if (any) darkMarks++;
+          else if (!c.safeLots.has(k) && !WINDOWED.includes(lot.use)) bare++;
+        }
+      });
+      for (let i = 0; i < W * W; i++)
+        if (c.dim[i] && !dist.lotAt[i]) check(false, `seed ${seed} district ${d}: the street is dark at ${i}`);
+      if (!c.zedPlaces.deep.length) lightOnly++;
+      // A load works the same dark out again, and the same places for the dead.
+      const again = loadCity(JSON.parse(JSON.stringify(c.snapshot())))!;
+      check(
+        again.dim.every((v, i) => v === c.dim[i]) && again.zedPlaces.deep.join() === c.zedPlaces.deep.join(),
+        `seed ${seed} district ${d}: a load has other dark rooms`,
+      );
+      loads++;
+      // By day the dead wait where it's dark, no more than one to `darkEach` tiles of it; the rest, and after dark all, anywhere indoors.
+      clock(c, 12);
+      const most = Math.min(quota(c).indoors, Math.floor(c.zedPlaces.deep.length / DEAD.darkEach));
+      for (let k = 0; k < 6; k++) {
+        populate(c);
+        const idle = c.state.zeds.filter((z) => z.mode === ZED.IDLE);
+        const inDark = idle.filter((z) => c.dim[tileAt(z.body.x, z.body.z)]).length;
+        waiting += inDark;
+        elsewhere += idle.length - inDark;
+        // (A district with dark enough for all of them: none stands in daylight.)
+        if (most === quota(c).indoors) inLight += idle.length - inDark;
+      }
+      c.state.zeds = [];
+      // (For the sight's check: two dark tiles of one room five apart along x, a clear line between them.)
+      if (!found)
+        for (const a of c.zedPlaces.deep) {
+          const b = a + 5;
+          if ((a % W) + 5 >= W || !c.dim[b] || c.grid[b] || dist.lotAt[a] !== dist.lotAt[b]) continue;
+          if (![1, 2, 3, 4].every((k) => !c.grid[a + k] && c.dim[a + k])) continue;
+          if (!lineOfSight(c.world, centerX(a), centerZ(a), centerX(b), centerZ(b))) continue;
+          found = { seed, d, a, b };
+          break;
+        }
+      clock(c, 6, 30);
+    }
+  }
+  check(darkHouses === 0 && houses > 0, `${darkHouses} of ${houses} houses have a dark corner`);
+  check(bare === 0, `${bare} landmarks with no dark room that are neither a home nor a survivor's`);
+  check(
+    inLight === 0 && waiting > elsewhere,
+    `by day ${waiting} of the dead put down in the dark indoors, ${elsewhere} elsewhere indoors, ${inLight} in daylight where the dark had room`,
+  );
+  say(
+    `dark by day, ${CITIES} cities, ${loads} districts: ${Math.round((100 * dark) / floors)}% of the floor indoors (daylight comes ${LIGHT.dayReach} tiles in at a street door, never through a wall); ${darkMarks} of ${marks} landmarks have dark rooms (the others a survivor's, the boathouse or the rangers' post), ${lightOnly} districts have none at all; no wall, street, doorway, open ground, home or survivor's building is dark; a load has the same`,
+  );
+  say(
+    `the day's dead indoors, six draws a district: ${waiting} put down in the dark (one to ${DEAD.darkEach} dark tiles at the most), ${elsewhere} elsewhere indoors, none in daylight where the dark has room for all`,
+  );
+  check(!!found, 'a dark room five tiles long');
+  const { a, b } = found!;
+  const c = new City(found!.seed);
+  c.step(0);
+  if (found!.d !== c.state.district) enter(c, found!.d);
+  c.peace = true;
+  clock(c, 12);
+  c.state.zeds = [];
+  stand(c, a);
+  check(lightLevel(c) === LEVEL.DARK, `deep in a building at noon it is dark: ${lightLevel(c)}`);
+  const door = c.district.lots[c.lot].doors[0];
+  if (door !== undefined) {
+    stand(c, door);
+    check(lightLevel(c) === LEVEL.LIT, 'in its doorway it is light');
+    stand(c, a);
+  }
+  // In the dark they see four tiles; behind a torch, six.
+  const looker = () => {
+    c.state.zeds = [];
+    const z = zed(c, b, ZED.IDLE);
+    z.body.facing = 13;
+    for (let k = 0; k < 12; k++) c.step(0);
+    return z.mode === ZED.CHASE;
+  };
+  c.peace = false;
+  const unseen = !looker();
+  give(c, [
+    ['torch', 1],
+    ['battery', 1],
+    ['lantern', 1],
+  ]);
+  c.state.zeds = [];
+  use(c, 'torch');
+  check(lightLevel(c) === LEVEL.DIM, 'the torch on: dim');
+  const seen = looker();
+  check(unseen && seen, `five tiles off in a dark room at noon: seen ${!unseen} without a light, ${seen} behind the torch`);
+  // A lantern set down: lit there by day as by night, and one of the dead that isn't after anyone keeps out.
+  c.state.zeds = [];
+  use(c, 'torch');
+  c.peace = true;
+  use(c, 'lantern');
+  check(lightLevel(c) === LEVEL.LIT && c.lit[a] === 1, 'beside a lantern in a dark room: lit');
+  c.peace = false;
+  populate(c);
+  check(
+    c.state.zeds.every((z) => !c.lit[tileAt(z.body.x, z.body.z)]),
+    'none of the dead put down in the lantern’s light by day',
+  );
+  // The dark all taken (lit, here; a shelter's the same): they are put down indoors elsewhere, not nowhere.
+  for (const i of c.zedPlaces.deep) c.lit[i] = 1;
+  populate(c);
+  const indoors = c.state.zeds.filter((z) => z.mode === ZED.IDLE);
+  check(
+    indoors.length > 0 && indoors.every((z) => !c.lit[tileAt(z.body.x, z.body.z)]),
+    `every dark room lit: ${indoors.length} of the dead indoors elsewhere`,
+  );
+  // Nothing of it is saved.
+  check(!('dim' in JSON.parse(JSON.stringify(c.snapshot())).state), 'the dark rooms are not in the save');
+  say(
+    `in a dark room at noon: dark (dim behind the torch, lit beside a lantern, light in the doorway); one of the dead five tiles off sees nobody there without a light (${DEAD.sightNight} tiles) and the torch's holder (${DEAD.sightDay}); none is put down in a lantern's light by day, and with every dark room lit they stand indoors elsewhere; nothing of it saved`,
   );
 }
 console.log(lines.join('\n'));

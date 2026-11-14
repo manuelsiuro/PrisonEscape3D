@@ -37,7 +37,7 @@ import { STORY, THINGS } from '../content/story';
 import { gatesOpen, going, marks, objectives, type Objective } from '../sim/story';
 import { CityMusic } from '../music';
 import { LEVEL, LIGHT_KIND } from '../content/light';
-import { lightLevel, lightsHere, torchLit } from '../sim/light';
+import { lightLevel, lightsHere, murky, torchLit } from '../sim/light';
 import { landmarkPlan } from '../render/landmarkPlan';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
@@ -418,7 +418,7 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   if (lightsShown !== c.lightsRev) {
     lightsShown = c.lightsRev;
-    cityView.setLights(lightsHere(c), c.lit);
+    cityView.setLights(lightsHere(c), c.lit, c.dim);
   }
   cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), torchLit(c));
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, nightAt(c.minute), f);
@@ -876,7 +876,11 @@ function hudOf(r: CityRun): CityHudState {
   st.chasing = c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0);
   // (2.52: the light they stand in, said at night and whenever the torch is on.)
   const torch = torchLit(c);
-  st.light = nightAt(c.minute) || torch ? (nightAt(c.minute) ? lightLevel(c) : LEVEL.DIM) : -1;
+  // (In daylight nothing is said, but a torch left burning; out of it: in the light, by the torch, in the dark.)
+  const out = murky(c, c.tile);
+  st.light = out ? lightLevel(c) : torch ? LEVEL.DIM : -1;
+  // (2.53: the first time in a building's dark by day.)
+  if (out && !nightAt(c.minute) && st.light !== LEVEL.LIT && !r.paused && !c.state.sleeping) tip('city.dark', 'city.tip.dark');
   st.torch = torch ? c.state.torch : 0;
   const goal = goalOf(r);
   st.goal = goal.text;
