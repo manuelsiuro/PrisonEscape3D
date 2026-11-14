@@ -284,6 +284,9 @@ In two slices.
   survivors' buildings aside. There the player is in the dark by day (`murky`, `lightLevel`), seen at
   the night's four tiles; `zedPlaces.deep` is where the day's dead indoors are put down. The view lays
   a gloom over those tiles and draws the dead in it as it does at night. `citylighttest`'s last part.
+- **Cars searched (2.54).** `sim/cars.ts`, `content/loot.ts`'s `CARS`: a car or a wreck is a box (key
+  `c` + its first tile), the button's last choice after furniture, a pile and a door; one car in six
+  has an alarm (`state.alarm`, the one new field), its red light drawn by the view. `citycartest`.
 
 ## Proof, stage by stage
 

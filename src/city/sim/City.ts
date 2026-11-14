@@ -9,7 +9,8 @@ import { MAP_H, MAP_W, type World } from '../../sim/world/World';
 import { decoVeils, generateDistrict, type District, type Gate } from '../gen/district';
 import { CITY_N, cityPlan, OPPOSITE, SIDE, type CityPlan } from '../gen/plan';
 import { cityItem, cityItemNumber } from '../content/items';
-import { BOX_SLOTS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED } from '../content/loot';
+import { BOX_SLOTS, carLoot, CARS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED } from '../content/loot';
+import { carMinute, carOpened, carsHere, carTiles, freshCars, isWreck, soundCars } from './cars';
 import { streamOf } from '../gen/plan';
 import { BLOW } from '../content/dead';
 import { CITY_RECIPES, recipeParts } from '../content/recipes';
@@ -108,7 +109,8 @@ export interface Target {
   /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile). */
   key: string;
   tile: number;
-  prop: PropKind | null;
+  /** The furniture it is (2.54: or a car, or a wreck). */
+  prop: PropKind | 'car' | 'wreck' | null;
 }
 
 export interface CityState {
@@ -175,6 +177,8 @@ export interface CityState {
   torch: number;
   torchOn: number;
   lights: Record<string, Light[]>;
+  // 2.54, optional on load: a car's alarm sounding in the district the player is in (sim/cars.ts): none, or [where it's heard from, the step it stops].
+  alarm: number[];
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -230,6 +234,8 @@ export type CityEvent =
   | { type: 'lit'; kind: number; tile: number }
   | { type: 'burnt'; kind: number; tile: number }
   | { type: 'torch'; on: boolean; spent: boolean }
+  /** 2.54: a car's alarm set off by a search (`tile`: the car's), or stopped. */
+  | { type: 'alarm'; on: boolean; tile: number }
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
   | { type: 'talk'; who: number; what: 'met' | 'done' | 'chat' }
   | { type: 'traded'; who: number; item: number }
@@ -272,7 +278,7 @@ export class City {
     if (from) {
       // (A save from before a field has it fresh, after the ones it has: a save's own order is kept.)
       this.state = { ...from.state, player: { ...from.state.player } };
-      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight() }))
+      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight(), ...freshCars() }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < CITY_N && unpackBits(text, this.seen[d]));
       this.enter(this.state.district, true);
@@ -289,6 +295,7 @@ export class City {
         ...freshSurvival(),
         ...freshStory(),
         ...freshLight(),
+        ...freshCars(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -344,12 +351,18 @@ export class City {
     });
     if (this.people.length) this.world.refreshBlock();
     this.refreshBars();
+    carsHere(this);
+    // (2.54: an alarm isn't heard from the next district.)
+    if (!kept) this.state.alarm = [];
     dayDark(this);
     // (2.53: by day the dead wait where it's dark.)
     this.zedPlaces.deep = this.zedPlaces.indoors.filter((i) => this.dim[i] === 1);
     relight(this);
     if (!kept) this.state.arrive = 1;
   }
+  /** 2.54: per tile, the car or wreck standing there (its first tile + 1); a count the view watches (a car searched, a district entered). */
+  carAt = new Int16Array(N);
+  carsRev = 0;
   /** 2.52: the tiles in strong light in the district the player is in; whether anything burns here; a count the view watches. */
   lit = new Uint8Array(N);
   /** 2.53: the tiles daylight doesn't reach (deep in a building): dark by day as the street is by night. */
@@ -517,6 +530,7 @@ export class City {
     }
     if (!s.over) storyMinute(this);
     if (!s.over) lightMinute(this);
+    if (!s.over) carMinute(this);
     if (s.over || !s.sleeping) return;
     if (s.hunger === 0) this.wake('hungry');
     else if (this.minute === SLEEP_TO) this.wake('morning');
@@ -555,6 +569,8 @@ export class City {
       st[0] = st[1] = 0;
     }
     storyFell(this);
+    // (2.54: nobody is left to hear the alarm.)
+    s.alarm = [];
     const [d, tile] = s.home;
     const moved = d !== s.district;
     if (moved) this.enter(d);
@@ -642,6 +658,14 @@ export class City {
       const door = doorAt(t);
       if (door) return door;
     }
+    // (2.54) A car or a wreck beside, the one faced first: after everything else, so nothing that was done before is done otherwise.
+    for (const [dx, dz] of around) {
+      const tx = x + dx;
+      const tz = z + dz;
+      if ((!dx && !dz) || tx < 0 || tz < 0 || tx >= MAP_W || tz >= MAP_H) continue;
+      const car = this.carAt[tz * MAP_W + tx];
+      if (car) return { kind: 'box', key: `c${car - 1}`, tile: tz * MAP_W + tx, prop: isWreck(this, car - 1) ? 'wreck' : 'car' };
+    }
     return null;
   }
 
@@ -653,7 +677,11 @@ export class City {
     const here = this.tile;
     if (key === 'w') return true;
     if (key.startsWith('n')) return this.target()?.key === key;
-    const at = key.startsWith('g') || key.startsWith('d') ? [Number(key.slice(1))] : this.tilesOf(Number(key));
+    const at = key.startsWith('c')
+      ? carTiles(this, Number(key.slice(1)))
+      : key.startsWith('g') || key.startsWith('d')
+        ? [Number(key.slice(1))]
+        : this.tilesOf(Number(key));
     return at.some((t) => Math.abs((t % MAP_W) - (here % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(here / MAP_W)) <= 1);
   }
   /** The tiles a piece of furniture stands on. */
@@ -670,8 +698,22 @@ export class City {
     const lot = this.district.lotAt[p.z * MAP_W + p.x];
     const { list, total } = lootList(lot ? this.district.lots[lot - 1].use : 'house', p.kind);
     const rnd = streamOf(this.state.seed, 5000 + this.state.district * 1000 + prop);
+    return this.draws(list, total, SEARCHED[p.kind] ?? 0, rnd);
+  }
+  /** What a car or a wreck holds (2.54), drawn once from the seed, its district and its first tile. */
+  private stockCar(first: number): Stack[] {
+    const wreck = isWreck(this, first);
+    const { list, total } = carLoot(wreck);
+    return this.draws(
+      list,
+      total,
+      wreck ? CARS.wreckDraws : CARS.draws,
+      streamOf(this.state.seed, 200_000 + this.state.district * N + first),
+    );
+  }
+  private draws(list: Array<[number, number]>, total: number, n: number, rnd: () => number): Stack[] {
     const out: Stack[] = [];
-    for (let draw = 0; draw < (SEARCHED[p.kind] ?? 0); draw++) {
+    for (let draw = 0; draw < n; draw++) {
       if (rnd() * 1000 < EMPTY_DRAWS) continue;
       let roll = rnd() * total;
       const item = list.find(([, w]) => (roll -= w) < 0)?.[0] ?? list[0][0];
@@ -687,10 +729,13 @@ export class City {
   private openBox(key: string, first: boolean) {
     const s = this.state;
     const fresh = !key.startsWith('g') && !this.searched(key);
-    if (fresh) this.boxOf(key, true).push(...this.stock(Number(key)));
+    const car = key.startsWith('c');
+    if (fresh) this.boxOf(key, true).push(...(car ? this.stockCar(Number(key.slice(1))) : this.stock(Number(key))));
     s.open = key;
     this.events.push({ type: 'open', key, found: this.box().filter((st) => st[0]).length, first });
-    if (!key.startsWith('g')) storyFound(this, Number(key));
+    if (car) {
+      if (fresh) carOpened(this, Number(key.slice(1)));
+    } else if (!key.startsWith('g')) storyFound(this, Number(key));
   }
   private close() {
     if (!this.state.open) return;
@@ -745,6 +790,8 @@ export class City {
       if (t.kind === 'way') return storyAct(this);
       if (t.kind === 'npc') return meet(this, Number(t.key.slice(1)));
       if (s.open === t.key) return this.close();
+      // (2.54: a press that shuts something else, a pile picked clean beside a car, doesn't start on the car as well.)
+      if (s.open && t.key.startsWith('c')) return this.close();
       // (Pressed again while searching: the search goes on.)
       if (s.search === t.key) return;
       if (t.kind === 'bed') {
@@ -1118,6 +1165,7 @@ export function loadCity(snap: unknown): City | null {
   const before = st.bars === undefined;
   if (typeof st.bars !== 'object' || !st.bars || Array.isArray(st.bars)) st.bars = {};
   soundLight(st);
+  soundCars(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

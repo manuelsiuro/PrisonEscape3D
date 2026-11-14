@@ -1,0 +1,5 @@
+12 cities: 1558 cars and 1115 wrecks, 0 with no tile to stand beside; 254 cars with an alarm (one in 6), no wreck
+searched, all of them (1 draw a car, 1 a wreck): 1219 things (0.46 each, 54% empty); the most found: wire 220, scrap 218, bottle 107, battery 105, pipe 101, water 84
+a car beside: searched in 30 steps the first time, at once after; walked away from, nothing; the same car of the same city holds the same; a wreck is named a wreck; a pile underfoot comes first, and shutting it emptied starts no search; a tile beside both a car and furniture: 0 in 12 cities (there furniture comes first); what is stored in a car stays
+the alarm: off as the car is opened, heard 12 tiles round the searcher (not beyond, not by one already after somebody), 20 game minutes, said to stop once; never a second time; not heard from the next district nor after a fall; one of the dead going elsewhere isn't called off
+saves: an alarm sounding is kept and plays on the same; a save from before cars has none searched; 8 damaged alarms loaded as none

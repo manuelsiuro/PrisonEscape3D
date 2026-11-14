@@ -365,7 +365,7 @@ export class CityView {
     );
     this.glow.renderOrder = 0.44;
     this.glow.visible = false;
-    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk, this.live.group, this.lights);
+    this.root.add(this.group, this.dead, this.eyes, this.glow, this.bars, this.marks, this.folk, this.live.group, this.lights, this.alarms);
   }
 
   /**
@@ -480,9 +480,24 @@ export class CityView {
       this.lights.add(m);
     }
   }
+  /** Cars searched (2.54): a small red light on the roof of each car whose alarm would still go off (`at`: the car's middle, in tiles). */
+  private readonly alarms = new THREE.Group();
+  private readonly alarmMat = new THREE.MeshBasicMaterial({ color: 0xff3b30, toneMapped: false });
+  setAlarms(at: ReadonlyArray<{ x: number; z: number }>) {
+    for (const m of this.alarms.children) (m as THREE.Mesh).geometry.dispose();
+    this.alarms.clear();
+    for (const p of at) {
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.14), this.alarmMat);
+      lamp.position.set(p.x, 0.7, p.z);
+      this.alarms.add(lamp);
+    }
+  }
+
   /** The fires flicker, the pool is stronger after dark; `torch`: the player's own light is the torch's (wider, warm). */
   drawLights(time: number, still: boolean, night: boolean, torch: boolean) {
     this.torch = torch;
+    // (A car's alarm light: two blinks every second and a half; held lit when nothing should move.)
+    this.alarms.visible = still || time % 1.5 < 0.2 || (time % 1.5 > 0.4 && time % 1.5 < 0.6);
     // (After dark the whole district is as dark: nothing more to lay over its rooms.)
     if (this.gloom) this.gloom.visible = !night;
     this.poolMat.opacity = night ? 0.3 : 0.06;
@@ -767,5 +782,6 @@ export class CityView {
     this.folk.clear();
     this.live.clear();
     this.setLights([], new Uint8Array(0), new Uint8Array(0));
+    this.setAlarms([]);
   }
 }
