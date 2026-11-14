@@ -147,6 +147,8 @@ export class CityHud {
   update(s: CityHudState) {
     if (textStamp() !== this.lang) {
       this.lang = textStamp();
+      // (The light's line is drawn once per state: said again in the new language.)
+      this.shownLight = '?';
       this.el.querySelector('.city-pause')!.setAttribute('aria-label', t('hud.pause'));
       this.mapBtn.setAttribute('aria-label', t('city.map.title'));
       this.mapBtn.setAttribute('aria-keyshortcuts', keyLabel('KeyM'));

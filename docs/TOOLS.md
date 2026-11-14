@@ -60,7 +60,9 @@ pocket, `KeyJ` the journal, `Escape`). Headless, a city is driven as the tests d
 `city.peace = true` for no dead, and `scripts/citybots.ts`'s `scavenger(city)` for a player made of commands (`quester(city, way)` follows
 the story to a way out). The story's places are `city.story` (`things`, `notes`, `exits`, `pier`), what it asks
 now `objectives(city)` (`city/sim/story.ts`); the survivors are `city.story.people` (`COP.ACT` beside one, `COP.TRADE` with `who * 4 + swap`); a test puts the player in another district with the private
-`city.enter(d)` and a new `state.player` (in the browser, `window.__cityStage()` then puts the district up). The help's nine city pictures are staged by
+`city.enter(d)` and a new `state.player` (in the browser, `window.__cityStage()` then puts the district up). The metro's tunnel (2.56) is place 9
+(`TUNNEL`): `city.descend()` puts the player at the foot of its stairs, `city.tunnel` has its `start`, `end` and `way`. What burns is
+`state.lights` (2.52) and `state.fires` (2.55), a car's alarm `state.alarm` (2.54); `city.dim` is the tiles dark by day (2.53). The help's ten city pictures are staged by
 `scripts/dev/cityshot.ts` (`stage('cityDead')` in a city open at 1040 × 480, the page's screenshot, then
 `cwebp -q 80 -resize 1040 480`).
 A page that falls to the background pauses the city (as the prisons do): a script that finds `.paused` true
