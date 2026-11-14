@@ -198,13 +198,14 @@ const idle = (c: City, minutes: number) => {
 // ------------------------------------------------------------------ what the review found (2.47)
 {
   // A save made on the step of a crossing, of a new city's start, of a fall: loaded, it plays on as the live city does.
-  const live = new City(3);
+  // (2.53: by day the dead wait in the dark, away from the start's homes: a first fall takes a third day.)
+  const live = new City(1);
   const next = scavenger(live);
   const saves: Array<{ at: number; snap: unknown; why: string }> = [
     { at: 0, snap: JSON.parse(JSON.stringify(live.snapshot())), why: 'start' },
   ];
   const cmds: number[] = [];
-  for (let k = 0; k < 2 * 1440 * MIN && saves.length < 8; k++) {
+  for (let k = 0; k < 3 * 1440 * MIN && saves.length < 8; k++) {
     const cmd = next();
     cmds.push(cmd);
     live.step(cmd);
@@ -222,7 +223,7 @@ const idle = (c: City, minutes: number) => {
   }
   check(
     saves.some((sv) => sv.why === 'travel'),
-    'the bot should have crossed a checkpoint in two days',
+    'the bot should have crossed a checkpoint in three days',
   );
   say(`saves made at the start and at ${saves.length - 1} crossings and falls: ${same} of ${saves.length} play on as the live city did`);
 

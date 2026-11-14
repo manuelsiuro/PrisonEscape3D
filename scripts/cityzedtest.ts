@@ -260,14 +260,30 @@ const toMinute = (c: City, minute: number) => {
   check(c.state.zeds.length > day, 'more of them by night');
   toMinute(c, 4 * 60 + 59);
   c.state.health = 100;
-  const out = () => c.state.zeds.filter((z) => c.zedStreet[Math.floor(z.body.z / UNIT) * MAP_W + Math.floor(z.body.x / UNIT)]).length;
+  // (The player out of everyone's sight, indoors and far off, and every chase called off: what dawn does to the rest.)
+  const tileOf = (z: Zed) => Math.floor(z.body.z / UNIT) * MAP_W + Math.floor(z.body.x / UNIT);
+  const apart = (a: number, b: number) =>
+    Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
+  const hide = c.zedPlaces.indoors
+    .map((i) => [i, Math.min(...c.state.zeds.map((z) => apart(i, tileOf(z))))])
+    .sort((a, b) => b[1] - a[1])[0][0];
+  c.state.player = bodyAt(hide % MAP_W, Math.floor(hide / MAP_W));
+  for (const z of c.state.zeds) {
+    z.mode = ZED.WANDER;
+    z.path = [];
+    z.seen = -9999;
+  }
+  const out = () => c.state.zeds.filter((z) => c.zedStreet[tileOf(z)]).length;
   const atDawn = out();
+  // (Each of those, followed: one indoors may still cross a street on its way to another room.)
+  const were = c.state.zeds.filter((z) => c.zedStreet[tileOf(z)]);
   for (let k = 0; k < 90 * MIN; k++) {
     c.step(0);
     c.state.health = 100;
   }
-  check(out() < atDawn || atDawn === 0, `by 06:30 fewer are in the streets: ${atDawn} to ${out()}`);
-  say(`dawn: ${atDawn} in the streets at 05:00, ${out()} by 06:30`);
+  const still = were.filter((z) => c.state.zeds.includes(z) && c.zedStreet[tileOf(z)]).length;
+  check(atDawn > 0 && still === 0, `by 06:30 those in the streets at dawn have gone to ground: ${still} of ${atDawn} still out`);
+  say(`dawn: ${atDawn} in the streets at 05:00, ${still} of them still out by 06:30`);
 }
 
 // ------------------------------------------------------------------ the same commands, the same city; a save

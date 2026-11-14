@@ -279,6 +279,11 @@ In two slices.
   which the dead that aren't chasing keep out of (a brute and the last stand's called ones aside). The
   dead's side of it is in `dead.ts` behind `City.anyLight`: a city with nothing burning plays as before.
   `citylighttest` proves each light and the night beside a lantern; the help's `cityLight`.
+- **Interiors dark by day (2.53).** `sim/light.ts`'s `dayDark` fills `City.dim` when a district is
+  entered (never saved): a building's floor more than three tiles' walk from a street door, homes and
+  survivors' buildings aside. There the player is in the dark by day (`murky`, `lightLevel`), seen at
+  the night's four tiles; `zedPlaces.deep` is where the day's dead indoors are put down. The view lays
+  a gloom over those tiles and draws the dead in it as it does at night. `citylighttest`'s last part.
 
 ## Proof, stage by stage
 
