@@ -207,7 +207,7 @@ feel) and the known limits.
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 80 help topics,
-6,094 text keys in English and French, 95 test scripts. A second mode, City Escape, built in four
+6,099 text keys in English and French, 96 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
