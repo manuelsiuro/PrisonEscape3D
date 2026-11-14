@@ -91,6 +91,10 @@ export const CITY_ITEMS: readonly CityItem[] = [
   food('ration', 'packet', 0x6a7a4a, 60, { energy: 20 }, 0xd8b04a),
   // 2.52: a lantern, made; set down where the player stands, it burns the night through.
   { id: 'lantern', kind: 'tool', stack: 2, shape: 'jar', color: 0xe8b04a, accent: 0x3a3a3a },
+  // 2.55: thrown (a bottle of fuel with a rag: fire where it breaks) and shot (the crossbow's count is the shots left in it).
+  { id: 'molotov', kind: 'weapon', stack: 3, shape: 'bottle', color: 0xc24a3a, accent: 0xe8d8b0 },
+  { id: 'crossbow', kind: 'weapon', stack: 1, shape: 'crowbar', color: 0x6a4a2a, accent: 0x9aa1ab, wear: 40 },
+  { id: 'bolt', kind: 'material', stack: 6, shape: 'bar', color: 0x9aa1ab, accent: 0xc24a3a },
 ];
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];

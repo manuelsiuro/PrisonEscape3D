@@ -412,7 +412,7 @@ HELP.city = [
       }),
       T('cityFight', 'fist', '#5a8ee0', {
         pic: true,
-        listIcons: ['fist', 'sword', 'route', 'bolt', 'wrench'],
+        listIcons: ['fist', 'sword', 'route', 'bolt', 'wrench', 'eye', 'flame', 'ear'],
         see: ['cityDead', 'cityMake'],
       }),
       T('cityShelter', 'home', '#6fb06a', { pic: true, stepIcons: ['hammer', 'lock', 'walk', 'moon'], see: ['cityMake', 'cityDead'] }),

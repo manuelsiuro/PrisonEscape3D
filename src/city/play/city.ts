@@ -180,6 +180,7 @@ function stage(r: CityRun, first = false) {
   barsShown = -1;
   lightsShown = -1;
   carsShown = -1;
+  firesShown = -1;
   goalAt = -1;
   marksShown = '?';
   sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
@@ -434,6 +435,10 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     alarmHeard = now;
     sound.carAlarm();
   }
+  if (firesShown !== c.firesRev) {
+    firesShown = c.firesRev;
+    cityView.setFires(c.state.fires.map((f) => f[0]));
+  }
   if (lightsShown !== c.lightsRev) {
     lightsShown = c.lightsRev;
     cityView.setLights(lightsHere(c), c.lit, c.dim);
@@ -486,6 +491,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       else if (cityItem(e.item)?.attack) tip('city.weapon', 'city.tip.weapon');
       else if (cityItem(e.item)?.id === 'plank' || cityItem(e.item)?.id === 'nails') tip('city.boards', 'city.tip.boards');
       else if (cityItem(e.item)?.id === 'fuel' || cityItem(e.item)?.id === 'torch') tip('city.light', 'city.tip.light');
+      else if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt') tip('city.thrown', 'city.tip.thrown');
       break;
     case 'stored':
     case 'dropped':
@@ -510,6 +516,35 @@ function cityEvent(r: CityRun, e: CityEvent) {
         banner.toast(t('city.toast.alarm'), 'bad', 3400);
         tip('city.alarm', 'city.tip.alarm');
       } else banner.toast(t('city.toast.alarmOff'), 'info', 2400);
+      break;
+    case 'thrown': {
+      const mid = (i: number) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 });
+      const fire = cityItem(e.item)?.id === 'molotov';
+      cityView.throwFx(mid(e.from), mid(e.to), fire ? 'molotov' : 'bottle');
+      sound.swish();
+      // (Heard as it lands, when its arc ends.)
+      setTimeout(() => {
+        if (play.side !== r) return;
+        sound.shatter();
+        if (fire) sound.ignite();
+      }, 260);
+      break;
+    }
+    case 'shot':
+      cityView.throwFx({ x: (e.from % MAP_W) + 0.5, z: Math.floor(e.from / MAP_W) + 0.5 }, { x: e.x / UNIT, z: e.z / UNIT }, 'bolt');
+      sound.twang();
+      if (e.dead) sound.dud();
+      break;
+    case 'scorched':
+      sound.dud();
+      break;
+    case 'burn':
+      sound.grunt();
+      buzz('missed');
+      bitten.classList.remove('on');
+      void bitten.offsetWidth;
+      bitten.classList.add('on');
+      banner.toast(t('city.toast.burning'), 'bad', 1600);
       break;
     case 'burnt':
       banner.toast(t(`city.toast.burnt.${e.kind}` as Key), 'info', 2800);
@@ -580,6 +615,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'made':
       sound.stow(false);
       banner.toast(t('city.toast.made', { what: itemName(e.item) }), 'good', 2200);
+      if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt') tip('city.thrown', 'city.tip.thrown');
       break;
     case 'cantMake':
       banner.toast(t(`city.toast.cant.${e.why}` as Key), 'info', 2400);
@@ -786,6 +822,7 @@ const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
 let barsShown = -1;
 let lightsShown = -1;
 let carsShown = -1;
+let firesShown = -1;
 let alarmHeard = -1e9;
 
 /** Where each of the dead was before the last step, and what the view is handed of them. */

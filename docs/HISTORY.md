@@ -218,3 +218,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape: light and fire (v2.52.0)
 - City Escape: interiors dark by day (v2.53.0)
 - City Escape: cars searched (v2.54.0)
+
+## [v2.55 to v2.59](history/v2.55-v2.59.md)
+
+- City Escape: weapons thrown or shot (v2.55.0, not released yet)

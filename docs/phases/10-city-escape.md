@@ -287,6 +287,9 @@ In two slices.
 - **Cars searched (2.54).** `sim/cars.ts`, `content/loot.ts`'s `CARS`: a car or a wreck is a box (key
   `c` + its first tile), the button's last choice after furniture, a pile and a door; one car in six
   has an alarm (`state.alarm`, the one new field), its red light drawn by the view. `citycartest`.
+- **Weapons thrown or shot (2.55).** `content/ranged.ts`, `sim/ranged.ts`: a bottle and a molotov
+  thrown with Use (`useThrown`), the crossbow shot from `strike` (`shoot`), what burns in `state.fires`
+  (`stepFires`, after the dead's step). Three items, three recipes (fifteen). `cityrangedtest`.
 
 ## Proof, stage by stage
 
