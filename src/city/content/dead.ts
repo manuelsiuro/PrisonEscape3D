@@ -51,6 +51,12 @@ export const ZKIND = { SHAMBLER: 0, RUNNER: 1, BRUTE: 2 } as const;
 export const RUNNER = { health: 16, chase: 168, bite: 6, fromNight: 3, oneIn: 8 } as const;
 export const BRUTE = { health: 90, chase: 108, bite: 14, fromNight: 5, danger: 2, reel: 4, shove: 140, pound: 80 } as const;
 
+/**
+ * 2.58: a sleeper's barred door found by the dead. From this night on, each hour asleep in a shelter: so many chances in a hundred
+ * a night past it (no more than `most`) that one of them within `near` tiles comes to the boards; they give after `pound` of its steps there.
+ */
+export const SIEGE = { fromNight: 3, perNight: 2, most: 8, near: 16, pound: 300 } as const;
+
 /** The player's blow (C2b; the city's weapons add their own). */
 export const BLOW = {
   /** Bare hands; a weapon adds twice its `attack`. */

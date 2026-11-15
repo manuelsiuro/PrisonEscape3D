@@ -2,6 +2,7 @@ import { NIGHT_FROM, STEPS_PER_MINUTE } from '../../sim/tuning';
 import { neighbours4 } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
 import { DISTRICTS, type LotUse } from '../content/districts';
+import { BLOW } from '../content/dead';
 import { cityItemNumber } from '../content/items';
 import { SEARCHED } from '../content/loot';
 import { LOCKED, PEOPLE, type Errand } from '../content/people';
@@ -11,6 +12,7 @@ import { CITY_N, gateOpen, LANES, neighbour, streamOf } from '../gen/plan';
 import { TUNNEL } from '../gen/tunnel';
 import type { City, Target } from './City';
 import { nightAt, noise } from './dead';
+import { joined } from './tools';
 
 /**
  * The story (C3), a part of the city's simulation: where the things it needs lie (from the city's
@@ -456,15 +458,36 @@ export function storyAct(c: City) {
     return refreshAct(c);
   }
   if (s.way === 2 && !(c.minute >= STORY.tideFrom || c.minute < STORY.tideTo)) return void c.events.push({ type: 'refused', why: 'tide' });
+  // (2.58: the boat isn't stepped into and gone: the lines are let go first, stood still at the pier's end, and it is heard.)
+  if (s.way === 2) {
+    if (s.search === 'w') return;
+    s.search = 'w';
+    s.searchLeft = STORY.castSteps;
+    noise(c, c.tile, BLOW.rustle);
+    return void c.events.push({ type: 'casting' });
+  }
   // (2.56: the metro's gates open: down into the tunnel, on foot; the way out is at its far end.)
   if (s.way === 3) return c.descend();
   win(c);
 }
 
+/** 2.58: the lines let go at the pier's end, the tide still in: away. */
+export function castOff(c: City) {
+  const s = c.state;
+  // (Begun on the tide, it is away on it: the last minutes of the tide count.)
+  if (s.ready && s.way === 2 && !s.over) win(c);
+}
+
 /** A way out chosen (the journal's button): one already scouted, once the radio works, until it's set going. */
 export function choose(c: City, way: number) {
   const s = c.state;
-  if (!wayOf(way) || !(s.flags & FLAG.FIXED) || !(s.scouted & (1 << (way - 1))) || s.ready || s.way === way) return;
+  if (!wayOf(way) || !(s.flags & FLAG.FIXED) || !(s.scouted & (1 << (way - 1))) || s.way === way) return;
+  // (A beacon lit or a generator running is walked away from first. 2.58: the boat made ready waits for no one: its engine comes out again.)
+  if (s.ready && s.way !== 2) return;
+  if (s.ready) {
+    s.ready = 0;
+    c.events.push({ type: 'ready', way: s.way, on: false });
+  }
   s.way = way;
   c.events.push({ type: 'chose', way });
   // (Seen before the radio worked: what it takes is said now.)
@@ -551,7 +574,7 @@ export function towards(c: City, from: number, to: number): number {
   for (let q = 0; q < queue.length; q++)
     for (let side = 0; side < 4; side++) {
       const n = neighbour(queue[q], side);
-      if (n < 0 || seen.has(n) || !c.plan.gates[queue[q]][side]) continue;
+      if (n < 0 || seen.has(n) || !joined(c, queue[q], side)) continue;
       seen.add(n);
       next[n] = queue[q];
       queue.push(n);

@@ -62,6 +62,10 @@ the measurements go in the history entry.
   of the queue done comes off).
 - **Releasing** (`CLAUDE.md`'s Release rule): after `npm run released` sees it live, run `npm run docs:released`.
   It marks the entry released, sets the status line and restamps the map viewer, then prints the commit to make.
+  An entry merged under its own version and never released on its own (a fix that rides in the next release)
+  is relabelled before the bump ("out with the next release"): once the version passes it, `docstest` refuses
+  its "not released yet" (2.57.0's CI failed on it and nothing was deployed). After `npm version`, run
+  `npm test -- docstest` before the push.
 - **Memory:** a note only for what the repo can't tell (the user's preferences, a decision's why when it isn't
   written down), with a pointer to the doc that has the rest.
 

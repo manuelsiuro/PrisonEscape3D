@@ -67,6 +67,8 @@ export interface Gate {
   lane: number;
   tiles: [number, number];
   to: number;
+  /** 2.58: not a checkpoint: the fence cut through by the player (city/sim/tools.ts). */
+  cut?: true;
 }
 
 export interface District {

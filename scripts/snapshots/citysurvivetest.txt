@@ -1,12 +1,12 @@
-10 cities, a scavenger bot 7 days in each, the dead about: it fell 2.0 times a week (it fights what comes in reach and never hides)
-a week, on average: 255.0 pieces searched, 83.0 things found (33.0 food), 14.3 eaten, asleep 20.8 times, starving 0.0 times, 47.5 of the dead put down, 66.1 bites taken
-  1: 213 searched, 78 things (33 food), 19 eaten, 19 times asleep, 54 put down, 65 bites, fell 1, 73c60c72
-  2: 184 searched, 65 things (44 food), 12 eaten, 15 times asleep, 31 put down, 76 bites, fell 4, f5dd7564
-  3: 332 searched, 137 things (47 food), 13 eaten, 32 times asleep, 77 put down, 98 bites, fell 1, a48de51b
-  4: 312 searched, 110 things (31 food), 13 eaten, 16 times asleep, 40 put down, 23 bites, fell 0, fc91dc15
+10 cities, a scavenger bot 7 days in each, the dead about: it fell 2.3 times a week (it fights what comes in reach and never hides)
+a week, on average: 243.7 pieces searched, 90.2 things found (33.8 food), 13.6 eaten, asleep 17.7 times, starving 0.0 times, 41.3 of the dead put down, 61.0 bites taken
+  1: 221 searched, 124 things (36 food), 11 eaten, 11 times asleep, 49 put down, 91 bites, fell 3, 666cf10a
+  2: 219 searched, 71 things (29 food), 14 eaten, 17 times asleep, 40 put down, 66 bites, fell 3, c5402404
+  3: 250 searched, 116 things (53 food), 11 eaten, 19 times asleep, 55 put down, 76 bites, fell 2, c73b2d84
+  4: 188 searched, 94 things (29 food), 14 eaten, 14 times asleep, 21 put down, 41 bites, fell 2, be99e685
 hunger: a third of the bar in ten hours awake; at nothing, health goes; a tin is 30 points, a bandage 28 health; nothing wasted on a full bar
 a Survivor who falls wakes at home the next morning with 40 health, their things where they fell; in Hardcore the city is lost
-seed 2's first six searches: 64=soda×1+water×1, 65=empty, 66=dried×1, 67=empty, 73=tin×1, 72=dried×1
+seed 2's first six searches: 64=soda×1+water×1, 65=empty, 66=dried×1, 67=empty, 79=tin×1, 82=dried×1
 a save carries the pockets, the meters and every box looked into; one from stage 1 loads with the meters fresh; a thing that is not is refused
-saves made at the start and at 1 crossings and falls: 2 of 2 play on as the live city did
+saves made at the start and at 7 crossings and falls: 8 of 8 play on as the live city did
 a bed holding something is looked into before it is slept in; a second press mid-search starts nothing over; medicine is kept at full health; an empty-handed fall leaves no pile and mends hunger only to 15

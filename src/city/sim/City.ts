@@ -18,8 +18,10 @@ import { BLOW } from '../content/dead';
 import { CITY_RECIPES, recipeParts } from '../content/recipes';
 import { noise, places, populate, stepDead, strike, type Zed } from './dead';
 import { districtWorld } from './world';
+import { cutCode, cutSpots, freshTools, lockedDoors, soundCuts, soundTools, TOOLS, withCuts, type CutSpot } from './tools';
 import type { Beat } from '../content/story';
 import {
+  castOff,
   choose,
   freshStory,
   giveErrand,
@@ -100,6 +102,8 @@ const PILE_SLOTS = 64;
 export const BAR_STEPS = 40;
 const BOARDS = cityItemNumber('boards');
 const STOVE = cityItemNumber('stove');
+const CROWBAR = cityItemNumber('crowbar');
+const CUTTERS = cityItemNumber('cutters');
 
 /** A pocket or a slot: [item number, how many] ([0, 0]: empty). */
 export type Stack = [number, number];
@@ -107,8 +111,8 @@ const empty = (): Stack => [0, 0];
 
 /** What the action button would do now: search a piece of furniture, look at what lies on the ground, sleep in a bed. */
 export interface Target {
-  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc';
-  /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile). */
+  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence';
+  /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile; 2.58: a locked door: 'k' + its tile, a fence: 'f' + its first tile). */
   key: string;
   tile: number;
   /** The furniture it is (2.54: or a car, or a wreck). */
@@ -183,6 +187,11 @@ export interface CityState {
   alarm: number[];
   // 2.55, optional on load: what burns in the district the player is in (sim/ranged.ts): [tile, the step it goes out].
   fires: number[][];
+  // 2.58, optional on load: the crowbar and the bolt cutters (sim/tools.ts). Whether this city has locked buildings (one begun before them: 0);
+  // the buildings forced open, by district (their lots); the fences cut (cutCode).
+  locks: number;
+  forced: Record<string, number[]>;
+  cuts: number[];
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -203,7 +212,7 @@ export type CityEvent =
   | { type: 'used'; item: number }
   | { type: 'dropped'; item: number }
   | { type: 'full' }
-  | { type: 'sleep'; on: boolean; why?: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked' }
+  | { type: 'sleep'; on: boolean; why?: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked' | 'pounding' }
   /** The dead: one has seen the player; a bite; the player's blow (landed, and whether it put one down, where); dusk coming (minutes), night fallen or over. */
   | { type: 'spotted'; zed: number }
   | { type: 'bite'; harm: number }
@@ -233,7 +242,9 @@ export type CityEvent =
         | 'noBattery'
         | 'noFire'
         | 'alreadyLit'
-        | 'noRoom';
+        | 'noRoom'
+        | 'crowbar'
+        | 'cutters';
     }
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
@@ -247,6 +258,11 @@ export type CityEvent =
   | { type: 'scorched'; dead: number }
   | { type: 'burn'; harm: number }
   | { type: 'fireOut' }
+  /** 2.58: a locked door being forced or a fence being cut (the work begun); a building forced open; a fence cut through (the district is put up again). */
+  | { type: 'forcing'; what: 'lock' | 'fence' }
+  | { type: 'casting' }
+  | { type: 'forced'; tile: number }
+  | { type: 'cut'; tile: number }
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
   | { type: 'talk'; who: number; what: 'met' | 'done' | 'chat' }
   | { type: 'traded'; who: number; item: number }
@@ -289,7 +305,16 @@ export class City {
     if (from) {
       // (A save from before a field has it fresh, after the ones it has: a save's own order is kept.)
       this.state = { ...from.state, player: { ...from.state.player } };
-      for (const [k, v] of Object.entries({ ...freshSurvival(), ...freshStory(), ...freshLight(), ...freshCars(), ...freshRanged() }))
+      // (2.58: a city begun before the chains has none, whoever builds it from its save.)
+      if ((this.state as { locks?: number }).locks === undefined) this.state.locks = 0;
+      for (const [k, v] of Object.entries({
+        ...freshSurvival(),
+        ...freshStory(),
+        ...freshLight(),
+        ...freshCars(),
+        ...freshRanged(),
+        ...freshTools(),
+      }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
       this.enter(this.state.district, true);
@@ -308,6 +333,7 @@ export class City {
         ...freshLight(),
         ...freshCars(),
         ...freshRanged(),
+        ...freshTools(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -324,16 +350,28 @@ export class City {
     return (this.places ??= storyPlaces(this));
   }
 
-  /** A district's plan (made once, kept). */
+  /** A district's plan as the generator made it (made once, kept). */
+  baseOf(d: number): District {
+    let made = this.bases.get(d);
+    if (!made) this.bases.set(d, (made = d === TUNNEL ? this.tunnel.district : generateDistrict(this.plan, d)));
+    return made;
+  }
+  private readonly bases = new Map<number, District>();
+  /** A district's plan as it stands: the generator's, with the fences cut so far (2.58). Kept until another is cut. */
   districtOf(d: number): District {
     let made = this.districts.get(d);
-    if (!made) this.districts.set(d, (made = d === TUNNEL ? this.tunnel.district : generateDistrict(this.plan, d)));
+    if (!made) this.districts.set(d, (made = withCuts(this, this.baseOf(d))));
     return made;
   }
   /** 2.56: the metro's tunnel, a tenth map (made once, kept). */
   private under: Tunnel | null = null;
   get tunnel(): Tunnel {
     return (this.under ??= generateTunnel(this.plan));
+  }
+  /** After a load mended what a district is made of: put up again, everyone where they were. */
+  reenter() {
+    this.districts.clear();
+    this.enter(this.state.district, true);
   }
   /** Up at the metro's stairs again (a save that has no business in the tunnel). */
   surface() {
@@ -369,14 +407,16 @@ export class City {
       if (SEARCHED[p.kind] === undefined) return;
       for (let z = p.z; z < p.z + (p.d ?? 1); z++) for (let x = p.x; x < p.x + (p.w ?? 1); x++) this.propAt[z * MAP_W + x] = k + 1;
     });
-    this.zedPlaces = places(this);
-    this.zedIndoor = new Uint8Array(N);
-    this.zedStreet = new Uint8Array(N);
-    for (const i of this.zedPlaces.indoors) this.zedIndoor[i] = 1;
-    for (const i of this.zedPlaces.streets) this.zedStreet[i] = 1;
     // Which tile is a building's street door (its lot's number + 1), and what stops the dead: the world, and the doors barred.
     this.doorLot = new Uint8Array(N);
     this.district.lots.forEach((l, k) => l.doors.forEach((i) => (this.doorLot[i] = k + 1)));
+    // (2.58: the locked buildings: their doors shut to everyone, nobody put down inside. The fences that can be cut.)
+    this.locked = lockedDoors(this, d);
+    for (let i = 0; i < N; i++) if (this.locked[i]) this.world.parked[i] = 1;
+    this.world.refreshBlock();
+    this.fences = cutSpots(this, d);
+    this.locksRev++;
+    this.setPlaces();
     // The survivors here: nobody walks through them, and nothing is put down in the buildings they hold.
     this.people = [];
     this.safeLots = new Set();
@@ -400,6 +440,27 @@ export class City {
     relight(this);
     if (!kept) this.state.arrive = 1;
   }
+  /** Where the dead may be: the open floors indoors (not a locked building's) and the streets. */
+  private setPlaces() {
+    this.zedPlaces = places(this);
+    this.zedIndoor = new Uint8Array(N);
+    this.zedStreet = new Uint8Array(N);
+    for (const i of this.zedPlaces.indoors) this.zedIndoor[i] = 1;
+    for (const i of this.zedPlaces.streets) this.zedStreet[i] = 1;
+    this.zedPlaces.deep = this.zedPlaces.indoors.filter((i) => this.dim[i] === 1);
+  }
+  /** 2.58: per tile, 1 on a locked building's door; the fences that can be cut here; a count the view watches (a door forced, a district entered). */
+  locked = new Uint8Array(N);
+  fences: CutSpot[] = [];
+  locksRev = 0;
+  /** Whether a building (its lot's number) is locked still. */
+  lockedLot(lot: number): boolean {
+    return (this.district.lots[lot]?.doors ?? []).some((i) => this.locked[i] === 1);
+  }
+  /** Whether a building was locked when the city began (forced since, or not): what's inside was never picked over. */
+  private wasLocked(lot: number): boolean {
+    return this.lockedLot(lot) || (this.state.forced[this.state.district] ?? []).includes(lot);
+  }
   /** 2.54: per tile, the car or wreck standing there (its first tile + 1); a count the view watches (a car searched, a district entered). */
   carAt = new Int16Array(N);
   carsRev = 0;
@@ -422,10 +483,14 @@ export class City {
   zedPlaces: { indoors: number[]; streets: number[]; deep: number[] } = { indoors: [], streets: [], deep: [] };
   zedIndoor = new Uint8Array(N);
   zedStreet = new Uint8Array(N);
+  /** 2.58: the share of the district's floors indoors that isn't behind a chained door (the dead indoors are that many fewer). */
+  zedShare = 1;
   /** Per tile: the building (lot + 1) whose street door it is. */
   private doorLot = new Uint8Array(N);
   /** What the dead can't walk: the world's own, and every barred door. */
   zedGrid = new Uint8Array(N);
+  /** What stops one that boards don't (a brute, one at a sleeper's door): the world's own, and every locked door. */
+  lockGrid = new Uint8Array(N);
   /** The same, as `walk` asks it. */
   readonly zedWorld = {
     blocked: (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || this.zedGrid[z * MAP_W + x] === 1,
@@ -438,9 +503,13 @@ export class City {
     return this.state.bars[this.state.district] ?? [];
   }
   private refreshBars() {
-    this.zedGrid.set(this.world.npcBlock);
+    // (2.58: a locked door stops everyone, and sight.)
+    this.lockGrid.set(this.world.npcBlock);
+    // (Its leaf is drawn shut: the world works out again which doors are, each time it is asked what blocks.)
+    for (let i = 0; i < N; i++) if (this.locked[i]) this.lockGrid[i] = this.world.doorShut[i] = 1;
+    this.zedGrid.set(this.lockGrid);
     // (Boards stop sight as well as the dead: what stands on the streets veils as it did, and each barred door too.)
-    for (let i = 0; i < N; i++) this.world.veil[i] = decoVeils(this.district.deco[i]) ? 1 : 0;
+    for (let i = 0; i < N; i++) this.world.veil[i] = decoVeils(this.district.deco[i]) || this.locked[i] ? 1 : 0;
     for (const i of this.bars) this.zedGrid[i] = this.world.veil[i] = 1;
     this.barsRev++;
   }
@@ -536,6 +605,9 @@ export class City {
         s.search = '';
         ended = true;
         if (key.startsWith('d')) this.bar(Number(key.slice(1)));
+        else if (key === 'w') castOff(this);
+        else if (key.startsWith('k')) this.force(Number(key.slice(1)));
+        else if (key.startsWith('f')) this.cut(Number(key.slice(1)));
         else this.openBox(key, true);
       }
     }
@@ -586,10 +658,10 @@ export class City {
   private starved = false;
 
   /** Woken (the dead's bite). */
-  wakeNow(why: 'attacked') {
+  wakeNow(why: 'attacked' | 'pounding') {
     if (this.state.sleeping) this.wake(why);
   }
-  private wake(why: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked') {
+  private wake(why: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked' | 'pounding') {
     this.state.sleeping = false;
     this.events.push({ type: 'sleep', on: false, why });
   }
@@ -685,10 +757,13 @@ export class City {
       [-1, 0],
     ];
     // (A street door faced comes before the furniture beside: what's faced is what's meant.)
+    // (2.58: a locked one is forced, whatever is in the pockets: the button says what it wants.)
     const doorAt = (t: number): Target | null =>
-      t >= 0 && t < N && this.doorLot[t] && (this.bars.includes(t) || this.count(BOARDS) > 0)
-        ? { kind: 'door', key: `d${t}`, tile: t, prop: null }
-        : null;
+      t >= 0 && t < N && this.locked[t]
+        ? { kind: 'lock', key: `k${t}`, tile: t, prop: null }
+        : t >= 0 && t < N && this.doorLot[t] && (this.bars.includes(t) || this.count(BOARDS) > 0)
+          ? { kind: 'door', key: `d${t}`, tile: t, prop: null }
+          : null;
     const faced = (fx ? doorAt(here + fx) : null) ?? (fz ? doorAt(here + fz * MAP_W) : null);
     if (faced) return faced;
     // (Beside the way out's tile: it comes after the furniture faced, before the furniture merely beside.)
@@ -723,6 +798,10 @@ export class City {
       const car = this.carAt[tz * MAP_W + tx];
       if (car) return { kind: 'box', key: `c${car - 1}`, tile: tz * MAP_W + tx, prop: isWreck(this, car - 1) ? 'wreck' : 'car' };
     }
+    // (2.58) The army's fence where a street runs up to it on both sides: cut through. Last of all.
+    for (const f of this.fences)
+      if (f.tiles.some((t) => Math.abs((t % MAP_W) - x) + Math.abs(Math.floor(t / MAP_W) - z) === 1))
+        return { kind: 'fence', key: `f${f.tiles[0]}`, tile: f.tiles[0], prop: null };
     return null;
   }
 
@@ -736,9 +815,11 @@ export class City {
     if (key.startsWith('n')) return this.target()?.key === key;
     const at = key.startsWith('c')
       ? carTiles(this, Number(key.slice(1)))
-      : key.startsWith('g') || key.startsWith('d')
+      : key.startsWith('g') || key.startsWith('d') || key.startsWith('k')
         ? [Number(key.slice(1))]
-        : this.tilesOf(Number(key));
+        : key.startsWith('f')
+          ? (this.fences.find((f) => f.tiles[0] === Number(key.slice(1)))?.tiles ?? [])
+          : this.tilesOf(Number(key));
     return at.some((t) => Math.abs((t % MAP_W) - (here % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(here / MAP_W)) <= 1);
   }
   /** The tiles a piece of furniture stands on. */
@@ -755,7 +836,9 @@ export class City {
     const lot = this.district.lotAt[p.z * MAP_W + p.x];
     const { list, total } = lootList(lot ? this.district.lots[lot - 1].use : 'house', p.kind);
     const rnd = streamOf(this.state.seed, 5000 + this.state.district * 1000 + prop);
-    return this.draws(list, total, SEARCHED[p.kind] ?? 0, rnd);
+    // (2.58: a building that was locked was never picked over: a draw more, and fewer of them empty.)
+    const kept = lot > 0 && this.wasLocked(lot - 1);
+    return this.draws(list, total, (SEARCHED[p.kind] ?? 0) + (kept ? TOOLS.moreDraws : 0), rnd, kept ? TOOLS.emptyDraws : EMPTY_DRAWS);
   }
   /** What a car or a wreck holds (2.54), drawn once from the seed, its district and its first tile. */
   private stockCar(first: number): Stack[] {
@@ -768,10 +851,10 @@ export class City {
       streamOf(this.state.seed, 200_000 + this.state.district * N + first),
     );
   }
-  private draws(list: Array<[number, number]>, total: number, n: number, rnd: () => number): Stack[] {
+  private draws(list: Array<[number, number]>, total: number, n: number, rnd: () => number, none: number = EMPTY_DRAWS): Stack[] {
     const out: Stack[] = [];
     for (let draw = 0; draw < n; draw++) {
-      if (rnd() * 1000 < EMPTY_DRAWS) continue;
+      if (rnd() * 1000 < none) continue;
       let roll = rnd() * total;
       const item = list.find(([, w]) => (roll -= w) < 0)?.[0] ?? list[0][0];
       const wear = cityItem(item)?.wear;
@@ -871,6 +954,16 @@ export class City {
         noise(this, this.tile, BLOW.noise);
         return void this.events.push({ type: 'barring', on: !this.bars.includes(t.tile) });
       }
+      if (t.kind === 'lock' || t.kind === 'fence') {
+        // (Prised open, cut through: a longer moment's work, heard as a blow is. Without the tool: said.)
+        const lock = t.kind === 'lock';
+        if (!this.count(lock ? CROWBAR : CUTTERS)) return void this.events.push({ type: 'refused', why: lock ? 'crowbar' : 'cutters' });
+        s.search = t.key;
+        s.searchLeft = lock ? TOOLS.forceSteps : TOOLS.cutSteps;
+        this.close();
+        noise(this, this.tile, BLOW.noise);
+        return void this.events.push({ type: 'forcing', what: t.kind });
+      }
       if (t.kind === 'pile' || this.searched(t.key)) return this.openBox(t.key, false);
       s.search = t.key;
       s.searchLeft = SEARCH_STEPS;
@@ -920,8 +1013,8 @@ export class City {
       if (--st[1] <= 0) st[0] = st[1] = 0;
       this.events.push({ type: 'used', item });
       if ((use.hunger ?? 0) > 0) storyDid(this, 'ate');
-      if (use.health && use.health < 0) this.hurt(-use.health);
-      else s.health = Math.min(100, s.health + (use.health ?? 0));
+      // (2.58: what's eaten never kills: raw fish takes health down to one point at the worst.)
+      s.health = Math.max(1, Math.min(100, s.health + (use.health ?? 0)));
       return;
     }
     if (op === COP.STORE && s.open) {
@@ -1019,6 +1112,36 @@ export class City {
     list.splice(at, 1);
     this.refreshBars();
     this.events.push({ type: 'breach', tile });
+  }
+
+  /** 2.58: a locked building forced open (the crowbar): every door of it, for good; the dead can go in as anywhere. */
+  private force(tile: number) {
+    const s = this.state;
+    const lot = this.doorLot[tile] - 1;
+    if (lot < 0 || !this.locked[tile]) return;
+    (s.forced[s.district] ??= []).push(lot);
+    for (const i of this.district.lots[lot].doors) this.locked[i] = this.world.parked[i] = 0;
+    // (The dead's places as a district entered works them out: before the survivors stand in the way. A save loads to the same.)
+    for (const p of this.people) this.world.parked[p.tile] = 0;
+    this.world.refreshBlock();
+    this.setPlaces();
+    for (const p of this.people) this.world.parked[p.tile] = 1;
+    if (this.people.length) this.world.refreshBlock();
+    this.refreshBars();
+    this.locksRev++;
+    this.events.push({ type: 'forced', tile });
+  }
+  /** 2.58: the fence cut through (the bolt cutters): the street runs on into the next district, from both sides, for good. */
+  private cut(tile: number) {
+    const s = this.state;
+    const spot = this.fences.find((f) => f.tiles[0] === tile);
+    if (!spot) return;
+    s.cuts.push(cutCode(s.district, spot.side, spot.lane));
+    this.districts.delete(s.district);
+    this.districts.delete(spot.to);
+    // (The district put up again as it now stands, everyone where they were.)
+    this.enter(s.district, true);
+    this.events.push({ type: 'cut', tile });
   }
 
   /** Things handed to the player: into the pockets, what doesn't fit on the ground underfoot. */
@@ -1237,6 +1360,7 @@ export function loadCity(snap: unknown): City | null {
   soundLight(st);
   soundCars(st);
   soundRanged(st);
+  soundTools(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)
@@ -1244,6 +1368,10 @@ export function loadCity(snap: unknown): City | null {
       const sp = city.districtOf(city.plan.start).spawn;
       city.state.home = [city.plan.start, sp.z * MAP_W + sp.x];
     }
+    // (2.58: only fences that can be cut stay cut; the district put up again if any went.)
+    const cuts = city.state.cuts.length;
+    soundCuts(city);
+    if (city.state.cuts.length !== cuts) city.reenter();
     // (The dead as the save had them, if it's sound; else the district's put down afresh.)
     city.soundBars(before);
     city.rebar();

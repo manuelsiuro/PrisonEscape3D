@@ -6,7 +6,7 @@ import { bodyAt, walk, type Body } from '../../sim/systems/movement';
 import { NIGHT_FROM, NIGHT_TO, STEPS_PER_MINUTE, UNIT } from '../../sim/tuning';
 import { centerX, centerZ, tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
-import { BLOW, BRUTE, DEAD, RUNNER, ZKIND } from '../content/dead';
+import { BLOW, BRUTE, DEAD, RUNNER, SIEGE, ZKIND } from '../content/dead';
 import { ESCAPE_KINDS, isBuilding } from '../content/districts';
 import { cityItem } from '../content/items';
 import { districtX, districtZ } from '../gen/plan';
@@ -78,23 +78,35 @@ export function quota(c: City): { indoors: number; streets: number } {
       DEAD.nightPerDanger * dg +
       Math.min(DEAD.nightMost, DEAD.nightPerNight * Math.max(0, night - 1)) +
       (set ? STORY.extra : 0);
-    return { indoors: Math.floor(all / 4), streets: all - Math.floor(all / 4) };
+    return { indoors: indoorsOf(c, Math.floor(all / 4)), streets: all - Math.floor(all / 4) };
   }
-  return { indoors: DEAD.dayBase + DEAD.dayPerDanger * dg + Math.min(DEAD.dayMost, DEAD.dayPerDay * (c.day - 1)), streets: dg };
+  return {
+    indoors: indoorsOf(c, DEAD.dayBase + DEAD.dayPerDanger * dg + Math.min(DEAD.dayMost, DEAD.dayPerDay * (c.day - 1))),
+    streets: dg,
+  };
 }
+
+/** 2.58: those indoors, less the share of the floors behind chained doors: nobody is in there, and the rest is no fuller for it. */
+const indoorsOf = (c: City, n: number) => Math.round(n * c.zedShare);
 
 /** A district's open tiles indoors and on its streets (worked out when it's entered). */
 export function places(c: City): { indoors: number[]; streets: number[]; deep: number[] } {
   const d = c.district;
   const indoors: number[] = [];
   const streets: number[] = [];
+  let shut = 0;
   for (let i = 0; i < N; i++) {
     if (c.grid[i]) continue;
     const ch = d.rows[Math.floor(i / MAP_W)][i % MAP_W];
     const lot = d.lotAt[i];
     if (ch === ',') streets.push(i);
-    else if (lot && isBuilding(d.lots[lot - 1].use) && (ch === 'w' || ch === ':' || ch === '_')) indoors.push(i);
+    // (2.58: not in a locked building: nobody has been in.)
+    else if (lot && isBuilding(d.lots[lot - 1].use) && (ch === 'w' || ch === ':' || ch === '_')) {
+      if (c.lockedLot(lot - 1)) shut++;
+      else indoors.push(i);
+    }
   }
+  c.zedShare = indoors.length + shut ? indoors.length / (indoors.length + shut) : 1;
   return { indoors, streets, deep: [] };
 }
 
@@ -165,6 +177,8 @@ export function noise(c: City, tile: number, reach: number, again = false) {
   if (going(c) === 2) reach *= STORY.fogHearing;
   for (const z of c.state.zeds) {
     if (z.mode === ZED.CHASE) continue;
+    // (2.58: one at a sleeper's boards isn't called off them by what it hears behind them.)
+    if (z.pound !== undefined && z.kind !== ZKIND.BRUTE) continue;
     // (A noise that goes on, a car's alarm: one already on its way somewhere else, to ground at dawn or out of a light, isn't called back each minute.)
     if (again && z.mode === ZED.SEEK && z.goal !== tile) continue;
     const zt = tileAt(z.body.x, z.body.z);
@@ -229,6 +243,40 @@ export function strike(c: City) {
   c.wearWeapon();
 }
 
+/**
+ * 2.58: a sleeper behind boards is found, now and then: on the hour, from the third night, one of the dead in the streets near by
+ * (not in a light) makes for where they lie, by the barred door, and pounds it until the boards give. A draw only when someone
+ * sleeps in a shelter at night: nothing else is moved by it.
+ */
+function siege(c: City) {
+  const s = c.state;
+  const lot = c.lot;
+  if (lot < 0 || !c.shelter(lot)) return;
+  const nightNo = (c.minute < NIGHT_TO ? c.day - 1 : c.day) + s.deaths;
+  const odds = Math.min(SIEGE.most, (nightNo - SIEGE.fromNight + 1) * SIEGE.perNight);
+  if (odds <= 0 || randomInt(s, 100) >= odds) return;
+  const here = c.tile;
+  let best: Zed | null = null;
+  let bestD = SIEGE.near + 1;
+  for (const z of s.zeds) {
+    const zt = tileAt(z.body.x, z.body.z);
+    if (z.mode === ZED.CHASE || z.pound !== undefined || z.kind === ZKIND.BRUTE || !c.zedStreet[zt] || c.lit[zt]) continue;
+    const d = Math.max(Math.abs((zt % MAP_W) - (here % MAP_W)), Math.abs(Math.floor(zt / MAP_W) - Math.floor(here / MAP_W)));
+    if (d < bestD) {
+      bestD = d;
+      best = z;
+    }
+  }
+  if (!best) return;
+  // (Its way goes by the boards: only a locked door stops it.)
+  const path = findPath(c.world, tileAt(best.body.x, best.body.z), (i) => i === here, here, 2500, undefined, c.lockGrid);
+  if (!path?.length) return;
+  best.mode = ZED.SEEK;
+  best.goal = here;
+  best.path = path;
+  best.pound = 0;
+}
+
 /** One step of the dead: the night's come and the day's go, each one looks, walks and bites. */
 export function stepDead(c: City) {
   const s = c.state;
@@ -258,6 +306,8 @@ export function stepDead(c: City) {
         z.path = [];
       }
     }
+    // (2.58: boards hold, but not unnoticed for ever: from the third night one of the dead near by may find a sleeper's barred door.)
+    if (above && night && m % 60 === 0 && s.sleeping) siege(c);
     // The night's come a few at a time, out of sight.
     const set = going(c);
     if ((night || set === 1) && m % (set ? STORY.trickle : DEAD.trickle) === 0) {
@@ -304,8 +354,10 @@ export function stepDead(c: City) {
     let speed: number = DEAD.wander;
     const brute = z.kind === ZKIND.BRUTE;
     // (A brute goes by the doors as if nothing barred them, and pounds its way through.)
-    const grid = brute ? c.world.npcBlock : c.zedGrid;
+    const grid = brute ? c.lockGrid : c.zedGrid;
     if (z.mode === ZED.CHASE) {
+      // (2.58: after someone, it goes round as any of them does: the boards are a brute's to pound.)
+      if (!brute) z.pound = undefined;
       speed = brute ? BRUTE.chase : z.kind === ZKIND.RUNNER ? RUNNER.chase : DEAD.chase;
       if (s.step - z.seen > DEAD.lose) {
         z.mode = ZED.SEEK;
@@ -362,6 +414,7 @@ export function stepDead(c: City) {
         z.mode = c.zedIndoor[tileAt(b.x, b.z)] && !night ? ZED.IDLE : ZED.WANDER;
         z.goal = -1;
         z.path = [];
+        if (!brute) z.pound = undefined;
       }
     }
     if (z.mode === ZED.WANDER && !z.path.length && (s.step + k * 7) % 40 === 0) {
@@ -387,6 +440,7 @@ export function stepDead(c: City) {
     // (2.52: one that isn't after anyone won't step out of the dark into strong light: it turns back.)
     if (shy && !brute && z.mode !== ZED.CHASE && c.lit[next] && !c.lit[tileAt(b.x, b.z)]) {
       z.path = [];
+      z.pound = undefined;
       if (z.mode === ZED.SEEK) {
         z.mode = c.zedIndoor[tileAt(b.x, b.z)] && !night ? ZED.IDLE : ZED.WANDER;
         z.goal = -1;
@@ -417,16 +471,23 @@ export function stepDead(c: City) {
     // (Against something that wasn't there when the way was found: looked for again.)
     // (A brute at a barred door: it pounds, and the boards give.)
     if (b.x === bx && b.z === bz) {
-      if (brute && c.bars.includes(next)) {
+      if ((brute || z.pound !== undefined) && c.bars.includes(next)) {
         z.pound = (z.pound ?? 0) + 1;
-        if (z.pound % 16 === 1) c.events.push({ type: 'pound', tile: next });
+        if (z.pound % 16 === 1) {
+          c.events.push({ type: 'pound', tile: next });
+          // (2.58: heard through the boards: nobody sleeps through it.)
+          if (s.sleeping) c.wakeNow('pounding');
+        }
         // (At the boards, it knows where they went: the chase isn't given up while it pounds.)
         z.seen = s.step;
-        if (z.pound >= BRUTE.pound) {
-          z.pound = 0;
+        if (z.pound >= (brute ? BRUTE.pound : SIEGE.pound)) {
+          z.pound = brute ? 0 : undefined;
           c.breach(next);
         }
-      } else z.path = [];
+      } else {
+        z.path = [];
+        if (!brute) z.pound = undefined;
+      }
     }
   }
 }

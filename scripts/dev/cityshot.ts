@@ -231,6 +231,20 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       for (const n of [1, 9, 17, 25, 33, 41]) t.zed(edge[(n * 5) % edge.length]);
     },
   },
+  // (2.58) By a chained door of a district that has one, in daylight.
+  cityTools: {
+    zoom: 1.9,
+    scene: (t) => {
+      t.time(1, 11 * 60);
+      for (const d of [t.c.plan.start, 0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+        const dist = t.c.districtOf(d);
+        t.go(d, dist.spawn.z * W + dist.spawn.x);
+        // (A door in a wall that faces the camera's side or the street: stood on its step.)
+        const door = Array.from(t.c.locked.keys()).find((i) => t.c.locked[i] === 1 && !t.c.grid[i + W] && !dist.lotAt[i + W]);
+        if (door !== undefined) return t.go(d, door + W, 9);
+      }
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,
