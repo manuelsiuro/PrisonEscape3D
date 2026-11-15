@@ -268,8 +268,12 @@ const walkTo = (c: City, t: number, most = 60) => {
   check(s.kit === (1 << THINGS.length) - 1 && s.way === 3, 'the things and the choice kept');
   check(
     s.boxes[`${TUNNEL}:g${fellAt}`] === undefined &&
-      (s.boxes[`${c.story.wayDistrict[2]}:g${c.story.exits[2]}`] ?? []).some((st) => st[0] === 1 && st[1] === 2),
-    'what they carried lies at the top of the metro’s stairs, not in the tunnel',
+      // (2.57: beside the stairs, never on their tile, where the button is the generator's.)
+      s.boxes[`${c.story.wayDistrict[2]}:g${c.story.exits[2]}`] === undefined &&
+      [W, -W, 1, -1].some((o) =>
+        (s.boxes[`${c.story.wayDistrict[2]}:g${c.story.exits[2] + o}`] ?? []).some((st) => st[0] === 1 && st[1] === 2),
+      ),
+    'what they carried lies beside the top of the metro’s stairs, not in the tunnel',
   );
   // Hardcore: the city is lost.
   const h = atStairs(3, MODE.HARDCORE);

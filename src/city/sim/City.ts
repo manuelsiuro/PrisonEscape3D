@@ -612,8 +612,11 @@ export class City {
     // (2.56: fallen in the tunnel, it lies at the top of the metro's stairs: not behind another night of the generator.)
     const under = s.district === TUNNEL;
     // (Made only if something is carried: empty pockets leave no pile.)
-    const pile = () =>
-      under ? (s.boxes[`${this.story.wayDistrict[2]}:g${this.story.exits[2]}`] ??= []) : this.boxOf(`g${this.tile}`, true);
+    // (2.57: beside the stairs, not on them: on their tile the button was the generator's, and the pile came second.)
+    const stairs = this.story.exits[2];
+    const top = under ? this.districtGrid(this.story.wayDistrict[2]) : null;
+    const beside = (top && [stairs + MAP_W, stairs - MAP_W, stairs + 1, stairs - 1].find((i) => !top[i])) ?? stairs;
+    const pile = () => (under ? (s.boxes[`${this.story.wayDistrict[2]}:g${beside}`] ??= []) : this.boxOf(`g${this.tile}`, true));
     for (const st of s.inv) {
       if (!st[0]) continue;
       // (Onto the pile already there, if they fell here before: never more slots than a save takes.)

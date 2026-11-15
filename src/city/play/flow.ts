@@ -40,7 +40,7 @@ export async function cityFlow(): Promise<void> {
       }
       // A new city replaces the one in progress: asked first.
       if (saved && !(await ask(t('city.newSure', { where: saved.name, n: saved.day }), t('city.newYes'), click))) continue;
-      if (!readPrisoner() && !(await intakeFlow(true))) continue;
+      if (!readPrisoner() && !(await intakeFlow(true, t('city.intake.tag')))) continue;
       await showLoading();
       city = new City(Date.now() & 0x7fffffff, mode);
     }

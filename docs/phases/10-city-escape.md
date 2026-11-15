@@ -295,6 +295,10 @@ In two slices.
   the seed, kept as a district with one lot and no gate. `City.descend` (from `storyAct` once the gates
   are open), `lampLit`, the tunnel's own `quota`; `storyMoved` wins at the ladder. Saves take a tenth
   map seen. `citytunneltest`.
+- **A town's own look (2.57).** Render only: `render/facades.ts`, `cityTex.ts`, `streets.ts`,
+  `streetThings.ts`, `cityProps.ts`, asked by `WorldView` and `ground.ts` through `town.ts`
+  (`townOf(world)`: the district a World was built from; the tunnel has none). The gloom is a body of
+  shade (`CityView.setLights`). `citylooktest`; `scripts/dev/citygo.ts` to look.
 
 ## Proof, stage by stage
 

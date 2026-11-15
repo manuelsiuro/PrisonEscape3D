@@ -35,6 +35,8 @@ const giverOf = (id: string) => ACHIEVEMENTS.find((a) => a.gives === id);
 export interface IntakeOptions {
   /** The cosmetics open to the player (the rest are shown locked). */
   unlocked: ReadonlySet<string>;
+  /** The line over its heading, when it isn't a prison's intake (2.57, City Escape: the transport's list). */
+  tag?: string;
   /** The first time (before a first game): Skip instead of Cancel. */
   first?: boolean;
   onChange: (p: Prisoner) => void;
@@ -49,7 +51,7 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
     'intake',
     `<div class="intake-stage" aria-hidden="true"><span class="intake-turn">${icon('chevronLeft', 16)}${t('intake.turn')}${icon('chevronRight', 16)}</span></div>
     <div class="intake-card" role="dialog" aria-modal="true" aria-labelledby="intake-title">
-      <div class="intake-head"><span class="intake-tag">${icon('shirt', 14)}${t('intake.tag')}</span><h2 id="intake-title">${t('intake.title')}</h2></div>
+      <div class="intake-head"><span class="intake-tag">${icon('shirt', 14)}${opts.tag ?? t('intake.tag')}</span><h2 id="intake-title">${t('intake.title')}</h2></div>
       <label class="intake-name"><span>${t('intake.name')}</span><input type="text" maxlength="${NAME_MAX * 2}" autocomplete="off" spellcheck="false" placeholder="${t('intake.namePh')}"></label>
       <div class="intake-parts" role="tablist" aria-label="${t('intake.parts')}">${LOOK_PARTS.map((k) => `<button role="tab" id="intake-tab-${k}" aria-controls="intake-pane" data-part="${k}">${icon(PART_ICON[k], 18)}<span>${t(`part.${k}` as Key)}</span></button>`).join('')}</div>
       <div id="intake-pane" role="tabpanel"><div class="intake-opts" role="radiogroup"></div></div>

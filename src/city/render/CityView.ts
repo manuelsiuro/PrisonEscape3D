@@ -10,6 +10,8 @@ import { MAP_H, MAP_W } from '../../sim/world/grid';
 import { DECO, type District } from '../gen/district';
 import { MAP_H as H, MAP_W as W } from '../../sim/world/grid';
 import { neighbour, ROAD_W, SIDE, type CityPlan } from '../gen/plan';
+import { facadeParts } from './facades';
+import { streetParts } from './streetThings';
 import { LandmarkLive, landmarkParts, type LandmarkFrame } from './landmarks';
 import type { LandmarkPlan } from './landmarkPlan';
 
@@ -162,7 +164,8 @@ const cone = (): Part[] => [
 
 /** The next district's rooftops past a sector's fence: blocks of grey at a distance, seeded by the place. */
 function beyond(plan: CityPlan, d: number, out: Part[], streets: ReadonlyArray<{ side: number; at: number }>) {
-  const TONES = [0x55585e, 0x64605a, 0x4a4e55, 0x6e665e, 0x5a5348];
+  const TONES = [0x8a8478, 0x7d8690, 0x94806c, 0x7c8a7c, 0x8c7a74, 0x9a9488];
+  const ROOFS = [0x6a4a40, 0x4f5862, 0x5c5248, 0x586456, 0x55585e];
   for (let side = 0; side < 4; side++) {
     if (neighbour(d, side) < 0) continue;
     for (let k = 1; k < MAP_W - 1;) {
@@ -183,7 +186,12 @@ function beyond(plan: CityPlan, d: number, out: Part[], streets: ReadonlyArray<{
               : [MAP_W + off, mid, deep, w];
       // (A gap left now and then; never over a street that runs on past the border.)
       const onStreet = streets.some((s) => s.side === side && Math.abs(s.at - mid) < w / 2 + 1.5);
-      if ((r >> 13) & 3 && !onStreet) out.push(box(bw - 0.4, tall, bd - 0.4, TONES[(r >> 16) % TONES.length], x, 0, z));
+      if ((r >> 13) & 3 && !onStreet) {
+        // (2.57: a building, not a block: its walls a faded paint, a roof slab in its own colour, rows of dark windows in the face the camera sees.)
+        out.push(box(bw - 0.4, tall, bd - 0.4, TONES[(r >> 16) % TONES.length], x, 0, z));
+        out.push(box(bw - 0.2, 0.14, bd - 0.2, ROOFS[(r >> 19) % ROOFS.length], x, tall, z));
+        for (let y = 0.7; y + 0.5 < tall; y += 0.85) out.push(box(bw - 1.1, 0.34, 0.03, GLASS, x, y, z + (bd - 0.4) / 2 + 0.01));
+      }
       k += w + ((r >> 20) & 1);
     }
   }
@@ -321,6 +329,7 @@ const TORCH_SEES = 6.5;
 const SHADE = 0x1c2230;
 /** How dark a building's depths are drawn by day (2.53). */
 const GLOOM = 0.5;
+const GLOOM_NIGHT = 0.5;
 const NOWHERE = new THREE.Matrix4().makeScale(0, 0, 0);
 const DARK_IRON = 0x2a2f36;
 /** A flame: a narrow cone on its foot; a work lamp: a small bright box. */
@@ -410,7 +419,7 @@ export class CityView {
     transparent: true,
     opacity: GLOOM,
     depthWrite: false,
-    depthTest: false,
+    vertexColors: true,
   });
   private gloom: THREE.Mesh | null = null;
   private lit: Uint8Array | null = null;
@@ -425,16 +434,45 @@ export class CityView {
     this.lit = list.length ? lit : null;
     this.dim = dim;
     this.gloom = null;
-    const dark: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < W * H; i++) {
-      if (!dim[i] || (list.length && lit[i])) continue;
-      const q = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-      q.translate((i % W) + 0.5, 0.032, Math.floor(i / W) + 0.5);
-      dark.push(q);
-    }
-    if (dark.length) {
-      this.gloom = new THREE.Mesh(mergeGeometries(dark), this.gloomMat);
-      for (const q of dark) q.dispose();
+    // (2.57: a body of shade standing in each dark room, waist high: what stands in it is in the dark, the
+    // roof's edge over it is not, and its foot fades out across the floor beside it. One surface, seen through once: the top
+    // of every dark tile, a side where the next tile is in the light.)
+    const isDark = (x: number, z: number) => x >= 0 && z >= 0 && x < W && z < H && !!dim[z * W + x] && !(list.length && lit[z * W + x]);
+    const pos: number[] = [];
+    const rgba: number[] = [];
+    const quad = (p: number[], a: number[]) => {
+      for (const k of [0, 1, 2, 0, 2, 3]) {
+        pos.push(p[k * 3], p[k * 3 + 1], p[k * 3 + 2]);
+        rgba.push(1, 1, 1, a[k]);
+      }
+    };
+    const TOP = 0.8;
+    const LOW = 0.032;
+    const FADE = 0.7;
+    for (let z = 0; z < H; z++)
+      for (let x = 0; x < W; x++) {
+        if (!isDark(x, z)) continue;
+        quad([x, TOP, z, x, TOP, z + 1, x + 1, TOP, z + 1, x + 1, TOP, z], [1, 1, 1, 1]);
+        // (Each side: the wall of shade down to the floor, then its foot fading out over the floor next to it (under a wall, unseen).)
+        if (!isDark(x, z + 1)) {
+          quad([x, TOP, z + 1, x, LOW, z + 1, x + 1, LOW, z + 1, x + 1, TOP, z + 1], [1, 1, 1, 1]);
+          quad([x, LOW, z + 1, x, LOW, z + 1 + FADE, x + 1, LOW, z + 1 + FADE, x + 1, LOW, z + 1], [1, 0, 0, 1]);
+        }
+        if (!isDark(x, z - 1)) quad([x, LOW, z - FADE, x, LOW, z, x + 1, LOW, z, x + 1, LOW, z - FADE], [0, 1, 1, 0]);
+        if (!isDark(x + 1, z)) {
+          quad([x + 1, TOP, z + 1, x + 1, LOW, z + 1, x + 1, LOW, z, x + 1, TOP, z], [1, 1, 1, 1]);
+          quad([x + 1, LOW, z, x + 1, LOW, z + 1, x + 1 + FADE, LOW, z + 1, x + 1 + FADE, LOW, z], [1, 1, 0, 0]);
+        }
+        if (!isDark(x - 1, z)) {
+          quad([x, TOP, z, x, LOW, z, x, LOW, z + 1, x, TOP, z + 1], [1, 1, 1, 1]);
+          quad([x - FADE, LOW, z, x - FADE, LOW, z + 1, x, LOW, z + 1, x, LOW, z], [0, 0, 1, 1]);
+        }
+      }
+    if (pos.length) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(rgba, 4));
+      this.gloom = new THREE.Mesh(g, this.gloomMat);
       this.gloom.renderOrder = 0.42;
       this.lights.add(this.gloom);
     }
@@ -648,8 +686,8 @@ export class CityView {
     this.drawFx(time, still);
     // (A car's alarm light: two blinks every second and a half; held lit when nothing should move.)
     this.alarms.visible = still || time % 1.5 < 0.2 || (time % 1.5 > 0.4 && time % 1.5 < 0.6);
-    // (After dark the whole district is as dark: nothing more to lay over its rooms.)
-    if (this.gloom) this.gloom.visible = !night;
+    // (After dark the rooms keep a thinner shade: no moon gets in, and a pale floor doesn't outshine the street. 2.57.)
+    this.gloomMat.opacity = night ? GLOOM_NIGHT : GLOOM;
     this.poolMat.opacity = night ? 0.3 : 0.06;
     this.hotMat.opacity = night ? 0.3 : 0.08;
     for (const f of this.flames) {
@@ -665,6 +703,8 @@ export class CityView {
   /** The landmark's pieces that change with the story (2.50). */
   private readonly live = new LandmarkLive();
   private readonly landMat = seeThrough(kitMaterial.clone(), 0.6);
+  /** 2.57: the windows and what stands on the roofs' edges, cut through with the walls they are on. */
+  private readonly facadeMat = seeThrough(kitMaterial.clone());
   drawLandmark(f: LandmarkFrame) {
     this.live.draw(f);
   }
@@ -919,10 +959,16 @@ export class CityView {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     this.group.add(mesh);
+    const front = [...facadeParts(district), ...streetParts(district)];
+    if (front.length) {
+      const m = new THREE.Mesh(merge(front), this.facadeMat);
+      m.castShadow = m.receiveShadow = true;
+      this.group.add(m);
+    }
   }
 
   clear() {
-    disposeTree(this.group, () => false, new Set([kitMaterial, this.landMat]));
+    disposeTree(this.group, () => false, new Set([kitMaterial, this.landMat, this.facadeMat]));
     this.group.clear();
     this.dead.count = 0;
     this.eyes.count = 0;

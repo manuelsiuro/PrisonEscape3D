@@ -552,7 +552,8 @@
 }
 
 /* ------------------------------------------------------------ the title menu, in the same family */
-.title-screen .menu-btn {
+.title-screen .menu-btn,
+.city-menu .menu-btn {
   color: var(--dlg-text);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--tone) 26%, transparent), transparent 60%),
@@ -569,7 +570,8 @@
     filter 0.2s;
 }
 
-.title-screen .menu-btn:hover {
+.title-screen .menu-btn:hover,
+.city-menu .menu-btn:hover {
   box-shadow:
     0 18px 34px -14px rgba(var(--black-rgb), 0.85),
     inset 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent),
@@ -577,7 +579,8 @@
   filter: brightness(1.08);
 }
 
-.title-screen .menu-btn:active {
+.title-screen .menu-btn:active,
+.city-menu .menu-btn:active {
   transform: scale(0.98);
 }
 
@@ -585,12 +588,14 @@
   color: var(--dlg-soft);
 }
 
-.title-screen .menu-btn > .ic {
+.title-screen .menu-btn > .ic,
+.city-menu .menu-btn > .ic {
   color: var(--dlg-soft);
   opacity: 0.8;
 }
 
-.title-screen .menu-ic {
+.title-screen .menu-ic,
+.city-menu .menu-ic {
   box-shadow:
     0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent),
     inset 0 1px 0 rgba(var(--white-rgb), 0.25);

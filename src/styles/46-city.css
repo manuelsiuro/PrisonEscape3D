@@ -8,6 +8,8 @@
   --city-night-26: #1c232d;
   --city-night-26-rgb: 28, 35, 45;
   --city-amber-83: #f2c230;
+  --city-gate-90: #dfe7ee;
+  --city-pile-68: #ff9a5c;
   --city-amber-83-rgb: 242, 194, 48;
   --city-wall-55: #b8443a;
   --city-moon-86: #c4d4f0;
@@ -275,7 +277,15 @@
 }
 
 .city-map-legend .lg-gate {
-  background: var(--city-amber-83);
+  background: var(--city-gate-90);
+}
+
+.city-map-legend .lg-pile {
+  width: 9px;
+  height: 9px;
+  margin: 0 1.5px;
+  border-radius: 1px;
+  background: var(--city-pile-68);
 }
 
 .city-map-legend .lg-wall {
@@ -1239,5 +1249,105 @@
     flex-wrap: wrap;
     padding: 6px 9px;
     font-size: 12.5px;
+  }
+}
+
+/* 2.57: a city card never outgrows the screen (a phone on its side: the intro's button lay below it): it scrolls;
+   its buttons stand clear of what is above them, and wrap rather than squeeze their words. */
+.city-modal > .card {
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.city-modal .card > .actions {
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.city-modal .card > .actions .big-btn {
+  white-space: nowrap;
+}
+
+.city-new .actions .primary {
+  order: -1;
+  flex: 1 0 100%;
+}
+
+.city-intro h2 {
+  margin-bottom: 12px;
+}
+
+@media (max-height: 460px) {
+  .city-modal {
+    padding: 8px;
+  }
+
+  .city-modal > .card {
+    max-height: calc(100dvh - 16px);
+    padding: 14px 20px;
+  }
+
+  /* (The story before the first steps, whole on a phone on its side: wider, its type a size down.) */
+  .city-modal > .card.city-intro {
+    width: min(100%, 640px);
+  }
+
+  .city-modal .card h2 {
+    font-size: 24px;
+  }
+
+  .city-intro p {
+    margin-bottom: 6px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .city-modal .card > .actions {
+    margin-top: 10px;
+  }
+}
+
+/* 2.57, a phone turned: the open box lies along the top, between the HUD and the corner map (one row of things, its
+   Take all beside its name), and the Make panel stands on the left: neither over Hit, the action button or Make. */
+@media (max-height: 480px) {
+  .city-box {
+    top: max(8px, env(safe-area-inset-top));
+    right: auto;
+    left: max(330px, calc(env(safe-area-inset-left) + 330px));
+    width: min(436px, calc(100vw - 330px - 110px));
+    max-height: 190px;
+    padding: 10px 12px;
+  }
+
+  .city-box .box-head {
+    margin-bottom: 6px;
+  }
+
+  .city-box .ct-actions {
+    margin-top: 8px;
+  }
+
+  .city-box .big-btn {
+    min-height: 34px;
+    padding: 4px 12px;
+  }
+
+  .city-make {
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+  }
+}
+
+/* 2.57, a phone upright: a pocket's card keeps to the left of Hit, and the Make panel stops above it. */
+@media (max-width: 620px) {
+  .city-thing {
+    left: max(12px, env(safe-area-inset-left));
+    width: min(340px, calc(100vw - 108px));
+    transform: none;
+  }
+
+  .city-make {
+    max-height: min(52vh, calc(100vh - 510px));
   }
 }

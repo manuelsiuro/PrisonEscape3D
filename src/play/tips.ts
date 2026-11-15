@@ -30,10 +30,10 @@ export function markTip(name: string) {
 }
 
 /** A tip shown the first time something happens (and never again). */
-export function coachOnce(name: string, key: Key, params?: Record<string, string | number>) {
+export function coachOnce(name: string, key: Key, params?: Record<string, string | number>, mark?: string) {
   if (seenTip(name)) return;
   markTip(name);
-  banner.toast(t(key, params), 'info', 7000);
+  banner.toast(t(key, params), 'info', 7000, mark);
 }
 
 export function seenInteract() {

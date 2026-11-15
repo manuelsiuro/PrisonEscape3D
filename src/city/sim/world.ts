@@ -2,6 +2,7 @@ import type { PrisonDef } from '../../content/prisons/types';
 import { MAP_H, MAP_W, World } from '../../sim/world/World';
 import { decoSolid, decoVeils, generateDistrict, type District } from '../gen/district';
 import type { CityPlan } from '../gen/plan';
+import { setTown } from '../town';
 
 /**
  * A district as the rules and the view take it (C1): the prisons' own World built from the generated
@@ -32,6 +33,8 @@ export function districtWorld(plan: CityPlan, d: number, district: District = ge
     gates: [],
   };
   const world = new World(def);
+  // (2.57: the view dresses a district by its lots. Not the metro's tunnel, 2.56: it has no gates, and keeps its bare walls.)
+  if (district.gates.length) setTown(world, district);
   for (let i = 0; i < MAP_W * MAP_H; i++) {
     if (decoSolid(district.deco[i])) world.parked[i] = 1;
     if (decoVeils(district.deco[i])) world.veil[i] = 1;

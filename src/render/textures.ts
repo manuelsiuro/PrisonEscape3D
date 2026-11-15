@@ -10,7 +10,7 @@ type Painter = (c: CanvasRenderingContext2D, n: number, rand: () => number) => v
 
 const cache = new Map<string, THREE.CanvasTexture>();
 
-function texture(name: string, n: number, paint: Painter): THREE.CanvasTexture {
+export function texture(name: string, n: number, paint: Painter): THREE.CanvasTexture {
   const hit = cache.get(name);
   if (hit) return hit;
   const canvas = document.createElement('canvas');
@@ -28,7 +28,15 @@ function texture(name: string, n: number, paint: Painter): THREE.CanvasTexture {
 }
 
 /** Fills with a base color and sprinkles darker and lighter pixels. */
-function speckle(c: CanvasRenderingContext2D, n: number, rand: () => number, base: string, dark: string, light: string, amount = 0.12) {
+export function speckle(
+  c: CanvasRenderingContext2D,
+  n: number,
+  rand: () => number,
+  base: string,
+  dark: string,
+  light: string,
+  amount = 0.12,
+) {
   c.fillStyle = base;
   c.fillRect(0, 0, n, n);
   for (let y = 0; y < n; y++) {
@@ -48,7 +56,7 @@ function speckle(c: CanvasRenderingContext2D, n: number, rand: () => number, bas
  * east, so each cap reads raised and a run of them as coping with its joints. (The texture's top row is
  * the tile's north, its left column the west.)
  */
-function capEdges(c: CanvasRenderingContext2D, n: number, lit: string, shade: string) {
+export function capEdges(c: CanvasRenderingContext2D, n: number, lit: string, shade: string) {
   c.fillStyle = lit;
   c.fillRect(0, n - 1, n, 1);
   c.fillRect(0, 0, 1, n);
