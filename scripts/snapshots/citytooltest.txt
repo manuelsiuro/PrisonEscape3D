@@ -1,5 +1,5 @@
 12 cities: 18.8 buildings chained shut a city (4 at the most in a district, none in 4 of 108), never the story's, a survivor's or a way out's; nobody walks in, none of the dead stand inside, the button at their door is the chain's
-what's inside (3 cities, 2706 pieces): 1.88 things a piece behind a chain (192), 0.70 elsewhere (2514)
+what's inside (3 cities, 2706 pieces): 1.45 things a piece behind a chain (192), 0.70 elsewhere (2514)
 a chained door: refused without a crowbar (said), forced in 4 seconds with one (heard as a blow is, the crowbar kept), every door of the building open for good, to the dead too; a save keeps it and plays on as the live city; a city begun before has none
 12 cities: 12.3 places a city where the fence can be cut (a street up to it on both sides, clear), 0 cities with none; 3.8 of them a city between two districts no checkpoint joins
 the fence: refused without bolt cutters (said), cut in 5 seconds with them (heard, the cutters kept); the street runs through from both sides, a crossing as a checkpoint is, and the journal's way takes it; a save keeps it, a cut that never could be is dropped
@@ -7,3 +7,4 @@ asleep behind boards in a one-door house, 24 cities: nights 1 and 2 nobody comes
 one of the dead at the boards isn't called off by a blow struck behind them; a door forced in a survivor's district loads as it stands (6 of 6)
 raw fish takes health down to 1 at the worst (a Hardcore city isn't lost to a meal); a stew gives 75 hunger, 8 health and 15 energy (its parts eaten as they are: 50, 2, 12); a medkit 100 health (its parts: 66), kept at full health
 the boat: with its engine in, another way chosen takes it out again (the things kept; a beacon lit or a generator running is walked away from, as before); on the tide the lines are let go at the pier's end, 10 seconds stood still, heard a little way off, begun again if walked away from
+somebody's clothes: in a house of the start's district in 12 of 12 cities (never chained, never the story's furniture), put on when found, kept by a save; nothing in the rules reads them

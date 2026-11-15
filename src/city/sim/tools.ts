@@ -1,5 +1,6 @@
 import { MAP_H, MAP_W } from '../../sim/world/World';
 import { isBuilding, type LotUse } from '../content/districts';
+import { SEARCHED } from '../content/loot';
 import { decoSolid, type District, type Gate } from '../gen/district';
 import { CITY_N, gateOpen, LANES, laneAt, neighbour, OPPOSITE, ROAD_W, SIDE, streamOf, type CityPlan } from '../gen/plan';
 import { TUNNEL } from '../gen/tunnel';
@@ -20,7 +21,7 @@ export const TOOLS = {
   cutSteps: 100,
   /** A locked building's furniture: this many draws more, and a draw in a thousand that finds nothing. */
   moreDraws: 1,
-  emptyDraws: 300,
+  emptyDraws: 450,
 } as const;
 
 /** The buildings that may be locked: never a landmark. */
@@ -29,11 +30,12 @@ const LOCKABLE: readonly LotUse[] = ['house', 'shop', 'office', 'warehouse', 'cl
 const N = MAP_W * MAP_H;
 
 export function freshTools() {
-  return { locks: 1, forced: {} as Record<string, number[]>, cuts: [] as number[] };
+  return { locks: 1, forced: {} as Record<string, number[]>, cuts: [] as number[], outfit: 0 };
 }
 
 /** A save's fields made sound before the city is built from it (one from before them: no locked building). */
-export function soundTools(st: { locks?: unknown; forced?: unknown; cuts?: unknown }) {
+export function soundTools(st: { locks?: unknown; forced?: unknown; cuts?: unknown; outfit?: unknown }) {
+  if (st.outfit !== 1) st.outfit = 0;
   if (st.locks !== 1) st.locks = 0;
   const forced: Record<string, number[]> = {};
   if (typeof st.forced === 'object' && st.forced && !Array.isArray(st.forced))
@@ -66,6 +68,33 @@ export function lockedLots(c: City, d: number): number[] {
   const out: number[] = [];
   for (let k = 0; k < n; k++) out.push(...can.splice(Math.floor(rnd() * can.length), 1));
   return out.sort((a, b) => a - b);
+}
+
+/**
+ * 2.59: somebody's clothes, in a house of the district the city starts in (not a chained one, not furniture the story uses):
+ * found, the prison's orange comes off. To look at only: nothing in the rules reads it.
+ */
+export function clothesSpot(c: City): number {
+  const d = c.plan.start;
+  const dist = c.baseOf(d);
+  const shut = new Set(lockedLots(c, d));
+  const taken = new Set([...c.story.things, ...c.story.notes].filter((sp) => sp.district === d).map((sp) => sp.prop));
+  const can: number[] = [];
+  dist.props.forEach((p, k) => {
+    const lot = dist.lotAt[p.z * MAP_W + p.x] - 1;
+    if (SEARCHED[p.kind] === undefined || p.kind === 'bin' || lot < 0 || dist.lots[lot].use !== 'house' || shut.has(lot) || taken.has(k))
+      return;
+    can.push(k);
+  });
+  return can.length ? can[Math.floor(streamOf(c.plan.seed, 9500)() * can.length)] : -1;
+}
+
+/** A piece of furniture looked into: the clothes, if they lie there. */
+export function foundClothes(c: City, prop: number) {
+  const s = c.state;
+  if (s.outfit || s.district !== c.plan.start || prop !== c.clothes) return;
+  s.outfit = 1;
+  c.events.push({ type: 'clothes' });
 }
 
 /** A fence cut, as a number: the district it was cut from, the side and the lane. */

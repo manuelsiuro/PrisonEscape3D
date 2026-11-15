@@ -86,7 +86,7 @@ export const STORY = {
   /** Batteries the radio takes (from the pockets, with the aerial). */
   batteries: 2,
   /** The beacon is lit after dark; the helicopter comes this many game minutes later. */
-  heliHold: 120,
+  heliHold: 90,
   /** The metro's gates wind open this many game minutes after the generator starts. */
   metroHold: 60,
   /** 2.56: the tunnel: how many of the dead stand along it, and its danger (as a district's: what's asked of any place). */

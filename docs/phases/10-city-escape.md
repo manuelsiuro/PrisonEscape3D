@@ -306,6 +306,9 @@ In two slices.
   tile), the work a search as a door's boards are. `dead.ts`: `siege` (a sleeper's barred door),
   `zedShare`, `lockGrid`. `story.ts`: `castOff` (key `w`), `choose` with the boat ready.
   `citytooltest`.
+- **What was left of the look (2.59).** `CityView`: `checkpoint()` at each gate the army left (on
+  the border's own tiles), `hearths` (a survivor's lantern and its pool, to look at only);
+  `cityBackdrop` behind the entry cards (`play/flow.ts`); `tools.ts` `clothesSpot`, `state.outfit`.
 
 ## Proof, stage by stage
 

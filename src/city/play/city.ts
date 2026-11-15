@@ -67,6 +67,8 @@ interface CityRun extends SideRun {
 }
 
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
+/** (2.59) Clothes found in a house: the ones a prisoner is released in. */
+const OWN_CLOTHES = itemNumber('own_clothes');
 /** What lies on the ground is drawn as a parcel (the view's items are the prisons'). */
 const PILE = itemNumber('parcel');
 /** Asleep, the night runs fast (as the prisons' does). */
@@ -127,7 +129,7 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     view.zoomTo(1.1);
     cityHud.show(true);
     pockets.show(true);
-    sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
+    sleepVeil.querySelector('span')!.textContent = t('city.sleep.asleep');
     hint.hide();
     document.body.classList.add('is-playing', 'city-on');
     controls.reset();
@@ -191,6 +193,37 @@ function stage(r: CityRun, first = false) {
   goalAt = -1;
   marksShown = '?';
   sound.setScene(darkNow(c) ? 'outdoorNight' : 'outdoorDay');
+}
+
+/**
+ * A city behind the mode's entry cards (2.59: they stood over the prison's picture): the district a saved city is in, or a
+ * new one's first, put up for the title's slow look. Nothing steps; `clearBackdrop` takes the city's pieces away again.
+ */
+export function cityBackdrop(c: City) {
+  view.setWorld(c.world, null);
+  view.setCast(0);
+  view.setGuards([], []);
+  cityView.set(
+    c.plan,
+    c.district,
+    c.state.district === TUNNEL
+      ? null
+      : landmarkPlan(
+          c.district,
+          c.story,
+          c.grid,
+          c.people.map((q) => q.tile),
+        ),
+  );
+  cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null);
+  cityView.setLocks(c.locked, c.district);
+  cityView.setBars(c.bars, c.district);
+  // (By day, nothing lit: not what the last city left.)
+  cityView.setLights([], c.lit, c.dim);
+  cityView.drawLights(0, true, false, false);
+}
+export function clearBackdrop() {
+  cityView.clear();
 }
 
 /** The place the player is in, named: a district's own name and kind, or the tunnel under them all (2.56). */
@@ -292,7 +325,8 @@ async function pauseCity() {
     for (;;) {
       const c = r.city;
       const place = `${t('city.title')} · ${placeName(c)} · ${t('city.hud.day', { n: c.day })}`;
-      const choice = await showPause(click, r.saved, false, '', false, place);
+      // (The city's own line: it says "vous" in French, the prisons' "tu".)
+      const choice = await showPause(click, r.saved, false, r.saved ? t('city.pause.saved') : '', false, place);
       if (choice === 'settings') await showSettings(settings, settingsChanged, click);
       else if (choice === 'help') await showHelp(click, { tab: 'city' });
       else if (choice === 'quit') return stopCity();
@@ -586,7 +620,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       r.pilot.stop();
       r.ops.length = 0;
       if (e.on) {
-        sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
+        sleepVeil.querySelector('span')!.textContent = t('city.sleep.asleep');
         sound.yawn();
         save(r);
       } else {
@@ -657,6 +691,11 @@ function cityEvent(r: CityRun, e: CityEvent) {
       sound.scuffle();
       break;
     // 2.58: the crowbar and the bolt cutters.
+    case 'clothes':
+      sound.stow(false);
+      banner.toast(t('city.toast.clothes'), 'good', 3600);
+      save(r);
+      break;
     case 'forced':
       sound.dud();
       banner.toast(t('city.toast.forced'), 'good', 3200);
@@ -825,7 +864,7 @@ function frameOf(r: CityRun, a: number): Frame {
   f.minuteOfDay = c.state.district === TUNNEL ? 0 : c.minute + ((c.state.step % STEPS_PER_SECOND) + a) / STEPS_PER_SECOND;
   f.surface = c.world.ground.kind[c.tile];
   f.tilesRev = c.world.rev;
-  f.outfit = INMATE_OUTFIT;
+  f.outfit = c.state.outfit ? OWN_CLOTHES : INMATE_OUTFIT;
   const dest = r.pilot.destination;
   if (dest >= 0) {
     tapAt.x = (dest % MAP_W) + 0.5;

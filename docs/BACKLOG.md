@@ -55,12 +55,9 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 
 - By hand (§2): touch on a real phone, a real pad, a real phone's speed in a busy district at night,
   the French read by a native speaker, its sounds listened to.
-- Balance still open after 2.58 (measured in its history entry): the helicopter is now the hardest
-  last night for a bot (11 to 13 of 16) and the boat the gentlest in bites; a chained building's
-  furniture holds 1.9 things a piece against 0.7 elsewhere, which may be generous.
-- The look, not done in 2.57: a checkpoint's own model at each gate (a booth, a boom, blocks); a few
-  lights of the living at night; a city picture behind the mode's entry cards; found clothes.
-- French: the city says "vous", the shared pause and sleep lines "tu".
+- Nothing of the 2.56 review or of the look is left open after 2.59 (the endings and the chained
+  buildings' loot re-tuned, a checkpoint's model, the survivors' lanterns, a city behind the entry
+  cards, clothes found, the city's French in "vous" throughout).
 
 ## 5. Upkeep
 
