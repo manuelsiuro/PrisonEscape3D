@@ -230,4 +230,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 ## [v2.60 to v2.64](history/v2.60-v2.64.md)
 
-- City Escape: the fight with the dead gone over, three more kinds of them (v2.60.0, not released yet)
+- City Escape: the fight with the dead gone over, three more kinds of them (v2.60.0)
