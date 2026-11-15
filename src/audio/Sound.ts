@@ -269,6 +269,40 @@ export class Sound extends SoundEffects {
     this.tone(95, 48, 0.16, 'sine', 0.14);
     this.hiss(0.09, 'lowpass', 700, 0.8, 0.09);
   }
+  /** 2.60: a blow landing on one of the dead: a dull crack, something wet under it. */
+  thwack() {
+    const f = 150 + Math.random() * 40;
+    this.tone(f, 55, 0.11, 'sine', 0.16);
+    this.hiss(0.07, 'lowpass', 900 + Math.random() * 300, 0.9, 0.16);
+    this.hiss(0.05, 'bandpass', 2600, 1.4, 0.05, undefined, 0.02);
+  }
+  /** 2.60: a screamer: a long, torn scream that climbs and breaks. */
+  shriek() {
+    this.tone(640, 1500, 0.5, 'sawtooth', 0.045);
+    this.tone(1500, 1320, 0.55, 'sawtooth', 0.04, 0.48);
+    this.tone(960, 2100, 0.9, 'square', 0.012, 0.05);
+    this.hiss(1.0, 'bandpass', 3000, 2.2, 0.04);
+  }
+  /** 2.60: a bloater bursting: a wet pop, then what falls. */
+  burst() {
+    this.tone(120, 38, 0.2, 'sine', 0.2);
+    this.hiss(0.16, 'lowpass', 600, 0.8, 0.22);
+    for (let k = 0; k < 6; k++)
+      this.hiss(0.05, 'lowpass', 900 + Math.random() * 500, 1, 0.07, undefined, 0.12 + k * 0.06 + Math.random() * 0.03);
+  }
+  /** 2.60: a crawler: a dry rasp near the floor. */
+  rasp() {
+    this.hiss(0.5, 'bandpass', 520, 3, 0.07);
+    this.tone(64, 52, 0.45, 'sawtooth', 0.03, 0.04);
+  }
+  /** 2.60: a bloater: a thick, bubbling breath. */
+  gurgle() {
+    for (let k = 0; k < 5; k++) {
+      const f = 90 + Math.random() * 60;
+      this.tone(f, f * 1.4, 0.09, 'sine', 0.06, k * 0.11 + Math.random() * 0.03);
+    }
+    this.hiss(0.6, 'lowpass', 260, 0.8, 0.05);
+  }
   /** A fire catching (City Escape, 2.52): a breath of flame, then a few snaps as it settles. */
   ignite() {
     this.hiss(0.55, 'bandpass', 650, 0.7, 0.2, undefined, 0, 0.12);

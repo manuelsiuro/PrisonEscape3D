@@ -719,7 +719,8 @@ const ids = (c: City) =>
   );
   s.step = ((5 - 1) * 1440 + 12 * 60 - START_MINUTE) * MIN;
   populate(c);
-  check(!s.zeds.some((z) => z.kind), 'runners or brutes by day');
+  // (2.60: a crawler is the day's own.)
+  check(!s.zeds.some((z) => z.kind && z.kind !== ZKIND.CRAWLER), 'runners or brutes by day');
   // A brute at a barred door pounds it open; a shambler stands there all night.
   const lot = c.district.lots.findIndex((l, k) => l.doors.length === 1 && c.zedPlaces.indoors.some((i) => c.district.lotAt[i] === k + 1));
   const door = c.district.lots[lot].doors[0];

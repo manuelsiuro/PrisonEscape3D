@@ -30,12 +30,13 @@ const LOCKABLE: readonly LotUse[] = ['house', 'shop', 'office', 'warehouse', 'cl
 const N = MAP_W * MAP_H;
 
 export function freshTools() {
-  return { locks: 1, forced: {} as Record<string, number[]>, cuts: [] as number[], outfit: 0 };
+  return { locks: 1, forced: {} as Record<string, number[]>, cuts: [] as number[], outfit: 0, snare: 0 };
 }
 
 /** A save's fields made sound before the city is built from it (one from before them: no locked building). */
-export function soundTools(st: { locks?: unknown; forced?: unknown; cuts?: unknown; outfit?: unknown }) {
+export function soundTools(st: { locks?: unknown; forced?: unknown; cuts?: unknown; outfit?: unknown; snare?: unknown }) {
   if (st.outfit !== 1) st.outfit = 0;
+  if (!Number.isInteger(st.snare) || (st.snare as number) < 0) st.snare = 0;
   if (st.locks !== 1) st.locks = 0;
   const forced: Record<string, number[]> = {};
   if (typeof st.forced === 'object' && st.forced && !Array.isArray(st.forced))

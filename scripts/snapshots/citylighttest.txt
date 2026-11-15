@@ -6,5 +6,5 @@ one of the dead sent to a lantern: stopped at its edge on an ordinary night, thr
 a first night asleep in a house with its doors open, 12 cities: bitten on 5 in the dark, on 1 beside a lantern
 saves: the lantern and the torch kept, none from before, seven damaged ones loaded without; 12 lights a district at the most
 dark by day, 12 cities, 108 districts: 53% of the floor indoors (daylight comes 3 tiles in at a street door, never through a wall); 66 of 108 landmarks have dark rooms (the others a survivor's, the boathouse or the rangers' post), 12 districts have none at all; no wall, street, doorway, open ground, home or survivor's building is dark; a load has the same
-the day's dead indoors, six draws a district: 5464 put down in the dark (one to 8 dark tiles at the most), 561 elsewhere indoors, none in daylight where the dark has room for all
+the day's dead indoors, six draws a district: 5461 put down in the dark (one to 8 dark tiles at the most), 565 elsewhere indoors, none in daylight where the dark has room for all
 in a dark room at noon: dark (dim behind the torch, lit beside a lantern, light in the doorway); one of the dead five tiles off sees nobody there without a light (4 tiles) and the torch's holder (6); none is put down in a lantern's light by day, and with every dark room lit they stand indoors elsewhere; nothing of it saved

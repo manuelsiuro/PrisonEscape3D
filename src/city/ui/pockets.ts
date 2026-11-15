@@ -29,6 +29,11 @@ export interface PocketsState {
   person: string;
   /** The way out in reach: what the button does with it ('begin1'–'3', 'go2', 'go3'; '' none). */
   way: string;
+  /** 2.60: the weapon that strikes (its item number; 0: fists), the blows left in it and those it had new; whether the arm is ready for another blow. */
+  weapon: number;
+  blows: number;
+  blowsOf: number;
+  ready: boolean;
 }
 
 /** The city's things photographed (by item number; 0 unused), once. */
@@ -96,6 +101,7 @@ export class CityPockets {
   private shownInv = '';
   private shownBox = '';
   private shownAct = '';
+  private shownHit = '';
   private lang = '';
   /** The pocket whose card is up (-1 none). */
   picked = -1;
@@ -122,7 +128,7 @@ export class CityPockets {
     this.hit = h(
       'button',
       'tool-btn city-hit hidden',
-      `<i class="tool-round"><i class="tool-ring"></i>${icon('fist', 22)}<span></span></i>`,
+      `<i class="tool-round"><i class="tool-ring"></i><i class="hit-icon">${icon('fist', 22)}</i><span></span></i><b class="hit-left hidden"></b>`,
     );
     this.hit.addEventListener('click', () => this.onHit());
     this.bar.addEventListener('click', (e) => {
@@ -152,7 +158,7 @@ export class CityPockets {
     this.bar.classList.toggle('hidden', !on);
     this.hit.classList.toggle('hidden', !on);
     if (!on) for (const el of [this.panel, this.card, this.act, this.make]) el.classList.add('hidden');
-    this.shownInv = this.shownBox = this.shownAct = this.shownMake = '';
+    this.shownInv = this.shownBox = this.shownAct = this.shownMake = this.shownHit = '';
     this.picked = -1;
     this.makeOpen = false;
   }
@@ -184,7 +190,7 @@ export class CityPockets {
   update(s: PocketsState) {
     if (textStamp() !== this.lang) {
       this.lang = textStamp();
-      this.shownInv = this.shownBox = this.shownAct = this.shownMake = '';
+      this.shownInv = this.shownBox = this.shownAct = this.shownMake = this.shownHit = '';
       this.bar.setAttribute('aria-label', t('city.pockets'));
       setText(this.hit.querySelector('span')!, t('city.act.hit'));
       this.hit.setAttribute('aria-keyshortcuts', keyLabel('Space'));
@@ -304,6 +310,25 @@ export class CityPockets {
         this.act.setAttribute('aria-keyshortcuts', keyLabel('KeyE'));
       }
     }
+    // (2.60) The blow's button: what strikes, the blows left in it round the button and by number, greyed while the arm comes back.
+    const hitKey = `${s.weapon}|${s.blows}`;
+    if (hitKey !== this.shownHit) {
+      this.shownHit = hitKey;
+      const armed = s.weapon > 0;
+      this.hit.querySelector('.hit-icon')!.innerHTML = armed ? `<img src="${iconOf(s.weapon)}" alt="">` : icon('fist', 22);
+      this.hit
+        .querySelector<HTMLElement>('.tool-ring')!
+        .style.setProperty('--p', armed ? `${Math.round((s.blows / Math.max(1, s.blowsOf)) * 100)}%` : '0%');
+      const left = this.hit.querySelector<HTMLElement>('.hit-left')!;
+      left.classList.toggle('hidden', !armed);
+      setText(left, armed ? String(s.blows) : '');
+      this.hit.classList.toggle('low', armed && s.blows <= 5);
+      this.hit.setAttribute(
+        'aria-label',
+        armed ? `${t('city.act.hit')} (${itemName(s.weapon)}, ${t('city.thing.blows', { n: s.blows, of: s.blowsOf })})` : t('city.act.hit'),
+      );
+    }
+    this.hit.classList.toggle('cooling', !s.ready);
     this.act.style.setProperty('--cut', String(s.searching));
     this.act.classList.toggle('cutting', s.searching > 0);
   }

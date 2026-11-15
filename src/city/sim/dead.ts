@@ -6,7 +6,7 @@ import { bodyAt, walk, type Body } from '../../sim/systems/movement';
 import { NIGHT_FROM, NIGHT_TO, STEPS_PER_MINUTE, UNIT } from '../../sim/tuning';
 import { centerX, centerZ, tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
-import { BLOW, BRUTE, DEAD, RUNNER, SIEGE, ZKIND } from '../content/dead';
+import { BLOATER, BLOW, BRUTE, CRAWLER, DEAD, kindStats, RUNNER, SCREAMER, SIEGE, ZKIND } from '../content/dead';
 import { ESCAPE_KINDS, isBuilding } from '../content/districts';
 import { cityItem } from '../content/items';
 import { districtX, districtZ } from '../gen/plan';
@@ -137,9 +137,23 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
         c.state.brute = stamp;
       } else if (randomInt(c.state, RUNNER.oneIn) === 0) kind = ZKIND.RUNNER;
     }
+    // (2.60: a screamer from the second night, a bloater from the fourth; by day from the second, a crawler in the dark indoors. No draw before.)
+    if (!kind && mode === ZED.WANDER && nightAt(c.minute)) {
+      if (nightNo >= SCREAMER.fromNight && randomInt(c.state, SCREAMER.oneIn) === 0) kind = ZKIND.SCREAMER;
+      else if (nightNo >= BLOATER.fromNight && randomInt(c.state, BLOATER.oneIn) === 0) kind = ZKIND.BLOATER;
+    }
+    if (
+      !kind &&
+      mode === ZED.IDLE &&
+      !nightAt(c.minute) &&
+      c.day >= CRAWLER.fromDay &&
+      c.dim[tile] &&
+      randomInt(c.state, CRAWLER.oneIn) === 0
+    )
+      kind = ZKIND.CRAWLER;
     c.state.zeds.push({
       body: bodyAt(tile % MAP_W, Math.floor(tile / MAP_W), 1 + randomInt(c.state, 16)),
-      hp: kind === ZKIND.BRUTE ? BRUTE.health : kind === ZKIND.RUNNER ? RUNNER.health : DEAD.health,
+      hp: kindStats(kind).health,
       mode,
       goal: -1,
       path: [],
@@ -203,7 +217,7 @@ export function strike(c: City) {
   const long = held?.reach ?? 0;
   const tired = s.energy <= 0;
   s.energy = Math.max(0, s.energy - BLOW.energy);
-  const harm = Math.ceil((BLOW.fists + weapon * 2) / (tired ? 2 : 1));
+  const blow = Math.ceil((BLOW.fists + weapon * 2) / (tired ? 2 : 1));
   const reach = BLOW.reach + long * UNIT;
   const p = s.player;
   const fx = DIR_X[p.facing] ?? 0;
@@ -224,23 +238,57 @@ export function strike(c: City) {
   noise(c, c.tile, BLOW.noise);
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
   const z = s.zeds[best];
+  // (2.60: one that isn't after anyone never saw it coming.)
+  const unseen = z.mode !== ZED.CHASE;
+  const harm = blow * (unseen ? BLOW.unseen : 1);
+  const K = kindStats(z.kind);
   z.hp -= harm;
-  z.reel = z.kind === ZKIND.BRUTE ? BRUTE.reel : DEAD.reel;
+  z.reel = K.reel;
   z.near = 0;
   z.mode = ZED.CHASE;
   z.seen = s.step;
   z.last = c.tile;
   // Pushed back along the blow, as far as there's room.
   const dir = nearestDir(z.body.x - p.x, z.body.z - p.z);
-  walk(c.zedWorld, z.body, dir, z.kind === ZKIND.BRUTE ? BRUTE.shove : DEAD.shove);
+  walk(c.zedWorld, z.body, dir, K.shove);
   z.body.facing = nearestDir(p.x - z.body.x, p.z - z.body.z);
   const dead = z.hp <= 0;
-  if (dead) {
-    s.zeds.splice(best, 1);
-    s.kills++;
-  }
-  c.events.push({ type: 'swing', hit: true, dead, x: z.body.x, z: z.body.z });
+  c.events.push({ type: 'swing', hit: true, dead, x: z.body.x, z: z.body.z, unseen, left: Math.max(0, z.hp) / K.health });
   c.wearWeapon();
+  if (dead) putDown(c, [z]);
+}
+
+/**
+ * 2.60: these of the dead are put down for good (a blow, a bolt, a fire): counted, said (`fell`: where and what, for the picture), and
+ * a bloater bursts: the player near it is hurt, each of the dead near it too, and those that fall to it are put down in their turn.
+ */
+export function putDown(c: City, list: Zed[]) {
+  const s = c.state;
+  const queue = [...list];
+  for (let q = 0; q < queue.length; q++) {
+    const z = queue[q];
+    const at = s.zeds.indexOf(z);
+    if (at < 0) continue;
+    s.zeds.splice(at, 1);
+    s.kills++;
+    c.events.push({ type: 'fell', x: z.body.x, z: z.body.z, facing: z.body.facing, kind: z.kind ?? 0, seed: z.pace });
+    if (z.kind !== ZKIND.BLOATER) continue;
+    const near = (b: { x: number; z: number }) => (b.x - z.body.x) ** 2 + (b.z - z.body.z) ** 2 <= BLOATER.within * BLOATER.within;
+    for (const o of s.zeds) {
+      if (!near(o.body)) continue;
+      o.hp -= BLOATER.dead;
+      if (o.hp <= 0) queue.push(o);
+    }
+    const hit = near(s.player);
+    c.events.push({ type: 'burst', x: z.body.x, z: z.body.z, harm: hit ? BLOATER.harm : 0 });
+    noise(c, tileAt(z.body.x, z.body.z), BLOATER.noise);
+    if (hit) {
+      if (s.sleeping) c.wakeNow('attacked');
+      c.hurt(BLOATER.harm);
+      // (Fallen to it: a Survivor is carried home, the district's dead left behind.)
+      if (s.over || c.events.some((e) => e.type === 'dead')) return;
+    }
+  }
 }
 
 /**
@@ -345,8 +393,18 @@ export function stepDead(c: City) {
     const dz = p.z - b.z;
     const d2 = dx * dx + dz * dz;
     // It looks (every fifth step, each on its own): the player in sight is gone after.
-    if ((s.step + k) % 5 === 0 && d2 <= sight * sight && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
-      if (z.mode !== ZED.CHASE) c.events.push({ type: 'spotted', zed: k });
+    // (2.60: a crawler sees no further than its three tiles.)
+    const far = z.kind === ZKIND.CRAWLER ? Math.min(sight, CRAWLER.sight * UNIT) : sight;
+    if ((s.step + k) % 5 === 0 && d2 <= far * far && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
+      if (z.mode !== ZED.CHASE) {
+        c.events.push({ type: 'spotted', zed: k });
+        // (2.60: a screamer says so to every one of them near.)
+        if (z.kind === ZKIND.SCREAMER) {
+          c.events.push({ type: 'scream', x: b.x, z: b.z });
+          z.mode = ZED.CHASE;
+          noise(c, here, SCREAMER.reach);
+        }
+      }
       z.mode = ZED.CHASE;
       z.seen = s.step;
       z.last = here;
@@ -358,7 +416,7 @@ export function stepDead(c: City) {
     if (z.mode === ZED.CHASE) {
       // (2.58: after someone, it goes round as any of them does: the boards are a brute's to pound.)
       if (!brute) z.pound = undefined;
-      speed = brute ? BRUTE.chase : z.kind === ZKIND.RUNNER ? RUNNER.chase : DEAD.chase;
+      speed = kindStats(z.kind).chase;
       if (s.step - z.seen > DEAD.lose) {
         z.mode = ZED.SEEK;
         z.goal = z.last;
@@ -369,10 +427,15 @@ export function stepDead(c: City) {
         if (d2 <= DEAD.reach * DEAD.reach && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
           b.moving = false;
           b.facing = nearestDir(dx, dz);
-          if (++z.near >= DEAD.lunge && s.step - z.bit >= DEAD.biteEvery) {
+          if (++z.near >= kindStats(z.kind).lunge && s.step - z.bit >= DEAD.biteEvery) {
             z.bit = s.step;
-            const harm = brute ? BRUTE.bite : z.kind === ZKIND.RUNNER ? RUNNER.bite : DEAD.bite;
+            const harm = kindStats(z.kind).bite;
             c.events.push({ type: 'bite', harm });
+            // (2.60: a crawler's bite holds a leg.)
+            if (z.kind === ZKIND.CRAWLER) {
+              s.snare = s.step + CRAWLER.hold;
+              c.events.push({ type: 'snared' });
+            }
             if (s.sleeping) c.wakeNow('attacked');
             c.hurt(harm);
             if (s.over || c.events.some((e) => e.type === 'dead')) return;

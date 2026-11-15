@@ -14,6 +14,9 @@ import { facadeParts } from './facades';
 import { streetParts } from './streetThings';
 import { LandmarkLive, landmarkParts, type LandmarkFrame } from './landmarks';
 import type { LandmarkPlan } from './landmarkPlan';
+import { Horde, type DeadFrame } from './horde';
+
+export type { DeadFrame } from './horde';
 
 /**
  * A district's own pieces in the picture (C1, render only): what the World's floors, walls and
@@ -221,45 +224,6 @@ function beyond(plan: CityPlan, d: number, out: Part[], streets: ReadonlyArray<{
   }
 }
 
-/** One of the dead as the view is handed it (tiles, radians; eased by the play layer). */
-export interface DeadFrame {
-  x: number;
-  z: number;
-  facing: number;
-  moving: boolean;
-  /** After the player; reeling from a blow. */
-  chasing: boolean;
-  reeling: boolean;
-  /** Its own number (its clothes and its gait). */
-  seed: number;
-  /** What it is (ZKIND: 0 a shambler, 1 a runner, 2 a brute). */
-  kind: number;
-}
-
-/** The most of the dead drawn at once. */
-const MOST = 80;
-/** Grey skin, eyes like coals, arms held out: one body for all of them, their clothes tinted each its own. */
-function deadBody(): THREE.BufferGeometry {
-  const SKIN = 0x9aad94;
-  const CLOTH = 0xf2f2f2;
-  const parts = [
-    box(0.16, 0.46, 0.18, 0x4a4f58, -0.11, 0, 0),
-    box(0.16, 0.46, 0.18, 0x4a4f58, 0.11, 0, 0),
-    box(0.46, 0.5, 0.26, CLOTH, 0, 0.46, 0),
-    box(0.4, 0.12, 0.24, 0x7a2a26, 0, 0.6, 0.02),
-    box(0.36, 0.34, 0.34, SKIN, 0, 0.98, 0.02),
-    box(0.38, 0.1, 0.36, 0x3a3630, 0, 1.3, 0),
-    box(0.07, 0.06, 0.02, 0x1a1414, -0.09, 1.14, 0.2),
-    box(0.07, 0.06, 0.02, 0x1a1414, 0.09, 1.14, 0.2),
-    box(0.16, 0.05, 0.02, 0x5a1c1a, 0, 1.03, 0.2),
-    // The arms, held out ahead.
-    box(0.12, 0.12, 0.5, CLOTH, -0.29, 0.78, 0.2),
-    box(0.12, 0.12, 0.5, CLOTH, 0.29, 0.74, 0.2),
-    box(0.12, 0.12, 0.12, SKIN, -0.29, 0.78, 0.5),
-    box(0.12, 0.12, 0.12, SKIN, 0.29, 0.74, 0.5),
-  ];
-  return merge(parts);
-}
 /**
  * A survivor (C4): one of the living, standing straight, arms at their sides, dressed for what they are:
  * the fence in the bus's orange with a wool cap, the nurse in teal scrubs and a white cap with its cross,
@@ -350,48 +314,24 @@ function litter(h: number): Part[] {
 /** 2.52: how far the player makes out the dead at night (tiles): by the faint light round them, by their torch; and what one out of the light looks like. */
 const GLOW_SEES = 3;
 const TORCH_SEES = 6.5;
-const SHADE = 0x1c2230;
 /** How dark a building's depths are drawn by day (2.53). */
 const GLOOM = 0.5;
 const GLOOM_NIGHT = 0.5;
-const NOWHERE = new THREE.Matrix4().makeScale(0, 0, 0);
 const DARK_IRON = 0x2a2f36;
 /** A flame: a narrow cone on its foot; a work lamp: a small bright box. */
 const FLAME_GEO = new THREE.ConeGeometry(0.2, 0.55, 6).translate(0, 0.27, 0);
 const HOT_GEO = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);
 const LAMP_GEO = new THREE.BoxGeometry(0.18, 0.1, 0.18).translate(0, 0.06, 0);
-const TINTS = [0xb9c2c9, 0xa9b89a, 0xc9b79a, 0x9aa9c2, 0xc29a9a, 0xb0a6c4, 0x8f9a8a];
 
 export class CityView {
   readonly group = new THREE.Group();
-  /** The dead: one instanced body, kept across districts. */
-  private readonly dead: THREE.InstancedMesh;
-  private readonly m = new THREE.Matrix4();
-  private readonly q = new THREE.Quaternion();
-  private readonly e = new THREE.Euler();
-  private readonly at = new THREE.Vector3();
-  private readonly size = new THREE.Vector3(1.3, 1.3, 1.3);
-  private readonly tint = new THREE.Color();
+  /** The dead (2.60: render/horde.ts), kept across districts. */
+  private readonly horde = new Horde();
   readonly root = new THREE.Group();
-  /** After dark: their eyes, lit (the same places as the bodies), and a faint pool of light round the player. */
-  private readonly eyes: THREE.InstancedMesh;
+  /** After dark: a faint pool of light round the player. */
   private readonly glow: THREE.Mesh;
 
   constructor() {
-    this.dead = new THREE.InstancedMesh(deadBody(), kitMaterial, MOST);
-    this.dead.castShadow = true;
-    this.dead.count = 0;
-    this.dead.frustumCulled = false;
-    // (Drawn after the gloom of a dark room, 2.53, so they shine out of it.)
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xd8ff6a, toneMapped: false, transparent: true });
-    this.eyes = new THREE.InstancedMesh(
-      merge([box(0.08, 0.07, 0.03, 0xffffff, -0.09, 1.135, 0.215), box(0.08, 0.07, 0.03, 0xffffff, 0.09, 1.135, 0.215)], false),
-      eyeMat,
-      MOST,
-    );
-    this.eyes.count = 0;
-    this.eyes.frustumCulled = false;
-    this.eyes.renderOrder = 0.5;
     this.glow = new THREE.Mesh(
       new THREE.CircleGeometry(2.6, 28).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0x9fb8ff, transparent: true, opacity: 0.09, depthWrite: false, toneMapped: false }),
@@ -400,8 +340,7 @@ export class CityView {
     this.glow.visible = false;
     this.root.add(
       this.group,
-      this.dead,
-      this.eyes,
+      this.horde.group,
       this.glow,
       this.bars,
       this.locks,
@@ -889,40 +828,16 @@ export class CityView {
       gem.rotation.y = still ? 0 : time * 1.6;
       gem.position.y = 1.9 + (still ? 0 : Math.sin(time * 2.2 + g.position.x) * 0.08);
     }
-    const n = Math.min(MOST, list.length);
-    // (By day, eyes only where it's dark: a building's depths.)
-    let murky = night;
     const mine = Math.floor(me.z) * W + Math.floor(me.x);
-    for (let k = 0; k < n; k++) {
-      const d = list[k];
-      const beat = still ? 0 : time * (d.chasing ? 7 : 4) + d.seed;
-      const sway = d.moving ? Math.sin(beat) * 0.09 : Math.sin(beat * 0.4) * 0.03;
-      this.e.set(d.reeling ? -0.45 : d.chasing ? 0.2 : 0.08, d.facing, sway, 'YXZ');
-      this.q.setFromEuler(this.e);
-      this.at.set(d.x, d.moving ? Math.abs(Math.sin(beat)) * 0.05 : 0, d.z);
-      // (A runner is slight and pale, a brute half as big again and dark.)
-      this.size.setScalar(d.kind === 2 ? 1.85 : d.kind === 1 ? 1.16 : 1.3);
-      this.m.compose(this.at, this.q, this.size);
-      this.dead.setMatrixAt(k, this.m);
-      // (2.52: at night, beyond the player's light and any other, a shape and its eyes; 2.53: by day too, deep in a building.)
+    const reach = this.torch ? TORCH_SEES : GLOW_SEES;
+    // (2.52: at night, beyond the player's light and any other, a shape and its eyes; 2.53: by day too, deep in a building.)
+    this.horde.draw(list, time, still, (d) => {
       const tile = Math.floor(d.z) * W + Math.floor(d.x);
       const murk = night || this.dim?.[tile] === 1;
-      if (murk) {
-        this.eyes.setMatrixAt(k, this.m);
-        murky = true;
-      } else this.eyes.setMatrixAt(k, NOWHERE);
       const dx = d.x - me.x;
       const dz = d.z - me.z;
-      const reach = this.torch ? TORCH_SEES : GLOW_SEES;
-      const shown = !murk || dx * dx + dz * dz <= reach * reach || (this.lit?.[tile] ?? 0) === 1;
-      this.dead.setColorAt(
-        k,
-        this.tint.set(!shown ? SHADE : d.kind === 2 ? 0x5a4a52 : d.kind === 1 ? 0xe6d8c8 : TINTS[d.seed % TINTS.length]),
-      );
-    }
-    this.dead.count = n;
-    this.eyes.count = murky ? n : 0;
-    this.eyes.instanceMatrix.needsUpdate = true;
+      return { murk, shown: !murk || dx * dx + dz * dz <= reach * reach || (this.lit?.[tile] ?? 0) === 1 };
+    });
     // (The player's own light: after dark, and by day in the dark of a building.)
     this.glow.visible = night || (this.dim?.[mine] === 1 && this.lit?.[mine] !== 1);
     this.glow.position.set(me.x, 0.03, me.z);
@@ -930,13 +845,17 @@ export class CityView {
     this.glow.scale.setScalar(this.torch ? TORCH_SEES / 2.6 : 1);
     (this.glow.material as THREE.MeshBasicMaterial).color.set(this.torch ? 0xffe2a0 : 0x9fb8ff);
     (this.glow.material as THREE.MeshBasicMaterial).opacity = this.torch ? 0.2 : 0.09;
-    this.dead.instanceMatrix.needsUpdate = true;
-    if (this.dead.instanceColor) this.dead.instanceColor.needsUpdate = true;
+  }
+  /** 2.60: one of the dead put down (tiles): its body topples where it stood. */
+  fellFx(x: number, z: number, facing: number, kind: number, seed: number, time: number) {
+    this.horde.fell(x, z, facing, kind, seed, time);
   }
 
   /** A district's pieces put up (the last one's taken down); `landmark`: its landmark's own (landmarkPlan). */
   set(plan: CityPlan, district: District, own: LandmarkPlan | null = null) {
     this.clear();
+    // (What its dead wear: the tunnel has no gate, and its own.)
+    this.horde.setPlace(district.gates.length ? district.kind : null, district.index === plan.start);
     this.live.set(own);
     if (own) {
       // (A model of its own: cut away round the player like the walls it stands on, so nobody is lost behind a sign.)
@@ -1081,8 +1000,7 @@ export class CityView {
   clear() {
     disposeTree(this.group, () => false, new Set([kitMaterial, this.landMat, this.facadeMat]));
     this.group.clear();
-    this.dead.count = 0;
-    this.eyes.count = 0;
+    this.horde.clear();
     this.glow.visible = false;
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();

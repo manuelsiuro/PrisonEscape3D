@@ -309,6 +309,11 @@ In two slices.
 - **What was left of the look (2.59).** `CityView`: `checkpoint()` at each gate the army left (on
   the border's own tiles), `hearths` (a survivor's lantern and its pool, to look at only);
   `cityBackdrop` behind the entry cards (`play/flow.ts`); `tools.ts` `clothesSpot`, `state.outfit`.
+- **The fight gone over (2.60).** `content/dead.ts`: `ZKIND` 3 to 5, `kindStats`; `sim/dead.ts`:
+  `putDown` (every death, the `fell` event, a bloater's burst), the screamer's call, `state.snare`;
+  `render/horde.ts` draws them (looks by district and kind, limbs, health, falling bodies), handed
+  `DeadFrame` by `play/city.ts`; `View.playerPunch`, `playerFlinch`, `puff`, `jolt` for a mode with
+  no Cast. `cityfighttest`.
 
 ## Proof, stage by stage
 

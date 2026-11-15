@@ -206,6 +206,8 @@ export interface CityState {
   cuts: number[];
   // 2.59, optional on load: what the player wears (0: the prison's orange; 1: clothes found).
   outfit: number;
+  // 2.60, optional on load: the step until which a crawler's bite holds the player's leg (a slower walk).
+  snare: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -230,7 +232,12 @@ export type CityEvent =
   /** The dead: one has seen the player; a bite; the player's blow (landed, and whether it put one down, where); dusk coming (minutes), night fallen or over. */
   | { type: 'spotted'; zed: number }
   | { type: 'bite'; harm: number }
-  | { type: 'swing'; hit: boolean; dead: boolean; x?: number; z?: number }
+  | { type: 'swing'; hit: boolean; dead: boolean; x?: number; z?: number; unseen?: boolean; left?: number }
+  /** 2.60: one of the dead put down for good (where, which way it faced, what it was, its own number); a screamer's scream; a bloater burst (`harm`: what it cost the player, 0 out of its reach); a crawler's bite holding a leg. */
+  | { type: 'fell'; x: number; z: number; facing: number; kind: number; seed: number }
+  | { type: 'scream'; x: number; z: number }
+  | { type: 'burst'; x: number; z: number; harm: number }
+  | { type: 'snared' }
   /** C2c: a thing made (or why not); a weapon worn out; a door barred or its boards taken down (the work begun, then done). */
   | { type: 'made'; item: number }
   | { type: 'cantMake'; why: 'parts' | 'bench' | 'stove' | 'unknown' }
@@ -608,7 +615,7 @@ export class City {
       if (!s.over && !this.events.some((e) => e.type === 'dead')) stepFires(this);
       return;
     }
-    const weak = s.hunger < FULL / 4 || s.energy <= 0;
+    const weak = s.hunger < FULL / 4 || s.energy <= 0 || s.step < s.snare;
     const px = s.player.x;
     const pz = s.player.z;
     walk(this.world, s.player, dir, weak ? Math.trunc((WALK_SPEED * WEAK_SPEED) / 1000) : WALK_SPEED);
@@ -634,6 +641,8 @@ export class City {
     }
     // (A press on the very step the work ends was a press at the work: it doesn't begin the opposite, or shut the box just opened.)
     if (!(ended && opOf(cmd) === COP.ACT)) this.act(opOf(cmd), argA(cmd));
+    // (2.60: fallen to their own blow, a bloater's burst: nothing more this step, as after the dead's.)
+    if (s.over || this.events.some((e) => e.type === 'dead')) return;
     // (A district just entered: its dead are put down once the player stands in it. In the state: a save made at a crossing loads to the same.)
     if (s.arrive) {
       s.arrive = 0;
@@ -1342,7 +1351,7 @@ const zedsOk = (list: unknown): list is Zed[] =>
       z.body.z < MAP_H * UNIT &&
       z.mode >= 0 &&
       z.mode <= 3 &&
-      (z.kind === undefined || z.kind === 1 || z.kind === 2) &&
+      (z.kind === undefined || (Number.isInteger(z.kind) && z.kind >= 1 && z.kind <= 5)) &&
       (z.pound === undefined || (Number.isInteger(z.pound) && z.pound >= 0)) &&
       Array.isArray(z.path) &&
       z.path.every((i) => Number.isInteger(i) && i >= 0 && i < N),
