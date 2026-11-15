@@ -422,6 +422,7 @@ HELP.city = [
         listIcons: ['flame', 'bulb', 'plug', 'eye', 'sun'],
         see: ['cityShelter', 'cityDead', 'cityMake'],
       }),
+      T('cityTools', 'lock', '#b9c0c9', { pic: true, listIcons: ['lock', 'cutters'], see: ['cityFood', 'cityPeople', 'cityShelter'] }),
     ],
   },
   {

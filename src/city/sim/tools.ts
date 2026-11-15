@@ -1,0 +1,172 @@
+import { MAP_H, MAP_W } from '../../sim/world/World';
+import { isBuilding, type LotUse } from '../content/districts';
+import { decoSolid, type District, type Gate } from '../gen/district';
+import { CITY_N, gateOpen, LANES, laneAt, neighbour, OPPOSITE, ROAD_W, SIDE, streamOf, type CityPlan } from '../gen/plan';
+import { TUNNEL } from '../gen/tunnel';
+import type { City } from './City';
+
+/**
+ * The crowbar and the bolt cutters (2.58), a part of the city's simulation: some buildings are locked
+ * (nobody has been in: the dead neither, and what's inside was never picked over) until a crowbar
+ * forces a door; where a street runs up to the army's fence on both sides of a border, bolt cutters
+ * open a way through, a crossing as any checkpoint is from then on. A city begun before them has no
+ * locked building (its `locks` is 0); the fences can be cut in any.
+ */
+export const TOOLS = {
+  /** One building in so many is locked (of those that can be; one at least in a district with three such). */
+  lockOneIn: 8,
+  /** Steps to force a door, to cut a fence; both are heard as a blow is. */
+  forceSteps: 80,
+  cutSteps: 100,
+  /** A locked building's furniture: this many draws more, and a draw in a thousand that finds nothing. */
+  moreDraws: 1,
+  emptyDraws: 300,
+} as const;
+
+/** The buildings that may be locked: never a landmark. */
+const LOCKABLE: readonly LotUse[] = ['house', 'shop', 'office', 'warehouse', 'clinic', 'garage'];
+
+const N = MAP_W * MAP_H;
+
+export function freshTools() {
+  return { locks: 1, forced: {} as Record<string, number[]>, cuts: [] as number[] };
+}
+
+/** A save's fields made sound before the city is built from it (one from before them: no locked building). */
+export function soundTools(st: { locks?: unknown; forced?: unknown; cuts?: unknown }) {
+  if (st.locks !== 1) st.locks = 0;
+  const forced: Record<string, number[]> = {};
+  if (typeof st.forced === 'object' && st.forced && !Array.isArray(st.forced))
+    for (const [d, list] of Object.entries(st.forced as Record<string, unknown>))
+      if (/^[0-8]$/.test(d) && Array.isArray(list))
+        forced[d] = [...new Set(list.filter((k): k is number => Number.isInteger(k) && k >= 0 && k < 255))];
+  st.forced = forced;
+  st.cuts = Array.isArray(st.cuts)
+    ? [...new Set(st.cuts.filter((k): k is number => Number.isInteger(k) && k >= 0 && k < CITY_N * 4 * LANES))]
+    : [];
+}
+
+/** The buildings of a district locked when the city began (their lots' numbers), from the seed and where the story's things are. */
+export function lockedLots(c: City, d: number): number[] {
+  if (!c.state.locks || d === TUNNEL) return [];
+  const dist = c.baseOf(d);
+  const P = c.story;
+  // (Never where the story has something, a note lies, a survivor lives or a way out begins.)
+  const taken = new Set<number>();
+  const lotOfProp = (prop: number) => dist.lotAt[dist.props[prop].z * MAP_W + dist.props[prop].x] - 1;
+  for (const sp of [...P.things, ...P.notes]) if (sp.district === d) taken.add(lotOfProp(sp.prop));
+  for (const p of P.people) if (p.district === d) taken.add(p.lot);
+  P.wayDistrict.forEach((w, k) => w === d && taken.add(P.wayLot[k]));
+  const can: number[] = [];
+  dist.lots.forEach((l, k) => {
+    if (isBuilding(l.use) && LOCKABLE.includes(l.use) && l.doors.length && !taken.has(k)) can.push(k);
+  });
+  const n = Math.max(can.length >= 3 ? 1 : 0, Math.floor(can.length / TOOLS.lockOneIn));
+  const rnd = streamOf(c.plan.seed, 7700 + d);
+  const out: number[] = [];
+  for (let k = 0; k < n; k++) out.push(...can.splice(Math.floor(rnd() * can.length), 1));
+  return out.sort((a, b) => a - b);
+}
+
+/** A fence cut, as a number: the district it was cut from, the side and the lane. */
+export const cutCode = (d: number, side: number, lane: number) => (d * 4 + side) * LANES + lane;
+
+/** The two border tiles of a lane's street on a district's side, and the four street tiles in from them. */
+function laneTiles(plan: CityPlan, d: number, side: number, lane: number): { border: [number, number]; inner: number[] } {
+  const a = laneAt(plan, d, side, lane);
+  const tile = (along: number, depth: number) =>
+    side === SIDE.N
+      ? depth * MAP_W + along
+      : side === SIDE.S
+        ? (MAP_H - 1 - depth) * MAP_W + along
+        : side === SIDE.W
+          ? along * MAP_W + depth
+          : along * MAP_W + (MAP_W - 1 - depth);
+  const inner: number[] = [];
+  for (let depth = 1; depth <= 2; depth++) for (let w = 0; w < ROAD_W; w++) inner.push(tile(a + w, depth));
+  return { border: [tile(a, 0), tile(a + 1, 0)], inner };
+}
+
+/** A place where the fence can be cut: the side and the lane, its tiles on the border, and the district beyond. */
+export interface CutSpot {
+  side: number;
+  lane: number;
+  tiles: [number, number];
+  to: number;
+}
+
+/** Where a district's fence can still be cut: a street up to it on this side and on the neighbour's, clear of what stands on them. */
+export function cutSpots(c: City, d: number): CutSpot[] {
+  if (d === TUNNEL) return [];
+  const out: CutSpot[] = [];
+  const clear = (dist: District, tiles: number[]) =>
+    tiles.every((i) => dist.rows[Math.floor(i / MAP_W)][i % MAP_W] === ',' && !decoSolid(dist.deco[i]));
+  for (let side = 0; side < 4; side++) {
+    const to = neighbour(d, side);
+    if (to < 0) continue;
+    for (let lane = 0; lane < LANES; lane++) {
+      if (gateOpen(c.plan, d, side, lane) || isCut(c, d, side, lane)) continue;
+      const here = laneTiles(c.plan, d, side, lane);
+      const there = laneTiles(c.plan, to, OPPOSITE[side], lane);
+      const mine = c.baseOf(d);
+      // (The fence itself: not the city's wall, not the sea.)
+      if (!here.border.every((i) => mine.rows[Math.floor(i / MAP_W)][i % MAP_W] === '=')) continue;
+      if (clear(mine, here.inner) && clear(c.baseOf(to), there.inner)) out.push({ side, lane, tiles: here.border, to });
+    }
+  }
+  return out;
+}
+
+/** Whether a district's side is cut at a lane (from either side of the border). */
+export function isCut(c: City, d: number, side: number, lane: number): boolean {
+  const to = neighbour(d, side);
+  return c.state.cuts.includes(cutCode(d, side, lane)) || (to >= 0 && c.state.cuts.includes(cutCode(to, OPPOSITE[side], lane)));
+}
+
+/** Whether two districts side by side are joined: by a checkpoint, or by a fence cut. */
+export function joined(c: City, d: number, side: number): boolean {
+  if (c.plan.gates[d][side]) return true;
+  for (let lane = 0; lane < LANES; lane++) if (isCut(c, d, side, lane)) return true;
+  return false;
+}
+
+/** A district as the generator made it, with the fences cut so far: the street runs through, a crossing like any other. */
+export function withCuts(c: City, base: District): District {
+  const d = base.index;
+  if (d === TUNNEL || !c.state.cuts.length) return base;
+  const rows = base.rows.map((r) => r.split(''));
+  const gates: Gate[] = [...base.gates];
+  for (let side = 0; side < 4; side++) {
+    const to = neighbour(d, side);
+    if (to < 0) continue;
+    for (let lane = 0; lane < LANES; lane++) {
+      if (gateOpen(c.plan, d, side, lane) || !isCut(c, d, side, lane)) continue;
+      const { border } = laneTiles(c.plan, d, side, lane);
+      for (const i of border) rows[Math.floor(i / MAP_W)][i % MAP_W] = ',';
+      gates.push({ side, lane, tiles: border, to, cut: true });
+    }
+  }
+  if (gates.length === base.gates.length) return base;
+  return { ...base, rows: rows.map((r) => r.join('')), gates };
+}
+
+/** A save's cuts kept only where a fence could be cut (the map changed under an old save, a damaged one). */
+export function soundCuts(c: City) {
+  const all = c.state.cuts;
+  c.state.cuts = [];
+  for (const code of all) {
+    const lane = code % LANES;
+    const side = Math.floor(code / LANES) % 4;
+    const d = Math.floor(code / LANES / 4);
+    if (cutSpots(c, d).some((s) => s.side === side && s.lane === lane)) c.state.cuts.push(code);
+  }
+}
+
+/** Per tile of a district: 1 where a locked building's door stands still locked. */
+export function lockedDoors(c: City, d: number) {
+  const out = new Uint8Array(N);
+  const forced = c.state.forced[d] ?? [];
+  const dist = c.baseOf(d);
+  for (const lot of lockedLots(c, d)) if (!forced.includes(lot)) for (const i of dist.lots[lot].doors) out[i] = 1;
+  return out;
+}

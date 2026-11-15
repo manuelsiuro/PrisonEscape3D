@@ -299,6 +299,13 @@ In two slices.
   `streetThings.ts`, `cityProps.ts`, asked by `WorldView` and `ground.ts` through `town.ts`
   (`townOf(world)`: the district a World was built from; the tunnel has none). The gloom is a body of
   shade (`CityView.setLights`). `citylooktest`; `scripts/dev/citygo.ts` to look.
+- **The crowbar, the bolt cutters, the rules gone over (2.58).** `sim/tools.ts`: `lockedLots` (from
+  the seed and the story's places), `lockedDoors`, `cutSpots`, `withCuts` (a district with its cut
+  fences: `City.baseOf` is the generator's, `districtOf` the one that stands), `joined` for the
+  journal's way. State: `locks`, `forced`, `cuts`. Targets `lock` (key `k` + tile) and `fence` (`f` +
+  tile), the work a search as a door's boards are. `dead.ts`: `siege` (a sleeper's barred door),
+  `zedShare`, `lockGrid`. `story.ts`: `castOff` (key `w`), `choose` with the boat ready.
+  `citytooltest`.
 
 ## Proof, stage by stage
 

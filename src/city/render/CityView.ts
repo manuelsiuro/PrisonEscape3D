@@ -380,6 +380,7 @@ export class CityView {
       this.eyes,
       this.glow,
       this.bars,
+      this.locks,
       this.marks,
       this.folk,
       this.live.group,
@@ -787,6 +788,38 @@ export class CityView {
     this.bars.add(mesh);
   }
 
+  /** 2.58: a chain and a padlock across each locked door. */
+  private readonly locks = new THREE.Group();
+  setLocks(locked: Uint8Array, district: District) {
+    disposeTree(this.locks, () => false, new Set([kitMaterial]));
+    this.locks.clear();
+    const parts: Part[] = [];
+    locked.forEach((on, i) => {
+      if (!on) return;
+      const row = district.rows[Math.floor(i / W)];
+      const across = row[(i % W) - 1] === '#' || row[(i % W) + 1] === '#' ? 0 : Math.PI / 2;
+      const STEEL = 0x8b929b;
+      const BRASS = 0xe0b23a;
+      // (Seen from above: two runs of chain over the shut leaf's top and down both its faces, a brass padlock where they cross.)
+      const chain = [
+        box(1.08, 0.06, 0.5, STEEL, 0, 1.41, 0),
+        box(0.1, 0.07, 0.5, 0x6d747d, -0.3, 1.42, 0),
+        box(0.1, 0.07, 0.5, 0x6d747d, 0.3, 1.42, 0),
+        box(1.08, 0.07, 0.06, STEEL, 0, 0.74, 0.25),
+        box(1.08, 0.07, 0.06, STEEL, 0, 0.74, -0.25),
+        box(0.34, 0.12, 0.34, BRASS, 0, 1.47, 0),
+        box(0.16, 0.06, 0.16, 0x6d747d, 0, 1.59, 0),
+        box(0.22, 0.26, 0.08, BRASS, 0, 0.66, 0.29),
+        box(0.22, 0.26, 0.08, BRASS, 0, 0.66, -0.29),
+      ];
+      put(parts, chain, (i % W) + 0.5, Math.floor(i / W) + 0.5, across);
+    });
+    if (!parts.length) return;
+    const mesh = new THREE.Mesh(merge(parts), kitMaterial);
+    mesh.castShadow = true;
+    this.locks.add(mesh);
+  }
+
   /** The dead where they stand now: a shamble's sway, a lean into the chase, thrown back by a blow. */
   drawDead(list: readonly DeadFrame[], time: number, still: boolean, night: boolean, me: { x: number; z: number }) {
     for (const g of this.marks.children) {
@@ -975,6 +1008,8 @@ export class CityView {
     this.glow.visible = false;
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();
+    disposeTree(this.locks, () => false, new Set([kitMaterial]));
+    this.locks.clear();
     this.marks.clear();
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();

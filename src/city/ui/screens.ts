@@ -9,6 +9,7 @@ import { FLAG, NOTES, THINGS, WAYS, thingBit } from '../content/story';
 import type { City } from '../sim/City';
 import { MODE } from '../sim/City';
 import { errandOf, objectives, wants } from '../sim/story';
+import { isCut } from '../sim/tools';
 import { cityItemNumber } from '../content/items';
 import { PEOPLE } from '../content/people';
 import { CITY_RECIPES } from '../content/recipes';
@@ -201,7 +202,8 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
           const n = neighbour(d, side);
           if (n < 0 || (((city.state.visited >> d) | (city.state.visited >> n)) & 1) === 0) continue;
           for (let k = 0; k < LANES; k++) {
-            if (!gateOpen(plan, d, side, k)) continue;
+            // (2.58: and where the fence has been cut.)
+            if (!gateOpen(plan, d, side, k) && !isCut(city, d, side, k)) continue;
             const at = laneAt(plan, d, side, k);
             c.fillStyle = '#dfe7ee';
             if (side === SIDE.E) c.fillRect(ox + MAP_W, oz + at, GAP, ROAD_W);
@@ -317,7 +319,7 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
             ? `<span class="cj-state on">${icon('check', 14)}${t(s.ready ? 'city.journal.locked' : 'city.journal.chosen')}</span>`
             : !seen
               ? `<span class="cj-state">${icon('eyeOff', 14)}${t('city.journal.unseen')}</span>`
-              : s.ready
+              : s.ready && s.way !== 2
                 ? ''
                 : `<button class="big-btn primary" data-c="way${n}">${t('city.journal.choose')}</button>`;
         return `<div class="cj-way${s.way === n ? ' chosen' : ''}"><b>${icon(w.id === 'heli' ? 'heli' : w.id === 'boat' ? 'boat' : 'lock', 16)}${t(`city.way.${n}` as Key)}<small>${city.plan.names[city.story.wayDistrict[k]]}</small></b><p>${t(`city.way.sub.${n}` as Key)}</p><ul>${needs}</ul>${state}</div>`;

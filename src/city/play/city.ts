@@ -25,6 +25,7 @@ import { SEARCH_STEPS } from '../content/loot';
 import { CITY_RECIPES } from '../content/recipes';
 import { deleteCitySave, writeCitySave } from '../save';
 import { BAR_STEPS, COP, FULL, type City, type CityEvent } from '../sim/City';
+import { TOOLS } from '../sim/tools';
 import { CityHud, type CityHudState } from '../ui/hud';
 import { paintDistrict } from '../ui/mapPaint';
 import { CityPockets, itemName, type PocketsState } from '../ui/pockets';
@@ -183,6 +184,7 @@ function stage(r: CityRun, first = false) {
   r.prev.z = p.z;
   picture = null;
   barsShown = -1;
+  locksShown = -1;
   lightsShown = -1;
   carsShown = -1;
   firesShown = -1;
@@ -428,6 +430,10 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     barsShown = c.barsRev;
     cityView.setBars(c.bars, c.district);
   }
+  if (locksShown !== c.locksRev) {
+    locksShown = c.locksRev;
+    cityView.setLocks(c.locked, c.district);
+  }
   const goal = goalOf(r);
   if (marksShown !== goal.key) {
     marksShown = goal.key;
@@ -506,6 +512,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       else if (cityItem(e.item)?.id === 'plank' || cityItem(e.item)?.id === 'nails') tip('city.boards', 'city.tip.boards');
       else if (cityItem(e.item)?.id === 'fuel' || cityItem(e.item)?.id === 'torch') tip('city.light', 'city.tip.light');
       else if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt') tip('city.thrown', 'city.tip.thrown');
+      else if (cityItem(e.item)?.id === 'crowbar' || cityItem(e.item)?.id === 'cutters') tip('city.tools', 'city.tip.tools');
       break;
     case 'stored':
     case 'dropped':
@@ -585,7 +592,12 @@ function cityEvent(r: CityRun, e: CityEvent) {
       } else {
         play.acc = 0;
         if (e.why && e.why !== 'stirred')
-          banner.toast(t(`city.toast.woke.${e.why}` as Key), e.why === 'hungry' || e.why === 'attacked' ? 'bad' : 'good', 3000);
+          banner.toast(
+            t(`city.toast.woke.${e.why}` as Key),
+            e.why === 'hungry' || e.why === 'attacked' || e.why === 'pounding' ? 'bad' : 'good',
+            3000,
+          );
+        if (e.why === 'pounding') tip('city.siege', 'city.tip.siege');
         save(r);
       }
       break;
@@ -640,7 +652,22 @@ function cityEvent(r: CityRun, e: CityEvent) {
       banner.toast(t('city.toast.broke', { what: itemName(e.item) }), 'bad', 3000);
       break;
     case 'barring':
+    case 'forcing':
+    case 'casting':
       sound.scuffle();
+      break;
+    // 2.58: the crowbar and the bolt cutters.
+    case 'forced':
+      sound.dud();
+      banner.toast(t('city.toast.forced'), 'good', 3200);
+      save(r);
+      break;
+    case 'cut':
+      // (The district as it now stands: the fence gone from the street's end, the way through on the map.)
+      stage(r);
+      sound.gateShut();
+      banner.toast(t('city.toast.cut'), 'good', 3200);
+      save(r);
       break;
     case 'barred':
       sound.stow(false);
@@ -809,11 +836,13 @@ function frameOf(r: CityRun, a: number): Frame {
   const tg = c.state.sleeping ? null : c.target();
   if (tg) {
     const tiles =
-      tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc'
-        ? [tg.tile]
-        : tg.key.startsWith('c')
-          ? carTiles(c, Number(tg.key.slice(1)))
-          : c.tilesOf(Number(tg.key));
+      tg.kind === 'fence'
+        ? (c.fences.find((q) => q.tiles[0] === tg.tile)?.tiles ?? [tg.tile])
+        : tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc' || tg.kind === 'lock'
+          ? [tg.tile]
+          : tg.key.startsWith('c')
+            ? carTiles(c, Number(tg.key.slice(1)))
+            : c.tilesOf(Number(tg.key));
     focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
     focus.x1 = Math.max(...tiles.map((i) => i % MAP_W));
     focus.z0 = Math.min(...tiles.map((i) => Math.floor(i / MAP_W)));
@@ -836,6 +865,7 @@ function frameOf(r: CityRun, a: number): Frame {
 const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
 /** The barred doors the view last put its boards on (`City.barsRev`). */
 let barsShown = -1;
+let locksShown = -1;
 let lightsShown = -1;
 let carsShown = -1;
 let firesShown = -1;
@@ -886,7 +916,16 @@ function pocketsOf(r: CityRun): PocketsState {
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
   st.searched = !!tg && c.searched(tg.key);
-  st.searching = s.search ? 1 - s.searchLeft / (s.search.startsWith('d') ? BAR_STEPS : SEARCH_STEPS) : 0;
+  const work = s.search.startsWith('d')
+    ? BAR_STEPS
+    : s.search.startsWith('k')
+      ? TOOLS.forceSteps
+      : s.search.startsWith('f')
+        ? TOOLS.cutSteps
+        : s.search === 'w'
+          ? STORY.castSteps
+          : SEARCH_STEPS;
+  st.searching = s.search ? 1 - s.searchLeft / work : 0;
   st.asleep = s.sleeping;
   st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
   st.person = tg?.kind === 'npc' ? PEOPLE[Number(tg.key.slice(1))].id : '';

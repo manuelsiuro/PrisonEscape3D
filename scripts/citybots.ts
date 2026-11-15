@@ -102,8 +102,10 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
     const props = c.district.props;
     // At night, or worn out: a bed already looked into.
     const bedtime = night || (s.energy < FULL * 0.3 && s.hunger > FULL * 0.2);
+    // (2.58: what's behind a chained door is left alone: it has no crowbar's use.)
+    const shut = (k: number) => c.lockedLot(c.district.lotAt[props[k].z * MAP_W + props[k].x] - 1);
     const want = (k: number) =>
-      !skip.has(`${s.district}:${k}`) && (bedtime ? props[k].kind === 'bed' && c.searched(`${k}`) : !c.searched(`${k}`));
+      !skip.has(`${s.district}:${k}`) && !shut(k) && (bedtime ? props[k].kind === 'bed' && c.searched(`${k}`) : !c.searched(`${k}`));
     // (2.54: it walks past cars, as it did before they could be searched: its runs stay what they were.)
     const beside = c.target();
     const t = beside?.key.startsWith('c') ? null : beside;
@@ -132,7 +134,7 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
         // (No bed looked into yet: the nearest is searched first.)
         let bed = -1;
         props.forEach((p, k) => {
-          if (p.kind !== 'bed' || skip.has(`${s.district}:${k}`)) return;
+          if (p.kind !== 'bed' || skip.has(`${s.district}:${k}`) || shut(k)) return;
           const d = Math.abs(p.x - (here % MAP_W)) + Math.abs(p.z - Math.floor(here / MAP_W));
           if (bed < 0 || d < bestD) {
             bestD = d;

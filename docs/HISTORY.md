@@ -225,3 +225,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape: the metro's tunnel, walked (v2.56.0)
 - City Escape: the light's line follows the language (v2.56.1, out with the next release)
 - City Escape: a town's own look, its cards and panels gone over (v2.57.1)
+- City Escape: the crowbar, the bolt cutters, and the rules the review left open (v2.58.0, not released yet)

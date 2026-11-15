@@ -426,7 +426,12 @@ const ids = (c: City) =>
     s.hunger = 90_000;
     c.step(0);
   }
-  press(c, COP.ACT);
+  // (2.58: the lines let go first, stood still.)
+  check(press(c, COP.ACT).some((e) => e.type === 'casting') && !s.over, 'the boat pressed on the tide: no casting off');
+  for (let k = 0; k < STORY.castSteps + 2 && !s.over; k++) {
+    s.hunger = 90_000;
+    c.step(0);
+  }
   check(s.over === 2 && s.won === 2, 'the boat not taken on the tide');
   say(
     `the boat: fitted at any hour and left fitted, taken from the pier's end between ${STORY.tideFrom / 60}:00 and 0${STORY.tideTo / 60}:00 only, in fog (the dead see two tiles, a blow carries twice as far); a fall keeps the engine fitted, and a pile on the pier's end doesn't take the button`,

@@ -88,13 +88,15 @@ export const STORY = {
   /** The beacon is lit after dark; the helicopter comes this many game minutes later. */
   heliHold: 120,
   /** The metro's gates wind open this many game minutes after the generator starts. */
-  metroHold: 90,
+  metroHold: 60,
   /** 2.56: the tunnel: how many of the dead stand along it, and its danger (as a district's: what's asked of any place). */
   tunnelDead: 8,
   tunnelDanger: 3,
   /** The boat leaves on the night's high tide: from, to (minutes of the day; over midnight). */
   tideFrom: 23 * 60,
   tideTo: 2 * 60,
+  /** 2.58: casting off takes this many steps at the pier's end, stood still (the lines let go, the engine coaxed): heard a little way off. */
+  castSteps: 200,
   /** A way out set going: this many more of the dead in its district, one arriving every so many game minutes. */
   extra: 8,
   trickle: 5,

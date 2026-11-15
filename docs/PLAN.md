@@ -182,7 +182,8 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
   each way out's last night, the survivors, runners and brutes, the records, a bot to each way out), `citylandmarktest` (2.50: where each
   landmark's pieces stand), `citymusictest` (2.51: the score's notes and its picking), `citylighttest` (2.52, 2.53: each
   light, the dead at its edge, interiors dark by day), `citycartest` (2.54: cars searched, the alarm), `cityrangedtest`
-  (2.55: thrown and shot, fire), `citytunneltest` (2.56: the metro's tunnel); their bots are in `citybots.ts`.
+  (2.55: thrown and shot, fire), `citytunneltest` (2.56: the metro's tunnel), `citylooktest` (2.57: a town's look), `citytooltest`
+  (2.58: chained buildings, fences cut, a sleeper's door, the boat); their bots are in `citybots.ts`.
 - **Speech** (`chattertest`, `gossiptest`): the phrase banks in both languages, the director
   over days of play, every piece of gossip checked against the running game.
 - **The action button** (`buttontest`, v2.34.2): in every prison, at a time in each block, beside every
@@ -209,8 +210,8 @@ feel) and the known limits.
 **Status (2026-11-15): v2.57.1.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
-45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 80 help topics,
-6,116 text keys in English and French, 99 test scripts. A second mode, City Escape, built in four
+45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 81 help topics,
+6,134 text keys in English and French, 100 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
 2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
 metro's tunnel).
