@@ -227,3 +227,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape: a town's own look, its cards and panels gone over (v2.57.1)
 - City Escape: the crowbar, the bolt cutters, and the rules the review left open (v2.58.0)
 - City Escape: what the backlog still held (v2.59.0)
+
+## [v2.60 to v2.64](history/v2.60-v2.64.md)
+
+- City Escape: the fight with the dead gone over, three more kinds of them (v2.60.0, not released yet)

@@ -12,6 +12,8 @@
 import type { City } from '../../src/city/sim/City';
 import type { Zed } from '../../src/city/sim/dead';
 import { relight } from '../../src/city/sim/light';
+import { cityItemNumber } from '../../src/city/content/items';
+import { nearestDir } from '../../src/sim/ai/path';
 import { MAP_W as W } from '../../src/sim/world/grid';
 
 interface Run {
@@ -130,12 +132,20 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       const d = t.c.plan.start;
       t.time(2, 11 * 60);
       t.go(d, t.c.districtOf(d).spawn.z * W + t.c.districtOf(d).spawn.x);
+      // (A clear run of street well inside the district: a street's end on the border is a checkpoint.)
+      const inside = (i: number) => i % W > 6 && i % W < W - 10 && Math.floor(i / W) > 6 && Math.floor(i / W) < W - 6;
       const at = t.c.zedPlaces.streets.find(
-        (i) => [0, 1, 2, 3].every((k) => !t.c.grid[i + k] && !t.c.district.deco[i + k]) && Math.floor((i + 3) / W) === Math.floor(i / W),
+        (i) => inside(i) && [0, 1, 2, 3, 4].every((k) => !t.c.grid[i + k] && !t.c.district.deco[i + k] && t.c.zedStreet[i + k]),
       )!;
-      t.go(d, at, 5);
-      t.zed(at + 1, 3, 13).reel = 9999;
-      t.zed(at + 3, 3, 13);
+      // (2.60: a bat in hand, one reeling from its blow with its health shown, a runner and a screamer coming.)
+      t.s.inv[0] = [cityItemNumber('bat'), 31];
+      t.go(d, at, nearestDir(1, 0));
+      const west = nearestDir(-1, 0);
+      const struck = t.zed(at + 1, 3, west);
+      struck.reel = 9999;
+      struck.hp = 12;
+      Object.assign(t.zed(at + 3, 3, west), { kind: 1, hp: 16 });
+      Object.assign(t.zed(at + 4, 3, west), { kind: 4, hp: 14 });
     },
   },
   // A house at dusk, its one door barred, the player by the bed, two of the dead at the door.
@@ -264,7 +274,9 @@ export async function stage(id: string) {
   const t = tools();
   t.r.paused = false;
   t.c.peace = true;
-  Object.assign(t.s, { hunger: 90_000, energy: 90_000, health: 100 });
+  // (The pictures are of the first days: the bus's orange, empty hands.)
+  Object.assign(t.s, { hunger: 90_000, energy: 90_000, health: 100, outfit: 0 });
+  t.s.inv = t.s.inv.map(() => [0, 0]);
   t.s.lights = {};
   relight(t.c);
   if (!hide) {

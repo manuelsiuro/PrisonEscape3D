@@ -5,11 +5,11 @@ import { randomInt } from '../../sim/rng';
 import { UNIT } from '../../sim/tuning';
 import { centerX, centerZ, tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
-import { BRUTE, DEAD, ZKIND } from '../content/dead';
+import { kindStats } from '../content/dead';
 import { cityItemNumber } from '../content/items';
 import { RANGED } from '../content/ranged';
 import type { City } from './City';
-import { noise, ZED, type Zed } from './dead';
+import { noise, putDown, ZED, type Zed } from './dead';
 
 /**
  * Weapons thrown or shot (2.55), a part of the city's simulation. Thrown from the pockets (Use): an
@@ -129,22 +129,19 @@ export function shoot(c: City, armsReach: number): boolean {
   const z = s.zeds[k];
   const at = tileAt(z.body.x, z.body.z);
   z.hp -= RANGED.shotHarm;
-  z.reel = z.kind === ZKIND.BRUTE ? BRUTE.reel : DEAD.reel;
+  z.reel = kindStats(z.kind).reel;
   z.near = 0;
   z.mode = ZED.CHASE;
   z.seen = s.step;
   z.last = c.tile;
   z.body.facing = nearestDir(s.player.x - z.body.x, s.player.z - z.body.z);
   const dead = z.hp <= 0;
-  if (dead) {
-    s.zeds.splice(k, 1);
-    s.kills++;
-  }
   noise(c, c.tile, RANGED.shotNoise);
   // (The bolt: found again where it struck, one time in a few.)
   if (randomInt(s, RANGED.boltBack) === 0) c.leave(at, BOLT, 1);
   c.events.push({ type: 'shot', from: c.tile, x: z.body.x, z: z.body.z, dead });
   c.wearItem(CROSSBOW);
+  if (dead) putDown(c, [z]);
   return true;
 }
 
@@ -175,17 +172,18 @@ export function stepFires(c: City) {
     if (!s.fires.length) return void c.events.push({ type: 'fireOut' });
   }
   if (s.step % RANGED.burnEvery) return;
-  let felled = 0;
+  const gone: Zed[] = [];
   for (let k = s.zeds.length - 1; k >= 0; k--) {
     const z = s.zeds[k];
     if (!burning(c, tileAt(z.body.x, z.body.z))) continue;
     z.hp -= RANGED.burnDead;
-    if (z.hp > 0) continue;
-    s.zeds.splice(k, 1);
-    s.kills++;
-    felled++;
+    if (z.hp <= 0) gone.push(z);
   }
-  if (felled) c.events.push({ type: 'scorched', dead: felled });
+  if (gone.length) {
+    c.events.push({ type: 'scorched', dead: gone.length });
+    putDown(c, gone);
+    if (s.over || c.events.some((e) => e.type === 'dead')) return;
+  }
   if (burning(c, c.tile)) {
     c.events.push({ type: 'burn', harm: RANGED.burnPlayer });
     if (s.sleeping) c.wakeNow('attacked');

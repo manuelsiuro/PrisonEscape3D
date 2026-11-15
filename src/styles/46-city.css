@@ -559,6 +559,63 @@
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
 }
 
+/* 2.60: what strikes, drawn on the button; its blows left round it and by number; greyed while the arm comes back. */
+.city-hit .hit-icon {
+  display: flex;
+}
+
+.city-hit .hit-icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.city-hit.cooling .tool-round {
+  opacity: 0.6;
+}
+
+.city-hit .hit-left {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  padding: 2px 5px;
+  border-radius: 11px;
+  font: 800 11px/1.3 var(--font-ui);
+  text-align: center;
+  color: var(--white);
+  background: var(--slate-48);
+}
+
+.city-hit.low .hit-left {
+  background: var(--city-health-70);
+}
+
+.city-hit.low .tool-ring {
+  background: conic-gradient(var(--city-health-70) var(--p, 0%), rgba(var(--white-rgb), 0.14) 0);
+}
+
+/* 2.60: badly hurt: the edges keep a slow red pulse. */
+.city-bitten.low {
+  animation: city-hurt 1.6s ease-in-out infinite;
+}
+
+/* (A bite on top of it still flashes.) */
+.city-bitten.low.on {
+  animation: city-bite 0.5s ease-out;
+}
+
+@keyframes city-hurt {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
 /* A phone turned: beside the action button, not over it (there's no height for two). */
 @media (max-height: 480px) {
   .city-hit {
@@ -570,6 +627,11 @@
 @media (prefers-reduced-motion: reduce) {
   .city-bitten.on {
     animation-duration: 0.01s;
+  }
+
+  .city-bitten.low {
+    animation: none;
+    opacity: 0.4;
   }
 }
 

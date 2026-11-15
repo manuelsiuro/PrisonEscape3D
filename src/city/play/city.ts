@@ -17,7 +17,7 @@ import { hideLoading } from '../../ui/loading';
 import { showHelp } from '../../ui/screens/help';
 import { showPause } from '../../ui/screens/pause';
 import { showSettings } from '../../ui/screens/settings';
-import { BLOW } from '../content/dead';
+import { BLOW, kindStats } from '../content/dead';
 import { CityView, type DeadFrame } from '../render/CityView';
 import { nightAt, ZED, type Zed } from '../sim/dead';
 import { cityItem } from '../content/items';
@@ -67,6 +67,14 @@ interface CityRun extends SideRun {
 }
 
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
+/** (2.60) What a city weapon looks like in the hand: the prisons' item of its shape. */
+const HELD: Record<string, number> = {
+  bat: itemNumber('bat'),
+  nail_bat: itemNumber('spiked_bat'),
+  knife: itemNumber('comb_blade'),
+  cleaver: itemNumber('comb_blade'),
+  spear: itemNumber('broom'),
+};
 /** (2.59) Clothes found in a house: the ones a prisoner is released in. */
 const OWN_CLOTHES = itemNumber('own_clothes');
 /** What lies on the ground is drawn as a parcel (the view's items are the prisons'). */
@@ -290,6 +298,7 @@ async function openJournal() {
 
 /** One tip at a time: a second within eight seconds waits for its next occasion (it isn't spent). */
 let tipped = -1e9;
+let fellHeard = -1e9;
 let crackled = -1e9;
 const now = () => performance.now();
 function tip(name: string, key: Key) {
@@ -351,7 +360,7 @@ export function stopCity() {
   sound.ambience(false);
   sound.duck(false);
   veil.classList.remove('on');
-  bitten.classList.remove('on');
+  bitten.classList.remove('on', 'low');
   document.body.classList.remove('is-playing', 'city-on');
   r.resolve();
 }
@@ -526,6 +535,8 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   cityHud.update(hudOf(r));
   pockets.update(pocketsOf(r));
   sleepVeil.classList.toggle('on', c.state.sleeping);
+  // (2.60: badly hurt: the screen's edges keep a slow red pulse.)
+  bitten.classList.toggle('low', c.state.health <= 25 && !c.state.over && !c.state.sleeping);
 }
 
 function cityEvent(r: CityRun, e: CityEvent) {
@@ -639,7 +650,9 @@ function cityEvent(r: CityRun, e: CityEvent) {
       const kind = c.state.zeds[e.zed]?.kind ?? 0;
       if (kind === 2) sound.roar();
       else if (kind === 1) sound.screech();
-      else sound.moan();
+      else if (kind === 3) sound.rasp();
+      else if (kind === 5) sound.gurgle();
+      else if (kind !== 4) sound.moan();
       tip('city.spotted', 'city.tip.spotted');
       break;
     }
@@ -648,6 +661,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'bite':
       sound.slap();
+      view.playerFlinch();
+      view.jolt(0.35);
       buzz('missed');
       bitten.classList.remove('on');
       void bitten.offsetWidth;
@@ -655,8 +670,47 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'swing':
       sound.swish();
-      if (e.hit) sound.scuffle();
-      if (e.dead) sound.dud();
+      view.playerPunch();
+      if (e.hit) {
+        sound.thwack();
+        // (Where it landed: a burst the colour of old blood, the camera jolted; harder for one put down or caught unawares.)
+        view.puff((e.x ?? 0) / UNIT, (e.z ?? 0) / UNIT, 0x8f2f2a, e.dead ? 12 : e.unseen ? 9 : 5);
+        view.jolt(e.dead ? 0.55 : e.unseen ? 0.4 : 0.22);
+        if (e.unseen) {
+          banner.toast(t('city.toast.unseen'), 'good', 1600);
+          tip('city.unseen', 'city.tip.unseen');
+        }
+      }
+      break;
+    // 2.60: one put down topples where it stood; a screamer's call; a bloater's burst; a crawler's hold.
+    case 'fell':
+      // (Several in a step, a fire's or a burst's: heard once.)
+      if (now() - fellHeard > 60) sound.dud();
+      fellHeard = now();
+      cityView.fellFx(e.x / UNIT, e.z / UNIT, headingAngle(e.facing), e.kind, e.seed, now() / 1000);
+      break;
+    case 'scream':
+      sound.shriek();
+      banner.toast(t('city.toast.scream'), 'bad', 2600);
+      tip('city.screamer', 'city.tip.screamer');
+      break;
+    case 'burst':
+      sound.burst();
+      view.puff(e.x / UNIT, e.z / UNIT, 0x9bbf5a, 26, 0.7);
+      view.jolt(e.harm ? 0.9 : 0.5);
+      if (e.harm) {
+        view.playerFlinch();
+        buzz('missed');
+        bitten.classList.remove('on');
+        void bitten.offsetWidth;
+        bitten.classList.add('on');
+        banner.toast(t('city.toast.burst'), 'bad', 2600);
+      }
+      tip('city.bloater', 'city.tip.bloater');
+      break;
+    case 'snared':
+      banner.toast(t('city.toast.snared'), 'bad', 2000);
+      tip('city.crawler', 'city.tip.crawler');
       break;
     case 'dusk':
       tip('city.dusk', 'city.tip.dusk');
@@ -865,6 +919,8 @@ function frameOf(r: CityRun, a: number): Frame {
   f.surface = c.world.ground.kind[c.tile];
   f.tilesRev = c.world.rev;
   f.outfit = c.state.outfit ? OWN_CLOTHES : INMATE_OUTFIT;
+  // (2.60: the weapon that strikes, in hand: the prisons' thing of the same shape.)
+  f.held = HELD[cityItem(c.weapon()?.[0] ?? 0)?.id ?? ''] ?? 0;
   const dest = r.pilot.destination;
   if (dest >= 0) {
     tapAt.x = (dest % MAP_W) + 0.5;
@@ -918,7 +974,18 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
   deadList.length = zeds.length;
   zeds.forEach((z, k) => {
     const q = was.get(z) ?? z.body;
-    const o = (deadList[k] ??= { x: 0, z: 0, facing: 0, moving: false, chasing: false, reeling: false, seed: 0, kind: 0 });
+    const o = (deadList[k] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      chasing: false,
+      reeling: false,
+      lunging: false,
+      seed: 0,
+      kind: 0,
+      hp: 1,
+    });
     o.x = (q.x + (z.body.x - q.x) * a) / UNIT;
     o.z = (q.z + (z.body.z - q.z) * a) / UNIT;
     o.facing = headingAngle(z.body.facing);
@@ -927,6 +994,8 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
     o.reeling = z.reel > 0;
     o.seed = z.pace;
     o.kind = z.kind ?? 0;
+    o.lunging = z.near > 0;
+    o.hp = Math.max(0, z.hp) / kindStats(z.kind).health;
   });
   return deadList;
 }
@@ -969,6 +1038,12 @@ function pocketsOf(r: CityRun): PocketsState {
   st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
   st.person = tg?.kind === 'npc' ? PEOPLE[Number(tg.key.slice(1))].id : '';
   st.way = tg?.kind === 'way' ? `${s.ready ? 'go' : 'begin'}${s.way}` : '';
+  // (2.60: what strikes, a crossbow aside: it shoots, its count is its shots.)
+  const w = c.weapon();
+  st.weapon = w?.[0] ?? 0;
+  st.blows = w?.[1] ?? 0;
+  st.blowsOf = cityItem(w?.[0] ?? 0)?.wear ?? 0;
+  st.ready = s.step - s.swung >= BLOW.every;
   // (What each recipe lacks: looked at only while the panel is up.)
   st.recipes = pockets.makeOpen ? CITY_RECIPES.map((_, k) => c.canMake(k)) : NO_RECIPES;
   return st;

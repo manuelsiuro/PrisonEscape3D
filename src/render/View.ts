@@ -534,6 +534,23 @@ export class View {
     this.fx.blow(by, on, ko);
   }
 
+  /**
+   * City Escape's fights (2.60), which have no Cast: the player's arm thrown forward; the player flinching from a bite; a burst
+   * of dust at a place (tiles); the camera jolted. Nothing moves with reduced motion but the arm and the flinch.
+   */
+  playerPunch() {
+    this.player.punch();
+  }
+  playerFlinch() {
+    this.player.flinch();
+  }
+  puff(x: number, z: number, color: number, count: number, y = 0.9) {
+    if (!this.reducedMotion) this.dust.puff(x, z, color, count, y);
+  }
+  jolt(amount: number) {
+    if (!this.reducedMotion) this.cam.jolt(amount);
+  }
+
   /** The throw being aimed (P14), or null: the reach, the arc, the landing ring, where its thud would carry. */
   setAim(a: AimView | null) {
     this.noiseFx.setAim(a);

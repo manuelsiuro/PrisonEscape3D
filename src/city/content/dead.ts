@@ -47,7 +47,17 @@ export const DEAD = {
  * fast as a tired player, frail), and from the fifth one brute in a district two or more steps of
  * danger (slow, hard to put down, a worse bite; it pounds a barred door in its way open). Never renumber.
  */
-export const ZKIND = { SHAMBLER: 0, RUNNER: 1, BRUTE: 2 } as const;
+export const ZKIND = { SHAMBLER: 0, RUNNER: 1, BRUTE: 2, CRAWLER: 3, SCREAMER: 4, BLOATER: 5 } as const;
+/**
+ * 2.60: three more. A crawler: by day, in the dark indoors, from the second day (one in five put down there): low, slow, frail; it
+ * sees only three tiles, lunges quicker, and its bite holds a leg (the player slowed for `hold` steps). A screamer: at night from the
+ * second (one arrival in ten): frail, a weak bite; seeing the player it screams, and the dead within `reach` tiles of them come.
+ * A bloater: at night from the fourth (one arrival in twelve): slow, swollen; put down, it bursts: `harm` to the player within
+ * `within` units, `dead` to each of the dead there, heard `noise` tiles off. Struck from a spear's length, shot or burnt, it is safe.
+ */
+export const CRAWLER = { health: 18, chase: 92, bite: 5, fromDay: 2, oneIn: 5, sight: 3, lunge: 4, hold: 40 } as const;
+export const SCREAMER = { health: 14, chase: 112, bite: 4, fromNight: 2, oneIn: 10, reach: 12 } as const;
+export const BLOATER = { health: 44, chase: 92, bite: 8, fromNight: 4, oneIn: 12, harm: 12, within: 1700, dead: 16, noise: 9 } as const;
 export const RUNNER = { health: 16, chase: 168, bite: 6, fromNight: 3, oneIn: 8 } as const;
 export const BRUTE = { health: 90, chase: 108, bite: 14, fromNight: 5, danger: 2, reel: 4, shove: 140, pound: 80 } as const;
 
@@ -68,4 +78,26 @@ export const BLOW = {
   /** How far its noise carries (tiles); a search's rustle. */
   noise: 7,
   rustle: 4,
+  /** 2.60: a blow on one that isn't after anyone (it never saw it coming): this many times the harm. */
+  unseen: 2,
 } as const;
+
+/** What a kind is made of: its health, its pace after someone, its bite, the steps it reels, how far a blow shoves it, the steps of its lunge. */
+export interface KindStats {
+  health: number;
+  chase: number;
+  bite: number;
+  reel: number;
+  shove: number;
+  lunge: number;
+}
+const base = { reel: DEAD.reel, shove: DEAD.shove, lunge: DEAD.lunge };
+const KINDS: readonly KindStats[] = [
+  { ...base, health: DEAD.health, chase: DEAD.chase, bite: DEAD.bite },
+  { ...base, health: RUNNER.health, chase: RUNNER.chase, bite: RUNNER.bite },
+  { ...base, health: BRUTE.health, chase: BRUTE.chase, bite: BRUTE.bite, reel: BRUTE.reel, shove: BRUTE.shove },
+  { ...base, health: CRAWLER.health, chase: CRAWLER.chase, bite: CRAWLER.bite, lunge: CRAWLER.lunge },
+  { ...base, health: SCREAMER.health, chase: SCREAMER.chase, bite: SCREAMER.bite },
+  { ...base, health: BLOATER.health, chase: BLOATER.chase, bite: BLOATER.bite, reel: 6, shove: 260 },
+];
+export const kindStats = (kind: number | undefined): KindStats => KINDS[kind ?? 0] ?? KINDS[0];
