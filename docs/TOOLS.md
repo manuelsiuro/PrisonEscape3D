@@ -65,5 +65,7 @@ now `objectives(city)` (`city/sim/story.ts`); the survivors are `city.story.peop
 `state.lights` (2.52) and `state.fires` (2.55), a car's alarm `state.alarm` (2.54); `city.dim` is the tiles dark by day (2.53). The help's ten city pictures are staged by
 `scripts/dev/cityshot.ts` (`stage('cityDead')` in a city open at 1040 × 480, the page's screenshot, then
 `cwebp -q 80 -resize 1040 480`).
+To look at a district: `scripts/dev/citygo.ts` (`go('downtown', 0.7)`, or `go('suburbs', 1.6, 22 * 60, 'house')`
+for an hour and the inside of a building; nobody about, the game held still).
 A page that falls to the background pauses the city (as the prisons do): a script that finds `.paused` true
 with no pause card should look for another screen up (the map).

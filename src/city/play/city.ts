@@ -201,7 +201,7 @@ const darkNow = (c: City) => nightAt(c.minute) || c.state.district === TUNNEL;
 /** Where they've come to, said. */
 function arrive(r: CityRun) {
   const c = r.city;
-  banner.show(placeName(c), placeKind(c), 'routine', 3200);
+  banner.show(placeName(c), placeKind(c), 'routine', 3200, 'pin');
 }
 
 /** The city in progress written to its slot. */
@@ -260,7 +260,7 @@ const now = () => performance.now();
 function tip(name: string, key: Key) {
   if (seenTip(name) || now() - tipped < 8000) return;
   tipped = now();
-  coachOnce(name, key);
+  coachOnce(name, key, undefined, 'bulb');
 }
 
 /** A survivor's card: what they say, their errand, their swaps (each a command; the card comes back after it). */
@@ -517,7 +517,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       else sound.munch(true);
       break;
     case 'full':
-      banner.toast(t('city.toast.full'), 'info', 2200);
+      banner.toast(t('city.toast.full'), 'info', 2200, 'bulb');
       break;
     // 2.52: light and fire.
     case 'lit':
@@ -529,7 +529,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (e.on) {
         banner.toast(t('city.toast.alarm'), 'bad', 3400);
         tip('city.alarm', 'city.tip.alarm');
-      } else banner.toast(t('city.toast.alarmOff'), 'info', 2400);
+      } else banner.toast(t('city.toast.alarmOff'), 'info', 2400, 'bulb');
       break;
     case 'thrown': {
       const mid = (i: number) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 });
@@ -561,14 +561,14 @@ function cityEvent(r: CityRun, e: CityEvent) {
       banner.toast(t('city.toast.burning'), 'bad', 1600);
       break;
     case 'burnt':
-      banner.toast(t(`city.toast.burnt.${e.kind}` as Key), 'info', 2800);
+      banner.toast(t(`city.toast.burnt.${e.kind}` as Key), 'info', 2800, 'bulb');
       break;
     case 'torch':
       sound.click();
-      if (e.spent) banner.toast(t('city.toast.torchSpent'), 'info', 2800);
+      if (e.spent) banner.toast(t('city.toast.torchSpent'), 'info', 2800, 'bulb');
       break;
     case 'refused':
-      banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400);
+      banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400, 'bulb');
       break;
     case 'starving':
       banner.toast(t('city.toast.starving'), 'bad', 3600);
@@ -614,7 +614,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'dusk':
       tip('city.dusk', 'city.tip.dusk');
-      banner.show(t('city.dusk.title'), t(e.soon > 60 ? 'city.dusk.two' : 'city.dusk.half'), 'alarm', 5200);
+      banner.show(t('city.dusk.title'), t(e.soon > 60 ? 'city.dusk.two' : 'city.dusk.half'), 'alarm', 5200, 'moon');
       sound.chime();
       break;
     case 'night':
@@ -623,6 +623,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
         t(e.on ? 'city.night.sub' : 'city.dawn.sub'),
         e.on ? 'alarm' : 'routine',
         5200,
+        e.on ? 'moon' : 'sun',
       );
       sound.setScene(e.on ? 'outdoorNight' : 'outdoorDay');
       break;
@@ -632,7 +633,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt') tip('city.thrown', 'city.tip.thrown');
       break;
     case 'cantMake':
-      banner.toast(t(`city.toast.cant.${e.why}` as Key), 'info', 2400);
+      banner.toast(t(`city.toast.cant.${e.why}` as Key), 'info', 2400, 'bulb');
       break;
     case 'broke':
       sound.dud();
@@ -644,7 +645,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'barred':
       sound.stow(false);
       if (e.on && e.shelter) {
-        banner.show(t('city.shelter.title'), t('city.shelter.sub'), 'routine', 5200);
+        banner.show(t('city.shelter.title'), t('city.shelter.sub'), 'routine', 5200, 'home');
         sound.chime();
       } else banner.toast(t(e.on ? 'city.toast.barred' : 'city.toast.unbarred'), 'good', 2400);
       save(r);
@@ -677,7 +678,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'note':
       sound.pickup();
-      banner.toast(t('city.toast.note'), 'info', 3000);
+      banner.toast(t('city.toast.note'), 'info', 3000, 'bulb');
       break;
     case 'fixed':
       sound.chime();
@@ -690,7 +691,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       cityHud.say(t(`city.say.${e.beat}` as Key));
       break;
     case 'act':
-      banner.show(t('city.act.n', { n: e.act }), t(`city.act.${e.act}` as Key), 'routine', 4200);
+      banner.show(t('city.act.n', { n: e.act }), t(`city.act.${e.act}` as Key), 'routine', 4200, 'book');
       save(r);
       break;
     case 'scouted':
@@ -703,13 +704,13 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'ready':
       if (e.on) {
         sound.sting();
-        banner.show(t(`city.ready.${e.way}.title` as Key), t(`city.ready.${e.way}.sub` as Key), 'alarm', 6000);
-      } else banner.show(t('city.ready.off.title'), t('city.ready.off.sub'), 'alarm', 5200);
+        banner.show(t(`city.ready.${e.way}.title` as Key), t(`city.ready.${e.way}.sub` as Key), 'alarm', 6000, 'flag');
+      } else banner.show(t('city.ready.off.title'), t('city.ready.off.sub'), 'alarm', 5200, 'flag');
       save(r);
       break;
     case 'gates':
       sound.gateShut();
-      banner.show(t('city.gates.title'), t('city.gates.sub'), 'routine', 5200);
+      banner.show(t('city.gates.title'), t('city.gates.sub'), 'routine', 5200, 'shield');
       break;
     case 'breach':
       sound.dud();
@@ -761,7 +762,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       }
       play.acc = 0;
       sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
-      banner.show(t('city.fell.title'), t('city.fell.sub'), 'alarm', 5200);
+      banner.show(t('city.fell.title'), t('city.fell.sub'), 'alarm', 5200, 'heart');
       save(r);
       break;
     default:

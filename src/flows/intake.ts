@@ -19,16 +19,16 @@ function clearOfPanel() {
 /**
  * The Intake (P16): make (or remake) your prisoner over the title's picture, kept on this
  * device. `first`: before a first game; skipping keeps the plain jumpsuit and doesn't ask again;
- * Escape then means "not now": false, back to the title.
+ * Escape then means "not now": false, back to the title. `tag`: the line over its heading, when it isn't a prison's.
  */
-export async function intakeFlow(first = false): Promise<boolean> {
+export async function intakeFlow(first = false, tag?: string): Promise<boolean> {
   const start = readPrisoner() ?? DEFAULT_PRISONER;
   view.previewTurn = 0;
   view.setPreview(start);
   document.body.classList.add('intake-on');
   const shown = showIntake(
     start,
-    { unlocked: unlockedCosmetics(), first, onChange: (p) => view.setPreview(p), onTurn: (r) => (view.previewTurn += r) },
+    { unlocked: unlockedCosmetics(), first, tag, onChange: (p) => view.setPreview(p), onTurn: (r) => (view.previewTurn += r) },
     click,
   );
   // The panel's size follows the part shown: the picture follows the panel.

@@ -264,7 +264,9 @@ export function soundStory(c: City) {
   });
   // (A save from before the story, or one started again: what lies in furniture already searched is found, or it never could be.)
   c.story.things.forEach((sp, k) => {
-    if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined && !shut(c, k)) s.kit |= 1 << k;
+    // (2.57: never what the armoury keeps under key. Its desk opened in vain, then the key had: a save and a load handed it over
+    // unsaid; it is found on opening the desk again, as it is without the save.)
+    if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined && !LOCKED.includes(THINGS[k])) s.kit |= 1 << k;
   });
   c.story.notes.forEach((sp, n) => {
     if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined) s.notes |= 1 << n;

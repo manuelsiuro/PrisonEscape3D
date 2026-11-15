@@ -1,0 +1,6 @@
+16 cities, 144 districts: every building wears a face of its own (127 different), 638 wall tiles a district all the city's
+windows and roofs' things: 1172 pieces a district on walls only, 25392 triangles at most
+street furniture a district: 63.7 lamps, 14.0 signals, 11.9 hydrants, on bare pavement, clear of doors and gates
+city furniture: armchair, bed, crate, rackShed, rackShop, table, till, ward, each within its tiles
+streets painted: 2684 marks a district (1930 at least), on the map, the same each time
+the metro's tunnel keeps the prisons' walls

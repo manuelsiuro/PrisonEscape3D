@@ -55,6 +55,14 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 
 - By hand (§2): touch on a real phone, a real pad, a real phone's speed in a busy district at night,
   the French read by a native speaker, its sounds listened to.
+- From the full review of 2.56 (2026-11-14), the user's to decide (measured in the history's 2.57 entry):
+  the crowbar and the bolt cutters are found and traded for but do nothing (the design's locked doors
+  and fence shortcuts); boards on one door make every night safe (0 bites in 72 nights); the metro is
+  the hardest way out, the boat the easiest; stew and the medkit give little more than their parts;
+  raw fish at 4 health kills (a Hardcore city lost); the boat's engine, once in, can't be taken back.
+- The look, not done in 2.57: a checkpoint's own model at each gate (a booth, a boom, blocks); a few
+  lights of the living at night; a city picture behind the mode's entry cards; found clothes.
+- French: the city says "vous", the shared pause and sleep lines "tu".
 
 ## 5. Upkeep
 

@@ -243,11 +243,14 @@ export class CityPockets {
             const parts = r.from
               .map(
                 ([id, n]) =>
-                  `<i class="slot filled${have(id) < n ? ' short' : ''}" title="${t(`city.item.${id}` as Key)}"><img src="${iconOf(cityItemNumber(id))}" alt="">${n > 1 ? `<i class="slot-n">${n}</i>` : ''}</i>`,
+                  `<i class="slot filled${have(id) < n ? ' short' : ''}" title="${t(`city.item.${id}` as Key)}"><img src="${iconOf(cityItemNumber(id))}" alt="${t(`city.item.${id}` as Key)}">${n > 1 ? `<i class="slot-n">${n}</i>` : ''}</i>`,
               )
               .join('');
+            // (2.57: what is missing, by name: a touch has no hover to read an icon by.)
+            const short = r.from.filter(([id, n]) => have(id) < n).map(([id]) => t(`city.item.${id}` as Key));
+            const missing = why === 'parts' && short.length ? t('city.make.missing', { what: short.join(', ') }) : '';
             const need = r.bench ? t('city.make.bench') : r.stove ? t('city.make.stove') : '';
-            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-r="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="${why === 'bench' || why === 'stove' ? 'lack' : ''}">${need || useLine(made) || t(`city.kindOf.${cityItem(made)!.kind}` as Key)}</small></span><span class="cr-parts">${parts}</span></button></li>`;
+            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-r="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="${why === 'bench' || why === 'stove' || missing ? 'lack' : ''}">${(why === 'bench' || why === 'stove' ? need : '') || missing || need || useLine(made) || t(`city.kindOf.${cityItem(made)!.kind}` as Key)}</small></span><span class="cr-parts">${parts}</span></button></li>`;
           }).join('')}</ul>`;
       }
     }

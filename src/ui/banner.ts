@@ -15,9 +15,10 @@ export class Banner {
     document.body.append(this.toasts);
   }
 
-  show(title: string, sub: string, kind: 'routine' | 'alarm' = 'routine', ms = 3600) {
+  /** `mark`: an icon of its own (City Escape's: a district's pin, the dusk's moon), in place of the bell or the siren. */
+  show(title: string, sub: string, kind: 'routine' | 'alarm' = 'routine', ms = 3600, mark?: string) {
     this.hide();
-    const el = h('div', `banner ${kind}`, `${icon(kind === 'alarm' ? 'siren' : 'bell', 26)}<div><b></b><span></span></div>`);
+    const el = h('div', `banner ${kind}`, `${icon(mark ?? (kind === 'alarm' ? 'siren' : 'bell'), 26)}<div><b></b><span></span></div>`);
     el.querySelector('b')!.textContent = title;
     el.querySelector('span')!.textContent = sub;
     document.body.append(el);
@@ -37,7 +38,7 @@ export class Banner {
     fadeOut(el, 400);
   }
 
-  toast(text: string, kind: 'bad' | 'good' | 'info' = 'info', ms = 3200) {
+  toast(text: string, kind: 'bad' | 'good' | 'info' = 'info', ms = 3200, mark?: string) {
     // The same line again while it's up (a button tapped twice): it stays longer instead of piling up.
     const last = this.toasts.lastElementChild as HTMLElement | null;
     if (last && last.textContent === text && last.classList.contains(kind) && !last.classList.contains('leaving')) {
@@ -45,7 +46,7 @@ export class Banner {
       this.leaving.set(last, this.leave(last, ms));
       return;
     }
-    const el = h('div', `toast ${kind}`, icon(kind === 'bad' ? 'flame' : kind === 'good' ? 'check' : 'lock', 16));
+    const el = h('div', `toast ${kind}`, icon(mark ?? (kind === 'bad' ? 'flame' : kind === 'good' ? 'check' : 'lock'), 16));
     el.append(text);
     this.toasts.append(el);
     this.leaving.set(el, this.leave(el, ms));

@@ -19,7 +19,15 @@ import { mapXY, objectiveText } from './story';
 
 /** A screen over the game: shown until one of its `[data-c]` buttons is pressed (Escape: `esc`). */
 function modal<T extends string>(html: string, esc: T, focus: string, setup?: (el: HTMLElement) => void): Promise<T> {
-  const el = h('div', 'modal', html);
+  const el = h('div', 'modal city-modal', html);
+  // (2.57: a dialog of its own: named by its heading, the game behind it out of reach of Tab.)
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  const head = el.querySelector('h2');
+  if (head) {
+    head.id ||= 'city-modal-title';
+    el.setAttribute('aria-labelledby', head.id);
+  }
   setup?.(el);
   return new Promise((resolve) => {
     const done = (c: T) => {
@@ -30,6 +38,16 @@ function modal<T extends string>(html: string, esc: T, focus: string, setup?: (e
     const key = (e: KeyboardEvent) => {
       const code = keyCode(e.code);
       if (e.code === 'Escape' || (esc === 'close' && (code === 'KeyM' || code === 'KeyJ') && !e.repeat)) done(esc);
+      if (e.code !== 'Tab') return;
+      // (Tab goes round the card's own buttons.)
+      const stops = [...el.querySelectorAll<HTMLElement>('button:not([disabled]), [tabindex="0"], summary')].filter((b) => b.offsetParent);
+      if (!stops.length) return;
+      const here = stops.indexOf(document.activeElement as HTMLElement);
+      const next = here < 0 ? 0 : (here + (e.shiftKey ? stops.length - 1 : 1)) % stops.length;
+      if (here < 0 || (e.shiftKey ? here === 0 : here === stops.length - 1)) {
+        e.preventDefault();
+        stops[next].focus();
+      }
     };
     addEventListener('keydown', key);
     el.onclick = (e) => {
@@ -164,7 +182,7 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       <h2>${icon('map', 20)}${t('city.map.title')}</h2>
       <div class="city-map-body">
         <div class="city-map-pic"><canvas width="${size}" height="${size}" role="img" aria-label="${t('city.map.title')}"></canvas><ol class="city-map-names" aria-hidden="true">${names}</ol></div>
-        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-person"></i>${t('city.map.person')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
+        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-pile"></i>${t('city.map.pile')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-person"></i>${t('city.map.person')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
       </div>
       <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.map.close')}</button></div>
     </div>`,
@@ -185,7 +203,7 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
           for (let k = 0; k < LANES; k++) {
             if (!gateOpen(plan, d, side, k)) continue;
             const at = laneAt(plan, d, side, k);
-            c.fillStyle = '#f2c230';
+            c.fillStyle = '#dfe7ee';
             if (side === SIDE.E) c.fillRect(ox + MAP_W, oz + at, GAP, ROAD_W);
             else c.fillRect(ox + at, oz + MAP_H, ROAD_W, GAP);
           }
@@ -207,6 +225,17 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
         c.lineTo(hx - 4, hz);
         c.closePath();
         c.fill();
+      }
+      // What lies on the ground (2.57: a fall's pile, a thing dropped): a small square each, in a district walked into.
+      for (const [key, box] of Object.entries(city.state.boxes)) {
+        const m = /^(\d+):g(\d+)$/.exec(key);
+        if (!m || !box.some((st) => st[0]) || ((city.state.visited >> Number(m[1])) & 1) === 0) continue;
+        const { x, y } = mapXY(Number(m[1]), Number(m[2]), GAP);
+        c.fillStyle = '#ff9a5c';
+        c.strokeStyle = '#07090c';
+        c.lineWidth = 1;
+        c.fillRect(x - 2.5, y - 2.5, 5, 5);
+        c.strokeRect(x - 3, y - 3, 6, 6);
       }
       // The survivors known of (Dispatch names them once the radio works; else those met): a dot each.
       city.story.people.forEach((p, k) => {

@@ -11,6 +11,8 @@ import { seeded } from './rand';
 import { canvasTexture } from './canvas';
 import { isOutside } from '../sim/hunt/world';
 import { isCity } from '../city/id';
+import { paintStreets } from '../city/render/streets';
+import { townOf } from '../city/town';
 
 /**
  * Two baked layers over the floors, drawn once per prison on canvases:
@@ -131,6 +133,9 @@ function fingerprint(world: World): string {
     mix(p.w * 16 + p.d);
     mix(p.kind.length);
   }
+  // (A district's paint follows its lots too.)
+  const town = townOf(world);
+  if (town) for (const l of town.lots) mix(l.use.length * 4096 + l.x0 * 64 + l.z0 + town.index * 131071);
   return `${world.def.id}:${world.props.length}:${(h >>> 0).toString(36)}`;
 }
 
@@ -153,6 +158,9 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
   const c = canvas.getContext('2d')!;
   const R = PAINT_RES;
   const kind = (x: number, z: number) => (world.inside(x, z) ? world.ground.kind[z * MAP_W + x] : TILE.EMPTY);
+
+  // (2.57: a district of City Escape paints its own streets.)
+  paintStreets(c, R, world);
 
   // Road: a dashed yellow center line along the ring (an island has no road round it, nor the manhunt's outside, P41; the forest's is a muddy track, 2.36).
   c.fillStyle = 'rgba(242, 194, 48, 0.85)';

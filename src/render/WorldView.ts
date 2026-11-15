@@ -13,6 +13,8 @@ import { stoneCap, TEX } from './textures';
 import { seeded } from './rand';
 import { isOutside } from '../sim/hunt/world';
 import { isCity } from '../city/id';
+import { buildCityWalls, cityDoor, cityFloor } from '../city/render/facades';
+import { cityProp } from '../city/render/cityProps';
 
 /** A cone standing on y (a pine's tier): radius, height, color. */
 const cone = (r: number, h: number, color: number, x: number, y: number) =>
@@ -201,11 +203,13 @@ export class WorldView {
   }
 
   private buildFloors() {
-    const byTex = new Map<keyof typeof TEX, number[]>();
+    const byTex = new Map<THREE.Texture, number[]>();
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
-        const tex = this.floorOf(x, z);
-        if (!tex) continue;
+        const name = this.floorOf(x, z);
+        if (!name) continue;
+        // (2.57: a district of City Escape wears its own streets and pavements.)
+        const tex = cityFloor(this.world, x, z) ?? (TEX[name] as () => THREE.Texture)();
         if (!byTex.has(tex)) byTex.set(tex, []);
         byTex.get(tex)!.push(x, z);
       }
@@ -213,7 +217,7 @@ export class WorldView {
     const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const color = new THREE.Color();
     for (const [tex, cells] of byTex) {
-      const mat = new THREE.MeshStandardMaterial({ map: (TEX[tex] as () => THREE.Texture)(), roughness: 0.95 });
+      const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 });
       const mesh = new THREE.InstancedMesh(geo, mat, cells.length / 2);
       for (let i = 0; i < cells.length / 2; i++) {
         const x = cells[i * 2];
@@ -232,6 +236,9 @@ export class WorldView {
   /** Brick walls (chipped through, they hide: `wallAt`), and reinforced concrete in its own panels, which nothing breaks. */
   private buildWalls() {
     const geo = wallBlock();
+    // (2.57: a district's buildings wear their own walls, each lot its colour: city/render/facades.ts.)
+    const town = buildCityWalls(this.world, geo);
+    if (town) this.group.add(...town.meshes);
     const brickTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
     // Reinforced concrete is concrete on top too: from above, the walls no tool chips read as such (San Pancho's sand all round them).
     // (2.36: the forest's fieldstone wears a cap of its own, its stones lit and shaded as every cap is since session 14.)
@@ -244,7 +251,9 @@ export class WorldView {
       [TILE.REINFORCED, TEX.reinforced(), 0.95],
     ] as const) {
       // (The manhunt's outside: its buildings are houses, HuntView's own; only its prison wall is drawn here.)
-      const cells = kind === TILE.BRICK && isOutside(this.world.def) ? [] : this.cells((k) => k === kind);
+      const all = kind === TILE.BRICK && isOutside(this.world.def) ? [] : this.cells((k) => k === kind);
+      const cells: number[] = [];
+      for (let i = 0; i < all.length; i += 2) if (!town?.taken[all[i + 1] * MAP_W + all[i]]) cells.push(all[i], all[i + 1]);
       if (!cells.length) continue;
       // The side faces' v runs 0..1 up the wall: repeat the texture so courses keep their size.
       const map = tex.clone();
@@ -428,7 +437,13 @@ export class WorldView {
     }
     if (!specs.length) return;
     const frameMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.55, metalness: 0.4 }));
-    const steel = seeThrough(new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 }));
+    // (2.57: a district's leaves are painted, each its own colour over white.)
+    const painted = specs.some((d) => cityDoor(this.world, d.i));
+    const steel = seeThrough(
+      new THREE.MeshStandardMaterial(
+        painted ? { color: 0xffffff, roughness: 0.7, metalness: 0.1 } : { color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 },
+      ),
+    );
     const glassMat = seeThrough(
       new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 }),
     );
@@ -480,7 +495,10 @@ export class WorldView {
         b.mesh.setColorAt(b.n, tint(d.key));
         parts.push([b.mesh, b.n++]);
       } else {
-        band!.setColorAt(s, tint(d.key));
+        // (2.57: a district's doors are painted as what they open on.)
+        const look = cityDoor(this.world, d.i);
+        if (painted) slab!.setColorAt(s, color.setHex(look?.leaf ?? 0x9aa2ad));
+        band!.setColorAt(s, look ? color.setHex(look.band) : tint(d.key));
         parts.push([slab!, s], [band!, s], [glass!, s]);
         s++;
       }
@@ -632,6 +650,9 @@ export class WorldView {
       this.q.setFromAxisAngle(this.up, lamp ? (p.aim * Math.PI) / 4 : [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]);
       const matrix = new THREE.Matrix4().compose(this.pos.set(p.x + p.w / 2, 0, p.z + p.d / 2), this.q, this.one);
       if (lamp && p.heads === 2) return { key: 'lamp:twin', make: () => merge(lampParts(2)), matrix };
+      // (2.57: a district's furniture is a home's, a shop's, a shed's.)
+      const town = cityProp(this.world, p, w, d);
+      if (town) return { ...town, matrix };
       return { key: `${p.kind}:${w}x${d}`, make: () => propGeometry(p.kind, w, d), matrix };
     });
     // Furniture is cut above waist height only: low pieces next to the player stay whole.
@@ -836,6 +857,26 @@ export function riverBeyond(world: World): Array<[number, number, number, number
   if (world.def.theme === 'island' || isOutside(world.def)) return [];
   const water = (x: number, z: number) => world.inside(x, z) && world.ground.base[z * MAP_W + x] === TILE.WATER;
   const out: Array<[number, number, number, number]> = [];
+  // (2.57: the docks of City Escape stand on the sea, not on a canal: the water past the map's edge on its side, and round
+  // that side's two corners, as far as the camera sees.)
+  if (isCity(world.def)) {
+    const SEEN = 16;
+    const most = (line: (k: number) => boolean) => Array.from({ length: MAP_W }, (_, k) => line(k)).filter(Boolean).length > MAP_W / 2;
+    const depth = (row: (k: number, d: number) => boolean) => {
+      let d = 0;
+      while (d < MAP_W / 2 && most((k) => row(k, d))) d++;
+      return d;
+    };
+    const s = depth((k, d) => water(k, MAP_H - 1 - d));
+    const n = depth((k, d) => water(k, d));
+    const w = depth((k, d) => water(d, k));
+    const e = depth((k, d) => water(MAP_W - 1 - d, k));
+    if (s) out.push([-SEEN, MAP_H, MAP_W + SEEN, MAP_H + SEEN], [-SEEN, MAP_H - s, 0, MAP_H], [MAP_W, MAP_H - s, MAP_W + SEEN, MAP_H]);
+    else if (n) out.push([-SEEN, -SEEN, MAP_W + SEEN, 0], [-SEEN, 0, 0, n], [MAP_W, 0, MAP_W + SEEN, n]);
+    else if (w) out.push([-SEEN, -SEEN, 0, MAP_H + SEEN], [0, -SEEN, w, 0], [0, MAP_H, w, MAP_H + SEEN]);
+    else if (e) out.push([MAP_W, -SEEN, MAP_W + SEEN, MAP_H + SEEN], [MAP_W - e, -SEEN, MAP_W, 0], [MAP_W - e, MAP_H, MAP_W, MAP_H + SEEN]);
+    return out;
+  }
   const FAR = 40;
   const runs = (along: (i: number) => boolean, n: number, put: (a: number, b: number) => void) => {
     for (let i = 0; i < n; i++) {
