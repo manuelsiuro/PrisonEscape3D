@@ -18,7 +18,19 @@ import { BLOW } from '../content/dead';
 import { CITY_RECIPES, recipeParts } from '../content/recipes';
 import { noise, places, populate, stepDead, strike, type Zed } from './dead';
 import { districtWorld } from './world';
-import { cutCode, cutSpots, freshTools, lockedDoors, soundCuts, soundTools, TOOLS, withCuts, type CutSpot } from './tools';
+import {
+  clothesSpot,
+  cutCode,
+  cutSpots,
+  foundClothes,
+  freshTools,
+  lockedDoors,
+  soundCuts,
+  soundTools,
+  TOOLS,
+  withCuts,
+  type CutSpot,
+} from './tools';
 import type { Beat } from '../content/story';
 import {
   castOff,
@@ -192,6 +204,8 @@ export interface CityState {
   locks: number;
   forced: Record<string, number[]>;
   cuts: number[];
+  // 2.59, optional on load: what the player wears (0: the prison's orange; 1: clothes found).
+  outfit: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -261,6 +275,8 @@ export type CityEvent =
   /** 2.58: a locked door being forced or a fence being cut (the work begun); a building forced open; a fence cut through (the district is put up again). */
   | { type: 'forcing'; what: 'lock' | 'fence' }
   | { type: 'casting' }
+  /** 2.59: somebody's clothes found and put on. */
+  | { type: 'clothes' }
   | { type: 'forced'; tile: number }
   | { type: 'cut'; tile: number }
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
@@ -344,6 +360,11 @@ export class City {
     this.look();
   }
 
+  /** 2.59: the furniture of the start's district the clothes lie in (-1: none). */
+  private wardrobe: number | null = null;
+  get clothes(): number {
+    return (this.wardrobe ??= clothesSpot(this));
+  }
   /** Where the story's things lie (worked out when first asked). */
   private places: StoryPlaces | null = null;
   get story(): StoryPlaces {
@@ -875,7 +896,10 @@ export class City {
     this.events.push({ type: 'open', key, found: this.box().filter((st) => st[0]).length, first });
     if (car) {
       if (fresh) carOpened(this, Number(key.slice(1)));
-    } else if (!key.startsWith('g')) storyFound(this, Number(key));
+    } else if (!key.startsWith('g')) {
+      storyFound(this, Number(key));
+      foundClothes(this, Number(key));
+    }
   }
   private close() {
     if (!this.state.open) return;
@@ -1372,6 +1396,8 @@ export function loadCity(snap: unknown): City | null {
     const cuts = city.state.cuts.length;
     soundCuts(city);
     if (city.state.cuts.length !== cuts) city.reenter();
+    // (2.59: the clothes' furniture searched before they lay there, an older save: found.)
+    if (city.clothes >= 0 && city.state.boxes[`${city.plan.start}:${city.clothes}`] !== undefined) city.state.outfit = 1;
     // (The dead as the save had them, if it's sound; else the district's put down afresh.)
     city.soundBars(before);
     city.rebar();

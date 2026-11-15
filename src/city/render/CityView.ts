@@ -41,6 +41,30 @@ function put(out: Part[], parts: Part[], x: number, z: number, angle = 0) {
   }
 }
 
+/** A checkpoint (2.59), about the middle of its street on the border's line (x along the border): the street's two tiles left clear. */
+function checkpoint(blocks: readonly number[]): Part[] {
+  const OLIVE = 0x74856a;
+  const DARK = 0x39443a;
+  const CONCRETE = 0xb9b4a8;
+  const WHITE = 0xe6e3da;
+  const RED = 0xc23a30;
+  // The boom, raised: red and white lengths leaning up over the street from its post.
+  const boom = Array.from({ length: 7 }, (_, k) => box(0.1, 0.36, 0.1, k % 2 ? WHITE : RED, 1.42 - 0.13 * k, 0.95 + 0.33 * k, 0));
+  return [
+    // The sentry box: a window band, a roof with an overhang.
+    box(0.92, 0.8, 0.92, OLIVE, -1.5, 0, 0),
+    box(0.94, 0.4, 0.94, 0x9fc3cf, -1.5, 0.8, 0),
+    box(0.92, 0.5, 0.92, OLIVE, -1.5, 1.2, 0),
+    box(1.14, 0.1, 1.14, DARK, -1.5, 1.7, 0),
+    // The boom's post and its weight.
+    box(0.2, 1.05, 0.2, DARK, 1.5, 0, 0),
+    box(0.34, 0.3, 0.24, DARK, 1.72, 0.8, 0),
+    ...boom,
+    // Concrete blocks beyond, a yellow band along their tops.
+    ...blocks.flatMap((x) => [box(0.94, 0.55, 0.6, CONCRETE, x, 0, 0), box(0.94, 0.06, 0.6, 0xe0b23a, x, 0.55, 0)]),
+  ];
+}
+
 /** A car two tiles long, nose along +z from the middle of its first tile; `burnt`: a shell, its roof down. */
 function car(paint: number, burnt: boolean, flat: number): Part[] {
   const body = burnt ? BURNT : paint;
@@ -383,6 +407,7 @@ export class CityView {
       this.locks,
       this.marks,
       this.folk,
+      this.hearths,
       this.live.group,
       this.lights,
       this.alarms,
@@ -690,6 +715,7 @@ export class CityView {
     // (After dark the rooms keep a thinner shade: no moon gets in, and a pale floor doesn't outshine the street. 2.57.)
     this.gloomMat.opacity = night ? GLOOM_NIGHT : GLOOM;
     this.poolMat.opacity = night ? 0.3 : 0.06;
+    this.hearthMat.opacity = night ? (still ? 0.55 : 0.55 + Math.sin(time * 7) * 0.04) : 0.1;
     this.hotMat.opacity = night ? 0.3 : 0.08;
     for (const f of this.flames) {
       if (f.userData.kind === 2) continue;
@@ -715,6 +741,8 @@ export class CityView {
   setPeople(list: ReadonlyArray<{ who: number; tile: number }>, facing: (tile: number) => number) {
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();
+    disposeTree(this.hearths, () => false, new Set([kitMaterial, this.hearthMat]));
+    this.hearths.clear();
     for (const p of list) {
       const mesh = new THREE.Mesh(merge(folk(p.who)), kitMaterial);
       mesh.castShadow = true;
@@ -722,8 +750,42 @@ export class CityView {
       mesh.position.set((p.tile % W) + 0.5, 0, Math.floor(p.tile / W) + 0.5);
       mesh.rotation.y = facing(p.tile);
       this.folk.add(mesh);
+      // (2.59: the living keep a light: a storm lantern at their feet, its flame and a warm pool on the floor after dark.
+      // To look at only: the rules' light is what the player lights.)
+      const x = (p.tile % W) + 0.84;
+      const z = Math.floor(p.tile / W) + 0.84;
+      const lamp = new THREE.Mesh(
+        merge([
+          box(0.2, 0.05, 0.2, 0x3a3f46, 0, 0, 0),
+          box(0.14, 0.2, 0.14, 0xf1d9a0, 0, 0.05, 0),
+          box(0.2, 0.04, 0.2, 0x3a3f46, 0, 0.25, 0),
+          box(0.04, 0.1, 0.04, 0x3a3f46, 0, 0.29, 0),
+        ]),
+        kitMaterial,
+      );
+      lamp.position.set(x, 0, z);
+      // (Warm at the lantern, nothing at its rim: the pool fades out, no edge to it.)
+      const tint = (g: THREE.BufferGeometry, rim: boolean) => {
+        const n = g.getAttribute('position').count;
+        const rgb = new Float32Array(n * 3);
+        for (let k = 0; k < n; k++) if (!rim || k === 0) rgb.set([1, 0.46, 0.1], k * 3);
+        return g.setAttribute('color', new THREE.BufferAttribute(rgb, 3));
+      };
+      const flame = new THREE.Mesh(tint(new THREE.BoxGeometry(0.1, 0.14, 0.1), false), this.hearthMat);
+      flame.position.set(x, 0.15, z);
+      const pool = new THREE.Mesh(tint(new THREE.CircleGeometry(3.2, 32).rotateX(-Math.PI / 2), true), this.hearthMat);
+      pool.position.set(x, 0.03, z);
+      this.hearths.add(lamp, flame, pool);
     }
   }
+  private readonly hearths = new THREE.Group();
+  private readonly hearthMat = new THREE.MeshBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
 
   /** A survivor turns to the player when they come near (within four tiles). */
   facePeople(x: number, z: number) {
@@ -977,6 +1039,22 @@ export class CityView {
           at: g.side === SIDE.N || g.side === SIDE.S ? (g.tiles[0] % W) + 1 : Math.floor(g.tiles[0] / W) + 1,
         })),
       );
+    // (2.59) A checkpoint's own things at each crossing the army left (not where the player cut the fence): a sentry box and
+    // a raised boom on the fence's line either side of the street, concrete blocks beyond them. All on the border's own tiles.
+    for (const g of district.gates) {
+      if (g.cut) continue;
+      const mx = ((g.tiles[0] % W) + (g.tiles[1] % W)) / 2 + 0.5;
+      const mz = (Math.floor(g.tiles[0] / W) + Math.floor(g.tiles[1] / W)) / 2 + 0.5;
+      // (A block only where the fence runs on: not out on the docks' sea, not on the city's wall.)
+      const along = g.side === SIDE.N || g.side === SIDE.S;
+      const blocks = [-2.5, 2.5].filter((o) => {
+        const x = Math.floor(along ? mx + o : mx);
+        const z = Math.floor(along ? mz : mz + o);
+        return district.rows[z]?.[x] === '=';
+      });
+      // (Turned a quarter, the model's x runs down the map: its far block is the one up it.)
+      put(parts, checkpoint(along ? blocks : blocks.map((o) => -o)), mx, mz, along ? 0 : Math.PI / 2);
+    }
     // Each street that crosses a border runs on past it, between the roofs.
     for (const g of district.gates) {
       const along = ((g.tiles[0] % W) + (g.tiles[1] % W)) / 2 + 0.5;
@@ -1013,6 +1091,8 @@ export class CityView {
     this.marks.clear();
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();
+    disposeTree(this.hearths, () => false, new Set([kitMaterial, this.hearthMat]));
+    this.hearths.clear();
     this.live.clear();
     this.setLights([], new Uint8Array(0), new Uint8Array(0));
     this.setAlarms([]);

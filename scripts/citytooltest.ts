@@ -591,4 +591,56 @@ const print = (c: City) => fnv1a(JSON.stringify(c.snapshot().state));
   );
 }
 
+// ------------------------------------------------------------------ somebody's clothes (2.59)
+{
+  let found = 0;
+  for (let seed = 1; seed <= SEEDS; seed++) {
+    const c = new City(seed);
+    c.peace = true;
+    const k = c.clothes;
+    if (k < 0) continue;
+    const dist = c.district;
+    const p = dist.props[k];
+    const lot = dist.lotAt[p.z * W + p.x] - 1;
+    const from = reach(c, c.tile);
+    check(
+      dist.lots[lot]?.use === 'house' &&
+        !c.lockedLot(lot) &&
+        c
+          .tilesOf(k)
+          .flatMap(around)
+          .some((i) => from[i]),
+      `seed ${seed}: the clothes can't be got to (a ${dist.lots[lot]?.use})`,
+    );
+    check(
+      !c.story.things.some((sp) => sp.district === c.state.district && sp.prop === k),
+      `seed ${seed}: the clothes lie with a thing of the story's`,
+    );
+    stand(
+      c,
+      c
+        .tilesOf(k)
+        .flatMap(around)
+        .find((i) => from[i])!,
+    );
+    const by = c.tilesOf(k).find((i) => around(i).includes(c.tile))!;
+    c.state.player.facing = nearestDir((by % W) - (c.tile % W), Math.floor(by / W) - Math.floor(c.tile / W));
+    const ev = work(c, 40);
+    check(
+      ev.some((e) => e.type === 'clothes') && c.state.outfit === 1,
+      `seed ${seed}: the clothes' furniture searched: ${ev.map((e) => e.type).join()}`,
+    );
+    const snap = JSON.parse(JSON.stringify(c.snapshot()));
+    check(loadCity(JSON.parse(JSON.stringify(snap)))!.state.outfit === 1, `seed ${seed}: a save forgets the clothes`);
+    // (A save from before them, that furniture already searched: found.)
+    delete snap.state.outfit;
+    check(loadCity(snap)!.state.outfit === 1, `seed ${seed}: an older save with the furniture searched has no clothes`);
+    found++;
+  }
+  check(found >= SEEDS - 1, `the clothes lie in ${found} of ${SEEDS} cities`);
+  say(
+    `somebody's clothes: in a house of the start's district in ${found} of ${SEEDS} cities (never chained, never the story's furniture), put on when found, kept by a save; nothing in the rules reads them`,
+  );
+}
+
 console.log(lines.join('\n'));

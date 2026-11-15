@@ -8,20 +8,29 @@ import { ask } from '../../ui/screens/ask';
 import { deleteCitySave, readCitySave } from '../save';
 import { City, loadCity } from '../sim/City';
 import { showCityMenu, showNewCity } from '../ui/screens';
-import { runCity } from './city';
+import { cityBackdrop, clearBackdrop, runCity } from './city';
 
 /**
  * City Escape from the title (C1): the city in progress carried on, or a new one made (how death
  * is taken chosen first; the Intake before a first game, as the prisons ask it). Back when the
  * player leaves the city for the title.
  */
+/** The city shown behind the cards when none is in progress. */
+const BACKDROP_SEED = 20261115;
+
 export async function cityFlow(): Promise<void> {
+  // (2.59: a city behind these cards, not the prison the title stood over: the one in progress, or one to look at.)
+  const first = readCitySave();
+  await showLoading();
+  const behind = (first && loadCity(first.snap)) || new City(BACKDROP_SEED);
+  cityBackdrop(behind);
+  hideLoading();
   for (;;) {
     const saved = readCitySave();
     const choice = saved
       ? await showCityMenu(`${saved.name} · ${t('city.hud.day', { n: saved.day })} · ${hhmm(saved.minute)}`, click)
       : 'new';
-    if (choice === 'back') return;
+    if (choice === 'back') return clearBackdrop();
     let city: City | null = null;
     if (choice === 'continue' && saved) {
       await showLoading();
@@ -36,7 +45,7 @@ export async function cityFlow(): Promise<void> {
       const mode = await showNewCity(click);
       if (mode === null) {
         if (saved) continue;
-        return;
+        return clearBackdrop();
       }
       // A new city replaces the one in progress: asked first.
       if (saved && !(await ask(t('city.newSure', { where: saved.name, n: saved.day }), t('city.newYes'), click))) continue;
