@@ -223,5 +223,5 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 - City Escape: weapons thrown or shot (v2.55.0)
 - City Escape: the metro's tunnel, walked (v2.56.0)
-- City Escape: the light's line follows the language (v2.56.1, not released yet)
-- City Escape: a town's own look, its cards and panels gone over (v2.57.0, not released yet)
+- City Escape: the light's line follows the language (v2.56.1, out with the next release)
+- City Escape: a town's own look, its cards and panels gone over (v2.57.1, not released yet)
