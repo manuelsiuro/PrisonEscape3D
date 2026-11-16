@@ -45,7 +45,7 @@ Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the
 - [Inmates, talk and crews](decisions/people.md): cells and visitors, opinion, followers, speech, the crew, the pet rat (6 rows)
 - [Free time and games](decisions/free-time.md): the side games, cards, long games, penalties, the tattoo parlour, stage nights (6 rows)
 - [Modes, progress and saves](decisions/modes.md): saving, the campaign's unlocks, achievements, lessons, the Daily Escape, replays (7 rows)
-- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (40 rows)
+- [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (47 rows)
 
 Any further conflict found during the build is added to its area's file in the same commit.
 
@@ -215,7 +215,8 @@ Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the game
 6,145 text keys in English and French, 101 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
 2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
-metro's tunnel).
+metro's tunnel), and its full review's findings from 2.57 to 2.60 (a town's own look, chained buildings and fences cut,
+a sleeper's door, the endings re-tuned, checkpoints, clothes, the fight and three more kinds of the dead).
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

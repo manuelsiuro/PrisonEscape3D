@@ -18,10 +18,12 @@ from `docs/POLISH.md`, the record of what's been done, the user's choices and th
 updating it.
 
 **City Escape** (`src/city/`, v2.46 on) is a second mode with its own simulation, generator and screens,
-built in four stages (on the title since 2.49; its parked items since, to 2.56, the metro's tunnel a
-tenth map): its design is `docs/source/city_escape_design.md`, its roadmap and the
-seams it shares with the prison game `docs/phases/10-city-escape.md`. It adds nothing to the prisons'
-lists or state; dev builds expose `window.__city()`.
+built in four stages (on the title since 2.49; its parked items and its reviews' findings since, to 2.60):
+its design is `docs/source/city_escape_design.md`, its rules where they depart from it
+`docs/decisions/city.md`, its roadmap, its code and the seams it shares with the prison game
+`docs/phases/10-city-escape.md`. It adds nothing to the prisons' lists or state; dev builds expose
+`window.__city()`; its tests are `city*test` with their bots in `citybots.ts`, its help pictures
+`scripts/dev/cityshot.ts` (`docs/TOOLS.md`). Polishing it: the `polish-gameplay` skill's City Escape part.
 
 Rules that matter every time:
 - **The simulation is deterministic** (`src/sim/`): fixed 20 Hz steps, integer positions
@@ -72,11 +74,15 @@ Rules that matter every time:
   Its picture is a `SHOTS` entry in `scripts/dev/helpshot.ts` (`docs/TOOLS.md`), retaken when what
   it shows changes.
 - **Release**: build, `npm run check` green (gate on the exit code, never `npm test | tail`) → commit →
-  `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
-  background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
+  merge → `npm version patch|minor --no-git-tag-version` → **`npm run check` again at the new version**
+  (`docstest` reads it: 2.57.0 was tagged on a check run before the bump, failed on CI and was never
+  deployed) → commit "X.Y.Z", `git tag vX.Y.Z` → `git push --follow-tags origin main` (and the tag) →
+  `npm run released` in the background (waits for CI on HEAD, then the live bundle; exits 1 on a failed
+  run or a timeout, 2 when the API is rate-limited and the site can't prove it; run it again later).
   Read what it printed, not only its exit code: a timeout with the deploy still running is checked
   by fetching the live bundle as `released.sh` does, not with a hand-written polling loop.
   Once it's live, `npm run docs:released` (the history entry marked released, the status line, the map
-  viewer), then commit and push what it lists.
+  viewer), then commit and push what it lists (with other work under way on a branch: in a
+  `git worktree` of `main`, `node_modules` linked, `git add docs assets/maps` only, never `-A`).
 - **Bots pass what people fail**: lessons and minigames are also played by hand in the browser
   at the three sizes before a release.

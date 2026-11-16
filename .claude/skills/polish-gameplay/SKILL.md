@@ -1,6 +1,6 @@
 ---
 name: polish-gameplay
-description: "The steps for reworking, polishing, rebalancing or reviewing a game mechanic in Prison Escape 3D so that nothing is forgotten and the quality holds: what's already been done, every place a mechanic reaches, rule traps, proof in all six prisons, playing it in the browser, an independent review, and finishing with evidence. Use it whenever the user wants a part of the gameplay improved, changed or checked (the canteen, showers, roll call, jobs, fights, guards, a minigame, an animation, a rule, a cost), asks for a full or AAA review of a feature, or says something 'should be polished', even if they don't say 'skill' or 'polish'. Use it before writing code."
+description: "The steps for reworking, polishing, rebalancing or reviewing a game mechanic in Prison Escape 3D so that nothing is forgotten and the quality holds: what's already been done, every place a mechanic reaches, rule traps, proof in all six prisons, playing it in the browser, an independent review, and finishing with evidence. Use it whenever the user wants a part of the gameplay improved, changed or checked (the canteen, showers, roll call, jobs, fights, guards, a minigame, an animation, a rule, a cost), asks for a full or AAA review of a feature, or says something 'should be polished', even if they don't say 'skill' or 'polish'. It covers City Escape too (its rules, its dead, its look: the part 7b). Use it before writing code."
 ---
 
 # Polishing a mechanic
@@ -166,6 +166,40 @@ Spawn one reviewer with the diff and the project's rules, not your conclusions, 
 with a scenario for each (and its own folder for probes: one shared scratchpad let its results overwrite a long measurement's). It reads what you stopped seeing. Confirm each finding before fixing it, and re-run
 the checks after: fixes introduce bugs too.
 
+## 7b. When the mechanic is City Escape's
+
+The same steps, with the city's own places (2.57 to 2.60 were run this way). Its record is `docs/decisions/city.md`
+(the rules as they stand), `docs/phases/10-city-escape.md` (the code) and its two rows in `docs/POLISH.md`; "all six
+prisons" becomes "twelve cities or more, every district" (a city is made from a seed: `new City(seed)`).
+
+- **Rules** live in `src/city/sim` and `content`, deterministic as the prisons'. There is no replay log: only saves
+  matter. A new state field goes in the last `fresh…()` (`tools.ts`), is made sound in its `sound…()` before the
+  city is built, and a rule that must not appear in a city under way is switched by a field the save lacks
+  (`state.locks`). What the story's places or the loot are drawn from must not change for a saved city: a new
+  placement gets a stream of its own and reads `lockedLots`, never the other way round.
+- **Draws from `state.rng` move every bot from that step on.** Keep the first day and night free of new draws, and
+  read each moved snapshot: fingerprints alone (a new field), or counts too.
+- **The bots are chaotic.** One sample of 40 cities moved the scavenger's falls by 0.7 a week for a change that
+  moved nothing on the next 60. Measure old and new in one script (`city.state.locks = 0; city.reenter()` gives the
+  old city), on two sets of seeds, before believing or dismissing a difference. The endings alone: the `quester`
+  put at the way out with the kit, a bat and three bandages, night 1 and night 5, 16 to 32 cities.
+- **A test that places its own dead** steps the city once first (`state.arrive` puts the district's own down on the
+  first step and would replace them), stands the player well inside the district (a street's end on the border is
+  a checkpoint: they cross), and steers with `nearestDir`, never a facing by number.
+- **The picture** is `CityView` and its parts, handed frames by `play/city.ts`: nothing there reads the simulation,
+  and nothing the player may walk through is thicker than a post. An effect begun by an event is stamped with
+  `performance.now()`, the frame draws with the frame's own time, a moment earlier: never drop what is "not born
+  yet". A new CSS animation's name is searched for first (2.60's pulse took the meters' `city-low`).
+- **Deaths, falls and ends inside an action**: after anything that can hurt the player (`hurt`, a burst), the step
+  returns on `state.over` or a `dead` event before the dead move (Hardcore died twice in one step).
+- **In the browser**: `window.__city()`, `scripts/dev/citygo.ts`, `cityshot.ts` (`docs/TOOLS.md`); an edit reloads
+  the page to the title (title → City Escape → Continue). A new city is needed to see what only new cities have.
+  Check the action button's label at 915×412 against Hit: a long name lies over it.
+- **How to play**: the City tab's topics; a list's lines must match its `listIcons`; a picture is a `SHOTS` entry of
+  `cityshot.ts`.
+- **The reviewer** gets the diff and the rules, its own probe folder, and is told not to touch files, snapshots or
+  the browser. Every pass of 2.58 to 2.60 had real findings from it.
+
 ## 8. Finish with evidence
 
 Before saying it's done, fill this in your report. Each line gets what proves it (a test's output, what was
@@ -190,4 +224,5 @@ Then, with the work, the documents as the `docs-upkeep` skill says (each fact on
 - The history entry and its index line, the area's `docs/decisions/` row, the pass's row in `docs/phases/8-polish.md`, the counts. `docs/FEATURES.md` and the README's counts if they moved.
 - Anything general the pass taught goes in `web-sim-game-playbook`; anything about this project's method, here.
 
-Commit, merge and release only when the user asks, following `CLAUDE.md`'s Release rule, with `npm run released` in the background.
+Commit, merge and release only when the user asks, following `CLAUDE.md`'s Release rule (the check run again after the
+version bump, before the tag), with `npm run released` in the background.
