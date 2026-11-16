@@ -20,7 +20,7 @@ Write each fact once, in its home, and link to it from elsewhere. Don't retell i
 | How a dev tool is used (the screen sweep, the render probes, the map viewer, the help pictures) | `docs/TOOLS.md` | `CLAUDE.md`, beyond a one-line pointer |
 | A rule of the game where the design document (GDD) is overruled or silent, as it stands now | its area's file in `docs/decisions/` (one row) | the story of how it was found |
 | What a release changed, what its review found, what was accepted | its entry in the latest `docs/history/` file, and its line in `docs/HISTORY.md` | the user's choices again in full |
-| A polish pass: the user's choices and the known limits | its area's row in `docs/POLISH.md` (at most 1,500 characters from 2.35) | what was built, measured or fixed |
+| A polish pass: the user's choices and the known limits | its area's row in `docs/POLISH.md` (at most 1,500 characters from 2.35; City Escape has two rows, its rules and its look) | what was built, measured or fixed |
 | A polish pass: the snapshots it moved and why | its row in `docs/phases/8-polish.md` | |
 | A new roadmap of phases | a new file in `docs/phases/` (`9-<name>.md`), listed in `PLAN.md` §4 | |
 | The status, the counts | `PLAN.md` §8 (`docstest` checks the counts against the game) | |
@@ -64,8 +64,10 @@ the measurements go in the history entry.
   It marks the entry released, sets the status line and restamps the map viewer, then prints the commit to make.
   An entry merged under its own version and never released on its own (a fix that rides in the next release)
   is relabelled before the bump ("out with the next release"): once the version passes it, `docstest` refuses
-  its "not released yet" (2.57.0's CI failed on it and nothing was deployed). After `npm version`, run
-  `npm test -- docstest` before the push.
+  its "not released yet" (2.57.0's CI failed on it and nothing was deployed). `CLAUDE.md`'s Release rule has the
+  whole check run again at the new version, before the tag. With work under way on a branch, the docs step is done
+  in a `git worktree` of `main` and the branch then takes `main` under it (the index line in `HISTORY.md` conflicts:
+  keep `main`'s released line and the branch's new one).
 - **Memory:** a note only for what the repo can't tell (the user's preferences, a decision's why when it isn't
   written down), with a pointer to the doc that has the rest.
 

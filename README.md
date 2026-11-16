@@ -101,7 +101,7 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
     <td width="72%">
       <ul>
         <li><b>A tutorial of 69 short lessons</b> in five chapters (First steps, Getting by, Prison life, Ways out, The prisons), each played in a real prison scene.</li>
-        <li><b>How to play</b>: 67 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
+        <li><b>How to play</b>: 81 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
         <li><b>144 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>

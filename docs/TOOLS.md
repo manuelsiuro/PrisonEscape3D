@@ -62,9 +62,18 @@ the story to a way out). The story's places are `city.story` (`things`, `notes`,
 now `objectives(city)` (`city/sim/story.ts`); the survivors are `city.story.people` (`COP.ACT` beside one, `COP.TRADE` with `who * 4 + swap`); a test puts the player in another district with the private
 `city.enter(d)` and a new `state.player` (in the browser, `window.__cityStage()` then puts the district up). The metro's tunnel (2.56) is place 9
 (`TUNNEL`): `city.descend()` puts the player at the foot of its stairs, `city.tunnel` has its `start`, `end` and `way`. What burns is
-`state.lights` (2.52) and `state.fires` (2.55), a car's alarm `state.alarm` (2.54); `city.dim` is the tiles dark by day (2.53). The help's ten city pictures are staged by
+`state.lights` (2.52) and `state.fires` (2.55), a car's alarm `state.alarm` (2.54); `city.dim` is the tiles dark by day (2.53). The help's eleven city pictures are staged by
 `scripts/dev/cityshot.ts` (`stage('cityDead')` in a city open at 1040 × 480, the page's screenshot, then
 `cwebp -q 80 -resize 1040 480`).
+`stage` empties the pockets and puts the bus's orange back on (the pictures are of the first days); a scene on a street
+picks its tiles well inside the district (a street's end on the border is a checkpoint: stood on, the player crosses).
+Since 2.58: `city.locked` (1 on a chained door), `city.fences` (where the fence can be cut), `state.forced`, `state.cuts`,
+`state.outfit`; a city without chains for a comparison: `city.state.locks = 0; city.reenter()`. Since 2.60 a `Zed` has a
+`kind` 0 to 5 (`content/dead.ts`'s `ZKIND`, `kindStats`); every death goes through `putDown` and is said as `fell`.
+A test or a probe that places its own dead steps the city once first (`state.arrive`: the district's own are put down on
+the first step in it, and would replace them). A balance question is measured on 40 cities or more, twice on different
+seeds, the old rule beside the new in one script (the scavenger's falls a week moved by 0.7 on one sample of 40 and by
+nothing on the next 60).
 To look at a district: `scripts/dev/citygo.ts` (`go('downtown', 0.7)`, or `go('suburbs', 1.6, 22 * 60, 'house')`
 for an hour and the inside of a building; nobody about, the game held still).
 A page that falls to the background pauses the city (as the prisons do): a script that finds `.paused` true

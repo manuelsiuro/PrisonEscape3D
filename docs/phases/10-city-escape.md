@@ -30,10 +30,13 @@ src/city/
   ui/                 its HUD, the map's painter, pockets.ts (pockets, a thing's card, the box, the Make panel,
                       the action and hit buttons), its screens (new city, the story card, the city's map, the
                       journal, both ends), story.ts (an objective in words)
+                      Since: light.ts (2.52), cars.ts (2.54), ranged.ts (2.55), tools.ts (2.58: chained
+                      buildings, fences cut, clothes); render/ facades.ts, streets.ts, streetThings.ts,
+                      cityProps.ts, cityTex.ts (2.57), horde.ts (2.60: the dead); gen/tunnel.ts (2.56)
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
   record.ts           the ways out taken and the feats, in a slot of their own (read by the city's menu)
 src/styles/46-city.css
-scripts/citygentest.ts, citytest.ts, citysurvivetest.ts, cityzedtest.ts, citymaketest.ts, citystorytest.ts, citylandmarktest.ts, citymusictest.ts, citylighttest.ts;
+scripts/city*test.ts (fifteen: `PLAN.md` §6 says what each proves);
 citybots.ts (the scavenger, the quester)
 ```
 
