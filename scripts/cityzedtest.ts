@@ -6,7 +6,7 @@
  */
 import { check } from './assert';
 import { scavenger } from './citybots';
-import { BLOW, DEAD } from '../src/city/content/dead';
+import { BLEED, BLOW, DEAD } from '../src/city/content/dead';
 import { cityItemNumber } from '../src/city/content/items';
 import { City, COP, loadCity } from '../src/city/sim/City';
 import { danger, quota, ZED, type Zed } from '../src/city/sim/dead';
@@ -151,7 +151,11 @@ const toMinute = (c: City, minute: number) => {
     `the first bite ${first - inReach} steps after it's in reach, its lunge is ${DEAD.lunge}`,
   );
   check(
-    Math.abs(c.state.health - (100 - bites * DEAD.bite)) <= 2 && bites >= 5 && bites <= 8,
+    // (2.61: and what the bites bled meanwhile, a point every BLEED.every steps.)
+    c.state.health <= 100 - bites * DEAD.bite + 2 &&
+      c.state.health >= 100 - bites * DEAD.bite - Math.ceil(200 / BLEED.every) - 2 &&
+      bites >= 5 &&
+      bites <= 8,
     `${bites} bites in ten seconds, health ${c.state.health}`,
   );
   const walked = (() => {
@@ -183,24 +187,39 @@ const toMinute = (c: City, minute: number) => {
     let swings = 0;
     let bites = 0;
     let heard = false;
-    for (let k = 0; k < 400 && c.state.zeds.length > 1; k++) {
+    // (2.61: knocked down without an edge, then finished where it lies; the one that heard is kept out of it.)
+    let knocked = -1;
+    for (let k = 0; k < 400 && !c.state.kills; k++) {
       c.step(command(0, COP.HIT));
       for (const e of c.events) {
         if (e.type === 'swing' && e.hit) swings++;
+        if (e.type === 'swing' && e.down) knocked = swings;
         if (e.type === 'bite') bites++;
       }
       if (c.state.zeds.at(-1)!.mode !== ZED.IDLE) heard = true;
+      c.state.zeds.at(-1)!.body = zedAt(run[7]).body;
     }
-    return { swings, bites, heard, kills: c.state.kills, energy: c.state.energy };
+    return { swings, bites, heard, knocked, kills: c.state.kills, energy: c.state.energy };
   };
   const fists = fight(null);
   const bat = fight('bat');
-  check(fists.kills === 1 && fists.swings === Math.ceil(DEAD.health / BLOW.fists), `fists: ${fists.swings} blows, ${fists.kills} down`);
-  check(bat.kills === 1 && bat.swings === Math.ceil(DEAD.health / (BLOW.fists + 12)), `a bat: ${bat.swings} blows`);
+  const knife = fight('knife');
+  check(
+    fists.kills === 1 && fists.knocked === Math.ceil(DEAD.health / BLOW.fists) && fists.swings === fists.knocked + 1,
+    `fists: down in ${fists.knocked} blows, finished in ${fists.swings}`,
+  );
+  check(
+    bat.kills === 1 && bat.knocked === Math.ceil(DEAD.health / (BLOW.fists + 12)) && bat.swings === bat.knocked + 1,
+    `a bat: ${bat.knocked}, ${bat.swings} blows`,
+  );
+  check(
+    knife.kills === 1 && knife.knocked < 0 && knife.swings === Math.ceil(DEAD.health / (BLOW.fists + 16)),
+    `a knife: ${knife.swings} blows`,
+  );
   check(fists.bites === 0, `one alone, struck as it comes, never lands a bite: ${fists.bites}`);
   check(fists.heard, 'the fight is heard by one seven tiles off, out of sight');
   say(
-    `the blow: ${fists.swings} with fists to put one down, ${bat.swings} with a bat; one alone, struck as it comes, lands no bite; the noise carries ${BLOW.noise} tiles`,
+    `the blow: ${fists.knocked} with fists to knock one down and one more to finish it, ${bat.knocked} and one with a bat, ${knife.swings} with a knife (an edge: never only knocked down); one alone, struck as it comes, lands no bite; the noise carries ${BLOW.noise} tiles`,
   );
 }
 

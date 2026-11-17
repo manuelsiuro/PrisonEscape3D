@@ -7,12 +7,12 @@
  * district and kind (render/horde.ts, a pure choice).
  */
 import { check } from './assert';
-import { BLOATER, BLOW, CRAWLER, DEAD, kindStats, SCREAMER, ZKIND } from '../src/city/content/dead';
+import { BLEED, BLOATER, BLOW, CRAWLER, DEAD, DOWN, kindStats, SCREAMER, ZKIND } from '../src/city/content/dead';
 import { KINDS } from '../src/city/content/districts';
 import { cityItemNumber } from '../src/city/content/items';
 import { lookOf } from '../src/city/render/horde';
 import { City, COP, loadCity, type CityEvent } from '../src/city/sim/City';
-import { populate, ZED, type Zed } from '../src/city/sim/dead';
+import { populate, putDown, ZED, type Zed } from '../src/city/sim/dead';
 import { nearestDir } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
 import { bodyAt } from '../src/sim/systems/movement';
@@ -126,9 +126,22 @@ function quiet(seed: number, day: number, minute: number): City {
   idle.body.facing = nearestDir(dir === 1 ? 1 : 0, dir === W ? 1 : 0);
   const ev = step(c, command(0, COP.HIT));
   const swing = ev.find((e) => e.type === 'swing');
+  // (2.61: a bat has no edge: down in one, finished by the next.)
   check(
-    swing?.type === 'swing' && swing.hit && swing.unseen === true && swing.dead && ev.some((e) => e.type === 'fell') && c.state.kills === 1,
+    swing?.type === 'swing' &&
+      swing.hit &&
+      swing.unseen === true &&
+      !!swing.down &&
+      !swing.dead &&
+      (idle.down ?? 0) >= DOWN.steps - 1 &&
+      c.state.kills === 0,
     `a bat on a shambler that isn't after anyone: ${JSON.stringify(swing)}`,
+  );
+  c.state.swung = -9999;
+  const fin = step(c, command(0, COP.HIT));
+  check(
+    fin.some((e) => e.type === 'fell') && c.state.kills === 1 && !c.state.zeds.length,
+    `the blow on one lying down: ${fin.map((e) => e.type).join()}`,
   );
   c.state.zeds = [];
   c.state.swung = -9999;
@@ -145,7 +158,7 @@ function quiet(seed: number, day: number, minute: number): City {
     `a bat on one that is after them: ${JSON.stringify(swing2)}`,
   );
   say(
-    `a blow on one that isn't after anyone does ${BLOW.unseen} times the harm (a bat puts a shambler down in one; two when it is after them); every one put down is said with where, which way and what it was`,
+    `a blow on one that isn't after anyone does ${BLOW.unseen} times the harm (a bat knocks a shambler down in one; two when it is after them); every one put down is said with where, which way and what it was`,
   );
 }
 
@@ -296,6 +309,185 @@ function quiet(seed: number, day: number, minute: number): City {
   say(
     `a bloater: put down, it bursts ${(BLOATER.within / UNIT).toFixed(1)} tiles round: ${BLOATER.harm} to the player, ${BLOATER.dead} to each of the dead there (those that fall to it are put down, another bloater bursting in its turn); from a spear's length the player is clear of it`,
   );
+}
+
+// ------------------------------------------------------------------ knocked down, finished (2.61)
+{
+  // Left lying, it gets up after them with a third of its health; a blow meanwhile finishes it.
+  const c = quiet(3, 2, 12 * 60);
+  c.peace = false;
+  const { at, dir } = street(c, 8);
+  c.state.inv[0] = [cityItemNumber('bat'), 40];
+  stand(c, at, at + dir);
+  const z = zed(c, at + dir, 0, ZED.CHASE);
+  z.seen = c.state.step;
+  z.hp = 5;
+  const ev = step(c, command(0, COP.HIT));
+  check(ev.some((e) => e.type === 'swing' && e.down) && z.down === DOWN.steps - 1 && z.hp === 0, `knocked down: ${z.down}, ${z.hp}`);
+  // (Lying: no bite, whoever stands over it, and nothing it hears moves it.)
+  c.state.player.facing = nearestDir(dir === 1 ? -1 : 0, dir === W ? -1 : 0);
+  let bit = 0;
+  let rose = -1;
+  for (let k = 0; k < DOWN.steps + 5 && rose < 0; k++) {
+    const e = step(c);
+    bit += e.filter((x) => x.type === 'bite').length;
+    if (e.some((x) => x.type === 'rose')) rose = k + 1;
+    if (k === 20) c.state.health = 100;
+  }
+  check(
+    bit === 0 && rose === DOWN.steps - 1 && z.hp === Math.ceil(DEAD.health * DOWN.rise) && z.mode === ZED.CHASE,
+    `left lying: ${bit} bites, up after ${rose} steps with ${z.hp} health, ${z.mode}`,
+  );
+  // The blow goes to one on its feet before one lying, then finishes the one lying.
+  const d = quiet(3, 2, 12 * 60);
+  d.peace = false;
+  const r = street(d, 8);
+  stand(d, r.at, r.at + r.dir);
+  const lying = zed(d, r.at + r.dir, 0, ZED.CHASE);
+  Object.assign(lying, { hp: 0, down: 100 });
+  const up = zed(d, r.at + r.dir, 0, ZED.CHASE);
+  up.body.x += r.dir === 1 ? 200 : 0;
+  up.body.z += r.dir === W ? 200 : 0;
+  up.seen = d.state.step;
+  step(d, command(0, COP.HIT));
+  check(
+    up.hp < DEAD.health && d.state.zeds.includes(lying),
+    `with one lying and one standing, the blow lands on the one standing: ${up.hp}`,
+  );
+  // A blade, a crawler, a bloater: never only knocked down.
+  const once = (weapon: string | null, kind: number) => {
+    const e = quiet(3, 5, 12 * 60);
+    const s = street(e, 8);
+    if (weapon) e.state.inv[0] = [cityItemNumber(weapon), 40];
+    stand(e, s.at, s.at + s.dir);
+    const one = zed(e, s.at + s.dir, kind, ZED.CHASE);
+    one.seen = e.state.step;
+    one.hp = 1;
+    const ev = step(e, command(0, COP.HIT));
+    return ev.some((x) => x.type === 'fell') && !e.state.zeds.includes(one);
+  };
+  check(once('knife', 0) && once('cleaver', 0) && once('spear', 0), 'a blade puts one down for good');
+  check(once(null, ZKIND.CRAWLER) && once('bat', ZKIND.CRAWLER), 'a crawler is finished by fists or a bat');
+  check(!once('bat', 0) && !once(null, ZKIND.BRUTE), 'a shambler and a brute are only knocked down by a bat or fists');
+  // (The review's.) One lying is after nobody: the pack goes past it, and a bolt is for one on its feet.
+  const pk = quiet(3, 2, 12 * 60);
+  pk.peace = false;
+  const q = street(pk, 8);
+  stand(pk, q.at, q.at + q.dir);
+  Object.assign(zed(pk, q.at + 2 * q.dir, 0, ZED.IDLE), { hp: 0, down: DOWN.steps });
+  const behind = zed(pk, q.at + 4 * q.dir, 0, ZED.CHASE);
+  behind.seen = pk.state.step;
+  let reached = -1;
+  for (let k = 0; k < 150 && reached < 0; k++) {
+    if (step(pk).some((e) => e.type === 'bite')) reached = k;
+    pk.state.health = 100;
+  }
+  check(reached >= 0, `one after the player behind a body lying in the street: ${reached < 0 ? 'held up' : `bites at step ${reached}`}`);
+  const bw = quiet(3, 5, 12 * 60);
+  const b2 = street(bw, 8);
+  bw.state.inv[0] = [cityItemNumber('crossbow'), 30];
+  bw.state.inv[1] = [cityItemNumber('bolt'), 5];
+  stand(bw, b2.at, b2.at + b2.dir);
+  const low = zed(bw, b2.at + 2 * b2.dir, 0, ZED.IDLE);
+  Object.assign(low, { hp: 0, down: DOWN.steps });
+  const runner = zed(bw, b2.at + 5 * b2.dir, ZKIND.RUNNER, ZED.CHASE);
+  runner.seen = bw.state.step;
+  step(bw, command(0, COP.HIT));
+  check(
+    runner.hp < kindStats(ZKIND.RUNNER).health && bw.state.zeds.includes(low),
+    `a bolt with one lying nearer: the runner has ${runner.hp}`,
+  );
+  // A save keeps one lying; one damaged loads as the district's.
+  const snap = JSON.parse(JSON.stringify(d.snapshot()));
+  check(
+    loadCity(JSON.parse(JSON.stringify(snap)))!.state.zeds.some((x) => x.down === lying.down),
+    'a save forgets one lying',
+  );
+  snap.state.zeds[0].down = DOWN.steps + 50;
+  check(!loadCity(snap)!.state.zeds.some((x) => (x.down ?? 0) > DOWN.steps), 'a damaged knockdown is kept');
+  say(
+    `knocked down (fists, a bat, a nailed bat): it lies ${DOWN.steps / 20} seconds and bites nobody, then gets up after them with ${Math.round(DOWN.rise * 100)}% of its health; any blow finishes it there, one on its feet taken first; a knife, a cleaver or a spear puts it down for good, and a crawler or a bloater is never only knocked down; a save keeps it`,
+  );
+}
+
+// ------------------------------------------------------------------ bleeding (2.61)
+{
+  const c = quiet(3, 2, 12 * 60);
+  c.peace = false;
+  const { at, dir } = street(c, 8);
+  stand(c, at, at + dir);
+  const z = zed(c, at + dir, 0, ZED.CHASE);
+  Object.assign(z, { seen: c.state.step, near: DEAD.lunge });
+  let bitten = -1;
+  for (let k = 0; k < 40 && bitten < 0; k++) if (step(c).some((e) => e.type === 'bite')) bitten = k;
+  const per = Math.ceil(DEAD.bite / BLEED.per);
+  check(bitten >= 0 && c.state.bleed === per && c.state.health === 100 - DEAD.bite, `a bite bleeds ${c.state.bleed}`);
+  c.state.zeds = [];
+  // (A point every BLEED.every steps, until it has bled what it had.)
+  // (Hungry enough that nothing mends meanwhile.)
+  c.state.hunger = 40_000;
+  const h0 = c.state.health;
+  const b0 = c.state.bleed;
+  for (let k = 0; k < BLEED.every * (per + 2); k++) step(c);
+  check(b0 > 0 && c.state.health === h0 - b0 && c.state.bleed === 0, `bled ${h0 - c.state.health} of ${b0}`);
+  // Never the last point: at 3 health with 16 to bleed, it stops at 1.
+  c.state.health = 3;
+  c.state.bleed = BLEED.most;
+  for (let k = 0; k < BLEED.every * 20; k++) step(c);
+  check(
+    c.state.health === 1 && c.state.bleed === 0 && !c.state.deaths,
+    `bleeding alone: health ${c.state.health}, ${c.state.deaths} falls`,
+  );
+  // A bandage stops it, at full health too; pills don't.
+  c.state.health = 100;
+  c.state.energy = 100_000;
+  c.state.bleed = 9;
+  c.state.inv[0] = [cityItemNumber('pills'), 1];
+  c.state.inv[1] = [cityItemNumber('bandage'), 1];
+  const pills = step(c, command(0, COP.USE, 0));
+  check(pills.some((e) => e.type === 'refused') && c.state.bleed === 9, 'pills at full health, bleeding, are refused');
+  const band = step(c, command(0, COP.USE, 1));
+  check(
+    band.some((e) => e.type === 'bleeding' && !e.on && e.why === 'bandaged') && c.state.bleed === 0 && !c.state.inv[1][0],
+    `a bandage on a wound at full health: ${band.map((e) => e.type).join()}`,
+  );
+  // A fall stops it.
+  c.state.bleed = 8;
+  c.hurt(200);
+  check(c.state.bleed === 0, 'a fall leaves nothing bleeding');
+  say(
+    `a bite bleeds half its harm more, a point every ${BLEED.every / 20} seconds (${BLEED.most} at the most), never the last point; a bandage or a medkit stops it, at full health too (pills don't); a fall leaves nothing bleeding`,
+  );
+}
+
+// ------------------------------------------------------------------ a burst stops at a wall (2.61)
+{
+  // A bloater put down on one side of a wall, the player on the other, within its reach: unhurt.
+  let tried = 0;
+  let clear = 0;
+  for (let seed = 1; seed <= 6 && tried < 6; seed++) {
+    const c = quiet(seed, 5, 12 * 60);
+    for (let t = W * 5; t < W * (W - 5) && tried < 6; t++) {
+      if (!c.grid[t]) continue;
+      const a = t - 1;
+      const b = t + 1;
+      if (c.grid[a] || c.grid[b] || c.district.rows[Math.floor(t / W)][t % W] !== '#') continue;
+      tried++;
+      stand(c, a, b);
+      c.state.zeds = [];
+      const bl = zed(c, b, ZKIND.BLOATER);
+      const by = zed(c, a + W, 0);
+      by.body = bodyAt(a % W, Math.floor(a / W));
+      by.body.z += 600;
+      const hp = by.hp;
+      putDown(c, [bl]);
+      const burst = c.events.find((e) => e.type === 'burst');
+      if (burst?.type === 'burst' && burst.harm === 0 && c.state.health === 100 && by.hp === hp) clear++;
+      t += 400;
+    }
+  }
+  check(tried >= 4 && clear === tried, `a burst behind a wall: ${clear} of ${tried} clear`);
+  say(`a bloater's burst stops at a wall: ${clear} of ${tried} walls, the player and the dead on the far side unhurt`);
 }
 
 // ------------------------------------------------------------------ saves, and the looks

@@ -377,6 +377,38 @@
   animation: city-low 1s ease-in-out infinite;
 }
 
+/* 2.61: a wound bleeding: a drop beside the health meter, falling again and again, and the bar's end darkened. */
+.cm-drip {
+  display: none;
+  color: var(--city-health-70);
+  line-height: 0;
+}
+
+.cm-health.bleeding .cm-drip {
+  display: block;
+  animation: city-drip 1.2s ease-in infinite;
+}
+
+.cm-health.bleeding > i > i {
+  background: linear-gradient(90deg, currentcolor 70%, var(--city-wall-55));
+}
+
+@keyframes city-drip {
+  0% {
+    transform: translateY(-3px);
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+}
+
 @keyframes city-low {
   50% {
     background: rgba(var(--city-you-65-rgb), 0.55);
@@ -632,6 +664,10 @@
   .city-bitten.low {
     animation: none;
     opacity: 0.4;
+  }
+
+  .cm-health.bleeding .cm-drip {
+    animation: none;
   }
 }
 

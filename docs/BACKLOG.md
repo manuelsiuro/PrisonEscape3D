@@ -54,12 +54,13 @@ The second mode is whole and on the title (`phases/10-city-escape.md`, v2.46.0 t
 everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 
 - By hand (§2): touch on a real phone, a real pad, a real phone's speed in a busy district at night
-  (since 2.60 the dead are a dozen draws, not one), the French read by a native speaker, its sounds
-  listened to (2.60 added five), a whole city played to its end by a person under the rules of 2.58 to 2.60.
-- Nothing of the 2.56 review or of the look is left open after 2.60. Known and left: the survivors'
-  lantern pool reads pale under the night's tint; the Intake reached from a first new city shows the
-  prisoner in the street over the city (not looked at); a bloater's burst is by distance alone (no wall
-  stops it); five of the eleven looks of the dead were not seen in the browser.
+  (since 2.60 the dead are a dozen draws, not one; 2.61's fog on the boat's night), the French read by
+  a native speaker, its sounds listened to (2.60 added five), a whole city played to its end by a
+  person under the rules of 2.58 to 2.61.
+- Nothing of the design is left unbuilt after 2.61, nor of the reviews or the look. Known and left: with
+  a bat the endings' last nights are harder (night 5, 32 cities: the helicopter 30 to 25, the metro 27 to
+  21; the user may want the holds shortened); a pane is cut away with its wall round the player, so the
+  window being broken isn't seen from where it is broken.
 
 ## 5. Upkeep
 

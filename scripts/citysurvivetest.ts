@@ -67,6 +67,8 @@ for (let seed = 1; seed <= SEEDS; seed++) {
       `  ${seed}: ${tally.searched} searched, ${tally.found} things (${tally.food} food), ${tally.eaten} eaten, ${tally.slept} times asleep, ${tally.kills} put down, ${tally.bites} bites, fell ${tally.deaths}, ${fnv1a(JSON.stringify(c.snapshot().state))}`,
     );
 }
+// (2.61: bites bleed and the dead only go down to a blunt blow, the blow followed through: on 100 cities 1.82 falls a week before,
+// 1.91 after; these ten read 2.3 and 1.6.)
 check(total.deaths <= SEEDS * 2.5, `the scavenger fell ${total.deaths} times in ${SEEDS} weeks: the dead are too many`);
 check(total.kills >= SEEDS * 5, `the scavenger put down only ${total.kills} of the dead in ${SEEDS} weeks: where are they?`);
 say(

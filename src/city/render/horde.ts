@@ -26,6 +26,9 @@ export interface DeadFrame {
   kind: number;
   /** Its health left (0–1). */
   hp: number;
+  /** 2.61: knocked down (0 on its feet, 1 flat on its back), and stirring, about to get up. */
+  down: number;
+  stir: boolean;
 }
 
 /** The most of the dead drawn at once. */
@@ -292,7 +295,7 @@ export class Horde {
   }
 
   /** One of them put down (tiles): its body topples back and sinks away. A bloater leaves nothing: it burst. */
-  fell(x: number, z: number, facing: number, kind: number, seed: number, time: number) {
+  fell(x: number, z: number, facing: number, kind: number, seed: number, time: number, lying = false) {
     if (kind === 5) return;
     const mesh = new THREE.Mesh(this.figure(lookOf(kind, seed, this.place, this.start), seed), kitMaterial);
     mesh.castShadow = true;
@@ -301,7 +304,8 @@ export class Horde {
     mesh.rotation.y = facing;
     mesh.scale.setScalar(SIZE[kind] ?? 1.3);
     this.group.add(mesh);
-    this.fallen.push({ mesh, born: time, crawler: kind === 3 });
+    // (2.61: finished where it lay knocked down: already over, it only sinks.)
+    this.fallen.push({ mesh, born: lying ? time - 0.34 : time, crawler: kind === 3 });
     // (Never a heap of them: the oldest goes.)
     if (this.fallen.length > 24) this.group.remove(this.fallen.shift()!.mesh);
   }
@@ -320,13 +324,16 @@ export class Horde {
       const beat = still ? 0 : time * (d.chasing ? (kind === 1 ? 10 : 7) : 4) + d.seed;
       const step = d.moving ? Math.sin(beat) : 0;
       // (Its lean: thrown back by a blow, into the chase, a runner low, a crawler flat on its front.)
-      const lean = crawl ? 1.32 : d.reeling ? -0.5 : d.chasing ? (kind === 1 ? 0.42 : 0.2) : 0.08;
+      const flat = d.down;
+      const twitch = d.stir && !still ? Math.sin(time * 23 + d.seed) * 0.06 : 0;
+      const lean =
+        flat > 0 ? -flat * (Math.PI / 2 - 0.06) + twitch : crawl ? 1.32 : d.reeling ? -0.5 : d.chasing ? (kind === 1 ? 0.42 : 0.2) : 0.08;
       const sway =
         (d.moving ? Math.sin(beat) * (kind === 5 ? 0.16 : kind === 2 ? 0.12 : 0.09) : Math.sin(beat * 0.4) * 0.03) * (crawl ? 0.4 : 1);
       this.e.set(lean, d.facing, sway, 'YXZ');
       this.q.setFromEuler(this.e);
       const s = SIZE[kind] ?? 1.3;
-      this.at.set(d.x, crawl ? 0.2 : d.moving ? Math.abs(Math.sin(beat)) * 0.05 : 0, d.z);
+      this.at.set(d.x, flat > 0 ? 0.14 * flat : crawl ? 0.2 : d.moving ? Math.abs(Math.sin(beat)) * 0.05 : 0, d.z);
       // (A runner is slight.)
       this.size.set(kind === 1 ? s * 0.88 : s, s, s);
       this.base.compose(this.at, this.q, this.size);
@@ -346,7 +353,7 @@ export class Horde {
       const stride = crawl ? 0.12 : kind === 1 ? 0.9 : kind === 5 ? 0.35 : 0.55;
       for (let side = 0; side < 2; side++) {
         const sign = side ? 1 : -1;
-        this.j.makeRotationX(crawl ? Math.sin(beat + side * 2) * stride : step * stride * sign);
+        this.j.makeRotationX(flat > 0 ? twitch * 2 * sign : crawl ? Math.sin(beat + side * 2) * stride : step * stride * sign);
         this.j.setPosition(0.11 * sign, 0.46, 0);
         this.m.multiplyMatrices(this.base, this.j);
         this.legs.setMatrixAt(k * 2 + side, this.m);
@@ -354,25 +361,28 @@ export class Horde {
         this.legs.setColorAt(k * 2 + side, this.paint);
         // The arms (0: held out ahead; more: hanging; less: raised).
         const claw = still ? 0 : Math.sin(beat * 1.3 + side * 2.1);
-        const arm = crawl
-          ? -1.25 + Math.sin(beat + side * Math.PI) * (d.moving ? 0.5 : 0.1)
-          : d.reeling
-            ? -1.15
-            : d.lunging
-              ? -0.35 + claw * 0.25
-              : kind === 1 && d.chasing
-                ? 2.1 + claw * 0.2
-                : kind === 4 && d.chasing
-                  ? -0.9 + claw * 0.5
-                  : kind === 5
-                    ? 1.05 + claw * 0.06
-                    : kind === 2
-                      ? (d.chasing ? 0.35 : 0.95) + claw * 0.12
-                      : d.chasing
-                        ? claw * 0.18
-                        : d.moving
-                          ? 0.55 + claw * 0.1
-                          : 1.2 + claw * 0.04;
+        const arm =
+          flat > 0
+            ? 1.1 * (1 - flat) + 2.4 * flat + twitch * 4 * sign
+            : crawl
+              ? -1.25 + Math.sin(beat + side * Math.PI) * (d.moving ? 0.5 : 0.1)
+              : d.reeling
+                ? -1.15
+                : d.lunging
+                  ? -0.35 + claw * 0.25
+                  : kind === 1 && d.chasing
+                    ? 2.1 + claw * 0.2
+                    : kind === 4 && d.chasing
+                      ? -0.9 + claw * 0.5
+                      : kind === 5
+                        ? 1.05 + claw * 0.06
+                        : kind === 2
+                          ? (d.chasing ? 0.35 : 0.95) + claw * 0.12
+                          : d.chasing
+                            ? claw * 0.18
+                            : d.moving
+                              ? 0.55 + claw * 0.1
+                              : 1.2 + claw * 0.04;
         const wide = kind === 2 ? 0.4 : kind === 5 ? 0.38 : 0.29;
         this.j.makeRotationX(arm);
         this.j.setPosition(wide * sign, kind === 5 ? 0.9 : 0.86, 0);

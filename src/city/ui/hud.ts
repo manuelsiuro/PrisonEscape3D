@@ -21,6 +21,8 @@ export interface CityHudState {
   z: number;
   /** Health, hunger and energy (0–1). */
   health: number;
+  /** 2.61: a wound bleeding (the health meter drips). */
+  bleeding: boolean;
   hunger: number;
   energy: number;
   /** How many of the dead are after the player. */
@@ -54,6 +56,7 @@ export class CityHud {
   private shownRev = -1;
   private shownLight = '?';
   private shownChasing = -1;
+  private shownBleeding: boolean | null = null;
   private meters: Record<string, number> = {};
   private shownNight: boolean | null = null;
   private lang = '';
@@ -79,7 +82,7 @@ export class CityHud {
         <button class="icon-btn hud-pause city-pause">${icon('pause')}</button>
       </div>
       <div class="hud-row city-meters">
-        <span class="city-meter cm-health" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('heart', 14)}<i><i></i></i></span>
+        <span class="city-meter cm-health" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('heart', 14)}<i><i></i></i><b class="cm-drip" aria-hidden="true">${icon('drop', 12)}</b></span>
         <span class="city-meter cm-hunger" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('utensils', 14)}<i><i></i></i></span>
         <span class="city-meter cm-energy" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('bolt', 14)}<i><i></i></i></span>
         <span class="pill hud-alert city-chased hidden" role="status">${icon('siren', 15)}<span></span></span>
@@ -147,8 +150,9 @@ export class CityHud {
   update(s: CityHudState) {
     if (textStamp() !== this.lang) {
       this.lang = textStamp();
-      // (The light's line is drawn once per state: said again in the new language.)
+      // (The light's line is drawn once per state: said again in the new language; the meter's word for bleeding too.)
       this.shownLight = '?';
+      this.shownBleeding = null;
       this.el.querySelector('.city-pause')!.setAttribute('aria-label', t('hud.pause'));
       this.mapBtn.setAttribute('aria-label', t('city.map.title'));
       this.mapBtn.setAttribute('aria-keyshortcuts', keyLabel('KeyM'));
@@ -175,6 +179,12 @@ export class CityHud {
       el.classList.toggle('low', pct <= 25);
       el.setAttribute('aria-valuenow', String(pct));
       el.setAttribute('aria-label', t(label));
+    }
+    if (s.bleeding !== this.shownBleeding) {
+      this.shownBleeding = s.bleeding;
+      const el = this.el.querySelector<HTMLElement>('.cm-health')!;
+      el.classList.toggle('bleeding', s.bleeding);
+      el.setAttribute('aria-description', s.bleeding ? t('city.meter.bleeding') : '');
     }
     if (s.chasing !== this.shownChasing) {
       this.shownChasing = s.chasing;

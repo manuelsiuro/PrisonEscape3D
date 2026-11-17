@@ -1,7 +1,10 @@
 12 cities, every district put down three times: day 1 and night 1 shamblers only; day 3, 15% crawlers (the dark indoors); night 2, 8% screamers; night 6, 79% shamblers, 10% runners, 1% brutes, 0% crawlers, 6% screamers, 5% bloaters
 what each is made of (health, pace after someone, bite): shamblers 30/126/8, runners 16/168/6, brutes 90/108/14, crawlers 18/92/5, screamers 14/112/4, bloaters 44/92/8; the player walks 184
-a blow on one that isn't after anyone does 2 times the harm (a bat puts a shambler down in one; two when it is after them); every one put down is said with where, which way and what it was
+a blow on one that isn't after anyone does 2 times the harm (a bat knocks a shambler down in one; two when it is after them); every one put down is said with where, which way and what it was
 a crawler: sees 3 tiles, never further; its bite (5) holds a leg 2 seconds (150 units a step against 184)
 a screamer: once as it sees the player, the dead within 12 tiles of them come, those beyond don't
 a bloater: put down, it bursts 1.7 tiles round: 12 to the player, 16 to each of the dead there (those that fall to it are put down, another bloater bursting in its turn); from a spear's length the player is clear of it
+knocked down (fists, a bat, a nailed bat): it lies 8 seconds and bites nobody, then gets up after them with 34% of its health; any blow finishes it there, one on its feet taken first; a knife, a cleaver or a spear puts it down for good, and a crawler or a bloater is never only knocked down; a save keeps it
+a bite bleeds half its harm more, a point every 2 seconds (16 at the most), never the last point; a bandage or a medkit stops it, at full health too (pills don't); a fall leaves nothing bleeding
+a bloater's burst stops at a wall: 6 of 6 walls, the player and the dead on the far side unhurt
 a save keeps every kind and the leg held, and plays on as the live city; in the picture 3 to 5 looks a district by what it is, a brute's, a screamer's and a bloater's their own everywhere, the bus's orange only where the city starts (23 in 200)

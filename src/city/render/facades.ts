@@ -6,7 +6,7 @@ import { MAP_H, MAP_W } from '../../sim/world/grid';
 import { TILE } from '../../sim/world/tiles';
 import type { World } from '../../sim/world/World';
 import { isBuilding, type LotUse } from '../content/districts';
-import { WINDOWED } from '../content/light';
+import { FACE_STYLE, lotHash, lotPanes, type Style } from '../content/windows';
 import type { District, Lot } from '../gen/district';
 import { townOf } from '../town';
 import { CITY_TEX } from './cityTex';
@@ -19,48 +19,43 @@ import { CITY_TEX } from './cityTex';
  * where the rules let the daylight in, boarded or shuttered where they don't), and what stands on a roof's
  * edge. Render only: reads the district, changes nothing; every choice is hashed from the lot's place.
  */
-type Style = 'siding' | 'stucco' | 'metal' | 'panel';
 interface Look {
-  style: Style;
   walls: readonly number[];
   caps: readonly number[];
 }
 const HOME: Look = {
-  style: 'siding',
   walls: [0xe9dfc8, 0xc6d3da, 0xc8d6ba, 0xe3bea9, 0xe6d3a4, 0xcfcac2, 0xd8b3ad, 0xb7c9b6, 0xeee8da],
   caps: [0x935644, 0x687480, 0x7d6048, 0x6c7a60, 0x84483f, 0x625c58],
 };
 const TRADE: Look = {
-  style: 'stucco',
   walls: [0xe6dcc8, 0xdccba6, 0xd2d8d6, 0xdcbca2, 0xc8d6c8, 0xe2d2b8],
   caps: [0x94503f, 0x3f7d76, 0x8b7748, 0x566a8c, 0x7a5a78, 0x5e7a52],
 };
-const WORK: Look = { style: 'panel', walls: [0xa8b2ba, 0xb6b6ae, 0x98a4b2, 0xbcb2a4], caps: [0x7f858d, 0x8d8a84, 0x6f7781] };
-const SHED: Look = { style: 'metal', walls: [0x94685a, 0x7d8d98, 0x889882, 0xa6a298, 0x8c7f6a], caps: [0x6d737a, 0x776a5f, 0x5f666d] };
+const WORK: Look = { walls: [0xa8b2ba, 0xb6b6ae, 0x98a4b2, 0xbcb2a4], caps: [0x7f858d, 0x8d8a84, 0x6f7781] };
+const SHED: Look = { walls: [0x94685a, 0x7d8d98, 0x889882, 0xa6a298, 0x8c7f6a], caps: [0x6d737a, 0x776a5f, 0x5f666d] };
 const LOOKS: Partial<Record<LotUse, Look>> = {
   house: HOME,
   shop: TRADE,
   office: WORK,
   warehouse: SHED,
   garage: SHED,
-  clinic: { style: 'stucco', walls: [0xe6e8e6], caps: [0x6aa8a2] },
+  clinic: { walls: [0xe6e8e6], caps: [0x6aa8a2] },
   // The landmarks, each in its own colours (their models stand on them: render/landmarks.ts).
-  station: { style: 'metal', walls: [0xe4e0d8], caps: [0xc97c2e] },
-  tower: { style: 'panel', walls: [0x93a3b8], caps: [0x56627a] },
-  factory: { style: 'metal', walls: [0x9a6048], caps: [0x5c5551] },
-  hospital: { style: 'stucco', walls: [0xeceeed], caps: [0xb9c6cb] },
-  boathouse: { style: 'siding', walls: [0xb89466], caps: [0x3f6d88] },
-  rangers: { style: 'siding', walls: [0x8fa474], caps: [0x5a4a36] },
-  mall: { style: 'stucco', walls: [0xe2d8c0], caps: [0x45a096] },
-  police: { style: 'panel', walls: [0x9aa6b8], caps: [0x3f58a0] },
-  metro: { style: 'panel', walls: [0xb6b2a6], caps: [0xb39630] },
+  station: { walls: [0xe4e0d8], caps: [0xc97c2e] },
+  tower: { walls: [0x93a3b8], caps: [0x56627a] },
+  factory: { walls: [0x9a6048], caps: [0x5c5551] },
+  hospital: { walls: [0xeceeed], caps: [0xb9c6cb] },
+  boathouse: { walls: [0xb89466], caps: [0x3f6d88] },
+  rangers: { walls: [0x8fa474], caps: [0x5a4a36] },
+  mall: { walls: [0xe2d8c0], caps: [0x45a096] },
+  police: { walls: [0x9aa6b8], caps: [0x3f58a0] },
+  metro: { walls: [0xb6b2a6], caps: [0xb39630] },
 };
 /** A room's walls inside a building: pale plaster, whatever its outside. */
 const INNER = 0xe4ded2;
 const INNER_CAP = 0xcbc5b9;
 
-const hashOf = (district: District, l: Lot) =>
-  mix32(Math.imul(l.x0 + 1, 73856093) ^ Math.imul(l.z0 + 1, 19349663) ^ Math.imul(district.index + 1, 83492791));
+const hashOf = lotHash;
 
 export interface Facade {
   style: Style;
@@ -76,7 +71,7 @@ export function facadeOf(district: District, lot: number): Facade | null {
   const h = hashOf(district, l);
   const wall = look.walls[h % look.walls.length];
   return {
-    style: look.style,
+    style: FACE_STYLE[l.use]!,
     wall,
     cap: look.caps[(h >>> 8) % look.caps.length],
     trim: new THREE.Color(wall).multiplyScalar(0.55).getHex(),
@@ -250,28 +245,10 @@ export function facadeParts(district: District): Part[] {
     const f = facadeOf(district, k);
     if (!f || !isBuilding(l.use)) return;
     const lh = hashOf(district, l);
-    const light = WINDOWED.includes(l.use);
-    // (A shop's front: wide panes; an office's: a band of glass along it; a shed's: one small pane in three.)
-    const every = f.style === 'metal' ? 3 : 2;
-    const kindAt = (h: number) =>
-      light ? 'glass' : f.style === 'panel' ? (h & 4 ? 'boards' : 'glass') : f.style === 'metal' ? 'glass' : h & 8 ? 'boards' : 'shutter';
-    const face = (x: number, z: number, n: number, angle: number, front: boolean) => {
-      if (!wallAt(x, z)) return;
-      const h = mix32(lh ^ Math.imul(x * 64 + z + 1, 0x9e3779b1));
-      if (f.style === 'panel' && !light) {
-        // (An office: glass all along, a pane in six boarded over.)
-        place(windowParts(h % 6 ? 'band' : 'boards', f.trim, h, false), x, z, angle);
-        return;
-      }
-      if (n % every !== 1) return;
-      place(windowParts(kindAt(h), f.trim, h, front && f.style === 'stucco'), x, z, angle);
-    };
-    // (Corners keep clear: a pane never wraps one.)
-    for (let x = l.x0 + 1; x < l.x1; x++) face(x, l.z1, x - l.x0, 0, true);
-    for (let z = l.z0 + 1; z < l.z1; z++) {
-      face(l.x1, z, z - l.z0, Math.PI / 2, false);
-      face(l.x0, z, z - l.z0, -Math.PI / 2, false);
-    }
+    // (A shop's front: wide panes; an office's: a band of glass along it; a shed's: one small pane in three. Corners keep clear: a
+    // pane never wraps one. Where they are and what fills them: content/windows.ts, which the rules read too.)
+    for (const { x, z, angle, front, look, h } of lotPanes(district, k))
+      place(windowParts(look, f.trim, h, look !== 'band' && front && f.style === 'stucco'), x, z, angle);
     // A shop's fascia: a band of its roof's colour along the top of its front.
     if (f.style === 'stucco') {
       const w = l.x1 - l.x0 + 1;
