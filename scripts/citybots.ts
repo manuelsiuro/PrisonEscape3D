@@ -51,7 +51,7 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
       let fromD = (4 * 1024) ** 2;
       s.zeds.forEach((z, k) => {
         const d = (z.body.x - s.player.x) ** 2 + (z.body.z - s.player.z) ** 2;
-        if (z.mode === 3 && d < fromD) {
+        if (z.mode === 3 && !z.down && d < fromD) {
           fromD = d;
           from = k;
         }
@@ -90,6 +90,11 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
     }
     if (s.health < 60) {
       const k = s.inv.findIndex((st) => (cityItem(st[0])?.use?.health ?? 0) > 5);
+      if (k >= 0) return command(0, COP.USE, k);
+    }
+    // (2.61: a wound bleeding more than a little: a bandage or a medkit on it.)
+    if (s.bleed >= 6) {
+      const k = s.inv.findIndex((st) => cityItem(st[0])?.kind === 'med' && (cityItem(st[0])?.use?.health ?? 0) >= 20);
       if (k >= 0) return command(0, COP.USE, k);
     }
     // Pockets full of what isn't eaten: the first such thing left behind.

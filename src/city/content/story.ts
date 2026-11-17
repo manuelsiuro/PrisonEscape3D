@@ -44,8 +44,13 @@ export const wayOf = (n: number): WayOut | undefined => WAYS[n - 1];
 /** What the story remembers beside the kit (bits). */
 export const FLAG = { ATE: 1, SLEPT: 2, FIXED: 4, KEY: 8 } as const;
 
-/** Notes, logs and signs left about the city: how many (one to a district, the rest anywhere). */
-export const NOTES = 10;
+/**
+ * Notes, logs and signs left about the city: how many (one to a district, the rest anywhere). 2.61: four more after the first ten,
+ * one for each of the others off the bus, in the district of what happened to them (placed apart: `sim/story.ts`'s `busNotes`).
+ */
+export const FIRST_NOTES = 10;
+export const BUS_NOTES: readonly DistrictKind[] = ['park', 'docks', 'hospital', 'precinct'];
+export const NOTES = FIRST_NOTES + BUS_NOTES.length;
 
 /** What Dispatch says, each once, by what brings it (the text: `city.say.<name>`). */
 export const BEATS = [

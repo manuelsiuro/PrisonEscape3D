@@ -10,7 +10,8 @@ import { check } from './assert';
 import { quester } from './citybots';
 import { cityItemNumber } from '../src/city/content/items';
 import { SEARCHED } from '../src/city/content/loot';
-import { BEATS, FLAG, NOTES, STORY, THING_IN, THINGS, WAYS, thingBit } from '../src/city/content/story';
+import { BEATS, BUS_NOTES, FLAG, NOTES, STORY, THING_IN, THINGS, WAYS, thingBit } from '../src/city/content/story';
+import { lockedLots } from '../src/city/sim/tools';
 import { neighbour } from '../src/city/gen/plan';
 import { TUNNEL } from '../src/city/gen/tunnel';
 import { LEVEL } from '../src/city/content/light';
@@ -89,7 +90,7 @@ const ids = (c: City) =>
     const P = c.story;
     const at = `seed ${seed}`;
     const taken = new Set<string>();
-    [...P.things, ...P.notes].forEach((sp, k) => {
+    [...P.things, ...P.notes, ...c.busNotes].forEach((sp, k) => {
       const what = k < THINGS.length ? THINGS[k] : `note ${k - THINGS.length}`;
       const dist = c.districtOf(sp.district);
       const p = dist.props[sp.prop];
@@ -102,6 +103,14 @@ const ids = (c: City) =>
         for (let x = p.x; x < p.x + (p.w ?? 1); x++)
           for (const j of [z * MAP_W + x - 1, z * MAP_W + x + 1, (z - 1) * MAP_W + x, (z + 1) * MAP_W + x]) if (!grid[j]) open = true;
       check(open, `${at}: ${what}'s furniture can't be stood beside`);
+    });
+    // (2.61: the notes about the others off the bus: in their districts, never in a chained building nor the clothes' furniture.)
+    c.busNotes.forEach((sp, n) => {
+      check(c.plan.kinds[sp.district] === BUS_NOTES[n], `${at}: bus note ${n} isn't in the ${BUS_NOTES[n]}`);
+      const dist = c.districtOf(sp.district);
+      const p = dist.props[sp.prop];
+      check(!lockedLots(c, sp.district).includes(dist.lotAt[p.z * MAP_W + p.x] - 1), `${at}: bus note ${n} is behind a chain`);
+      check(!(sp.district === c.plan.start && sp.prop === c.clothes), `${at}: bus note ${n} lies with the clothes`);
     });
     check(P.things[0].district === c.plan.start, `${at}: the radio isn't where the city starts`);
     const near = [0, 1, 2, 3].map((s) => neighbour(c.plan.start, s));
@@ -790,12 +799,12 @@ const ids = (c: City) =>
   const none: CityRecord = { v: 1, wins: [0, 0, 0], best: 0, feats: [] };
   const a = withRun(none, { way: 2, day: 9, hardcore: false, deaths: 2, kills: 12, notes: 4, errands: 3 });
   check(a.fresh.join() === 'boat' && a.record.wins.join() === '0,1,0' && a.record.best === 9, `a first way out: ${a.fresh.join()}`);
-  const b = withRun(a.record, { way: 1, day: 5, hardcore: true, deaths: 0, kills: 44, notes: 10, errands: 8 });
+  const b = withRun(a.record, { way: 1, day: 5, hardcore: true, deaths: 0, kills: 44, notes: NOTES, errands: 8 });
   check(b.fresh.join() === 'heli,hardcore,swift,reader,friend,clean,hunter' && b.record.best === 5, `a second: ${b.fresh.join()}`);
   const d = withRun(b.record, { way: 3, day: 20, hardcore: false, deaths: 1, kills: 0, notes: 0, errands: 0 });
   check(d.fresh.join() === 'metro,three' && d.record.feats.length === 10 && d.record.best === 5, `a third: ${d.fresh.join()}`);
   check(
-    withRun(d.record, { way: 3, day: 2, hardcore: true, deaths: 0, kills: 99, notes: 10, errands: 8 }).fresh.length === 0,
+    withRun(d.record, { way: 3, day: 2, hardcore: true, deaths: 0, kills: 99, notes: NOTES, errands: 8 }).fresh.length === 0,
     'a feat had twice',
   );
   say('the records: a way out counted, the quickest kept, ten feats each had once');

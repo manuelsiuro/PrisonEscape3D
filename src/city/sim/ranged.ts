@@ -9,7 +9,7 @@ import { kindStats } from '../content/dead';
 import { cityItemNumber } from '../content/items';
 import { RANGED } from '../content/ranged';
 import type { City } from './City';
-import { noise, putDown, ZED, type Zed } from './dead';
+import { isDown, noise, putDown, ZED, type Zed } from './dead';
 
 /**
  * Weapons thrown or shot (2.55), a part of the city's simulation. Thrown from the pockets (Use): an
@@ -39,11 +39,13 @@ function ahead(c: City, reach: number, from = 0): number {
   c.state.zeds.forEach((z, k) => {
     const dx = z.body.x - p.x;
     const dz = z.body.z - p.z;
-    const d2 = dx * dx + dz * dz;
-    if (d2 > (reach * UNIT) ** 2 || d2 <= from * from || d2 >= bestD) return;
+    const r2 = dx * dx + dz * dz;
+    // (2.61: one on its feet before one lying knocked down, as the blow does.)
+    const d2 = r2 + (isDown(z) ? 1e12 : 0);
+    if (r2 > (reach * UNIT) ** 2 || r2 <= from * from || d2 >= bestD) return;
     // (Integers only: the cosine's square against the aim's, no root taken.)
     const dot = dx * fx + dz * fz;
-    if (dot <= 0 || dot * dot * RANGED.aimOf < RANGED.aim * d2 * fl2) return;
+    if (dot <= 0 || dot * dot * RANGED.aimOf < RANGED.aim * r2 * fl2) return;
     if (!lineOfSight(c.world, p.x, p.z, z.body.x, z.body.z)) return;
     bestD = d2;
     best = k;

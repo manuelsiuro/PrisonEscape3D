@@ -21,6 +21,8 @@ export interface CityItem {
   reach?: number;
   /** Blows it lasts (C2c): a weapon's count in its pocket is the blows left in it, not how many there are. */
   wear?: number;
+  /** 2.61: a blade or a point: what it puts down stays down (the others' are only knocked down). */
+  edge?: true;
 }
 
 const food = (
@@ -75,10 +77,10 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'torch', kind: 'tool', stack: 1, shape: 'tube', color: 0x2a2f36, accent: 0xf2c230 },
   { id: 'cutters', kind: 'tool', stack: 1, shape: 'cutters', color: 0xd9822b },
   { id: 'bat', kind: 'weapon', stack: 1, shape: 'bat', color: 0xa9824e, attack: 6, wear: 40 },
-  { id: 'knife', kind: 'weapon', stack: 1, shape: 'knife', color: 0xc4cad0, accent: 0x3a2a1c, attack: 8, wear: 30 },
+  { id: 'knife', kind: 'weapon', stack: 1, shape: 'knife', color: 0xc4cad0, accent: 0x3a2a1c, attack: 8, wear: 30, edge: true },
   // C2c: what's made (content/recipes.ts).
   { id: 'nail_bat', kind: 'weapon', stack: 1, shape: 'mace', color: 0xa9824e, accent: 0x9aa1ab, attack: 10, wear: 50 },
-  { id: 'spear', kind: 'weapon', stack: 1, shape: 'broom', color: 0x7c8794, accent: 0xc4cad0, attack: 8, reach: 1, wear: 35 },
+  { id: 'spear', kind: 'weapon', stack: 1, shape: 'broom', color: 0x7c8794, accent: 0xc4cad0, attack: 8, reach: 1, wear: 35, edge: true },
   /** Planks nailed across a street door: one bars one door (and comes back when it's taken down). */
   { id: 'boards', kind: 'tool', stack: 4, shape: 'plank', color: 0x8a6a40, accent: 0x9aa1ab },
   /** A camp stove: carried, it cooks. */
@@ -88,7 +90,7 @@ export const CITY_ITEMS: readonly CityItem[] = [
   food('stew', 'bowl', 0xb5673a, 75, { health: 8, energy: 15 }, 0xe8e2d0),
   // C3b: what the survivors teach.
   { id: 'medkit', kind: 'med', stack: 2, shape: 'pack', color: 0xf0ece2, accent: 0xc24a3a, use: { health: 100 } },
-  { id: 'cleaver', kind: 'weapon', stack: 1, shape: 'knife', color: 0x9aa1ab, accent: 0x5a3320, attack: 14, wear: 60 },
+  { id: 'cleaver', kind: 'weapon', stack: 1, shape: 'knife', color: 0x9aa1ab, accent: 0x5a3320, attack: 14, wear: 60, edge: true },
   food('ration', 'packet', 0x6a7a4a, 60, { energy: 20 }, 0xd8b04a),
   // 2.52: a lantern, made; set down where the player stands, it burns the night through.
   { id: 'lantern', kind: 'tool', stack: 2, shape: 'jar', color: 0xe8b04a, accent: 0x3a3a3a },

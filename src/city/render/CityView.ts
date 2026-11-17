@@ -14,6 +14,7 @@ import { facadeParts } from './facades';
 import { streetParts } from './streetThings';
 import { LandmarkLive, landmarkParts, type LandmarkFrame } from './landmarks';
 import type { LandmarkPlan } from './landmarkPlan';
+import { lotPanes } from '../content/windows';
 import { Horde, type DeadFrame } from './horde';
 
 export type { DeadFrame } from './horde';
@@ -314,6 +315,10 @@ function litter(h: number): Part[] {
 /** 2.52: how far the player makes out the dead at night (tiles): by the faint light round them, by their torch; and what one out of the light looks like. */
 const GLOW_SEES = 3;
 const TORCH_SEES = 6.5;
+/** 2.61: the docks' fog: clear within so many tiles of the player, thick from so many; its colour. */
+const FOG_CLEAR = 2.2;
+const FOG_THICK = 5.5;
+const FOG_TINT = 0x8d99a3;
 /** How dark a building's depths are drawn by day (2.53). */
 const GLOOM = 0.5;
 const GLOOM_NIGHT = 0.5;
@@ -654,7 +659,9 @@ export class CityView {
     // (After dark the rooms keep a thinner shade: no moon gets in, and a pale floor doesn't outshine the street. 2.57.)
     this.gloomMat.opacity = night ? GLOOM_NIGHT : GLOOM;
     this.poolMat.opacity = night ? 0.3 : 0.06;
-    this.hearthMat.opacity = night ? (still ? 0.55 : 0.55 + Math.sin(time * 7) * 0.04) : 0.1;
+    // (2.61: a warm wash that fades at its rim, a flicker in it; by day hardly there.)
+    this.hearthMat.opacity = night ? (still ? 0.62 : 0.62 + Math.sin(time * 7) * 0.05) : 0.08;
+    this.hearthFlame.color.set(night ? 0xffc46a : 0xc9b894);
     this.hotMat.opacity = night ? 0.3 : 0.08;
     for (const f of this.flames) {
       if (f.userData.kind === 2) continue;
@@ -680,7 +687,7 @@ export class CityView {
   setPeople(list: ReadonlyArray<{ who: number; tile: number }>, facing: (tile: number) => number) {
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();
-    disposeTree(this.hearths, () => false, new Set([kitMaterial, this.hearthMat]));
+    disposeTree(this.hearths, () => false, new Set([kitMaterial, this.hearthMat, this.hearthFlame]));
     this.hearths.clear();
     for (const p of list) {
       const mesh = new THREE.Mesh(merge(folk(p.who)), kitMaterial);
@@ -696,23 +703,23 @@ export class CityView {
       const lamp = new THREE.Mesh(
         merge([
           box(0.2, 0.05, 0.2, 0x3a3f46, 0, 0, 0),
-          box(0.14, 0.2, 0.14, 0xf1d9a0, 0, 0.05, 0),
           box(0.2, 0.04, 0.2, 0x3a3f46, 0, 0.25, 0),
           box(0.04, 0.1, 0.04, 0x3a3f46, 0, 0.29, 0),
         ]),
         kitMaterial,
       );
       lamp.position.set(x, 0, z);
-      // (Warm at the lantern, nothing at its rim: the pool fades out, no edge to it.)
-      const tint = (g: THREE.BufferGeometry, rim: boolean) => {
-        const n = g.getAttribute('position').count;
-        const rgb = new Float32Array(n * 3);
-        for (let k = 0; k < n; k++) if (!rim || k === 0) rgb.set([1, 0.46, 0.1], k * 3);
-        return g.setAttribute('color', new THREE.BufferAttribute(rgb, 3));
-      };
-      const flame = new THREE.Mesh(tint(new THREE.BoxGeometry(0.1, 0.14, 0.1), false), this.hearthMat);
+      // (Warm at the lantern, nothing at its rim: the pool fades out, no edge to it. 2.61: laid over the floor, not added to
+      // it: added, a pale floor washed out to white.)
+      const g = new THREE.CircleGeometry(3.2, 32).rotateX(-Math.PI / 2);
+      const n = g.getAttribute('position').count;
+      const rgba = new Float32Array(n * 4);
+      for (let k = 0; k < n; k++) rgba.set([1, 0.58, 0.2, k === 0 ? 1 : 0], k * 4);
+      g.setAttribute('color', new THREE.BufferAttribute(rgba, 4));
+      // (Its glass: the light itself, lit after dark.)
+      const flame = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.14), this.hearthFlame);
       flame.position.set(x, 0.15, z);
-      const pool = new THREE.Mesh(tint(new THREE.CircleGeometry(3.2, 32).rotateX(-Math.PI / 2), true), this.hearthMat);
+      const pool = new THREE.Mesh(g, this.hearthMat);
       pool.position.set(x, 0.03, z);
       this.hearths.add(lamp, flame, pool);
     }
@@ -723,8 +730,9 @@ export class CityView {
     transparent: true,
     opacity: 0,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    toneMapped: false,
   });
+  private readonly hearthFlame = new THREE.MeshBasicMaterial({ color: 0xffc46a, toneMapped: false });
 
   /** A survivor turns to the player when they come near (within four tiles). */
   facePeople(x: number, z: number) {
@@ -791,7 +799,7 @@ export class CityView {
 
   /** 2.58: a chain and a padlock across each locked door. */
   private readonly locks = new THREE.Group();
-  setLocks(locked: Uint8Array, district: District) {
+  setLocks(locked: Uint8Array, district: District, broken: readonly number[] = []) {
     disposeTree(this.locks, () => false, new Set([kitMaterial]));
     this.locks.clear();
     const parts: Part[] = [];
@@ -815,6 +823,28 @@ export class CityView {
       ];
       put(parts, chain, (i % W) + 0.5, Math.floor(i / W) + 0.5, across);
     });
+    // (2.61: a window broken to climb in by: the hole, a tooth of glass left in its frame, the rest on the ground outside.)
+    for (const tile of broken) {
+      const x = tile % W;
+      const z = Math.floor(tile / W);
+      const pane = lotPanes(district, district.lotAt[tile] - 1).find((p) => p.x === x && p.z === z);
+      if (!pane) continue;
+      const band = pane.look === 'band';
+      const w = band ? 0.96 : 0.52;
+      const y = band ? 0.62 : 0.55;
+      const shards: Part[] = [
+        box(w, band ? 0.32 : 0.38, 0.03, 0x07090c, 0, y, 0.535),
+        box(w * 0.22, 0.12, 0.035, 0x6e8aa0, -w * 0.36, y + 0.1, 0.54),
+      ];
+      for (let k = 0; k < 7; k++) {
+        const h = Math.imul(tile + 1, 2654435761 + k * 40503) >>> 0;
+        const s = box(0.05 + (h % 7) / 70, 0.012, 0.04 + ((h >>> 4) % 5) / 60, k & 1 ? 0x9fc2d8 : 0x6e8aa0, 0, 0.006, 0);
+        s.rotateY(((h >>> 8) % 628) / 100);
+        s.translate((((h >>> 12) % 100) / 100 - 0.5) * 0.9, 0, 0.62 + ((h >>> 20) % 100) / 220);
+        shards.push(s);
+      }
+      put(parts, shards, x + 0.5, z + 0.5, pane.angle);
+    }
     if (!parts.length) return;
     const mesh = new THREE.Mesh(merge(parts), kitMaterial);
     mesh.castShadow = true;
@@ -846,9 +876,64 @@ export class CityView {
     (this.glow.material as THREE.MeshBasicMaterial).color.set(this.torch ? 0xffe2a0 : 0x9fb8ff);
     (this.glow.material as THREE.MeshBasicMaterial).opacity = this.torch ? 0.2 : 0.09;
   }
+  /**
+   * 2.61: the docks' fog on the boat's night (the rules: the dead see two tiles): a low bank of it over everything, thinning to
+   * nothing round the player, drifting. Render only.
+   */
+  private fog: THREE.Mesh | null = null;
+  drawFog(on: boolean, me: { x: number; z: number }, time: number, still: boolean) {
+    if (!on) {
+      if (this.fog) this.fog.visible = false;
+      return;
+    }
+    if (!this.fog) {
+      this.fog = new THREE.Mesh(
+        new THREE.PlaneGeometry(48, 48).rotateX(-Math.PI / 2),
+        new THREE.ShaderMaterial({
+          transparent: true,
+          depthWrite: false,
+          uniforms: { me: { value: new THREE.Vector2() }, time: { value: 0 }, tint: { value: new THREE.Color(FOG_TINT) } },
+          vertexShader: `varying vec2 vAt;
+void main() {
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vAt = w.xz;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`,
+          fragmentShader: `uniform vec2 me;
+uniform float time;
+uniform vec3 tint;
+varying vec2 vAt;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+void main() {
+  float d = distance(vAt, me);
+  float drift = noise(vAt * 0.22 + vec2(time * 0.05, time * 0.02)) * 0.6 + noise(vAt * 0.6 - vec2(time * 0.08, 0.0)) * 0.4;
+  float a = smoothstep(${FOG_CLEAR.toFixed(1)}, ${FOG_THICK.toFixed(1)}, d) * (0.62 + drift * 0.3);
+  gl_FragColor = vec4(tint, a);
+}`,
+        }),
+      );
+      // (Over the ground and the dead; drawn before the story's marks, the bars over the struck and the eyes in the dark, so they
+      // show through it: it writes no depth.)
+      this.fog.renderOrder = 0.4;
+      this.root.add(this.fog);
+    }
+    this.fog.visible = true;
+    // (Over the heads of the dead, a brute's too: only the street lamps' tops stand out of it.)
+    this.fog.position.set(me.x, 2.5, me.z);
+    const u = (this.fog.material as THREE.ShaderMaterial).uniforms;
+    (u.me.value as THREE.Vector2).set(me.x, me.z);
+    if (!still) u.time.value = time;
+  }
+
   /** 2.60: one of the dead put down (tiles): its body topples where it stood. */
-  fellFx(x: number, z: number, facing: number, kind: number, seed: number, time: number) {
-    this.horde.fell(x, z, facing, kind, seed, time);
+  fellFx(x: number, z: number, facing: number, kind: number, seed: number, time: number, lying = false) {
+    this.horde.fell(x, z, facing, kind, seed, time, lying);
   }
 
   /** A district's pieces put up (the last one's taken down); `landmark`: its landmark's own (landmarkPlan). */
@@ -1002,6 +1087,8 @@ export class CityView {
     this.group.clear();
     this.horde.clear();
     this.glow.visible = false;
+    // (2.61: the docks' fog goes with the city: a boat's escape, a quit mid-fog.)
+    if (this.fog) this.fog.visible = false;
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();
     disposeTree(this.locks, () => false, new Set([kitMaterial]));
@@ -1009,7 +1096,7 @@ export class CityView {
     this.marks.clear();
     disposeTree(this.folk, () => false, new Set([kitMaterial]));
     this.folk.clear();
-    disposeTree(this.hearths, () => false, new Set([kitMaterial, this.hearthMat]));
+    disposeTree(this.hearths, () => false, new Set([kitMaterial, this.hearthMat, this.hearthFlame]));
     this.hearths.clear();
     this.live.clear();
     this.setLights([], new Uint8Array(0), new Uint8Array(0));

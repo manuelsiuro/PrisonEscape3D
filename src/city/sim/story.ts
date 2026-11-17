@@ -6,13 +6,28 @@ import { BLOW } from '../content/dead';
 import { cityItemNumber } from '../content/items';
 import { SEARCHED } from '../content/loot';
 import { LOCKED, PEOPLE, type Errand } from '../content/people';
-import { BEATS, FLAG, isBeat, NOTES, STORY, THING_IN, THINGS, thingBit, WAYS, wayOf, type Beat, type Thing } from '../content/story';
+import {
+  BEATS,
+  BUS_NOTES,
+  FIRST_NOTES,
+  FLAG,
+  isBeat,
+  NOTES,
+  STORY,
+  THING_IN,
+  THINGS,
+  thingBit,
+  WAYS,
+  wayOf,
+  type Beat,
+  type Thing,
+} from '../content/story';
 import type { District } from '../gen/district';
 import { CITY_N, gateOpen, LANES, neighbour, streamOf } from '../gen/plan';
 import { TUNNEL } from '../gen/tunnel';
 import type { City, Target } from './City';
 import { nightAt, noise } from './dead';
-import { joined } from './tools';
+import { joined, lockedLots } from './tools';
 
 /**
  * The story (C3), a part of the city's simulation: where the things it needs lie (from the city's
@@ -111,7 +126,7 @@ export function storyPlaces(c: City): StoryPlaces {
     const d = plan.kinds.findIndex((kind) => DISTRICTS[kind].landmark === where);
     return pickIn(d, lotOf(d, where), k);
   });
-  const notes = Array.from({ length: NOTES }, (_, n): Spot => {
+  const notes = Array.from({ length: FIRST_NOTES }, (_, n): Spot => {
     const d = n < plan.kinds.length ? n : Math.floor(streamOf(plan.seed, 9300 + n)() * plan.kinds.length);
     return pickIn(d, -1, 100 + n);
   });
@@ -199,6 +214,37 @@ export function storyPlaces(c: City): StoryPlaces {
   return { things, notes, wayDistrict, wayLot, exits, pier, people };
 }
 
+/**
+ * 2.61: the notes about the others off the bus, one in a district of each kind of BUS_NOTES: worked out after everything else, from
+ * a stream of their own, in furniture nothing else uses (not the story's, not a chained building's, not the clothes'). Nothing
+ * placed before them moves, so a saved city keeps its locks and its loot.
+ */
+export function busNotes(c: City): Spot[] {
+  const plan = c.plan;
+  const taken = new Set([...c.story.things, ...c.story.notes].map((sp) => `${sp.district}:${sp.prop}`));
+  if (c.clothes >= 0) taken.add(`${plan.start}:${c.clothes}`);
+  const out: Spot[] = [];
+  BUS_NOTES.forEach((kind, n) => {
+    const d = plan.kinds.indexOf(kind);
+    const dist = c.districtOf(d);
+    const grid = c.districtGrid(d);
+    const shut = new Set(lockedLots(c, d));
+    const from: number[] = [];
+    dist.props.forEach((p, k) => {
+      if (SEARCHED[p.kind] === undefined || taken.has(`${d}:${k}`) || shut.has(dist.lotAt[p.z * MAP_W + p.x] - 1)) return;
+      if (tilesOf(dist, k).some((t) => neighbours4(t).some(([j, ok]) => ok && !grid[j]))) from.push(k);
+    });
+    if (!from.length) throw new Error(`city ${plan.seed}: nowhere in district ${d} for a note`);
+    const prop = from[Math.floor(streamOf(plan.seed, 9600 + n)() * from.length)];
+    taken.add(`${d}:${prop}`);
+    out.push({ district: d, prop });
+  });
+  return out;
+}
+
+/** Every note's place, in the order of their bits. */
+export const notePlaces = (c: City): Spot[] => [...c.story.notes, ...c.busNotes];
+
 /** The story's fields of a new city (and of a save from before them). */
 export function freshStory() {
   return {
@@ -270,7 +316,7 @@ export function soundStory(c: City) {
     // unsaid; it is found on opening the desk again, as it is without the save.)
     if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined && !LOCKED.includes(THINGS[k])) s.kit |= 1 << k;
   });
-  c.story.notes.forEach((sp, n) => {
+  notePlaces(c).forEach((sp, n) => {
     if (s.boxes[`${sp.district}:${sp.prop}`] !== undefined) s.notes |= 1 << n;
   });
   s.act = actOf(c);
@@ -337,7 +383,7 @@ export function storyFound(c: City, prop: number) {
     if (s.way && wayOf(s.way)!.needs.includes(THINGS[k]) && !missing(c, s.way).length) say(c, `all${s.way}` as Beat);
     fix(c);
   }
-  const n = c.story.notes.findIndex(at);
+  const n = notePlaces(c).findIndex(at);
   if (n >= 0 && !(s.notes & (1 << n))) {
     s.notes |= 1 << n;
     c.events.push({ type: 'note', n });

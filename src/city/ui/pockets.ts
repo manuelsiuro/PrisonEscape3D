@@ -270,19 +270,21 @@ export class CityPockets {
           ? `city.act.${s.way}`
           : tg.kind === 'lock'
             ? 'city.act.force'
-            : tg.kind === 'fence'
-              ? 'city.act.cut'
-              : tg.kind === 'door'
-                ? s.barred
-                  ? 'city.act.unbar'
-                  : 'city.act.bar'
-                : s.targetOpen
-                  ? 'city.act.close'
-                  : tg.kind === 'bed'
-                    ? 'city.act.sleep'
-                    : tg.kind === 'pile' || s.searched
-                      ? 'city.act.look'
-                      : 'city.act.search';
+            : tg.kind === 'pane'
+              ? 'city.act.smash'
+              : tg.kind === 'fence'
+                ? 'city.act.cut'
+                : tg.kind === 'door'
+                  ? s.barred
+                    ? 'city.act.unbar'
+                    : 'city.act.bar'
+                  : s.targetOpen
+                    ? 'city.act.close'
+                    : tg.kind === 'bed'
+                      ? 'city.act.sleep'
+                      : tg.kind === 'pile' || s.searched
+                        ? 'city.act.look'
+                        : 'city.act.search';
     const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${s.person}`;
     if (key !== this.shownAct) {
       this.shownAct = key;
@@ -297,13 +299,15 @@ export class CityPockets {
                 ? 'city.box.door'
                 : tg.kind === 'lock'
                   ? 'city.box.lock'
-                  : tg.kind === 'fence'
-                    ? 'city.box.fence'
-                    : tg.prop
-                      ? (`city.box.${tg.prop}` as Key)
-                      : 'city.box.pile',
+                  : tg.kind === 'pane'
+                    ? 'city.box.pane'
+                    : tg.kind === 'fence'
+                      ? 'city.box.fence'
+                      : tg.prop
+                        ? (`city.box.${tg.prop}` as Key)
+                        : 'city.box.pile',
         );
-        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);

@@ -17,7 +17,7 @@ import { hideLoading } from '../../ui/loading';
 import { showHelp } from '../../ui/screens/help';
 import { showPause } from '../../ui/screens/pause';
 import { showSettings } from '../../ui/screens/settings';
-import { BLOW, kindStats } from '../content/dead';
+import { BLOW, DOWN, kindStats } from '../content/dead';
 import { CityView, type DeadFrame } from '../render/CityView';
 import { nightAt, ZED, type Zed } from '../sim/dead';
 import { cityItem } from '../content/items';
@@ -224,7 +224,7 @@ export function cityBackdrop(c: City) {
         ),
   );
   cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null);
-  cityView.setLocks(c.locked, c.district);
+  cityView.setLocks(c.locked, c.district, c.state.panes[c.state.district] ?? []);
   cityView.setBars(c.bars, c.district);
   // (By day, nothing lit: not what the last city left.)
   cityView.setLights([], c.lit, c.dim);
@@ -475,7 +475,7 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   if (locksShown !== c.locksRev) {
     locksShown = c.locksRev;
-    cityView.setLocks(c.locked, c.district);
+    cityView.setLocks(c.locked, c.district, c.state.panes[c.state.district] ?? []);
   }
   const goal = goalOf(r);
   if (marksShown !== goal.key) {
@@ -507,6 +507,8 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, darkNow(c), torchLit(c) || lampLit(c));
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, darkNow(c), f);
+  // (2.61: the boat's night in the docks, in fog as the rules have it.)
+  cityView.drawFog(going(c) === 2, f, now / 1000, r.paused || settings.reducedMotion);
   view.draw(f, dt, now / 1000);
   cityView.facePeople(f.x, f.z);
   cityView.drawLandmark(landmarkOf(r, now / 1000));
@@ -680,6 +682,12 @@ function cityEvent(r: CityRun, e: CityEvent) {
           banner.toast(t('city.toast.unseen'), 'good', 1600);
           tip('city.unseen', 'city.tip.unseen');
         }
+        // (2.61: knocked down, not finished.)
+        if (e.down) {
+          sound.dud();
+          if (!e.unseen) banner.toast(t('city.toast.down'), 'good', 1800);
+          tip('city.down', 'city.tip.down');
+        }
       }
       break;
     // 2.60: one put down topples where it stood; a screamer's call; a bloater's burst; a crawler's hold.
@@ -687,7 +695,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       // (Several in a step, a fire's or a burst's: heard once.)
       if (now() - fellHeard > 60) sound.dud();
       fellHeard = now();
-      cityView.fellFx(e.x / UNIT, e.z / UNIT, headingAngle(e.facing), e.kind, e.seed, now() / 1000);
+      cityView.fellFx(e.x / UNIT, e.z / UNIT, headingAngle(e.facing), e.kind, e.seed, now() / 1000, !!e.lying);
       break;
     case 'scream':
       sound.shriek();
@@ -707,6 +715,22 @@ function cityEvent(r: CityRun, e: CityEvent) {
         banner.toast(t('city.toast.burst'), 'bad', 2600);
       }
       tip('city.bloater', 'city.tip.bloater');
+      break;
+    // 2.61: one knocked down gets up; a wound bleeds, and stops; a window broken.
+    case 'rose':
+      sound.moan();
+      break;
+    case 'bleeding':
+      if (e.on) {
+        banner.toast(t('city.toast.bleeding'), 'bad', 2400);
+        tip('city.bleed', 'city.tip.bleed');
+      } else banner.toast(t(e.why === 'bandaged' ? 'city.toast.bandaged' : 'city.toast.clotted'), 'good', 2000);
+      break;
+    case 'smashed':
+      sound.shatter();
+      sound.pound();
+      view.jolt(0.3);
+      banner.toast(t(e.cut ? 'city.toast.smashedCut' : 'city.toast.smashed'), e.cut ? 'bad' : 'good', 3600);
       break;
     case 'snared':
       banner.toast(t('city.toast.snared'), 'bad', 2000);
@@ -751,8 +775,11 @@ function cityEvent(r: CityRun, e: CityEvent) {
       save(r);
       break;
     case 'forced':
-      sound.dud();
-      banner.toast(t('city.toast.forced'), 'good', 3200);
+      // (2.61: climbed in by a window: said by its own toast.)
+      if (!c.events.some((x) => x.type === 'smashed')) {
+        sound.dud();
+        banner.toast(t('city.toast.forced'), 'good', 3200);
+      }
       save(r);
       break;
     case 'cut':
@@ -933,7 +960,7 @@ function frameOf(r: CityRun, a: number): Frame {
     const tiles =
       tg.kind === 'fence'
         ? (c.fences.find((q) => q.tiles[0] === tg.tile)?.tiles ?? [tg.tile])
-        : tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc' || tg.kind === 'lock'
+        : tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc' || tg.kind === 'lock' || tg.kind === 'pane'
           ? [tg.tile]
           : tg.key.startsWith('c')
             ? carTiles(c, Number(tg.key.slice(1)))
@@ -985,6 +1012,8 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
       seed: 0,
       kind: 0,
       hp: 1,
+      down: 0,
+      stir: false,
     });
     o.x = (q.x + (z.body.x - q.x) * a) / UNIT;
     o.z = (q.z + (z.body.z - q.z) * a) / UNIT;
@@ -996,6 +1025,11 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
     o.kind = z.kind ?? 0;
     o.lunging = z.near > 0;
     o.hp = Math.max(0, z.hp) / kindStats(z.kind).health;
+    // (2.61: knocked down: over in a third of a second, up again over the last half second; stirring before it.)
+    const lying = z.down ?? 0;
+    const since = DOWN.steps - lying + a;
+    o.down = lying > 0 ? Math.min(1, since / 7, (lying - a) / 10) : 0;
+    o.stir = lying > 0 && lying <= DOWN.stir;
   });
   return deadList;
 }
@@ -1116,6 +1150,7 @@ function hudOf(r: CityRun): CityHudState {
   st.x = c.state.player.x / UNIT;
   st.z = c.state.player.z / UNIT;
   st.health = c.state.health / 100;
+  st.bleeding = c.state.bleed > 0;
   st.hunger = c.state.hunger / FULL;
   st.energy = c.state.energy / FULL;
   st.chasing = c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0);

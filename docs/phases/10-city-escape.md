@@ -32,7 +32,8 @@ src/city/
                       journal, both ends), story.ts (an objective in words)
                       Since: light.ts (2.52), cars.ts (2.54), ranged.ts (2.55), tools.ts (2.58: chained
                       buildings, fences cut, clothes); render/ facades.ts, streets.ts, streetThings.ts,
-                      cityProps.ts, cityTex.ts (2.57), horde.ts (2.60: the dead); gen/tunnel.ts (2.56)
+                      cityProps.ts, cityTex.ts (2.57), horde.ts (2.60: the dead); gen/tunnel.ts (2.56);
+                      content/windows.ts (2.61: where windows are, for the rules and the picture)
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
   record.ts           the ways out taken and the feats, in a slot of their own (read by the city's menu)
 src/styles/46-city.css
@@ -317,6 +318,11 @@ In two slices.
   `render/horde.ts` draws them (looks by district and kind, limbs, health, falling bodies), handed
   `DeadFrame` by `play/city.ts`; `View.playerPunch`, `playerFlinch`, `puff`, `jolt` for a mode with
   no Cast. `cityfighttest`.
+- **What the design promised (2.61).** `content/dead.ts` `DOWN`, `BLEED`; `sim/dead.ts` `isDown`,
+  `Zed.down`; `City.bleedFor`, `state.bleed`, `state.panes`, the `pane` target and `smash`;
+  `content/windows.ts` (`lotPanes`, `FACE_STYLE`, read by `render/facades.ts` and `tools.ts`
+  `lockedPanes`); `sim/story.ts` `busNotes`, `notePlaces`; `CityView.drawFog`, the lanterns'
+  `hearthFlame`; the HUD's `bleeding`. `cityfighttest`, `cityzedtest`, `citytooltest`, `citystorytest`.
 
 ## Proof, stage by stage
 

@@ -1,4 +1,5 @@
 import { KEYS, readJSON, writeJSON } from '../game/storage';
+import { NOTES } from './content/story';
 
 /**
  * City Escape's records (C3b): the ways out taken across every city, and its own feats (the prisons'
@@ -50,7 +51,7 @@ export function withRun(rec: CityRecord, run: Run): { record: CityRecord; fresh:
   if (wins.every((n) => n > 0)) had.push('three');
   if (run.hardcore) had.push('hardcore');
   if (run.day <= SWIFT_DAY) had.push('swift');
-  if (run.notes >= 10) had.push('reader');
+  if (run.notes >= NOTES) had.push('reader');
   if (run.errands >= 8) had.push('friend');
   if (run.deaths === 0) had.push('clean');
   if (run.kills >= HUNTER_KILLS) had.push('hunter');

@@ -18,6 +18,8 @@ import { ZED, type Zed } from '../src/city/sim/dead';
 import { relight } from '../src/city/sim/light';
 import { towards } from '../src/city/sim/story';
 import { cutSpots, lockedLots, TOOLS } from '../src/city/sim/tools';
+import { lotPanes } from '../src/city/content/windows';
+import { BLEED } from '../src/city/content/dead';
 import { neighbour, OPPOSITE } from '../src/city/gen/plan';
 import { nearestDir } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
@@ -640,6 +642,109 @@ const print = (c: City) => fnv1a(JSON.stringify(c.snapshot().state));
   check(found >= SEEDS - 1, `the clothes lie in ${found} of ${SEEDS} cities`);
   say(
     `somebody's clothes: in a house of the start's district in ${found} of ${SEEDS} cities (never chained, never the story's furniture), put on when found, kept by a save; nothing in the rules reads them`,
+  );
+}
+
+// ------------------------------------------------------------------ a chained building's window (2.61)
+{
+  let panes = 0;
+  let glass = 0;
+  let tried = 0;
+  for (let seed = 1; seed <= SEEDS; seed++) {
+    const c = new City(seed);
+    c.peace = true;
+    for (let d = 0; d < 9; d++) {
+      enter(c, d);
+      c.step(0);
+      for (const lot of lockedLots(c, d)) {
+        const all = lotPanes(c.district, lot);
+        panes += all.length;
+        // (Only glass is broken: boards and shutters are not the button's.)
+        for (const p of all) {
+          const t = p.z * W + p.x;
+          check((c.panes[t] === 1) === (p.look === 'glass' || p.look === 'band'), `seed ${seed}: a ${p.look} pane marked ${c.panes[t]}`);
+          if (c.panes[t]) glass++;
+        }
+      }
+    }
+  }
+  check(glass > 0 && glass < panes, `of ${panes} panes of chained buildings, ${glass} are glass`);
+  // Broken from outside by ordinary commands: quick, loud, the building forced; bare hands bleed, a weapon in the pockets doesn't.
+  const run = (seed: number, armed: boolean) => {
+    const c = new City(seed);
+    c.peace = true;
+    for (let d = 0; d < 9; d++) {
+      enter(c, d);
+      c.step(0);
+      const from = reach(c, c.tile);
+      for (const lot of lockedLots(c, d))
+        for (const p of lotPanes(c.district, lot)) {
+          const t = p.z * W + p.x;
+          if (!c.panes[t]) continue;
+          // (The tile outside its face, and the way it is faced from there.)
+          const dx = Math.round(Math.sin(p.angle));
+          const dz = Math.round(Math.cos(p.angle));
+          const out = t + dx + dz * W;
+          if (!from[out] || c.district.lotAt[out] === lot + 1) continue;
+          tried++;
+          if (armed) c.state.inv[0] = [cityItemNumber('bat'), 40];
+          stand(c, out, nearestDir(-dx, -dz));
+          check(c.target()?.kind === 'pane' && c.target()?.tile === t, `seed ${seed}: before a window the button is ${c.target()?.kind}`);
+          // (One of the dead out of sight 12 tiles off, idle: it hears the glass.)
+          const ear = c.zedPlaces.streets.find(
+            (i) => Math.max(Math.abs((i % W) - (out % W)), Math.abs(Math.floor(i / W) - Math.floor(out / W))) === 12,
+          );
+          const z: Zed | null =
+            ear === undefined
+              ? null
+              : {
+                  body: bodyAt(ear % W, Math.floor(ear / W)),
+                  hp: 30,
+                  mode: ZED.IDLE,
+                  goal: -1,
+                  path: [],
+                  seen: -9999,
+                  last: -1,
+                  bit: -9999,
+                  reel: 0,
+                  near: 0,
+                  pace: 1000,
+                };
+          if (z) c.state.zeds = [z];
+          const ev = work(c, TOOLS.paneSteps);
+          const smashed = ev.find((e) => e.type === 'smashed');
+          check(
+            ev[0]?.type === 'forcing' && smashed?.type === 'smashed' && smashed.cut === !armed && ev.some((e) => e.type === 'forced'),
+            `seed ${seed}: breaking a window: ${ev.map((e) => e.type).join()}`,
+          );
+          check(
+            !c.lockedLot(lot) && c.state.forced[d].includes(lot) && c.state.panes[d].includes(t),
+            `seed ${seed}: the building isn't forced`,
+          );
+          check(
+            c.state.bleed === (armed ? 0 : TOOLS.paneCut),
+            `seed ${seed}: bleeding ${c.state.bleed} after breaking it ${armed ? 'armed' : 'bare-handed'}`,
+          );
+          check(!z || z.mode === ZED.SEEK, `seed ${seed}: one twelve tiles off hears the glass: ${z?.mode}`);
+          check(c.target()?.kind !== 'pane' && !c.panes[t], `seed ${seed}: a window of a forced building is still the button's`);
+          const back = loadCity(JSON.parse(JSON.stringify(c.snapshot())))!;
+          check(back.state.panes[d].includes(t) && back.state.bleed === c.state.bleed, `seed ${seed}: a save forgets the window`);
+          return ev.length;
+        }
+    }
+    return 0;
+  };
+  let broke = 0;
+  for (let seed = 1; seed <= 6; seed++) if (run(seed, seed % 2 === 0)) broke++;
+  check(broke >= 5, `a window broken in ${broke} of 6 cities`);
+  // (A save from before them: no window broken, nothing bleeding.)
+  const old = JSON.parse(JSON.stringify(new City(2).snapshot()));
+  delete old.state.panes;
+  delete old.state.bleed;
+  const mended = loadCity(old)!;
+  check(JSON.stringify(mended.state.panes) === '{}' && mended.state.bleed === 0, 'a save from before windows');
+  say(
+    `a chained building's window: ${glass} of ${panes} panes of such buildings are glass (boards and shutters can't be), broken from outside in ${TOOLS.paneSteps / 20} seconds with no tool, heard ${TOOLS.paneNoise} tiles off; climbed through, the building is forced; bare hands bleed ${TOOLS.paneCut} (${BLEED.every / 20} s a point), a weapon carried doesn't; ${broke} of 6 cities, a save keeps it`,
   );
 }
 

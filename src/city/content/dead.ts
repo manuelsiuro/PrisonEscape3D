@@ -67,6 +67,20 @@ export const BRUTE = { health: 90, chase: 108, bite: 14, fromNight: 5, danger: 2
  */
 export const SIEGE = { fromNight: 3, perNight: 2, most: 8, near: 16, pound: 300 } as const;
 
+/**
+ * 2.61: put down by a blow without an edge (fists, a bat), one of the dead isn't finished: it lies `steps` steps (eight seconds),
+ * stirs for the last `stir` of them, and gets up after the player with `rise` of its health back. The blow that knocks it
+ * down is followed through: the next comes `follow` steps on, not BLOW.every. Any blow, a bolt, a fire or a
+ * burst finishes it where it lies; a blade finishes it at once. A crawler is already on the floor and a bloater bursts: never.
+ */
+export const DOWN = { steps: 160, stir: 40, rise: 0.34, follow: 3 } as const;
+
+/**
+ * 2.61: a bite bleeds. It adds its harm over `per` to what is still to bleed (no more than `most`), a point of health every `every`
+ * steps until a bandage or a medkit stops it. Bleeding alone never takes the last point: it stops at one.
+ */
+export const BLEED = { per: 2, most: 16, every: 40 } as const;
+
 /** The player's blow (C2b; the city's weapons add their own). */
 export const BLOW = {
   /** Bare hands; a weapon adds twice its `attack`. */

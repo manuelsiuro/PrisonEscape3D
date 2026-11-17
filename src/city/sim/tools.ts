@@ -4,6 +4,8 @@ import { SEARCHED } from '../content/loot';
 import { decoSolid, type District, type Gate } from '../gen/district';
 import { CITY_N, gateOpen, LANES, laneAt, neighbour, OPPOSITE, ROAD_W, SIDE, streamOf, type CityPlan } from '../gen/plan';
 import { TUNNEL } from '../gen/tunnel';
+import { BLEED } from '../content/dead';
+import { lotPanes } from '../content/windows';
 import type { City } from './City';
 
 /**
@@ -22,6 +24,10 @@ export const TOOLS = {
   /** A locked building's furniture: this many draws more, and a draw in a thousand that finds nothing. */
   moreDraws: 1,
   emptyDraws: 450,
+  /** 2.61: steps to break a chained building's window and climb in; how far it's heard (tiles); what bare hands bleed for it. */
+  paneSteps: 24,
+  paneNoise: 14,
+  paneCut: 6,
 } as const;
 
 /** The buildings that may be locked: never a landmark. */
@@ -30,12 +36,35 @@ const LOCKABLE: readonly LotUse[] = ['house', 'shop', 'office', 'warehouse', 'cl
 const N = MAP_W * MAP_H;
 
 export function freshTools() {
-  return { locks: 1, forced: {} as Record<string, number[]>, cuts: [] as number[], outfit: 0, snare: 0 };
+  return {
+    locks: 1,
+    forced: {} as Record<string, number[]>,
+    cuts: [] as number[],
+    outfit: 0,
+    snare: 0,
+    bleed: 0,
+    panes: {} as Record<string, number[]>,
+  };
 }
 
 /** A save's fields made sound before the city is built from it (one from before them: no locked building). */
-export function soundTools(st: { locks?: unknown; forced?: unknown; cuts?: unknown; outfit?: unknown; snare?: unknown }) {
+export function soundTools(st: {
+  locks?: unknown;
+  forced?: unknown;
+  cuts?: unknown;
+  outfit?: unknown;
+  snare?: unknown;
+  bleed?: unknown;
+  panes?: unknown;
+}) {
   if (st.outfit !== 1) st.outfit = 0;
+  if (!Number.isInteger(st.bleed) || (st.bleed as number) < 0 || (st.bleed as number) > BLEED.most) st.bleed = 0;
+  const panes: Record<string, number[]> = {};
+  if (typeof st.panes === 'object' && st.panes && !Array.isArray(st.panes))
+    for (const [d, list] of Object.entries(st.panes as Record<string, unknown>))
+      if (/^[0-8]$/.test(d) && Array.isArray(list))
+        panes[d] = [...new Set(list.filter((k): k is number => Number.isInteger(k) && k >= 0 && k < N))];
+  st.panes = panes;
   if (!Number.isInteger(st.snare) || (st.snare as number) < 0) st.snare = 0;
   if (st.locks !== 1) st.locks = 0;
   const forced: Record<string, number[]> = {};
@@ -190,6 +219,18 @@ export function soundCuts(c: City) {
     const d = Math.floor(code / LANES / 4);
     if (cutSpots(c, d).some((s) => s.side === side && s.lane === lane)) c.state.cuts.push(code);
   }
+}
+
+/** 2.61: per tile of a district, 1 on a window of a building still locked (broken, it is climbed in by: the building forced). */
+export function lockedPanes(c: City, d: number, locked: Uint8Array) {
+  const out = new Uint8Array(N);
+  const dist = c.baseOf(d);
+  for (const lot of lockedLots(c, d)) {
+    if (!dist.lots[lot].doors.some((i) => locked[i])) continue;
+    // (Only glass: boards and shutters are nailed and locked from inside.)
+    for (const p of lotPanes(dist, lot)) if (p.look === 'glass' || p.look === 'band') out[p.z * MAP_W + p.x] = 1;
+  }
+  return out;
 }
 
 /** Per tile of a district: 1 where a locked building's door stands still locked. */

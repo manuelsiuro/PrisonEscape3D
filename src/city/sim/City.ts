@@ -14,7 +14,7 @@ import { BOX_SLOTS, carLoot, CARS, EMPTY_DRAWS, lootList, SEARCH_STEPS, SEARCHED
 import { freshRanged, soundRanged, stepFires, useThrown } from './ranged';
 import { carMinute, carOpened, carsHere, carTiles, freshCars, isWreck, soundCars } from './cars';
 import { streamOf } from '../gen/plan';
-import { BLOW } from '../content/dead';
+import { BLEED, BLOW, DOWN } from '../content/dead';
 import { CITY_RECIPES, recipeParts } from '../content/recipes';
 import { noise, places, populate, stepDead, strike, type Zed } from './dead';
 import { districtWorld } from './world';
@@ -25,6 +25,7 @@ import {
   foundClothes,
   freshTools,
   lockedDoors,
+  lockedPanes,
   soundCuts,
   soundTools,
   TOOLS,
@@ -41,6 +42,7 @@ import {
   meet,
   trade,
   soundStory,
+  busNotes,
   storyAct,
   storyDid,
   storyFell,
@@ -49,6 +51,7 @@ import {
   storyMoved,
   storyPlaces,
   storyTarget,
+  type Spot,
   type StoryPlaces,
 } from './story';
 
@@ -123,7 +126,7 @@ const empty = (): Stack => [0, 0];
 
 /** What the action button would do now: search a piece of furniture, look at what lies on the ground, sleep in a bed. */
 export interface Target {
-  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence';
+  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane';
   /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile; 2.58: a locked door: 'k' + its tile, a fence: 'f' + its first tile). */
   key: string;
   tile: number;
@@ -208,6 +211,9 @@ export interface CityState {
   outfit: number;
   // 2.60, optional on load: the step until which a crawler's bite holds the player's leg (a slower walk).
   snare: number;
+  // 2.61, optional on load: the health still to bleed from bites (BLEED); the windows broken, by district (their tiles).
+  bleed: number;
+  panes: Record<string, number[]>;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -232,9 +238,9 @@ export type CityEvent =
   /** The dead: one has seen the player; a bite; the player's blow (landed, and whether it put one down, where); dusk coming (minutes), night fallen or over. */
   | { type: 'spotted'; zed: number }
   | { type: 'bite'; harm: number }
-  | { type: 'swing'; hit: boolean; dead: boolean; x?: number; z?: number; unseen?: boolean; left?: number }
+  | { type: 'swing'; hit: boolean; dead: boolean; x?: number; z?: number; unseen?: boolean; left?: number; down?: boolean }
   /** 2.60: one of the dead put down for good (where, which way it faced, what it was, its own number); a screamer's scream; a bloater burst (`harm`: what it cost the player, 0 out of its reach); a crawler's bite holding a leg. */
-  | { type: 'fell'; x: number; z: number; facing: number; kind: number; seed: number }
+  | { type: 'fell'; x: number; z: number; facing: number; kind: number; seed: number; lying?: boolean }
   | { type: 'scream'; x: number; z: number }
   | { type: 'burst'; x: number; z: number; harm: number }
   | { type: 'snared' }
@@ -280,11 +286,16 @@ export type CityEvent =
   | { type: 'burn'; harm: number }
   | { type: 'fireOut' }
   /** 2.58: a locked door being forced or a fence being cut (the work begun); a building forced open; a fence cut through (the district is put up again). */
-  | { type: 'forcing'; what: 'lock' | 'fence' }
+  | { type: 'forcing'; what: 'lock' | 'fence' | 'pane' }
   | { type: 'casting' }
   /** 2.59: somebody's clothes found and put on. */
   | { type: 'clothes' }
   | { type: 'forced'; tile: number }
+  /** 2.61: a chained building's window broken and climbed through (`cut`: by bare hands, on the glass); bleeding begun or stopped (`why`: a bandage, or it stopped of itself). */
+  | { type: 'smashed'; tile: number; cut: boolean }
+  | { type: 'bleeding'; on: boolean; why?: 'bandaged' | 'clotted' }
+  /** 2.61: one of the dead knocked down got up again (where). */
+  | { type: 'rose'; x: number; z: number }
   | { type: 'cut'; tile: number }
   /** C3b: a survivor spoken to (first met, an errand handed in, or a word), a swap made. */
   | { type: 'talk'; who: number; what: 'met' | 'done' | 'chat' }
@@ -372,6 +383,11 @@ export class City {
   get clothes(): number {
     return (this.wardrobe ??= clothesSpot(this));
   }
+  /** 2.61: where the notes about the others off the bus lie (worked out when first asked, after everything else). */
+  private bus: Spot[] | null = null;
+  get busNotes(): Spot[] {
+    return (this.bus ??= busNotes(this));
+  }
   /** Where the story's things lie (worked out when first asked). */
   private places: StoryPlaces | null = null;
   get story(): StoryPlaces {
@@ -440,6 +456,7 @@ export class City {
     this.district.lots.forEach((l, k) => l.doors.forEach((i) => (this.doorLot[i] = k + 1)));
     // (2.58: the locked buildings: their doors shut to everyone, nobody put down inside. The fences that can be cut.)
     this.locked = lockedDoors(this, d);
+    this.panes = lockedPanes(this, d, this.locked);
     for (let i = 0; i < N; i++) if (this.locked[i]) this.world.parked[i] = 1;
     this.world.refreshBlock();
     this.fences = cutSpots(this, d);
@@ -479,6 +496,8 @@ export class City {
   }
   /** 2.58: per tile, 1 on a locked building's door; the fences that can be cut here; a count the view watches (a door forced, a district entered). */
   locked = new Uint8Array(N);
+  /** 2.61: per tile, 1 on a window of a building still locked. */
+  panes = new Uint8Array(N);
   fences: CutSpot[] = [];
   locksRev = 0;
   /** Whether a building (its lot's number) is locked still. */
@@ -605,6 +624,14 @@ export class City {
     const dir = dirOf(cmd);
     if (s.step % STEPS_PER_MINUTE === 0) this.minutePassed();
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
+    // (2.61: a wound bleeds, awake or asleep, never the last point.)
+    if (s.bleed && s.step % BLEED.every === 0) {
+      if (s.health > 1) s.health--;
+      if (--s.bleed <= 0 || s.health <= 1) {
+        s.bleed = 0;
+        this.events.push({ type: 'bleeding', on: false, why: 'clotted' });
+      }
+    }
     if (s.sleeping) {
       // (A push on the stick wakes them; the dead go on about the streets meanwhile.)
       if (dir) this.wake('stirred');
@@ -635,6 +662,7 @@ export class City {
         if (key.startsWith('d')) this.bar(Number(key.slice(1)));
         else if (key === 'w') castOff(this);
         else if (key.startsWith('k')) this.force(Number(key.slice(1)));
+        else if (key.startsWith('x')) this.smash(Number(key.slice(1)));
         else if (key.startsWith('f')) this.cut(Number(key.slice(1)));
         else this.openBox(key, true);
       }
@@ -703,6 +731,7 @@ export class City {
     if (s.health > 0) return;
     s.sleeping = false;
     s.search = '';
+    s.bleed = 0;
     this.close();
     s.deaths++;
     if (s.mode === MODE.HARDCORE) {
@@ -796,6 +825,10 @@ export class City {
           : null;
     const faced = (fx ? doorAt(here + fx) : null) ?? (fz ? doorAt(here + fz * MAP_W) : null);
     if (faced) return faced;
+    // (2.61: a chained building's window faced from outside: broken, and climbed through.)
+    const pane = fx && this.panes[here + fx] ? here + fx : fz && this.panes[here + fz * MAP_W] ? here + fz * MAP_W : -1;
+    if (pane >= 0 && this.district.lotAt[here] !== this.district.lotAt[pane])
+      return { kind: 'pane', key: `x${pane}`, tile: pane, prop: null };
     // (Beside the way out's tile: it comes after the furniture faced, before the furniture merely beside.)
     for (let a = 0; a < around.length; a++) {
       const [dx, dz] = around[a];
@@ -987,6 +1020,14 @@ export class City {
         noise(this, this.tile, BLOW.noise);
         return void this.events.push({ type: 'barring', on: !this.bars.includes(t.tile) });
       }
+      if (t.kind === 'pane') {
+        // (2.61: no tool: quick, and heard twice as far as a crowbar's work.)
+        s.search = t.key;
+        s.searchLeft = TOOLS.paneSteps;
+        this.close();
+        noise(this, this.tile, TOOLS.paneNoise);
+        return void this.events.push({ type: 'forcing', what: 'pane' });
+      }
       if (t.kind === 'lock' || t.kind === 'fence') {
         // (Prised open, cut through: a longer moment's work, heard as a blow is. Without the tool: said.)
         const lock = t.kind === 'lock';
@@ -1036,7 +1077,10 @@ export class City {
       const use = cityItem(item)?.use;
       if (!use) return void this.events.push({ type: 'refused', why: 'noUse' });
       // (Nothing wasted: a full stomach isn't fed, unless the thing mends or wakes too.)
+      // (2.61: a bandage or a medkit stops a wound bleeding, whatever the health.)
+      const stanch = s.bleed > 0 && cityItem(item)?.kind === 'med' && (use.health ?? 0) >= 20;
       const needed =
+        stanch ||
         ((use.hunger ?? 0) > 0 && s.hunger < FULL - 2000) ||
         ((use.energy ?? 0) > 0 && s.energy < FULL - 5000) ||
         ((use.health ?? 0) > 0 && s.health < 100);
@@ -1048,6 +1092,10 @@ export class City {
       if ((use.hunger ?? 0) > 0) storyDid(this, 'ate');
       // (2.58: what's eaten never kills: raw fish takes health down to one point at the worst.)
       s.health = Math.max(1, Math.min(100, s.health + (use.health ?? 0)));
+      if (stanch) {
+        s.bleed = 0;
+        this.events.push({ type: 'bleeding', on: false, why: 'bandaged' });
+      }
       return;
     }
     if (op === COP.STORE && s.open) {
@@ -1147,6 +1195,30 @@ export class City {
     this.events.push({ type: 'breach', tile });
   }
 
+  /**
+   * 2.61: a chained building's window broken: climbed through, the chain lifted off from inside (the building forced, as by the
+   * crowbar); bare hands are cut on the glass. Kept, for the picture.
+   */
+  private smash(tile: number) {
+    const s = this.state;
+    const lot = this.district.lotAt[tile] - 1;
+    const door = lot >= 0 ? this.district.lots[lot].doors.find((i) => this.locked[i]) : undefined;
+    if (door === undefined || !this.panes[tile]) return;
+    (s.panes[s.district] ??= []).push(tile);
+    const cut = !this.weapon();
+    this.events.push({ type: 'smashed', tile, cut });
+    this.force(door);
+    if (cut) this.bleedFor(TOOLS.paneCut * BLEED.per);
+  }
+
+  /** 2.61: what a wound will bleed (BLEED): added to what's still to bleed. */
+  bleedFor(harm: number) {
+    const s = this.state;
+    const was = s.bleed;
+    s.bleed = Math.min(BLEED.most, s.bleed + Math.ceil(harm / BLEED.per));
+    if (!was && s.bleed) this.events.push({ type: 'bleeding', on: true });
+  }
+
   /** 2.58: a locked building forced open (the crowbar): every door of it, for good; the dead can go in as anywhere. */
   private force(tile: number) {
     const s = this.state;
@@ -1161,6 +1233,7 @@ export class City {
     for (const p of this.people) this.world.parked[p.tile] = 1;
     if (this.people.length) this.world.refreshBlock();
     this.refreshBars();
+    this.panes = lockedPanes(this, s.district, this.locked);
     this.locksRev++;
     this.events.push({ type: 'forced', tile });
   }
@@ -1353,6 +1426,7 @@ const zedsOk = (list: unknown): list is Zed[] =>
       z.mode <= 3 &&
       (z.kind === undefined || (Number.isInteger(z.kind) && z.kind >= 1 && z.kind <= 5)) &&
       (z.pound === undefined || (Number.isInteger(z.pound) && z.pound >= 0)) &&
+      (z.down === undefined || (Number.isInteger(z.down) && z.down > 0 && z.down <= DOWN.steps)) &&
       Array.isArray(z.path) &&
       z.path.every((i) => Number.isInteger(i) && i >= 0 && i < N),
   );
