@@ -13,11 +13,11 @@ plot your way out of five prisons, each harder than the last, then the Six Hunte
 No download and no account. It plays in the browser, can be installed as an app and then works offline. In
 English and French.
 
-### 🎬 Watch the trailer (42 s)
+### 🎬 Watch the trailer (46 s)
 
-https://github.com/user-attachments/assets/0e522035-9561-443e-9bd6-f3f106767af3
+https://github.com/user-attachments/assets/50d74341-98e1-4229-8d68-55feb0e8568d
 
-In full quality (1080p) [on YouTube](https://youtu.be/P9cyX4B0F-8).
+In full quality (1080p) [on YouTube](https://youtu.be/tKhrYX69rww).
 
 ![The title screen over the drifting prison](docs/screenshots/title.webp)
 
