@@ -16,13 +16,20 @@ type Lang = 'en' | 'fr';
 export const TOUCHDOWN = 1052;
 
 /** What the game doesn't say itself. */
-const OWN: Record<Lang, { words: string[]; prisons: string; cta: string }> = {
+const OWN: Record<Lang, { model: string; plan: string; survive: [string, string]; words: string[]; prisons: string; cta: string }> = {
   en: {
+    // (The game's tagline until 2.63, the trailer's own lines since: the routine's and the plan's.)
+    model: 'Play the model prisoner.',
+    plan: 'Plan the perfect escape.',
+    survive: ['Then ', 'survive.'],
     words: ['Dig.', 'Cut.', 'Bribe.', 'Smuggle.', 'Disguise.', 'Tame.'],
     prisons: '5 prisons. Every way out.',
     cta: 'Free in your browser · Phone & desktop',
   },
   fr: {
+    model: 'Joue le détenu modèle.',
+    plan: 'Prépare l’évasion parfaite.',
+    survive: ['Puis ', 'survis.'],
     words: ['Creuse.', 'Coupe.', 'Soudoie.', 'Trafique.', 'Déguise-toi.', 'Apprivoise.'],
     prisons: '5 prisons. Toutes les sorties.',
     cta: 'Gratuit dans ton navigateur · Mobile et ordinateur',
@@ -258,8 +265,8 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
   // 1. The PA's hello.
   paLine(g, L['pa.hello.maple-grove.0'], t);
 
-  // 2. The model prisoner (the tagline's first half), across the day.
-  const [first, second = ''] = L['title.tagline'].split(/(?<=\.)\s+/);
+  // 2. The model prisoner (the trailer's first line), across the day.
+  const [first, second] = [own.model, own.plan];
   {
     const t0 = marks.rollcall.at + 0.15;
     const t1 = marks.turn.at - 0.05;
@@ -273,7 +280,7 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
     }
   }
 
-  // 3. The plan (its second half), slammed down on the beat.
+  // 3. The plan (its second line), slammed down on the beat.
   {
     const t0 = marks.vents.at;
     const a = env(t, t0, marks.vents.end - 0.04, 0.08, 0.12);
@@ -349,6 +356,30 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
       g.fillRect(0, H - bar, W, bar);
     }
     stamp(g, L['cinema.escaped'], W / 2, H * 0.3, 150, t - touch, env(t, touch, marks.escape.end - 0.02, 0.01, 0.15));
+  }
+
+  // 6b. (2.63) Then survive: over the city, slammed down a beat in, held to the end card.
+  {
+    const t0 = marks.city.at + 0.35;
+    const a = env(t, t0, marks.city.end - 0.04, 0.08, 0.15);
+    if (a > 0) {
+      g.save();
+      g.globalAlpha = a;
+      const s = 1.35 - 0.35 * back((t - t0) / 0.35);
+      g.translate(W / 2, H / 2 + 230);
+      g.scale(s, s);
+      heavy(
+        g,
+        [
+          { text: own.survive[0], color: '#ffffff' },
+          { text: own.survive[1], color: ORANGE },
+        ],
+        0,
+        0,
+        132,
+      );
+      g.restore();
+    }
   }
 
   // 7. The end card: the picture dimmed, the logo, the tagline, where to play.

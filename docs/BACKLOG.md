@@ -65,7 +65,7 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 ## 5. Upkeep
 
 - **Before selling (2.62 renamed the borrowed names):** the trailer on YouTube shows the old prison names
-  (remake or unlist it); the repo is public and its history and the old site still hold them (going
+  (remade for 2.63 as "Over the Wall", in `trailer/`: to upload, and the old one unlisted); the repo is public and its history and the old site still hold them (going
   private, or a fresh repo, is the user's call); a trademark search on the new names and the new title (Over the Wall since 2.63: a first web search found
   no game of that name);
   generic item names some players will still recognise (the fake wall block, the fake fence, the bed
