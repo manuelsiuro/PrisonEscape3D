@@ -232,4 +232,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 - City Escape: the fight with the dead gone over, three more kinds of them (v2.60.0)
 - City Escape: what its design promised and the build left out (v2.61.0)
-- Another game's names taken out (v2.62.0, not released yet)
+- Another game's names taken out (v2.62.0)
