@@ -183,7 +183,7 @@
     linear-gradient(var(--campaign-yellow-94), var(--campaign-yellow-94)) top / 100% 2px no-repeat;
 }
 
-/* Shankton: a hazy sky, gravel, a taller concrete block with its smokestack, two fences. */
+/* Gravel Point: a hazy sky, gravel, a taller concrete block with its smokestack, two fences. */
 .theme-industrial .pc-scene {
   background:
     linear-gradient(var(--campaign-grey-55), var(--campaign-grey-55)) 74% 14% / 7px 34% no-repeat,
@@ -209,7 +209,7 @@
     linear-gradient(var(--grey-93), var(--grey-93)) top / 100% 2px no-repeat;
 }
 
-/* San Pancho: a white-hot sky, sand, an adobe block, a band of mines under the wall. */
+/* Sierra Seca: a white-hot sky, sand, an adobe block, a band of mines under the wall. */
 .theme-desert .pc-scene {
   background:
     radial-gradient(circle at 78% 18%, var(--yellow-97) 0 7%, transparent 8%),
@@ -322,7 +322,7 @@
   gap: 0 8px;
 }
 
-/* A long name ("Pénitencier de Shankton") wraps rather than pushing the stars off the card; on a narrow card (six
+/* A long name ("Pénitencier de Gravel Point") wraps rather than pushing the stars off the card; on a narrow card (six
    stars, the interface scaled up) the stars go under the name rather than breaking its words. */
 .pc-head b {
   flex: 1 1 9ch;

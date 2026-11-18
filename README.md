@@ -2,7 +2,7 @@
 
 **Play the model prisoner. Plan the perfect escape.**
 
-A 3D prison escape game in the spirit of *The Escapists*, for phones and desktops, right in the browser.
+A 3D prison escape game for phones and desktops, right in the browser.
 Keep your head down through roll calls and work shifts while you secretly craft tools, dig, bribe, bluff and
 plot your way out of five prisons, each harder than the last, then the Six Hunter, whose six Hunters keep hounds. And once you're over the wall, keep running.
 
@@ -23,7 +23,7 @@ In full quality (1080p) [on YouTube](https://youtu.be/P9cyX4B0F-8).
 
 ## The game
 
-You arrive at Center Perks, a quiet minimum-security prison, with an orange jumpsuit and empty pockets. The
+You arrive at Maple Grove, a quiet minimum-security prison, with an orange jumpsuit and empty pockets. The
 day runs on a strict timetable: roll call, meals, work, exercise, showers, lights out. Miss it, or slip away
 before you're counted, and the guards notice. Your **heat** rises, guards follow you, and too much of it ends in a chase, a beating and a
 spell in solitary peeling potatoes.
@@ -48,7 +48,7 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
   true, if you know how to read them. Every guard has a name and a temperament: some are lazy and doze off,
   some are strict and search cells, and a few can be bribed.
 - **Make your own tools.** 165 items to find, buy, steal or craft: from a toothbrush shiv and a wire
-  lockpick to a bed dummy, a sheet rope, a grapnel and a glider. Intelligence opens harder recipes.
+  lockpick to a bed dummy, knotted sheets, a grapnel and a glider. Intelligence opens harder recipes.
 - **Work and money.** Ten jobs (three of them only at the Six Hunter), merchants among the inmates, favors to do for cash, a black market with a
   fixer, a burner phone, drone drops and visitors. A cork board in the canteen has odd jobs every day, and
   a story to follow in each prison, a vending machine sells snacks that sometimes need a thump, the menu board changes every day, and the water cooler is where the gossip is.
@@ -74,18 +74,18 @@ getaway star by the medal.
 
 ### Six prisons
 
-Escape one to open the next. Past Irongate, the sixth: **the Six Hunter**, a hunting lodge in a pine valley, where six Hunters
+Escape one to open the next. Past Gull Rock, the sixth: **the Six Hunter**, a hunting lodge in a pine valley, where six Hunters
 and their hounds follow every trail, a river floods every tunnel, and the kennel hand can win the pack over.
 
 <table>
   <tr>
-    <td width="33%" align="center"><img src="docs/screenshots/map-center-perks.webp" alt="Center Perks from above"><br><b>Center Perks</b><br>minimum security<br><em>Chain-link fences and a few detectors: learn the ropes.</em></td>
-    <td width="33%" align="center"><img src="docs/screenshots/map-stalag-flucht.webp" alt="Stalag Flucht from above"><br><b>Stalag Flucht</b><br>medium security<br><em>An alpine camp: live wire, granite under the snow and a cold that saps you.</em></td>
-    <td width="33%" align="center"><img src="docs/screenshots/map-shankton.webp" alt="Shankton State Pen from above"><br><b>Shankton State Pen</b><br>high security<br><em>A concrete shell no tool can chip, detectors in every corridor, two fences.</em></td>
+    <td width="33%" align="center"><img src="docs/screenshots/map-maple-grove.webp" alt="Maple Grove from above"><br><b>Maple Grove</b><br>minimum security<br><em>Chain-link fences and a few detectors: learn the ropes.</em></td>
+    <td width="33%" align="center"><img src="docs/screenshots/map-frostberg.webp" alt="Camp Frostberg from above"><br><b>Camp Frostberg</b><br>medium security<br><em>An alpine camp: live wire, granite under the snow and a cold that saps you.</em></td>
+    <td width="33%" align="center"><img src="docs/screenshots/map-gravel-point.webp" alt="Gravel Point State Pen from above"><br><b>Gravel Point State Pen</b><br>high security<br><em>A concrete shell no tool can chip, detectors in every corridor, two fences.</em></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img src="docs/screenshots/map-san-pancho.webp" alt="San Pancho from above"><br><b>San Pancho</b><br>maximum security<br><em>A desert compound: a minefield between two walls and snipers who never sleep.</em></td>
-    <td width="33%" align="center"><img src="docs/screenshots/map-irongate.webp" alt="HMP Irongate from above"><br><b>HMP Irongate</b><br>supermax<br><em>A fortress on a rock in the sea: tunnels flood, and the only ways off are by sea or by air.</em></td>
+    <td width="33%" align="center"><img src="docs/screenshots/map-sierra-seca.webp" alt="Sierra Seca from above"><br><b>Sierra Seca</b><br>maximum security<br><em>A desert compound: a minefield between two walls and snipers who never sleep.</em></td>
+    <td width="33%" align="center"><img src="docs/screenshots/map-gull-rock.webp" alt="HMP Gull Rock from above"><br><b>HMP Gull Rock</b><br>supermax<br><em>A fortress on a rock in the sea: tunnels flood, and the only ways off are by sea or by air.</em></td>
     <td width="33%" align="center"><img src="docs/screenshots/map-six-hunter.webp" alt="The Six Hunter from above"><br><b>The Six Hunter</b><br>hunting grounds<br><em>A hunting lodge in a pine valley: six Hunters with their hounds, a river that floods tunnels, a fieldstone wall.</em></td>
   </tr>
   <tr>
@@ -141,8 +141,8 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
 | *Talent night* | *Off the roof on the glider* |
 | ![The delivery truck at the gate](public/help/delivery.webp) | ![The guard dog in the corridor](public/help/dogs.webp) |
 | *Delivery day* | *The guard dog* |
-| ![The minefield at San Pancho](public/help/mines.webp) | ![A raft leaving Irongate's pier](public/help/island.webp) |
-| *San Pancho's minefield* | *Off Irongate by raft* |
+| ![The minefield at Sierra Seca](public/help/mines.webp) | ![A raft leaving Gull Rock's pier](public/help/island.webp) |
+| *Sierra Seca's minefield* | *Off Gull Rock by raft* |
 
 ## Controls
 
@@ -165,7 +165,7 @@ On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows
 
 Vite + TypeScript + Three.js, with **no models, textures or sound files**: the prisons, characters and
 items are built in code, and the music and sound effects are synthesized. About 143,000 lines of TypeScript
-in 469 files (formatted by Prettier), and 59,000 more in the tests and tools.
+in 494 files (formatted by Prettier), and 59,000 more in the tests and tools.
 
 ### Running it
 
@@ -233,7 +233,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 ### Documents
 
 - [`docs/FEATURES.md`](docs/FEATURES.md): every feature at a high level, what the code offers as a toolkit, its limits and the ways to extend it.
-- [`docs/source/the_escapists_3d_complete_game_design_document.md`](docs/source/the_escapists_3d_complete_game_design_document.md): the game design document, the source of truth.
+- [`docs/source/game_design_document.md`](docs/source/game_design_document.md): the game design document, the source of truth.
 - [`docs/source/city_escape_design.md`](docs/source/city_escape_design.md): the design of City Escape, the second mode.
 - [`docs/README.md`](docs/README.md): where to find what in the documents.
 - [`docs/PLAN.md`](docs/PLAN.md): decisions, the architecture, tests, the release routine and the status; [`docs/decisions/`](docs/decisions/) what was decided, area by area; [`docs/phases/`](docs/phases/) the phases (P0 to P42 and the polish series) as planned and built.

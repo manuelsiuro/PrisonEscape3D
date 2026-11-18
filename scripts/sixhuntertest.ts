@@ -131,8 +131,8 @@ const NEW = [
     st.tiles[(LAYER.UNDER + 1) * MAP_W * 64 + tileOf(11, z)] = TILE.BRACED;
   }
   place(bot, 11, 5, LAYER.UNDER);
-  give(bot, 'sturdy_shovel');
-  bot.hold('sturdy_shovel');
+  give(bot, 'heavy_shovel');
+  bot.hold('heavy_shovel');
   bot.face(DIR.NORTH);
   let flooded = false;
   for (let k = 0; k < 600 && !flooded; k++) {
@@ -472,15 +472,15 @@ const NEW = [
 // ------------------------------------------------------------------ the antler pick
 {
   const pick = ITEMS.find((d) => d.id === 'antler_pick')!;
-  const steel = ITEMS.find((d) => d.id === 'sturdy_shovel')!;
+  const steel = ITEMS.find((d) => d.id === 'heavy_shovel')!;
   check(pick.tool?.kind === 'dig', 'the antler pick digs');
   const target = { action: 'dig' as const, layer: LAYER.UNDER, tile: 0, fits: true, hp: 1 };
   const reach = (id: string) => strikeNoise(LAYER.UNDER, target, n(id))!.reach;
   check(
-    reach('antler_pick') < reach('light_shovel') &&
-      reach('light_shovel') < reach('sturdy_shovel') &&
+    reach('antler_pick') < reach('reinforced_shovel') &&
+      reach('reinforced_shovel') < reach('heavy_shovel') &&
       reach('antler_pick') === reach('plastic_spoon'),
-    `bone digs quieter than any metal shovel, as quiet as plastic (heard ${reach('antler_pick')} tiles, a light shovel ${reach('light_shovel')}, a sturdy one ${reach('sturdy_shovel')}; ${pick.tool!.damage} a strike against ${steel.tool!.damage})`,
+    `bone digs quieter than any metal shovel, as quiet as plastic (heard ${reach('antler_pick')} tiles, a reinforced shovel ${reach('reinforced_shovel')}, a heavy-duty one ${reach('heavy_shovel')}; ${pick.tool!.damage} a strike against ${steel.tool!.damage})`,
   );
 }
 
@@ -545,7 +545,7 @@ const NEW = [
     const there = lines(PRISONS[0], lang);
     check(
       there.every((l) => officer.test(l)),
-      `${lang}: Center Perks' guards still officers (${there.length})`,
+      `${lang}: Maple Grove's guards still officers (${there.length})`,
     );
   }
   setLang('en');

@@ -231,6 +231,6 @@ export type Nick = 'fish' | 'mole' | 'champ' | 'brains' | 'muscles' | 'moneybags
 /** 2.36: a prison whose guards go by another title (the Six Hunter's Hunters). */
 const OWN_TITLE: Record<string, Record<Lang, string>> = { 'six-hunter': { en: 'Hunter', fr: 'le Veneur' } };
 
-/** A guard by name: "Officer Pratt" / « le gardien Pratt » ("Hunter Garrow" / « le Veneur Garrow » at the Six Hunter). */
+/** A guard by name: "Officer Tibbs" / « le gardien Tibbs » ("Hunter Garrow" / « le Veneur Garrow » at the Six Hunter). */
 export const guardFull = (lang: Lang, name: string, prison = '') =>
   `${OWN_TITLE[prison]?.[lang] ?? (lang === 'fr' ? 'le gardien' : 'Officer')} ${name}`;

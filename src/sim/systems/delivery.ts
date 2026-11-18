@@ -1,6 +1,6 @@
 /**
- * Delivery day (P18): once a week a vehicle comes in at 12:30 (Center Perks' supply truck,
- * Stalag Flucht's Red Cross truck, San Pancho's produce truck, Irongate's supply helicopter)
+ * Delivery day (P18): once a week a vehicle comes in at 12:30 (Maple Grove's supply truck,
+ * Camp Frostberg's Red Cross truck, Sierra Seca's produce truck, Gull Rock's supply helicopter)
  * and leaves at 14:31. While it's in, its bay is solid and stops sight, the doors it needs
  * stand open, and its supervisor walks a round of it instead of his own. A player who reaches
  * its tail unseen can climb in: hidden, going nowhere on foot (the routine's blocks still

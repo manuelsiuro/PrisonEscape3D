@@ -139,14 +139,14 @@ export const START_STR = 40;
 export const START_SPD = 40;
 /** Guards are tougher than the average inmate; inmates vary (STR 30–60). */
 export const GUARD_STR = 60;
-/** Armored riot guards (P12, HMP Irongate): stronger (more health, harder blows), and their plates take a blow's edge off (defense, as an outfit's). */
+/** Armored riot guards (P12, HMP Gull Rock): stronger (more health, harder blows), and their plates take a blow's edge off (defense, as an outfit's). */
 export const RIOT_STR = 80;
 export const RIOT_DEFENSE = 45;
 export const INMATE_STR_MIN = 30;
 export const INMATE_STR_SPAN = 31;
 /** A melee blow reaches this far (units, centre to centre); the razor whip further (its def says). */
 export const MELEE_REACH = Math.round(1.3 * UNIT);
-/** Molten chocolate is thrown this far (GDD §10.1: 3 tiles). */
+/** Scalding cocoa is thrown this far (GDD §10.1: 3 tiles). */
 export const THROW_RANGE = 3 * UNIT;
 /** Lock-on picks someone this close (and in sight); the lock holds out to the second range. */
 export const LOCK_RANGE = 5 * UNIT;
@@ -245,7 +245,7 @@ export const TALK_REACH = Math.round(1.4 * UNIT);
 /** Opinion (GDD §10.3): 0–100 from 50; at or under LOW an inmate may jump the player at meals and showers; from HIGH it joins them. */
 export const OPINION_START = 50;
 export const OPINION_LOW = 25;
-/** A hostile prison (San Pancho, P11): what inmates think of the new arrival on day 1; every fourth cell's starts with a grudge. */
+/** A hostile prison (Sierra Seca, P11): what inmates think of the new arrival on day 1; every fourth cell's starts with a grudge. */
 export const HOSTILE_OPINION = 40;
 export const HOSTILE_GRUDGE = 20;
 /** A score settled: an inmate who put the player down gets over its grudge (its opinion back up to this). */

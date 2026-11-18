@@ -6,7 +6,7 @@
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { ON_MACHINE } from '../src/sim/ai/doing';
 import { placesOf } from '../src/sim/ai/places';
@@ -35,7 +35,7 @@ const put = (bot: Bot, tile: number, facing = 5) => {
 };
 const gearOf = (bot: Bot) => bot.sim.world.props.flatMap((p, i) => (GEAR.includes(p.kind) ? [i] : []));
 const spotOf = (bot: Bot, prop: number) => placesOf(bot.sim.world).machines.find((q) => q.prop === prop)!;
-const hour = (seed = 3, def = CENTER_PERKS, minute = HOUR + 2) => {
+const hour = (seed = 3, def = MAPLE_GROVE, minute = HOUR + 2) => {
   const bot = new Bot(def, seed);
   check(bot.routineUntil(1, minute), 'the hour');
   return bot;
@@ -267,12 +267,12 @@ for (const def of PRISONS) {
   }
   check(any === 0, "nobody on the Training Block's machines");
   // Nothing about the hour's check-in moved: it's still the zone, whoever is on what.
-  const count = hour(3, CENTER_PERKS, HOUR);
+  const count = hour(3, MAPLE_GROVE, HOUR);
   check(count.counted(), 'the hour still counts the player');
 }
 
 // ------------------------------------------------------------------ giving way
-function someoneOn(def = CENTER_PERKS, seed = 41) {
+function someoneOn(def = MAPLE_GROVE, seed = 41) {
   const bot = hour(seed, def, HOUR);
   check(
     bot.until(
@@ -515,10 +515,10 @@ console.log('giving way: asked in every prison, on the machine in 2 s, they keep
   check(after?.kind === 'person' && after.who === talk.who, `off it, as ever (${JSON.stringify(after)})`);
   // Nor is someone only standing on a mat kept from a talk by the mat.
   const mats = new Bot(
-    PRISONS.find((d) => d.id === 'irongate')!,
+    PRISONS.find((d) => d.id === 'gull-rock')!,
     3,
   );
-  check(mats.routineUntil(1, 10 * 60), 'irongate');
+  check(mats.routineUntil(1, 10 * 60), 'gull-rock');
   const mat = mats.sim.world.props.find((p) => p.kind === 'mat')!;
   const stands = mats.st.inmates[0];
   stands.body.x = (mat.x + 1) * UNIT + UNIT / 2;
@@ -535,7 +535,7 @@ console.log('giving way: asked in every prison, on the machine in 2 s, they keep
   );
   check(faced?.kind === 'person' && faced.who === 0, `someone on a mat, faced, is talked to (${JSON.stringify(faced)})`);
   // The player on a machine: anyone bound for it goes elsewhere.
-  const bound = hour(41, CENTER_PERKS, HOUR);
+  const bound = hour(41, MAPLE_GROVE, HOUR);
   clear(bound);
   const prop = bound.sim.world.props.findIndex((p) => p.kind === 'treadmill');
   const spot = spotOf(bound, prop);
@@ -661,7 +661,7 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   bot.st.energy = 100;
   bot.act();
   const snap = JSON.parse(JSON.stringify(bot.sim.snapshot()));
-  const loaded = new Sim(CENTER_PERKS, 41);
+  const loaded = new Sim(MAPLE_GROVE, 41);
   loaded.restore(snap);
   check(loaded.state.askTurn[0] === prop, 'a turn asked for is kept in a save');
   for (let k = 0; k < 60; k++) {
@@ -673,11 +673,11 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   const old = JSON.parse(JSON.stringify(bot.sim.snapshot()));
   delete old.state.repBeat;
   delete old.state.askTurn;
-  const from = new Sim(CENTER_PERKS, 41);
+  const from = new Sim(MAPLE_GROVE, 41);
   from.restore(old);
   check(from.state.repBeat === -1 && from.state.askTurn.length === 0, 'a save from before loads with neither');
   // A log from before.
-  const was228 = new Sim(CENTER_PERKS, 24);
+  const was228 = new Sim(MAPLE_GROVE, 24);
   was228.rules228 = true;
   was228.rules229 = true;
   was228.rules230 = true;
@@ -690,16 +690,16 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   const prev = new RunRecorder(was228, { seed: 24, game: '2.28.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(!prev.sim.state.inmates.some((m) => ON_MACHINE.includes(m.doing)), 'the old rules: nobody on the machines');
-  const replayed = replayLog(prev.toLog(), CENTER_PERKS);
+  const replayed = replayLog(prev.toLog(), MAPLE_GROVE);
   check(!!replayed?.ok && replayed.sim.rules228 === true, 'a 2.28 log through the hour replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, MAPLE_GROVE)?.ok, 'and would not under the new ones: the test can fail');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 24), { seed: 24, game: '2.44.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) now.step(0);
-  check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
+  check(!!replayLog(now.toLog(), MAPLE_GROVE)?.ok, "a log of today's replays");
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 24, 'and is carried on');
   // The old set: fast presses, a bar that drains, the bag no use at all.
-  const o = new Bot(CENTER_PERKS, 3);
+  const o = new Bot(MAPLE_GROVE, 3);
   o.sim.rules228 = true;
   check(o.routineUntil(1, HOUR + 2), 'the hour, as it was');
   clear(o);

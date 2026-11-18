@@ -178,7 +178,7 @@ export function announcePeople(e: SimEvent, sim: Sim) {
       sound.whistle();
       buzz('missed');
       banner.toast(t('toast.ambush', { name: inmateName(sim, e.who) }), 'bad', 4500);
-      // A lawless prison (San Pancho, or a Bad Blood Daily): how scores are settled there, told once.
+      // A lawless prison (Sierra Seca, or a Bad Blood Daily): how scores are settled there, told once.
       if (hostile(sim)) coachOnce('hostile', 'hint.hostile');
       break;
     case 'allyHit':

@@ -6,7 +6,7 @@
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { Sim } from '../src/sim/Sim';
 import { prepareReplay, RunRecorder, type RunLog } from '../src/sim/runlog';
@@ -50,7 +50,7 @@ console.log(`${pictured.length} pictures, each with its recipe`);
 // ------------------------------------------------------------------ rule changes
 const num = (v: string) => v.split('.').reduce((sum, x) => sum * 1000 + Number(x), 0);
 // (2.43: the flags kept on the world too are getters on the prototype: rules232, rules2331, rules236, rules242.)
-const flags = [...Object.keys(new Sim(CENTER_PERKS, 1)), ...Object.getOwnPropertyNames(Sim.prototype)].filter((k) => /^rules\d+$/.test(k));
+const flags = [...Object.keys(new Sim(MAPLE_GROVE, 1)), ...Object.getOwnPropertyNames(Sim.prototype)].filter((k) => /^rules\d+$/.test(k));
 /** The plan, with its decisions and phases, and the history: each split into files (2026-11-06). */
 const docs = (...dirs: string[]) =>
   dirs
@@ -68,26 +68,26 @@ const version = (flag: string) =>
     : flag.length === 9
       ? [Number(flag[5]), Number(flag.slice(6, 8)), Number(flag[8])]
       : [Number(flag[5]), Number(flag.slice(6)), 0];
-const log = (game: string, prison = CENTER_PERKS.id): RunLog => ({ v: 1, prison, seed: 1, game, from: 0, steps: 0, data: '', sums: [] });
+const log = (game: string, prison = MAPLE_GROVE.id): RunLog => ({ v: 1, prison, seed: 1, game, from: 0, steps: 0, data: '', sums: [] });
 for (const flag of flags) {
   check(plan.includes(`Sim.${flag}`), `${flag}: written down in the plan (PLAN.md, docs/decisions/, docs/phases/)`);
   const [a, b, c] = version(flag);
   // (rules236 is the roll call's as it was where 2.37 moved it: a prison that has one before 2.37.)
-  const def = flag === 'rules236' ? PRISONS.find((d) => d.rollCallBefore237)! : CENTER_PERKS;
+  const def = flag === 'rules236' ? PRISONS.find((d) => d.rollCallBefore237)! : MAPLE_GROVE;
   const set = prepareReplay(log(`${a}.${b}.${c}`, def.id), def);
   check(!!set && (set.sim as unknown as Record<string, boolean>)[flag] === true, `${flag}: a log from ${a}.${b}.${c} replays under it`);
 }
 const latest = [...flags].sort((a, b) => num(version(a).join('.')) - num(version(b).join('.'))).at(-1)!;
 const [ma, mi] = version(latest);
-const old = new RunRecorder(new Sim(CENTER_PERKS, 1), { seed: 1, game: `${ma}.${mi}.0` });
+const old = new RunRecorder(new Sim(MAPLE_GROVE, 1), { seed: 1, game: `${ma}.${mi}.0` });
 old.step(0);
 check(
   new RunRecorder(old.sim, { log: old.toLog(), game: `${ma}.${mi + 1}.0` }).toLog().seed === -1,
   `a log from before ${latest}'s change isn't carried on under it`,
 );
-const now = new RunRecorder(new Sim(CENTER_PERKS, 1), { seed: 1, game: `${ma}.${mi + 1}.0` });
+const now = new RunRecorder(new Sim(MAPLE_GROVE, 1), { seed: 1, game: `${ma}.${mi + 1}.0` });
 now.step(0);
-check(prepareReplay(now.toLog(), CENTER_PERKS)!.sim[latest as 'rules224'] === false, `a log from ${ma}.${mi + 1}.0 plays by today's rules`);
+check(prepareReplay(now.toLog(), MAPLE_GROVE)!.sim[latest as 'rules224'] === false, `a log from ${ma}.${mi + 1}.0 plays by today's rules`);
 console.log(`rule flags: ${flags.join(', ')}; each gated and written down`);
 
 // ------------------------------------------------------------------ the record

@@ -4,7 +4,7 @@
 // animation frame's scripts where the browser reports them. Memory is sampled as it goes: the JS heap,
 // the graphics objects (geometries, textures, programs), the page's elements.
 //   const hp = await import('/scripts/dev/hitchprobe.ts');
-//   await hp.day('center-perks', 1, 30);     // a day from 07:00 at ×30, the player standing by
+//   await hp.day('maple-grove', 1, 30);     // a day from 07:00 at ×30, the player standing by
 //   await hp.watch(20);                      // 20 s of whatever's on screen, at its own speed
 //   await hp.prisons(3);                     // every prison staged 3 times: what's left behind
 import { play } from '../../src/play/game';
@@ -190,7 +190,7 @@ export async function watch(seconds = 20) {
 /** Every prison staged `rounds` times over (as a long session moving between them does): what each round leaves. */
 export async function prisons(rounds = 3) {
   hook();
-  const list = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
+  const list = ['training', 'maple-grove', 'frostberg', 'gravel-point', 'gull-rock', 'sierra-seca', 'six-hunter'];
   const t0 = performance.now();
   const out: Array<Sample & { round: number }> = [];
   rec = { gaps: [], slow: [], compiled: 0, gcs: 0 };

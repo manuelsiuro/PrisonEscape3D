@@ -32,7 +32,7 @@ import {
 } from '../src/content/crew';
 import { itemDef, itemNumber } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { ROUTINE } from '../src/content/routine';
 import { placesOf } from '../src/sim/ai/places';
 import { lineOfSight } from '../src/sim/ai/sight';
@@ -55,7 +55,7 @@ import {
   shaftOf,
   specialityOf,
 } from '../src/sim/systems/crew';
-import { IRONGATE } from '../src/content/prisons/irongate';
+import { GULL_ROCK } from '../src/content/prisons/gull-rock';
 import { DAY_EVENTS } from '../src/content/days';
 import { performersTonight, tonight } from '../src/sim/systems/talent';
 import { damage, INMATE_DEFENSE } from '../src/sim/systems/combat';
@@ -83,12 +83,12 @@ const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').
 const crewNews = (seen: SimEvent[], what: string) =>
   seen.filter((e) => e.type === 'crew' && e.what === what) as Array<Extract<SimEvent, { type: 'crew' }>>;
 
-/** Center Perks' inmates by line of work (inmate index): the first of each. */
+/** Maple Grove's inmates by line of work (inmate index): the first of each. */
 const CP = { digger: 0, muscle: 1, lookout: 2, smuggler: 4, digger2: 3, muscle2: 5, lookout2: 6 };
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet. */
 function game(seed = 5) {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   sim.state.calendar = [[0, 0, 0]];
   const seen: SimEvent[] = [];
   const step = (cmd = 0, calm = true) => {
@@ -171,9 +171,9 @@ function clearOut(sim: Sim, keep: number[] = []) {
     check(def.crew.length === def.names.length, `${def.id}: a line of work for every inmate (${def.crew.length} of ${def.names.length})`);
     if (def.id !== 'training') for (const sp of SPECIALITIES) check(def.crew.includes(sp), `${def.id}: has a ${sp}`);
   }
-  const sim = new Sim(CENTER_PERKS, 1);
+  const sim = new Sim(MAPLE_GROVE, 1);
   check(
-    sim.state.inmates.map((m, k) => specialityOf(sim.world, k, m.cell)).join(',') === CENTER_PERKS.crew.join(','),
+    sim.state.inmates.map((m, k) => specialityOf(sim.world, k, m.cell)).join(',') === MAPLE_GROVE.crew.join(','),
     "an inmate's line of work is its cell's",
   );
   check(
@@ -283,7 +283,7 @@ function clearOut(sim: Sim, keep: number[] = []) {
 /** A floor tile with a wall to the east the pick can chip (inside, not a cell's). */
 function chipSpot(sim: Sim): number {
   const w = sim.world;
-  const pick = n('sturdy_pickaxe');
+  const pick = n('heavy_pickaxe');
   for (let i = MAP_W * 3; i < MAP_W * (MAP_H - 3); i++) {
     const x = i % MAP_W;
     if (
@@ -310,7 +310,7 @@ function chipSpot(sim: Sim): number {
   check(orderOf(sim.state, CP.digger) === ORDER.DIG, 'digging with the player');
   const spot = chipSpot(sim);
   const it = sim.state.items;
-  it.inv[0] = slot(n('sturdy_pickaxe'));
+  it.inv[0] = slot(n('heavy_pickaxe'));
   it.hand = 0;
   const strikeOnce = () => {
     sim.state.struckAt = -1000;
@@ -324,7 +324,7 @@ function chipSpot(sim: Sim): number {
   m.path = [];
   strikeOnce();
   const key = placeKey(LAYER.GROUND, spot + 1);
-  const dmg = itemDef(n('sturdy_pickaxe')).tool!.damage;
+  const dmg = itemDef(n('heavy_pickaxe')).tool!.damage;
   check(
     sim.state.wear[key] === Math.floor((dmg * DIG_HELP) / 4),
     `a chip with him at hand: ${Math.floor((dmg * DIG_HELP) / 4)} (not ${dmg})`,
@@ -345,7 +345,7 @@ function chipSpot(sim: Sim): number {
   h.recruit(CP.digger);
   h.talk(TALK.CREW, ORDER.DIG);
   h.step(command(0, OP.CLOSE));
-  h.sim.state.items.inv[0] = slot(n('sturdy_pickaxe'));
+  h.sim.state.items.inv[0] = slot(n('heavy_pickaxe'));
   h.sim.state.items.hand = 0;
   put(h.sim.state.player, spot);
   h.sim.state.player.facing = 1;
@@ -356,7 +356,7 @@ function chipSpot(sim: Sim): number {
 
   // Down a tunnel: dug in the yard, he waits beside the shaft, the tunnel dug a quarter faster, the dirt his.
   const y = yardSpot(sim, 1);
-  it.inv[0] = slot(n('sturdy_shovel'));
+  it.inv[0] = slot(n('heavy_shovel'));
   put(sim.state.player, y);
   sim.state.player.facing = 1;
   put(m.body, y - 1);
@@ -380,7 +380,7 @@ function chipSpot(sim: Sim): number {
   sim.state.player.facing = 1;
   strikeOnce();
   const under = placeKey(LAYER.UNDER, y + 2);
-  const sd = itemDef(n('sturdy_shovel')).tool!.damage;
+  const sd = itemDef(n('heavy_shovel')).tool!.damage;
   const soil = Math.floor((sd * SHAFT_HELP) / 4);
   check(
     (sim.state.wear[under] ?? 0) === soil || sim.world.layers[LAYER.UNDER].kind[y + 2] === TILE.TUNNEL,
@@ -396,7 +396,7 @@ function chipSpot(sim: Sim): number {
   g.step(command(0, OP.INTERACT));
   check(sim.state.layer === LAYER.GROUND && shaftOf(sim.state, CP.digger) === -1, "back up: by the player's side again");
   console.log(
-    `dig: a sturdy pick ${dmg} → ${Math.floor((dmg * DIG_HELP) / 4)} with a digger, a sturdy shovel underground ${sd} → ${soil}; dirt taken ${sim.state.feats[FEAT.dirtTaken]}`,
+    `dig: a heavy-duty pick ${dmg} → ${Math.floor((dmg * DIG_HELP) / 4)} with a digger, a heavy-duty shovel underground ${sd} → ${soil}; dirt taken ${sim.state.feats[FEAT.dirtTaken]}`,
   );
 }
 
@@ -427,7 +427,7 @@ function chipSpot(sim: Sim): number {
   };
   const plain = run(false);
   const backed = run(true);
-  const sim = new Sim(CENTER_PERKS, 13);
+  const sim = new Sim(MAPLE_GROVE, 13);
   const base = damage(sim.state.inmates[CP.muscle].str, 0, INMATE_DEFENSE);
   check(
     plain === base && backed === Math.floor((base * 3) / 2),
@@ -875,7 +875,7 @@ function chipSpot(sim: Sim): number {
   g.talk(TALK.CREW, ORDER.FETCH);
   g.step(command(0, OP.CLOSE));
   g.steps(30);
-  const twin = new Sim(CENTER_PERKS, 37);
+  const twin = new Sim(MAPLE_GROVE, 37);
   twin.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   for (let k = 0; k < 1500; k++) {
     sim.step(0);
@@ -919,8 +919,8 @@ function chipSpot(sim: Sim): number {
 
 // ------------------------------------------------------------------ 2.5.1: fences, the cell door, the evening's busy
 {
-  // Irongate's walkway and yard, a chain-link fence between (x 7): sight goes through it, feet don't.
-  const sim = new Sim(IRONGATE, 3);
+  // Gull Rock's walkway and yard, a chain-link fence between (x 7): sight goes through it, feet don't.
+  const sim = new Sim(GULL_ROCK, 3);
   const s = sim.state;
   const tile = (x: number, z: number) => z * MAP_W + x;
   check(
@@ -928,7 +928,7 @@ function chipSpot(sim: Sim): number {
       !sim.world.blocked(6, 24) &&
       !sim.world.blocked(8, 24) &&
       !sim.world.blocked(9, 24),
-    'Irongate: a fence at 7,24 between open ground',
+    'Gull Rock: a fence at 7,24 between open ground',
   );
   const who = 2;
   s.followers = [who];
@@ -957,7 +957,7 @@ function chipSpot(sim: Sim): number {
 }
 {
   // A lookout never posted beside the player's cell door (its doorstep, inside, either side).
-  const sim = new Sim(CENTER_PERKS, 5);
+  const sim = new Sim(MAPLE_GROVE, 5);
   const w = sim.world;
   const door = w.cellDoor[1];
   const [dx, dz] = [door % MAP_W, Math.floor(door / MAP_W)];
@@ -994,7 +994,7 @@ function chipSpot(sim: Sim): number {
   sim.rules250 = false;
   sim.state.shootout = null;
   // Talent night: not the act on the stage.
-  const t = new Sim(CENTER_PERKS, 81);
+  const t = new Sim(MAPLE_GROVE, 81);
   t.state.calendar = [
     [0, 0, 0],
     [1, DAY_EVENTS.indexOf('talent'), 0],

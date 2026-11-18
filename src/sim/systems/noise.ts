@@ -246,7 +246,7 @@ export function makeNoise(
 
 /**
  * The noise a strike makes (null: none): how far it carries by what the tool does, a tile less
- * for plastic and one more for a sturdy, powered or multi tool; heard from the floor broken
+ * for plastic and one more for a heavy-duty, powered or multi tool; heard from the floor broken
  * open from below, and from wherever the player works a grate.
  */
 export function strikeNoise(layer: number, target: ToolTarget | null, held: number): NoiseAt | null {

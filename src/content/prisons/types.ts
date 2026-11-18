@@ -40,7 +40,7 @@ export interface GuardDef {
   duties?: ReadonlyArray<'bedCheck' | 'shakedown'>;
   /** The door key it carries on its belt (GDD §10.2: one color each). */
   key: 'yellow' | 'cyan' | 'purple' | 'red' | 'green';
-  /** An armored riot guard (HMP Irongate, GDD §4.5): helmet and plates, stronger, blows glance off. */
+  /** An armored riot guard (HMP Gull Rock, GDD §4.5): helmet and plates, stronger, blows glance off. */
   riot?: boolean;
   /** One of the helipad's guards (GDD §4.5): the helicopter takes nobody while one is up and about. */
   helipad?: boolean;
@@ -78,7 +78,7 @@ export interface DogDef {
 /** How a dog looks: a black-and-tan shepherd, a brindle mastiff, a cinnamon retriever, a black-and-white collie; 2.36 (The Six Hunter's pack): a tricolour foxhound, a liver-red bloodhound. */
 export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie' | 'foxhound' | 'bloodhound';
 
-/** What a generator powers (GDD §5.5; HMP Irongate splits them between two, §4.5). */
+/** What a generator powers (GDD §5.5; HMP Gull Rock splits them between two, §4.5). */
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
 
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
@@ -121,7 +121,7 @@ export interface CheckpointDef {
   window: ReadonlyArray<{ x: number; z: number }>;
   /** The gates that open for the player once waved through, in the order they're walked (perimeter doors no key opens). */
   gates: ReadonlyArray<{ x: number; z: number }>;
-  /** Irongate: the drawbridge (`drawbridge`) comes down for the player too. */
+  /** Gull Rock: the drawbridge (`drawbridge`) comes down for the player too. */
   bridge?: boolean;
   /** The gatekeeper's booth, by the gate where nobody walks (solid from 2.33.2): a tile, and the way its hatch faces (1–16). */
   booth: { x: number; z: number; face: number };
@@ -145,7 +145,7 @@ export interface CommsDef {
    * P36: the release desk. Where a forged release form is slipped into the tray, and where the
    * player reports on the morning their name is on the list (tiles they can walk to at 10:00 with
    * no key); the doors from there to the road, in the order they're walked, that open for them
-   * alone once they're cleared (Irongate: the drawbridge comes down too, `bridge`). Route `paperwork`.
+   * alone once they're cleared (Gull Rock: the drawbridge comes down too, `bridge`). Route `paperwork`.
    */
   release: { at: ReadonlyArray<{ x: number; z: number }>; gates: ReadonlyArray<{ x: number; z: number }>; bridge?: boolean };
 }
@@ -164,13 +164,13 @@ export interface SmugglingDef {
   droneHours?: readonly [number, number];
   /** The room where visitors sit, across a counter or a table, on visiting day; its ways out are scanned as detector arches while visiting hours last. */
   visits?: Rect;
-  /** No visits (Stalag Flucht): what a visitor would bring comes in a Red Cross parcel on delivery day. */
+  /** No visits (Camp Frostberg): what a visitor would bring comes in a Red Cross parcel on delivery day. */
   parcel?: boolean;
 }
 
 /**
- * How a prison bends the common rules (P8+; each default is Center Perks'). New prisons add
- * what they need here rather than in code: San Pancho's snipers by night too, the tutorial's
+ * How a prison bends the common rules (P8+; each default is Maple Grove's). New prisons add
+ * what they need here rather than in code: Sierra Seca's snipers by night too, the tutorial's
  * forgiving routine.
  */
 interface PrisonRules {
@@ -180,9 +180,9 @@ interface PrisonRules {
   relaxed?: boolean;
   /** Contraband in sight adds its heat one step in this many (default 1: +40% a second). */
   contrabandEvery?: number;
-  /** Freezing weather (Stalag Flucht, GDD §4.2): a minute outdoors without a warm outfit doubles what energy costs. */
+  /** Freezing weather (Camp Frostberg, GDD §4.2): a minute outdoors without a warm outfit doubles what energy costs. */
   cold?: boolean;
-  /** A lawless interior (San Pancho, GDD §4.4): a few inmates bear the new arrival a grudge from day 1, and grudges are settled in free time and the yard too, not just at meals and in the showers. */
+  /** A lawless interior (Sierra Seca, GDD §4.4): a few inmates bear the new arrival a grudge from day 1, and grudges are settled in free time and the yard too, not just at meals and in the showers. */
   hostile?: boolean;
   /** How far guards see (tiles; default 7): the Daily's twists (P26) may change it, the weather and the inspectors bend it (P17). */
   sightRange?: number;
@@ -272,7 +272,7 @@ export interface PrisonDef {
   id: string;
   /** 1 (minimum security) to 5 (supermax); 6, the Six Hunter's hunting grounds (2.36: past the campaign's five, out of the Daily's draw). */
   difficulty: number;
-  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island in the sea, the Six Hunter's pine forest. */
+  /** How it looks (render only): Maple Grove's suburban green (default), Camp Frostberg's alpine snow, Gravel Point's industrial grey, Sierra Seca's desert, HMP Gull Rock's island in the sea, the Six Hunter's pine forest. */
   theme?: 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island' | 'forest';
   /** The ground floor picture (layer 0). */
   ground: string;
@@ -288,7 +288,7 @@ export interface PrisonDef {
   /** Standing spots at roll call, one per inmate (painted on the ground; used by the routine). */
   rollCall: ReadonlyArray<{ x: number; z: number }>;
   /**
-   * 2.37: the roll call as it was before its squares were centred in their zone (the Six Hunter's, Shankton's):
+   * 2.37: the roll call as it was before its squares were centred in their zone (the Six Hunter's, Gravel Point's):
    * its standing spots (when they moved) and its zone's rectangles in place of the `rollCall` ones, for runs logged
    * on 2.36 or before (`World.oldRollCall`, `Sim.rules236`).
    */
@@ -312,20 +312,20 @@ export interface PrisonDef {
   searchlights?: ReadonlyArray<ReadonlyArray<{ x: number; z: number }>>;
   /** Decor (P8+): pieces that dress the rooms and nothing else (the simulation never sees them). */
   decor?: readonly DecorPlacement[];
-  /** Rules that differ from Center Perks' (P8+). */
+  /** Rules that differ from Maple Grove's (P8+). */
   rules?: PrisonRules;
   /** The perimeter gates (doors no key opens; a takeover does). Default: every door beside the road. */
   gates?: ReadonlyArray<{ x: number; z: number }>;
   /** The ways out of this prison (default: fence, tunnel, roof, takeover), for the victory screen and the records. */
   escapes?: readonly EscapeRoute[];
   /**
-   * Several generators (HMP Irongate, GDD §4.5): what each powers, in the order the props
+   * Several generators (HMP Gull Rock, GDD §4.5): what each powers, in the order the props
    * list them. Without it the prison's one generator powers everything.
    */
   grid?: ReadonlyArray<readonly PowerUse[]>;
-  /** Roofs a grapnel swings across onto from another roof, over open ground (Irongate's chasm): their rectangles. */
+  /** Roofs a grapnel swings across onto from another roof, over open ground (Gull Rock's chasm): their rectangles. */
   landings?: readonly Rect[];
-  /** Water a takeover bridges (Irongate's ferry drawbridge, GDD §4.5): walkable while the prison is the inmates'. */
+  /** Water a takeover bridges (Gull Rock's ferry drawbridge, GDD §4.5): walkable while the prison is the inmates'. */
   drawbridge?: Rect;
   /** Its delivery day's vehicle (P18); without one, no delivery (the deck has no such card). */
   delivery?: DeliveryDef;

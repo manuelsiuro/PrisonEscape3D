@@ -3,7 +3,7 @@
  * - the data: the burner phone is contraband and plain to see in hand; the catalogue's items
  *   exist; every prison but the Training Block has a fixer (one of its merchants), a drop area
  *   with somewhere to land, and visitors (a visiting room with seats across a counter or a
- *   table, and its ways out) or Stalag Flucht's Red Cross parcel; visiting day is dealt only
+ *   table, and its ways out) or Camp Frostberg's Red Cross parcel; visiting day is dealt only
  *   where people visit;
  * - the phone: only the fixer sells it, in the merchants' hours, to a friend, for $60, one at a
  *   time; in hand in a guard's sight it's contraband seen (in the pocket it isn't);
@@ -23,8 +23,8 @@
 import { DAY_BOOKS, DAY_EVENTS } from '../src/content/days';
 import { itemDef, itemNumber } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import {
@@ -180,7 +180,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 
 // ------------------------------------------------------------------ the phone from the fixer
 {
-  const { sim, seen, step, to } = game(CENTER_PERKS);
+  const { sim, seen, step, to } = game(MAPLE_GROVE);
   const s = sim.state;
   const fixer = fixerOf(sim);
   const other = s.inmates.findIndex((_, k) => k !== fixer);
@@ -228,7 +228,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 
 // ------------------------------------------------------------------ plain to see in hand
 {
-  const { sim, seen, step, to } = game(CENTER_PERKS);
+  const { sim, seen, step, to } = game(MAPLE_GROVE);
   const s = sim.state;
   to(1, 10, 30);
   const g = s.guards[0];
@@ -255,7 +255,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 
 // ------------------------------------------------------------------ orders
 {
-  const { sim, seen, to, phone, order } = game(CENTER_PERKS, 5, [
+  const { sim, seen, to, phone, order } = game(MAPLE_GROVE, 5, [
     [0, 0, 0],
     [6, VISITING, 0],
   ]);
@@ -284,7 +284,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   check(refused(seen).includes('ordered') && s.order[0] === 2, 'one order at a time');
   // Nothing coming that way in the weeks ahead (every visiting day forced away): refused, nothing paid.
   {
-    const q = game(CENTER_PERKS, 5);
+    const q = game(MAPLE_GROVE, 5);
     q.to(1, 10, 0);
     q.phone(500);
     q.order(0, WAY.VISITOR);
@@ -299,7 +299,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 // ------------------------------------------------------------------ the drone: when, where, the noise, seized or picked up
 {
   // Tonight with notice enough; else tomorrow night.
-  const { sim, seen, step, to, phone, order, blind } = game(CENTER_PERKS, 7);
+  const { sim, seen, step, to, phone, order, blind } = game(MAPLE_GROVE, 7);
   const s = sim.state;
   to(2, 9, 0);
   const tonight = droneMinute(sim, 2);
@@ -359,7 +359,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 }
 {
   // A guard who sees it takes it.
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 7);
+  const { sim, seen, step, to, phone, order } = game(MAPLE_GROVE, 7);
   const s = sim.state;
   to(2, 9, 0);
   phone();
@@ -389,7 +389,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 }
 {
   // Never in a storm; the sirens turn it back.
-  const { sim, seen, step, to, phone, order, blind } = game(CENTER_PERKS, 7, [
+  const { sim, seen, step, to, phone, order, blind } = game(MAPLE_GROVE, 7, [
     [0, 0, 0],
     [2, 0, 3],
   ]);
@@ -414,7 +414,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 }
 {
   // A guard looking right where it would land: the drone turns back (never seized as it falls).
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 7);
+  const { sim, seen, step, to, phone, order } = game(MAPLE_GROVE, 7);
   const s = sim.state;
   to(2, 9, 0);
   phone();
@@ -495,7 +495,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 
 // ------------------------------------------------------------------ visits and the arches
 {
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [
+  const { sim, seen, step, to, phone, order } = game(MAPLE_GROVE, 5, [
     [0, 0, 0],
     [3, VISITING, 0],
   ]);
@@ -578,7 +578,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   s.lockdown = false;
   // Stood in an arch at noon: scanned once, as they stepped in (not again by the noon scan).
   {
-    const q = game(CENTER_PERKS, 5, [
+    const q = game(MAPLE_GROVE, 5, [
       [0, 0, 0],
       [3, VISITING, 0],
     ]);
@@ -598,7 +598,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 }
 {
   // No room in the hotbar: kept for next time.
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [
+  const { sim, seen, step, to, phone, order } = game(MAPLE_GROVE, 5, [
     [0, 0, 0],
     [3, VISITING, 0],
     [10, VISITING, 0],
@@ -621,10 +621,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   check(arrival(sim)?.day === 10, 'next visiting day: day 10');
 }
 
-// ------------------------------------------------------------------ the Red Cross parcel (Stalag Flucht)
+// ------------------------------------------------------------------ the Red Cross parcel (Camp Frostberg)
 {
   const parcelRun = (item: number, close: boolean, full = false) => {
-    const { sim, seen, step, to, phone, order } = game(STALAG_FLUCHT, 5, [
+    const { sim, seen, step, to, phone, order } = game(FROSTBERG, 5, [
       [0, 0, 0],
       [3, DELIVERY, 0],
     ]);
@@ -682,12 +682,12 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 // ------------------------------------------------------------------ saves and old games
 {
   // An order on its way, saved and loaded: the same game.
-  const { sim, step, to, phone, order } = game(CENTER_PERKS, 7);
+  const { sim, step, to, phone, order } = game(MAPLE_GROVE, 7);
   to(2, 9, 0);
   phone();
   order(4, WAY.DRONE);
   const snap: Snapshot = sim.snapshot();
-  const twin = new Sim(CENTER_PERKS, 1);
+  const twin = new Sim(MAPLE_GROVE, 1);
   twin.restore(JSON.parse(JSON.stringify(snap)));
   for (let k = 0; k < 600; k++) {
     step();
@@ -701,7 +701,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 }
 {
   // A save from before P21: today and tomorrow keep the card visiting day took the place of.
-  const sim = new Sim(CENTER_PERKS, 4);
+  const sim = new Sim(MAPLE_GROVE, 4);
   let day = 2;
   while (planOf(sim, day).event !== 'visiting') day++;
   const snap = sim.snapshot();
@@ -710,37 +710,37 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   delete old.order;
   delete old.drops;
   delete old.visit;
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(snap);
   check(
-    planOf(loaded, day).event === DAY_BOOKS['center-perks'].beforeVisits && loaded.state.order.length === 0,
-    `an old save on visiting day ${day}: it keeps its ${DAY_BOOKS['center-perks'].beforeVisits}`,
+    planOf(loaded, day).event === DAY_BOOKS['maple-grove'].beforeVisits && loaded.state.order.length === 0,
+    `an old save on visiting day ${day}: it keeps its ${DAY_BOOKS['maple-grove'].beforeVisits}`,
   );
   // A damaged one: an order for nothing in the catalogue, a drop of no item: dropped, never a crash.
   const bad = sim.snapshot();
   Object.assign(bad.state, { order: [99, 0, 1], drops: [[5, 0, 1]] });
-  const fixed = new Sim(CENTER_PERKS, 1);
+  const fixed = new Sim(MAPLE_GROVE, 1);
   fixed.restore(bad);
   for (let k = 0; k < DAY_STEPS + 10; k++) fixed.step(0);
   check(fixed.state.order.length === 0 && fixed.state.drops.length === 0, 'a damaged save: the broken order and drop are gone');
   // A drop with nothing lying where it says: forgotten, never counted as picked up.
   const ghost = sim.snapshot();
   Object.assign(ghost.state, { drops: [[1885, catalogueItem(0), 5]] });
-  const g2 = new Sim(CENTER_PERKS, 1);
+  const g2 = new Sim(MAPLE_GROVE, 1);
   g2.restore(ghost);
   g2.step(0);
   check(g2.state.drops.length === 0 && g2.state.feats[FEAT.drops] === 0, "a save with a drop that isn't there: no pick-up counted");
   // A run logged before P21 replays with the old card.
-  const rec = new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.14.2' });
-  const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);
+  const rec = new RunRecorder(new Sim(MAPLE_GROVE, 4), { seed: 4, game: '1.14.2' });
+  const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, MAPLE_GROVE);
   check(
-    !!replay && planOf(replay.sim, day).event === DAY_BOOKS['center-perks'].beforeVisits,
+    !!replay && planOf(replay.sim, day).event === DAY_BOOKS['maple-grove'].beforeVisits,
     'a run logged before P21 replays with the old card',
   );
   const now = replayLog(
-    { ...new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.15.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] },
-    CENTER_PERKS,
+    { ...new RunRecorder(new Sim(MAPLE_GROVE, 4), { seed: 4, game: '1.15.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] },
+    MAPLE_GROVE,
   );
   check(!!now && planOf(now.sim, day).event === 'visiting', 'one logged since deals visiting day');
-  console.log(`saves: an order carries on; an old save on visiting day ${day} keeps its ${DAY_BOOKS['center-perks'].beforeVisits}`);
+  console.log(`saves: an order carries on; an old save on visiting day ${day} keeps its ${DAY_BOOKS['maple-grove'].beforeVisits}`);
 }

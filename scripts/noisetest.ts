@@ -1,10 +1,10 @@
 /**
- * Noise and distractions (P14), rule by rule, at Center Perks:
+ * Noise and distractions (P14), rule by rule, at Maple Grove:
  * - reach: walking tiles through wherever sight passes, never into a wall; a shut door costs
  *   4; a wall being chipped is heard on both sides of it;
  * - from below only the 3×3 tiles above hear it; from the vents, the floor within 2 tiles
  *   below; from a roof, the open ground around;
- * - tools: chip 6, cut 5, dig 3, unscrew and sharpen 2; plastic a tile less, sturdy, powered
+ * - tools: chip 6, cut 5, dig 3, unscrew and sharpen 2; plastic a tile less, heavy-duty, powered
  *   and multi a tile more;
  * - who comes: the guards awake within earshot hear it, the two nearest (by the walk; ties:
  *   the lower index) go and look where it came from for 8 s; nobody more where one is already
@@ -20,7 +20,7 @@
  * - contraband thrown over a detector arch never meets the scanner;
  * - the ear on the tool button says a guard would hear exactly when the strike is heard.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { command, EXT, OP, tossArgs } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { GUARD, type Guard } from '../src/sim/systems/guards';
@@ -106,7 +106,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
 
 // ------------------------------------------------------------------ how far a noise carries
 {
-  const sim = new Sim(CENTER_PERKS, 1);
+  const sim = new Sim(MAPLE_GROVE, 1);
   const w = sim.world;
   const chip = earshot(sim, { layer: LAYER.GROUND, tile: tileOf(30, 22), reach: 6 });
   const has = (list: number[], x: number, z: number) => list.includes(tileOf(x, z));
@@ -183,14 +183,14 @@ const same = (a: readonly number[], b: readonly number[]) =>
     g0.mode === GUARD.INVESTIGATE && md(g0.target) < md(outside),
     `sent to a roof noise, a guard walks towards it (from ${xz(outside)} to ${xz(g0.target)})`,
   );
-  // Tools: chip 6, cut 5, dig 3, unscrew 2; plastic −1, sturdy, powered and multi +1.
+  // Tools: chip 6, cut 5, dig 3, unscrew 2; plastic −1, heavy-duty, powered and multi +1.
   const reachOf = (action: string, id: string, layer: number = LAYER.GROUND) =>
     strikeNoise(layer, { action: action as 'chip', layer, tile: 0, fits: true, hp: 1 }, n(id))?.reach;
   const tools = [
     reachOf('chip', 'plastic_fork'),
-    reachOf('chip', 'flimsy_pickaxe'),
-    reachOf('chip', 'sturdy_pickaxe'),
-    reachOf('cut', 'light_cutters'),
+    reachOf('chip', 'makeshift_pickaxe'),
+    reachOf('chip', 'heavy_pickaxe'),
+    reachOf('cut', 'reinforced_cutters'),
     reachOf('dig', 'plastic_spoon', LAYER.UNDER),
     reachOf('dig', 'multitool', LAYER.UNDER),
     reachOf('unscrew', 'nail_file'),
@@ -205,7 +205,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
 
 // ------------------------------------------------------------------ who comes
 {
-  const sim = new Sim(CENTER_PERKS, 2);
+  const sim = new Sim(MAPLE_GROVE, 2);
   const st = sim.state;
   away(sim);
   const [g0, g1, g2, g3, g4] = st.guards;
@@ -234,7 +234,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
   run(sim, NOISE_LOOK + 6 * STEPS_PER_SECOND);
   check(g0.mode !== GUARD.INVESTIGATE && g3.mode !== GUARD.INVESTIGATE, 'and back to duty after the look');
   // Chasing, asleep.
-  const s2 = new Sim(CENTER_PERKS, 3);
+  const s2 = new Sim(MAPLE_GROVE, 3);
   away(s2);
   const [h0, h1, h2] = s2.state.guards;
   post(h0, 31, 22);
@@ -247,7 +247,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
   const c = noiseOf(s2.events)!;
   check(c.heard.join() === '0,1' && c.sent.join() === '1', 'a chasing guard hears but keeps chasing; a sleeping one hears nothing');
   // A bang: the sleeper wakes, three go, 12 s.
-  const s3 = new Sim(CENTER_PERKS, 4);
+  const s3 = new Sim(MAPLE_GROVE, 4);
   away(s3);
   const [k0, k1, k2, k3] = s3.state.guards;
   post(k0, 32, 22);
@@ -265,7 +265,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
 
 // ------------------------------------------------------------------ throwing
 {
-  const sim = new Sim(CENTER_PERKS, 5);
+  const sim = new Sim(MAPLE_GROVE, 5);
   const st = sim.state;
   away(sim);
   stand(sim, 30, 22);
@@ -343,7 +343,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
 
 // ------------------------------------------------------------------ the firecracker
 {
-  const sim = new Sim(CENTER_PERKS, 7);
+  const sim = new Sim(MAPLE_GROVE, 7);
   const st = sim.state;
   away(sim);
   const [g0, g1, g2, g3, g4] = st.guards;
@@ -366,11 +366,11 @@ const same = (a: readonly number[], b: readonly number[]) =>
   // Saved mid-fuse and loaded: it goes off just the same.
   run(sim, 10);
   const snap = sim.snapshot();
-  const copy = new Sim(CENTER_PERKS, 7);
+  const copy = new Sim(MAPLE_GROVE, 7);
   copy.restore(snap);
   const old = sim.snapshot();
   delete (old.state as Partial<typeof old.state>).fuses;
-  const older = new Sim(CENTER_PERKS, 7);
+  const older = new Sim(MAPLE_GROVE, 7);
   older.restore(old);
   check(
     copy.state.fuses.length === 1 && older.state.fuses.length === 0,
@@ -407,7 +407,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
 
 // ------------------------------------------------------------------ the alarm clock
 {
-  const sim = new Sim(CENTER_PERKS, 8);
+  const sim = new Sim(MAPLE_GROVE, 8);
   const st = sim.state;
   away(sim);
   const g = st.guards[1];
@@ -442,7 +442,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
   check(usesOf(st.items.inv[0]) === 0 && itemOf(st.items.inv[0]) === ALARM_CLOCK, 'then it stops');
   check(firstSent?.join() === '1', 'the guard within earshot comes');
   // In a desk: it rings there. A press while it rings stops it.
-  const s2 = new Sim(CENTER_PERKS, 9);
+  const s2 = new Sim(MAPLE_GROVE, 9);
   away(s2);
   const desk = containersOf(s2.world).findIndex((c) => c.prop.kind === 'desk');
   const prop = containersOf(s2.world)[desk].prop;
@@ -467,7 +467,7 @@ const same = (a: readonly number[], b: readonly number[]) =>
 // ------------------------------------------------------------------ over the detector arch
 {
   // The canteen arch at 43–44, 20: thrown over it, the nail file never meets the scanner.
-  const sim = new Sim(CENTER_PERKS, 10);
+  const sim = new Sim(MAPLE_GROVE, 10);
   const st = sim.state;
   away(sim);
   stand(sim, 44, 22, NORTH);
@@ -503,11 +503,11 @@ const same = (a: readonly number[], b: readonly number[]) =>
   let heard = 0;
   const trials = 60;
   for (let k = 0; k < trials; k++) {
-    const sim = new Sim(CENTER_PERKS, 12);
+    const sim = new Sim(MAPLE_GROVE, 12);
     const st = sim.state;
     away(sim);
     stand(sim, 8, 23, SOUTH);
-    carry(sim, ['plastic_fork', 'flimsy_pickaxe', 'sturdy_pickaxe'][k % 3]);
+    carry(sim, ['plastic_fork', 'makeshift_pickaxe', 'heavy_pickaxe'][k % 3]);
     post(st.guards[0], 3 + rnd(20), 20 + rnd(10));
     post(st.guards[1], 3 + rnd(20), 20 + rnd(10));
     const held = itemOf(st.items.inv[0]);

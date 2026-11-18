@@ -25,7 +25,7 @@ export const DAY_EVENTS = [
 ] as const;
 export type DayEvent = (typeof DAY_EVENTS)[number];
 
-/** The weather. Stored as numbers: append only. In the snow (Stalag Flucht) the storm is a blizzard. */
+/** The weather. Stored as numbers: append only. In the snow (Camp Frostberg) the storm is a blizzard. */
 export const WEATHERS = ['clear', 'fog', 'rain', 'storm', 'heatwave'] as const;
 export type Weather = (typeof WEATHERS)[number];
 
@@ -62,8 +62,8 @@ export interface DayBook {
 export const DAY_BOOKS: Record<string, DayBook> = {
   // Suburban and mild: a bit of everything, rarely too hot; families visit once a week, and the yard holds its sports day.
   // (P30: a talent night on the quiet day, a quiz night in place of the generator's service.)
-  'center-perks': {
-    // (2.36: the gang war in place of the inspection; Stalag Flucht keeps one.)
+  'maple-grove': {
+    // (2.36: the gang war in place of the inspection; Camp Frostberg keeps one.)
     deck: ['talent', 'delivery', 'gangWar', 'visiting', 'sports', 'drill', 'quiz'],
     climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
     beforeGangs: 'inspection',
@@ -74,9 +74,9 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   },
   // The Alps: clear (snowing), fog in the valleys, blizzards; never rain, never a heatwave.
   // (The Red Cross truck comes once a week; the camp's own Olympics too.)
-  'stalag-flucht': {
+  frostberg: {
     // (P30: the camp's cabaret in place of the generator's service, a quiz on the quiet day; the film still shows.)
-    // (2.36: the huts' war in place of the fire drill; Center Perks keeps one.)
+    // (2.36: the huts' war in place of the fire drill; Maple Grove keeps one.)
     deck: ['quiz', 'inspection', 'gangWar', 'delivery', 'sports', 'talent', 'movie'],
     climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
     beforeGangs: 'drill',
@@ -85,7 +85,7 @@ export const DAY_BOOKS: Record<string, DayBook> = {
     beforeStage: { talent: 'maintenance', quiz: 'none' },
   },
   // Industrial and grey: rain and smog, scuffles at meals; visiting day once a week, in the canteen; a sports day instead of a drill.
-  shankton: {
+  'gravel-point': {
     // (P30: a talent night where the film was, a quiz in place of the generator's service; a quiet day still.)
     // (2.36: the gang war in place of the inspection; the quiet day stays.)
     deck: ['none', 'gangWar', 'foodFight', 'sports', 'quiz', 'talent', 'visiting'],
@@ -96,7 +96,7 @@ export const DAY_BOOKS: Record<string, DayBook> = {
     beforeStage: { talent: 'movie', quiz: 'maintenance' },
   },
   // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week; sports day in the dust.
-  'san-pancho': {
+  'sierra-seca': {
     // (P30: a talent night where the food fight was, a quiz in place of the inspection; the feast and a quiet day still.)
     // (2.36: the gang war in place of the quiet day.)
     deck: ['gangWar', 'talent', 'delivery', 'feast', 'visiting', 'quiz', 'sports'],
@@ -109,7 +109,7 @@ export const DAY_BOOKS: Record<string, DayBook> = {
   },
   // The island: sea fog and squalls, and inspectors on the ferry; a sports day where the food fight was.
   // (The supply helicopter by day once a week; families come over on the ferry once a week.)
-  irongate: {
+  'gull-rock': {
     // (P30: a talent night on the quiet day, a quiz in place of the drill.)
     // (2.36: the gang war in place of the inspection; the generator's service stays.)
     deck: ['talent', 'gangWar', 'delivery', 'quiz', 'maintenance', 'visiting', 'sports'],

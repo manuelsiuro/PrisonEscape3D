@@ -11,7 +11,7 @@ import { DAY_EVENTS } from '../src/content/days';
 import { HISTORY, HISTORY_240, QUESTION_STEPS, QUIZ_GATHER, QUIZ_QUESTIONS, STRIKE_ONE, STRIKE_TWO, WARDENS } from '../src/content/nights';
 import { RIVALS } from '../src/content/long';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { isFloor } from '../src/sim/ai/places';
 import { DOING } from '../src/sim/ai/doing';
 import { command, EXT, OP } from '../src/sim/command';
@@ -160,9 +160,9 @@ check(WARDENS.length === PRISONS.length && PRISONS.every((p) => WARDENS.includes
 }
 
 // ------------------------------------------------------------------ the answers ruled out, and guessing
-/** A quiz night at Center Perks on day 1 (stagetest's way: the clock put at 19:00), the player at the first place, an Intellect. */
+/** A quiz night at Maple Grove on day 1 (stagetest's way: the clock put at 19:00), the player at the first place, an Intellect. */
 function quizGame(seed: number, int: number, before241 = false) {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   sim.rules240 = before241;
   sim.state.calendar = [
     [0, 0, 0],
@@ -404,13 +404,13 @@ check(ownersAll >= PRISONS.length * 3, "the rats' owners come to the start");
   const { sim, go } = quizGame(2, 40);
   for (let k = 0; k < QUIZ_GATHER + 60; k++) go();
   const saved = JSON.parse(JSON.stringify(sim.state));
-  const back = loadState(sim.world, CENTER_PERKS, JSON.parse(JSON.stringify(saved)));
+  const back = loadState(sim.world, MAPLE_GROVE, JSON.parse(JSON.stringify(saved)));
   check(
     JSON.stringify(back) === JSON.stringify(saved) && (back.quiz?.host ?? -1) >= 0,
     'a save mid-quiz loads as it was, its host with it',
   );
   const bad = JSON.parse(JSON.stringify(saved));
   bad.quiz.host = bad.quiz.who[0];
-  check(loadState(sim.world, CENTER_PERKS, bad).quiz === null, 'a quiz whose host is a contestant loads as none');
+  check(loadState(sim.world, MAPLE_GROVE, bad).quiz === null, 'a quiz whose host is a contestant loads as none');
   console.log('a save mid-quiz round trips with its host');
 }

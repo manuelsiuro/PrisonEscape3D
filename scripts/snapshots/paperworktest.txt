@@ -1,8 +1,8 @@
-center-perks: forms on Dunn; the desk at 30,44 31,44, out through 4 doors
-stalag-flucht: forms on Weber; the desk at 20,60 21,60, out through 2 doors
-shankton: forms on Ortega; the desk at 47,39, out through 8 doors
-san-pancho: forms on Ríos; the desk at 42,46, out through 8 doors
-irongate: forms on Pike; the desk at 30,40 31,40, out through 6 doors and the drawbridge
+maple-grove: forms on Lowry; the desk at 30,44 31,44, out through 4 doors
+frostberg: forms on Bauer; the desk at 20,60 21,60, out through 2 doors
+gravel-point: forms on Salazar; the desk at 47,39, out through 8 doors
+sierra-seca: forms on Herrera; the desk at 42,46, out through 8 doors
+gull-rock: forms on Gale; the desk at 30,40 31,40, out through 6 doors and the drawbridge
 six-hunter: forms on Fell; the desk at 26,44 27,44, out through 4 doors
-form: off Dunn, forged with ink at Intellect 80
+form: off Lowry, forged with ink at Intellect 80
 paperwork ok

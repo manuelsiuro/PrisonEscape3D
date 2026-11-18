@@ -186,7 +186,7 @@ export type Target =
 /**
  * Furniture used by standing at it: the job board, the weights (Strength), the treadmill
  * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, the
- * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
+ * infirmary's beds to rest on (GDD §3.1); Gull Rock's helipad, to board the helicopter (P12).
  */
 export type FixtureUse =
   'vending' | 'cooler' | 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';

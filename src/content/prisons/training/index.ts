@@ -45,7 +45,7 @@ const props: PropPlacement[] = [
  * The Training Block (P8+): where the tutorial's lessons are played. One inmate to spar with,
  * one guard walking the patrol hall (its walls keep the other lessons out of its sight) with
  * his dog, no jobs, no merchants, no cameras or towers. What it hasn't got (merchants, the
- * day's events, smuggling, the delivery, the checkpoint) is taught at Center Perks.
+ * day's events, smuggling, the delivery, the checkpoint) is taught at Maple Grove.
  */
 /** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
 const GEAR: PropPlacement[] = [
@@ -112,7 +112,7 @@ export const TRAINING: PrisonDef = {
       dog: { name: 'Biscuit', kennel: { x: 44, z: 26, face: 9 }, coat: 'collie' },
     },
   ],
-  names: ['Sparky'],
+  names: ['Scooter'],
   merchants: [],
   crew: ['lookout'],
   jobs: [],

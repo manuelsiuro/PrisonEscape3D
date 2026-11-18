@@ -488,7 +488,7 @@ const HOSTILE_BLOCKS: readonly string[] = [...GRUDGE_BLOCKS, 'freeTime', 'exerci
 /**
  * An inmate with a grudge (opinion 25 or less) may jump the player at a meal or in the
  * showers (GDD §10.3): close by, in the same room, now and then. In a lawless prison (San
- * Pancho, GDD §4.4) anywhere they meet in free time or the yard.
+ * Sierra Seca, GDD §4.4) anywhere they meet in free time or the yard.
  */
 export function grudges(sim: SimContext) {
   const s = sim.state;
@@ -645,5 +645,5 @@ function foeOf(sim: SimContext, m: Inmate): number {
   return best;
 }
 
-/** A lawless interior (San Pancho, GDD §4.4), or a Bad Blood Daily (P26): grudges from day 1, settled in free time and the yard too. */
+/** A lawless interior (Sierra Seca, GDD §4.4), or a Bad Blood Daily (P26): grudges from day 1, settled in free time and the yard too. */
 export const hostile = (sim: SimContext): boolean => !!sim.world.def.rules?.hostile || twist(sim.state, 'badBlood');

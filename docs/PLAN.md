@@ -1,10 +1,10 @@
 # PrisonEscape3D: Project Plan
 
-A 3D web take on *The Escapists*. It is built with the **web-game-playbook** and
+A 3D prison escape sandbox for the web. It is built with the **web-game-playbook** and
 **web-sim-game-playbook** skills, starting from `~/ClaudeProjects/web-game-starter`.
 
 Sources:
-- `docs/source/the_escapists_3d_complete_game_design_document.md` (**GDD, the source of truth**);
+- `docs/source/game_design_document.md` (**GDD, the source of truth**);
 - `docs/source/game_idea.md` (feature list);
 - `docs/source/tech_plan.md` (engineering details, used where the GDD says nothing).
 
@@ -141,7 +141,7 @@ A phase that changes a map or places something new on it also brings the map vie
 
 Every phase is built and released. The plans, phase by phase with what each shipped and how it was proved, are kept in `docs/phases/`, one file per roadmap (moved there word for word on 2026-11-06):
 
-- [The five-prison campaign (P0–P12, v0.1–v1.6)](phases/1-campaign.md): P0 Kickoff, P1 Routine, P2 Items, P3 Guards, P4 Layers, P5 Combat, P6 Economy, P7 Security & escapes, P8 Level 1 complete, P8+ Polish and foundations, P9 Stalag Flucht, P10 Shankton, P11 San Pancho, P12 HMP Irongate
+- [The five-prison campaign (P0–P12, v0.1–v1.6)](phases/1-campaign.md): P0 Kickoff, P1 Routine, P2 Items, P3 Guards, P4 Layers, P5 Combat, P6 Economy, P7 Security & escapes, P8 Level 1 complete, P8+ Polish and foundations, P9 Camp Frostberg, P10 Gravel Point, P11 Sierra Seca, P12 HMP Gull Rock
 - [Prison Life (P13–P26, v1.7–v2.1)](phases/2-prison-life.md): P13 Voices, P14 Noise & distractions, P15 Guard ways, P16 Achievements & you, P17 The day, P18 Delivery day, P19 Guard dogs, P20 The pet rat, P21 Smuggling, P22 Side games, P23 Crew & specialists, P24 Bluff & glider, Tutorial: Prison life, Tutorial: Ways out, Tutorial: Getting by, P26 Daily Escape, P25 Escape replays
 - [Free time (P27–P30, v2.2–v2.6)](phases/3-free-time.md): P27 Card sharks, P28 Long games, P29 Team & ink, P30 Stage nights, P23–P30 polish
 - [Sports grounds and gardens (P31–P33, v2.7–v2.9)](phases/4-grounds.md): P31 Grounds, P32 Grounds II, P33 Grounds III
@@ -170,7 +170,7 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
 - **Mechanics**, one test per system or phase: routine (since v2.23 the stay, a drop-in who leaves at once, old saves), guards (a block skipped and another inmate's cell searched in sight, the owner), traits, combat, layers,
   security, economy, living furniture, noise, calendar, delivery, k9, rats, smuggling, games,
   crew, getaway, cards, long games, team, stage, grounds, phone, kiosk, paperwork, parole,
-  odd jobs, holidays, the manhunt, and one per prison (`stalagtest` … `irongatetest`).
+  odd jobs, holidays, the manhunt, and one per prison (`frostbergtest` … `gullrocktest`).
 - **Bots**: `escapetest` plays every way out of every prison from day 1 (`escapes.ts`;
   `ONLY=<id>` runs one prison); `tutorialtest` plays every lesson and its dead ends;
   `paroletest`, `holidaybotstest`, `hunttest` (the hunt's balance: a limited bot caught

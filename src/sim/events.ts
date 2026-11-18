@@ -150,7 +150,7 @@ export type SimEvent =
   | { type: 'aim'; tower: number }
   | { type: 'shot'; tower: number; hit: boolean; dmg: number }
   | { type: 'takeover'; on: boolean }
-  /** Combat (GDD §10): the lock moved (-1: none); a blow landed on someone (Cast id) or the player; a cup of molten chocolate thrown. */
+  /** Combat (GDD §10): the lock moved (-1: none); a blow landed on someone (Cast id) or the player; a cup of scalding cocoa thrown. */
   | { type: 'lock'; who: number }
   /** (`free`, P17: a food fight's blow at an inmate in the canteen: no heat, counted for Food Fighter.) */
   | { type: 'hit'; who: number; dmg: number; ko: boolean; weapon: number; free?: boolean }

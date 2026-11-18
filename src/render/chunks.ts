@@ -10,7 +10,7 @@ export type Placed = [mesh: THREE.InstancedMesh, k: number];
  * Instances spread over the map (the trees round a prison, a minefield's mounds), split by where they
  * stand into squares of `CHUNK` tiles, each an instanced mesh of its own. The camera skips an instanced
  * mesh only whole, and the shadow pass too, so one spread over the map was drawn whole every frame,
- * nearly all of it out of sight (session 5, the phone performance pass: San Pancho's busiest frame sent
+ * nearly all of it out of sight (session 5, the phone performance pass: Sierra Seca's busiest frame sent
  * 275k triangles, 105k of them the minefield's). The same geometry and material in every piece, each
  * piece's instances in their first order: the picture is the same. `make` sets up each piece (shadows,
  * culling); `placed[i]` is where instance `i` went.

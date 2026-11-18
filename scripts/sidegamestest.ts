@@ -149,7 +149,7 @@ check(stayedAfter > 0, 'those watching are still there just after the end (their
 
 // ------------------------------------------------------------------ when nobody comes
 {
-  // The Training Block: the rule's off (and Sparky, its one inmate, is the one playing), a bout really on.
+  // The Training Block: the rule's off (and Scooter, its one inmate, is the one playing), a bout really on.
   const training = new Bot(TRAINING, 3);
   training.routineUntil(1, 10 * 60 + 30);
   const k = partner(training);

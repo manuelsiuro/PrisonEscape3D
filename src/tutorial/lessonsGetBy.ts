@@ -4,7 +4,7 @@ import { UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER } from '../sim/world/World';
-import { CENTER_PERKS } from '../content/prisons/center-perks';
+import { MAPLE_GROVE } from '../content/prisons/maple-grove';
 import { FAVOR, FAVOR_STATE, HOLDER, jobRooms } from '../sim/systems/economy';
 import { tileAt } from '../sim/world/grid';
 import {
@@ -82,7 +82,7 @@ export const GET_BY: readonly Lesson[] = [
     // Merchants (GDD §10.3): open in free time, cheaper to friends.
     id: 'trade',
     icon: 'cart',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 61,
     setup: (sim) => {
       clockTo(sim, MORNING);
@@ -109,7 +109,7 @@ export const GET_BY: readonly Lesson[] = [
     // A job (GDD §11): the Work Period at the laundry, a load through the machine for the quota.
     id: 'job',
     icon: 'briefcase',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 62,
     setup: (sim) => {
       clockTo(sim, at(12, 1));
@@ -190,7 +190,7 @@ export const GET_BY: readonly Lesson[] = [
       // Below the desk, facing it (the chair stands at its side).
       place(sim, 22, 18, 13);
       // (Four braces: past the fence however early the player braces; a pocket left free for the dirt.)
-      pockets(sim, 'sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace', 'timber_brace');
+      pockets(sim, 'heavy_shovel', 'timber_brace', 'timber_brace', 'timber_brace', 'timber_brace');
       sim.state.items.hand = 0;
       sim.state.energy = 100;
     },
@@ -228,7 +228,7 @@ export const GET_BY: readonly Lesson[] = [
     // The vents (GDD §9.3): the cell's grate unscrewed, the ducts crawled to the ladder, up on the roof.
     id: 'vents',
     icon: 'screw',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 63,
     setup: (sim) => {
       // After Lights Out, a dummy in bed: no guard sweeps the cells then to see the grate open.

@@ -1,13 +1,13 @@
 /**
  * The holidays' evenings, played (P42 rules review): holidaybotstest's escape bots are out by day 2
- * at 10:17, before any holiday day's evening, so here a bot keeps the routine at Center Perks
+ * at 10:17, before any holiday day's evening, so here a bot keeps the routine at Maple Grove
  * through each holiday's day, playing it as a player would, by commands only: summer's ice lolly
  * and tool work on the sports ground's wall through the water fight (there for the exercise hour;
  * the soaked guards see two tiles); costume night's costume, worn among the inmates from 19:00 to 21:00 (each laughs once,
  * never after); Christmas Day's present, given; and work on the cell's wall under New Year's
  * fireworks (every strike drowned, nobody sent to look). Each run's outcome is the golden output.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { HOLIDAY, TREAT, WET_SIGHT } from '../src/content/holidays';
 import { BLOCK, ROUTINE } from '../src/content/routine';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
@@ -29,10 +29,10 @@ import { Bot, DIR, n } from './bots';
 type Ev<T extends SimEvent['type']> = Extract<SimEvent, { type: T }>;
 const clock = (bot: Bot) => formatTime(bot.sim.clock);
 
-/** A bot under a holiday at Center Perks, two forks in its pockets (a plastic fork is no contraband). */
+/** A bot under a holiday at Maple Grove, two forks in its pockets (a plastic fork is no contraband). */
 function start(holiday: number, seed: number): Bot {
   Bot.holiday = holiday;
-  const bot = new Bot(CENTER_PERKS, seed);
+  const bot = new Bot(MAPLE_GROVE, seed);
   Bot.holiday = 0;
   bot.st.items.inv[4] = slot(n('plastic_fork'));
   bot.st.items.inv[5] = slot(n('plastic_fork'));

@@ -206,7 +206,7 @@ export function startGame(
   controls.enabled = true;
   hud.show(true);
   sound.ambience(true);
-  // Irongate's surf and gulls (P12).
+  // Gull Rock's surf and gulls (P12).
   sound.setCoast(sim.world.def.theme === 'island');
   sound.setForest(sim.world.def.theme === 'forest');
   fadeIn();

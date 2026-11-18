@@ -1,8 +1,8 @@
-center-perks: stage 56,11 facing 9; quiz 17,34 18,34 20,34 21,34; was none/maintenance
-stalag-flucht: stage 11,30 facing 5; quiz 9,56 10,56 11,56 12,56; was maintenance/none
-shankton: stage 31,14 facing 5; quiz 25,42 26,42 28,42 29,42; was movie/maintenance
-san-pancho: stage 21,40 facing 13; quiz 41,43 42,43 43,43 44,43; was foodFight/inspection
-irongate: stage 30,37 facing 13; quiz 48,35 49,35 50,35 51,35; was none/drill
+maple-grove: stage 56,11 facing 9; quiz 17,34 18,34 20,34 21,34; was none/maintenance
+frostberg: stage 11,30 facing 5; quiz 9,56 10,56 11,56 12,56; was maintenance/none
+gravel-point: stage 31,14 facing 5; quiz 25,42 26,42 28,42 29,42; was movie/maintenance
+sierra-seca: stage 21,40 facing 13; quiz 41,43 42,43 43,43 44,43; was foodFight/inspection
+gull-rock: stage 30,37 facing 13; quiz 48,35 49,35 50,35 51,35; was none/drill
 six-hunter: stage 54,28 facing 9; quiz 19,42 20,42 21,42 22,42; was nothing: built with them
 shuffle: level 1, 53 notes, 39.0 s, lanes 17/21/15
 lightsOut: level 2, 80 notes, 40.5 s, lanes 25/33/22
@@ -14,11 +14,11 @@ breakout: perfect 100, ±1 100/100, +2 60, half 50, none 0, mashing 0
 verdict: the hardest song perfect: place 0, $60, 7 won over, 20 heat off; every other note of the easiest: 50% place 3 $0
 no-shows: all out cold, 50% first at 689; the best of 2 out cold, 50% placed 1
 acts on the boards, 6 prisons × 4 nights: 54/54 (2.5.0: 34/54)
-center-perks: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
-stalag-flucht: 33 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict warden)
-shankton: 33 kinds asked over 30 nights (breakfast cells key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
-san-pancho: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
-irongate: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
+maple-grove: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
+frostberg: 33 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict warden)
+gravel-point: 33 kinds asked over 30 nights (breakfast cells key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
+sierra-seca: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
+gull-rock: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
 six-hunter: 34 kinds asked over 30 nights (breakfast cells delivery key keyHolder lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting warden)
 quiz bots over 40 nights: knows, 3 s: 40 won 0 tied; knows, 5 s: 40 won 0 tied; knows, 7.5 s: 28 won 4 tied; knows, 10 s: 5 won 4 tied; guesses, 1.5 s: 0 won 0 tied; silent: 0; before 2.16, knows, 5 s: 25 won
 saves: mid-act and mid-quiz round trips ok; an old save's talent night (day 8) is none again

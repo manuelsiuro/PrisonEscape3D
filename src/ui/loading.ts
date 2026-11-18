@@ -3,7 +3,7 @@ import { h } from './dom';
 
 /**
  * The veil over a game's start (session 6): building a prison and compiling its look holds the page
- * for 150–420 ms on a phone's CPU (Irongate the longest), the screen standing still meanwhile. The veil
+ * for 150–420 ms on a phone's CPU (Gull Rock the longest), the screen standing still meanwhile. The veil
  * goes up and is painted first, its bar sliding on the compositor through the wait, so the pause reads
  * as loading; the game's first frame takes it down (`hideLoading`, at the end of startGame and of a
  * world staged behind the title).

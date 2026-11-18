@@ -8,8 +8,8 @@ import { BREAKFASTS, DINNERS, HOUSE_DINNER, MEAL, MENU, SCRIBBLE_HEAT, SCRIBBLE_
 import { COOLER_FROM_DAY, CUP_ENERGY, THIRST_STEPS } from '../src/content/cooler';
 import { DECOR } from '../src/content/decor';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { isFloor, placesOf } from '../src/sim/ai/places';
@@ -81,7 +81,7 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
       const t = s.z * MAP_W + s.x;
       check(isFloor(w, s.x, s.z) && w.zoneAt(s.x, s.z) === 'canteen', `${def.id}: drink place ${s.x},${s.z} is canteen floor`);
       check(Math.max(Math.abs(s.x - c.x), Math.abs(s.z - c.z)) === 1, `${def.id}: drink place ${s.x},${s.z} is beside the cooler`);
-      // (A counter's place is the meals' only, the cooler's the free times': Stalag Flucht's corner shares one.)
+      // (A counter's place is the meals' only, the cooler's the free times': Camp Frostberg's corner shares one.)
       check(
         !stops.has(t) && !vline.has(t) && !seats.has(t),
         `${def.id}: drink place ${s.x},${s.z} is nobody else's (a guard's stop, the machine's line, a seat)`,
@@ -129,7 +129,7 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
 
 // ------------------------------------------------------------------ the dishes
 {
-  const salt = new Sim(CENTER_PERKS, 3).state.salt;
+  const salt = new Sim(MAPLE_GROVE, 3).state.salt;
   const out: string[] = [];
   for (const def of PRISONS) {
     check(
@@ -169,16 +169,16 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     for (let d = 2; d < 60 && !feast; d++) if (planOf(sim, d).event === 'feast') feast = `${def.id} day ${d}: ${feastOn(sim, d)}`;
   }
   check(feast.endsWith('roast'), `a feast day's dinner is the roast (${feast})`);
-  const easter = new Sim(CENTER_PERKS, 3, [], 1);
+  const easter = new Sim(MAPLE_GROVE, 3, [], 1);
   check(feastOn(easter, 2) === 'lamb' || feastOn(easter, 2) === null, "a holiday's feast is its own");
 }
 
 // ------------------------------------------------------------------ a meal gives the day's dish
 {
-  const bot = new Bot(CENTER_PERKS, 3);
+  const bot = new Bot(MAPLE_GROVE, 3);
   bot.routineUntil(2, 9 * 60 + 2);
   const dish = dishNow(bot.sim)!;
-  check(!!dish && dish === dishOn(bot.st.salt, CENTER_PERKS.id, 2, MEAL.BREAKFAST), "day 2's breakfast is the board's");
+  check(!!dish && dish === dishOn(bot.st.salt, MAPLE_GROVE.id, 2, MEAL.BREAKFAST), "day 2's breakfast is the board's");
   const counter = placesOf(bot.sim.world).counters[0];
   bot.st.player.x = (counter.tile % MAP_W) * UNIT + UNIT / 2;
   bot.st.player.z = Math.floor(counter.tile / MAP_W) * UNIT + UNIT / 2;
@@ -203,7 +203,7 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
   );
   // (Sitting brings a little energy back too, a point every so often.)
   check(bot.st.energy >= 20 + dish.energy, `energy up by the dish's (${dish.energy}) at least`);
-  console.log(`a meal on day 2 at center-perks: ${dish.id}, +${dish.energy} energy${dish.health ? `, +${dish.health} health` : ''}`);
+  console.log(`a meal on day 2 at maple-grove: ${dish.id}, +${dish.energy} energy${dish.health ? `, +${dish.health} health` : ''}`);
 }
 
 // ------------------------------------------------------------------ the board read and scribbled on, walked by real commands
@@ -233,7 +233,7 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
 }
 
 /** At the board in the morning's free time, card up, guards out of the way or not. */
-function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
+function atBoard(def = MAPLE_GROVE, seed = 3, clear = true) {
   const bot = new Bot(def, seed);
   bot.routineUntil(2, 10 * 60 + 5);
   const m = def.menu!;
@@ -265,7 +265,7 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   check(new Set(bot.st.menu.laughed).size === laughed, 'each once');
   bot.routineUntil(3, 8 * 60 + 5);
   check(bot.st.menu.scribbled === 0 && bot.st.menu.laughed.length === 0, 'wiped by the morning');
-  console.log(`scribbled unseen at center-perks: done in ${SCRIBBLE_STEPS / 20} s, ${laughed} inmates laughed by 17:30, wiped by day 3`);
+  console.log(`scribbled unseen at maple-grove: done in ${SCRIBBLE_STEPS / 20} s, ${laughed} inmates laughed by 17:30, wiped by day 3`);
 }
 {
   // Seen: told off, a little heat, not finished. (At a meal, when a guard on its round is actually watching.)
@@ -302,7 +302,7 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   hurt(hit.sim, 1, -1);
   check(!hit.st.menuOpen && hit.st.menu.until === 0, 'a blow shuts the card and stops the scribble');
   // Not at it: refused.
-  const far = new Bot(CENTER_PERKS, 3);
+  const far = new Bot(MAPLE_GROVE, 3);
   far.routineUntil(1, 10 * 60 + 5);
   menuOp(far, MENU.SCRIBBLE);
   check(refusals(far).includes('menuFar') && far.st.menu.until === 0, 'away from it: refused');
@@ -333,9 +333,9 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   }
   console.log(`a cup: ${out.join('; ')}`);
   // Half an hour on, another; full and cool, refused.
-  const bot = new Bot(CENTER_PERKS, 3);
+  const bot = new Bot(MAPLE_GROVE, 3);
   bot.routineUntil(1, 10 * 60 + 5);
-  const c = CENTER_PERKS.cooler!;
+  const c = MAPLE_GROVE.cooler!;
   bot.walkTo(tileOf(c.spots[0].x, c.spots[0].z));
   bot.face(DIR.NORTH);
   bot.st.energy = 50;
@@ -361,18 +361,18 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   // A heatwave's heat: gone with a cup, as under a shower.
   let found: Bot | null = null;
   for (let seed = 1; seed < 40 && !found; seed++) {
-    const sim = new Sim(SAN_PANCHO, seed);
+    const sim = new Sim(SIERRA_SECA, seed);
     for (let d = 1; d <= 3 && !found; d++)
       if (planOf(sim, d).weather === 'heatwave') {
-        const bot = new Bot(SAN_PANCHO, seed);
+        const bot = new Bot(SIERRA_SECA, seed);
         bot.routineUntil(d, 13 * 60);
         if (today(bot.sim).weather === 'heatwave') found = bot;
       }
   }
-  check(!!found, 'a heatwave found at San Pancho');
+  check(!!found, 'a heatwave found at Sierra Seca');
   if (found) {
     const bot = found;
-    const c = SAN_PANCHO.cooler!;
+    const c = SIERRA_SECA.cooler!;
     bot.walkTo(tileOf(c.spots[0].x, c.spots[0].z));
     bot.face(DIR.EAST);
     bot.st.cold = COLD_STEPS;
@@ -381,7 +381,7 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
     bot.act();
     bot.step(0);
     check(bot.st.cold === 0 && !bot.st.frozen, 'hot, a cup cools the player at once (even at full energy)');
-    console.log(`a heatwave at san-pancho on ${bot.time}: cooled by a cup`);
+    console.log(`a heatwave at sierra-seca on ${bot.time}: cooled by a cup`);
   }
 }
 
@@ -430,7 +430,7 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
 
 // ------------------------------------------------------------------ old logs as they were
 {
-  const was = new Sim(CENTER_PERKS, 24);
+  const was = new Sim(MAPLE_GROVE, 24);
   was.rules232 = true;
   was.rules2331 = true;
   was.rules233 = true;
@@ -442,25 +442,25 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   was.rules241 = true;
   was.rules242 = true;
   // (Played then, with the week's cards as they were: the gang war's place held by the card it took, 2.36.)
-  keepOldCards(was.state, [1, 2, 3], (d) => planOf(was, d).event, { gangWar: DAY_BOOKS['center-perks'].beforeGangs! });
+  keepOldCards(was.state, [1, 2, 3], (d) => planOf(was, d).event, { gangWar: DAY_BOOKS['maple-grove'].beforeGangs! });
   const prev = new RunRecorder(was, { seed: 24, game: '2.32.0' });
   for (let k = 0; k < 34 * 60 * STEPS_PER_MINUTE && prev.sim.state.step < DAY_STEPS + 9 * 60 * STEPS_PER_MINUTE; k++) prev.step(0);
   check(dishNow(prev.sim) === null, 'the old rules: no dish');
-  const replayed = replayLog(prev.toLog(), CENTER_PERKS);
+  const replayed = replayLog(prev.toLog(), MAPLE_GROVE);
   check(!!replayed?.ok && replayed.sim.rules232 === true, 'a 2.32 log replays whole under the old rules');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 24), { seed: 24, game: '2.44.0' });
   for (let k = 0; k < 2 * 60 * STEPS_PER_MINUTE; k++) now.step(0);
-  check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
+  check(!!replayLog(now.toLog(), MAPLE_GROVE)?.ok, "a log of today's replays");
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 24, 'and is carried on');
   // Under the old rules, no card, no cup.
-  const old = new Bot(CENTER_PERKS, 3);
+  const old = new Bot(MAPLE_GROVE, 3);
   old.sim.rules232 = true;
   old.sim.rules2331 = true;
   old.sim.rules233 = true;
   old.sim.rules234 = true;
   old.routineUntil(1, 10 * 60 + 5);
-  const m = CENTER_PERKS.menu!;
+  const m = MAPLE_GROVE.menu!;
   old.walkTo(tileOf(m.x + 1, m.z));
   old.face(DIR.NORTH);
   old.act();

@@ -1,4 +1,4 @@
-data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open floor, a walk from their rounds
+data: Gravel Point 1 dog, Sierra Seca 2, Gull Rock 1; kennels on open floor, a walk from their rounds
 shifts: kennel on day 1; at the heel 10:00–22:00 from day 2, nights 01:00–05:00 for night dogs, every lockdown
 nose: contraband in the hotbar within 1.5 tiles → a bark, +25%, the handler looks; a pouch stops it, a uniform doesn't; trust 60+ lets it go
 trail: out of bounds only, a tile at a time, 32 tiles at most, 90 s fresh; soap and showers wash it off

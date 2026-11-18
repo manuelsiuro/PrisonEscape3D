@@ -228,7 +228,7 @@ export function shakedown(sim: SimContext) {
 
 /**
  * The bed check: the night guard looks into every cell, from the east-most on, each time the
- * nearest left (a wing done before the next: Shankton's two wings are a long walk apart).
+ * nearest left (a wing done before the next: Gravel Point's two wings are a long walk apart).
  */
 export function bedCheck(sim: SimContext) {
   const s = sim.state;

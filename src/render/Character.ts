@@ -125,7 +125,7 @@ const TOWEL = 0xf0f1ec;
 const TOWEL_EDGE = 0xc9d4de;
 
 /**
- * A blocky character, a 3D take on the Escapists sprites: a big head with blinking eyes,
+ * A blocky character, a 3D take on chunky pixel-art sprites: a big head with blinking eyes,
  * a jumpsuit with a number patch and rolled sleeves, arms and legs on pivots. Faces +z at
  * rotation 0; about 1.25 tiles tall. The limbs are bones of one skinned, vertex-colored mesh
  * (one draw call a character, and one in the shadow pass). When given a silhouette color, it

@@ -9,9 +9,9 @@ import { hash01 } from './rand';
 /**
  * The outside's buildings as buildings (P41 review: they were the prisons' brick blocks, flat grey
  * tops): the picture's `#` tiles cut into rectangles, each a house of the place's own kind, with
- * walls, a roof, windows, a door on the side its road or yard is, a chimney. The Center Perks farm
- * and its barn, the border post's timber huts in the snow, Shankton's sheds of corrugated iron,
- * San Pancho's adobe diner and motel with flat roofs, Irongate's terraces in harbour colours.
+ * walls, a roof, windows, a door on the side its road or yard is, a chimney. The Maple Grove farm
+ * and its barn, the border post's timber huts in the snow, Gravel Point's sheds of corrugated iron,
+ * Sierra Seca's adobe diner and motel with flat roofs, Gull Rock's terraces in harbour colours.
  * One-tile strips are garden and yard walls. Render only: the tiles stay the World's brick (solid,
  * opaque) as they were; WorldView leaves the outside's brick to this.
  */
@@ -198,7 +198,7 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
         k++;
       }
     } else units.push([0, len]);
-    // A big building out in the country is a barn (Center Perks), a long one in the yards a warehouse (Shankton: shed already).
+    // A big building out in the country is a barn (Maple Grove), a long one in the yards a warehouse (Gravel Point: shed already).
     const barn = theme === 'suburban' && w * d >= 20;
     units.forEach(([at, size], k) => {
       const ux0 = alongX ? b.x0 + at : b.x0;

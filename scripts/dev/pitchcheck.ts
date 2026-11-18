@@ -3,11 +3,11 @@ import { PRISONS } from '../../src/content/prisons';
 import { TRAINING } from '../../src/content/prisons/training';
 import { Sim } from '../../src/sim/Sim';
 const PICK: Record<string, [number, number, number, number]> = {
-  'center-perks': [26, 28, 11, 4],
-  'stalag-flucht': [13, 22, 13, 5],
-  shankton: [27, 30, 11, 5],
-  'san-pancho': [27, 32, 10, 6],
-  irongate: [14, 22, 13, 5],
+  'maple-grove': [26, 28, 11, 4],
+  frostberg: [13, 22, 13, 5],
+  'gravel-point': [27, 30, 11, 5],
+  'sierra-seca': [27, 32, 10, 6],
+  'gull-rock': [14, 22, 13, 5],
   training: [31, 39, 13, 6],
 };
 for (const p of [...PRISONS, TRAINING]) {

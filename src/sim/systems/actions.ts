@@ -692,7 +692,7 @@ function sharpen(sim: SimContext, target: ToolTarget, held: number) {
 
 /**
  * The item in hand put to use on the structure (GDD §9.2–9.3): a cover over damage, a
- * brace in the tunnel, a sheet rope down off a roof. One press each.
+ * brace in the tunnel, knotted sheets down off a roof. One press each.
  */
 function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
   const s = sim.state;
@@ -727,12 +727,12 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
       break;
     }
     case 'grapnel': {
-      // Hooked over the fence onto a roof beyond: across on the line, the sheet rope kept for the way down.
+      // Hooked over the fence onto a roof beyond: across on the line, the knotted sheets kept for the way down.
       if (target.layer === LAYER.ROOF) {
         moveTo(sim, LAYER.ROOF, t, 'grapnel');
         break;
       }
-      // Hooked over the fence, the sheet rope takes the player down the far side (both stay there).
+      // Hooked over the fence, the knotted sheets takes the player down the far side (both stay there).
       const rope = hotbarSlotOf(it.inv, SHEET_ROPE);
       if (rope >= 0) it.inv[rope] = 0;
       moveTo(sim, LAYER.GROUND, t, 'grapnel');

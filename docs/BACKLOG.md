@@ -64,6 +64,11 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 
 ## 5. Upkeep
 
+- **Before selling (2.62 renamed the borrowed names):** the trailer on YouTube shows the old prison names
+  (remake or unlist it); the repo is public and its history and the old site still hold them (going
+  private, or a fresh repo, is the user's call); a trademark search on the new names and a new title;
+  generic item names some players will still recognise (the fake wall block, the fake fence, the bed
+  dummy) left as they are.
 - **The repository's size:** 705 MB, nearly all of it old versions of the map viewer's pictures.
   Since 2.34.1 they no longer change at every release, and the 3D photos are WebP (a fifth of the
   size), so it grows only when a map does. Shrinking what's already there means rewriting git

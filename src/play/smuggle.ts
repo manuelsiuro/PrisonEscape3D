@@ -88,7 +88,7 @@ function whenText(sim: Sim, way: number, order: readonly number[]): string {
   return t(`phone.visit${rel}` as Key, { n: a.day, from: dayTime(a.minute), to: dayTime(until), place: zoneWords(visitZone(sim)).at });
 }
 
-/** A way's icon and name here (the visitor's is a parcel at Stalag Flucht). */
+/** A way's icon and name here (the visitor's is a parcel at Camp Frostberg). */
 function wayLook(sim: Sim, way: number): { icon: string; label: string } {
   if (way === WAY.DRONE) return { icon: 'drone', label: t('phone.wayDrone') };
   return smugglingOf(sim)!.parcel ? { icon: 'box', label: t('phone.wayParcel') } : { icon: 'users', label: t('phone.wayVisitor') };

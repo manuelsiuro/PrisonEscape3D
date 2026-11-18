@@ -7,7 +7,7 @@ import { fr } from '../src/i18n/fr';
 import { enBarks as barksEn } from '../src/i18n/barks/en';
 import { frBarks as barksFr } from '../src/i18n/barks/fr';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
@@ -33,7 +33,7 @@ const put = (bot: Bot, tile: number) => {
   p.moving = false;
 };
 /** A player at home beside their bed, a few minutes into the night (day 1 by the model prisoner). */
-function atBed(def = CENTER_PERKS, seed = 3, minute = NIGHT + 20) {
+function atBed(def = MAPLE_GROVE, seed = 3, minute = NIGHT + 20) {
   const bot = new Bot(def, seed);
   check(bot.routineUntil(1, minute), `${def.id}: into the night`);
   check(bot.sim.playerZone === 'playerCell' && ROUTINE[bot.st.routine].id === 'lightsOut', `${def.id}: home at ${minute}`);
@@ -132,25 +132,25 @@ for (const def of PRISONS) {
 // ------------------------------------------------------------------ the walk through the yard: no searchlight during the grace
 {
   const walk = new Bot(
-    PRISONS.find((d) => d.id === 'stalag-flucht')!,
+    PRISONS.find((d) => d.id === 'frostberg')!,
     3,
   );
-  check(walk.routineUntil(1, NIGHT + 20), 'stalag-flucht: the model prisoner goes home');
+  check(walk.routineUntil(1, NIGHT + 20), 'frostberg: the model prisoner goes home');
   check(
     walk.st.heat === 0 && !walk.log.some((l) => l.includes('searchlight')),
-    `stalag-flucht: no searchlight on the walk home (heat ${walk.st.heat})`,
+    `frostberg: no searchlight on the walk home (heat ${walk.st.heat})`,
   );
   console.log('searchlights: the walk home at the bell is left alone');
 }
 
 // ------------------------------------------------------------------ the grace and the bell's own moment
 {
-  const bot = new Bot(CENTER_PERKS, 3);
+  const bot = new Bot(MAPLE_GROVE, 3);
   check(bot.routineUntil(1, NIGHT + 24), 'to 23:24');
   check(!afterHours(bot.sim), 'not out late at 23:24');
   bot.routineUntil(1, NIGHT + 25);
   check(afterHours(bot.sim), 'out late from 23:25');
-  const old = new Bot(CENTER_PERKS, 3);
+  const old = new Bot(MAPLE_GROVE, 3);
   old.sim.rules227 = true;
   old.routineUntil(1, NIGHT + 14);
   check(!afterHours(old.sim), 'the old rules: not out late at 23:14');
@@ -213,7 +213,7 @@ for (const def of PRISONS) {
   forced.st.lockdown = false;
   check(awakeAtNight(forced.sim), 'up and free to sleep: it does');
 
-  const day = new Bot(CENTER_PERKS, 3);
+  const day = new Bot(MAPLE_GROVE, 3);
   check(!awakeAtNight(day.sim), 'by day nothing changes');
   day.st.energy = 50;
   waitMinutes(day, 20);
@@ -303,7 +303,7 @@ for (const def of PRISONS) {
   check(dummyInBed(packed.sim) && packed.st.items.inv[packed.st.items.hand] === first, 'a full bed: swapped, nothing lost');
 
   // By day the bed is searched as ever, the dummy no different.
-  const day = new Bot(CENTER_PERKS, 3);
+  const day = new Bot(MAPLE_GROVE, 3);
   inHand(day, 'bed_dummy');
   put(day, placesOf(day.sim.world).bedside[1]);
   day.act();
@@ -379,9 +379,9 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ saves and older runs
 {
-  // A run that reaches the night, with something the new rules would change: the walk through Stalag's searchlights.
-  const stalag = PRISONS.find((d) => d.id === 'stalag-flucht')!;
-  const played = new Bot(stalag, 3);
+  // A run that reaches the night, with something the new rules would change: the walk through Frostberg's searchlights.
+  const frostberg = PRISONS.find((d) => d.id === 'frostberg')!;
+  const played = new Bot(frostberg, 3);
   played.sim.rules227 = true;
   played.sim.rules228 = true;
   played.sim.rules229 = true;
@@ -394,7 +394,7 @@ for (const def of PRISONS) {
   played.routineUntil(1, NIGHT + 20);
   check(played.st.heat > 0, 'the old rules: the searchlight on the walk home');
   const logOf = (game: string, rules227: boolean) => {
-    const sim = new Sim(stalag, 3);
+    const sim = new Sim(frostberg, 3);
     sim.rules227 = rules227;
     sim.rules228 = rules227;
     sim.rules229 = rules227;
@@ -414,15 +414,15 @@ for (const def of PRISONS) {
     return rec;
   };
   const prev = logOf('2.27.0', true);
-  const replayed = replayLog(prev.toLog(), stalag);
+  const replayed = replayLog(prev.toLog(), frostberg);
   check(
     !!replayed?.ok && replayed.sim.rules227 === true && replayed.sim.state.heat > 0,
     'a 2.27 log through the night replays whole under the old rules',
   );
-  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, frostberg)?.ok, 'and would not under the new ones: the test can tell');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
   const now = logOf('2.44.0', false);
-  const again = replayLog(now.toLog(), stalag);
+  const again = replayLog(now.toLog(), frostberg);
   check(!!again?.ok && again.sim.rules227 === false, "a log of today's replays under today's rules");
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 3, 'and is carried on');
   console.log('older runs: a 2.27 log replays as it was and is not carried on; a new one is');

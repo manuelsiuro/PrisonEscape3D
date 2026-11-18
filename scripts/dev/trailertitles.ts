@@ -29,7 +29,7 @@ const OWN: Record<Lang, { words: string[]; prisons: string; cta: string }> = {
   },
 };
 const URL_TEXT = 'manuelsiuro.github.io/PrisonEscape3D';
-const PRISONS = ['center-perks', 'stalag-flucht', 'shankton', 'san-pancho', 'irongate'];
+const PRISONS = ['maple-grove', 'frostberg', 'gravel-point', 'sierra-seca', 'gull-rock'];
 const WORD_CUTS = ['dig', 'cut', 'bribe', 'smuggle', 'disguise', 'rat'];
 
 const ORANGE = '#ff7714';
@@ -256,7 +256,7 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
   const black = Math.max(1 - smooth(t / 0.45), smooth((t - (end - 0.6)) / 0.55));
 
   // 1. The PA's hello.
-  paLine(g, L['pa.hello.center-perks.0'], t);
+  paLine(g, L['pa.hello.maple-grove.0'], t);
 
   // 2. The model prisoner (the tagline's first half), across the day.
   const [first, second] = L['title.tagline'].split(/(?<=\.)\s+/);
@@ -305,8 +305,8 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
 
   // 5. The five prisons: the line over them all, each name stamped like a file.
   {
-    const t0 = marks['center-perks'].at;
-    const t1 = marks.irongate.end - 0.05;
+    const t0 = marks['maple-grove'].at;
+    const t1 = marks['gull-rock'].end - 0.05;
     const a = env(t, t0 + 0.05, t1, 0.3, 0.15);
     if (a > 0) {
       g.save();

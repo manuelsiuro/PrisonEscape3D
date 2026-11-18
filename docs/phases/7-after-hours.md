@@ -18,7 +18,7 @@ and Easter as well as Halloween and Christmas. The other six stay in the memory 
 photo mode and the postcard, the custom escape, the escape planner, and a story through the prisons.
 
 ### Rules for every phase
-- **Where**: the five campaign prisons. The Training Block gets none of it, so lessons run at Center Perks.
+- **Where**: the five campaign prisons. The Training Block gets none of it, so lessons run at Maple Grove.
 - **The escape bots stay byte-identical.**
   - Everything here starts on the player's request: applying for parole, taking an odd job, running after the
     wall. A prison's holiday is off unless a test forces one.
@@ -64,10 +64,10 @@ five prisons. It walks out through the front door like paperwork (P36), using th
   parole.
 - **Proof**: `paroletest`: a model-prisoner bot granted in every prison; a plotting bot voided; a record bot whose
   card lines match the ledger; the denied path and applying again.
-- **Lesson**: the hearing (Center Perks, a forced record).
+- **Lesson**: the hearing (Maple Grove, a forced record).
 - **Built (where):** the room is data (`content/parole.ts` HEARINGS, not `PrisonDef.comms`, so P40's comms changes don't
-  clash): Center Perks' visiting room (the board on the visitors' chairs of the east booths), Stalag Flucht's mess hut
-  (nobody visits there: its west table), the canteen where the others' visitors sit (Shankton, San Pancho, Irongate).
+  clash): Maple Grove's visiting room (the board on the visitors' chairs of the east booths), Camp Frostberg's mess hut
+  (nobody visits there: its west table), the canteen where the others' visitors sit (Gravel Point, Sierra Seca, Gull Rock).
   The hearing starts on entering the room between 10:00 and 10:30 (the arrows lead to the seat across from the board);
   leaving it during the hearing is walking out (denied). The board is drawn only: three seated figures in suits (the
   visitors' model, P21) while the hearing is called, sits and gives its word; nothing on the map changes. The map viewer
@@ -96,7 +96,7 @@ five prisons. It walks out through the front door like paperwork (P36), using th
   events now say `plot`), or seen out at night (`spotted` night or a failed bed check). Voided, the player may apply
   again 3 prison days on (the plan didn't say; the same wait as a no).
 - **Built (medals):** applied on day 3 at the soonest, out on day 11 (10 with the lawyer): gold 12/12/13/13/14, silver
-  +4, bronze +5 (Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate); a no and a new application lands in
+  +4, bronze +5 (Maple Grove, Camp Frostberg, Gravel Point, Sierra Seca, Gull Rock); a no and a new application lands in
   bronze. `paroletest`'s five model prisoners are out on day 11.
 - **Built (also):** help topic Parole (a timeline; its picture is the lead's to take: `helpshot.ts` has SHOTS.parole);
   lesson `parole` in Ways out (seed 145: fights, work, the heat); achievements Good Behaviour (out on parole, gives the
@@ -117,7 +117,7 @@ five prisons. It walks out through the front door like paperwork (P36), using th
   sideways the hotbar steps aside for every parole card, the card clears the HUD's chips, the warden's line goes top
   right and a lesson's card bottom right (the board stays in view); upright, the desk's record stays below the player
   (tight rows, it scrolls), the for-lines at nothing on one line and no "0" points. The verdict hides the action button;
-  the call to the room is dropped once the player sits. San Pancho's and Irongate's boards stay split across two
+  the call to the room is dropped once the player sits. Sierra Seca's and Gull Rock's boards stay split across two
   tables: their canteens have only two-seat benches. The lesson holds the verdict 6 s before it ends.
 - **Built (full review, rules and text):** no visitor comes while a hearing is due or sitting (the board sits on the
   visiting chairs; visiting hours overlap the hearing): the visit comes after the verdict, still in visiting hours
@@ -142,19 +142,19 @@ the game can already do.
   - **The cake**: smuggle a birthday cake in through visiting.
   - **Lookout**: whistle when a guard comes during someone's dig.
 - **Story chains**: each prison has one chain of 3–4 jobs for a named inmate, told in short cards. For example, at
-  Center Perks, the old-timer's lost watch.
+  Maple Grove, the old-timer's lost watch.
 - **Rewards**: cash, a rare item, an Intake cosmetic, or a debt: the inmate owes you one, so they join your crew
   without the opinion, or hand over a tool.
 - **Failing**: the job goes, opinion drops, and a frame caught out brings heat.
 - **Proof**: `oddjobstest`: every kind done by a bot in every prison it can be dealt in; the chain finished; the
   deals never ask for something the prison doesn't have.
-- **Lesson**: one job from the board (Center Perks).
+- **Lesson**: one job from the board (Maple Grove).
 
 **Built** (what differs from the plan above, and why):
 - **The board**: `PrisonDef.board` (its own field, not inside `comms`: nothing in the phone's data changes, and the
   other phases' edits to `comms()` can't collide with it). On the canteen's north wall in all five prisons, clear of
-  the stage and of the two rows a wall hides: Center Perks 49,7; Stalag Flucht 5,30; Shankton 25,14 (moved off the cyan door at 38,13 in the browser re-check); San Pancho 17,32;
-  Irongate 29,28. Its checks live in `oddjobstest` (the kiosk's checks, done the same way), not in phonetest.
+  the stage and of the two rows a wall hides: Maple Grove 49,7; Camp Frostberg 5,30; Gravel Point 25,14 (moved off the cyan door at 38,13 in the browser re-check); Sierra Seca 17,32;
+  Gull Rock 29,28. Its checks live in `oddjobstest` (the kiosk's checks, done the same way), not in phonetest.
   Drawn by `render/OddJobs.ts` (the decor kit's parts and the notice board's colours, not a `DECOR` kind: its cards
   come down as their pins are taken, a tag hangs while a job is held).
 - **Taking a job**: standing on the board's tile opens its card (the kiosk's way, no action key); the job's own card
@@ -173,15 +173,15 @@ the game can already do.
   searcher); the morning shakedown finding it counts too. Planted in a guard's sight: failed and +35% heat.
 - **Drop**: seen as the parcel lands in the desk (`state.seen` that step): failed. A parcel (or stash) left in that
   desk by an earlier job doesn't count: only one more than it held when the job was taken.
-- **Cake**: dealt only when a visiting day (Stalag Flucht: the Red Cross parcel's delivery day) falls inside the job's
+- **Cake**: dealt only when a visiting day (Camp Frostberg: the Red Cross parcel's delivery day) falls inside the job's
   days, so it can always be done; it comes at the next visit after it's taken (Lou's cake waits for the day after).
 - **Every job ends with the one who asked** (TALK.JOB_IN), as favours do: cash, and on some a rare item or a debt.
   A debt: he joins the crew whatever he thinks of the player (the debt is paid), or hands over a tool (TALK.CALL_IN).
 - **The fixer's job**: one of his kinds (lift, drop, frame, tip), 1.5× the pay and a rare item always.
 - **Story chains**: three steps each (not four), from prison day 2, a step a prison day, on a fourth card beside the
-  pins; a short card as each is taken and handed in. Center Perks: Doc's watch; Stalag Flucht: Ferret's tunnel;
-  Shankton: the Preacher's collection (not the fixer's: Deacon is Shankton's fixer); San Pancho: Toro's birthday;
-  Irongate: Gull's message ashore. The cosmetic is earned through achievements: a story finished gives the copper
+  pins; a short card as each is taken and handed in. Maple Grove: Doc's watch; Camp Frostberg: Ferret's tunnel;
+  Gravel Point: the Preacher's collection (not the fixer's: Deacon is Gravel Point's fixer); Sierra Seca: Toro's birthday;
+  Gull Rock: Gull's message ashore. The cosmetic is earned through achievements: a story finished gives the copper
   trim, five stories the saffron trim.
 - **Codes**: EXT.BOARD 24, EXT.WHISTLE 25; TALK.ODD_JOB 28, JOB_IN 29, CALL_IN 30; DOING.DIG 35; SALT.ODDJOBS 35,
   FIXER_JOB 36, ODDJOB_PERK 37; TODAY.FIXER_JOB 524288, ODD_JOB 1048576. State: `oddjob`, `oddjobs` (appended,
@@ -214,10 +214,10 @@ the game can already do.
   card says "one job at a time" once, starts at its top, and steps aside while a story's card is up; Take buttons
   named by kind and asker. On a phone held sideways the HUD's chips clear a card docked left and a panel docked
   right; upright the job's pill takes the screen's width. A delivery's parcel is given from the talk panel; the hand-in
-  row says the job is done; one toast per action (a delivery, a debt's recruit). Center Perks' and Irongate's
-  stories hand over a parcel; Shankton's Preacher keeps his name in French. Not done: the player's head over the
+  row says the job is done; one toast per action (a delivery, a debt's recruit). Maple Grove's and Gull Rock's
+  stories hand over a parcel; Gravel Point's Preacher keeps his name in French. Not done: the player's head over the
   middle cards (no browser in this pass); the map viewer's in-game photos to retake in the browser pass.
-- **Built (browser re-check):** Shankton's board moved to 25,14 (38,13 behind it was the cyan door; `oddjobstest`
+- **Built (browser re-check):** Gravel Point's board moved to 25,14 (38,13 behind it was the cyan door; `oddjobstest`
   now asks for brick or reinforced wall behind every board). A guard is "coming" only while the player is on watch.
   A delivery's parcel handed over is not a gift (no opinion), and it leaves the gift row for its own. Touch variants
   of the job's hints and the "coming" toast; the dig's % apart from the chip's words; the race card steps aside for
@@ -225,7 +225,7 @@ the game can already do.
   both open; the board card's scroll reset once it's shown; the Today row's dot kept with the step before it.
 - **Built (full review, rules and text):** the help's pay reads $15–55 (the fixer's up to $83), and `helptest` checks
   it against `KIND_DEFS` and `FIXER_PAY`; a save's job with a stage, pin (`FROM`) or perk that can't be loads as none.
-  The Irongate lookout's digger walking to his bed every free time costs about 2% of a step there (measured): left as is.
+  The Gull Rock lookout's digger walking to his bed every free time costs about 2% of a step there (measured): left as is.
 
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.
@@ -237,11 +237,11 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
 
   | Prison | Outside |
   |---|---|
-  | Center Perks | woods and a road |
-  | Stalag Flucht | snow, a river, the border post |
-  | Shankton | a rail yard and an industrial estate |
-  | San Pancho | scrub desert and a highway |
-  | Irongate | a harbour town, reached by raft or helicopter |
+  | Maple Grove | woods and a road |
+  | Camp Frostberg | snow, a river, the border post |
+  | Gravel Point | a rail yard and an industrial estate |
+  | Sierra Seca | scrub desert and a highway |
+  | Gull Rock | a harbour town, reached by raft or helicopter |
 
 - **The hunt**:
   - searchers on foot with dogs (k9 rules: scent, trail);
@@ -259,7 +259,7 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
   - Caught: recaptured, and the escape still counts. The card says how close the player got.
 - **Proof**: `manhunttest`: a getaway bot per prison and per kind of start; every outside map reachable to the safe
   point; the escape bots' snapshots unchanged (they end at the wall).
-- **Lesson**: the manhunt (Center Perks' woods).
+- **Lesson**: the manhunt (Maple Grove's woods).
 - **Built** (what differs from the plan above, and why):
   - **Its own simulation.** The hunt is `sim/hunt/Hunt.ts`, a deterministic sim of its own (20 steps a second,
     packed commands, integer positions, draws from `roll()` with `SALT.HUNT`), built from the outside's data and a
@@ -276,9 +276,9 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     trees and crates as solid `parked` tiles, cover and trees in a new `World.veil` that stops sight but not feet),
     so walking, sight, cones and paths are the inside's own code. Starts are by kind (`content/manhunt.ts
     startKindOf`): wall (fence, tunnel, roof), gate (takeover, gate, bluff), glider (further out), van (stowaway),
-    sea (raft), air (helicopter; Irongate's stowaway rides the supply helicopter). Safe points: Center Perks' night
-    bus, Stalag Flucht's border (across the wire: a gap far west, cutters, or past the post), Shankton's night
-    freight, San Pancho's truck stop, Irongate's coach station.
+    sea (raft), air (helicopter; Gull Rock's stowaway rides the supply helicopter). Safe points: Maple Grove's night
+    bus, Camp Frostberg's border (across the wire: a gap far west, cutters, or past the post), Gravel Point's night
+    freight, Sierra Seca's truck stop, Gull Rock's coach station.
   - **The hunt's rules** (numbers in `content/manhunt.ts HUNT`): searchers walk beats and look with the inside's
     60° cones (7 tiles by day, 5 after dark); a notice meter (in other clothes they know the player only within 3
     tiles, in a guard's uniform 2.5); spotted, a chase and the radio; out of sight 3 s, a look round where last seen.
@@ -311,9 +311,9 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     (`scripts/huntbot.ts`: shortest way out of every eye's reach, else into cover) clean away from all 17 starts and
     again seen going by day, each rule on its own, determinism, the lesson played through. `scripts/dev/huntsweep.ts`
     sweeps the bot over every start, night and day. The map viewer has an Outside view per prison.
-  - **Lesson** `manhunt`, last of the Ways out chapter: over Center Perks' wall, into the woods, a thicket while a
+  - **Lesson** `manhunt`, last of the Ways out chapter: over Maple Grove's wall, into the woods, a thicket while a
     searcher goes by, clothes off a line, Lou's car (one searcher, no roadblocks, no helicopter). Dev builds start a
-    hunt from the console: `__manhunt('stalag-flucht', 'wall', { minute: 1410, crew: 1, lou: true })`.
+    hunt from the console: `__manhunt('frostberg', 'wall', { minute: 1410, crew: 1, lou: true })`.
   - **Rules review** (before release; the numbers above are the first cut's, these replace them):
     - Bugs: a searcher sent to look (a noise, the radio, the helicopter, a lost chase) now walks there, looks round,
       and goes back (with no way there he looks round where he stands); before, he froze. A ford washes the trail
@@ -338,12 +338,12 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
       searches the same cover, from the second time the patrols sweep too; the dog teams keep their own round of
       places sniffed. Keeping still fails in the end (in the cover nearest safety: caught in 69–360 s; in the open
       where they came out: 40–181 s).
-    - Every start has a careful line in the jumpsuit: Shankton's estate gained hedges along two rows and culverts
-      under its three roads, and a washing line by the gate road (33,44); Stalag Flucht (40,50) and San Pancho
+    - Every start has a careful line in the jumpsuit: Gravel Point's estate gained hedges along two rows and culverts
+      under its three roads, and a washing line by the gate road (33,44); Camp Frostberg (40,50) and Sierra Seca
       (30,47) gained a line near the gate too.
     - The gauge, `hunttest` (the review's limited bot: `HuntBot` plain, 12-tile view) over 17 starts × night/day ×
-      head start/seen going × jumpsuit/uniform × 3 salts: caught 106/408 (26%, from 0% at Center Perks' wall to 71%
-      at Irongate's gate), a getaway in 53 s on average (25–123 s; a human plays slower); the expert `HuntBot` (it
+      head start/seen going × jumpsuit/uniform × 3 salts: caught 106/408 (26%, from 0% at Maple Grove's wall to 71%
+      at Gull Rock's gate), a getaway in 53 s on average (25–123 s; a human plays slower); the expert `HuntBot` (it
       sees everything; looking-round searchers counted all round, the gates and edges still to open kept clear of, a
       line or a ford close by when a dog is on the trail) gets away in all 136 combinations, each in either outfit,
       with one run's draws or another (salts 1–6 tried; 33 need more than the first, none more than 5). `manhunttest` keeps each rule's
@@ -353,8 +353,8 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
   - **UI review**: How to play (H) in a hunt opens on the manhunt topic and the hunt goes on after it; the pause
     card says leaving counts as recaptured; the HUD starts clean each hunt, says "1 tile", shows a "A dog's on your
     trail" pill, and keeps the distance on a phone held upright; toasts keep clear of the stone (portrait) and of the
-    strip below the player (landscape). Lou's car stands on its spot (open road, checked); Stalag's border ring sits
-    beyond the wire; Irongate's outside is sea all round (no woods past the town, as the map viewer now shows too),
+    strip below the player (landscape). Lou's car stands on its spot (open road, checked); Frostberg's border ring sits
+    beyond the wire; Gull Rock's outside is sea all round (no woods past the town, as the map viewer now shows too),
     the prison's ferry and patrol boat are no longer drawn there, and Pike's beat keeps west of the gate start; a
     river running off the world's edge goes on out of sight; a faint glow at the player's feet after dark; head-on
     into a tree the player slides round it. The helicopter's light shows them whatever they wear and holds a chase
@@ -363,7 +363,7 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     fails as in the jumpsuit (40–181 s). Night-only barks only at night; the lesson's thicket step ticks once the
     searcher has gone by; its recapture card has a title and a line under it; the hunt's achievements come first on
     the card. Not done: the van, glider and helicopter starts still begin on foot (no vehicle moment), and the
-    lighter rectangle of Irongate's sea over the picture couldn't be traced without a browser (the data past the
+    lighter rectangle of Gull Rock's sea over the picture couldn't be traced without a browser (the data past the
     picture is the same sea now).
 - **Built (full review, rules and text):** a hunt counts in the stats once a run (its salt, as an escape does: the
   trophies' store keeps `hunted`), so the same save hunted twice, or left, is one hunt. The help names the touch
@@ -371,13 +371,13 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
   French names the jerky as the item does (viande séchée).
   - **Built (full review of v2.21.0, 3D):** the seams at the world's edge. The contact shadows' multiplied layer
     darkens even its white a little (the tone curve), and only over the 64×64 world: it now carries on past the
-    edge round the sea (Irongate's prison and outside) and round the manhunt's outside, with open ground's average
+    edge round the sea (Gull Rock's prison and outside) and round the manhunt's outside, with open ground's average
     shade. The fields past the outside's edge are its own grass (untinted, the floors' shade), the picture's roads,
     dirt tracks and railway lines run on 44 tiles off its edge (over the woods band too, rails and gravel with
     them), and the woods past the world's edge are the HuntView's, clear of those and of the rivers. The next
     hunt's helicopter no longer eases in from where the last one was. A glow round each searcher after dark is
     drawn from `HuntFrame.searchers` (the play loop fills it).
-  - **Built (Irongate's sea seam, re-check):** the line down the sea was the Island view's shallows, a canvas the size
+  - **Built (Gull Rock's sea seam, re-check):** the line down the sea was the Island view's shallows, a canvas the size
     of the map: where land lies within 3 tiles of its edge (the manhunt's town 2 in, the prison's west shore 1 in) their
     paler gradient stopped square at the edge. The shallows are now drawn 6 tiles past the edge.
 
@@ -389,7 +389,7 @@ The prisons dress up for the holidays of the real calendar, each with its own da
 | **Easter / Pâques** | Good Friday to Easter Monday (computed each year) | An **egg hunt** in the yard and the desks: chocolate eggs to find before the inmates do (they trade them as cash). Bunny ears in the Intake. The feast has a lamb roast. |
 | **Summer** | 1 July – 31 August | **Sports day** on the grounds: races, tug of war, a medal. A **barbecue** in the yard, and a **water fight** with hoses that soaks the guards (wet: a moment's cover). An ice-cream van comes on delivery day. Heatwaves come more often. |
 | **Halloween** | 24 October – 2 November | **Costume night**: a costume is a disguise that fools no one but makes everyone laugh. Pumpkin carving in the kitchen. A ghost story at lights-out; the rat scares a guard. |
-| **Christmas & New Year** | 15 December – 6 January | **Christmas dinner** and a gift swap (a gift raises opinion). A snowball fight where there is snow, and jokes about it at San Pancho. **New Year's Eve fireworks** at midnight, loud enough to cover the noise of work. |
+| **Christmas & New Year** | 15 December – 6 January | **Christmas dinner** and a gift swap (a gift raises opinion). A snowball fight where there is snow, and jokes about it at Sierra Seca. **New Year's Eve fireworks** at midnight, loud enough to cover the noise of work. |
 
 - **How the date gets in**: the play layer reads the date when a run starts (as the Daily does) and stores
   `state.holiday`. Inside the sim it is only data, so a replay plays back the same.
@@ -425,7 +425,7 @@ The prisons dress up for the holidays of the real calendar, each with its own da
     ground, never the courtyard (`zonesOf`); held in the yard, it cost "Missed Exercise" (UI review). The
     warden, the banner, the help and *Splashdown* say "the sports ground". An ice lolly at the canteen
     counter that day, and the barbecue is dinner's feast. Heatwaves come more often all summer where the climate
-    has them (weight ×2 + 10; never in the Alps, nor at Shankton and Irongate, whose climates have none).
+    has them (weight ×2 + 10; never in the Alps, nor at Gravel Point and Gull Rock, whose climates have none).
   - *Costume night* (Halloween, 19:00–21:00): a witch's costume at the canteen counter and a pumpkin in the
     kitchen freezer from 08:00. The costume is an outfit that is no disguise. Worn on costume night, every inmate
     within 2 tiles laughs once (+5 opinion). Caught, the player wakes up in the jumpsuit as with any outfit. The
@@ -439,16 +439,16 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   open furniture beside P28's, from 08:00 until their holiday day is over (`treatHours`: the lolly until 15:30,
   the costume and the pumpkin until 21:00, the present until 22:00); the day card says so.
 - **Cut to keep it small**: no ice-cream van on delivery day (the lolly comes on the water fight's day instead,
-  since Shankton has no delivery); no new sports day with races and tug of war (sports day is already in four decks);
-  the rat scaring a guard and the snowball fight are words only (barks, the snowman, a sandman at San Pancho).
+  since Gravel Point has no delivery); no new sports day with races and tug of war (sports day is already in four decks);
+  the rat scaring a guard and the snowball fight are words only (barks, the snowman, a sandman at Sierra Seca).
 - **Decor** (`render/Holidays.ts`, render only, planned from the map by `holidayDecor` and checked by
   holidaytest): garlands (lights at Christmas) along the canteen's north wall, broken round what hangs there
   (the menu board, the clock, posters, P40's odd jobs board), on the side walls where that leaves no run of two
-  tiles (Irongate; never a south wall, the camera's side), the Christmas lights on a drooping wire; the tree never under a garland nor under anything
+  tiles (Gull Rock; never a south wall, the camera's side), the Christmas lights on a drooping wire; the tree never under a garland nor under anything
   hung on a wall (its column, a tile either side: the menu board, the odd jobs board), and nothing standing on any
   tile round it (its boughs and presents never touch a table or the counter): along a wall, else free in the room
-  away from doors and the counter's queue (Center Perks' 50,11, Stalag Flucht's 10,33), else out by the yard
-  (San Pancho's canteen has no room: on the sports ground, 34,34); egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
+  away from doors and the counter's queue (Maple Grove's 50,11, Camp Frostberg's 10,33), else out by the yard
+  (Sierra Seca's canteen has no room: on the sports ground, 34,34); egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
   parasols, deckchairs, a barbecue and two hoses' sprays on the sports ground (summer); lanterns along the yard's walls (Halloween); a lit tree with presents in a canteen corner and a snowman
   in a Santa hat (a sandman in the desert) for Christmas; fireworks just above and ahead of the player at
   midnight (within 3 tiles across and 1–4 ahead, in view on a phone). Nothing stands on furniture, the prison's
@@ -456,7 +456,7 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   and, but for a hose against the wall, not within a tile of the track or the court) or by a door
   (the tree two tiles off); parasols keep 3 tiles apart, their deckchairs only where there's floor for them,
   and a canopy fades over whoever stands under it (the camera looks down); where the sports ground has no room
-  left by them (Center Perks'), the parasols stand in the yard beside it. Each hose sprays a short fan of three
+  left by them (Maple Grove's), the parasols stand in the yard beside it. Each hose sprays a short fan of three
   jets 3 tiles out from its wall (`HOSE_REACH`), splashing where they land. The title's
   prison is dressed for the date. The Daily plays without a holiday; only its decor follows the date (the
   date's own, never a holiday picked in Settings). The inmates' holiday talk is the day's own only on the
@@ -464,7 +464,7 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   viewer doesn't draw any of it: the decor depends on the date, not on the prison's data.
   P41's manhunt is never dressed: its outside world gets no decor (its frame's holiday is none) and its sim never reads
   `holiday`.
-  The help page's picture is staged by `SHOTS.holidays` in scripts/dev/helpshot.ts (Christmas in Center Perks'
+  The help page's picture is staged by `SHOTS.holidays` in scripts/dev/helpshot.ts (Christmas in Maple Grove's
   canteen: the tree free in the room, the player beside it, the lights on the north wall), to be taken in the browser.
 - **Cosmetics** (earned): bunny ears (*Egg Hunter*, 5 eggs in a run), summer shades (*Splashdown*, in the water
   fight), a witch's hat (*Trick or Treat*, 3 laughs), a Santa hat (*Secret Santa*, a present given); and *Out With
@@ -475,7 +475,7 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   holiday talk on its days only, a player at the water fight present for Exercise) and `holidaybotstest` (all 33 escape bots under
   each of the four holidays, and P39's model prisoner, whose 11-day run lives through two holiday days, under
   each holiday at another prison; it runs beside the other), and `holidayruntest` (a bot playing the evenings by
-  commands at Center Perks: tool work through the water fight, costume night's laughs and none after 21:00,
+  commands at Maple Grove: tool work through the water fight, costume night's laughs and none after 21:00,
   the present given, ten strikes on the cell wall under the fireworks, heard 1 tile off). No escape snapshot changed. Only counts and
   the state's hash changed (simtest, replaytest's save size, items, achievements, keys, banks, help).
 - **Built (full review, rules and text):** the water fight's bit is `TODAY.SPLASHED` in calendar.ts with the other
@@ -488,12 +488,12 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   doorway (`lanesOf`, 4 tiles on; parasols a tile either side too), in a one-wide passage or within a tile of a
   fence's wire; nothing by a wall stands just north of one (the wall hid it from the camera: the lanterns,
   barbecues and hoses the review listed); a tile in from a fence counts as by the edge where a sports ground or yard
-  has no wall (Stalag Flucht's). Ground pieces are picked one at a time, each keeping the tiles round it (Irongate's
-  lanterns stood side by side). Garlands never hang on a south wall (Irongate's now on its side walls) nor
-  behind the parole board's seats (Stalag Flucht's and San Pancho's broken there). Irongate's tree, which stood in
+  has no wall (Camp Frostberg's). Ground pieces are picked one at a time, each keeping the tiles round it (Gull Rock's
+  lanterns stood side by side). Garlands never hang on a south wall (Gull Rock's now on its side walls) nor
+  behind the parole board's seats (Camp Frostberg's and Sierra Seca's broken there). Gull Rock's tree, which stood in
   the canteen's south opening, has no room left in the canteen: it stands by the sports ground. Each hose has a
   tap, a reel and a nozzle on a stake, its fan of jets over nothing standing nor the other summer pieces. Baskets
-  and lanterns on every canteen table (Center Perks' eight). San Pancho's sports ground has room for one parasol
+  and lanterns on every canteen table (Maple Grove's eight). Sierra Seca's sports ground has room for one parasol
   off its ways in. The parasols share one two-sided material and eight faded steps (one shader, compiled with the
   prison: the first parasol cost a ~190 ms hitch). Fireworks: bigger sparks with trails and a flash, none drawn
   with reduced motion. The witch's hat: a narrower brim, the hat tipped back, so the face shows from above.

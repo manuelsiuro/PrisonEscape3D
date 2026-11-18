@@ -65,7 +65,7 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   const free = (t: number) => floorOk(t) && !edges.has(t);
   const canteen = canteenOf(w, things, grounds);
   const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen');
-  // (Out in the yard; where it has no room, Shankton's strip, the sports ground too.)
+  // (Out in the yard; where it has no room, Gravel Point's strip, the sports ground too.)
   const own = floorOf(w, ['yard']);
   const sports = floorOf(w, ['sports']);
   const near = [-1, 0, 1].flatMap((dz) => [-1, 0, 1].map((dx) => dz * MAP_W + dx)).filter((d) => d !== 0);
@@ -106,7 +106,7 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   if (canteen) out.push(...canteen.walls);
   if (kind === HOLIDAY.EASTER) for (const p of tables) out.push({ what: 'basket', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
   else if (kind === HOLIDAY.SUMMER) {
-    // (Where the sports ground has no room left by its pitch, track and court, Center Perks', out in the yard by it; well in from a doorway, off the way in.)
+    // (Where the sports ground has no room left by its pitch, track and court, Maple Grove's, out in the yard by it; well in from a doorway, off the way in.)
     const lanes = lanesOf(w);
     const roomy = (ground: readonly number[]) => roomOf(ground).filter((t) => !nearDoor(w, t, PARASOL_CLEAR) && !lanes.has(t));
     const room = roomy(sports).length ? roomy(sports) : roomy(own);
@@ -122,7 +122,7 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
       place(t);
     }
     const byWall = byWallOf(sports);
-    // (A barbecue by the wall, or, where the running track's margin takes the whole wall, Center Perks', at the track's edge.)
+    // (A barbecue by the wall, or, where the running track's margin takes the whole wall, Maple Grove's, at the track's edge.)
     const hoseAt = sports.filter((t) => floorOk(t) && edgeAt(w, t));
     const bbq = pick(byWall, 1, 12)[0] ?? pick(hoseAt, 1, 12)[0];
     if (bbq !== undefined) {
@@ -146,14 +146,14 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
     }
   } else if (kind === HOLIDAY.HALLOWEEN) {
     for (const p of tables) out.push({ what: 'lantern', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
-    // (Along the yard's walls; where it has too few free, San Pancho's, the sports ground's too.)
+    // (Along the yard's walls; where it has too few free, Sierra Seca's, the sports ground's too.)
     const got = pickPlace(byWallOf(yard), 4, 14);
     got.push(...pickPlace(byWallOf(floorOf(w, ['yard', 'sports'])), 4 - got.length, 14));
     for (const t of got) out.push({ what: 'lantern', ...at(t) });
   } else if (kind === HOLIDAY.CHRISTMAS) {
     if (canteen?.corner) out.push({ what: 'tree', x: canteen.corner[0], z: canteen.corner[1] });
     else {
-      // (A canteen with no room for it anywhere, tables to every wall, San Pancho's: the tree out in the yard, or by the sports ground.)
+      // (A canteen with no room for it anywhere, tables to every wall, Sierra Seca's: the tree out in the yard, or by the sports ground.)
       const clear = (ground: readonly number[]) => roomOf(ground).filter((u) => !nearDoor(w, u, 2));
       const t = pick(clear(yard), 1, 16)[0] ?? pick(clear(floorOf(w, ['yard', 'sports'])), 1, 16)[0];
       if (t !== undefined) {
@@ -292,8 +292,8 @@ const OPENINGS = new WeakMap<World, Set<number>>();
 
 /**
  * The openings between rooms with no door in them (the gaps in a wall's line, up to OPENING_WIDE
- * tiles across, where the floor on one side is another zone's: Irongate's canteen's south opening,
- * Center Perks' yard's ways in): each tile of the gap. A doorway to the decor, like a door.
+ * tiles across, where the floor on one side is another zone's: Gull Rock's canteen's south opening,
+ * Maple Grove's yard's ways in): each tile of the gap. A doorway to the decor, like a door.
  */
 function openingsOf(w: World): ReadonlySet<number> {
   const had = OPENINGS.get(w);
@@ -421,7 +421,7 @@ function wallAt(w: World, x: number, z: number): boolean {
 
 /**
  * The canteen: its garlands, runs of its north wall (or, where what hangs there leaves no room,
- * Irongate's with the odd jobs board, of its side walls), broken where something hangs on that
+ * Gull Rock's with the odd jobs board, of its side walls), broken where something hangs on that
  * wall (a garland never crosses the menu board, the clock, a poster or the odd jobs board) and
  * where the parole board sits in front of it (their heads would cover it); and a tile for the
  * tree: free floor with nothing standing on any tile round it (a plant, the water cooler, a table,

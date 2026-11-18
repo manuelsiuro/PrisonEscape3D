@@ -4,7 +4,7 @@ import { h } from '../dom';
 import { icon } from '../icons';
 import { hhmm } from '../../sim/systems/clock';
 
-/** "Stalag Flucht · Day 3 · 14:20 · Laundry": which prison, when and where a save was made. */
+/** "Camp Frostberg · Day 3 · 14:20 · Laundry": which prison, when and where a save was made. */
 export function saveWhen(f: SaveFile): string {
   // (P31: its prison rebuilt since, said before it's picked: the run starts over.)
   if (rebuiltSince(f)) return `${t(`prison.${f.prison}` as Key)} · ${t('title.rebuilt')}`;

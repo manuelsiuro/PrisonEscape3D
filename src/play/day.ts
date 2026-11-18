@@ -85,7 +85,7 @@ export const EVENT_COLOR: Record<DayEvent, string> = {
   quiz: '#5fb3ff',
   gangWar: '#e0503c',
 };
-/** An event's icon here (P18: Irongate's delivery comes by helicopter). */
+/** An event's icon here (P18: Gull Rock's delivery comes by helicopter). */
 export const eventIcon = (sim: Sim, e: DayEvent) =>
   e === 'delivery' && sim.prison.delivery?.vehicle === 'helicopter' ? 'heli' : EVENT_ICON[e];
 
@@ -94,7 +94,7 @@ const supervisorOf = (sim: Sim) => {
   const name = sim.prison.guards[sim.prison.delivery?.supervisor ?? -1]?.name;
   return name ? guardWord(sim, 'guard.the', { name }) : t('guard.nameless');
 };
-/** The weather as it's named and drawn: in the snow (Stalag Flucht) a clear day snows, a storm is a blizzard. */
+/** The weather as it's named and drawn: in the snow (Camp Frostberg) a clear day snows, a storm is a blizzard. */
 type WeatherName = Weather | 'snow' | 'blizzard';
 const WX_ICON: Record<WeatherName, string> = {
   clear: 'sun',

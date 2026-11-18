@@ -30,25 +30,25 @@ export function gangName(sim: Sim, k: number): string {
   return id ? t(`gang.${id}` as Key) : '';
 }
 
-/** The words for a guard by title ("Officer Pratt") in a sentence's place. */
+/** The words for a guard by title ("Officer Tibbs") in a sentence's place. */
 type GuardWord = 'guard.title' | 'guard.addressed' | 'guard.subject' | 'guard.the' | 'combat.guardNamed';
 
 /**
  * 2.36: a guard's title as this prison has it: `<key>.<prison>` where there is one (the Six Hunter's guards are
- * Hunters: "Hunter Garrow", "Veneur Garrow"), else the usual ("Officer Pratt").
+ * Hunters: "Hunter Garrow", "Veneur Garrow"), else the usual ("Officer Tibbs").
  */
 export function guardWord(sim: Pick<Sim, 'prison'>, key: GuardWord, vars: Record<string, string | number>): string {
   const own = `${key}.${sim.prison.id}`;
   return t(hasKey(own) ? own : key, vars);
 }
 
-/** A guard as the player addresses it: "Officer Pratt" (or "The guard" for one without a name). */
+/** A guard as the player addresses it: "Officer Tibbs" (or "The guard" for one without a name). */
 export function guardTitle(sim: Sim, k: number): string {
   const d = sim.prison.guards[k];
   return d?.name ? guardWord(sim, 'guard.title', { name: d.name }) : t('guard.nameless');
 }
 
-/** A guard opening a sentence: "Officer Pratt looks away", "Le gardien Pratt ferme les yeux". */
+/** A guard opening a sentence: "Officer Tibbs looks away", "Le gardien Tibbs ferme les yeux". */
 export function guardSubject(sim: Sim, k: number): string {
   const d = sim.prison.guards[k];
   return d?.name ? guardWord(sim, 'guard.subject', { name: d.name }) : t('guard.nameless');

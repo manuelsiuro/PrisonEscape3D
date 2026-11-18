@@ -4,7 +4,7 @@ A practical guide for generating 3D models via code that seamlessly blend with P
 
 ---
 
-## 1. Visual Philosophy: The Low-Poly Escapists Aesthetic
+## 1. Visual Philosophy: The Low-Poly Blocky Aesthetic
 
 Prison Escape 3D uses a stylized, clean, retro 3D aesthetic reminiscent of classic sandbox escape games. The visual appeal comes from:
 

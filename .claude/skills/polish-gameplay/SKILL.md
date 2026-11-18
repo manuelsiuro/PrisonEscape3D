@@ -75,7 +75,7 @@ line is something that was missed or broke at some point.
 
 **The world**
 - Props and decor in all six prisons: is what the rule assumes actually there, and the same everywhere?
-  Tray decor was only on Center Perks' counter.
+  Tray decor was only on Maple Grove's counter.
 - The map viewer (`mapimage.ts`, `mapdata.ts`, overlays, routine notes, photos). `mapshot.send()` rewrites
   every photo: `git checkout` the ones nothing changed in.
 
@@ -124,11 +124,11 @@ Write `scripts/<area>test.ts` with its snapshot:
 **Reading changed snapshots.** `npm test -- -u` only after reading the diff, and gate on the exit code. A
 changed bot snapshot is a regression until proven otherwise. Separate a real FAIL from a moved number, and
 never explain a failure away unmeasured: run old and new code over many seeds with a git worktree of
-`HEAD` (symlink `node_modules`, run one probe script against both). That showed Irongate's takeover bot wins
+`HEAD` (symlink `node_modules`, run one probe script against both). That showed Gull Rock's takeover bot wins
 about half the time on either, and that the gardener's bug was older than the change. To name a moved snapshot's
 cause, change one thing at a time in the same build (2.33: inmates at the cooler from day 2, then the cooler made
 walk-through: the escape bots' drift went to zero, so the cooler being solid was all of it). A route lost on 24 seeds
-may be luck: measure it on 60 on the old code and on each candidate fix before moving anything (Irongate's bluff: 58,
+may be luck: measure it on 60 on the old code and on each candidate fix before moving anything (Gull Rock's bluff: 58,
 58 and 57; the cooler stayed where it was). Check a long probe has really started (a `.ts` with top-level await dies at once under `tsx`; use `.mts`). Remove the worktree
 afterwards, and list every accepted change in the pass's row in `docs/phases/8-polish.md`.
 
@@ -139,7 +139,7 @@ Bots pass what people fail: the lesson that started inside a wall passed its bot
 
 ```js
 const p = await import('/scripts/dev/playat.ts');
-await p.at('irongate', 1, 9 * 60 + 1);          // the model prisoner's day up to then, on screen
+await p.at('gull-rock', 1, 9 * 60 + 1);          // the model prisoner's day up to then, on screen
 await p.to(50, 12); await p.press('KeyE');      // real keys
 p.freeze(); p.zoom(3);                          // held still and enlarged for a close look
 ```

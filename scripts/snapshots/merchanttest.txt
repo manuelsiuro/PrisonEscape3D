@@ -1,13 +1,13 @@
-center-perks: 3 merchants, 7 things bought for $151 as shown
-stalag-flucht: 3 merchants, 7 things bought for $158 as shown
-shankton: 4 merchants, 12 things bought for $279 as shown
-san-pancho: merchant 10 starts with a grudge
-san-pancho: 4 merchants, 8 things bought for $181 as shown
-irongate: 4 merchants, 8 things bought for $179 as shown
+maple-grove: 3 merchants, 7 things bought for $151 as shown
+frostberg: 3 merchants, 7 things bought for $158 as shown
+gravel-point: 4 merchants, 12 things bought for $279 as shown
+sierra-seca: merchant 10 starts with a grudge
+sierra-seca: 4 merchants, 8 things bought for $181 as shown
+gull-rock: 4 merchants, 8 things bought for $179 as shown
 six-hunter: 4 merchants, 12 things bought for $278 as shown
-center-perks: change about each morning $13/$24/$46, favors on offer $110/$92/$109, wages $30–$55, merchant goods $12–$40
-stalag-flucht: change about each morning $23/$50/$96, favors on offer $126/$85/$107, wages $30–$65, merchant goods $12–$40
-shankton: change about each morning $37/$98/$154, favors on offer $139/$72/$96, wages $30–$65, merchant goods $12–$40
-san-pancho: change about each morning $37/$70/$112, favors on offer $128/$94/$98, wages $30–$65, merchant goods $12–$40
-irongate: change about each morning $36/$90/$135, favors on offer $120/$125/$100, wages $30–$65, merchant goods $12–$40
+maple-grove: change about each morning $13/$24/$46, favors on offer $110/$92/$109, wages $30–$55, merchant goods $12–$40
+frostberg: change about each morning $23/$50/$96, favors on offer $126/$85/$107, wages $30–$65, merchant goods $12–$40
+gravel-point: change about each morning $37/$98/$154, favors on offer $139/$72/$96, wages $30–$65, merchant goods $12–$40
+sierra-seca: change about each morning $37/$70/$112, favors on offer $128/$94/$98, wages $30–$65, merchant goods $12–$40
+gull-rock: change about each morning $36/$90/$135, favors on offer $120/$125/$100, wages $30–$65, merchant goods $12–$40
 six-hunter: change about each morning $37/$81/$116, favors on offer $139/$110/$124, wages $30–$55, merchant goods $12–$40

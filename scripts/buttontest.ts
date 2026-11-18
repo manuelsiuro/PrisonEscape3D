@@ -431,10 +431,10 @@ for (const def of PRISONS) {
 // From the escape bots' own runs: the presses they make at the vehicle, the release desk, the checkpoint.
 const RARE = new Set(['stow', 'climbOut', 'report', 'fileForm', 'showId']);
 const ROUTES: Array<[string, Route]> = [
-  ['center-perks', 'stowaway'],
-  ['center-perks', 'bluff'],
-  ['center-perks', 'paperwork'],
-  ['irongate', 'stowaway'],
+  ['maple-grove', 'stowaway'],
+  ['maple-grove', 'bluff'],
+  ['maple-grove', 'paperwork'],
+  ['gull-rock', 'stowaway'],
 ];
 const caught: Array<{ prison: string; route: string; snap: ReturnType<Sim['snapshot']>; kind: string }> = [];
 const proto = Bot.prototype as unknown as { step(this: Bot, cmd?: number): void };

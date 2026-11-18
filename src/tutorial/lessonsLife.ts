@@ -6,7 +6,7 @@ import { itemOf, slot, usesOf } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, TRUST_IGNORE, UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { MAP_W } from '../sim/world/World';
-import { CENTER_PERKS } from '../content/prisons/center-perks';
+import { MAPLE_GROVE } from '../content/prisons/maple-grove';
 import { DAY_EVENTS, WEATHERS } from '../content/days';
 import { GANGS } from '../content/gangs';
 import { initiationTile, playerGang } from '../sim/systems/gangs';
@@ -78,7 +78,7 @@ import {
   wiltedBed,
 } from './kit';
 
-/** The free time lesson's ring: the one nearest Center Perks' yard bench (32, 31). */
+/** The free time lesson's ring: the one nearest Maple Grove's yard bench (32, 31). */
 function freeRing(sim: Sim): number {
   const rings = ringsOf(sim.world);
   let best = 0;
@@ -99,7 +99,7 @@ export const LIFE: readonly Lesson[] = [
     // Guard ways (P15): a corrupt guard, paid to lose the paperwork.
     id: 'guards',
     icon: 'hand',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 31,
     known: [{ guard: PRATT, kind: 'corrupt' }],
     setup: (sim) => {
@@ -126,7 +126,7 @@ export const LIFE: readonly Lesson[] = [
     // The day (P17): the warden's board in the morning, a fire drill's bell, roll call in time.
     id: 'day',
     icon: 'megaphone',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 32,
     days: true,
     setup: (sim) => {
@@ -153,7 +153,7 @@ export const LIFE: readonly Lesson[] = [
     setup: (sim) => {
       clockTo(sim, DAY_TWO + MORNING);
       place(sim, 38, 30, 13);
-      pockets(sim, 'light_cutters', 'jerky');
+      pockets(sim, 'reinforced_cutters', 'jerky');
       sim.state.items.hand = 2;
       sim.state.dogs[0].trust = 40;
     },
@@ -210,7 +210,7 @@ export const LIFE: readonly Lesson[] = [
     // Smuggling (P21): an order on the burner phone, by drone, picked up in the yard before a guard sees it.
     id: 'smuggle',
     icon: 'drone',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     // (A night whose drop lands at 21:21 and lies a few seconds before a guard's round comes by: tutorialtest holds it to that.)
     seed: 68,
     setup: (sim) => {
@@ -289,7 +289,7 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Cheat (P27): a hand for $5 with Sparky, played out to its last chip.
+    // Cheat (P27): a hand for $5 with Scooter, played out to its last chip.
     id: 'cards',
     icon: 'cards',
     // (Its seed as it was before the hounds and the gangs came before it in the list.)
@@ -326,7 +326,7 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Hoops (P27): a basket on one's own, then a shootout with Sparky.
+    // Hoops (P27): a basket on one's own, then a shootout with Scooter.
     id: 'hoops',
     icon: 'ball',
     // (Its seed as it was before the hounds and the gangs came before it in the list.)
@@ -555,10 +555,10 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Penalties (2.44; P29's yard football before, its id kept): a shootout with a Center Perks inmate, a kick, a save, the end.
+    // Penalties (2.44; P29's yard football before, its id kept): a shootout with a Maple Grove inmate, a kick, a save, the end.
     id: 'football',
     icon: 'football',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 72,
     setup: (sim) => {
       clockTo(sim, at(10, 5));
@@ -605,7 +605,7 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // The tattoo parlour (P29): a gun crafted, a heart traced for Sparky, a design of his on the player's arm.
+    // The tattoo parlour (P29): a gun crafted, a heart traced for Scooter, a design of his on the player's arm.
     id: 'tattoo',
     icon: 'needle',
     // (Its seed as it was before the hounds and the gangs came before it in the list.)
@@ -644,10 +644,10 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Talent night (P30): the night's acts at Center Perks, then the player's song on the canteen's stage.
+    // Talent night (P30): the night's acts at Maple Grove, then the player's song on the canteen's stage.
     id: 'talent',
     icon: 'music',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 81,
     days: true,
     setup: (sim) => {
@@ -682,10 +682,10 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Quiz night (P30): eight questions in Center Perks' library against three inmates.
+    // Quiz night (P30): eight questions in Maple Grove's library against three inmates.
     id: 'quiz',
     icon: 'brain',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 84,
     days: true,
     setup: (sim) => {
@@ -751,10 +751,10 @@ export const LIFE: readonly Lesson[] = [
   },
   {
     // Free time (2.39): what it opens, two inmates at dice in the yard joined by walking up to one, a game played; the
-    // chats and the warning before roll call told at the end. At Center Perks on day 2 (none gather on the first).
+    // chats and the warning before roll call told at the end. At Maple Grove on day 2 (none gather on the first).
     id: 'freetime',
     icon: 'walk',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 165,
     setup: (sim) => {
       // (A quiet evening: nothing to take the crowd off to the canteen.)
@@ -797,11 +797,11 @@ export const LIFE: readonly Lesson[] = [
     ],
   },
   {
-    // Gangs (2.37's lesson for 2.36): Rusty, the Kitchen Crew's boss, won over and asked in; the initiation's sugar
-    // taken from the desk of Lefty, the Lifers' boss, and handed in.
+    // Gangs (2.37's lesson for 2.36): Sonny, the Kitchen Crew's boss, won over and asked in; the initiation's sugar
+    // taken from the desk of Lucky, the Lifers' boss, and handed in.
     id: 'gangJoin',
     icon: 'fist',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 150,
     setup: (sim) => {
       // (The evening's free time: four minutes, time enough to read and do it.)
@@ -846,7 +846,7 @@ export const LIFE: readonly Lesson[] = [
     // off in time; home to the Crew's own corner.
     id: 'gangTurf',
     icon: 'flag',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 151,
     setup: (sim) => {
       // (An ordinary second day: no film or talent night to keep the corners empty.)
@@ -878,7 +878,7 @@ export const LIFE: readonly Lesson[] = [
     // Caught (2.38): wanted past 90%, a guard's catch, solitary with the contraband gone, potatoes peeled, out.
     id: 'caught',
     icon: 'lock',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 158,
     caught: true,
     setup: (sim) => {
@@ -886,7 +886,7 @@ export const LIFE: readonly Lesson[] = [
       const m = sim.state.guards[MOSS].body;
       const [x, z] = near(sim, Math.floor(m.x / UNIT) + 3, Math.floor(m.z / UNIT));
       place(sim, x, z, 9);
-      pockets(sim, 'light_cutters', 'chocolate');
+      pockets(sim, 'reinforced_cutters', 'chocolate');
       sim.state.heat = 95;
     },
     steps: [
@@ -917,7 +917,7 @@ export const LIFE: readonly Lesson[] = [
     // The towers (2.38): at night the searchlights sweep the perimeter; crossed between the beams.
     id: 'towers',
     icon: 'target',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 159,
     routine: false,
     setup: (sim) => {

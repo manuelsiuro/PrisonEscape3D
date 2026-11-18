@@ -17,7 +17,7 @@
  * - saves mid-course, a save from before the kiosk, damaged numbers.
  */
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { DECOR } from '../src/content/decor';
 import { itemDef, itemNumber } from '../src/content/items';
@@ -64,7 +64,7 @@ const refusals = (seen: SimEvent[]) => of(seen, 'refused').map((e) => e.why);
 const n = itemNumber;
 
 /** A game kept calm (lockdowns cleared each step), quiet days. */
-function game(prison = CENTER_PERKS, seed = 5) {
+function game(prison = MAPLE_GROVE, seed = 5) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = [[0, 0, 0]];
   const seen: SimEvent[] = [];
@@ -348,7 +348,7 @@ function deskOf(sim: Sim) {
 
 // ------------------------------------------------------------------ the news: the days ahead are the days that come
 {
-  const g = game(CENTER_PERKS, 9);
+  const g = game(MAPLE_GROVE, 9);
   const { sim } = g;
   sim.state.calendar = [];
   g.jump(2, 10);
@@ -557,8 +557,8 @@ function deskOf(sim: Sim) {
   g.ext(KIOSK.COURSE);
   g.ext(KIOSK.ORDER, 0);
   const saved = JSON.parse(JSON.stringify(sim.state));
-  const back = new Sim(CENTER_PERKS, 5);
-  back.state = loadState(back.world, CENTER_PERKS, saved);
+  const back = new Sim(MAPLE_GROVE, 5);
+  back.state = loadState(back.world, MAPLE_GROVE, saved);
   check(
     JSON.stringify(back.state) === JSON.stringify(sim.state) && back.state.course.length === 6 && back.state.kiosk > 0,
     'a save mid-course loads as it was',
@@ -570,8 +570,8 @@ function deskOf(sim: Sim) {
   check(sim.hash() === back.hash(), 'and plays on the same');
   const old = JSON.parse(JSON.stringify(sim.state));
   for (const k of ['kiosk', 'post', 'photos', 'course']) delete old[k];
-  const o = new Sim(CENTER_PERKS, 5);
-  o.state = loadState(o.world, CENTER_PERKS, old);
+  const o = new Sim(MAPLE_GROVE, 5);
+  o.state = loadState(o.world, MAPLE_GROVE, old);
   check(
     o.state.kiosk === 0 && o.state.post.join() === '0,0,0,0,0,0' && o.state.photos.length === 0 && o.state.course.length === 0,
     'a save from before the kiosk: logged out, nothing coming',
@@ -581,8 +581,8 @@ function deskOf(sim: Sim) {
   bad.photos = [1, 2, 3, 4];
   bad.course = [0, 9];
   bad.kiosk = -5;
-  const b = new Sim(CENTER_PERKS, 5);
-  b.state = loadState(b.world, CENTER_PERKS, bad);
+  const b = new Sim(MAPLE_GROVE, 5);
+  b.state = loadState(b.world, MAPLE_GROVE, bad);
   check(
     b.state.post.join() === '0,0,0,0,0,0' && b.state.photos.length === 0 && b.state.course.length === 0 && b.state.kiosk === 0,
     'damaged numbers (contraband ordered, a fourth drawing) load as none',
@@ -590,13 +590,13 @@ function deskOf(sim: Sim) {
   // A course with nobody logged in, time paid far ahead: neither.
   const odd = JSON.parse(JSON.stringify(saved));
   odd.kiosk = 0;
-  const o2 = new Sim(CENTER_PERKS, 5);
-  o2.state = loadState(o2.world, CENTER_PERKS, odd);
+  const o2 = new Sim(MAPLE_GROVE, 5);
+  o2.state = loadState(o2.world, MAPLE_GROVE, odd);
   check(o2.state.course.length === 0, 'a course with nobody logged in loads as none');
   odd.kiosk = 1e9;
   odd.course = saved.course;
-  const o3 = new Sim(CENTER_PERKS, 5);
-  o3.state = loadState(o3.world, CENTER_PERKS, odd);
+  const o3 = new Sim(MAPLE_GROVE, 5);
+  o3.state = loadState(o3.world, MAPLE_GROVE, odd);
   check(o3.state.kiosk === 0 && o3.state.course.length === 0, 'time paid far ahead loads as logged out');
 }
 console.log('kiosk ok');

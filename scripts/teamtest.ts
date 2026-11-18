@@ -70,7 +70,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   console.log(lines.join('\n'));
   check(qualityOf(0, 100) === 100 && qualityOf(100 * 500, 100) === 0, 'quality: 100 on the line, 0 far off it');
 
-  /** A sitting in the Training Block with Sparky (opinion `op`), the gun and `inks` jars in the hotbar. */
+  /** A sitting in the Training Block with Scooter (opinion `op`), the gun and `inks` jars in the hotbar. */
   const sitting = (op: number, inks = 1) => {
     const g = game(TRAINING, 3);
     g.jump(1, 10, 30);

@@ -87,7 +87,7 @@ function spotFor(sim: Sim, job: 'chip' | 'cut' | 'unscrew' | 'dig'): Spot | null
   // (What's struck depends on what's in hand: a tool for the job, held while looking.)
   const it = sim.state.items;
   const was = it.inv[it.hand];
-  it.inv[it.hand] = slot(n({ chip: 'sturdy_pickaxe', cut: 'sturdy_cutters', unscrew: 'screwdriver', dig: 'sturdy_shovel' }[job]));
+  it.inv[it.hand] = slot(n({ chip: 'heavy_pickaxe', cut: 'heavy_cutters', unscrew: 'screwdriver', dig: 'heavy_shovel' }[job]));
   const free = (i: number) => !w.blocked(xOf(i), zOf(i)) && !w.propSolid[i];
   const tries: Spot[] = [];
   for (let i = 0; i < MAP_W * MAP_H; i++) {
@@ -249,7 +249,7 @@ for (const def of PRISONS) {
   const sim = new Sim(quiet(def), 3);
   const s = sim.state;
   const sp = spotFor(sim, 'chip')!;
-  carry(sim, 'sturdy_pickaxe', 'sock', 'sock', 'sock', 'sock', 'sock');
+  carry(sim, 'heavy_pickaxe', 'sock', 'sock', 'sock', 'sock', 'sock');
   stand(sim, sp.stand, sp.facing);
   s.wear[placeKey(LAYER.GROUND, sp.tile)] = WALL_HP - 1;
   s.energy = 100;
@@ -288,7 +288,7 @@ for (const def of PRISONS) {
   const w = sim.world;
   const sp = spotFor(sim, 'chip')!;
   // Tools that can't chip, at a brick wall: grey, and no uses counted (they'd do nothing there).
-  const wrong = ['flimsy_cutters', 'nail_file', 'light_shovel'].filter((id) => {
+  const wrong = ['makeshift_cutters', 'nail_file', 'reinforced_shovel'].filter((id) => {
     carry(sim, id);
     stand(sim, sp.stand, sp.facing);
     const v = describeTool(sim, targetOf(sim), held(sim));
@@ -398,7 +398,7 @@ for (const def of PRISONS) {
       setTile(sim, LAYER.GROUND, d, TILE.SHAFT);
       setTile(sim, LAYER.UNDER, d, TILE.TUNNEL);
       const side = SIDES.find(([dx, dz]) => w.layers[LAYER.UNDER].kind[tileOf(desk.x + dx, desk.z + dz)] === TILE.SOIL)!;
-      carry(sim, 'sturdy_shovel');
+      carry(sim, 'heavy_shovel');
       stand(sim, d, side[2], LAYER.UNDER);
       s.deskAside = true;
       s.energy = 100;
@@ -411,7 +411,7 @@ for (const def of PRISONS) {
       return { struck, up: sim.state.layer === LAYER.GROUND, ...watched(sim) };
     }
     const sp = spotFor(sim, 'chip')!;
-    carry(sim, 'sturdy_pickaxe');
+    carry(sim, 'heavy_pickaxe');
     stand(sim, sp.stand, sp.facing);
     s.energy = 100;
     sim.step(command(0, OP.USE, 1));
@@ -519,7 +519,7 @@ for (const def of PRISONS) {
     line += `${Math.round((s.step - from) / 20)} s to get there; took ${en} / ${fr}`;
   }
   // Caught: what was on the player, by name.
-  carry(sim, 'light_cutters', 'magazine');
+  carry(sim, 'reinforced_cutters', 'magazine');
   s.items.inv[6] = slot(n('comb_shiv'));
   s.items.inv[7] = slot(n('guard_outfit'));
   s.heat = 50;
@@ -531,7 +531,9 @@ for (const def of PRISONS) {
   }
   const off = (woke?.items ?? []).map((v) => itemDef(v).id).sort();
   check(
-    off.join(',') === 'comb_shiv,guard_outfit,light_cutters' && woke?.taken === 3 && s.items.inv.some((v) => itemOf(v) === n('magazine')),
+    off.join(',') === 'comb_shiv,guard_outfit,reinforced_cutters' &&
+      woke?.taken === 3 &&
+      s.items.inv.some((v) => itemOf(v) === n('magazine')),
     `${def.id}: caught, the contraband carried taken by name, the legal kept (${off.join(', ')})`,
   );
   // Every guard's pockets: its key, a baton, its uniform.

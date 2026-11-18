@@ -3,7 +3,7 @@ import type { PropPlacement } from '../props';
 import type { Rect } from './types';
 
 /**
- * A 4×4 cell whose door is in a side wall (Shankton's and San Pancho's wings): its rectangle
+ * A 4×4 cell whose door is in a side wall (Gravel Point's and Sierra Seca's wings): its rectangle
  * into `cells`, and its bed, desk, toilet and chair into `props`, in that order (prop order
  * numbers the containers and seats saves keep). `doorEast`: the bed against the west wall,
  * the desk and toilet by the east one; else the other way round.

@@ -21,7 +21,8 @@ import { facts, keepRumors, LASTING, type Fact, type Rumor } from './gossip';
 import { guardMood, inmateMood, outdoors, type Incident, type Mood, type Recent } from './mood';
 import type { Line, LineDef, Style, Tag, Voice } from './types';
 import { CHATTY, guardVoice, inmateVoice, PAUSE, PITCH } from './voice';
-import { hash32, randomFrom } from '../sim/rng';
+import { idHash } from '../content/prisons/renamed';
+import { randomFrom } from '../sim/rng';
 import { FROM } from '../content/oddjobs';
 import { twoAtCooler } from '../sim/systems/cooler';
 import { HUDDLE } from '../content/huddles';
@@ -225,7 +226,7 @@ export class Director {
     this.dayEvent = null;
     this.dogAbout = -1;
     this.prisonId = sim.prison.id;
-    this.random = randomFrom(hash32(sim.prison.id) ^ (seed + sim.clock.day * 7919));
+    this.random = randomFrom(idHash(sim.prison.id) ^ (seed + sim.clock.day * 7919));
     const s = sim.state;
     this.voices = [
       ...s.inmates.map((m) => inmateVoice(sim.prison, m.cell) as Voice),

@@ -9,7 +9,7 @@
 import { cornersOf, onTrack } from '../src/content/grounds';
 import { JOBS } from '../src/content/jobs';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { OPEN_HOURS, ROUTINE } from '../src/content/routine';
@@ -146,7 +146,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ laps of the track
 {
-  const r = CENTER_PERKS.leisure!.track!;
+  const r = MAPLE_GROVE.leisure!.track!;
   /** The lane tiles from a corner, round one way (1 clockwise, -1 the other), n of them. */
   const round = (from: number, way: number, n: number) => {
     const ring: Array<[number, number]> = [];
@@ -159,7 +159,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
     return Array.from({ length: n }, (_, k) => ring[(((k0 + way * k) % ring.length) + ring.length) % ring.length]);
   };
   const lanes = 2 * (r.w + r.d) - 4;
-  const a = arena(CENTER_PERKS, at(1, 15, 10));
+  const a = arena(MAPLE_GROVE, at(1, 15, 10));
   const walk = (tiles: Array<[number, number]>) => {
     for (const [x, z] of tiles) {
       put(a.st.player, x, z);
@@ -194,13 +194,13 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   walk(round(0, 1, lanes + 1));
   check(laps() === 3 && a.st.spd === s1 && a.seen.some((e) => e.type === 'cantTrain' && e.why === 'tired'), 'too tired: a lap, no Speed');
   console.log(
-    `laps: ${lanes} lane tiles a lap at Center Perks; +${TRAIN_GAIN} Speed and ${GYM_ENERGY} energy each, either way round; turned back or off the lanes, none`,
+    `laps: ${lanes} lane tiles a lap at Maple Grove; +${TRAIN_GAIN} Speed and ${GYM_ENERGY} energy each, either way round; turned back or off the lanes, none`,
   );
 }
 
 // ------------------------------------------------------------------ the pull-up bar
 {
-  const a = arena(CENTER_PERKS, at(1, 15, 10));
+  const a = arena(MAPLE_GROVE, at(1, 15, 10));
   const bar = a.sim.world.props.find((q) => q.kind === 'pullup')!;
   put(a.st.player, bar.x, bar.z - 1);
   a.st.player.facing = 5;
@@ -213,7 +213,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ the gates' hours
 {
-  const a = arena(CENTER_PERKS, at(1, 8, 0));
+  const a = arena(MAPLE_GROVE, at(1, 8, 0));
   const w = a.sim.world;
   const gate = (zone: 'sports' | 'garden') => w.doorRoom.findIndex((z) => z === zoneIndex(zone));
   const sports = gate('sports');
@@ -245,14 +245,14 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
     `the gates by the hour (${seen.join(', ')})`,
   );
   // A lockdown shuts them; someone still inside keeps theirs open until they're out.
-  const b = arena(CENTER_PERKS, at(1, 10, 30));
+  const b = arena(MAPLE_GROVE, at(1, 10, 30));
   b.step();
   check(open(gate('sports')) || b.sim.world.doorShut[gate('sports')] === 0, 'open in free time');
   b.st.lockdown = true;
   b.step();
   check(b.sim.world.doorShut[gate('sports')] === 1, 'shut in a lockdown');
   b.st.lockdown = false;
-  const c = arena(CENTER_PERKS, at(1, 11, 59));
+  const c = arena(MAPLE_GROVE, at(1, 11, 59));
   put(c.st.player, 16, 51);
   for (let k = 0; k < 3 * STEPS_PER_MINUTE; k++) c.step();
   check(
@@ -264,8 +264,8 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ the gardener and the kitchen
 {
-  const a = arena(CENTER_PERKS, at(1, 12, 10));
-  const job = CENTER_PERKS.jobs.findIndex((j) => j.id === 'gardener');
+  const a = arena(MAPLE_GROVE, at(1, 12, 10));
+  const job = MAPLE_GROVE.jobs.findIndex((j) => j.id === 'gardener');
   const old = a.st.jobs.indexOf(HOLDER.PLAYER);
   if (old >= 0) a.st.jobs[old] = HOLDER.NOBODY;
   a.st.jobs[job] = HOLDER.PLAYER;
@@ -293,7 +293,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   a.st.step += FRESH_FOR;
   check(!freshMeals(a.sim), 'a day after, the meals are as ever');
   // An inmate gardener's shift: his own crates, no fresh meals (they're the player's to earn).
-  const b = arena(CENTER_PERKS, at(1, 14, 59));
+  const b = arena(MAPLE_GROVE, at(1, 14, 59));
   const who = b.st.jobs[job];
   check(who >= 0, "an inmate holds the gardener's job on day 1");
   b.st.inmates[who].shift = 1;
@@ -306,8 +306,8 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ inmates at the exercise hour
 {
-  const a = arena(CENTER_PERKS, at(1, 14, 59), 3);
-  const r = CENTER_PERKS.leisure!.track!;
+  const a = arena(MAPLE_GROVE, at(1, 14, 59), 3);
+  const r = MAPLE_GROVE.leisure!.track!;
   let jogging = 0;
   let out = 0;
   for (let k = 0; k < 40 * STEPS_PER_MINUTE; k++) {
@@ -328,8 +328,8 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ the review's holes (P31): the fences, lookouts, lockdowns, the courtyard
 {
-  // The fences round Center Perks' sports ground and garden are live: cutting out by day knocks the player flat (the power off first, as for the perimeter).
-  const a = arena(CENTER_PERKS, at(1, 10, 35));
+  // The fences round Maple Grove's sports ground and garden are live: cutting out by day knocks the player flat (the power off first, as for the perimeter).
+  const a = arena(MAPLE_GROVE, at(1, 10, 35));
   const w = a.sim.world;
   const live = new Set<number>();
   for (const [x0, z0, x1, z1] of [
@@ -342,10 +342,10 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   ])
     for (let z = z0; z <= z1; z++)
       for (let x = x0; x <= x1; x++) if (w.ground.kind[z * MAP_W + x] === TILE.ELECTRIC) live.add(z * MAP_W + x);
-  check(live.size === 86, `Center Perks: the new places' fences are electric all round (${live.size} tiles)`);
+  check(live.size === 86, `Maple Grove: the new places' fences are electric all round (${live.size} tiles)`);
   put(a.st.player, 6, 50);
   a.st.player.facing = 9;
-  a.st.items.inv[0] = slot(n('sturdy_cutters'));
+  a.st.items.inv[0] = slot(n('heavy_cutters'));
   a.st.items.hand = 0;
   for (let k = 0; k < 400 && !a.seen.some((e) => e.type === 'shocked'); k++) a.step(command(0, OP.USE, 1));
   check(
@@ -359,37 +359,37 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   ])
     check(!postable(w, z * MAP_W + x), `no lookout post at ${x},${z} (${w.zoneAt(x, z)})`);
   // No laps in a lockdown.
-  const b = arena(CENTER_PERKS, at(1, 15, 10));
+  const b = arena(MAPLE_GROVE, at(1, 15, 10));
   b.st.lockdown = true;
-  const r = CENTER_PERKS.leisure!.track!;
+  const r = MAPLE_GROVE.leisure!.track!;
   for (const c of [...cornersOf(r), cornersOf(r)[0]]) {
     put(b.st.player, c.x, c.z);
     b.step();
   }
   check(!b.seen.some((e) => e.type === 'lap') && !b.st.lap.length, 'in a lockdown, no lap');
   // The exercise hour: the gym or the sports ground, not the quiet courtyard (no guard posted there).
-  const c = arena(CENTER_PERKS, at(1, 15, 1));
+  const c = arena(MAPLE_GROVE, at(1, 15, 1));
   c.step();
-  check(c.sim.dutyZones.join() === 'gym,sports', `Center Perks' exercise hour: ${c.sim.dutyZones.join(', ')}`);
+  check(c.sim.dutyZones.join() === 'gym,sports', `Maple Grove's exercise hour: ${c.sim.dutyZones.join(', ')}`);
   const d = arena(
-    PRISONS.find((q) => q.id === 'san-pancho')!,
+    PRISONS.find((q) => q.id === 'sierra-seca')!,
     at(1, 15, 1),
   );
   d.step();
-  check(d.sim.dutyZones.join() === 'gym,sports', `San Pancho's exercise hour: ${d.sim.dutyZones.join(', ')}`);
+  check(d.sim.dutyZones.join() === 'gym,sports', `Sierra Seca's exercise hour: ${d.sim.dutyZones.join(', ')}`);
   console.log(
-    `holes: ${live.size} live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: ${c.sim.dutyZones.join(', ')}`,
+    `holes: ${live.size} live fence tiles round Maple Grove's places; no lookout posts in them; no laps in a lockdown; exercise at Maple Grove: ${c.sim.dutyZones.join(', ')}`,
   );
 }
 
 // ------------------------------------------------------------------ saves from before the rebuild
 {
-  const sim = new Sim(CENTER_PERKS, 1);
+  const sim = new Sim(MAPLE_GROVE, 1);
   const now = saveFileOf(sim, 0, 'test');
   check(now.map === 1 && !rebuiltSince(now), 'a save written now carries the map it was made on');
   const before = { ...now };
   delete before.map;
-  check(rebuiltSince(before), 'a Center Perks save from 2.6: its prison has been rebuilt since (the run starts again)');
+  check(rebuiltSince(before), 'a Maple Grove save from 2.6: its prison has been rebuilt since (the run starts again)');
   // (Every prison is rebuilt since P33: a save made now in each loads as ever.)
   const fresh = PRISONS.map((p) => saveFileOf(new Sim(p, 1), 0, 'test'));
   check(

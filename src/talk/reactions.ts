@@ -272,7 +272,7 @@ export function react(d: Reactor, e: SimEvent, sim: Sim, now: number) {
       break;
     }
     case 'power':
-      // Irongate's GEN-1 runs only the detectors and cameras: nobody notices a blackout that isn't one.
+      // Gull Rock's GEN-1 runs only the detectors and cameras: nobody notices a blackout that isn't one.
       if (!e.on && !sim.powered('lights')) {
         d.powerOut(now);
         d.noteDay('power');

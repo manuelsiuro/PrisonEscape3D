@@ -3,7 +3,7 @@
  * - The bluff: at the checkpoint's shift change (19:50–20:10), when the gatekeeper coming on
  *   doesn't know a face yet, a player in a guard's uniform with a fake ID in the hotbar and the
  *   heat under BLUFF_HEAT shows it at the booth's window (Interact): the checkpoint's gates
- *   (and Irongate's drawbridge) open for them alone for WAVED_STEPS, and out through them is
+ *   (and Gull Rock's drawbridge) open for them alone for WAVED_STEPS, and out through them is
  *   route `bluff`. The gatekeeper is drawn, never simulated: the rule is the whole of him.
  * - The glider: off a roof's edge as far as the day's wind carries it (structure.ts
  *   glideFrom); landing out on the road is route `glider`. Played out in actions.ts.
@@ -105,7 +105,7 @@ export function checkpointGates(sim: SimContext) {
   sim.events.push({ type: 'bluff', on: false });
 }
 
-/** The player's footprint on the checkpoint's way out (a gate, the lowered drawbridge), or on ground only it leads back from (Irongate's rock outside the gate). */
+/** The player's footprint on the checkpoint's way out (a gate, the lowered drawbridge), or on ground only it leads back from (Gull Rock's rock outside the gate). */
 function inTheWay(sim: SimContext): boolean {
   const s = sim.state;
   if (s.layer !== LAYER.GROUND) return false;

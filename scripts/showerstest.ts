@@ -6,8 +6,8 @@
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { floorOf, placesOf } from '../src/sim/ai/places';
@@ -32,7 +32,7 @@ const put = (bot: Bot, tile: number, facing = 5) => {
   p.facing = facing;
 };
 /** In the showers room near the start of the block, the crowd on its way. */
-function atShowers(seed = 3, prison = CENTER_PERKS, minute = BLOCK + 2) {
+function atShowers(seed = 3, prison = MAPLE_GROVE, minute = BLOCK + 2) {
   const bot = new Bot(prison, seed);
   check(bot.routineUntil(1, minute), 'shower time');
   check(ROUTINE[bot.st.routine].id === 'showers', 'it is shower time');
@@ -91,14 +91,14 @@ for (const def of PRISONS) {
   console.log(`${def.id}: ${n} heads, each turned on from under it and from in front, lined up facing its pipe, energy back`);
 }
 {
-  const bot = atShowers(3, SAN_PANCHO);
+  const bot = atShowers(3, SIERRA_SECA);
   const side = heads(bot).find((h) => h.tile === 38 * MAP_W + 44)!;
   check(
     side.wall === 1 &&
       heads(bot)
         .filter((h) => h.tile !== side.tile)
         .every((h) => h.wall === 5),
-    "San Pancho's side head faces east, the rest south",
+    "Sierra Seca's side head faces east, the rest south",
   );
 }
 
@@ -147,7 +147,7 @@ for (const def of PRISONS) {
   check(bot.st.washing && bot.st.items.open >= 0, 'the next one searches, the water still on');
   bot.close();
   // Outside the block: a search and no more.
-  const later = new Bot(CENTER_PERKS, 6);
+  const later = new Bot(MAPLE_GROVE, 6);
   check(later.routineUntil(1, BLOCK + 62), 'dinner');
   const q = heads(later)[0];
   put(later, q.tile, q.wall);
@@ -157,7 +157,7 @@ for (const def of PRISONS) {
   later.close();
 
   // Someone under it already: refused, nothing changed.
-  const full = atShowers(7, CENTER_PERKS, BLOCK + 2);
+  const full = atShowers(7, MAPLE_GROVE, BLOCK + 2);
   const taken = freeHead(full);
   const m = full.st.inmates[0];
   m.body.x = (taken.tile % MAP_W) * UNIT + UNIT / 2;
@@ -235,7 +235,7 @@ for (const def of PRISONS) {
     const n = bot.st.inmates.length;
     check(washed.size === n, `${def.id} #${seed}: ${washed.size} of ${n} got a turn`);
     check(dry === 0, `${def.id} #${seed}: nobody scrubs on dry floor (${dry} steps)`);
-    // (A moment in passing, in San Pancho's room: over 24 seeds, up to 29 steps before inmates used the machines, 30 since.)
+    // (A moment in passing, in Sierra Seca's room: over 24 seeds, up to 29 steps before inmates used the machines, 30 since.)
     check(shared <= 35, `${def.id} #${seed}: two under one head for ${shared} steps`);
     check(firstFree >= 0, `${def.id} #${seed}: a head comes free for a latecomer`);
     const stuck = bot.st.inmates.filter((m) => m.doing === DOING.SHOWER_WAIT).length;
@@ -282,8 +282,8 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ an ambush's moment of warning
 {
-  const bot = new Bot(SAN_PANCHO, 5);
-  check(bot.routineUntil(1, BLOCK + 1), 'San Pancho at shower time');
+  const bot = new Bot(SIERRA_SECA, 5);
+  check(bot.routineUntil(1, BLOCK + 1), 'Sierra Seca at shower time');
   bot.walkTo(heads(bot)[0].tile, 20 * STEPS_PER_MINUTE);
   const hp = () => bot.st.health;
   let seen = -1;
@@ -334,7 +334,7 @@ for (const def of PRISONS) {
     let kos = 0;
     let ambushes = 0;
     for (let seed = 1; seed <= 12; seed++) {
-      const bot = new Bot(SAN_PANCHO, seed);
+      const bot = new Bot(SIERRA_SECA, seed);
       bot.routineUntil(1, BLOCK);
       const hs = heads(bot);
       bot.walkTo(hs[seed % hs.length].tile, 20 * STEPS_PER_MINUTE);
@@ -344,7 +344,7 @@ for (const def of PRISONS) {
       }
       if (bot.st.ko > 0) kos++;
     }
-    console.log(`san-pancho, day 1, a player who ${name}: knocked out in ${kos} of 12 blocks, ${ambushes} ambushes`);
+    console.log(`sierra-seca, day 1, a player who ${name}: knocked out in ${kos} of 12 blocks, ${ambushes} ambushes`);
   }
 }
 
@@ -355,19 +355,19 @@ for (const def of PRISONS) {
   put(bot, h.tile, h.wall);
   bot.act();
   const snap: Snapshot = bot.sim.snapshot();
-  const back = new Sim(CENTER_PERKS, 1);
+  const back = new Sim(MAPLE_GROVE, 1);
   back.restore(snap);
   check(back.state.washing && back.showering, 'a save keeps the water on');
   const old = JSON.parse(JSON.stringify(snap)) as Snapshot;
   delete (old.state as unknown as Record<string, unknown>).washing;
   for (const m of old.state.inmates as unknown as Array<Record<string, unknown>>) delete m.windup;
-  const was = new Sim(CENTER_PERKS, 1);
+  const was = new Sim(MAPLE_GROVE, 1);
   was.restore(old);
   check(was.state.washing === false && was.state.inmates.every((m) => m.windup === 0), 'a save from before loads with none');
   for (let k = 0; k < 40; k++) was.step(0);
 
   // Older runs: standing still is enough, inmates stay under a head for the block, no moment's warning.
-  const then = new Bot(CENTER_PERKS, 22);
+  const then = new Bot(MAPLE_GROVE, 22);
   then.sim.rules225 = true;
   check(then.routineUntil(1, BLOCK + 40), 'an older run at shower time');
   check(
@@ -378,7 +378,7 @@ for (const def of PRISONS) {
   put(then, q.tile, q.face);
   then.step(0);
   check(then.sim.showering && offer(then) === -1, 'older runs: standing still is washing, no button');
-  const hot = new Bot(CENTER_PERKS, 23);
+  const hot = new Bot(MAPLE_GROVE, 23);
   hot.sim.rules225 = true;
   // (A run from before 2.26 is from before 2.35's lying low too.)
   hot.sim.rules234 = true;
@@ -391,7 +391,7 @@ for (const def of PRISONS) {
 
   // A log from before plays on as a new one; today's carries on and replays whole.
   // (Right through a shower block: the crowd by the old rules.)
-  const was225 = new Sim(CENTER_PERKS, 24);
+  const was225 = new Sim(MAPLE_GROVE, 24);
   was225.rules225 = true;
   was225.rules226 = true;
   was225.rules227 = true;
@@ -406,12 +406,12 @@ for (const def of PRISONS) {
   const prev = new RunRecorder(was225, { seed: 24, game: '2.25.0' });
   for (let k = 0; k < (BLOCK + 40 - 8 * 60) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'a log from 2.25 is not carried on');
-  const replayed = replayLog(prev.toLog(), CENTER_PERKS);
+  const replayed = replayLog(prev.toLog(), MAPLE_GROVE);
   check(!!replayed?.ok && replayed.sim.rules225 === true, 'and replays whole under the old rules');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 25), { seed: 25, game: '2.44.0' });
   for (let k = 0; k < 40; k++) now.step(0);
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 25, 'a log from today is');
-  check(replayLog(now.toLog(), CENTER_PERKS)?.sim.rules225 === false, "and replays under today's");
+  check(replayLog(now.toLog(), MAPLE_GROVE)?.sim.rules225 === false, "and replays under today's");
 
   // Training has no showers: its crowd's day isn't troubled, through the block.
   const t = new Bot(TRAINING, 1);

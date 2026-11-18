@@ -4,7 +4,7 @@
 // fingerprinted. Run it before and after, at the same window size, and compare the lines. A moved line
 // that changes the order of Math.random calls shows up too, as it should: what's drawn changed.
 //   const d = await import('/scripts/dev/drawhash.ts');
-//   const lines = await d.run();          // [`center-perks d1 08:00 f30 <hash>`, …]
+//   const lines = await d.run();          // [`maple-grove d1 08:00 f30 <hash>`, …]
 // Built for session 3 (splitting View.ts and Character.ts, v2.34.2), the manhunt's frames added in session 4;
 // keep it for any render refactor.
 import { play } from '../../src/play/game';
@@ -20,10 +20,10 @@ import { at } from './playat';
 
 /** [prison, day, minute]: waking, roll call, a job, lunch, the yard and gym, showers, night. */
 const MOMENTS = [7 * 60 + 50, 8 * 60 + 2, 9 * 60 + 30, 12 * 60 + 10, 15 * 60 + 5, 18 * 60 + 40, 23 * 60 + 30];
-const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
+const PRISONS = ['training', 'maple-grove', 'frostberg', 'gravel-point', 'gull-rock', 'sierra-seca', 'six-hunter'];
 /**
  * What the frames are forced to, for what a model prisoner's first day never shows (each at Center
- * Perks' 12:10 and Stalag Flucht's 23:30): a storm, fog in a heatwave, snow, a lockdown, a takeover,
+ * Perks' 12:10 and Camp Frostberg's 23:30): a storm, fog in a heatwave, snow, a lockdown, a takeover,
  * the lights out, a lock-on, the vents, the roofs, the tunnels, knocked out.
  */
 const FORCES: Record<string, (f: Frame, n: number) => void> = {
@@ -38,7 +38,7 @@ const FORCES: Record<string, (f: Frame, n: number) => void> = {
   roof: (f) => void (f.layer = LAYER.ROOF),
   under: (f) => void (f.layer = LAYER.UNDER),
   ko: (f) => void (f.knockedOut = true),
-  // The player's own stances (Center Perks' 15:05 only): an arm-wrestle, a lock, the dice, a machine, the showers and the towel, a tray, dressed as a guard and inked holding something, up from a bed.
+  // The player's own stances (Maple Grove's 15:05 only): an arm-wrestle, a lock, the dice, a machine, the showers and the towel, a tray, dressed as a guard and inked holding something, up from a bed.
   bout: (f, n) => {
     f.games.bout = { who: 0, strain: Math.sin(n / 10), surge: n % 20 < 5, crate: null };
     f.doing = DOING.WRESTLE;
@@ -110,21 +110,21 @@ const ACTS: Record<string, () => void> = {
 type Scene = [string, number, number, string?];
 export const SCENES: Scene[] = [
   ...PRISONS.flatMap((p) => MOMENTS.map((m) => [p, 1, m] as Scene)),
-  ...['center-perks|730', 'stalag-flucht|1410'].flatMap((pm) => {
+  ...['maple-grove|730', 'frostberg|1410'].flatMap((pm) => {
     const [p, m] = pm.split('|');
     return [...Object.keys(FORCES).filter((k) => !PLAYER_FORCES.includes(k)), ...Object.keys(ACTS)].map(
       (force) => [p, 1, Number(m), force] as Scene,
     );
   }),
-  ...PLAYER_FORCES.map((force) => ['center-perks', 1, 905, force] as Scene),
+  ...PLAYER_FORCES.map((force) => ['maple-grove', 1, 905, force] as Scene),
 ];
 /** The manhunt (P41), outside each prison that has one: [prison, way out, minute] (session 4, v2.34.2: its code a file of its own). */
 const HUNTS: Array<[string, 'wall' | 'gate', number]> = [
-  ['center-perks', 'wall', 23 * 60 + 40],
-  ['stalag-flucht', 'wall', 12 * 60],
-  ['shankton', 'gate', 23 * 60 + 40],
-  ['irongate', 'wall', 6 * 60 + 30],
-  ['san-pancho', 'wall', 23 * 60 + 40],
+  ['maple-grove', 'wall', 23 * 60 + 40],
+  ['frostberg', 'wall', 12 * 60],
+  ['gravel-point', 'gate', 23 * 60 + 40],
+  ['gull-rock', 'wall', 6 * 60 + 30],
+  ['sierra-seca', 'wall', 23 * 60 + 40],
 ];
 /** Frames at which the canvas is fingerprinted (60 a second). */
 const SHOTS = [1, 30, 90];

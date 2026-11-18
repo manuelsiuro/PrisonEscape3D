@@ -30,7 +30,7 @@ export const DECOR = {
   medCabinet: { wall: true },
   sink: { wall: true },
   keyCabinet: { wall: true },
-  // P12 (HMP Irongate): a life ring on the wall.
+  // P12 (HMP Gull Rock): a life ring on the wall.
   lifebuoy: { wall: true },
   /** 2.36 (The Six Hunter): the Hunters' tally board, six columns of strokes; a stag's head mounted on a plaque. */
   tallyBoard: { wall: true },
@@ -54,11 +54,11 @@ export const DECOR = {
   flagpole: { wall: false },
   tree: { wall: false },
   bush: { wall: false },
-  // P11 (San Pancho): a saguaro in the plaza, a skull-and-crossbones sign on a post at the minefield's edge.
+  // P11 (Sierra Seca): a saguaro in the plaza, a skull-and-crossbones sign on a post at the minefield's edge.
   cactus: { wall: false },
   mineSign: { wall: false },
   hoop: { wall: false },
-  // P12 (HMP Irongate): the dock's mooring bollards, crates and coils of rope; the helipad's windsock.
+  // P12 (HMP Gull Rock): the dock's mooring bollards, crates and coils of rope; the helipad's windsock.
   bollard: { wall: false },
   crates: { wall: false },
   ropeCoil: { wall: false },

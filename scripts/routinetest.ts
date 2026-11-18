@@ -9,7 +9,7 @@
  * Prints the event log of each run; the snapshot pins the timings.
  */
 import { zoneIndex } from '../src/content/zones';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { BLOCK, ROUTINE, routineAt } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
@@ -64,10 +64,10 @@ check(
   'every mandatory block but Lights Out has a penalty',
 );
 {
-  const sim = new Sim(CENTER_PERKS);
+  const sim = new Sim(MAPLE_GROVE);
   // (The sports ground's gate open, as it is for the exercise hour: P31.)
   sim.world.setOpenRooms(1n << BigInt(zoneIndex('sports')));
-  const reach = reachableFrom(sim.world, CENTER_PERKS.spawn.x, CENTER_PERKS.spawn.z);
+  const reach = reachableFrom(sim.world, MAPLE_GROVE.spawn.x, MAPLE_GROVE.spawn.z);
   sim.world.setOpenRooms(0n);
   for (const r of ROUTINE) {
     for (const z of r.zones) {
@@ -114,7 +114,7 @@ function modelPrisoner(sim: Sim): Bot {
 
 /** Runs a bot for a number of steps; returns the event log and the inmates' attendance. */
 function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim) => void) {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   const play = bot(sim);
   const log: string[] = [];
   let worst = 0;
@@ -311,24 +311,24 @@ check(!owl.log.some((l) => l.includes('LOCKDOWN')), 'home within the grace: no t
 
 // A save from before 2.23 loads with no time at the block yet, and no search under way.
 {
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   const play = modelPrisoner(sim);
   for (let i = 0; i < 15 * STEPS_PER_MINUTE; i++) sim.step(play(sim));
   const snap = JSON.parse(JSON.stringify(sim.snapshot()));
   check(sim.state.present > 0, `a save mid-roll call holds the time there (${sim.state.present} steps)`);
-  const back = new Sim(CENTER_PERKS, 1);
+  const back = new Sim(MAPLE_GROVE, 1);
   back.restore(JSON.parse(JSON.stringify(snap)));
   check(back.state.present === sim.state.present && back.hash() === sim.hash(), 'and loads it back');
   delete snap.state.present;
   delete snap.state.snoop;
-  const old = new Sim(CENTER_PERKS, 1);
+  const old = new Sim(MAPLE_GROVE, 1);
   old.restore(snap);
   check(old.state.present === 0 && old.state.snoop.length === 0, 'a save from before 2.23: none yet');
 }
 
 // The visitor: in someone else's cell when a lockdown starts, never locked in; the guards come for it there.
 {
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   // Wait for roll call to empty the cells, then step into cell 3.
   for (let i = 0; i < 20 * 20; i++) sim.step(0);
   sim.state.player.x = 17 * 1024 + 512;
@@ -348,13 +348,13 @@ check(!owl.log.some((l) => l.includes('LOCKDOWN')), 'home within the grace: no t
 // Saves can be taken at any step: a snapshot restored into a fresh simulation is the same
 // state, and plays on the same (doors included, since they are settled at the end of a step).
 {
-  const a = new Sim(CENTER_PERKS, 5);
+  const a = new Sim(MAPLE_GROVE, 5);
   const play = modelPrisoner(a);
   let checked = 0;
   for (let i = 0; i < DAY; i++) {
     a.step(play(a));
     if (i % 997 !== 0) continue;
-    const b = new Sim(CENTER_PERKS, 5);
+    const b = new Sim(MAPLE_GROVE, 5);
     b.restore(a.snapshot());
     if (b.hash() !== a.hash()) check(false, `restore at step ${a.state.step} gives the same state`);
     checked++;

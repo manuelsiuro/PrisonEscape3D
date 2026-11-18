@@ -27,7 +27,7 @@ import { runHoliday } from '../src/game/holidays';
 import { DAY_BOOKS } from '../src/content/days';
 import { ROUTINE } from '../src/content/routine';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { itemNumber } from '../src/content/items';
 import { Sim } from '../src/sim/Sim';
 import { DAY_STEPS, formatTime } from '../src/sim/systems/clock';
@@ -149,7 +149,7 @@ check(
 
 // ------------------------------------------------------------------ in the sim
 /** A game under a holiday, run to a prison day's minute (0 is 08:00). */
-const game = (holiday: number, def = CENTER_PERKS, seed = 7) => new Sim(def, seed, [], holiday);
+const game = (holiday: number, def = MAPLE_GROVE, seed = 7) => new Sim(def, seed, [], holiday);
 const runTo = (sim: Sim, day: number, minute: number, each?: () => void) => {
   const goal = (day - 1) * DAY_STEPS + minute * STEPS_PER_MINUTE;
   while (sim.state.step < goal) {
@@ -216,7 +216,7 @@ for (const p of PRISONS) {
   const inYard = sim.state.items.ground.filter(
     ([t, v]) => itemOf(v) === CHOC_EGG && sim.world.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'yard',
   );
-  console.log(`easter at center-perks: ${log.join(', ')}; ${inDesks.length} eggs in inmates' desks, ${inYard.length} about the yard`);
+  console.log(`easter at maple-grove: ${log.join(', ')}; ${inDesks.length} eggs in inmates' desks, ${inYard.length} about the yard`);
   check(inDesks.length === EGG_DESKS && inYard.length === EGG_YARD, `eggs hidden at 08:00: ${EGG_DESKS} in desks, ${EGG_YARD} in the yard`);
   check(
     list.every((c, k) => c.table !== 'playerDesk' || !sim.state.items.containers[k].some((v) => itemOf(v) === CHOC_EGG)),
@@ -417,7 +417,7 @@ for (const p of PRISONS) {
       (p) => Array.from({ length: 60 }, (_, k) => dayPlan(p.id, 3, k + 2, [], [], h).weather).filter((w) => w === 'heatwave').length,
     );
   console.log(
-    `heatwave days in 60 (center-perks, stalag-flucht, shankton, san-pancho, irongate): ${heat(0).join(', ')}; in summer ${heat(HOLIDAY.SUMMER).join(', ')}`,
+    `heatwave days in 60 (maple-grove, frostberg, gravel-point, sierra-seca, gull-rock): ${heat(0).join(', ')}; in summer ${heat(HOLIDAY.SUMMER).join(', ')}`,
   );
   check(
     heat(HOLIDAY.SUMMER).every((n, k) => n >= heat(0)[k]) && heat(HOLIDAY.SUMMER).reduce((a, b) => a + b) > heat(0).reduce((a, b) => a + b),
@@ -520,8 +520,8 @@ for (const p of PRISONS) {
   };
   const rows: string[] = [];
   for (const [h, def] of [
-    [HOLIDAY.SUMMER, CENTER_PERKS],
-    [HOLIDAY.CHRISTMAS, PRISONS.find((p) => p.id === 'stalag-flucht')!],
+    [HOLIDAY.SUMMER, MAPLE_GROVE],
+    [HOLIDAY.CHRISTMAS, PRISONS.find((p) => p.id === 'frostberg')!],
   ] as const) {
     const sim = game(h, def, 5);
     const on = talk(sim, 2);
@@ -545,18 +545,18 @@ for (const p of PRISONS) {
   for (let k = 0; k < DAY_STEPS + 12 * 60 * STEPS_PER_MINUTE; k++) rec.step(k % 300 < 150 ? 1 : 0);
   const log = rec.toLog();
   check(log.holiday === HOLIDAY.HALLOWEEN, "a run log keeps the run's holiday");
-  const back = replayLog(log, CENTER_PERKS);
+  const back = replayLog(log, MAPLE_GROVE);
   check(
     !!back?.ok && back.sim.state.holiday === HOLIDAY.HALLOWEEN && back.sim.hash() === sim.hash(),
     'and plays back under it, every checksum met, to the same state',
   );
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(loaded.state.holiday === HOLIDAY.HALLOWEEN && loaded.hash() === sim.hash(), 'a game saved and loaded keeps its holiday');
   const none = new RunRecorder(game(0), { seed: 7, game: '2.44.0' });
   none.step(0);
   check(none.toLog().holiday === undefined, '(a run without one says nothing of it)');
-  const old = new Sim(CENTER_PERKS, 1);
+  const old = new Sim(MAPLE_GROVE, 1);
   const st = JSON.parse(JSON.stringify(game(0).snapshot()));
   delete st.state.holiday;
   delete st.state.hol;
@@ -646,10 +646,10 @@ for (const p of PRISONS) {
         const floor = !TILE_INFO[kind].solid;
         const zone = w.zoneAt(tx, tz);
         const summer = d.what === 'parasol' || d.what === 'barbecue' || d.what === 'hose';
-        // (Parasols out in the yard only where the sports ground has no room for one: Center Perks'.)
+        // (Parasols out in the yard only where the sports ground has no room for one: Maple Grove's.)
         const yardParasols =
           d.what === 'parasol' && !plan.some((q) => q.what === 'parasol' && w.zoneAt(Math.floor(q.x), Math.floor(q.z)) === 'sports');
-        // (The tree in the canteen; out in the yard where the canteen has no room for one anywhere, San Pancho's.)
+        // (The tree in the canteen; out in the yard where the canteen has no room for one anywhere, Sierra Seca's.)
         const where =
           d.what === 'garland' || d.y
             ? 'canteen'
@@ -781,7 +781,7 @@ for (const p of PRISONS) {
         );
         check(!above.length, `${p.id}: the tree stands under nothing hung on a wall (${above.map((d) => d.kind).join(', ')})`);
       }
-      // No two pieces out on the floor side by side (Irongate's lanterns were: all picked before the first was set down).
+      // No two pieces out on the floor side by side (Gull Rock's lanterns were: all picked before the first was set down).
       const floor = plan.filter((d) => !d.y && d.what !== 'garland').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
       check(
         floor.every((a, k) => floor.every((b, j) => j === k || near(a, b) >= 2)),
@@ -795,14 +795,14 @@ for (const p of PRISONS) {
       const n = (what: string) => plan.filter((d) => d.what === what).length;
       check(n('garland') > 0, `${p.id} ${HOLIDAYS[h]}: the canteen dressed`);
       if (h === HOLIDAY.CHRISTMAS) check(n('tree') === 1 && n('snowman') === 1, `${p.id}: a Christmas tree and a snowman`);
-      // (San Pancho's sports ground has room for one parasol off its ways in; the Six Hunter's, its track round the pitch and
+      // (Sierra Seca's sports ground has room for one parasol off its ways in; the Six Hunter's, its track round the pitch and
       // the court beside it, for one hose: the look's pass may find it a second.)
       if (h === HOLIDAY.SUMMER)
         check(
-          n('parasol') >= (p.id === 'san-pancho' ? 1 : 2) && n('barbecue') === 1 && n('hose') === (p.id === 'six-hunter' ? 1 : 2),
+          n('parasol') >= (p.id === 'sierra-seca' ? 1 : 2) && n('barbecue') === 1 && n('hose') === (p.id === 'six-hunter' ? 1 : 2),
           `${p.id}: parasols, the barbecue, two hoses on the sports ground`,
         );
-      // Every table in the canteen dressed (Center Perks' eight, not the first six).
+      // Every table in the canteen dressed (Maple Grove's eight, not the first six).
       const tables = w.props.filter((q) => q.kind === 'table' && w.zoneAt(q.x, q.z) === 'canteen').length;
       if (h === HOLIDAY.EASTER || h === HOLIDAY.HALLOWEEN)
         check(plan.filter((d) => d.y).length === tables, `${p.id} ${HOLIDAYS[h]}: something on each of the canteen's ${tables} tables`);

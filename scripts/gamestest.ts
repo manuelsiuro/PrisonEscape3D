@@ -51,7 +51,7 @@ import {
 } from '../src/content/games';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { RECIPES } from '../src/content/recipes';
 import { ROUTINE } from '../src/content/routine';
@@ -104,7 +104,7 @@ const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W +
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet unless forced. */
 function game(seed = 5, calendar: Array<[number, number, number]> = [[0, 0, 0]]) {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   sim.state.calendar = calendar;
   const seen: SimEvent[] = [];
   const step = (cmd = 0, calm = true) => {
@@ -896,7 +896,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
 // ------------------------------------------------------------------ saves
 {
   const twin = (a: Sim, cmds: number[]) => {
-    const b = new Sim(CENTER_PERKS, 1);
+    const b = new Sim(MAPLE_GROVE, 1);
     b.restore(JSON.parse(JSON.stringify(a.snapshot())));
     for (const c of cmds) {
       a.step(c);
@@ -924,7 +924,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   // Damaged: dice that aren't dice, a bout with nobody, a lock that isn't a door.
   const bad = sim.snapshot();
   Object.assign(bad.state, { dice: [0, 9, 7, 1], bout: [99, 500, 0, 1], pick: [5, 0, 1], picked: [5, 9, 0], played: ['x'] });
-  const fixed = new Sim(CENTER_PERKS, 1);
+  const fixed = new Sim(MAPLE_GROVE, 1);
   fixed.restore(bad);
   for (let k = 0; k < 40; k++) fixed.step(0);
   check(
@@ -936,33 +936,33 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     'a damaged save: the broken games are gone',
   );
   // A save from before P22 on a sports day: today and tomorrow keep the card it took the place of.
-  const fresh = new Sim(CENTER_PERKS, 4);
+  const fresh = new Sim(MAPLE_GROVE, 4);
   let day = 2;
   while (planOf(fresh, day).event !== 'sports') day++;
   const snap = fresh.snapshot();
   snap.state.step = (day - 1) * DAY_STEPS + 100;
   const old = snap.state as unknown as Record<string, unknown>;
   for (const k of ['played', 'dice', 'bout', 'pick', 'picked']) delete old[k];
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(snap);
-  const before = DAY_BOOKS['center-perks'].beforeSports;
+  const before = DAY_BOOKS['maple-grove'].beforeSports;
   check(planOf(loaded, day).event === before, `an old save on sports day ${day}: it keeps its ${before}`);
   // Run logs: before 1.16 they replay with the old card, and a game carried on starts a log of its own.
-  const rec = new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.15.1' });
-  const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);
+  const rec = new RunRecorder(new Sim(MAPLE_GROVE, 4), { seed: 4, game: '1.15.1' });
+  const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, MAPLE_GROVE);
   check(!!replay && planOf(replay.sim, day).event === before, 'a run logged before P22 replays with the old card');
   const now = replayLog(
-    { ...new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.16.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] },
-    CENTER_PERKS,
+    { ...new RunRecorder(new Sim(MAPLE_GROVE, 4), { seed: 4, game: '1.16.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] },
+    MAPLE_GROVE,
   );
   check(!!now && planOf(now.sim, day).event === 'sports', 'one logged since deals sports day');
-  const carried = new RunRecorder(new Sim(CENTER_PERKS, 4), { log: rec.toLog(), game: '1.16.0' }).toLog();
+  const carried = new RunRecorder(new Sim(MAPLE_GROVE, 4), { log: rec.toLog(), game: '1.16.0' }).toLog();
   check(carried.seed === -1 && !!carried.start, "an old log isn't carried on: the game starts its own");
   console.log(`saves: dice and a bout carry on; damaged games dropped; an old save on sports day ${day} keeps its ${before}`);
 }
 {
   // A lock half picked, and a door picked open, saved and loaded.
-  const sim = new Sim(CENTER_PERKS, 23);
+  const sim = new Sim(MAPLE_GROVE, 23);
   sim.state.calendar = [[0, 0, 0]];
   while (sim.state.step < at(1, 10, 30)) sim.step(0);
   const s = sim.state;
@@ -974,7 +974,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.items.inv[0] = slot(LOCKPICK);
   s.items.hand = 0;
   sim.step(command(0, OP.USE, 1));
-  const half = new Sim(CENTER_PERKS, 1);
+  const half = new Sim(MAPLE_GROVE, 1);
   half.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   const presses = Array.from({ length: 200 }, (_, k) => (k % 9 === 4 ? command(0, OP.USE, 1) : 0));
   for (const c of presses) {
@@ -985,7 +985,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   }
   check(half.hash() === sim.hash(), 'saved with a lock half picked: the same picking');
   s.picked = [door, s.step + PICKED_STEPS, 0];
-  const open = new Sim(CENTER_PERKS, 1);
+  const open = new Sim(MAPLE_GROVE, 1);
   open.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(open.world.block[door] === 0 && open.world.pickedDoor === door, "saved with a door picked open: it's open when loaded");
   console.log('saves: a lock half picked and a door picked open carry on');

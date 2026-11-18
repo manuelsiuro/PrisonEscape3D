@@ -18,8 +18,8 @@ const mem = new Map<string, string>();
 const { dailyDate, dailyNumber, dailyOf, RHYTHM } = await import('../src/content/daily');
 const { TWISTS, TWIST_IDS, twistOf } = await import('../src/content/twists');
 const { PRISONS, escapesOf } = await import('../src/content/prisons');
-const { CENTER_PERKS } = await import('../src/content/prisons/center-perks');
-const { STALAG_FLUCHT } = await import('../src/content/prisons/stalag-flucht');
+const { MAPLE_GROVE } = await import('../src/content/prisons/maple-grove');
+const { FROSTBERG } = await import('../src/content/prisons/frostberg');
 const { ITEMS, itemNumber } = await import('../src/content/items');
 const { RECIPES } = await import('../src/content/recipes');
 const { Sim, ESCAPES } = await import('../src/sim/Sim');
@@ -124,8 +124,8 @@ check(
 check(TWISTS.length === TWIST_IDS.length && TWIST_IDS.every((id) => twistOf(id)?.id === id), 'every twist has its data');
 
 // ------------------------------------------------------------------ each twist's rule
-/** A game at Center Perks (quiet days), under these twists. */
-const game = (mods: string[], def = CENTER_PERKS, seed = 7) => {
+/** A game at Maple Grove (quiet days), under these twists. */
+const game = (mods: string[], def = MAPLE_GROVE, seed = 7) => {
   const sim = new Sim(def, seed, mods);
   sim.state.calendar = quietCalendar();
   return sim;
@@ -238,7 +238,7 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
   const plain = game([]);
   plain.state.player.x = sim.state.player.x;
   plain.state.player.z = sim.state.player.z;
-  check(exposed(sim) && !exposed(plain), 'Big Freeze: out in the yard without a warm outfit, the cold bites (at Center Perks)');
+  check(exposed(sim) && !exposed(plain), 'Big Freeze: out in the yard without a warm outfit, the cold bites (at Maple Grove)');
 }
 {
   const sim = game(['badBlood']);
@@ -260,7 +260,7 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
   check(plain.state.rng === sim.state.rng, '(drawn without the RNG: everything else as it would be)');
 }
 {
-  const plan = (mods: string[]) => Array.from({ length: 6 }, (_, k) => dayPlan(CENTER_PERKS.id, 5, k + 1, [], mods).weather).join(' ');
+  const plan = (mods: string[]) => Array.from({ length: 6 }, (_, k) => dayPlan(MAPLE_GROVE.id, 5, k + 1, [], mods).weather).join(' ');
   check(
     plan(['fogDays']).startsWith('clear') &&
       plan(['fogDays'])
@@ -277,13 +277,13 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
     'Storm: a storm every day after the first',
   );
   const deliveries = (mods: string[]) =>
-    Array.from({ length: 28 }, (_, k) => dayPlan(CENTER_PERKS.id, 5, k + 1, [], mods).event).filter((e) => e === 'delivery').length;
+    Array.from({ length: 28 }, (_, k) => dayPlan(MAPLE_GROVE.id, 5, k + 1, [], mods).event).filter((e) => e === 'delivery').length;
   check(deliveries([]) === 4 && deliveries(['truckStrike']) === 0, 'Truck Strike: no delivery all month (4 as a rule)');
 }
 {
-  const { SHANKTON } = await import('../src/content/prisons/shankton');
+  const { GRAVEL_POINT } = await import('../src/content/prisons/gravel-point');
   check(dogsFrom({ mods: ['dogDay'] }) === 1 && dogsFrom({ mods: [] }) === 2, 'Dog Day: the dogs work from day 1');
-  const sim = new Sim(SHANKTON, 3, ['dogDay']);
+  const sim = new Sim(GRAVEL_POINT, 3, ['dogDay']);
   const counters = containersOf(sim.world).flatMap((c, i) => (c.table === 'canteenCounter' ? [sim.state.items.containers[i]] : []));
   check(
     counters.some((box) => box.some((v) => itemOf(v) === itemNumber('jerky'))),
@@ -296,7 +296,7 @@ check(
 );
 {
   const sim = game(['straightLaced']);
-  const k = CENTER_PERKS.guards.findIndex((g) => g.trait === 'corrupt');
+  const k = MAPLE_GROVE.guards.findIndex((g) => g.trait === 'corrupt');
   sim.state.heat = 30;
   sim.state.cash = 500;
   bribe(sim, k, BRIBE.PAPER);
@@ -335,14 +335,14 @@ check(
 
 // ------------------------------------------------------------------ saves and logs under twists
 {
-  const sim = new Sim(STALAG_FLUCHT, 12, ['eagleEyes', 'nightOwl']);
+  const sim = new Sim(FROSTBERG, 12, ['eagleEyes', 'nightOwl']);
   const rec = new RunRecorder(sim, { seed: 12, game: '2.0.0' });
   for (let k = 0; k < 2 * 60 * STEPS_PER_MINUTE; k++) rec.step(k % 200 < 100 ? 1 : 0);
   const log = rec.toLog();
   check(log.mods?.join() === 'eagleEyes,nightOwl', 'a Daily’s run log keeps its twists');
-  const back = replayLog(log, STALAG_FLUCHT);
+  const back = replayLog(log, FROSTBERG);
   check(!!back?.ok && back.sim.state.mods.join() === 'eagleEyes,nightOwl', 'and plays back under them, every checksum met');
-  const loaded = new Sim(STALAG_FLUCHT, 1);
+  const loaded = new Sim(FROSTBERG, 1);
   loaded.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(loaded.state.mods.join() === 'eagleEyes,nightOwl' && loaded.hash() === sim.hash(), 'a Daily saved and loaded keeps its twists');
 }
@@ -350,16 +350,16 @@ check(
 // ------------------------------------------------------------------ the static kit check
 /** What each way out can't do without (any one of each group). */
 const NEEDS: Record<string, string[][]> = {
-  fence: [['flimsy_cutters', 'light_cutters', 'sturdy_cutters']],
-  tunnel: [['flimsy_shovel', 'light_shovel', 'sturdy_shovel']],
+  fence: [['makeshift_cutters', 'reinforced_cutters', 'heavy_cutters']],
+  tunnel: [['makeshift_shovel', 'reinforced_shovel', 'heavy_shovel']],
   roof: [
     ['grapnel', 'grappling_hook'],
     ['screwdriver', 'nail_file', 'powered_screwdriver', 'multitool'],
   ],
   takeover: [],
   gate: [['plastic_key_yellow'], ['plastic_key_red'], ['plastic_key_green']],
-  raft: [['raft'], ['flimsy_cutters', 'light_cutters', 'sturdy_cutters']],
-  helicopter: [['grapnel', 'grappling_hook'], ['molten_chocolate']],
+  raft: [['raft'], ['makeshift_cutters', 'reinforced_cutters', 'heavy_cutters']],
+  helicopter: [['grapnel', 'grappling_hook'], ['scalding_cocoa']],
   stowaway: [],
   bluff: [['fake_id'], ['guard_outfit']],
   glider: [['glider']],
@@ -416,7 +416,7 @@ for (const p of PLANS) {
     console.log = () => {};
     console.error = () => {};
     // (What's asked is that it can be won under them all, and a seed can go badly: under the hardest twists a grudge may knock the
-    // bot out before its release is called, and Irongate's takeover is a close fight, won about half the time. So, a few tries.)
+    // bot out before its release is called, and Gull Rock's takeover is a close fight, won about half the time. So, a few tries.)
     // (The bot's own checks fail along with a bad try: only the last try's count.)
     const code = process.exitCode;
     let bot = runRoute(plan, r);
@@ -456,18 +456,18 @@ check(
     code !== checkCode(3, 'tunnel', 1501, 2, 'abcd1234'),
   `a check code (${code}): short, the same for the same escape, another for another`,
 );
-let e = dailyEscape(3, { prison: 'center-perks', day: 2, minutes: 1500, via: 'tunnel', strip, code });
+let e = dailyEscape(3, { prison: 'maple-grove', day: 2, minutes: 1500, via: 'tunnel', strip, code });
 check(e.best && e.medal === 'gold' && e.record.best?.tries === 2, 'the first escape is the best (on the second try: gold)');
-e = dailyEscape(3, { prison: 'center-perks', day: 4, minutes: 4000, via: 'fence', strip, code });
+e = dailyEscape(3, { prison: 'maple-grove', day: 4, minutes: 4000, via: 'fence', strip, code });
 check(!e.best && dailyRecord(3).best?.minutes === 1500, 'a slower one keeps the best');
 check(
   streakOf(3) === 1 && streakOf(4) === 1 && streakOf(5) === 0,
   'the streak: one, still one the day after (today’s still to play), gone the day after that',
 );
 dailyTry(4);
-dailyEscape(4, { prison: 'shankton', day: 5, minutes: 6500, via: 'fence', strip, code });
+dailyEscape(4, { prison: 'gravel-point', day: 5, minutes: 6500, via: 'fence', strip, code });
 dailyTry(6);
-dailyEscape(6, { prison: 'irongate', day: 3, minutes: 3000, via: 'bluff', strip, code });
+dailyEscape(6, { prison: 'gull-rock', day: 3, minutes: 3000, via: 'bluff', strip, code });
 check(streakOf(6) === 1 && streakOf(4) === 2 && bestStreak() === 2, 'a day missed starts the streak again; the best is kept');
 mem.set('pe3d.daily', JSON.stringify({ x: 1, 7: { tries: 'lots', best: { day: 'one' } }, 8: null }));
 check(dailyRecord(7).tries === 0 && !dailyRecord(7).best && streakOf(8) === 0, 'a damaged history reads as nothing played');

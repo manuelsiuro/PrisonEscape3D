@@ -22,8 +22,8 @@
  */
 import { itemDef, itemNumber, ITEMS, KEY_ITEM_COLORS } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { RECIPES } from '../src/content/recipes';
 import { floorOf } from '../src/sim/ai/places';
@@ -120,7 +120,7 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
     KEY_ITEM_COLORS.every(([c]) => itemDef(n(`key_${c}`)).small && itemDef(n(`mold_${c}`)).small && itemDef(n(`plastic_key_${c}`)).small),
     'keys, molds and plastic keys are small',
   );
-  const big = ['timber', 'crowbar', 'sturdy_shovel', 'guard_outfit', 'baton', 'pillow', 'caught_rat', 'rat_trap', 'raft'];
+  const big = ['timber', 'crowbar', 'heavy_shovel', 'guard_outfit', 'baton', 'pillow', 'caught_rat', 'rat_trap', 'raft'];
   check(
     big.every((id) => !itemDef(n(id)).small),
     'nothing long, heavy or bulky is',
@@ -146,7 +146,7 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
 
 // ------------------------------------------------------------------ the odds
 {
-  const sim = new Sim(CENTER_PERKS, 1);
+  const sim = new Sim(MAPLE_GROVE, 1);
   const w = sim.world;
   const canteen = floorOf(w, ['canteen'])[0];
   const corridor = floorOf(w, ['corridor'])[0];
@@ -169,7 +169,7 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
 
 // ------------------------------------------------------------------ setting traps, the night's catch
 {
-  const { sim, seen, step, to } = game(CENTER_PERKS);
+  const { sim, seen, step, to } = game(MAPLE_GROVE);
   const w = sim.world;
   const it = sim.state.items;
   const canteen = floorOf(w, ['canteen']);
@@ -217,7 +217,7 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
 
 // ------------------------------------------------------------------ taming
 {
-  const { sim, seen, step } = game(CENTER_PERKS);
+  const { sim, seen, step } = game(MAPLE_GROVE);
   const it = sim.state.items;
   it.inv[0] = slot(n('caught_rat'));
   it.hand = 0;
@@ -243,7 +243,7 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
 
 // ------------------------------------------------------------------ errands: furniture
 {
-  const { sim, seen, step, tame } = game(CENTER_PERKS);
+  const { sim, seen, step, tame } = game(MAPLE_GROVE);
   const w = sim.world;
   const it = sim.state.items;
   tame();
@@ -336,7 +336,7 @@ function sleeperNear(sim: Sim, d = 6): { k: number; at: number } | null {
 
 // ------------------------------------------------------------------ keys: the alarm, and the heist
 for (const heist of [false, true]) {
-  const { sim, seen, step, to, blind, tame } = game(CENTER_PERKS);
+  const { sim, seen, step, to, blind, tame } = game(MAPLE_GROVE);
   const w = sim.world;
   const it = sim.state.items;
   tame();
@@ -420,7 +420,7 @@ for (const heist of [false, true]) {
 
 // ------------------------------------------------------------------ someone who wakes first
 {
-  const { sim, seen, step, blind, tame } = game(CENTER_PERKS);
+  const { sim, seen, step, blind, tame } = game(MAPLE_GROVE);
   const w = sim.world;
   tame();
   blind();
@@ -449,7 +449,7 @@ for (const heist of [false, true]) {
 
 // ------------------------------------------------------------------ let loose: panics
 {
-  const { sim, seen, step, to, blind, tame } = game(CENTER_PERKS);
+  const { sim, seen, step, to, blind, tame } = game(MAPLE_GROVE);
   const w = sim.world;
   tame();
   // In the player's own cell: nobody to scare.
@@ -545,7 +545,7 @@ for (const heist of [false, true]) {
 
 // ------------------------------------------------------------------ dogs go after rats
 {
-  const { sim, seen, step, to, blind, tame } = game(SAN_PANCHO);
+  const { sim, seen, step, to, blind, tame } = game(SIERRA_SECA);
   const w = sim.world;
   tame();
   to(2, 11);
@@ -553,7 +553,7 @@ for (const heist of [false, true]) {
   const k = 0;
   const d = sim.state.dogs[k];
   const g = sim.state.guards[handlersOf(w)[k]];
-  check(d.mode === DOG.HEEL, "Canela at her handler's heel");
+  check(d.mode === DOG.HEEL, "Chispa at her handler's heel");
   // The player beside the dog, something within the rat's reach.
   putTile(sim.state.player, tileOf(d.body));
   const to0 = ratTargets(sim).find((x) => x.who < 0);
@@ -565,18 +565,18 @@ for (const heist of [false, true]) {
       step();
       chased = seen.some((e) => e.type === 'dog' && e.what === 'rat');
     }
-    check(chased && seen.some((e) => e.type === 'noise' && e.kind === 'bark'), 'Canela sees the rat: after it, barking');
+    check(chased && seen.some((e) => e.type === 'noise' && e.kind === 'bark'), 'Chispa sees the rat: after it, barking');
     check(ratEvents(seen, 'chased').length === 1 && ratEvents(seen, 'took').length === 0, 'the rat gives its errand up');
     check(ratEvents(seen, 'home').length === 1 || until(sim, step, 'home', 400), 'and bolts home');
     for (let s = 0; s < 200; s++) step();
-    check(d.mode === DOG.HEEL && g.ko <= 0, 'Canela back at the heel');
+    check(d.mode === DOG.HEEL && g.ko <= 0, 'Chispa back at the heel');
   }
   console.log('dogs: after a rat they see, the rat home without its errand');
 }
 
 // ------------------------------------------------------------------ the player off the floor; saves
 {
-  const { sim, seen, step, tame } = game(CENTER_PERKS);
+  const { sim, seen, step, tame } = game(MAPLE_GROVE);
   tame();
   const to0 = ratTargets(sim).find((x) => x.who < 0)!;
   step(send(to0.container));

@@ -2,7 +2,7 @@ import { HUNT } from '../content/manhunt';
 import { itemNumber } from '../content/items';
 import { outsideOf } from '../content/outside';
 import { prisonById } from '../content/prisons';
-import { CENTER_PERKS } from '../content/prisons/center-perks';
+import { MAPLE_GROVE } from '../content/prisons/maple-grove';
 import type { PrisonDef } from '../content/prisons/types';
 import { readPrisoner } from '../game/prisoner';
 import { t, type Key } from '../i18n';
@@ -91,8 +91,8 @@ const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const STONE = itemNumber('wall_chunk');
 const TREAT_ITEMS = [itemNumber('jerky'), itemNumber('pepper'), itemNumber('sleepy_jerky')];
 
-/** Where a prison is, by id (the Training Block has no outside: its lessons are Center Perks'). */
-const prisonOf = (id: string): PrisonDef => prisonById(id) ?? CENTER_PERKS;
+/** Where a prison is, by id (the Training Block has no outside: its lessons are Maple Grove's). */
+const prisonOf = (id: string): PrisonDef => prisonById(id) ?? MAPLE_GROVE;
 
 /**
  * Into the manhunt: the outside on screen, the player where their way out left them, the HUD
@@ -178,7 +178,7 @@ export function lessonHunt(
   spec: { kind: Carry['kind']; searchers: readonly number[]; headStart: number; minute: number; lou: boolean },
 ) {
   const carry: Carry = {
-    prison: CENTER_PERKS.id,
+    prison: MAPLE_GROVE.id,
     via: 'fence',
     kind: spec.kind,
     spd: 40,

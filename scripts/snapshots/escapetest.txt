@@ -72,22 +72,22 @@
   saved and loaded at day 1 21:07 (playerCell) resumes, day 2 07:37 (playerCell) resumes, day 2 09:43 (canteen) resumes, day 2 10:06 (yard) resumes
   ledger: formsFiled 1, released 1; walked 592 tiles; days quiet / escaped
   → out day 2 10:14 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== stalag-flucht
+== frostberg
   cutout: the fence cut 5.2 s after the power went off
-== stalag-flucht: perimeter cutout
+== frostberg: perimeter cutout
   day 1 23:28 power OFF (player)
   day 1 23:33 ESCAPED (fence)
   saved and loaded at day 1 15:46 (gym) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (yard) resumes, day 1 23:29 (none) resumes
   ledger: powerCuts 1; walked 359 tiles; days escaped
   → out day 1 23:33 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== stalag-flucht: tunnel
+== frostberg: tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
   day 1 23:21 ESCAPED (tunnel)
   saved and loaded at day 1 15:40 (gym) resumes, day 1 21:48 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
   ledger: nothing; walked 284 tiles; days escaped
   → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
-== stalag-flucht: rooftop grapnel
+== frostberg: rooftop grapnel
   day 1 23:28 power OFF (player)
   day 1 23:29 climbRoof → layer 3
   day 1 23:30 grapnel → layer 1
@@ -96,7 +96,7 @@
   ledger: powerCuts 1; walked 355 tiles; days escaped
   → out day 1 23:30 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 8/150, guards down 6/6, xxxxxx
-== stalag-flucht: takeover
+== frostberg: takeover
   day 1 08:38 spotted: skipping
   day 1 08:40 spotted: skipping
   day 1 08:40 spotted: fight
@@ -113,7 +113,7 @@
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:49 (yard) resumes, day 1 08:54 (yard) resumes, day 1 08:55 (yard) resumes
   ledger: blows 14, koGuards 6, lockdowns 1, spotted 3, maxHeat 100, recruits 2, crew 2; walked 168 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 08:55 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 6, cash $0
-== stalag-flucht: stowaway
+== frostberg: stowaway
   day 1 12:30 the delivery is in
   day 1 12:46 into the vehicle
   day 1 14:30 the vehicle searched (a quick look)
@@ -123,7 +123,7 @@
   ledger: stowed 1; walked 154 tiles; days escaped
   → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   seed 29: the search a quick look
-== stalag-flucht: glider
+== frostberg: glider
   day 1 23:29 climbRoof → layer 3
   day 1 23:30 glide → layer 1
   day 1 23:30 off the roof on a glider: 5 tiles
@@ -132,7 +132,7 @@
   ledger: glides 1, glideFar 5; walked 354 tiles; days escaped
   → out day 1 23:30 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the west, strength 1: 5 tiles
-== stalag-flucht: paperwork
+== frostberg: paperwork
   day 1 18:27 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
   day 2 01:18 bed check: pass
@@ -143,9 +143,9 @@
   saved and loaded at day 1 21:06 (playerCell) resumes, day 2 07:34 (playerCell) resumes, day 2 09:40 (canteen) resumes, day 2 10:04 (yard) resumes
   ledger: formsFiled 1, released 1; walked 487 tiles; days quiet / escaped
   → out day 2 10:12 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== shankton
+== gravel-point
   cutout: the fence cut 6.9 s after the power went off
-== shankton: perimeter cutout
+== gravel-point: perimeter cutout
   day 1 23:17 detector: shielded (19 passes left)
   day 1 23:18 spotted: recognized
   day 1 23:19 detector: shielded (18 passes left)
@@ -154,14 +154,14 @@
   saved and loaded at day 1 15:46 (sports) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (corridor) resumes, day 1 23:29 (perimeter) resumes
   ledger: spotted 1, maxHeat 15, powerCuts 1; walked 425 tiles; days spotted+escaped
   → out day 1 23:33 by fence; heat peak 15%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== shankton: tunnel
+== gravel-point: tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
   day 1 23:21 ESCAPED (tunnel)
   saved and loaded at day 1 15:40 (sports) resumes, day 1 21:49 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
   ledger: nothing; walked 361 tiles; days escaped
   → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
-== shankton: rooftop grapnel
+== gravel-point: rooftop grapnel
   day 1 23:11 climbVent → layer 2
   day 1 23:42 climbRoof → layer 3
   day 1 23:47 grapnel → layer 3
@@ -171,7 +171,7 @@
   ledger: nothing; walked 437 tiles; days escaped
   → out day 1 23:48 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 47/140, guards down 8/8, xxxxxxxx
-== shankton: takeover
+== gravel-point: takeover
   day 1 08:23 spotted: skipping
   day 1 08:26 spotted: skipping
   day 1 08:46 knocked out #13
@@ -200,7 +200,7 @@
   saved and loaded at day 1 08:35 (corridor) resumes, day 1 09:04 (none) resumes, day 1 09:09 (perimeter) resumes, day 1 09:10 (perimeter) resumes
   ledger: blows 12, koGuards 8, lockdowns 1, spotted 9, maxHeat 100, recruits 2, flung 4, crew 2; walked 194 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:11 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
-== shankton: bluff
+== gravel-point: bluff
   day 1 19:12 detector: shielded (19 passes left)
   day 1 19:15 detector: shielded (18 passes left)
   day 1 19:50 waved through the checkpoint
@@ -208,7 +208,7 @@
   saved and loaded at day 1 13:56 (metalshop) resumes, day 1 18:41 (playerCell) resumes, day 1 19:38 (controlRoom) resumes, day 1 19:48 (controlRoom) resumes
   ledger: waved 1; walked 354 tiles; days escaped
   → out day 1 19:52 by bluff; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== shankton: glider
+== gravel-point: glider
   day 1 23:11 climbVent → layer 2
   day 1 23:42 climbRoof → layer 3
   day 1 23:44 glide → layer 1
@@ -218,7 +218,7 @@
   ledger: glides 1, glideFar 7; walked 417 tiles; days escaped
   → out day 1 23:44 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the north, strength 2: 7 tiles
-== shankton: paperwork
+== gravel-point: paperwork
   day 1 18:16 detector: shielded (19 passes left)
   day 1 18:19 detector: shielded (18 passes left)
   day 1 18:26 form filed: on the release list for day 2
@@ -231,21 +231,21 @@
   saved and loaded at day 1 21:07 (playerCell) resumes, day 2 07:37 (playerCell) resumes, day 2 09:43 (canteen) resumes, day 2 10:07 (corridor) resumes
   ledger: formsFiled 1, released 1; walked 580 tiles; days quiet / escaped
   → out day 2 10:15 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== san-pancho
-== san-pancho: tunnel
+== sierra-seca
+== sierra-seca: tunnel
   day 1 23:12 climbDown → layer 0
   day 2 00:04 digUp → layer 1
   day 2 00:04 ESCAPED (tunnel)
   saved and loaded at day 1 16:02 (cellBlock) resumes, day 1 22:27 (rollCall) resumes, day 1 23:45 (tunnels) resumes, day 1 23:59 (tunnels) resumes
   ledger: nothing; walked 298 tiles; days quiet / escaped
   → out day 2 00:04 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
-== san-pancho: supply road gate
+== sierra-seca: supply road gate
   day 1 23:33 ESCAPED (gate)
   saved and loaded at day 1 15:46 (sports) resumes, day 1 21:59 (playerCell) resumes, day 1 23:14 (corridor) resumes, day 1 23:28 (generator) resumes
   ledger: nothing; walked 371 tiles; days escaped
   → out day 1 23:33 by gate; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 68/150, guards down 7/8, xxCxxxxx
-== san-pancho: takeover
+== sierra-seca: takeover
   day 1 08:23 spotted: skipping
   day 1 08:37 spotted: fight
   day 1 08:37 LOCKDOWN
@@ -261,7 +261,7 @@
   saved and loaded at day 1 08:31 (corridor) resumes, day 1 08:56 (library) resumes, day 1 09:01 (walkway) resumes, day 1 09:02 (walkway) resumes
   ledger: blows 9, koGuards 7, lockdowns 1, spotted 2, maxHeat 100, recruits 2, flung 4, crew 2; walked 177 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:03 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 7, cash $0
-== san-pancho: stowaway
+== sierra-seca: stowaway
   day 1 12:30 the delivery is in
   day 1 13:06 into the vehicle
   day 1 14:30 the vehicle searched (a quick look)
@@ -271,7 +271,7 @@
   ledger: stowed 1; walked 240 tiles; days escaped
   → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   seed 49: the search a quick look
-== san-pancho: paperwork
+== sierra-seca: paperwork
   day 1 18:24 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
   day 2 01:28 bed check: pass
@@ -282,9 +282,9 @@
   saved and loaded at day 1 21:08 (playerCell) resumes, day 2 07:39 (playerCell) resumes, day 2 09:45 (canteen) resumes, day 2 10:09 (library) resumes
   ledger: formsFiled 1, released 1; walked 513 tiles; days quiet / escaped
   → out day 2 10:17 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== irongate
+== gull-rock
   raft: the dock fence cut 25.9 s after GEN-2 went off
-== irongate: raft
+== gull-rock: raft
   day 1 23:23 detector: shielded (19 passes left)
   day 1 23:25 detector: shielded (18 passes left)
   day 1 23:44 power OFF (player)
@@ -292,7 +292,7 @@
   saved and loaded at day 1 16:05 (showers) resumes, day 1 22:34 (rollCall) resumes, day 1 23:52 (walkway) resumes, day 2 00:06 (walkway) resumes
   ledger: powerCuts 1; walked 499 tiles; days quiet / escaped
   → out day 2 00:11 by raft; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== irongate: helicopter
+== gull-rock: helicopter
   day 1 23:16 climbVent → layer 2
   day 1 23:39 climbRoof → layer 3
   day 1 23:43 grapnel → layer 3
@@ -305,7 +305,7 @@
   ledger: koGuards 2, spotted 1, maxHeat 2, flung 2; walked 437 tiles; days spotted+fight+escaped
   → out day 1 23:52 by helicopter; heat peak 2%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
   takeover: health 18/150, guards down 10/10, xxxxxxxxxx
-== irongate: takeover
+== gull-rock: takeover
   day 1 08:24 spotted: skipping
   day 1 08:39 detector: shielded (19 passes left)
   day 1 08:39 spotted: skipping
@@ -333,7 +333,7 @@
   saved and loaded at day 1 08:47 (rollCall) resumes, day 1 09:25 (cellBlock) resumes, day 1 09:33 (walkway) resumes, day 1 09:35 (perimeter) resumes
   ledger: blows 11, koGuards 10, lockdowns 1, spotted 4, maxHeat 100, recruits 2, flung 5, crew 2; walked 197 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:35 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0
-== irongate: stowaway
+== gull-rock: stowaway
   day 1 12:30 the delivery is in
   day 1 13:03 detector: shielded (19 passes left)
   day 1 13:05 detector: shielded (18 passes left)
@@ -347,7 +347,7 @@
   ledger: thrown 1, decoys 1, bangs 1, stowed 2, slipped 1; walked 303 tiles; days escaped
   → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   seed 59: the search thorough, the supervisor drawn off (1 slipped through)
-== irongate: bluff
+== gull-rock: bluff
   day 1 19:13 detector: shielded (19 passes left)
   day 1 19:15 detector: shielded (18 passes left)
   day 1 19:50 waved through the checkpoint
@@ -355,7 +355,7 @@
   saved and loaded at day 1 13:55 (woodshop) resumes, day 1 18:40 (playerCell) resumes, day 1 19:37 (walkway) resumes, day 1 19:47 (walkway) resumes
   ledger: waved 1; walked 339 tiles; days escaped
   → out day 1 19:51 by bluff; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-== irongate: paperwork
+== gull-rock: paperwork
   day 1 18:18 detector: shielded (19 passes left)
   day 1 18:20 detector: shielded (18 passes left)
   day 1 18:25 form filed: on the release list for day 2

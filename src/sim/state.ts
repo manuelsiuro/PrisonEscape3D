@@ -172,7 +172,7 @@ export interface SimState {
   frozen: boolean;
   /** Mines set off today (P11, GDD §4.4): their ground tiles, craters until the guards lay new ones at 08:00. */
   craters: number[];
-  /** The second generator (P12, HMP Irongate's GEN-2): steps until its power comes back on (0: on). */
+  /** The second generator (P12, HMP Gull Rock's GEN-2): steps until its power comes back on (0: on). */
   powerOff2: number;
   /** Firecrackers burning (P14): [where (World placeKey), the step it goes off]. */
   fuses: Array<[number, number]>;

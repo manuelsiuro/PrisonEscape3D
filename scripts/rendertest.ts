@@ -13,7 +13,7 @@ import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { CANOPY, CANOPY_SHADE, canopyCovers, decorMatrix, HOOP_BOARD, HOOP_RIM, ROT_ANGLE } from '../src/render/decor';
 import { ROLL_CALL_LEAD, rollCallOverPitch, rollCallShows, rollCallSoon } from '../src/render/ground';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import { DAY_EVENTS, WEATHERS } from '../src/content/days';
 import { routineAt } from '../src/content/routine';
 import { Sim } from '../src/sim/Sim';
@@ -139,7 +139,7 @@ const ALL = [...PRISONS, TRAINING];
     check(rollCallSoon(at(id), minute) === want, `pitch: roll call's marks at ${id} ${minute} ${want ? 'shown' : 'hidden'}`);
   console.log(`pitch: the roll call's marks over a pitch show for roll call and ${ROLL_CALL_LEAD} minutes before`);
   // A fire drill (P17) musters everyone at roll call outside the routine: the marks show for it too.
-  const sim = new Sim(STALAG_FLUCHT, 5);
+  const sim = new Sim(FROSTBERG, 5);
   sim.state.calendar = [
     [0, 0, 0],
     [2, DAY_EVENTS.indexOf('drill'), WEATHERS.indexOf('clear')],
@@ -163,14 +163,14 @@ const ALL = [...PRISONS, TRAINING];
     'pitch: the drill over, the routine decides again',
   );
   console.log(
-    `pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${STALAG_FLUCHT.id}`,
+    `pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${FROSTBERG.id}`,
   );
 }
 
 // ------------------------------------------------------------------ a 2.5.0 replay's pitch
 {
   // A replay of a 2.5.0 run plays on the pitch it had (penalties.ts pitchOf): the paint keeps off that one.
-  const def = STALAG_FLUCHT;
+  const def = FROSTBERG;
   const was = def.leisure!.pitchWas!;
   const old = new Sim(def, 3);
   old.rules250 = true;

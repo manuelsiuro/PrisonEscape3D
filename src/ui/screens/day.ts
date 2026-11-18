@@ -52,7 +52,7 @@ export interface DayBlock {
 export interface DayView {
   /** "Day 3". */
   title: string;
-  /** "Center Perks · 17:33". */
+  /** "Maple Grove · 17:33". */
   sub: string;
   /** The sky by the clock (sun, moon). */
   sky: string;

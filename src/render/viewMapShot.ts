@@ -121,7 +121,7 @@ export function mapShot(v: MapShotParts, px = 40, ss = 2, dress = false): { canv
 
 /**
  * What the title screen takes away and a prison has every day: the cameras and searchlights, the
- * pitch's lines and goals, the garden's beds, the rat track; Irongate's drawbridge up. Nothing
+ * pitch's lines and goals, the garden's beds, the rat track; Gull Rock's drawbridge up. Nothing
  * that comes only with an event. Returns how to take them away again (the drawbridge stays up: it
  * is, in play).
  */

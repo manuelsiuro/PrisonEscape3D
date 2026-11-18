@@ -213,7 +213,7 @@ export class Sim {
     forgetReserved(this.world);
     reserved(this.world);
   }
-  /** Replaying a run from 2.36 or before: the Six Hunter's and Shankton's roll call squares and zone as they were (World.oldRollCall). */
+  /** Replaying a run from 2.36 or before: the Six Hunter's and Gravel Point's roll call squares and zone as they were (World.oldRollCall). */
   get rules236() {
     return this.world.oldRollCall;
   }
@@ -523,8 +523,8 @@ export class Sim {
   }
 
   /**
-   * On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), off a roof on a glider (P24), out of the gates in a takeover, waved through the checkpoint (P24), through a gate with its keys (San Pancho's supply road), or through the fence.
-   * Or away over the sea (Irongate): on a raft off the pier, in the helicopter off its pad; or away in the delivery's vehicle (P18).
+   * On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), off a roof on a glider (P24), out of the gates in a takeover, waved through the checkpoint (P24), through a gate with its keys (Sierra Seca's supply road), or through the fence.
+   * Or away over the sea (Gull Rock): on a raft off the pier, in the helicopter off its pad; or away in the delivery's vehicle (P18).
    * (`from`: the tile the player stood on before walking this step; -1 not walking.)
    */
   private out(from: number): boolean {
@@ -598,12 +598,12 @@ export class Sim {
     return this.state.ko > 0 || this.state.solitary > 0;
   }
 
-  /** The prison's power (GDD §5.5): on unless the generator was switched off less than 45 s ago (Irongate: GEN-1's; see powered()). */
+  /** The prison's power (GDD §5.5): on unless the generator was switched off less than 45 s ago (Gull Rock: GEN-1's; see powered()). */
   get power(): boolean {
     return this.state.powerOff === 0;
   }
 
-  /** Whether something has power now (Irongate's two generators each power their half, GDD §4.5). */
+  /** Whether something has power now (Gull Rock's two generators each power their half, GDD §4.5). */
   powered(use: PowerUse): boolean {
     return powered(this.world, this.state, use);
   }

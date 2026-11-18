@@ -9,7 +9,7 @@ agent. It points to the real sources rather than repeating them; when they disag
 
 - **Live:** the version in `docs/PLAN.md` §8's status line, at <https://manuelsiuro.github.io/PrisonEscape3D/> (repo
   <https://github.com/manuelsiuro/PrisonEscape3D>, branch `main`, tags `vX.Y.Z`).
-- **The game:** an original Escapists-like 3D prison escape for the browser, phone and desktop.
+- **The game:** an original 3D prison escape sandbox for the browser, phone and desktop.
   Six prisons and the Training Block; the sixth, **The Six Hunter** (level 6, out of the Daily),
   came in 2.36. The counts (ways out, items, tests…) are in `docs/PLAN.md` §8, checked by `docstest`.
 - **Done:** every planned roadmap (P0–P42), the polish series, and the improvement queue
@@ -57,7 +57,7 @@ await p.at('six-hunter', 1, 8*60); p.freeze(); p.zoom(3);` (`window.__game()` is
 | How was a roadmap planned and proved (the prisons, the polish series, the Six Hunter)? | `docs/phases/` (listed in `PLAN.md` §4) |
 | What does the game have, for players? | `docs/FEATURES.md`, `README.md` |
 | What's open or parked? | `docs/BACKLOG.md` |
-| The original design (the source of truth for the game)? | `docs/source/the_escapists_3d_complete_game_design_document.md` (never edited) |
+| The original design (the source of truth for the game)? | `docs/source/game_design_document.md` (never edited) |
 
 Search instead of reading whole files: `grep -l "vending" docs/history/*.md`.
 

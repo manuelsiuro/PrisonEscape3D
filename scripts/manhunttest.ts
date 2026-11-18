@@ -230,9 +230,9 @@ for (const def of OUTSIDES) {
 
 // ------------------------------------------------------------------ the rules, one by one
 const CP = PRISONS[0];
-const CPO = outsideOf('center-perks')!;
+const CPO = outsideOf('maple-grove')!;
 const SF = PRISONS[1];
-const SFO = outsideOf('stalag-flucht')!;
+const SFO = outsideOf('frostberg')!;
 /** A hunt to try a rule on: only these searchers out (by their place in the list), no roadblocks, no helicopter unless asked. */
 const lab = (
   def = CPO,
@@ -276,7 +276,7 @@ const steps = (h: Hunt, n: number, cmd = 0) => {
   const s = sim.state;
   s.via = 1;
   s.spd = 52;
-  s.items.inv[0] = slot(itemNumber('light_cutters'));
+  s.items.inv[0] = slot(itemNumber('reinforced_cutters'));
   s.items.inv[1] = slot(itemNumber('jerky'));
   s.items.inv[7] = slot(itemNumber('guard_outfit'));
   s.crewOut = [2];
@@ -380,7 +380,7 @@ console.log(
   const wire = h.wireAhead();
   const none = steps(h, 1, command(0, OP.INTERACT));
   check(wire >= 0 && none.includes('refused:noCutters'), 'wire: no cutters, refused');
-  const h2 = lab(SFO, SF, { kit: [itemNumber('light_cutters')] });
+  const h2 = lab(SFO, SF, { kit: [itemNumber('reinforced_cutters')] });
   put(h2, 20, 9, 13);
   const ev = steps(h2, HUNT.cutSteps + 2, command(0, OP.INTERACT));
   check(ev.includes('cut') && h2.state.cut.length === 1 && !h2.grid[wire], 'wire: cut through with cutters');
@@ -448,14 +448,14 @@ console.log(
 
 // Roadblocks go up at their time (never on the player), the way shut; the helicopter's light; the lookout's whistle.
 {
-  const h = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0 }), { searchers: [], heli: false });
+  const h = new Hunt(CPO, CP, testCarry('maple-grove', 'wall', { headStart: 0 }), { searchers: [], heli: false });
   steps(h, (Math.max(...CPO.roadblocks.map((b) => b.at)) + 1) * 20);
   const r = CPO.roadblocks[0];
   check(
     h.state.blocks === (1 << CPO.roadblocks.length) - 1 && !!h.grid[(r.area[1] + h.out.oz) * 64 + r.area[0] + h.out.ox],
     'roadblocks up, their tiles shut',
   );
-  const h2 = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0 }), { searchers: [], heli: true, roadblocks: false });
+  const h2 = new Hunt(CPO, CP, testCarry('maple-grove', 'wall', { headStart: 0 }), { searchers: [], heli: true, roadblocks: false });
   steps(h2, CPO.heli.at * 20 + 1);
   h2.state.heli.x = h2.state.player.x;
   h2.state.heli.z = h2.state.player.z;
@@ -469,7 +469,7 @@ console.log(
   const watch = (seen: boolean, px: number, pz: number) => {
     for (let dz = -6; dz <= 6; dz++)
       for (let dx = -6; dx <= 6; dx++) {
-        const h3 = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0, crew: 1 }), {
+        const h3 = new Hunt(CPO, CP, testCarry('maple-grove', 'wall', { headStart: 0, crew: 1 }), {
           searchers: [3],
           heli: false,
           roadblocks: false,
@@ -588,7 +588,7 @@ console.log(
   );
 }
 
-// A ford: into the water, the trail is gone, and a dog tracking it loses it there (Stalag Flucht's river).
+// A ford: into the water, the trail is gone, and a dog tracking it loses it there (Camp Frostberg's river).
 {
   const h = lab(SFO, SF, {}, { searchers: [2], heli: false, roadblocks: false });
   let ford = -1;
@@ -634,7 +634,7 @@ console.log(
 
 // A roadblock waits for a player loitering by it, but only HUNT.blockWait; a washing line in a guard's uniform says it's a worse disguise.
 {
-  const h = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0 }), { searchers: [], heli: false });
+  const h = new Hunt(CPO, CP, testCarry('maple-grove', 'wall', { headStart: 0 }), { searchers: [], heli: false });
   const r = CPO.roadblocks[0];
   put(h, r.area[0] - 1, r.area[1]);
   let upAt = -1;
@@ -669,10 +669,10 @@ console.log(
 
 // The same hunt, the same commands: the same run.
 {
-  const a = new HuntBot(new Hunt(SFO, SF, testCarry('stalag-flucht', 'gate'))).run();
-  const b = new HuntBot(new Hunt(SFO, SF, testCarry('stalag-flucht', 'gate'))).run();
+  const a = new HuntBot(new Hunt(SFO, SF, testCarry('frostberg', 'gate'))).run();
+  const b = new HuntBot(new Hunt(SFO, SF, testCarry('frostberg', 'gate'))).run();
   check(a.hash === b.hash && a.secs === b.secs, 'a hunt is deterministic');
-  console.log(`deterministic: stalag-flucht gate twice, ${a.hash} both times`);
+  console.log(`deterministic: frostberg gate twice, ${a.hash} both times`);
 }
 
 // The lesson: into the woods, a thicket while a searcher goes by, clothes off the line, Lou's car.
@@ -685,7 +685,7 @@ console.log(
   const h = new Hunt(
     CPO,
     CP,
-    { ...testCarry('center-perks', spec.kind, { headStart: spec.headStart, minute: spec.minute, lou: spec.lou }), salt: 41 },
+    { ...testCarry('maple-grove', spec.kind, { headStart: spec.headStart, minute: spec.minute, lou: spec.lou }), salt: 41 },
     { searchers: spec.searchers, heli: false, roadblocks: false },
   );
   const progress = new LessonProgress(lesson);
@@ -730,7 +730,7 @@ console.log(
   const h = new Hunt(
     CPO,
     CP,
-    { ...testCarry('center-perks', spec.kind, { headStart: spec.headStart, minute: spec.minute, lou: spec.lou }), salt: 41 },
+    { ...testCarry('maple-grove', spec.kind, { headStart: spec.headStart, minute: spec.minute, lou: spec.lou }), salt: 41 },
     { searchers: spec.searchers, heli: false, roadblocks: false },
   );
   const progress = new LessonProgress(lesson);
@@ -757,9 +757,9 @@ console.log(
 
 // Review of v2.21.3: a crunch nobody hears tells the search nothing; clothes off a line fool them till the search has widened once more than a uniform does.
 {
-  const def = outsideOf('shankton')!;
-  const pr = PRISONS.find((p) => p.id === 'shankton')!;
-  const h = new Hunt(def, pr, testCarry('shankton', 'gate', { headStart: 0 }));
+  const def = outsideOf('gravel-point')!;
+  const pr = PRISONS.find((p) => p.id === 'gravel-point')!;
+  const h = new Hunt(def, pr, testCarry('gravel-point', 'gate', { headStart: 0 }));
   // Far from every searcher, onto the rail yard's gravel.
   const far = (i: number) => h.state.searchers.every((m) => m.mode === SEEK.OFF || cheb(tileAt(m.body.x, m.body.z), i) > HUNT.crunch + 6);
   let at = -1;
@@ -784,21 +784,21 @@ console.log(
   console.log('gravel unheard tells nothing; line clothes known a widening after a uniform');
 }
 
-// Review of v2.21.3: cover with no open ground right beside it (Shankton's hedge along the map's edge) is swept too: a dog team casts about from the nearest place; keeping still there fails in the end.
+// Review of v2.21.3: cover with no open ground right beside it (Gravel Point's hedge along the map's edge) is swept too: a dog team casts about from the nearest place; keeping still there fails in the end.
 {
-  const def = outsideOf('shankton')!;
-  const pr = PRISONS.find((p) => p.id === 'shankton')!;
+  const def = outsideOf('gravel-point')!;
+  const pr = PRISONS.find((p) => p.id === 'gravel-point')!;
   for (const salt of [1, 2]) {
-    const h = new Hunt(def, pr, testCarry('shankton', 'wall', { headStart: 0, salt }));
+    const h = new Hunt(def, pr, testCarry('gravel-point', 'wall', { headStart: 0, salt }));
     const at = spotTile({ x: 59, z: 44 }, h.out.ox, h.out.oz);
-    check(h.out.cover[at] === 1, 'Shankton (59,44) is cover');
+    check(h.out.cover[at] === 1, 'Gravel Point (59,44) is cover');
     const p = h.state.player;
     p.x = (at % MAP_W) * 1024 + 512;
     p.z = Math.floor(at / MAP_W) * 1024 + 512;
     h.state.at = at;
     h.state.trail = [];
     for (let k = 0; k < 20 * 1200 && !h.state.over; k++) h.step(0);
-    check(h.state.over === OVER.CAUGHT, `hidden in Shankton's edge hedge (salt ${salt}): found in the end (over ${h.state.over})`);
-    console.log(`Shankton's edge hedge, salt ${salt}: found after ${Math.round(h.state.overAt / 20)} s`);
+    check(h.state.over === OVER.CAUGHT, `hidden in Gravel Point's edge hedge (salt ${salt}): found in the end (over ${h.state.over})`);
+    console.log(`Gravel Point's edge hedge, salt ${salt}: found after ${Math.round(h.state.overAt / 20)} s`);
   }
 }

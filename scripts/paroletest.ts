@@ -19,7 +19,7 @@
  */
 import { escapesOf, PRISONS } from '../src/content/prisons';
 import { itemNumber } from '../src/content/items';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import {
   ANSWER,
@@ -109,7 +109,7 @@ function reachFrom(w: World, from: number[]): Uint8Array {
 }
 
 /** A game kept calm (lockdowns cleared each step unless asked), quiet days. */
-function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
+function game(prison = MAPLE_GROVE, seed = 5, mods: string[] = []) {
   const sim = new Sim(prison, seed, mods);
   sim.state.calendar = [[0, 0, 0]];
   const seen: SimEvent[] = [];
@@ -198,7 +198,7 @@ function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
     if (d.twists.length) dealt++;
   }
   // (Applying in the Daily: refused.)
-  const g = game(CENTER_PERKS, 5, ['shortFuse']);
+  const g = game(MAPLE_GROVE, 5, ['shortFuse']);
   g.jump(3, 10, 5);
   g.toDesk();
   g.step(APPLY);
@@ -247,7 +247,7 @@ function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
   const g = game();
   const { sim, seen } = g;
   const s = sim.state;
-  const c = CENTER_PERKS.comms!.phone;
+  const c = MAPLE_GROVE.comms!.phone;
   g.jump(3, 10, 5);
   put(s.player, c.x, c.z);
   s.player.facing = c.face;
@@ -328,13 +328,13 @@ function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
 
 // ------------------------------------------------------------------ the hearing
 /** Applied on day 3, now at day 10 a minute before the hearing, the record as asked. */
-function applied(prison = CENTER_PERKS) {
+function applied(prison = MAPLE_GROVE) {
   const g = game(prison);
   g.jump(3, 10, 5);
   g.toDesk();
   g.step(APPLY);
   g.jump(10, 9, 59);
-  // (Out of the room: at Center Perks the release desk is in the visiting room.)
+  // (Out of the room: at Maple Grove the release desk is in the visiting room.)
   put(g.sim.state.player, 20, 20);
   return g;
 }
@@ -355,7 +355,7 @@ function applied(prison = CENTER_PERKS) {
   check(!!s.hearing && news(seen, 'sat').length === 1, 'in the room: sat before the board');
   const seat = sim.world.props[s.seat];
   check(
-    !!seat && seat.x <= HEARINGS[CENTER_PERKS.id].seat.x && HEARINGS[CENTER_PERKS.id].seat.x < seat.x + seat.w && s.player.facing === 13,
+    !!seat && seat.x <= HEARINGS[MAPLE_GROVE.id].seat.x && HEARINGS[MAPLE_GROVE.id].seat.x < seat.x + seat.w && s.player.facing === 13,
     'on the seat across from the board, facing it',
   );
   for (let k = 0; k < 200 && s.hearing!.q < 0; k++) g.step();
@@ -543,7 +543,7 @@ function applied(prison = CENTER_PERKS) {
   // Out at night: spotted.
   g.jump(5, 23, 30);
   g.setCalm(false);
-  put(s.player, CENTER_PERKS.rollCall[0].x, CENTER_PERKS.rollCall[0].z);
+  put(s.player, MAPLE_GROVE.rollCall[0].x, MAPLE_GROVE.rollCall[0].z);
   for (let k = 0; k < 2000 && !news(seen, 'voided').length; k++) g.step();
   check(
     news(seen, 'voided')[0]?.why === 'night' && s.parole[P.HEARING] === 0 && s.parole[P.OUTCOME] === OUTCOME.VOIDED,
@@ -557,7 +557,7 @@ function applied(prison = CENTER_PERKS) {
   const { sim, seen } = g;
   const s = sim.state;
   g.jump(6, 13, 0);
-  s.items.inv[0] = slot(itemNumber('light_cutters'));
+  s.items.inv[0] = slot(itemNumber('reinforced_cutters'));
   s.ko = 1;
   s.wake = 1;
   g.step();
@@ -592,8 +592,8 @@ function applied(prison = CENTER_PERKS) {
   g.step();
   for (let k = 0; k < 100; k++) g.step();
   const saved = JSON.parse(JSON.stringify(s));
-  const back = new Sim(CENTER_PERKS, 5);
-  back.state = loadState(back.world, CENTER_PERKS, saved);
+  const back = new Sim(MAPLE_GROVE, 5);
+  back.state = loadState(back.world, MAPLE_GROVE, saved);
   check(JSON.stringify(back.state) === JSON.stringify(s) && !!back.state.hearing, 'a save in the middle of a hearing loads as it was');
   for (let k = 0; k < 600; k++) {
     g.sim.step(0);
@@ -604,8 +604,8 @@ function applied(prison = CENTER_PERKS) {
   delete old.parole;
   delete old.paroleBase;
   delete old.hearing;
-  const o = new Sim(CENTER_PERKS, 5);
-  o.state = loadState(o.world, CENTER_PERKS, old);
+  const o = new Sim(MAPLE_GROVE, 5);
+  o.state = loadState(o.world, MAPLE_GROVE, old);
   check(
     o.state.parole.join() === '0,0,0,0,0,0,-1,-1,0,0' && o.state.hearing === null && o.state.paroleBase.length === 0,
     'a save from before P39: nothing applied for',
@@ -613,8 +613,8 @@ function applied(prison = CENTER_PERKS) {
   const bad = JSON.parse(JSON.stringify(s));
   bad.parole = [999, -4];
   bad.hearing = { q: 7 };
-  const b = new Sim(CENTER_PERKS, 5);
-  b.state = loadState(b.world, CENTER_PERKS, bad);
+  const b = new Sim(MAPLE_GROVE, 5);
+  b.state = loadState(b.world, MAPLE_GROVE, bad);
   check(b.state.parole.join() === '0,0,0,0,0,0,-1,-1,0,0' && b.state.hearing === null, 'damaged numbers load as none');
 }
 
@@ -641,10 +641,10 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
     s.parole[P.OUTCOME] === OUTCOME.DENIED && s.parole[P.SCORE] < 0 && s.parole[P.SCORE] >= SCORE_MIN,
     `a denial at ${s.parole[P.SCORE]} (the lowest a score can be ${SCORE_MIN}, the highest ${SCORE_MAX})`,
   );
-  const back = new Sim(CENTER_PERKS, 5);
-  back.state = loadState(back.world, CENTER_PERKS, JSON.parse(JSON.stringify(s)));
+  const back = new Sim(MAPLE_GROVE, 5);
+  back.state = loadState(back.world, MAPLE_GROVE, JSON.parse(JSON.stringify(s)));
   check(JSON.stringify(back.state) === JSON.stringify(s), `a save keeps the denial below zero (${back.state.parole.join()})`);
-  const r = new Sim(CENTER_PERKS, 5);
+  const r = new Sim(MAPLE_GROVE, 5);
   r.restore(g.sim.snapshot());
   check(r.state.parole.join() === s.parole.join() && r.hash() === g.sim.hash(), 'and so does a snapshot restored');
   for (let k = 0; k < 600; k++) {
@@ -653,7 +653,7 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
     r.step(0);
   }
   check(back.hash() === g.sim.hash() && r.hash() === g.sim.hash(), 'and both play on the same');
-  put(back.state.player, CENTER_PERKS.comms!.release.at[0].x, CENTER_PERKS.comms!.release.at[0].z);
+  put(back.state.player, MAPLE_GROVE.comms!.release.at[0].x, MAPLE_GROVE.comms!.release.at[0].z);
   back.step(APPLY);
   check(
     back.events.some((e) => e.type === 'refused' && e.why === 'paroleWait'),
@@ -661,8 +661,8 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
   );
   const far = JSON.parse(JSON.stringify(s));
   far.parole[P.SCORE] = SCORE_MIN - 1;
-  const b2 = new Sim(CENTER_PERKS, 5);
-  b2.state = loadState(b2.world, CENTER_PERKS, far);
+  const b2 = new Sim(MAPLE_GROVE, 5);
+  b2.state = loadState(b2.world, MAPLE_GROVE, far);
   check(b2.state.parole.join() === '0,0,0,0,0,0,-1,-1,0,0', 'a score below what can be loads as none');
 }
 {
@@ -711,7 +711,7 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
 }
 {
   // A fire drill during the hearing: the board first, the muster excused (seed 5 rings it at 10:40).
-  const g = game(CENTER_PERKS, 5);
+  const g = game(MAPLE_GROVE, 5);
   const s = g.sim.state;
   g.jump(3, 10, 5);
   g.toDesk();
@@ -752,7 +752,7 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
 }
 {
   // The hearing on visiting day (full review): the board sits on the visiting chairs; no visitor until the verdict, then one, still in visiting hours.
-  const g = game(CENTER_PERKS, 5);
+  const g = game(MAPLE_GROVE, 5);
   const s = g.sim.state;
   g.jump(3, 10, 5);
   g.toDesk();
@@ -806,7 +806,7 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
   // The lawyer's filing refused by the call's end (wanted meanwhile): the fee back.
   const g = game();
   const s = g.sim.state;
-  const c = CENTER_PERKS.comms!.phone;
+  const c = MAPLE_GROVE.comms!.phone;
   g.jump(3, 10, 5);
   put(s.player, c.x, c.z);
   s.player.facing = c.face;
@@ -939,7 +939,7 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
   );
   const counsel = ACHIEVEMENTS.find((x) => x.id === 'counsel')!;
   const run = (s: typeof a) =>
-    counsel.run!({ prison: CENTER_PERKS.id, feats: s.feats, days: s.days, str: s.str, spd: s.spd, int: s.items.int });
+    counsel.run!({ prison: MAPLE_GROVE.id, feats: s.feats, days: s.days, str: s.str, spd: s.spd, int: s.items.int });
   check(run(a) && !run(b), "Counsel: granted on the lawyer's filing");
 }
 {
@@ -948,8 +948,8 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
   g.jump(3, 10, 5);
   const saved = JSON.parse(JSON.stringify(g.sim.state));
   saved.hearing = { from: saved.step, q: -1, at: 0, topics: [0, 1, 2], said: [-1, -1, -1], worth: [0, 0, 0], until: 0 };
-  const b = new Sim(CENTER_PERKS, 5);
-  b.state = loadState(b.world, CENTER_PERKS, saved);
+  const b = new Sim(MAPLE_GROVE, 5);
+  b.state = loadState(b.world, MAPLE_GROVE, saved);
   check(b.state.hearing === null, 'a hearing with nothing applied for loads as none');
 }
 {
@@ -978,14 +978,14 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
 
 /** The plotter: applied on day 3, then out of the cell after Lights Out (a bed check, a guard about): voided. */
 {
-  const bot = new Bot(CENTER_PERKS, 41);
+  const bot = new Bot(MAPLE_GROVE, 41);
   const st = bot.st;
-  const r = CENTER_PERKS.comms!.release;
+  const r = MAPLE_GROVE.comms!.release;
   check(bot.routineUntil(3, 10 * 60 + 5), 'plotter: the first days kept');
   check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 6000), 'plotter: at the desk');
   bot.step(APPLY);
   check(bot.routineUntil(3, 22 * 60 + 30), 'plotter: roll call');
-  const spot = CENTER_PERKS.rollCall[0];
+  const spot = MAPLE_GROVE.rollCall[0];
   bot.walkTo(tileOf(spot.x, spot.z), 3000);
   bot.until(() => st.parole[P.OUTCOME] === OUTCOME.VOIDED, 4 * 60 * STEPS_PER_MINUTE);
   const v = bot.log.find((l) => l.includes('parole: voided'));
@@ -998,10 +998,10 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
 
 /** The record bot: applied, a call home, a block missed, a scuffle; the card's lines are what it saw happen. */
 {
-  const bot = new Bot(CENTER_PERKS, 43);
+  const bot = new Bot(MAPLE_GROVE, 43);
   const st = bot.st;
   st.cash = 10;
-  const r = CENTER_PERKS.comms!.release;
+  const r = MAPLE_GROVE.comms!.release;
   check(bot.routineUntil(3, 10 * 60 + 5), 'record bot: the first days kept');
   check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 6000), 'record bot: at the desk');
   bot.step(APPLY);
@@ -1014,7 +1014,7 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
   };
   const watch = (cmd = 0) => bot.step(cmd);
   // A call home.
-  const c = CENTER_PERKS.comms!.phone;
+  const c = MAPLE_GROVE.comms!.phone;
   bot.walkTo(tileOf(c.x, c.z), 3000);
   watch(command(0, OP.EXT, EXT.CALL, CALLEE.HOME * 16));
   for (let k = 0; k < 8 * STEPS_PER_MINUTE && st.call; k++) watch();
@@ -1046,10 +1046,10 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
   const byId = (id: string) => PRISONS.find((p) => p.id === id)!;
   // Out at night: filmed or lit up, then caught (a lockdown says nothing more is "spotted"): void all the same.
   const night: Array<[string, number, number]> = [
-    ['shankton', 32, 22],
-    ['irongate', 8, 14],
-    ['shankton', 53, 6],
-    ['irongate', 42, 5],
+    ['gravel-point', 32, 22],
+    ['gull-rock', 8, 14],
+    ['gravel-point', 53, 6],
+    ['gull-rock', 42, 5],
   ];
   for (const [id, x, z] of night) {
     const g = game(byId(id));
@@ -1092,7 +1092,7 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
   {
     const g = game();
     const s = g.sim.state;
-    const c = CENTER_PERKS.comms!.phone;
+    const c = MAPLE_GROVE.comms!.phone;
     g.jump(3, 10, 5);
     put(s.player, c.x, c.z);
     s.player.facing = c.face;
@@ -1122,7 +1122,7 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
   }
   // Before the board: no talk, so no side game.
   {
-    const g = game(byId('shankton'));
+    const g = game(byId('gravel-point'));
     const s = g.sim.state;
     g.jump(3, 10, 5);
     g.toDesk();
@@ -1175,7 +1175,7 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
     const g = game();
     const saved = JSON.parse(JSON.stringify(g.sim.state));
     saved.parole = [0, 0, 0, 9999, 2, 0, -1, -1, 1, 0];
-    check(loadState(g.sim.world, CENTER_PERKS, saved).parole[3] === 0, 'a save waiting till day 9999: nothing applied for');
+    check(loadState(g.sim.world, MAPLE_GROVE, saved).parole[3] === 0, 'a save waiting till day 9999: nothing applied for');
   }
   console.log(
     "P39 review: out at night (camera, searchlight, in a lockdown), the lawyer's fee back, applied after midnight, no talk at the hearing, the board kept clear, a save's days: checked",

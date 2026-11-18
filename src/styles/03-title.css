@@ -224,7 +224,7 @@
   color: var(--ink-soft);
 }
 
-/* A small phone, or one turned: a long line under a button's name (French "n°19 · Stalag Flucht · 2 règles
+/* A small phone, or one turned: a long line under a button's name (French "n°19 · Camp Frostberg · 2 règles
    du jour") on two lines rather than cut; the button grows only then (session 8). */
 @media (max-width: 400px), (max-height: 520px) {
   .menu-text small {

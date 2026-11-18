@@ -14,7 +14,7 @@ const LIFT = 0.012;
  * The prison itself behind the manhunt's wall (P41 review: there were only woods past it): the
  * run's own prison as the game draws it, roofs on, seen from outside. Turned round so its front
  * gate faces the outside, the gate in line with the opening in the outside's wall, the road along
- * its front just behind that wall. Irongate's island lies out across the water from the town's
+ * its front just behind that wall. Gull Rock's island lies out across the water from the town's
  * quays. Render only, built once a hunt; nobody walks there (the outside's tiles past its wall are
  * solid woods to the hunt, as before).
  */
@@ -28,7 +28,7 @@ export class PrisonBehind {
   private readonly own: Array<THREE.Texture | THREE.Material | THREE.BufferGeometry> = [];
   private readonly view: WorldView;
   private readonly structure: Structure;
-  /** Irongate's shore (rock, shallows, surf) and drawbridge round the island. */
+  /** Gull Rock's shore (rock, shallows, surf) and drawbridge round the island. */
   private readonly island: Island | null = null;
   /** The prison's corners in the outside's world (tiles): x0, z0, x1, z1 (exclusive). */
   readonly box: readonly [number, number, number, number];

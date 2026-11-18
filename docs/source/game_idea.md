@@ -33,7 +33,7 @@ Items are the key to escaping.
 ### 4. Crafting System
 A robust system to combine raw materials into escape tools.
 
-*   **Recipe System:** Combining 2 or 3 specific items to create a new one (e.g., Sock + Soap = Soap Mace; File + Timber + Wire = Flimsy Cutters).
+*   **Recipe System:** Combining 2 or 3 specific items to create a new one (e.g., Sock + Soap = Soap Mace; File + Timber + Wire = Makeshift Cutters).
 *   **Intellect Gating:** Certain recipes are locked until the player reaches a specific Intellect level.
 *   **Crafting Notes:** Collectible notes hidden around the prison that teach the player recipes.
 
@@ -65,7 +65,7 @@ This is where Three.js will shine. You need a multi-layered world map.
     *   Cutting chain-link fences.
     *   Digging holes in the dirt.
     *   Unscrewing vent covers.
-*   **Cover-Up Mechanics:** The ability to craft and place Fake Vent Covers, Fake Wall Blocks, or Dirt Rubble to hide escape attempts from guards.
+*   **Cover-Up Mechanics:** The ability to craft and place Dummy Vent Grilles, Fake Wall Blocks, or Dirt Rubble to hide escape attempts from guards.
 *   **Prison Jobs:** Interactive mini-games or tasks (e.g., doing laundry, pressing license plates) to earn daily money.
 
 ### 7. Security Systems & Fail States

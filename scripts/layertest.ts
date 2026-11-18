@@ -7,7 +7,7 @@
  * - cutting: plastic knives through the north fence, then out on the road: escaped;
  * - the electric fence knocks the player out while the generator runs (securitytest cuts the power);
  * - vents: a nail file unscrews the cell grate, the player climbs in, crawls to the ladder,
- *   climbs to the roof and back down; a fake vent cover goes on from above;
+ *   climbs to the roof and back down; a dummy vent grille cover goes on from above;
  * - tunnels: a shovel digs under the desk, the desk panel leads down, the third unbraced
  *   tile caves in, braces hold, dirt goes down the toilet (clogged after 3, again an hour
  *   later), and the tunnel bot digs out under the fence and up onto the road: escaped;
@@ -17,7 +17,7 @@
  * - a save restored mid-tunnel replays to the same state.
  */
 import { ITEMS, itemNumber } from '../src/content/items';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
 import { command, EXT, OP } from '../src/sim/command';
@@ -34,7 +34,7 @@ import { check } from './assert';
 
 const n = (id: string) => itemNumber(id);
 const at = (sim: Sim) => `day ${sim.clock.day} ${formatTime(sim.clock)}`;
-const NO_GUARDS = { ...CENTER_PERKS, guards: [] };
+const NO_GUARDS = { ...MAPLE_GROVE, guards: [] };
 const NORTH = 13;
 const SOUTH = 5;
 const EAST = 1;
@@ -261,7 +261,7 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   check(st.layer === LAYER.GROUND && sim.playerZone === 'generator', 'down the ladder into the generator room');
   // Back up and through the ducts to the cell, down, and the grate covered from above.
   stand(sim, 13, 40, NORTH);
-  carry(sim, 'nail_file', 'fake_vent');
+  carry(sim, 'nail_file', 'dummy_vent');
   const gen = strikeUntil(sim, 'nail_file', () => kindAt(sim, LAYER.VENTS, 13, 40) === TILE.GRATE_OPEN);
   check(gen.ok, 'the generator room grate unscrews');
   interact(sim);
@@ -269,9 +269,9 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   check(goTo(sim, 9 * MAP_W + 9), 'crawled home');
   sim.step(command(0, OP.SELECT, 1));
   use(sim);
-  check(kindAt(sim, LAYER.VENTS, 9, 9) === TILE.GRATE_FAKE, 'a fake vent cover goes on from above');
+  check(kindAt(sim, LAYER.VENTS, 9, 9) === TILE.GRATE_FAKE, 'a dummy vent grille cover goes on from above');
   interact(sim);
-  check(kindAt(sim, LAYER.VENTS, 9, 9) === TILE.GRATE_OPEN && itemOf(st.items.inv[1]) === n('fake_vent'), 'and off again, into the hand');
+  check(kindAt(sim, LAYER.VENTS, 9, 9) === TILE.GRATE_OPEN && itemOf(st.items.inv[1]) === n('dummy_vent'), 'and off again, into the hand');
   interact(sim);
   check(st.layer === LAYER.GROUND && sim.playerZone === 'playerCell', 'down into the cell');
 }
@@ -283,8 +283,8 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   const st = sim.state;
   // Under the desk (10, 7), from beside it.
   stand(sim, 9, 7, EAST);
-  carry(sim, 'sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace');
-  const shaft = strikeUntil(sim, 'sturdy_shovel', () => kindAt(sim, LAYER.GROUND, 10, 7) === TILE.SHAFT);
+  carry(sim, 'heavy_shovel', 'timber_brace', 'timber_brace', 'timber_brace');
+  const shaft = strikeUntil(sim, 'heavy_shovel', () => kindAt(sim, LAYER.GROUND, 10, 7) === TILE.SHAFT);
   check(shaft.ok && kindAt(sim, LAYER.UNDER, 10, 7) === TILE.TUNNEL, 'a shovel digs a tunnel entrance under the desk');
   check(
     st.items.inv.some((v) => itemOf(v) === n('dirt')),
@@ -303,7 +303,7 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   console.log(`toilet ${toilet}: ${flushes.join(', ')}`);
   check(flushes.join() === 'flushed,flushed,flushed,clogged,flushed', 'three loads, then clogged, then fine an hour later');
   // Down through the desk's panel.
-  carry(sim, 'sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace');
+  carry(sim, 'heavy_shovel', 'timber_brace', 'timber_brace', 'timber_brace');
   stand(sim, 9, 7, EAST);
   interact(sim);
   const desk = containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
@@ -317,7 +317,7 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   for (const z of [6, 5, 4]) {
     const r = strikeUntil(
       sim,
-      'sturdy_shovel',
+      'heavy_shovel',
       () => kindAt(sim, LAYER.UNDER, 10, z) !== TILE.SOIL || sim.events.some((e) => e.type === 'caveIn'),
       200,
     );
@@ -345,7 +345,7 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
     if (z === 2) braceHere();
     const r = strikeUntil(
       sim,
-      'sturdy_shovel',
+      'heavy_shovel',
       () => kindAt(sim, LAYER.UNDER, 10, z) !== TILE.SOIL || sim.events.some((e) => e.type === 'caveIn'),
       200,
     );
@@ -361,7 +361,7 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   st.player.facing = SOUTH;
   for (let k = 0; k < 60; k++) sim.step(command(0, OP.USE, 0));
   check(st.layer === LAYER.UNDER && !st.wear[1 * MAP_W + 10], 'a held button never digs up');
-  const up = strikeUntil(sim, 'sturdy_shovel', () => st.escaped > 0 || st.layer === LAYER.GROUND, 200);
+  const up = strikeUntil(sim, 'heavy_shovel', () => st.escaped > 0 || st.layer === LAYER.GROUND, 200);
   check(up.ok && st.escaped > 0, 'dug up onto the road: escaped');
   console.log(`tunnel escape: ${st.escaped ? `escaped ${at(sim)}` : `stuck in the ${sim.playerZone}`}`);
 }
@@ -390,7 +390,7 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   // Along the tunnel, where the floor overhead could be dug through (never under the desk).
   const over = [7, 6, 5, 4, 3].map(
     (z) =>
-      `${z}:${digUpTarget(sim.world, LAYER.UNDER, { ...st.player, x: 10 * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2 }, n('sturdy_shovel'), []) ? 'up' : '-'}`,
+      `${z}:${digUpTarget(sim.world, LAYER.UNDER, { ...st.player, x: 10 * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2 }, n('heavy_shovel'), []) ? 'up' : '-'}`,
   );
   console.log(`dig up along the tunnel: ${over.join(' ')}`);
   check(over[0] === '7:-', 'no digging up under the desk');
@@ -438,13 +438,13 @@ function quiet(sim: Sim) {
 }
 {
   // An open hole in the corridor wall south of the cell block, seen by a guard.
-  const sim = new Sim(CENTER_PERKS, 7);
+  const sim = new Sim(MAPLE_GROVE, 7);
   const st = sim.state;
   const g = quiet(sim);
   stand(sim, 12, 19, SOUTH);
-  carry(sim, 'sturdy_pickaxe', 'fake_wall');
+  carry(sim, 'heavy_pickaxe', 'fake_wall');
   // The wall at 12,20 between the lower cells and the corridor; the guard looks the other way.
-  const chip = strikeUntil(sim, 'sturdy_pickaxe', () => kindAt(sim, LAYER.GROUND, 12, 20) === TILE.HOLE);
+  const chip = strikeUntil(sim, 'heavy_pickaxe', () => kindAt(sim, LAYER.GROUND, 12, 20) === TILE.HOLE);
   check(chip.ok && !st.lockdown, 'chipped out of sight: no alarm');
   stand(sim, 9, 8, SOUTH);
   plant(g, 16, 22, 9);
@@ -463,12 +463,12 @@ function quiet(sim: Sim) {
 }
 {
   // The same hole behind a fake wall block: the guard walks by.
-  const sim = new Sim(CENTER_PERKS, 7);
+  const sim = new Sim(MAPLE_GROVE, 7);
   const st = sim.state;
   const g = quiet(sim);
   stand(sim, 12, 19, SOUTH);
-  carry(sim, 'sturdy_pickaxe', 'fake_wall', 'poster');
-  strikeUntil(sim, 'sturdy_pickaxe', () => kindAt(sim, LAYER.GROUND, 12, 20) === TILE.HOLE);
+  carry(sim, 'heavy_pickaxe', 'fake_wall', 'poster');
+  strikeUntil(sim, 'heavy_pickaxe', () => kindAt(sim, LAYER.GROUND, 12, 20) === TILE.HOLE);
   // Another inmate's cell: a poster wouldn't pass there.
   sim.step(command(0, OP.SELECT, 2));
   const refused = use(sim).some((e) => e.type === 'cantStrike' && e.why === 'poster');
@@ -491,7 +491,7 @@ function quiet(sim: Sim) {
 }
 {
   // Seen at work.
-  const sim = new Sim(CENTER_PERKS, 8);
+  const sim = new Sim(MAPLE_GROVE, 8);
   const st = sim.state;
   const g = quiet(sim);
   stand(sim, 12, 21, NORTH);
@@ -509,7 +509,7 @@ function quiet(sim: Sim) {
 }
 {
   // On the roof: seen from the roll call yard, not from inside.
-  const sim = new Sim(CENTER_PERKS, 9);
+  const sim = new Sim(MAPLE_GROVE, 9);
   const st = sim.state;
   const g = quiet(sim);
   stand(sim, 25, 12, EAST, LAYER.ROOF);
@@ -531,7 +531,7 @@ function quiet(sim: Sim) {
   const st = sim.state;
   // The last blow with full pockets would drop the chunk at the player's feet: refused.
   stand(sim, 8, 7, NORTH);
-  carry(sim, 'sturdy_pickaxe', 'sock', 'sock', 'sock', 'sock', 'sock');
+  carry(sim, 'heavy_pickaxe', 'sock', 'sock', 'sock', 'sock', 'sock');
   st.wear[6 * MAP_W + 8] = 90;
   const ev = use(sim);
   check(
@@ -540,7 +540,7 @@ function quiet(sim: Sim) {
   );
   // Nobody digs where people must stand: beside beds and desks, at cell doors, at the ladder's foot.
   const places = placesOf(sim.world);
-  carry(sim, 'sturdy_shovel');
+  carry(sim, 'heavy_shovel');
   const side = places.deskside[1];
   stand(sim, side % MAP_W, Math.floor(side / MAP_W) - 1, SOUTH);
   const before = sim.world.ground.kind[side];
@@ -570,8 +570,8 @@ function quiet(sim: Sim) {
   const st = sim.state;
   // Down the desk tunnel; tap (fresh presses) on at the face: never up through the floor.
   stand(sim, 9, 7, EAST);
-  carry(sim, 'sturdy_shovel');
-  strikeUntil(sim, 'sturdy_shovel', () => kindAt(sim, LAYER.GROUND, 10, 7) === TILE.SHAFT);
+  carry(sim, 'heavy_shovel');
+  strikeUntil(sim, 'heavy_shovel', () => kindAt(sim, LAYER.GROUND, 10, 7) === TILE.SHAFT);
   interact(sim);
   interact(sim, 1);
   st.player.facing = NORTH;
@@ -584,7 +584,7 @@ function quiet(sim: Sim) {
 }
 {
   // A lockdown while the player stays below: called off after an hour, found damage repaired, heat kept.
-  const sim = new Sim(CENTER_PERKS, 12);
+  const sim = new Sim(MAPLE_GROVE, 12);
   const st = sim.state;
   for (const g of st.guards) g.wait = 100000;
   stand(sim, 10, 5, NORTH, LAYER.UNDER);
@@ -606,7 +606,7 @@ function quiet(sim: Sim) {
   const blockedSpots = [13 * MAP_W + 25, 23 * MAP_W + 10, 23 * MAP_W + 19].filter((i) => {
     const before = w.ground.kind[i];
     stand(sim, i % MAP_W, Math.floor(i / MAP_W) - 1, SOUTH);
-    carry(sim, 'sturdy_shovel');
+    carry(sim, 'heavy_shovel');
     for (let k = 0; k < 30; k++) use(sim);
     return w.ground.kind[i] === before;
   });

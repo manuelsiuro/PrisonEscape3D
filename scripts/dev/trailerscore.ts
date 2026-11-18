@@ -316,14 +316,14 @@ export async function score() {
     cue(marks[id].at + 0.03, fn);
   }
   // Five prisons: five bars, a layer more on each, a stamp on every name, a rise into the escape.
-  const prisons = marks['center-perks'].at;
+  const prisons = marks['maple-grove'].at;
   for (let k = 0; k < 40; k++) drive(prisons + k * e2, k, PRISON_BARS[k >> 3], 1 + Math.min(3, k >> 3));
-  for (const id of ['center-perks', 'stalag-flucht', 'shankton', 'san-pancho', 'irongate']) {
+  for (const id of ['maple-grove', 'frostberg', 'gravel-point', 'sierra-seca', 'gull-rock']) {
     cue(marks[id].at + 0.3, () => snd.stamp());
     crash(marks[id].at, 0.08);
   }
-  for (let k = 0; k < 8; k++) snare(marks.irongate.at + e2 * 4 + (k * e2) / 2, 0.04 + k * 0.012);
-  riser(marks.irongate.at, marks.escape.at, 0.14);
+  for (let k = 0; k < 8; k++) snare(marks['gull-rock'].at + e2 * 4 + (k * e2) / 2, 0.04 + k * 0.012);
+  riser(marks['gull-rock'].at, marks.escape.at, 0.14);
   // The escape: the drive at full, the siren; it all stops as the glider leaves the roof.
   const esc = marks.escape.at;
   stab(DM, esc, 0.06);

@@ -57,5 +57,5 @@ export function chill(sim: SimContext) {
   }
 }
 
-/** A freezing prison (Stalag Flucht, GDD §4.2), or a Big Freeze Daily anywhere (P26). */
+/** A freezing prison (Camp Frostberg, GDD §4.2), or a Big Freeze Daily anywhere (P26). */
 export const freezing = (sim: SimContext): boolean => !!sim.world.def.rules?.cold || twist(sim.state, 'bigFreeze');

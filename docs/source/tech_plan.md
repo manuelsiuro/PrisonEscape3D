@@ -2,11 +2,11 @@ Copy the entire document below into a `PLAN.md` file at the root of your reposit
 
 ---
 
-# THE ESCAPISTS 3D (THREE.JS) — MASTER TECHNICAL & DESIGN SPECIFICATION
+# PRISON ESCAPE 3D (THREE.JS) — MASTER TECHNICAL & DESIGN SPECIFICATION
 
 ## 0. Agent Execution Instructions (For Antigravity)
 
-You are an autonomous Principal Game Engineer building a complete, feature-complete 3D web adaptation of *The Escapists* using **Three.js**, **TypeScript**, and **Vite**.
+You are an autonomous Principal Game Engineer building a complete, feature-complete 3D prison escape sandbox for the web using **Three.js**, **TypeScript**, and **Vite**.
 
 ### Strict Engineering Rules for the Agent:
 
@@ -25,7 +25,7 @@ Initialize the project with Vite (`vanilla-ts` or `react-ts`). Required packages
 
 ```json
 {
-  "name": "the-escapists-threejs",
+  "name": "prison-escape-3d",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -60,7 +60,7 @@ src/
 │   ├── items.data.ts                # Complete database of 75+ items
 │   ├── recipes.data.ts              # Complete database of 42+ crafting recipes
 │   ├── routines.data.ts             # 24-hour prison schedule & zone rules
-│   └── centerPerks.map.ts           # Procedural/matrix generator for the 4-layer prison map
+│   └── mapleGrove.map.ts           # Procedural/matrix generator for the 4-layer prison map
 ├── core/
 │   ├── GameEngine.ts                # Main loop, delta time, system orchestration
 │   ├── ClockSystem.ts               # 24h clock, routine transitions, day/night events
@@ -245,7 +245,7 @@ export interface ItemDefinition {
   category: ItemCategory;
   isContraband: boolean;
   maxDurability?: number;
-  toolTier?: 1 | 2 | 3 | 4;           // 1: Plastic/Flimsy, 2: Lightweight, 3: Sturdy, 4: Multitool
+  toolTier?: 1 | 2 | 3 | 4;           // 1: Plastic/Makeshift, 2: Reinforced, 3: Heavy-duty, 4: Multitool
   damageBonus?: number;               // Weapon attack bonus (1 to 25)
   attackRange?: number;               // Default 1.5 tiles; Whip/Cup = 3.0 tiles
   defenseBonus?: number;              // Outfit damage reduction
@@ -321,7 +321,7 @@ Populate `src/config/items.data.ts` with all **76 items** below. Every item must
 | `sheet_metal` | Sheet Metal | **Yes** | $20 | Metalshop / Shops | Used for shovel blades and armored outfits. |
 | `crowbar` | Crowbar | **Yes** | $35 | Shops | Heavy metal pry bar; high-tier chipping tool and component. |
 | `pillow` | Pillow | No | $5 | Cell Beds | Combine 2 Pillows + 1 Sheet to craft a Bed Dummy. |
-| `bed_sheet` | Bed Sheet | No | $5 | Cell Beds | Used for Bed Dummies, Sheet Ropes, and Rafts. |
+| `bed_sheet` | Bed Sheet | No | $5 | Cell Beds | Used for Bed Dummies, Knotted Sheets, and Rafts. |
 | `sock` | Sock | No | $3 | Desks / Laundry | Harmless alone; deadly when stuffed with soap or batteries. |
 | `bar_of_soap` | Bar of Soap | No | $5 | Showers / Desks | Used for Sock Mace or combined with wax for key putty. |
 | `battery` | Battery | No | $10 | Desks | Heavy power cell; used for Super Sock Mace or Powered Screwdriver. |
@@ -357,15 +357,15 @@ Populate `src/config/items.data.ts` with all **76 items** below. Every item must
 | `screwdriver` | Screwdriver | `TOOL_UNSCREWING` | 2 | 25 | 25 (Vents) | 4% | **Yes** |
 | `powered_screwdriver` | Powered Screwdriver | `TOOL_UNSCREWING` | 4 | 50 | 50 (Vents) | 2% | **Yes** |
 | `trowel` | Garden Trowel | `TOOL_DIGGING` | 2 | 20 | 10 | 6% | **Yes** |
-| `flimsy_shovel` | Flimsy Shovel | `TOOL_DIGGING` | 1 | 18 | 10 | 6% | **Yes** |
-| `lightweight_shovel` | Lightweight Shovel | `TOOL_DIGGING` | 2 | 30 | 18 | 5% | **Yes** |
-| `sturdy_shovel` | Sturdy Shovel | `TOOL_DIGGING` | 3 | 50 | 25 | 4% | **Yes** |
-| `flimsy_pickaxe` | Flimsy Pickaxe | `TOOL_CHIPPING` | 1 | 18 | 10 | 6% | **Yes** |
-| `lightweight_pickaxe` | Lightweight Pickaxe | `TOOL_CHIPPING` | 2 | 30 | 18 | 5% | **Yes** |
-| `sturdy_pickaxe` | Sturdy Pickaxe | `TOOL_CHIPPING` | 3 | 50 | 25 | 4% | **Yes** |
-| `flimsy_cutters` | Flimsy Cutters | `TOOL_CUTTING` | 1 | 18 | 10 | 6% | **Yes** |
-| `lightweight_cutters` | Lightweight Cutters | `TOOL_CUTTING` | 2 | 30 | 18 | 5% | **Yes** |
-| `sturdy_cutters` | Sturdy Cutters | `TOOL_CUTTING` | 3 | 50 | 25 | 4% | **Yes** |
+| `makeshift_shovel` | Makeshift Shovel | `TOOL_DIGGING` | 1 | 18 | 10 | 6% | **Yes** |
+| `reinforced_shovel` | Reinforced Shovel | `TOOL_DIGGING` | 2 | 30 | 18 | 5% | **Yes** |
+| `heavy_shovel` | Heavy-duty Shovel | `TOOL_DIGGING` | 3 | 50 | 25 | 4% | **Yes** |
+| `makeshift_pickaxe` | Makeshift Pickaxe | `TOOL_CHIPPING` | 1 | 18 | 10 | 6% | **Yes** |
+| `reinforced_pickaxe` | Reinforced Pickaxe | `TOOL_CHIPPING` | 2 | 30 | 18 | 5% | **Yes** |
+| `heavy_pickaxe` | Heavy-duty Pickaxe | `TOOL_CHIPPING` | 3 | 50 | 25 | 4% | **Yes** |
+| `makeshift_cutters` | Makeshift Cutters | `TOOL_CUTTING` | 1 | 18 | 10 | 6% | **Yes** |
+| `reinforced_cutters` | Reinforced Cutters | `TOOL_CUTTING` | 2 | 30 | 18 | 5% | **Yes** |
+| `heavy_cutters` | Heavy-duty Cutters | `TOOL_CUTTING` | 3 | 50 | 25 | 4% | **Yes** |
 | `multitool` | Multitool | `TOOL_DIGGING` (All) | 4 | 80 | 35 (Dig & Chip) | 3% | **Yes** |
 
 ### 3.3 Weapons, Outfits, Keys & Escape Equipment
@@ -374,7 +374,7 @@ Populate `src/config/items.data.ts` with all **76 items** below. Every item must
 | --- | --- | --- | --- | --- |
 | `comb_shiv` | Comb Shiv | `WEAPON` | +6 Damage | **Yes** |
 | `toothbrush_shiv` | Toothbrush Shiv | `WEAPON` | +6 Damage | **Yes** |
-| `comb_blade` | Comb Blade | `WEAPON` | +10 Damage | **Yes** |
+| `razor_comb` | Razor Comb | `WEAPON` | +10 Damage | **Yes** |
 | `sock_mace` | Sock Mace | `WEAPON` | +10 Damage | **Yes** |
 | `super_sock_mace` | Super Sock Mace | `WEAPON` | +16 Damage | **Yes** |
 | `wooden_bat` | Wooden Bat | `WEAPON` | +14 Damage | **Yes** |
@@ -382,7 +382,7 @@ Populate `src/config/items.data.ts` with all **76 items** below. Every item must
 | `guard_baton` | Guard Baton | `WEAPON` | +18 Damage | **Yes** |
 | `nunchucks` | Nunchucks | `WEAPON` | +22 Damage, +15% Attack Speed | **Yes** |
 | `whip` | Razor Whip | `WEAPON` | +20 Damage, 2.5 Tile Range | **Yes** |
-| `molten_chocolate` | Cup of Molten Chocolate | `WEAPON` | Single-use instant KO ranged throw (3 tiles) | **Yes** |
+| `scalding_cocoa` | Cup of Scalding Cocoa | `WEAPON` | Single-use instant KO ranged throw (3 tiles) | **Yes** |
 | `inmate_outfit` | Orange Inmate Outfit | `OUTFIT` | +5 Defense (Default legal uniform) | No |
 | `cushioned_outfit` | Cushioned Inmate Outfit | `OUTFIT` | +15 Defense | **Yes** |
 | `plated_outfit` | Plated Inmate Outfit | `OUTFIT` | +30 Defense | **Yes** |
@@ -394,10 +394,10 @@ Populate `src/config/items.data.ts` with all **76 items** below. Every item must
 | `bed_dummy` | Bed Dummy | `CONCEALMENT` | Placed in player bed to fool night-patrol guards | **Yes** |
 | `poster` | Wall Poster | `CONCEALMENT` | Hides broken wall tiles on Layer 0 | **Yes** |
 | `fake_wall_block` | Fake Wall Block | `CONCEALMENT` | Hides broken wall tiles on Layer 0 | **Yes** |
-| `fake_vent_cover` | Fake Vent Cover | `CONCEALMENT` | Hides unscrewed Vent Grates | **Yes** |
+| `fake_vent_cover` | Dummy Vent Grille | `CONCEALMENT` | Hides unscrewed Vent Grates | **Yes** |
 | `fake_fence_cover` | Fake Fence Cover | `CONCEALMENT` | Hides cut fence tiles | **Yes** |
 | `timber_brace` | Timber Brace | `CONCEALMENT` | Supports Layer -1 tunnel ceiling | **Yes** |
-| `sheet_rope` | Sheet Rope | `KEY` | Climb down from Layer 2 (Roof) to Layer 0 | **Yes** |
+| `knotted_sheets` | Knotted Sheets | `KEY` | Climb down from Layer 2 (Roof) to Layer 0 | **Yes** |
 | `grappling_hook` | Grappling Hook | `KEY` | Climb up to Roof walls or across outer perimeter from Roof | **Yes** |
 
 ---
@@ -412,7 +412,7 @@ Implement an order-independent recipe matcher (`ingredients.sort().join('+')`). 
 | `wad_of_putty` | `talcum_powder` | `toothpaste` | — | 40 |
 | `papier_mache` | `toilet_paper` | `tube_of_glue` | — | 30 |
 | `bed_dummy` | `pillow` | `pillow` | `bed_sheet` | 30 |
-| `sheet_rope` | `bed_sheet` | `bed_sheet` | — | 20 |
+| `knotted_sheets` | `bed_sheet` | `bed_sheet` | — | 20 |
 | `poster` | `magazine` | `duct_tape` | — | 20 |
 | `fake_wall_block` | `papier_mache` | `papier_mache` | `jar_of_ink` | 50 |
 | `fake_vent_cover` | `papier_mache` | `papier_mache` | — | 30 |
@@ -420,37 +420,37 @@ Implement an order-independent recipe matcher (`ingredients.sort().join('+')`). 
 | `timber_brace` | `timber` | `timber` | — | 20 |
 | `contraband_pouch` | `foil` | `duct_tape` | — | 50 |
 | `tool_handle` | `timber` | `file` | — | 30 |
-| `flimsy_shovel` | `tool_handle` | `sheet_metal` | `duct_tape` | 40 |
-| `lightweight_shovel` | `flimsy_shovel` | `sheet_metal` | `duct_tape` | 60 |
-| `sturdy_shovel` | `lightweight_shovel` | `sheet_metal` | `duct_tape` | 80 |
-| `flimsy_pickaxe` | `tool_handle` | `crowbar` | `duct_tape` | 40 |
-| `lightweight_pickaxe` | `flimsy_pickaxe` | `timber` | `duct_tape` | 60 |
-| `sturdy_pickaxe` | `lightweight_pickaxe` | `timber` | `duct_tape` | 80 |
-| `flimsy_cutters` | `file` | `file` | `duct_tape` | 40 |
-| `lightweight_cutters` | `flimsy_cutters` | `file` | `duct_tape` | 60 |
-| `sturdy_cutters` | `lightweight_cutters` | `file` | `duct_tape` | 80 |
-| `multitool` | `sturdy_shovel` | `sturdy_pickaxe` | `duct_tape` | 90 |
+| `makeshift_shovel` | `tool_handle` | `sheet_metal` | `duct_tape` | 40 |
+| `reinforced_shovel` | `makeshift_shovel` | `sheet_metal` | `duct_tape` | 60 |
+| `heavy_shovel` | `reinforced_shovel` | `sheet_metal` | `duct_tape` | 80 |
+| `makeshift_pickaxe` | `tool_handle` | `crowbar` | `duct_tape` | 40 |
+| `reinforced_pickaxe` | `makeshift_pickaxe` | `timber` | `duct_tape` | 60 |
+| `heavy_pickaxe` | `reinforced_pickaxe` | `timber` | `duct_tape` | 80 |
+| `makeshift_cutters` | `file` | `file` | `duct_tape` | 40 |
+| `reinforced_cutters` | `makeshift_cutters` | `file` | `duct_tape` | 60 |
+| `heavy_cutters` | `reinforced_cutters` | `file` | `duct_tape` | 80 |
+| `multitool` | `heavy_shovel` | `heavy_pickaxe` | `duct_tape` | 90 |
 | `powered_screwdriver` | `screwdriver` | `battery` | `wire` | 70 |
 | `mold_[color]` | `wad_of_putty` | `key_[color]` | — | 50 |
 | `plastic_key_[color]` | `mold_[color]` | `molten_plastic` | — | 60 |
 | `sock_mace` | `sock` | `bar_of_soap` | — | 20 |
 | `super_sock_mace` | `sock` | `battery` | — | 40 |
-| `comb_blade` | `comb` | `razor_blade` | — | 30 |
+| `razor_comb` | `comb` | `razor_blade` | — | 30 |
 | `wooden_bat` | `timber` | `duct_tape` | — | 40 |
 | `spiked_bat` | `wooden_bat` | `nail_file` (or `wire`) | `duct_tape` | 60 |
 | `nunchucks` | `timber` | `timber` | `wire` | 70 |
 | `whip` | `timber` | `wire` | `razor_blade` | 80 |
-| `molten_chocolate` | `cup` | `chocolate_bar` | `lighter` | 40 |
+| `scalding_cocoa` | `cup` | `chocolate_bar` | `lighter` | 40 |
 | `cushioned_outfit` | `inmate_outfit` | `pillow` | `duct_tape` | 40 |
 | `plated_outfit` | `inmate_outfit` | `sheet_metal` | `duct_tape` | 70 |
 | `grappling_hook` | `crowbar` | `crowbar` | `duct_tape` | 60 |
-| `grapnel` | `grappling_hook` | `rope` (or `sheet_rope`) | — | 60 |
+| `grapnel` | `grappling_hook` | `rope` (or `knotted_sheets`) | — | 60 |
 
 *(Note: When crafting `mold_[color]` from `wad_of_putty` + `key_[color]`, **do not consume the original `key_[color]**`! Return both the `mold_[color]` and the original `key_[color]` to the player's inventory so the player can put the real key back into the unconscious guard's pockets).*
 
 ---
 
-## 5. The 4-Layer World Map Specification ("Center Perks 3D")
+## 5. The 4-Layer World Map Specification ("Maple Grove 3D")
 
 The map is a `64 x 64` grid (`x: 0..63`, `z: 0..63`) across 4 vertical layers (`tileSize = 2.0` world units).
 
@@ -519,7 +519,7 @@ Z=0..63, X=0..63
 6. **Layer +2 (Rooftops):**
 * Flat roof surfaces covering the main compound buildings.
 * Accessed via the Ladder in the Maintenance/Generator Room or from Layer +1 Vent rooftop exhaust hatches.
-* Features gap points where a `grapnel` (Grappling Hook + Rope) can hook across to the outer perimeter wall, and edges where a `sheet_rope` can be tied to climb down to the outer yard.
+* Features gap points where a `grapnel` (Grappling Hook + Rope) can hook across to the outer perimeter wall, and edges where a `knotted_sheets` can be tied to climb down to the outer yard.
 
 
 
@@ -544,7 +544,7 @@ Z=0..63, X=0..63
 
 ### 6.2 Procedural Voxel Character & Prop Generator (`src/rendering/AssetFactory.ts`)
 
-Construct crisp, stylized 3D blocky characters (resembling 3D voxel versions of *The Escapists* sprites):
+Construct crisp, stylized 3D blocky characters:
 
 * **Character Rig (`createCharacterMesh(role, outfitColor, skinColor, hairStyle)`):**
 * `rootGroup`:
@@ -662,7 +662,7 @@ $$\text{SwingCooldown} = \max\left(0.35\text{s}, 0.95\text{s} - (\text{Attacker.
 * Pressing `[E]` near an unconscious NPC opens their 6-slot inventory + equipped outfit + equipped weapon.
 
 
-* **The Guard Key Rule (Critical Escapists Mechanic):**
+* **The Guard Key Rule (Critical Mechanic):**
 * Each of the 5 on-duty patrol guards carries one specific key (`YELLOW`, `CYAN`, `PURPLE`, `RED`, or `GREEN`).
 * When a guard is knocked out, the player can take their `key_[color]`, craft a `mold_[color]` using `wad_of_putty`, and **place the real `key_[color]` back into the unconscious guard's inventory before the 30-second KO timer expires**.
 * If the guard wakes up (`KO timer === 0`) and their assigned `key_[color]` is missing from their inventory, they immediately radio Control -> **Instant Prison Lockdown + Solitary Confinement if caught**.
@@ -701,9 +701,9 @@ $$\text{FinalPrice} = \text{round}\left(\text{Item.baseValue} \times \left(1.5 -
 
 When the player steps onto any `TileType.ROAD_ESCAPE` tile on the outer edge of the map (`x <= 1 || x >= 62 || z <= 1 || z >= 62`), trigger the **Escape Victory Cinematic & Score Summary**! The map must support all 4 classic escape strategies:
 
-1. **The Classic Perimeter Cutout:** Craft a `bed_dummy`, `contraband_pouch`, `guard_outfit`, and `sturdy_cutters`. During `LIGHTS_OUT`, place the `bed_dummy` in bed, sneak out using a cloned `plastic_key_yellow`, enter the `GENERATOR_ROOM` (`plastic_key_purple` or vents), shut off the `GENERATOR` to disable the outer `ELECTRIC_FENCE` and searchlights, and cut through the outer fence before the maintenance guard turns the generator back on.
+1. **The Classic Perimeter Cutout:** Craft a `bed_dummy`, `contraband_pouch`, `guard_outfit`, and `heavy_cutters`. During `LIGHTS_OUT`, place the `bed_dummy` in bed, sneak out using a cloned `plastic_key_yellow`, enter the `GENERATOR_ROOM` (`plastic_key_purple` or vents), shut off the `GENERATOR` to disable the outer `ELECTRIC_FENCE` and searchlights, and cut through the outer fence before the maintenance guard turns the generator back on.
 2. **The Great Underground Tunnel:** Acquire `timber` (for braces) and shovels/multitool. Dig a `TUNNEL_ENTRANCE` under your cell desk (or cover it), flush all `dirt_pile` items in the toilet, and dig south/west on Layer `-1` all the way past `x = 3` beneath the electric fence, then dig upward to surface on the escape road.
-3. **The Rooftop Grapnel Breakout:** Unscrew the `VENT_GRATE` in your cell (`screwdriver`), cover it with a `fake_vent_cover`, crawl through Layer `+1` ducts to the roof hatch (`Layer +2`), use a `grapnel` to zip across the inner fence to the outer gatehouse roof, and use a `sheet_rope` to descend outside the perimeter.
+3. **The Rooftop Grapnel Breakout:** Unscrew the `VENT_GRATE` in your cell (`screwdriver`), cover it with a `fake_vent_cover`, crawl through Layer `+1` ducts to the roof hatch (`Layer +2`), use a `grapnel` to zip across the inner fence to the outer gatehouse roof, and use a `knotted_sheets` to descend outside the perimeter.
 4. **The Prison Takeover (Riot Escape):** Train `Strength` and `Speed` to `90+` in the Gym, craft a `plated_outfit` and `nunchucks` or `spiked_bat`, recruit 2 high-opinion inmate allies (`Opinion >= 80`), and knock out at least **7 of the 8 guards** simultaneously. The prison enters `PRISON_TAKEOVER` state and the main south perimeter gates automatically swing open!
 
 ---
@@ -758,7 +758,7 @@ Execute the implementation in these **8 sequential phases**. Do not skip ahead o
 
 ### Phase 2: 4-Layer World Grid, Map Generator & Three.js Cutaway Renderer
 
-1. Implement `src/world/WorldGrid.ts` and `src/config/centerPerks.map.ts` generating the complete `64x64` 4-layer prison layout (Cells, Roll Call, Canteen, Gym, Library, Showers, 6 Job Rooms, Generator Room, Guard Quarters, Solitary, Vent network on Layer +1, Roofs on Layer +2, and Dirt on Layer -1).
+1. Implement `src/world/WorldGrid.ts` and `src/config/mapleGrove.map.ts` generating the complete `64x64` 4-layer prison layout (Cells, Roll Call, Canteen, Gym, Library, Showers, 6 Job Rooms, Generator Room, Guard Quarters, Solitary, Vent network on Layer +1, Roofs on Layer +2, and Dirt on Layer -1).
 2. Implement `src/rendering/TextureFactory.ts` and `src/rendering/AssetFactory.ts` to procedurally generate all tile textures, furniture props (beds, desks, toilets, gym gear, generators, contraband detectors), and 3D blocky character meshes.
 3. Implement `src/rendering/SceneManager.ts`, `src/rendering/OrthographicCameraRig.ts`, `src/rendering/InstancedWorldRenderer.ts`, and `src/rendering/CutawaySystem.ts`.
 4. **Verification:** Run `npx tsc --noEmit`.
@@ -804,7 +804,7 @@ Execute the implementation in these **8 sequential phases**. Do not skip ahead o
 
 1. Implement `src/audio/SoundManager.ts` using Web Audio API oscillators and noise buffers for footsteps, wall chipping, fence cutting, detector buzzers, lockdown sirens, combat hits, and UI clicks.
 2. Implement all UI views in `src/ui/` (`HUDView.ts`, `InventoryAndDeskModal.ts`, `CraftingModal.ts`, `JobAndFavorModal.ts`, `MinigameOverlay.ts`) styled in `src/style.css`.
-3. Implement `src/systems/EscapeEvaluator.ts` verifying all 4 escape paths (Perimeter Cut, Underground Tunnel, Rooftop Grapnel/Sheet Rope, and Prison Takeover Riot) and rendering the Victory Summary Screen.
+3. Implement `src/systems/EscapeEvaluator.ts` verifying all 4 escape paths (Perimeter Cut, Underground Tunnel, Rooftop Grapnel/Knotted Sheets, and Prison Takeover Riot) and rendering the Victory Summary Screen.
 4. **Verification:** Run `npx tsc --noEmit` and `npm run build`.
 
 ### Phase 8: Save/Load Persistence, Particle Polish & Final QA Check

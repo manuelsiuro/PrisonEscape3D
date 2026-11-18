@@ -6,7 +6,7 @@
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { BLOCK, ROUTINE } from '../src/content/routine';
 import { floorOf, placesOf } from '../src/sim/ai/places';
@@ -38,7 +38,7 @@ const offSquare = (bot: Bot) => {
   )!;
 };
 /** A silent player at the morning's roll call on day 2, stood on their square as the block begins. */
-function atMorning(seed = 3, prison = CENTER_PERKS) {
+function atMorning(seed = 3, prison = MAPLE_GROVE) {
   const bot = new Bot(prison, seed);
   check(bot.routineUntil(2, MORNING), 'the morning roll call');
   check(ROUTINE[bot.st.routine].id === 'rollCall', 'it is roll call');
@@ -361,7 +361,7 @@ for (const def of PRISONS) {
   put(bot, square(bot));
   check(untilCalled(bot), 'called');
   const snap: Snapshot = bot.sim.snapshot();
-  const back = new Sim(CENTER_PERKS, 1);
+  const back = new Sim(MAPLE_GROVE, 1);
   back.restore(snap);
   check(
     back.state.calling > 0 && back.state.countDone && back.state.guards[wardenOf(back)].mode === GUARD.COUNT,
@@ -369,13 +369,13 @@ for (const def of PRISONS) {
   );
   const old = JSON.parse(JSON.stringify(snap)) as Snapshot;
   for (const f of ['calling', 'countDone', 'yardSeen', 'countAt']) delete (old.state as unknown as Record<string, unknown>)[f];
-  const was = new Sim(CENTER_PERKS, 1);
+  const was = new Sim(MAPLE_GROVE, 1);
   was.restore(old);
   check(was.state.calling === 0 && was.state.countDone === false && was.state.yardSeen === false, 'a save from before loads with none');
   for (let k = 0; k < 40; k++) was.step(0);
 
   // Older runs: anywhere in the yard counts, the warden at the post, nobody called.
-  const then = new Bot(CENTER_PERKS, 22);
+  const then = new Bot(MAPLE_GROVE, 22);
   then.sim.rules226 = true;
   then.silent = true;
   check(then.routineUntil(2, MORNING), 'an older run');
@@ -386,7 +386,7 @@ for (const def of PRISONS) {
   then.until(() => ROUTINE[then.st.routine].id !== 'rollCall', 62 * STEPS_PER_MINUTE);
   check(!then.events.some((e) => e.type === 'count') && then.st.calling === 0, 'older runs: nobody called');
 
-  const was226 = new Sim(CENTER_PERKS, 24);
+  const was226 = new Sim(MAPLE_GROVE, 24);
   was226.rules225 = false;
   was226.rules226 = true;
   was226.rules227 = true;
@@ -401,12 +401,12 @@ for (const def of PRISONS) {
   const prev = new RunRecorder(was226, { seed: 24, game: '2.26.0' });
   for (let k = 0; k < (1440 + 30) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'a log from 2.26 is not carried on');
-  const replayed = replayLog(prev.toLog(), CENTER_PERKS);
+  const replayed = replayLog(prev.toLog(), MAPLE_GROVE);
   check(!!replayed?.ok && replayed.sim.rules226 === true, 'and replays whole under the old rules');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 25), { seed: 25, game: '2.44.0' });
   for (let k = 0; k < (1440 + 30) * STEPS_PER_MINUTE; k++) now.step(0);
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 25, "a log of today's is carried on");
-  const again = replayLog(now.toLog(), CENTER_PERKS);
+  const again = replayLog(now.toLog(), MAPLE_GROVE);
   check(!!again?.ok && again.sim.rules226 === false, "and replays under today's");
 
   // Training is relaxed: its roll call asks nothing new.

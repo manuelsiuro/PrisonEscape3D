@@ -36,7 +36,7 @@ export const PROPS = {
   deskChair: { solid: false },
   /** The metalshop's hydraulic press (P9): sheet metal in, a license plate out. */
   press: { solid: true },
-  /** HMP Irongate's helipad (P12): kept clear (nobody walks onto it, the helicopter sets down on it at night); boarded from beside it. */
+  /** HMP Gull Rock's helipad (P12): kept clear (nobody walks onto it, the helicopter sets down on it at night); boarded from beside it. */
   helipad: { solid: true },
   // P31 (sports grounds & gardens).
   /** A pull-up bar in the sports ground's weights corner: trains Strength, as the weights do. */

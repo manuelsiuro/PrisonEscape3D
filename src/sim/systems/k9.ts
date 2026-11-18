@@ -506,7 +506,7 @@ function passage(w: World, t: number): boolean {
 
 /**
  * Where the player went off the trail (a placeKey; -1 none): a way through at its end; and where
- * they left the floor there (`off`), a shaft down or a grate up (open or behind a fake vent) on
+ * they left the floor there (`off`), a shaft down or a grate up (open or behind a dummy vent grille) on
  * or beside the tile. (A trail that ends with the player back in bounds leads nowhere.)
  */
 function wayOff(w: World, at: number, off: boolean): number {

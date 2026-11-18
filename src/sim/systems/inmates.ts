@@ -859,7 +859,7 @@ export function stepInmates(
         m.wait = TURN_STEPS;
         return;
       }
-      // (2.25: at work, a spot behind furniture no door will ever open on, Irongate's planters: another next time.)
+      // (2.25: at work, a spot behind furniture no door will ever open on, Gull Rock's planters: another next time.)
       if (social.reroute && !m.path.length && plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'work') m.goal = -1;
       return;
     }

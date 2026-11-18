@@ -1,5 +1,5 @@
 /**
- * The sea round HMP Irongate (P12, GDD §4.5): a tunnel dug under the water floods at once
+ * The sea round HMP Gull Rock (P12, GDD §4.5): a tunnel dug under the water floods at once
  * (the whole tunnel is lost, the player washed out and carried to the infirmary), a raft is
  * launched off the end of the pier, and the supply helicopter on its pad takes a guard away
  * at night once the helipad's guards are down.

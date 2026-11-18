@@ -1,10 +1,10 @@
-center-perks: fixer Lefty, 120 drop tiles, 14 visiting seats, 6 arch tiles
-stalag-flucht: fixer Scraps, 61 drop tiles, the Red Cross parcel
-shankton: fixer Deacon, 54 drop tiles, 24 visiting seats, 3 arch tiles
-san-pancho: fixer Primo, 60 drop tiles, 16 visiting seats, 2 arch tiles
-irongate: fixer Rook, 48 drop tiles, 16 visiting seats, 3 arch tiles
-six-hunter: fixer Fox, 60 drop tiles, 8 visiting seats, 5 arch tiles
-phone: the fixer is Lefty; $60 at opinion 60
+maple-grove: fixer Lucky, 120 drop tiles, 14 visiting seats, 6 arch tiles
+frostberg: fixer Nipper, 61 drop tiles, the Red Cross parcel
+gravel-point: fixer Choirboy, 54 drop tiles, 24 visiting seats, 3 arch tiles
+sierra-seca: fixer Compa, 60 drop tiles, 16 visiting seats, 2 arch tiles
+gull-rock: fixer Rigger, 48 drop tiles, 16 visiting seats, 3 arch tiles
+six-hunter: fixer Polecat, 60 drop tiles, 8 visiting seats, 5 arch tiles
+phone: the fixer is Lucky; $60 at opinion 60
 drone: ordered 09:00 day 2, came at minute 800 (21:20) on tile 31,28
 drift: downwind on 111 of 111 windy nights
 promises: 12 of 12 drones came when and where the phone said

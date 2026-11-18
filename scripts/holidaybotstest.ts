@@ -17,10 +17,10 @@ for (let h = 1; h < HOLIDAYS.length; h++) holidayBots(h);
 
 // The parole board's model prisoner (P39) lives through two of the holiday's days (day 2 and day 9): one a holiday, each at another prison (as paroletest's seeds).
 const PAROLED: Array<[number, string]> = [
-  [HOLIDAY.EASTER, 'center-perks'],
-  [HOLIDAY.SUMMER, 'san-pancho'],
-  [HOLIDAY.HALLOWEEN, 'shankton'],
-  [HOLIDAY.CHRISTMAS, 'stalag-flucht'],
+  [HOLIDAY.EASTER, 'maple-grove'],
+  [HOLIDAY.SUMMER, 'sierra-seca'],
+  [HOLIDAY.HALLOWEEN, 'gravel-point'],
+  [HOLIDAY.CHRISTMAS, 'frostberg'],
 ];
 console.log("the parole board's model prisoner under a holiday:");
 quiet.on = true;

@@ -11,7 +11,7 @@
  *   across a counter or a table from where the visitor sits, the visitor comes after
  *   VISIT_STEPS with a gift ($10–20, every visiting day, order or not) and slips the order
  *   across. The room's ways out are detector arches while visiting hours last, and whoever is
- *   still in it at 12:00 is scanned on the way out. At Stalag Flucht nobody visits: a Red Cross
+ *   still in it at 12:00 is scanned on the way out. At Camp Frostberg nobody visits: a Red Cross
  *   parcel comes with the truck (14:45 on delivery day) into the player's desk, unless that
  *   day's search was thorough and the item is contraband.
  * When and where it all happens is pure (`arrival`, `droneMinute`, `dropTile`): what the phone
@@ -89,7 +89,7 @@ export function droneMinute(sim: Pick<SimContext, 'world' | 'state'>, day: numbe
   return from + rollInt(sim.state.salt, SALT.DRONE, day, 0, to - from);
 }
 
-/** Whether the drone flies on a day's night: never in a storm (a blizzard at Stalag Flucht). */
+/** Whether the drone flies on a day's night: never in a storm (a blizzard at Camp Frostberg). */
 const droneFlies = (sim: Pick<SimContext, 'prison' | 'state'>, day: number) => planOf(sim, day).weather !== 'storm';
 
 /** The first prison day an order placed now may come: a drone tonight with notice enough (else tomorrow night), a visitor from tomorrow. */
@@ -487,7 +487,7 @@ function visit(sim: SimContext) {
 }
 
 /**
- * The Red Cross parcel (Stalag Flucht), from 14:45 on delivery day: seized if the day's search
+ * The Red Cross parcel (Camp Frostberg), from 14:45 on delivery day: seized if the day's search
  * was thorough and it's contraband, else into the player's desk (full: it waits for room until the day is out).
  */
 function parcel(sim: SimContext, m: number) {

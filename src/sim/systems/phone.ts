@@ -747,7 +747,7 @@ export function cakeAtVisit(sim: SimContext) {
   sim.events.push({ type: 'phone', what: 'cake' });
 }
 
-/** Stalag Flucht's cake: in the Red Cross parcel on delivery day (from PARCEL_MINUTE), into the desk's open slots. */
+/** Camp Frostberg's cake: in the Red Cross parcel on delivery day (from PARCEL_MINUTE), into the desk's open slots. */
 function cakeParcel(sim: SimContext) {
   const s = sim.state;
   const d = smugglingOf(sim);

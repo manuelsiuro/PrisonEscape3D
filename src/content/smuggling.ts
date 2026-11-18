@@ -1,7 +1,7 @@
 /**
  * Smuggling (P21): what the fixer's people outside can get in, and what it costs. Bought on
  * the burner phone; it comes by drone in the night (the yard's drop area), or with a visitor on
- * visiting day (at Stalag Flucht, in a Red Cross parcel on delivery day). How it plays out is
+ * visiting day (at Camp Frostberg, in a Red Cross parcel on delivery day). How it plays out is
  * src/sim/systems/smuggling.ts.
  */
 
@@ -44,7 +44,7 @@ export const VISIT_STEPS = 60;
 export const GIFT_MIN = 10;
 export const GIFT_MAX = 20;
 
-/** The Red Cross parcel (Stalag Flucht): handed out at 14:45 on delivery day (minutes into the prison day), into the player's desk. */
+/** The Red Cross parcel (Camp Frostberg): handed out at 14:45 on delivery day (minutes into the prison day), into the player's desk. */
 export const PARCEL_MINUTE = 405;
 /** How far ahead the schedule looks for the next drone or visiting day (days). */
 export const LOOKAHEAD = 28;

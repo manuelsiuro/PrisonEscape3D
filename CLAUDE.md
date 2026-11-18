@@ -1,12 +1,12 @@
 # Working on Prison Escape 3D
 
-An Escapists-like 3D prison escape for the browser (phone and desktop), started from web-game-starter.
+A 3D prison escape sandbox for the browser (phone and desktop), started from web-game-starter.
 The general playbooks (`web-game-playbook`, `web-sim-game-playbook`) aren't needed to work here: this
 file and the project's skills are; lessons go back into them only at the user's word.
 
 - **The plan**: `docs/README.md` says where to find what; read only the file you need. `docs/PLAN.md`
   (decisions, architecture, tests; §8 the status). The design source of truth is
-  `docs/source/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/source/tech_plan.md` fills
+  `docs/source/game_design_document.md` (GDD); `docs/source/tech_plan.md` fills
   engineering gaps only. A new conflict goes into its area's file in `docs/decisions/` in the same
   commit. **Writing to the docs** (a feature, a fix, a release, the memory): the `docs-upkeep` skill,
   which says where each fact goes; `docstest` checks it.

@@ -38,7 +38,7 @@ const ROUTE_ICON: Record<string, string> = {
   paperwork: 'clipboard',
   parole: 'scale',
 };
-/** A way out's icon in a prison (P18: Irongate's stowaway rides the helicopter). */
+/** A way out's icon in a prison (P18: Gull Rock's stowaway rides the helicopter). */
 export const routeIcon = (route: string, prison: string) =>
   route === 'stowaway' && prisonById(prison)?.delivery?.vehicle === 'helicopter' ? 'heli' : (ROUTE_ICON[route] ?? 'route');
 

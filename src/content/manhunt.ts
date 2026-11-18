@@ -16,7 +16,7 @@ export const LEGAL_ROUTES: readonly string[] = ['paperwork', 'parole'];
 /** Whether a way out ends at the wall as before (a legal release), or is followed by a manhunt. */
 export const isLegal = (via: string) => LEGAL_ROUTES.includes(via);
 
-/** Where a way out leaves the player (the outside map's `starts`). Irongate's stowaway rides the supply helicopter. */
+/** Where a way out leaves the player (the outside map's `starts`). Gull Rock's stowaway rides the supply helicopter. */
 export function startKindOf(via: string, prison: PrisonDef): StartKind {
   switch (via) {
     case 'takeover':

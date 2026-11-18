@@ -161,7 +161,7 @@ function wayOut(route: EscapeRoute, def: PrisonDef, w: World): SheetRow {
     case 'roof':
       return {
         label,
-        text: `From a roof's edge, with a sheet rope in the pockets, a grapnel over a fence up to ${GRAPNEL_REACH} tiles away, landing past the exit line (Roof view).`,
+        text: `From a roof's edge, with knotted sheets in the pockets, a grapnel over a fence up to ${GRAPNEL_REACH} tiles away, landing past the exit line (Roof view).`,
       };
     case 'takeover':
       return {

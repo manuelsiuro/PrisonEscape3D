@@ -17,9 +17,9 @@
 import { sendToLook } from '../src/sim/systems/guards';
 import type { ForcedDay } from '../src/sim/systems/calendar';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
 import { itemNumber } from '../src/content/items';
 import { SALES_A_DAY } from '../src/content/long';
 import {
@@ -81,7 +81,7 @@ const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
   seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet and clear unless forced. */
-function game(prison = CENTER_PERKS, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
+function game(prison = MAPLE_GROVE, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = calendar;
   const seen: SimEvent[] = [];
@@ -205,7 +205,7 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   const counter = box(sim, (c) => c.table === 'canteenCounter');
   const freezer = box(sim, (c) => c.table === 'kitchenFreezer');
   const shelf = box(sim, (c) => c.table === 'libraryShelf');
-  check(counter >= 0 && freezer >= 0 && shelf >= 0, 'center-perks: a canteen counter, a kitchen freezer, a library shelf');
+  check(counter >= 0 && freezer >= 0 && shelf >= 0, 'maple-grove: a canteen counter, a kitchen freezer, a library shelf');
   const stock = JSON.stringify(s.items.containers);
   // Breakfast: a piece of fruit, once.
   g.jump(1, 9, 10);
@@ -356,8 +356,8 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
 
 // ------------------------------------------------------------------ pruno: a dog's nose, the shakedown
 {
-  // San Pancho's dogs: one walked up to the player's cell on shift, a bag in the toilet's tank.
-  const g = game(SAN_PANCHO);
+  // Sierra Seca's dogs: one walked up to the player's cell on shift, a bag in the toilet's tank.
+  const g = game(SIERRA_SECA);
   const { sim, seen } = g;
   const s = sim.state;
   g.jump(2, 11, 0);
@@ -500,7 +500,7 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   const RAIN = WEATHERS.indexOf('rain');
   const HEAT = WEATHERS.indexOf('heatwave');
   // Day 2 rains, day 4 is a heatwave; the rest clear.
-  const g = game(CENTER_PERKS, 5, [
+  const g = game(MAPLE_GROVE, 5, [
     [0, 0, 0],
     [2, 0, RAIN],
     [4, 0, HEAT],
@@ -587,7 +587,7 @@ function ripeBed(b: number[]) {
   g.hold(0, n('veg_seeds'));
   g.use();
   // Dug down through the plant, unseen (every guard blind as it's dug).
-  g.hold(0, n('sturdy_shovel'), 50);
+  g.hold(0, n('heavy_shovel'), 50);
   s.energy = 100;
   for (let k = 0; k < 400 && w.ground.kind[t] !== TILE.SHAFT; k++) {
     g.blind();
@@ -621,7 +621,7 @@ function ripeBed(b: number[]) {
 
 // ------------------------------------------------------------------ the rat's track
 /** A game with a tame rat on the player's shoulder. */
-function withRat(prison = CENTER_PERKS, seed = 5) {
+function withRat(prison = MAPLE_GROVE, seed = 5) {
   const g = game(prison, seed);
   const s = g.sim.state;
   g.hold(0, n('caught_rat'), 1);
@@ -700,7 +700,7 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
 // ------------------------------------------------------------------ race nights
 {
   // The card: pure, the same every time asked; rivals by cell; odds by speed.
-  const sim = new Sim(CENTER_PERKS, 5);
+  const sim = new Sim(MAPLE_GROVE, 5);
   const card = rivals(sim.state, 1);
   check(card.length === 3 && new Set(card.map((e) => e.owner)).size === 3, 'three rivals a night, three different inmates');
   check(JSON.stringify(card) === JSON.stringify(rivals(sim.state, 1)), 'the card is pure');
@@ -761,7 +761,7 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   let nights = 0;
   const pet = (speed: number, fed: boolean): Entrant => ({ owner: -1, name: -1, speed, fed });
   for (let seed = 1; seed <= 20; seed++) {
-    const s0 = new Sim(CENTER_PERKS, seed).state;
+    const s0 = new Sim(MAPLE_GROVE, seed).state;
     for (let day = 1; day <= 39; day += 2) {
       const c = rivals(s0, day);
       const o = oddsOf(s0.salt, day, c);
@@ -960,7 +960,7 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   g.to(1, 21, 0);
   g.step();
   g.step();
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(loaded.hash() === sim.hash(), 'saved mid-race: loads the same');
   for (let k = 0; k < RACE_STEPS + 40; k++) {
@@ -972,7 +972,7 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   const old = JSON.parse(JSON.stringify(sim.snapshot()));
   for (const k of ['pantry', 'tipsy', 'plots', 'race']) delete old.state[k];
   for (const r of old.state.rats) for (const k of ['speed', 'fed', 'lap']) delete r[k];
-  const back = new Sim(CENTER_PERKS, 1);
+  const back = new Sim(MAPLE_GROVE, 1);
   back.restore(old);
   check(
     back.state.plots.length === 0 &&

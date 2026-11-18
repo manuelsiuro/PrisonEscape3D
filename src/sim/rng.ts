@@ -21,7 +21,12 @@ export function randomFrom(seed: number): () => number {
 
 /** FNV-1a over a string, as a 32-bit number: the same on every device (voices, menus, seeds). */
 export function hash32(text: string): number {
-  let h = 0x811c9dc5;
+  return hashFrom(0x811c9dc5, text);
+}
+
+/** FNV-1a carried on from an earlier hash32 (it goes a letter at a time): hashFrom(hash32(a), b) === hash32(a + b). */
+export function hashFrom(start: number, text: string): number {
+  let h = start;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
     h = Math.imul(h, 0x01000193);

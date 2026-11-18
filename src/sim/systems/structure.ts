@@ -35,7 +35,7 @@ import { tileAt, tileX, tileZ } from '../world/grid';
 
 /**
  * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
- * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
+ * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, knotted sheets
  * takes the player down off a roof, an alarm clock is wound (P14), soap washes the scent off
  * (P19), a caught rat is fed and a rat trap set down (P20), a lockpick works a keyed door's pins (P22),
  * a glider takes off a roof's edge (P24); ripe pruno is drunk, the rat runs its track, and a garden
@@ -141,9 +141,9 @@ export const WALL_CHUNK = itemNumber('wall_chunk');
 const POSTER = itemNumber('poster');
 const FAKE_WALL = itemNumber('fake_wall');
 const FAKE_FENCE = itemNumber('fake_fence');
-const FAKE_VENT = itemNumber('fake_vent');
+const FAKE_VENT = itemNumber('dummy_vent');
 const BRACE = itemNumber('timber_brace');
-export const SHEET_ROPE = itemNumber('sheet_rope');
+export const SHEET_ROPE = itemNumber('knotted_sheets');
 const CHOCOLATE = itemNumber('chocolate');
 /** P34: Lou's cake (a file inside). */
 const CAKE = itemNumber('cake');
@@ -431,7 +431,7 @@ export function toolTarget(
       return { action: 'glide', layer: LAYER.GROUND, tile: land, over: here, hp: 0, fits: glide.why === null, glide };
     }
   }
-  // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): a sheet rope in the pockets gets the player down outside.
+  // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): knotted sheets in the pockets gets the player down outside.
   if (held === GRAPNEL && layer === LAYER.ROOF) {
     const swing = grapnelSwing(w, b);
     if (swing)
@@ -493,7 +493,7 @@ export function digUpTarget(w: World, layer: number, b: Body, held: number, bodi
 }
 
 /**
- * A cover, a brace or a sheet rope in hand (GDD §9.2–9.3, §12): a fake vent cover over an
+ * A cover, a brace or knotted sheets in hand (GDD §9.2–9.3, §12): a dummy vent grille cover over an
  * open grate (from below or above), a fake wall block into a hole, a poster over a hole in
  * the player's own cell (elsewhere it wouldn't pass: `fits` false), a fake fence cover over
  * a cut, a brace in the tunnel where the player stands, a rope down off a roof's edge.
@@ -528,7 +528,7 @@ function placeTarget(w: World, layer: number, here: number, ahead: number, held:
 /**
  * A grapnel thrown from a roof's edge (GDD §12): straight ahead over the open ground below,
  * the perimeter fence within reach, and free road just past it to come down on; or a roof
- * standing on the wire to swing across onto (Shankton's gatehouse, GDD §4.3: the sheet
+ * standing on the wire to swing across onto (Gravel Point's gatehouse, GDD §4.3: the sheet
  * rope then gets the player down its far side). Returns the tile hooked and the landing, or null.
  */
 export function grapnelSwing(w: World, b: Body): { fence: number; land: number; roof: boolean } | null {
@@ -553,7 +553,7 @@ export function grapnelSwing(w: World, b: Body): { fence: number; land: number; 
       return TILE_INFO[lk].outdoor && !TILE_INFO[lk].solid && !w.blocked(x + sx, z + sz) ? { fence: i, land, roof: false } : null;
     }
     // A roof standing on the wire (a gatehouse astride the fences), or a landing across a chasm
-    // between roofs (Irongate's yard): hooked, and swung across onto it.
+    // between roofs (Gull Rock's yard): hooked, and swung across onto it.
     if (roof[i] === TILE.ROOF && k <= GRAPNEL_REACH && (w.zoneAt(x, z) === 'perimeter' || onLanding(w, x, z)))
       return { fence: i, land: i, roof: true };
     // Over open ground only (no roofs, towers or walls in the way).

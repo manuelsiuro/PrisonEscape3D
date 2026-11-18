@@ -1,4 +1,5 @@
-storage ok, version 2
+storage ok, version 3
 escape records ok
 saves ok, under 12 KB
 progress keys ok
+renamed prisons migrated

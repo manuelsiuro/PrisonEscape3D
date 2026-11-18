@@ -16,9 +16,9 @@
  *   with no room, a bribed guard at the dig.
  */
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import { TRAINING } from '../src/content/prisons/training';
 import { DECOR } from '../src/content/decor';
 import { itemDef, itemNumber } from '../src/content/items';
@@ -681,7 +681,7 @@ function handIn(g: Game, deal: Deal) {
 
 // ------------------------------------------------------------------ failing, refusals, debts
 {
-  const p = CENTER_PERKS;
+  const p = MAPLE_GROVE;
   const lines: string[] = [];
   // The time up: the job goes, and what the one who asked thinks of it.
   {
@@ -920,7 +920,7 @@ function handIn(g: Game, deal: Deal) {
 
 // ------------------------------------------------------------------ the rules review (P40)
 {
-  const p = CENTER_PERKS;
+  const p = MAPLE_GROVE;
   const lines: string[] = [];
   const pockets = (g: Game, k: number) => g.sim.state.items.containers[pocketOf(g.sim.world, g.sim.state.inmates.length + k)];
   /** The hand-in asked of the one who asked (his opinion high enough to talk): what it refuses, or 'paid'. */
@@ -968,7 +968,7 @@ function handIn(g: Game, deal: Deal) {
     g.jump(3, 10, 5);
     s.oddjobs[R.CHAIN] = 1;
     const cd = chainDeal(g.sim)!;
-    check(cd.kind === KIND.LIFT && cd.variant === LIFT.KEEPSAKE, "Center Perks: the story's second step is the keepsake");
+    check(cd.kind === KIND.LIFT && cd.variant === LIFT.KEEPSAKE, "Maple Grove: the story's second step is the keepsake");
     takeAt(g, CHAIN_PIN);
     check(
       pockets(g, cd.target).some((v) => itemOf(v) === n('pocket_watch')),
@@ -1080,7 +1080,7 @@ function handIn(g: Game, deal: Deal) {
     check(jobOf(s)?.[J.STAGE] === STAGE.DONE && tryHandIn(g, deal.giver) === 'paid', 'dropped again: paid');
   }
   {
-    const { g, pin, deal } = dealt(SAN_PANCHO, KIND.CAKE)!;
+    const { g, pin, deal } = dealt(SIERRA_SECA, KIND.CAKE)!;
     const s = g.sim.state;
     takeAt(g, pin);
     s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(n('birthday_cake'));
@@ -1145,7 +1145,7 @@ function handIn(g: Game, deal: Deal) {
   }
   // 9. The cake with no room: the hotbar full at the visit, into the desk; the desk full for the parcel, into the hotbar; both, told.
   {
-    const { g, pin, deal } = dealt(SAN_PANCHO, KIND.CAKE)!;
+    const { g, pin, deal } = dealt(SIERRA_SECA, KIND.CAKE)!;
     const s = g.sim.state;
     takeAt(g, pin);
     for (let k = 0; k < HOTBAR; k++) if (!s.items.inv[k]) s.items.inv[k] = slot(n('soap'));
@@ -1172,7 +1172,7 @@ function handIn(g: Game, deal: Deal) {
     check(tryHandIn(g, deal.giver) === 'paid', 'and handed in');
   }
   {
-    const { g, pin } = dealt(STALAG_FLUCHT, KIND.CAKE)!;
+    const { g, pin } = dealt(FROSTBERG, KIND.CAKE)!;
     const s = g.sim.state;
     takeAt(g, pin);
     const mine = containersOf(g.sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
@@ -1239,7 +1239,7 @@ function handIn(g: Game, deal: Deal) {
   const lines: string[] = [];
   // 1. A fixed game's pin waits while its opponent won't play the player: thinks too little of them, or has had his games today.
   {
-    const { g, pin, deal } = dealt(CENTER_PERKS, KIND.WRESTLE)!;
+    const { g, pin, deal } = dealt(MAPLE_GROVE, KIND.WRESTLE)!;
     const s = g.sim.state;
     const m = s.inmates[deal.target];
     g.toBoard();
@@ -1252,27 +1252,27 @@ function handIn(g: Game, deal: Deal) {
     g.jump(prisonDay(s.step), 18, 30);
     g.toBoard();
     check(boardRefusal(g.sim as never, pin) === null, 'taken from 18:00 (its day is tomorrow): fine');
-    const c = dealt(CENTER_PERKS, KIND.CHECKERS)!;
+    const c = dealt(MAPLE_GROVE, KIND.CHECKERS)!;
     c.g.toBoard();
     c.g.sim.state.inmates[c.deal.target].opinion = 10;
     check(boardRefusal(c.g.sim as never, c.pin) === 'elderOpinion', "checkers with an old-timer who won't sit down: refused");
-    // (San Pancho's hostile cells start under the games' opinion: their pins wait, never an impossible job.)
+    // (Sierra Seca's hostile cells start under the games' opinion: their pins wait, never an impossible job.)
     let waited = 0;
     for (let day = 2; day < 40; day++) {
-      const sim = new Sim(SAN_PANCHO, 1);
+      const sim = new Sim(SIERRA_SECA, 1);
       sim.state.step = at(day, 10, 5);
       dealsOf(sim, day).forEach((d) => {
         if ((d.kind === KIND.WRESTLE || d.kind === KIND.CHEAT) && sim.state.inmates[d.target].opinion < 40) {
-          check(gameGate(sim as never, d) === 'gameOpinion', `san-pancho day ${day}: a fix against a hostile inmate waits`);
+          check(gameGate(sim as never, d) === 'gameOpinion', `sierra-seca day ${day}: a fix against a hostile inmate waits`);
           waited++;
         }
       });
     }
-    lines.push(`full review: fixed games wait for an opponent who'll play (san-pancho: ${waited} pins waited)`);
+    lines.push(`full review: fixed games wait for an opponent who'll play (sierra-seca: ${waited} pins waited)`);
   }
   // 2. A story's step held into the next day isn't pinned up again; given up, it can't be taken again that day.
   {
-    const g = game(STALAG_FLUCHT, 5);
+    const g = game(FROSTBERG, 5);
     const s = g.sim.state;
     g.jump(2, 10, 5);
     takeAt(g, CHAIN_PIN);
@@ -1287,7 +1287,7 @@ function handIn(g: Game, deal: Deal) {
   }
   // 3. A job given up takes back what it handed over: from the hotbar, or the player's own desk.
   for (const kind of [KIND.DROP, KIND.FRAME, KIND.RAT, KIND.DELIVER]) {
-    const { g, pin } = dealt(CENTER_PERKS, kind)!;
+    const { g, pin } = dealt(MAPLE_GROVE, kind)!;
     const gives = n(KIND_DEFS[KINDS[kind]].gives!);
     takeAt(g, pin);
     check(inHand(g.sim, gives) >= 0, `${KINDS[kind]}: handed over`);
@@ -1295,7 +1295,7 @@ function handIn(g: Game, deal: Deal) {
     check(inHand(g.sim, gives) < 0, `${KINDS[kind]} given up: taken back`);
   }
   {
-    const { g, pin } = dealt(CENTER_PERKS, KIND.FRAME)!;
+    const { g, pin } = dealt(MAPLE_GROVE, KIND.FRAME)!;
     const s = g.sim.state;
     takeAt(g, pin);
     const own = containersOf(g.sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
@@ -1306,7 +1306,7 @@ function handIn(g: Game, deal: Deal) {
     g.ext(EXT.BOARD, BOARD.QUIT);
     check(!box.some((v) => itemOf(v) === n('stash')), "a stash put away in the player's desk, then given up: taken back");
   }
-  // 4. Stalag Flucht's cake, taken on a delivery day after the parcel came in: with the next delivery, not today's.
+  // 4. Camp Frostberg's cake, taken on a delivery day after the parcel came in: with the next delivery, not today's.
   {
     let checked = false;
     for (let day = 2; day < 60 && !checked; day++) {
@@ -1315,11 +1315,11 @@ function handIn(g: Game, deal: Deal) {
         [day, DELIVERY, -1],
         [day + 1, DELIVERY, -1],
       ];
-      const probe = new Sim(STALAG_FLUCHT, 5);
+      const probe = new Sim(FROSTBERG, 5);
       probe.state.calendar = cal;
       const pin = dealsOf(probe, day).findIndex((d) => d.kind === KIND.CAKE);
       if (pin < 0) continue;
-      const g = game(STALAG_FLUCHT, 5, cal);
+      const g = game(FROSTBERG, 5, cal);
       g.jump(day, 16, 0);
       takeAt(g, pin);
       g.to(day + 1, 10, 0);
@@ -1332,7 +1332,7 @@ function handIn(g: Game, deal: Deal) {
   }
   // 5. A debt from one who owes the player one already: a tool there and then, the first still owed.
   {
-    const { g, pin, deal } = dealt(CENTER_PERKS, KIND.DELIVER)!;
+    const { g, pin, deal } = dealt(MAPLE_GROVE, KIND.DELIVER)!;
     const s = g.sim.state;
     takeAt(g, pin);
     const job = jobOf(s)!;
@@ -1356,7 +1356,7 @@ function handIn(g: Game, deal: Deal) {
   const lines: string[] = [];
   // The whistle only in the dig's hours: outside them, at the door, B opens the card and a whistle is refused (no false alarm).
   {
-    const { g, pin } = dealt(CENTER_PERKS, KIND.LOOKOUT)!;
+    const { g, pin } = dealt(MAPLE_GROVE, KIND.LOOKOUT)!;
     const s = g.sim.state;
     takeAt(g, pin);
     const d = digOf(g.sim)!;
@@ -1393,7 +1393,7 @@ function handIn(g: Game, deal: Deal) {
   }
   // Off watch (away from the door) in the dig's hours: no guard "coming", nothing to whistle at.
   {
-    const { g, pin } = dealt(CENTER_PERKS, KIND.LOOKOUT)!;
+    const { g, pin } = dealt(MAPLE_GROVE, KIND.LOOKOUT)!;
     const s = g.sim.state;
     takeAt(g, pin);
     const d = digOf(g.sim)!;
@@ -1413,7 +1413,7 @@ function handIn(g: Game, deal: Deal) {
   }
   // A delivery's parcel handed over isn't a gift: what he thinks of the player stays.
   {
-    const { g, pin, deal } = dealt(CENTER_PERKS, KIND.DELIVER)!;
+    const { g, pin, deal } = dealt(MAPLE_GROVE, KIND.DELIVER)!;
     const s = g.sim.state;
     takeAt(g, pin);
     s.inmates[deal.target].opinion = 60;

@@ -1,5 +1,5 @@
 /**
- * Delivery day (P18): the four prisons with a vehicle deal its card once a week (Shankton and
+ * Delivery day (P18): the four prisons with a vehicle deal its card once a week (Gravel Point and
  * the Training Block never, even forced); while it's in (12:30–14:31) its bay is solid for
  * everyone and stops sight, its doors stand open, anyone standing where it parks steps aside;
  * the supervisor walks its round and signs it off at the tail from 14:25. Climbing in: only at
@@ -15,11 +15,11 @@
 import { ACHIEVEMENTS } from '../src/content/achievements';
 import { DAY_BOOKS, DAY_EVENTS, SEARCH_REACH, SIGN_OFF_MINUTES, WARY_DAYS, WEATHERS, type DayEvent } from '../src/content/days';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { IRONGATE } from '../src/content/prisons/irongate';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
-import { SHANKTON } from '../src/content/prisons/shankton';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { GULL_ROCK } from '../src/content/prisons/gull-rock';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
+import { GRAVEL_POINT } from '../src/content/prisons/gravel-point';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { canSee } from '../src/sim/ai/sight';
@@ -40,11 +40,11 @@ import { check } from './assert';
 
 const E = (id: DayEvent) => DAY_EVENTS.indexOf(id);
 const CLEAR = WEATHERS.indexOf('clear');
-const WITH_VEHICLE = [CENTER_PERKS, STALAG_FLUCHT, SAN_PANCHO, IRONGATE];
+const WITH_VEHICLE = [MAPLE_GROVE, FROSTBERG, SIERRA_SECA, GULL_ROCK];
 
 // ------------------------------------------------------------------ the plans
 {
-  const salts = [1, 2, 3, 4, 5, 6].map((k) => new Sim(CENTER_PERKS, k).state.salt);
+  const salts = [1, 2, 3, 4, 5, 6].map((k) => new Sim(MAPLE_GROVE, k).state.salt);
   for (const p of PRISONS) {
     const book = DAY_BOOKS[p.id];
     let deliveries = 0;
@@ -73,7 +73,7 @@ const WITH_VEHICLE = [CENTER_PERKS, STALAG_FLUCHT, SAN_PANCHO, IRONGATE];
   }
   check(dayPlan(TRAINING.id, 1, 2, [[2, E('delivery'), -1]]).event === 'none', 'the Training Block: never a delivery');
   console.log(
-    'plans: a delivery once a week where a vehicle comes (Center Perks, Stalag Flucht, San Pancho, Irongate); none at Shankton or in training',
+    'plans: a delivery once a week where a vehicle comes (Maple Grove, Camp Frostberg, Sierra Seca, Gull Rock); none at Gravel Point or in training',
   );
 }
 
@@ -127,8 +127,8 @@ for (const def of WITH_VEHICLE) {
   const w = sim.world;
   const [bx0, bz0, bx1, bz1] = d.bay;
   const mid = tileOf(bx0, bz0);
-  // (Irongate's helicopter sets down on its pad, solid all along.)
-  const pad = def === IRONGATE;
+  // (Gull Rock's helicopter sets down on its pad, solid all along.)
+  const pad = def === GULL_ROCK;
   to(269);
   check(!vehicleIn(sim) && !w.parked[mid] && (pad || !w.block[mid]), `${def.id}: before 12:30 the bay is open ground`);
   // Someone standing where it parks steps aside as it comes in.
@@ -187,8 +187,8 @@ for (const def of WITH_VEHICLE) {
 
 // ------------------------------------------------------------------ climbing in
 {
-  const { sim, to, step } = game(CENTER_PERKS, seedFor(CENTER_PERKS, false));
-  const d = CENTER_PERKS.delivery!;
+  const { sim, to, step } = game(MAPLE_GROVE, seedFor(MAPLE_GROVE, false));
+  const d = MAPLE_GROVE.delivery!;
   to(300);
   // Not at the tail: Interact does something else.
   put(sim, 30, 44);
@@ -231,7 +231,7 @@ for (const def of WITH_VEHICLE) {
   step(command(0, OP.INTERACT));
   check(sim.state.stowed, 'and back in');
   // The tailgate shuts for the search.
-  const late = game(CENTER_PERKS, seedFor(CENTER_PERKS, false));
+  const late = game(MAPLE_GROVE, seedFor(MAPLE_GROVE, false));
   late.to(390);
   unseenAtTail(late.sim);
   late.step(command(0, OP.INTERACT));
@@ -283,7 +283,7 @@ for (const def of WITH_VEHICLE) {
 }
 {
   // A thorough day, the supervisor knocked out: nobody searches; away (and Off the Books).
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const k = def.delivery!.supervisor;
   const ko = hideAndWait(def, seedFor(def, true), (sim) => (sim.state.guards[k].ko = 200 * STEPS_PER_MINUTE));
   check(
@@ -352,12 +352,12 @@ for (const def of WITH_VEHICLE) {
 // ------------------------------------------------------------------ saves
 {
   // Saved and loaded hidden: the same game, to the same escape.
-  const g = game(STALAG_FLUCHT, seedFor(STALAG_FLUCHT, false));
+  const g = game(FROSTBERG, seedFor(FROSTBERG, false));
   g.to(300);
   unseenAtTail(g.sim);
   g.step(command(0, OP.INTERACT));
   g.to(340);
-  const twin = new Sim(STALAG_FLUCHT, 99);
+  const twin = new Sim(FROSTBERG, 99);
   twin.restore(JSON.parse(JSON.stringify(g.sim.snapshot())) as Snapshot);
   check(twin.state.stowed && twin.world.delivering, 'loaded hidden: still hidden, the truck still in');
   while (!g.sim.state.escaped) {
@@ -366,18 +366,18 @@ for (const def of WITH_VEHICLE) {
   }
   check(twin.state.escaped === g.sim.state.escaped && twin.hash() === g.sim.hash(), 'and it plays on the same, to the same escape');
   // A save from before P18 on a delivery day: that day keeps its old card.
-  const salt0 = new Sim(CENTER_PERKS, 1).state.salt;
+  const salt0 = new Sim(MAPLE_GROVE, 1).state.salt;
   let day = 2;
-  while (dayPlan(CENTER_PERKS.id, salt0, day).event !== 'delivery') day++;
-  const sim = new Sim(CENTER_PERKS, 1);
+  while (dayPlan(MAPLE_GROVE.id, salt0, day).event !== 'delivery') day++;
+  const sim = new Sim(MAPLE_GROVE, 1);
   for (let k = 0; k < (day - 1) * 1440 * STEPS_PER_MINUTE + 100; k++) sim.step(0);
   const snap = JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot;
   delete (snap.state as Partial<typeof snap.state>).stowed;
   delete (snap.state as Partial<typeof snap.state>).stowCaught;
-  const old = new Sim(CENTER_PERKS, 5);
+  const old = new Sim(MAPLE_GROVE, 5);
   old.restore(snap);
   check(
-    today(old).event === (DAY_BOOKS[CENTER_PERKS.id].before ?? 'none') && today(sim).event === 'delivery',
+    today(old).event === (DAY_BOOKS[MAPLE_GROVE.id].before ?? 'none') && today(sim).event === 'delivery',
     `an old save on day ${day} keeps its old card (${today(old).event})`,
   );
   check(planOf(old, day + 7).event === planOf(sim, day + 7).event, 'and the days after are as drawn');
@@ -393,13 +393,13 @@ for (const def of WITH_VEHICLE) {
     return { prison, feats: f, days: [], str: 0, spd: 0, int: 0, via, day: 3, medal: null };
   };
   check(
-    ach('specialDelivery').escape!(view('center-perks', 'stowaway')) && !ach('specialDelivery').escape!(view('center-perks', 'tunnel')),
+    ach('specialDelivery').escape!(view('maple-grove', 'stowaway')) && !ach('specialDelivery').escape!(view('maple-grove', 'tunnel')),
     'Special Delivery: away as a stowaway',
   );
   check(
-    ach('airMail').escape!(view('irongate', 'stowaway')) &&
-      !ach('airMail').escape!(view('center-perks', 'stowaway')) &&
-      !ach('airMail').escape!(view('irongate', 'helicopter')),
+    ach('airMail').escape!(view('gull-rock', 'stowaway')) &&
+      !ach('airMail').escape!(view('maple-grove', 'stowaway')) &&
+      !ach('airMail').escape!(view('gull-rock', 'helicopter')),
     'Air Mail: away in the helicopter by day, hidden',
   );
   check(
@@ -412,11 +412,11 @@ for (const def of WITH_VEHICLE) {
   );
   console.log('achievements: Special Delivery, Air Mail, Off the Books, Return to Sender');
 }
-void SHANKTON;
+void GRAVEL_POINT;
 
 // ------------------------------------------------------------------ the review's edge cases
 {
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const d = def.delivery!;
   // Damage the guards find while the player hides: the alarm goes up all the same, and a lockdown searches the truck.
   const dmg = game(def, seedFor(def, false));

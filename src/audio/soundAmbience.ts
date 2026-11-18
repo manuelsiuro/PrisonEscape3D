@@ -162,7 +162,7 @@ export class SoundAmbience extends SoundMusic {
     this.applyWeather();
   }
 
-  /** On the coast (HMP Irongate, P12): outdoors, the surf and gulls instead of songbirds and crickets. */
+  /** On the coast (HMP Gull Rock, P12): outdoors, the surf and gulls instead of songbirds and crickets. */
   protected coast = false;
   setCoast(on: boolean) {
     this.coast = on;

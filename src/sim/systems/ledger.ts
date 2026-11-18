@@ -58,7 +58,7 @@ export const FEATS = [
   'recruits',
   'tips',
   'trained',
-  // v1.10.1: molten chocolate thrown at someone (a blow all the same), and the most followers at once.
+  // v1.10.1: scalding cocoa thrown at someone (a blow all the same), and the most followers at once.
   'flung',
   'crew',
   // v1.11 (P17, the day): an inspection's commendation, the drill's muster made and missed, a feast eaten, blows landed in a food fight, baked by a heatwave.
@@ -300,7 +300,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         f[FEAT.flung]++;
         if (e.free) f[FEAT.foodBlows]++;
         bits |= DAY.FIGHT;
-        // (Molten chocolate puts them out cold at once.)
+        // (Scalding cocoa puts them out cold at once.)
         if (record && !e.free && !s.selfDefense) {
           bits |= DAY.STARTED;
           f[FEAT.kosDealt]++;

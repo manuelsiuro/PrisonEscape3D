@@ -75,7 +75,7 @@ export const TWISTS: readonly Twist[] = [
   { id: 'bigFreeze', icon: 'snow', cost: 1, at: (p) => !p.rules?.cold, not: ['storm'] },
   { id: 'badBlood', icon: 'fist', cost: 1, at: (p) => !p.rules?.hostile },
   { id: 'carePackage', icon: 'gift', cost: -1 },
-  // (No weapon: no takeover, nor the molten chocolate Irongate's helipad guards need.)
+  // (No weapon: no takeover, nor the scalding cocoa Gull Rock's helipad guards need.)
   { id: 'bareHands', icon: 'hand', cost: 1, breaks: ['takeover', 'helicopter'] },
   { id: 'fogDays', icon: 'fog', cost: 1, not: ['storm'] },
   { id: 'storm', icon: 'storm', cost: 1, not: ['fogDays', 'bigFreeze'] },

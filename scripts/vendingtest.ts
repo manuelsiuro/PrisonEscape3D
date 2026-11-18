@@ -5,7 +5,7 @@
  */
 import { itemDef, itemNumber } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { COIL_STEPS, DELIVERY_EXTRA, GOODS, rowCode, SNACK_ROWS, THUMP_STEPS, VEND, VEND_TURN_STEPS } from '../src/content/vending';
 import { isFloor, placesOf } from '../src/sim/ai/places';
 import { EXT, OP } from '../src/sim/command';
@@ -42,7 +42,7 @@ const check = (ok: boolean, what: string) => {
 const MACHINES = PRISONS;
 
 /** Up to the machine in the morning's free time, its card open. */
-function atMachine(def = CENTER_PERKS, seed = 3, cash = 100): Bot {
+function atMachine(def = MAPLE_GROVE, seed = 3, cash = 100): Bot {
   const bot = new Bot(def, seed);
   bot.routineUntil(1, 10 * 60 + 1);
   bot.st.cash = cash;
@@ -113,7 +113,7 @@ for (const def of MACHINES) {
 function TILE_WALL_BEHIND(w: Sim['world'], x: number, z: number) {
   return w.blocked(x, z - 1) || w.blocked(x + 1, z) || w.blocked(x - 1, z);
 }
-check(PRISONS.every((p) => !!p.vending) && !new Sim(CENTER_PERKS, 3).rules231, 'every campaign prison has one');
+check(PRISONS.every((p) => !!p.vending) && !new Sim(MAPLE_GROVE, 3).rules231, 'every campaign prison has one');
 
 // ---------------------------------------------------------------- a buy, walked, in each prison
 
@@ -195,7 +195,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 // ---------------------------------------------------------------- refused: nothing's taken
 
 {
-  const bot = atMachine(CENTER_PERKS, 3, 3);
+  const bot = atMachine(MAPLE_GROVE, 3, 3);
   bot.act();
   theirTurn(bot);
   const tried = (what: string, why: string, row: number) => {
@@ -233,7 +233,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 
 {
   // Fix which buy sticks.
-  const jammed = (seed = 3, def = CENTER_PERKS) => {
+  const jammed = (seed = 3, def = MAPLE_GROVE) => {
     const bot = atMachine(def, seed);
     bot.act();
     theirTurn(bot);
@@ -319,7 +319,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   theirTurn(bot);
   ask(bot, VEND.BUY, 0);
   // Off in the middle of the turn: it's on the floor in front of the machine, and can be picked up.
-  const m = CENTER_PERKS.vending!;
+  const m = MAPLE_GROVE.vending!;
   bot.walkTo(tileOf(m.x, m.z + 4), 40);
   bot.until(() => bot.st.vend.who === VEND_NOBODY, 60);
   const front = tileOf(m.line[0].x, m.line[0].z);
@@ -361,7 +361,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 // ---------------------------------------------------------------- the rows through the days
 
 {
-  const bot = new Bot(CENTER_PERKS, 7);
+  const bot = new Bot(MAPLE_GROVE, 7);
   const seen: string[] = [];
   let was = 0;
   let deliveries = 0;
@@ -448,10 +448,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 {
   // Find a moment with someone at it, the player arriving: they wait, or push in.
   const crowded = (seed: number) => {
-    const bot = new Bot(CENTER_PERKS, seed);
+    const bot = new Bot(MAPLE_GROVE, seed);
     bot.routineUntil(1, 10 * 60 + 1);
     bot.st.cash = 100;
-    const m = CENTER_PERKS.vending!;
+    const m = MAPLE_GROVE.vending!;
     // Someone on their way, there first.
     bot.st.vend.line.push(1, 2);
     bot.st.inmates[1].body.x = m.line[0].x * UNIT + UNIT / 2;
@@ -491,7 +491,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   off.st.vend.line = [VEND_PLAYER];
   off.st.vendOpen = true;
   off.st.vend.up = false;
-  const m0 = CENTER_PERKS.vending!;
+  const m0 = MAPLE_GROVE.vending!;
   off.st.player.x = (m0.x - 1) * UNIT + UNIT / 2;
   off.st.player.z = (m0.z + 3) * UNIT + UNIT / 2;
   off.step(0);
@@ -528,8 +528,8 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   // The button: faced, the machine's; turned to someone in the queue, theirs.
   const b = crowded(3);
   ask(b, VEND.CLOSE);
-  b.st.player.x = CENTER_PERKS.vending!.x * UNIT + UNIT / 2 + UNIT;
-  b.st.player.z = (CENTER_PERKS.vending!.z + 1) * UNIT;
+  b.st.player.x = MAPLE_GROVE.vending!.x * UNIT + UNIT / 2 + UNIT;
+  b.st.player.z = (MAPLE_GROVE.vending!.z + 1) * UNIT;
   b.st.player.facing = DIR.WEST;
   const faces = vendOffer(b.sim);
   b.face(DIR.SOUTH);
@@ -541,7 +541,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 {
   // A jam: what's paid for isn't lost while they stand there, however late in the turn it came.
   const stuck = (seed = 3) => {
-    const bot = atMachine(CENTER_PERKS, seed);
+    const bot = atMachine(MAPLE_GROVE, seed);
     bot.act();
     theirTurn(bot);
     let n = 1;
@@ -550,7 +550,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     return bot;
   };
   const late = stuck();
-  const m = CENTER_PERKS.vending!;
+  const m = MAPLE_GROVE.vending!;
   const behind = (bot: Bot, k: number) => {
     bot.st.vend.line = [VEND_PLAYER, k];
     bot.st.inmates[k].body.x = m.line[1].x * UNIT + UNIT / 2;
@@ -674,7 +674,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 
   // The lesson: nobody comes while they read, and a second buy before the drink doesn't strand it.
   const lesson = LESSONS.find((l) => l.id === 'vending')!;
-  const sim = new Sim(CENTER_PERKS, lesson.seed ?? 7);
+  const sim = new Sim(MAPLE_GROVE, lesson.seed ?? 7);
   lesson.setup?.(sim);
   const left = [...sim.state.vend.left];
   let queued = 0;
@@ -697,10 +697,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
 // ---------------------------------------------------------------- called away mid-buy
 
 {
-  // Movie night at Stalag Flucht (day 3, seed 3): someone at the machine as the film starts goes with what they paid for.
-  const stalag = PRISONS.find((q) => q.id === 'stalag-flucht')!;
-  const film = new Bot(stalag, 3);
-  check(planOf(film.sim, 3).event === 'movie', 'stalag-flucht: day 3 is movie night');
+  // Movie night at Camp Frostberg (day 3, seed 3): someone at the machine as the film starts goes with what they paid for.
+  const frostberg = PRISONS.find((q) => q.id === 'frostberg')!;
+  const film = new Bot(frostberg, 3);
+  check(planOf(film.sim, 3).event === 'movie', 'frostberg: day 3 is movie night');
   film.routineUntil(3, 18 * 60 + 59);
   const v = film.st.vend;
   const k = film.st.inmates.findIndex((m, i) => i > 0 && m.ko === 0 && m.angry === 0);
@@ -721,7 +721,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     `and the soda went with them, not lost from the row (${film.st.inmates[k].snack}, ${v.left[1]} left)`,
   );
   // Something stuck stays stuck for whoever's next.
-  const jam = new Bot(stalag, 3);
+  const jam = new Bot(frostberg, 3);
   jam.routineUntil(3, 18 * 60 + 59);
   const w = jam.st.vend;
   w.line = [k];
@@ -760,7 +760,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     check(a === c, `${p.id}: everyone's spots as they were in old runs`);
   }
   // A log from 2.31 replays under its own rules, and isn't carried on; today's is.
-  const was = new Sim(CENTER_PERKS, 24);
+  const was = new Sim(MAPLE_GROVE, 24);
   was.rules231 = true;
   was.rules232 = true;
   was.rules2331 = true;
@@ -768,18 +768,18 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   was.rules234 = true;
   const prev = new RunRecorder(was, { seed: 24, game: '2.31.0' });
   for (let k = 0; k < 4800; k++) prev.step(0);
-  check(!!replayLog(prev.toLog(), CENTER_PERKS)?.ok, 'a 2.31 log replays whole under the old rules');
+  check(!!replayLog(prev.toLog(), MAPLE_GROVE)?.ok, 'a 2.31 log replays whole under the old rules');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.35.0' }).toLog().seed === -1, 'and is not carried on');
-  const today = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.35.0' });
+  const today = new RunRecorder(new Sim(MAPLE_GROVE, 24), { seed: 24, game: '2.35.0' });
   for (let k = 0; k < 4800; k++) today.step(0);
-  check(!!replayLog(today.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
+  check(!!replayLog(today.toLog(), MAPLE_GROVE)?.ok, "a log of today's replays");
   // A save mid-turn; one from before the machine.
   const s = atMachine();
   s.act();
   theirTurn(s);
   ask(s, VEND.BUY, 1);
   const snap = s.sim.snapshot();
-  const back = new Sim(CENTER_PERKS, 3);
+  const back = new Sim(MAPLE_GROVE, 3);
   back.restore(snap);
   check(back.state.vend.who === VEND_PLAYER && back.state.vendOpen && back.state.vend.left[1] === s.st.vend.left[1], 'a save mid-turn');
   const old = structuredClone(snap);
@@ -787,7 +787,7 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   delete (old.state as Partial<typeof old.state>).vendOpen;
   delete (old.state as Partial<typeof old.state>).vendBought;
   for (const m of old.state.inmates) delete (m as Partial<typeof m>).snack;
-  const b2 = new Sim(CENTER_PERKS, 3);
+  const b2 = new Sim(MAPLE_GROVE, 3);
   b2.restore(old);
   check(
     !b2.state.vendOpen &&
