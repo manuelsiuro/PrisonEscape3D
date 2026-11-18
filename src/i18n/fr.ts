@@ -2,7 +2,7 @@ import type { Strings } from './en';
 
 /** French (tu, friendly). Typographic spaces before ! ? : ; are narrow no-break spaces. */
 export const fr: Partial<Strings> = {
-  "title.tagline": "Joue le détenu modèle. Prépare l’évasion parfaite.",
+  "title.tagline": "Sors et survis.",
   "title.play": "Jouer",
   "title.prison": "{name} · {security}",
   "security.1": "sécurité minimale",

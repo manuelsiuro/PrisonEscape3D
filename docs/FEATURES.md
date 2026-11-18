@@ -1,4 +1,4 @@
-# Prison Escape 3D: what the game can do
+# Over the Wall: what the game can do
 
 A high-level map of every feature in the game, and of what the code could support beyond it. It
 is meant as the starting point for deciding what to build next, including gameplay that has

@@ -3,7 +3,7 @@
  * filled by t(); `%KeyW%` prints the label of the key at W's place on this keyboard.
  */
 export const en = {
-  "title.tagline": "Play the model prisoner. Plan the perfect escape.",
+  "title.tagline": "Get out and survive.",
   "title.play": "Play",
   "title.prison": "{name} · {security}",
   "security.1": "minimum security",

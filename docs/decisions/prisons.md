@@ -5,7 +5,7 @@ What each prison has and where: maps, rooms, themes, the grounds. Where the desi
 | Topic | tech_plan.md | Decision (GDD) |
 |---|---|---|
 | Campaign | One map (Maple Grove) | **5 prisons**: Maple Grove, Camp Frostberg, Gravel Point, Sierra Seca, HMP Gull Rock; since 2.36 a sixth past them, **the Six Hunter** (below) |
-| Names (2.62) | The GDD and the tech plan named the game, its prisons and some items after another game | **Every name is the game's own** (the user, 2026-11-18): the five prisons, their people, six items and the ids renamed (`history/v2.60-v2.64.md`); the GDD renamed `game_design_document.md` and its mentions of that game reworded, the only edit to `docs/source/`. Old saves and logs take the new ids (`renamed.ts`) |
+| Names (2.62) | The GDD and the tech plan named the game, its prisons and some items after another game | **Every name is the game's own** (the user, 2026-11-18): the five prisons, their people, six items and the ids renamed (`history/v2.60-v2.64.md`); the GDD renamed `game_design_document.md` and its mentions of that game reworded, the only edit to `docs/source/`. Old saves and logs take the new ids (`renamed.ts`). The game itself is **Over the Wall** from 2.63 ("Get out and survive."); the repo and the code keep the old name |
 | L1 detectors | Cell block, Canteen, Gym, Laundry, Woodshop, Metalshop | **Canteen and Woodshop only** (the L1 cell block is unscanned) |
 | L1 rooms | No Infirmary | **Infirmary** present (the player wakes there after a KO by an inmate) |
 | L1 towers / perimeter | 4 towers, fully electric | **2 towers** (south). Chain-link on N/E/W, electric only at the south gate |

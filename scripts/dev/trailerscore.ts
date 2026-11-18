@@ -360,6 +360,14 @@ export async function score() {
   cue(touch, () => snd.touchdown());
   cue(touch + 0.08, () => snd.fanfare());
   for (let k = 0; touch + k * e2 < marks.end.at - 0.01; k++) drive(touch + k * e2, k, k < 4 ? DM : BB, 3);
+  // (2.63) Then survive: the city cuts in on a hit, the dead's moans under the drive.
+  const city = marks.city.at;
+  stab(BB, city, 0.07);
+  v.thump(city, 0.5);
+  crash(city, 0.16);
+  cue(city + 0.25, () => snd.moan());
+  cue(city + 1.3, () => snd.screech());
+  cue(city + 2.2, () => snd.moan());
 
   // ---------------------------------------------------------------- 8. the end card: the cell door, the title's theme, home to D minor
   const fin = marks.end.at;

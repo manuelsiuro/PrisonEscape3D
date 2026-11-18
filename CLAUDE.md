@@ -1,6 +1,7 @@
-# Working on Prison Escape 3D
+# Working on Over the Wall (Prison Escape 3D)
 
-A 3D prison escape sandbox for the browser (phone and desktop), started from web-game-starter.
+A 3D prison escape sandbox for the browser (phone and desktop), started from web-game-starter. Its name
+since 2.63 is **Over the Wall** ("Get out and survive."); the repo, the address and the code keep the old one.
 The general playbooks (`web-game-playbook`, `web-sim-game-playbook`) aren't needed to work here: this
 file and the project's skills are; lessons go back into them only at the user's word.
 

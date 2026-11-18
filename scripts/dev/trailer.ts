@@ -25,6 +25,13 @@ import { UNIT } from '../../src/sim/tuning';
 import { TILE } from '../../src/sim/world/tiles';
 import { LAYER, MAP_W } from '../../src/sim/world/World';
 import type { View } from '../../src/render/View';
+import { COP, City } from '../../src/city/sim/City';
+import { runCity, stopCity } from '../../src/city/play/city';
+import { relight } from '../../src/city/sim/light';
+import { BLOW, kindStats, ZKIND } from '../../src/city/content/dead';
+import { cityItemNumber } from '../../src/city/content/items';
+import type { Zed } from '../../src/city/sim/dead';
+import { nearestDir } from '../../src/sim/ai/path';
 
 export const FPS = 30;
 export const W = 1920;
@@ -55,14 +62,22 @@ export interface Cut {
   /** Beats long, at the first or the second tempo. */
   beats: number;
   tempo: 1 | 2;
-  /** The moment, as helpshot stages it. */
-  shot: Shot;
+  /** The moment, as helpshot stages it (a prison's), or a City Escape scene (`city`). */
+  shot?: Shot;
+  city?: CityShot;
   /** The camera through the shot (the game's own, eased onto the player, where it gives nothing). */
   cam?: (u: number) => Cam;
   /** Play speed through the shot (1: real time; under it, slow motion). */
   speed?: (u: number) => number;
   /** Seconds played before the first frame kept (the camera settled, the shaders warm). */
   pre?: number;
+}
+
+/** A City Escape scene (2.63): a new city, the scene put up in it, then played on live; `each` runs before every frame. */
+interface CityShot {
+  seed: number;
+  scene: (c: City) => void;
+  each?: (c: City, u: number) => void;
 }
 
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
@@ -192,6 +207,15 @@ export const CUTS: Cut[] = [
     cam: (u) => ({ zoom: lerp(2.1, 1.5, ease(u)), turn: lerp(0, -0.5, ease(u)), tilt: 0.15 }),
     speed: (u) => (u < 0.175 ? 1 : u < 0.756 ? 0.45 : 1),
   },
+  // 6b. (2.63) Then survive: City Escape at dusk, the dead closing in up a street, a bat swung at the first.
+  {
+    id: 'city',
+    beats: 8,
+    tempo: 2,
+    city: { seed: 20261118, scene: duskStreet, each: swingAtNearest },
+    pre: 1.2,
+    cam: (u) => ({ zoom: lerp(1.45, 1.8, ease(u)), dx: lerp(1.2, 0.6, u), turn: lerp(0.18, 0.05, u), tilt: 0.12 }),
+  },
   // 7. The end card's picture: the prison left behind, at dusk.
   {
     id: 'end',
@@ -210,6 +234,64 @@ export const SPARE: Cut[] = [
   { id: 'grounds', beats: 2, tempo: 1, shot: { ...SHOTS.grounds, when: (_s, k, n) => k >= n - 60 }, cam: push(1.3, 1.5) },
   { id: 'dinner', beats: 2, tempo: 1, shot: { prison: 'maple-grove', route: 'glider', when: minute(17 * 60 + 25) }, cam: push(1.5, 1.7) },
 ];
+
+// ------------------------------------------------------------------ the city's scene
+const UNIT_C = 1024;
+const CITY_START = 390;
+
+/** A street at dusk on the second day: the player with a bat, five of the dead coming up it from the east (the first in reach mid-shot). */
+function duskStreet(c: City) {
+  const s = c.state;
+  const W = MAP_W;
+  s.step = (1440 + 19 * 60 + 35 - CITY_START) * 20;
+  Object.assign(s, { hunger: 90_000, energy: 90_000, health: 100, outfit: 0 });
+  s.inv = s.inv.map(() => [0, 0]);
+  s.inv[0] = [cityItemNumber('bat'), 31];
+  s.lights = {};
+  // (Arrived already: the city doesn't put its own dead down over these on the first step.)
+  s.arrive = 0;
+  // (A clear run of street well inside the district, as cityshot's fight finds one.)
+  const inside = (i: number) => i % W > 6 && i % W < W - 18 && Math.floor(i / W) > 6 && Math.floor(i / W) < W - 6;
+  const at = c.zedPlaces.streets.find(
+    (i) =>
+      inside(i) && Array.from({ length: 13 }, (_, k) => k).every((k) => !c.grid[i + k] && !c.district.deco[i + k] && c.zedStreet[i + k]),
+  )!;
+  s.player.x = (at % W) * UNIT_C + UNIT_C / 2;
+  s.player.z = Math.floor(at / W) * UNIT_C + UNIT_C / 2;
+  s.player.facing = nearestDir(1, 0);
+  const west = nearestDir(-1, 0);
+  const zed = (tile: number, kind: number): Zed => ({
+    body: { x: (tile % W) * UNIT_C + UNIT_C / 2, z: Math.floor(tile / W) * UNIT_C + UNIT_C / 2, facing: west, moving: false },
+    hp: kindStats(kind).health,
+    mode: 3,
+    goal: -1,
+    path: [],
+    seen: s.step,
+    last: at,
+    bit: -9999,
+    reel: 0,
+    near: 0,
+    pace: 900 + (tile % 97),
+    kind,
+  });
+  s.zeds = [
+    zed(at + 6, ZKIND.SHAMBLER),
+    zed(at + 9, ZKIND.RUNNER),
+    zed(at + 8, ZKIND.SHAMBLER),
+    zed(at + 12, ZKIND.BLOATER),
+    zed(at + 11 - W, ZKIND.SCREAMER),
+  ].filter((z) => !c.grid[Math.floor(z.body.z / UNIT_C) * W + Math.floor(z.body.x / UNIT_C)]);
+  relight(c);
+}
+
+/** The player swings whenever one of the dead is in reach and the last blow is done. */
+function swingAtNearest(c: City) {
+  const s = c.state;
+  const r = (window as unknown as { __city: () => { ops: Array<[number, number]> } | null }).__city();
+  if (!r || s.step - s.swung < BLOW.every) return;
+  const close = s.zeds.some((z) => Math.hypot(z.body.x - s.player.x, z.body.z - s.player.z) < UNIT_C * 1.4);
+  if (close && !r.ops.some((o) => o[0] === COP.HIT)) r.ops.push([COP.HIT, 0]);
+}
 
 /** Each cut's first frame and length in frames (where the beats fall, rounded to frames). */
 export function timeline() {
@@ -303,8 +385,10 @@ function setCam(c: Cam) {
 
 /** The game at a cut's moment, on screen, the HUD hidden, played on by the run's own commands. */
 function stageCut(c: Cut) {
-  const s = c.shot;
+  if (c.city) return stageCity(c.city);
+  const s = c.shot!;
   rig(false);
+  stopCity();
   const bot = run(s);
   const n = bot.cmds.length;
   const sim = new Sim(bot.sim.prison, 1);
@@ -332,6 +416,21 @@ function stageCut(c: Cut) {
   return { step: k, of: n };
 }
 
+/** A City Escape scene on screen, the HUD hidden: a new city, the scene put up, played on live from there. */
+function stageCity(cs: CityShot) {
+  rig(false);
+  if (play.game) endGame();
+  stopCity();
+  // (The prison shot before it may have left its own light on the view: the city keeps its dusk.)
+  daylight(undefined);
+  const city = new City(cs.seed);
+  void runCity(city, false);
+  cs.scene(city);
+  (window as unknown as { __cityStage: () => void }).__cityStage();
+  hideUi(true);
+  return { step: city.state.step, of: 0 };
+}
+
 const out = document.createElement('canvas');
 out.width = W;
 out.height = H;
@@ -357,6 +456,10 @@ async function shoot(c: Cut, from: number, frames: number, keep = true) {
     const u = Math.max(0, j) / Math.max(1, frames - 1);
     if (c.cam) setCam(c.cam(u));
     else setCam({});
+    if (c.city?.each) {
+      const r = (window as unknown as { __city: () => { city: City } | null }).__city();
+      if (r) c.city.each(r.city, u);
+    }
     tick((1000 / FPS) * (c.speed ? c.speed(u) : 1));
     if (j < 0 || !keep) continue;
     const src = view().renderer.domElement;
@@ -395,6 +498,7 @@ export async function peek(id: string, u = 0) {
 export function stop() {
   rig(false);
   giveClock();
+  stopCity();
   if (play.game) endGame();
   daylight(undefined);
   hideUi(false);

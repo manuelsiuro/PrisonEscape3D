@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Prison Escape 3D",
-  "short_name": "Escape 3D",
+  "name": "Over the Wall",
+  "short_name": "Over the Wall",
   "description": "An escape game in 3D: learn the routine, make the tools, find your way out of five prisons.",
   "start_url": "./",
   "scope": "./",

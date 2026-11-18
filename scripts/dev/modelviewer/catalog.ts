@@ -63,7 +63,7 @@ export const LIBRARIES: CatalogLibraryInfo[] = [
   },
   {
     id: 'game',
-    name: 'Prison Escape 3D',
+    name: 'Over the Wall',
     badge: 'GAME',
     description: 'All 3D models built by the game in src/render/* and src/content/*.',
   },

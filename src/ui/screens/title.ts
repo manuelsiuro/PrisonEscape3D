@@ -45,7 +45,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
     'div',
     'title-screen',
     `<div class="title-inner">
-      <div class="logo"><div class="logo-mark">${icon('bars', 40)}</div><h1>Prison Escape <span>3D</span></h1><p class="tagline">${t('title.tagline')}</p></div>
+      <div class="logo"><div class="logo-mark">${icon('bars', 40)}</div><h1>Over the <span>Wall</span></h1><p class="tagline">${t('title.tagline')}</p></div>
       <div class="title-actions">
         ${
           info.resume
