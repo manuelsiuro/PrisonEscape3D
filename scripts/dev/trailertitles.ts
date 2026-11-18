@@ -233,8 +233,8 @@ function logo(g: CanvasRenderingContext2D, t: number, t0: number) {
     heavy(
       g,
       [
-        { text: 'Prison Escape ', color: '#ffffff' },
-        { text: '3D', color: ORANGE },
+        { text: 'Over the ', color: '#ffffff' },
+        { text: 'Wall', color: ORANGE },
       ],
       0,
       0,
@@ -259,7 +259,7 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
   paLine(g, L['pa.hello.maple-grove.0'], t);
 
   // 2. The model prisoner (the tagline's first half), across the day.
-  const [first, second] = L['title.tagline'].split(/(?<=\.)\s+/);
+  const [first, second = ''] = L['title.tagline'].split(/(?<=\.)\s+/);
   {
     const t0 = marks.rollcall.at + 0.15;
     const t1 = marks.turn.at - 0.05;

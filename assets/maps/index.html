@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Prison Map Viewer</title>
-<meta name="description" content="Every Prison Escape 3D prison drawn from its data: pan, zoom, inspect any tile, read its ways out and rules, turn on overlays and leave notes.">
+<meta name="description" content="Every Over the Wall prison drawn from its data: pan, zoom, inspect any tile, read its ways out and rules, turn on overlays and leave notes.">
 <style>
 :root {
   color-scheme: light;
@@ -481,7 +481,7 @@ button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 4
       </div>
       <div>
         <div class="brand-title">Prison Map Viewer</div>
-        <div class="brand-sub">Prison Escape 3D · drawn from the game's data</div>
+        <div class="brand-sub">Over the Wall · drawn from the game's data</div>
       </div>
       <span class="chip" id="version">v—</span>
     </div>
@@ -980,7 +980,7 @@ button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 4
   document.querySelectorAll('input[name=scope]').forEach((r) => r.addEventListener('change', () => { st.scope = r.value; renderNoteList(); }));
 
   function markdown() {
-    const lines = [`# Map notes — Prison Escape 3D v${D.version}`, ''];
+    const lines = [`# Map notes — Over the Wall v${D.version}`, ''];
     for (const p of D.prisons) {
       const mine = notes.filter((n) => n.prison === p.id);
       if (!mine.length) continue;

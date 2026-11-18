@@ -1,6 +1,6 @@
-# Prison Escape 3D [![The game's version](https://img.shields.io/github/package-json/v/manuelsiuro/PrisonEscape3D?label=&color=ff7714&style=flat)](https://github.com/manuelsiuro/PrisonEscape3D/tags)
+# Over the Wall [![The game's version](https://img.shields.io/github/package-json/v/manuelsiuro/PrisonEscape3D?label=&color=ff7714&style=flat)](https://github.com/manuelsiuro/PrisonEscape3D/tags)
 
-**Play the model prisoner. Plan the perfect escape.**
+**Get out and survive.**
 
 A 3D prison escape game for phones and desktops, right in the browser.
 Keep your head down through roll calls and work shifts while you secretly craft tools, dig, bribe, bluff and

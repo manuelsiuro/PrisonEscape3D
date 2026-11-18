@@ -56,7 +56,7 @@ export function showShare(click: () => void): Promise<void> {
     const send = async () => {
       try {
         if (sheet) {
-          await navigator.share({ title: 'Prison Escape 3D', text: t('title.tagline'), url: GAME_URL });
+          await navigator.share({ title: 'Over the Wall', text: t('title.tagline'), url: GAME_URL });
           label.textContent = t('share.shared');
           return;
         }

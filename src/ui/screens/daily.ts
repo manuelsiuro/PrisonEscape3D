@@ -27,7 +27,7 @@ function shareText(
   streak: number,
 ): string {
   return [
-    `Prison Escape 3D · ${t('daily.name', { n: n + 1 })}`,
+    `Over the Wall · ${t('daily.name', { n: n + 1 })}`,
     `${best.medal ? `${t(`medal.${best.medal}` as Key)} · ` : ''}${t('hud.day', { n: best.day })} · ${t(best.tries === 1 ? 'daily.tries1' : 'daily.tries', { n: best.tries })}`,
     best.strip.map((k) => STRIP_EMOJI[k]).join(''),
     `${streak > 1 ? `${t('daily.streak', { n: streak })} · ` : ''}${t('daily.check', { code: best.code })}`,

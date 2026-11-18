@@ -66,7 +66,8 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 
 - **Before selling (2.62 renamed the borrowed names):** the trailer on YouTube shows the old prison names
   (remake or unlist it); the repo is public and its history and the old site still hold them (going
-  private, or a fresh repo, is the user's call); a trademark search on the new names and a new title;
+  private, or a fresh repo, is the user's call); a trademark search on the new names and the new title (Over the Wall since 2.63: a first web search found
+  no game of that name);
   generic item names some players will still recognise (the fake wall block, the fake fence, the bed
   dummy) left as they are.
 - **The repository's size:** shrunk 795 → 39 MB on 2026-11-18 (the user's go): `git filter-repo`
