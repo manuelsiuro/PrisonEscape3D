@@ -93,6 +93,39 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
   </tr>
 </table>
 
+### City Escape
+
+The second mode, from the title: the prison transport never arrived. You come round at dawn beside the bus,
+on its side, in a city the army walled in and left. **Find food, find out what happened, find a way out.**
+
+The city is new every time: nine districts, each its own map, joined by checkpoints in the army's fences.
+Search houses, shops and the cars left in the street (some still have their alarms). Eat, sleep, make
+weapons, bandages and meals (fifteen recipes). The dead keep to the dark indoors by day and come out
+everywhere at night: runners, brutes, screamers and bloaters on the later nights. Fight them with a bat or
+a crossbow, burn them, draw them off with a thrown bottle, bar a house's doors to sleep, keep a fire lit.
+A voice on a radio and your journal lead through five acts to three ways out (a helicopter, a boat or the
+metro tunnel), each with a last night of its own. Four survivors have errands, swaps and recipes to
+teach. Play as Survivor, or as Hardcore with one life.
+
+<table>
+  <tr>
+    <td width="78%"><img src="docs/screenshots/city-street.webp" alt="A street at dusk in City Escape: the player with a bat, four of the dead coming"></td>
+    <td width="22%"><img src="docs/screenshots/city-phone.webp" alt="The same street on a phone, with the touch buttons"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><em>Dusk on the second day: four after you, and only a bat</em></td>
+  </tr>
+</table>
+
+| | |
+|:---:|:---:|
+| ![The story's first card: the transport never arrived](docs/screenshots/city-intro.webp) | ![The prison bus on its side at dawn](public/help/cityGoal.webp) |
+| *How it starts* | *The first morning, by the bus* |
+| ![A bat swung at one of the dead in the street](public/help/cityFight.webp) | ![A house with its door barred at dusk, two of the dead outside](public/help/cityShelter.webp) |
+| *A fight in the street* | *A barred door for the night* |
+| ![A lantern lit in the street at night, the dead at the edge of its light](public/help/cityLight.webp) | ![The nurse, one of the survivors](public/help/cityPeople.webp) |
+| *A lantern keeps them back* | *The nurse, one of four survivors* |
+
 ### Learn as you go, and keep playing
 
 <table>
