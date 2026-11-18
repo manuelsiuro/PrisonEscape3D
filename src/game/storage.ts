@@ -6,6 +6,8 @@
  * Rename PREFIX for a new game. When a stored format changes, bump SAVE_VERSION and add a
  * migration below: players keep their progress across updates.
  */
+import { renamedId } from '../content/prisons/renamed';
+
 const PREFIX = 'pe3d';
 
 export const KEYS = {
@@ -121,7 +123,7 @@ export function writeJSON(key: StorageKey, value: unknown): boolean {
 
 // ------------------------------------------------------------------ versions
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** MIGRATIONS[n] upgrades saves from version n to n + 1; false means "try again next start". */
 const MIGRATIONS: Array<() => boolean> = [
@@ -144,7 +146,53 @@ const MIGRATIONS: Array<() => boolean> = [
     }
     return writeJSON(KEYS.escapes, all);
   },
+  // 2 → 3 (2.62): five prisons renamed, ids and all (content/prisons/renamed.ts). Every stored value that
+  // names one by its old id (saves and their logs, escape records, the daily's, the trophies) names it by
+  // its new one; each prison's best replay moves to its new key.
+  () => {
+    let ok = true;
+    for (const key of storedKeys()) {
+      const raw = readText(key as StorageKey);
+      if (raw === null) continue;
+      let text = raw;
+      try {
+        text = JSON.stringify(withNewIds(JSON.parse(raw)));
+      } catch {
+        /* not JSON (the version, a setting): nothing to rename */
+      }
+      const best = key.startsWith(replayBestKey('')) ? renamedId(key.slice(replayBestKey('').length)) : undefined;
+      if (best) {
+        ok = writeText(replayBestKey(best), text) && ok;
+        if (ok) removeKey(key as StorageKey);
+      } else if (text !== raw) ok = writeText(key as StorageKey, text) && ok;
+    }
+    return ok;
+  },
 ];
+
+/** A stored value with every renamed prison's old id (a string, or an object's key) turned into its new one. */
+function withNewIds(v: unknown): unknown {
+  if (typeof v === 'string') return renamedId(v) ?? v;
+  if (Array.isArray(v)) return v.map(withNewIds);
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [renamedId(k) ?? k, withNewIds(x)]));
+  }
+  return v;
+}
+
+/** Every key the game has stored (its prefix's), or none when storage can't be read. */
+function storedKeys(): string[] {
+  try {
+    const out: string[] = [];
+    for (let k = 0; k < localStorage.length; k++) {
+      const key = localStorage.key(k);
+      if (key?.startsWith(`${PREFIX}.`)) out.push(key);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
 
 /** Brings stored data up to SAVE_VERSION; call once at startup. Newer saves are left alone. */
 export function migrateStorage(): number {

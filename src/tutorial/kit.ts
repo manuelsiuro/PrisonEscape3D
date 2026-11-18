@@ -15,7 +15,7 @@ import { itemOf, slot } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { containersOf, playerDesk } from '../sim/world/containers';
 import { LAYER, MAP_W } from '../sim/world/World';
-import { CENTER_PERKS } from '../content/prisons/center-perks';
+import { MAPLE_GROVE } from '../content/prisons/maple-grove';
 import { SIGN_OFF_MINUTES } from '../content/days';
 import { SHIFT_TO } from '../content/getaways';
 import { searchMinute, vehicleIn } from '../sim/systems/delivery';
@@ -72,7 +72,7 @@ export interface LessonStep {
 export interface Lesson {
   id: string;
   icon: string;
-  /** Where it's played (the Training Block unless it says; Center Perks, always open, for what the Training Block hasn't got). */
+  /** Where it's played (the Training Block unless it says; Maple Grove, always open, for what the Training Block hasn't got). */
   prison?: PrisonDef;
   /** The game's seed (fixed: trying again plays the same scene); 7 + its place in the list otherwise. */
   seed?: number;
@@ -181,12 +181,12 @@ export function waitAt(sim: Sim, who: number, x: number, z: number, facing = 9) 
   m.wait = 5 * 60 * STEPS_PER_MINUTE;
   m.body.facing = facing;
 }
-/** The other inmate's desk on the Training Block (Sparky's). */
+/** The other inmate's desk on the Training Block (Scooter's). */
 export const sparkyDesk = (sim: Sim) => containersOf(sim.world).findIndex((c) => !c.mine && c.prop.kind === 'desk');
 
-/** A Center Perks seed whose day-1 delivery search is a quick look (tutorialtest holds it to that). */
+/** A Maple Grove seed whose day-1 delivery search is a quick look (tutorialtest holds it to that). */
 export const STOW_SEED = 51;
-/** Center Perks' corrupt guard (P15): Officer Pratt. */
+/** Maple Grove's corrupt guard (P15): Officer Tibbs. */
 export const PRATT = 1;
 /** The second prison day (P19: the dogs' first) at a step of the day (`at`). */
 export const DAY_TWO = DAY_STEPS;
@@ -266,7 +266,7 @@ export function seesRound(sim: Sim, post: number, guard: number): boolean {
   return false;
 }
 
-/** A Center Perks merchant (the first in its list: an inmate whose stall opens in free time). */
+/** A Maple Grove merchant (the first in its list: an inmate whose stall opens in free time). */
 export function merchantAt(sim: Sim): number {
   return inmateInCell(sim.state, sim.prison.merchants[0]);
 }
@@ -284,7 +284,7 @@ export function talkFail(c: LessonCtx): Key | null {
   if (!magazineFavor(c.sim)) return prisonDay(c.sim.state.step) > 1 ? 'lesson.talk.lapsed' : 'lesson.talk.dropped';
   return !somewhere ? 'lesson.talk.lost' : null;
 }
-/** Sparky's favor in the talk lesson: a magazine, while it's still on. */
+/** Scooter's favor in the talk lesson: a magazine, while it's still on. */
 export const magazineFavor = (sim: Sim) => sim.state.favors.find((f) => f.by === 0 && f.item === n('magazine'));
 /** A favor handed in and paid (the ledger counts them). */
 export const favorPaid = (sim: Sim) => sim.state.feats[FEAT.favors] > 0;
@@ -354,9 +354,9 @@ export function loadedMachine(sim: Sim, job = LAUNDRY): number {
   const room = jobRooms(sim.world)[job];
   return room.machines.find((i) => sim.state.machines[i] !== undefined) ?? room.machines[0];
 }
-/** Center Perks' laundry job (its place in the jobs list), and its gardener's (P31). */
+/** Maple Grove's laundry job (its place in the jobs list), and its gardener's (P31). */
 export const LAUNDRY = 0;
-export const GARDENER = CENTER_PERKS.jobs.findIndex((j) => j.id === 'gardener');
+export const GARDENER = MAPLE_GROVE.jobs.findIndex((j) => j.id === 'gardener');
 /** A machine at work in the player's job room (a load in it). */
 export function machineOn(sim: Sim, job = LAUNDRY): boolean {
   const room = jobRooms(sim.world)[job];
@@ -511,7 +511,7 @@ export function inkOff(e: SimEvent): Key | null {
 
 // ---------------------------------------------------------------- 2.37: the lessons the tutorial lacked
 
-/** Center Perks' gangs (2.36), their places in its list: the Kitchen Crew (Rusty's), the Lifers (Lefty's), the Gym Rats (Bones's). */
+/** Maple Grove's gangs (2.36), their places in its list: the Kitchen Crew (Sonny's), the Lifers (Lucky's), the Gym Rats (Chips's). */
 export const KITCHEN = 0;
 export const GYM_RATS = 2;
 /** A gang's boss (inmate index). */
@@ -544,7 +544,7 @@ export function onCorner(sim: Sim, gang: number): boolean {
   return x >= c[0] && x <= c[2] && z >= c[1] && z <= c[3];
 }
 
-/** Center Perks' guard with the generator room's purple key (P15's list): Officer Keller. */
+/** Maple Grove's guard with the generator room's purple key (P15's list): Officer Garvey. */
 export const KELLER = 4;
 /** A guard's pockets (the container searched when he's out cold). */
 export const guardPockets = (sim: Sim, guard: number) => pocketOf(sim.world, sim.state.inmates.length + guard);
@@ -609,8 +609,8 @@ export function knockOut(sim: Sim, guard: number, x: number, z: number, steps: n
   g.path = [];
   g.goal = -1;
 }
-/** Center Perks' courtyard guard (P15's list): Officer Moss. */
+/** Maple Grove's courtyard guard (P15's list): Officer Fenton. */
 export const MOSS = 3;
-/** The camera over the woodshop (Center Perks' second), and the canteen's detector arch (its west tile). */
+/** The camera over the woodshop (Maple Grove's second), and the canteen's detector arch (its west tile). */
 export const WOODSHOP_CAM = 1;
 export const CANTEEN_ARCH = tile(44, 20);

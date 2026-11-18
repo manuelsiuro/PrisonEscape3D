@@ -1,9 +1,9 @@
 import { DAY_EVENTS, WEATHERS } from '../content/days';
-import { IRONGATE } from '../content/prisons/irongate';
-import { SAN_PANCHO } from '../content/prisons/san-pancho';
-import { SHANKTON } from '../content/prisons/shankton';
+import { GULL_ROCK } from '../content/prisons/gull-rock';
+import { SIERRA_SECA } from '../content/prisons/sierra-seca';
+import { GRAVEL_POINT } from '../content/prisons/gravel-point';
 import { SIX_HUNTER } from '../content/prisons/six-hunter';
-import { STALAG_FLUCHT } from '../content/prisons/stalag-flucht';
+import { FROSTBERG } from '../content/prisons/frostberg';
 import { placesOf } from '../sim/ai/places';
 import { SLOT } from '../sim/command';
 import { itemOf, slot } from '../sim/systems/items';
@@ -46,22 +46,22 @@ function dummyInBed(sim: Sim) {
 }
 /** Worn: a guard's uniform (the night lessons' disguise). */
 const uniform = (sim: Sim) => (sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit')));
-/** Cups of molten chocolate in the pockets or lying about (a miss lands on the floor). */
+/** Cups of scalding cocoa in the pockets or lying about (a miss lands on the floor). */
 const cupsLeft = (sim: Sim) =>
-  sim.state.items.inv.slice(0, 6).filter((v) => itemOf(v) === n('molten_chocolate')).length +
-  sim.state.items.ground.filter(([, v]) => itemOf(v) === n('molten_chocolate')).length;
-/** Shankton's lesson: the sheet rope used up (down too soon, off the wrong roof) or gone. */
+  sim.state.items.inv.slice(0, 6).filter((v) => itemOf(v) === n('scalding_cocoa')).length +
+  sim.state.items.ground.filter(([, v]) => itemOf(v) === n('scalding_cocoa')).length;
+/** Gravel Point's lesson: the knotted sheets used up (down too soon, off the wrong roof) or gone. */
 const ROPE_GONE = (c: LessonCtx): Key | null =>
-  !c.sim.state.escaped && !carries(c.sim, 'sheet_rope') && !onFloor(c.sim, 'sheet_rope') ? 'lesson.shell.noRope' : null;
-/** The dock's fence cut anywhere along the pier's three rows (Irongate's raft). */
+  !c.sim.state.escaped && !carries(c.sim, 'knotted_sheets') && !onFloor(c.sim, 'knotted_sheets') ? 'lesson.shell.noRope' : null;
+/** The dock's fence cut anywhere along the pier's three rows (Gull Rock's raft). */
 const dockCut = (sim: Sim) => [27, 28, 29].some((z) => sim.world.ground.kind[tile(60, z)] === TILE.FENCE_CUT);
-/** Irongate's two riot guards in the helipad court. */
+/** Gull Rock's two riot guards in the helipad court. */
 const helipadGuards = (sim: Sim) => sim.prison.guards.flatMap((g, k) => (g.helipad ? [k] : []));
 
 /**
  * The prisons (the fifth chapter, 2.38): what each prison past the first has of its own, played there. The Six Hunter's
- * hounds (moved here from Prison life), Stalag Flucht's cold, Shankton's concrete and gatehouse, San Pancho's mines and
- * supply road, Irongate's raft and helicopter. Each lesson has a seed of its own.
+ * hounds (moved here from Prison life), Camp Frostberg's cold, Gravel Point's concrete and gatehouse, Sierra Seca's mines and
+ * supply road, Gull Rock's raft and helicopter. Each lesson has a seed of its own.
  */
 export const PRISONS_LESSONS: readonly Lesson[] = [
   {
@@ -110,10 +110,10 @@ export const PRISONS_LESSONS: readonly Lesson[] = [
     ],
   },
   {
-    // Stalag Flucht's cold (2.38): a minute out in the snow chills, indoors warms, a cushioned outfit keeps it out.
+    // Camp Frostberg's cold (2.38): a minute out in the snow chills, indoors warms, a cushioned outfit keeps it out.
     id: 'cold',
     icon: 'snow',
-    prison: STALAG_FLUCHT,
+    prison: FROSTBERG,
     seed: 160,
     setup: (sim) => {
       sim.state.calendar = [[1, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
@@ -152,17 +152,17 @@ export const PRISONS_LESSONS: readonly Lesson[] = [
     ],
   },
   {
-    // Shankton's shell (2.38): concrete no tool chips; up the generator room's ladder, the grapnel across onto the
-    // gatehouse roof astride both fences, down its far side on the sheet rope.
+    // Gravel Point's shell (2.38): concrete no tool chips; up the generator room's ladder, the grapnel across onto the
+    // gatehouse roof astride both fences, down its far side on the knotted sheets.
     id: 'shell',
     icon: 'shield',
-    prison: SHANKTON,
+    prison: GRAVEL_POINT,
     seed: 161,
     routine: false,
     setup: (sim) => {
       clockTo(sim, at(23, 20));
       place(sim, 35, 54, 5);
-      pockets(sim, 'light_pickaxe', 'grapnel', 'sheet_rope');
+      pockets(sim, 'reinforced_pickaxe', 'grapnel', 'knotted_sheets');
       sim.state.items.hand = 0;
       sim.state.energy = 100;
       dummyInBed(sim);
@@ -213,11 +213,11 @@ export const PRISONS_LESSONS: readonly Lesson[] = [
     ],
   },
   {
-    // San Pancho's mines (2.38): at night in uniform, through the inner wall, down the paved corridor between the
+    // Sierra Seca's mines (2.38): at night in uniform, through the inner wall, down the paved corridor between the
     // mines, out of the outer gate.
     id: 'mines',
     icon: 'mine',
-    prison: SAN_PANCHO,
+    prison: SIERRA_SECA,
     seed: 162,
     routine: false,
     setup: (sim) => {
@@ -245,16 +245,16 @@ export const PRISONS_LESSONS: readonly Lesson[] = [
     ],
   },
   {
-    // Irongate's raft (2.38): GEN-2 just switched off; the dock's dead fence cut, the raft launched off the pier's end.
+    // Gull Rock's raft (2.38): GEN-2 just switched off; the dock's dead fence cut, the raft launched off the pier's end.
     id: 'raft',
     icon: 'boat',
-    prison: IRONGATE,
+    prison: GULL_ROCK,
     seed: 163,
     routine: false,
     setup: (sim) => {
       clockTo(sim, at(23, 40));
       place(sim, 59, 28, 1);
-      pockets(sim, 'sturdy_cutters', 'raft');
+      pockets(sim, 'heavy_cutters', 'raft');
       sim.state.items.hand = 0;
       sim.state.energy = 100;
       uniform(sim);
@@ -285,18 +285,18 @@ export const PRISONS_LESSONS: readonly Lesson[] = [
     ],
   },
   {
-    // Irongate's helicopter (2.38): down in the helipad court at night in uniform; its two riot guards put down with
-    // molten chocolate; aboard.
+    // Gull Rock's helicopter (2.38): down in the helipad court at night in uniform; its two riot guards put down with
+    // scalding cocoa; aboard.
     id: 'helicopter',
     icon: 'heli',
-    prison: IRONGATE,
+    prison: GULL_ROCK,
     seed: 164,
     routine: false,
     setup: (sim) => {
       clockTo(sim, at(23, 30));
       const [x, z] = near(sim, 33, 44);
       place(sim, x, z, 1);
-      pockets(sim, 'molten_chocolate', 'molten_chocolate');
+      pockets(sim, 'scalding_cocoa', 'scalding_cocoa');
       sim.state.items.hand = 0;
       uniform(sim);
       dummyInBed(sim);

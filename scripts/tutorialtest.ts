@@ -9,7 +9,7 @@ import { beamAt } from '../src/sim/systems/security';
 import { VEND } from '../src/content/vending';
 import { MENU } from '../src/content/menu';
 import { peopleAhead, VEND_NOBODY } from '../src/sim/systems/vending';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
 import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
 import { questionNow } from '../src/sim/systems/quiz';
@@ -133,7 +133,7 @@ play('routine', (bot) => {
 });
 
 play('heat', (bot) => {
-  bot.hold('light_cutters');
+  bot.hold('reinforced_cutters');
   bot.until(() => bot.st.heat >= 20, 20 * 60);
   bot.op(OP.SELECT, 1);
 });
@@ -145,7 +145,7 @@ play('stash', (bot) => {
 
 play('dig', (bot) => {
   check(
-    bot.strikeUntil('light_pickaxe', () => bot.sim.world.ground.kind[tile(20, 16)] === TILE.HOLE),
+    bot.strikeUntil('reinforced_pickaxe', () => bot.sim.world.ground.kind[tile(20, 16)] === TILE.HOLE),
     'dig: through the wall',
   );
   bot.hold('poster');
@@ -224,7 +224,7 @@ play('escape', (bot) => {
   check(bot.walkTo(tile(29, 51)), 'escape: at the fence');
   bot.face(DIR.SOUTH);
   check(
-    bot.strikeUntil('light_cutters', () => bot.sim.world.ground.kind[tile(29, 52)] === TILE.FENCE_CUT),
+    bot.strikeUntil('reinforced_cutters', () => bot.sim.world.ground.kind[tile(29, 52)] === TILE.FENCE_CUT),
     'escape: the fence cut',
   );
   bot.walkTo(tile(29, 54));
@@ -252,7 +252,7 @@ function useProp(bot: Bot, prop: number) {
 }
 
 play('talk', (bot) => {
-  check(talkTo(bot, bot.st.inmates[0].body), 'talk: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'talk: talking to Scooter');
   bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
   bot.op(OP.TALK, TALK.ACCEPT);
   bot.op(OP.CLOSE);
@@ -309,7 +309,7 @@ function tunnelDown(bot: Bot) {
   const desk = deskTileOf(bot);
   const below = desk + MAP_W;
   check(
-    bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT),
+    bot.strikeUntil('heavy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT),
     'tunnel: the entrance under the desk',
   );
   check(bot.walkTo(tile(22, 19)), 'tunnel: by the toilet');
@@ -341,7 +341,7 @@ function tunnelAlong(bot: Bot, dir: number, tiles: number[]) {
     }
     bot.face(dir);
     check(
-      bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[t] !== TILE.SOIL),
+      bot.strikeUntil('heavy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[t] !== TILE.SOIL),
       `tunnel: ${t % MAP_W},${Math.floor(t / MAP_W)} dug`,
     );
     check(bot.walkTo(t, 400), `tunnel: along to ${t % MAP_W},${Math.floor(t / MAP_W)}`);
@@ -349,7 +349,7 @@ function tunnelAlong(bot: Bot, dir: number, tiles: number[]) {
 }
 /** Dig up (U, its button), facing on north: a press each until up. */
 function digUp(bot: Bot) {
-  bot.hold('sturdy_shovel');
+  bot.hold('heavy_shovel');
   for (let k = 0; k < 400 && bot.st.layer === LAYER.UNDER; k++) bot.op(OP.EXT, EXT.DIG_UP);
 }
 
@@ -408,7 +408,7 @@ function walkUp(bot: Bot, body: { x: number; z: number }, reach: number, limit =
 }
 
 play('guards', (bot) => {
-  check(talkTo(bot, bot.st.guards[1].body), 'guards: talking to Pratt');
+  check(talkTo(bot, bot.st.guards[1].body), 'guards: talking to Tibbs');
   bot.op(OP.TALK, TALK.BRIBE, BRIBE.PAPER);
 });
 
@@ -474,7 +474,7 @@ play('smuggle', (bot) => {
 });
 
 play('games', (bot) => {
-  check(talkTo(bot, bot.st.inmates[0].body), 'games: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'games: talking to Scooter');
   bot.op(OP.TALK, TALK.DICE, 0);
   bot.op(OP.TALK, TALK.REROLL, 0);
   bot.op(OP.TALK, TALK.WRESTLE);
@@ -482,7 +482,7 @@ play('games', (bot) => {
 });
 
 play('cards', (bot) => {
-  check(talkTo(bot, bot.st.inmates[0].body), 'cards: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'cards: talking to Scooter');
   bot.op(OP.TALK, TALK.CHEAT, 0);
   // True cards when there are (one if not), a call on his tell or his empty hand; to the end.
   for (let k = 0; k < 4000 && bot.st.cheat; k++) {
@@ -523,7 +523,7 @@ play('hoops', (bot) => {
   check(bot.walkTo(spot(0)), 'hoops: on the first spot');
   shoot(bot, 0);
   bot.until(() => false, 30);
-  check(talkTo(bot, bot.st.inmates[0].body), 'hoops: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'hoops: talking to Scooter');
   bot.op(OP.TALK, TALK.HOOPS);
   check(!!bot.st.shootout, 'hoops: a shootout on');
   for (let k = 0; k < 40 && bot.st.shootout; k++) {
@@ -539,7 +539,7 @@ play('hoops', (bot) => {
 });
 
 play('checkers', (bot) => {
-  check(talkTo(bot, bot.st.inmates[0].body), 'checkers: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'checkers: talking to Scooter');
   bot.op(OP.TALK, TALK.CHECKERS, 1);
   check(!!bot.st.board?.seated, 'checkers: at the board');
   bot.op(OP.TALK, TALK.MOVE, squareAt(5, 2), squareAt(3, 4));
@@ -614,7 +614,7 @@ play('ratRace', (bot) => {
 
 play('football', (bot) => {
   // Penalties (2.44, the lesson's id kept): talked into a shootout; kicks as the marker crosses a corner, dives on his look late, to the end.
-  check(talkTo(bot, bot.st.inmates[0].body), 'football: talking to Rusty');
+  check(talkTo(bot, bot.st.inmates[0].body), 'football: talking to Sonny');
   bot.op(OP.TALK, TALK.PENALTIES);
   check(!!bot.st.pens && bot.st.pens.who === 0, 'football: a shootout on');
   bot.until(
@@ -625,12 +625,12 @@ play('football', (bot) => {
 });
 
 play('tattoo', (bot, ctx) => {
-  // The gun crafted; a heart drawn for Sparky, a finger after the ring; a skull of his on the player's arm.
+  // The gun crafted; a heart drawn for Scooter, a finger after the ring; a skull of his on the player's arm.
   ctx.craftOpen = true;
   bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
   ctx.craftOpen = false;
   check(bot.slotOf('tattoo_gun') >= 0, 'tattoo: the gun crafted');
-  check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Scooter');
   bot.op(OP.TALK, TALK.TATTOO, 0);
   check(!!bot.st.ink, 'tattoo: a sitting');
   const to: [number, number] = [0, 0];
@@ -648,7 +648,7 @@ play('tattoo', (bot, ctx) => {
       return cmd;
     },
   );
-  check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky again');
+  check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Scooter again');
   bot.op(OP.TALK, TALK.INK_ME, 1);
   check(
     bot.until(() => bot.st.inked.length > 0, 400),
@@ -705,9 +705,9 @@ play('quiz', (bot) => {
 });
 
 play('crew', (bot) => {
-  check(talkTo(bot, bot.st.inmates[0].body), 'crew: talking to Sparky');
+  check(talkTo(bot, bot.st.inmates[0].body), 'crew: talking to Scooter');
   bot.op(OP.TALK, TALK.RECRUIT);
-  check(bot.st.followers.includes(0), 'crew: Sparky follows');
+  check(bot.st.followers.includes(0), 'crew: Scooter follows');
   bot.op(OP.TALK, TALK.CREW, ORDER.WATCH);
   bot.until(() => bot.sim.events.some((e) => e.type === 'crew' && e.what === 'whistle'), 3000);
 });
@@ -722,19 +722,19 @@ play('freetime', (bot) => {
 
 play('gangJoin', (bot) => {
   const boss = bossIn(bot.sim, KITCHEN);
-  check(talkTo(bot, bot.st.inmates[boss].body) && bot.st.talk === boss, 'gangJoin: talking to Rusty');
+  check(talkTo(bot, bot.st.inmates[boss].body) && bot.st.talk === boss, 'gangJoin: talking to Sonny');
   bot.op(OP.TALK, TALK.JOIN);
   bot.close();
   const f = initiation(bot.sim);
   check(!!f, 'gangJoin: the initiation taken on');
   // To the rival boss's desk by the lesson's arrows, the marked sugar taken from its drawers.
   const desk = tributeDesk(bot.sim, f!);
-  check(bot.walkTo(initiationTile(bot.sim), 4000), "gangJoin: at Lefty's desk");
+  check(bot.walkTo(initiationTile(bot.sim), 4000), "gangJoin: at Lucky's desk");
   const p = containersOf(bot.sim.world)[desk].prop;
   const dx = p.x + (p.w - 1) / 2 - (bot.tile % MAP_W);
   const dz = p.z + (p.d - 1) / 2 - Math.floor(bot.tile / MAP_W);
   bot.face(Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? DIR.EAST : DIR.WEST) : dz > 0 ? DIR.SOUTH : DIR.NORTH);
-  check(bot.open(desk), "gangJoin: Lefty's desk open");
+  check(bot.open(desk), "gangJoin: Lucky's desk open");
   const k = bot.st.items.containers[desk].findIndex((v) => v === tributeOf(f!));
   const free = bot.st.items.inv.slice(0, 6).indexOf(0);
   bot.op(OP.MOVE, SLOT.CONTAINER + k, free);
@@ -745,7 +745,7 @@ play('gangJoin', (bot) => {
     if (bot.st.talk >= 0) bot.close();
     talkTo(bot, bot.st.inmates[boss].body, 4000);
   }
-  check(bot.st.talk === boss, 'gangJoin: back with Rusty');
+  check(bot.st.talk === boss, 'gangJoin: back with Sonny');
   bot.op(OP.TALK, TALK.HAND_IN);
   bot.close();
 });
@@ -906,16 +906,16 @@ play('showers', (bot) => {
 });
 
 play('caught', (bot) => {
-  // Stood still till Moss has them; out cold, then solitary; a potato peeled; out.
+  // Stood still till Fenton has them; out cold, then solitary; a potato peeled; out.
   check(
     bot.until(() => bot.events.some((e) => e.type === 'caught'), 3 * 60 * 20),
-    'caught: Moss catches them',
+    'caught: Fenton catches them',
   );
   check(
     bot.until(() => bot.st.solitary > 0 && bot.st.ko <= 0, 120 * 20),
     'caught: awake in solitary',
   );
-  check(bot.slotOf('light_cutters') < 0 && bot.slotOf('chocolate') >= 0, 'caught: the cutters taken, the chocolate kept');
+  check(bot.slotOf('reinforced_cutters') < 0 && bot.slotOf('chocolate') >= 0, 'caught: the cutters taken, the chocolate kept');
   for (let k = 0; k < 5; k++) {
     bot.act();
     for (let j = 0; j < 4; j++) bot.step();
@@ -966,7 +966,7 @@ play('laps', (bot) => {
 });
 
 play('gardener', (bot) => {
-  // (P31: the gardener's job at Center Perks, one crate for the quota.)
+  // (P31: the gardener's job at Maple Grove, one crate for the quota.)
   bot.step();
   const room = jobRooms(bot.sim.world)[bot.sim.prison.jobs.findIndex((j) => j.id === 'gardener')];
   check(bot.walkTo(tile(47, 47), 3000), 'gardener: down to the garden');
@@ -1002,10 +1002,10 @@ play('lockpick', (bot) => {
 });
 
 play('keys', (bot, ctx) => {
-  // Keller's pockets searched, his key taken; pressed into the putty; put back; the mold cast; through the purple door.
+  // Garvey's pockets searched, his key taken; pressed into the putty; put back; the mold cast; through the purple door.
   const pockets = guardPockets(bot.sim, KELLER);
   bot.face(DIR.WEST);
-  check(bot.open(pockets), "keys: Keller's pockets open");
+  check(bot.open(pockets), "keys: Garvey's pockets open");
   const k = bot.st.items.containers[pockets].findIndex((v) => itemOf(v) === n('key_purple'));
   bot.op(OP.MOVE, SLOT.CONTAINER + k, bot.st.items.inv.slice(0, 6).indexOf(0));
   bot.close();
@@ -1014,7 +1014,7 @@ play('keys', (bot, ctx) => {
   bot.op(OP.CRAFT, (1 << bot.slotOf('putty')) | (1 << bot.slotOf('key_purple')));
   ctx.craftOpen = false;
   check(bot.slotOf('mold_purple') >= 0 && bot.slotOf('key_purple') >= 0, 'keys: the mold made, the key kept');
-  check(bot.open(pockets), "keys: Keller's pockets open again");
+  check(bot.open(pockets), "keys: Garvey's pockets open again");
   bot.putIn('key_purple', bot.st.items.containers[pockets].indexOf(0));
   bot.close();
   check(keyBack(bot.sim, KELLER, 'key_purple'), 'keys: the key back in his pockets');
@@ -1028,7 +1028,7 @@ play('keys', (bot, ctx) => {
 });
 
 {
-  // (Review: the key taken and put straight back, uncopied: once Keller comes round, the lesson says so and ends.)
+  // (Review: the key taken and put straight back, uncopied: once Garvey comes round, the lesson says so and ends.)
   const index = LESSONS.findIndex((l) => l.id === 'keys');
   const lesson = LESSONS[index];
   const bot = new Bot(lesson.prison ?? TRAINING, lesson.seed ?? 7 + index);
@@ -1047,7 +1047,7 @@ play('keys', (bot, ctx) => {
   progress.update(ctx);
   check(
     progress.k === 1 && progress.verdict(ctx) === 'lesson.keys.late',
-    'keys: the key put back uncopied, Keller awake: the lesson ends, to try again',
+    'keys: the key put back uncopied, Garvey awake: the lesson ends, to try again',
   );
   console.log(`keys, put back uncopied: ended at step ${progress.k + 1} (${progress.verdict(ctx)})`);
 }
@@ -1110,7 +1110,7 @@ play('grapnel', (bot) => {
 });
 
 play('takeover', (bot) => {
-  // Moss, locked on and beaten; out through the gates.
+  // Fenton, locked on and beaten; out through the gates.
   const inmates = bot.st.inmates.length;
   const moss = bot.st.guards[MOSS].body;
   let fights = 0;
@@ -1136,7 +1136,7 @@ play('forgery', (bot, ctx) => {
   bot.op(OP.CRAFT, (1 << bot.slotOf('release_form')) | (1 << bot.slotOf('ink')));
   ctx.craftOpen = false;
   check(bot.slotOf('forged_release') >= 0, 'forgery: the form forged');
-  const q = CENTER_PERKS.comms!.release.at[0];
+  const q = MAPLE_GROVE.comms!.release.at[0];
   check(bot.walkTo(tile(q.x, q.z), 2000), 'forgery: at the release desk');
   bot.hold('forged_release');
   bot.until(() => !bot.st.seen, 20 * 60 * 10);
@@ -1147,7 +1147,7 @@ play('forgery', (bot, ctx) => {
 
 play('release', (bot) => {
   // Called at 10:00, cleared at the desk, out through the doors to the road.
-  const q = CENTER_PERKS.comms!.release.at[0];
+  const q = MAPLE_GROVE.comms!.release.at[0];
   bot.until(() => bot.sim.clock.minuteOfDay >= 10 * 60, 20 * 60 * 10);
   check(bot.walkTo(tile(q.x, q.z), 1000), 'release: at the desk');
   bot.act();
@@ -1157,7 +1157,7 @@ play('release', (bot) => {
 
 play('parole', (bot) => {
   // To the seat before the board at 10:00, then each answer the best by the file and Intellect: granted.
-  const h = HEARINGS[CENTER_PERKS.id];
+  const h = HEARINGS[MAPLE_GROVE.id];
   check(bot.walkTo(tile(h.seat.x, h.seat.z), 2000), 'parole: at the seat before the board');
   check(
     bot.until(() => !!bot.st.hearing, 20 * 60 * 15),
@@ -1176,8 +1176,8 @@ play('parole', (bot) => {
 });
 
 play('payphone', (bot) => {
-  // In line beside the phone, Sparky talking: the secret overheard while waiting; then the call home, the money at mail call.
-  const c = CENTER_PERKS.comms!;
+  // In line beside the phone, Scooter talking: the secret overheard while waiting; then the call home, the money at mail call.
+  const c = MAPLE_GROVE.comms!;
   bot.walkTo(tile(c.line[0].x, c.line[0].z));
   bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
   check(bot.st.line[0] === -1, 'payphone: in line');
@@ -1245,7 +1245,7 @@ play('menu', (bot) => {
     return bot.st.menu.scribbled > 0;
   }, 2000);
   check(bot.st.menu.scribbled > 0, 'menu: scribbled on');
-  const c = CENTER_PERKS.cooler!;
+  const c = MAPLE_GROVE.cooler!;
   bot.walkTo(tile(c.spots[1].x, c.spots[1].z));
   bot.face(DIR.NORTH);
   bot.act();
@@ -1255,7 +1255,7 @@ play('menu', (bot) => {
 
 play('kiosk', (bot) => {
   // Logged in at the library's terminal: a letter home, the thick book ordered, a course answered right, the book at mail call.
-  const k = CENTER_PERKS.comms!.kiosk;
+  const k = MAPLE_GROVE.comms!.kiosk;
   bot.walkTo(tile(k.x, k.z));
   bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
   check(bot.st.kiosk > 0, 'kiosk: logged in');
@@ -1273,7 +1273,7 @@ play('kiosk', (bot) => {
 
 play('oddjob', (bot) => {
   // The odd jobs board (P40): the board read, the Delivery taken, the parcel given, the job handed in.
-  const b = CENTER_PERKS.board!;
+  const b = MAPLE_GROVE.board!;
   check(bot.walkTo(tile(b.x, b.z)), 'oddjob: at the board');
   const pin = dealsOf(bot.sim).findIndex((d) => d.kind === KIND.DELIVER);
   check(pin >= 0, 'oddjob: a Delivery pinned up');
@@ -1348,7 +1348,7 @@ function follow(id: string) {
   console.log(`cousin, not understood: ended at step ${progress.k + 1}; silent: ${quiet.why()}`);
   // The queue walked away from: the place lost, the lesson ends.
   const away = follow('payphone');
-  const c = CENTER_PERKS.comms!;
+  const c = MAPLE_GROVE.comms!;
   away.bot.walkTo(tile(c.line[0].x, c.line[0].z));
   away.bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
   away.bot.walkTo(tile(c.phone.x, c.phone.z + 2));
@@ -1357,7 +1357,7 @@ function follow(id: string) {
   away.bot.until(() => !!away.why(), 60 * 20);
   check(!!away.why(), `payphone: walking off ends the lesson (${away.why()})`);
   // The kiosk: walked away mid-lesson (logged out), a course given up.
-  const k = CENTER_PERKS.comms!.kiosk;
+  const k = MAPLE_GROVE.comms!.kiosk;
   const off = follow('kiosk');
   off.bot.walkTo(tile(k.x, k.z));
   off.bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
@@ -1435,7 +1435,7 @@ function follow(id: string) {
   const hot = follow('forgery');
   hot.ctx.craftOpen = true;
   hot.bot.op(OP.CRAFT, (1 << hot.bot.slotOf('release_form')) | (1 << hot.bot.slotOf('ink')));
-  const q = CENTER_PERKS.comms!.release.at[0];
+  const q = MAPLE_GROVE.comms!.release.at[0];
   hot.bot.walkTo(tile(q.x, q.z), 2000);
   hot.bot.hold('forged_release');
   hot.bot.until(() => !hot.bot.st.seen, 20 * 60 * 10);
@@ -1452,7 +1452,7 @@ function follow(id: string) {
 }
 {
   // The parole board (P39): sat down, then up and out of the room (walked out); and claiming everything on a record that doesn't bear it out (denied).
-  const h = HEARINGS[CENTER_PERKS.id];
+  const h = HEARINGS[MAPLE_GROVE.id];
   const out = follow('parole');
   out.bot.walkTo(tile(h.seat.x, h.seat.z), 2000);
   out.bot.until(() => !!out.bot.st.hearing, 20 * 60 * 15);
@@ -1547,9 +1547,9 @@ function follow(id: string) {
   // A stray hole dug down in the cell first (Space held facing the wrong way), then the lesson as the bot plays it: never "dug up inside".
   const { bot, progress, why } = follow('tunnel');
   bot.face(DIR.WEST);
-  bot.hold('sturdy_shovel');
+  bot.hold('heavy_shovel');
   check(
-    bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[tile(21, 18)] === TILE.SHAFT),
+    bot.strikeUntil('heavy_shovel', () => bot.sim.world.ground.kind[tile(21, 18)] === TILE.SHAFT),
     'tunnel: a stray hole dug down',
   );
   for (let k = 0; k < 6; k++) if (itemOf(bot.st.items.inv[k]) === n('dirt')) bot.st.items.inv[k] = 0;
@@ -1616,7 +1616,7 @@ function follow(id: string) {
   check(progress.done, 'dogs: and it ends done');
 }
 {
-  // Pratt never paid: the heat cools off by itself (the routine kept: 2.23, a guard minds a block skipped) and the lesson says so.
+  // Tibbs never paid: the heat cools off by itself (the routine kept: 2.23, a guard minds a block skipped) and the lesson says so.
   const { bot, progress, why } = follow('guards');
   bot.keepRoutine(() => !!why(), 8 * 60 * 20);
   check(why() === 'lesson.guards.cooled', `guards: heat cooled off before paying ends the lesson (${why()})`);
@@ -1625,7 +1625,7 @@ function follow(id: string) {
 {
   // Cheat walked away from (folded): the lesson says so; a shootout left behind on the court, the same.
   const cards = follow('cards');
-  check(talkTo(cards.bot, cards.bot.st.inmates[0].body), 'cards: talking to Sparky');
+  check(talkTo(cards.bot, cards.bot.st.inmates[0].body), 'cards: talking to Scooter');
   cards.bot.op(OP.TALK, TALK.CHEAT, 0);
   for (let k = 0; k < 40; k++) cards.bot.step(command(DIR.EAST));
   check(cards.why() === 'lesson.cards.folded', `cards: walking away from the table ends the lesson (${cards.why()})`);
@@ -1633,19 +1633,19 @@ function follow(id: string) {
   const c = courtOf(hoops.bot.sim)!;
   hoops.bot.walkTo(tile(c.spots[0].x, c.spots[0].z));
   shoot(hoops.bot, 0);
-  check(talkTo(hoops.bot, hoops.bot.st.inmates[0].body), 'hoops: talking to Sparky');
+  check(talkTo(hoops.bot, hoops.bot.st.inmates[0].body), 'hoops: talking to Scooter');
   hoops.bot.op(OP.TALK, TALK.HOOPS);
   hoops.bot.walkTo(tile(30, 31));
   check(hoops.why() === 'lesson.hoops.off', `hoops: leaving the court ends the lesson (${hoops.why()})`);
   // The board left (up from it) until free time is over: said; resigning the set-up game: said.
   const up = follow('checkers');
-  check(talkTo(up.bot, up.bot.st.inmates[0].body), 'checkers: talking to Sparky');
+  check(talkTo(up.bot, up.bot.st.inmates[0].body), 'checkers: talking to Scooter');
   up.bot.op(OP.TALK, TALK.CHECKERS, 1);
   up.bot.op(OP.TALK, TALK.CHECKERS, 0);
   up.bot.until(() => !!up.why(), 5 * 60 * 20 * 60);
   check(up.why() === 'lesson.games.closed', `checkers: up from the board until free time ends ends the lesson (${up.why()})`);
   const quit = follow('checkers');
-  check(talkTo(quit.bot, quit.bot.st.inmates[0].body), 'checkers: talking to Sparky');
+  check(talkTo(quit.bot, quit.bot.st.inmates[0].body), 'checkers: talking to Scooter');
   quit.bot.op(OP.TALK, TALK.CHECKERS, 1);
   quit.bot.op(OP.TALK, TALK.CHECKERS, 2);
   check(quit.why() === 'lesson.checkers.resigned', `checkers: resigning ends the lesson (${quit.why()})`);
@@ -1738,7 +1738,7 @@ function follow(id: string) {
   bot.step();
   check(bot.walkTo(tile(48, 40), 4000), 'heat: at the east fence');
   bot.face(DIR.EAST);
-  bot.strikeUntil('light_cutters', () => bot.sim.world.ground.kind[tile(49, 40)] === TILE.FENCE_CUT);
+  bot.strikeUntil('reinforced_cutters', () => bot.sim.world.ground.kind[tile(49, 40)] === TILE.FENCE_CUT);
   // (The cutters put away: the last step, nothing contraband in hand, holds; the first never happened.)
   bot.op(OP.SELECT, 1);
   bot.until(
@@ -1794,7 +1794,7 @@ function follow(id: string) {
     }
     bot.face(DIR.NORTH);
     check(
-      bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tile(x, z)] !== TILE.SOIL),
+      bot.strikeUntil('heavy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tile(x, z)] !== TILE.SOIL),
       `tunnel, braced early: ${x},${z} dug`,
     );
     check(bot.walkTo(tile(x, z), 400), `tunnel, braced early: along to ${x},${z}`);
@@ -1811,9 +1811,9 @@ function follow(id: string) {
   // Down a stray hole beside the desk, not under it: the first steps pass, and up outside it ends done.
   const { bot, progress, why } = follow('tunnel');
   bot.face(DIR.WEST);
-  bot.hold('sturdy_shovel');
+  bot.hold('heavy_shovel');
   check(
-    bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[tile(21, 18)] === TILE.SHAFT),
+    bot.strikeUntil('heavy_shovel', () => bot.sim.world.ground.kind[tile(21, 18)] === TILE.SHAFT),
     'tunnel: a stray hole',
   );
   // (Facing it from beside it: Climb down.)
@@ -1926,7 +1926,7 @@ play('shell', (bot) => {
   );
   check(bot.walkTo(tile(53, 62), 400), "shell: at the gatehouse's far edge");
   bot.face(DIR.SOUTH);
-  bot.hold('sheet_rope');
+  bot.hold('knotted_sheets');
   bot.use();
 });
 
@@ -1939,7 +1939,7 @@ play('mines', (bot) => {
 play('raft', (bot) => {
   bot.face(DIR.EAST);
   check(
-    bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[tile(60, 28)] === TILE.FENCE_CUT),
+    bot.strikeUntil('heavy_cutters', () => bot.sim.world.ground.kind[tile(60, 28)] === TILE.FENCE_CUT),
     'raft: the dock fence cut',
   );
   check(bot.walkTo(tile(62, 28), 300), "raft: at the pier's end");
@@ -1949,7 +1949,7 @@ play('raft', (bot) => {
 });
 
 play('helicopter', (bot) => {
-  // Each riot guard: locked on, a cup of molten chocolate thrown; then aboard.
+  // Each riot guard: locked on, a cup of scalding cocoa thrown; then aboard.
   const st = bot.st;
   const inmates = st.inmates.length;
   for (const k of bot.sim.prison.guards.flatMap((g, j) => (g.helipad ? [j] : []))) {
@@ -1963,7 +1963,7 @@ play('helicopter', (bot) => {
       }
       bot.pilot.stop();
       if (st.lock !== inmates + k) bot.op(OP.LOCK, 2 + inmates + k);
-      bot.hold('molten_chocolate');
+      bot.hold('scalding_cocoa');
       bot.op(OP.USE, 1);
     }
     check(g.ko > 0, `helicopter: riot guard ${k} out cold`);

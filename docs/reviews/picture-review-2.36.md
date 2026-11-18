@@ -29,12 +29,12 @@ Cost is per frame on the phone's tier (1024 shadow map): draw calls, triangles, 
 | 1 | All, 21:00–05:00 | The night is noon dimmed: the ambient's sky stays day's white and its bounce grass-green, so the grass is a saturated green, and the warm pools barely stand out of it | Moonlight: the ambient's sky moon-blue and its bounce dark slate as the night falls, lifted to hold the same brightness (nothing goes black) | 0 calls, 0 tris, 0 ms (two colours) | **Yes** |
 | 2 | All, 21:00–05:00 | A lamp's pool is a soft glow: half strength at 1.2 tiles, a quarter at 2.5. The dark rule (2.35) lights every tile within 2.5 tiles of the head, so where a guard sees by lamplight never showed | The pool evenly lit to the rule's reach (half strength still at 2.5 tiles) and gone at 3, the same instanced mesh with its own texture | 0 calls, 0 tris, 0 ms | **Yes** |
 | 3 | All, rain, storm and fog by day | The sun's shadows stay noon-crisp under the cloud: a rainy day reads as a sunny one with streaks | The sun's shadow fades under cloud: 40% off in rain, 60% in a storm, 30% in fog (`shadow.intensity`) | 0 calls, 0 tris, 0 ms | **Yes** |
-| 4 | Stalag Flucht, all day | Snow-white wall tops on snow-white ground: the rooms read only by their floors and the brick strips; at night the lit canteen and gym look darker than the snow outside, where the dark rule calls them lit | Wall tops a step darker (stone with a snow speckle); the alpine room pools brighter | 0 | **Yes**, second round: the caps; the rooms' light left (below) |
-| 5 | San Pancho, by day | The adobe wall tops are the yard's dirt colour, and orange jumpsuits stand on orange dirt: the yard's walls and people blend | A darker adobe cap or a paler yard; or a faint ring under the player, as the manhunt has | 0 (a ring: 1 call, 2 tris) | **Yes**, second round: a clay cap and a paler yard; no ring (the camera keeps the player in the middle) |
-| 6 | Center Perks, Shankton, Irongate, Training | The wall tops, the largest surface on screen, are one flat grey speckle with no edge: from this camera they read unfinished | A lighter rim along the caps' edges, or joints every few tiles | 0 calls, 0 tris | **Yes**, second round |
+| 4 | Camp Frostberg, all day | Snow-white wall tops on snow-white ground: the rooms read only by their floors and the brick strips; at night the lit canteen and gym look darker than the snow outside, where the dark rule calls them lit | Wall tops a step darker (stone with a snow speckle); the alpine room pools brighter | 0 | **Yes**, second round: the caps; the rooms' light left (below) |
+| 5 | Sierra Seca, by day | The adobe wall tops are the yard's dirt colour, and orange jumpsuits stand on orange dirt: the yard's walls and people blend | A darker adobe cap or a paler yard; or a faint ring under the player, as the manhunt has | 0 (a ring: 1 call, 2 tris) | **Yes**, second round: a clay cap and a paler yard; no ring (the camera keeps the player in the middle) |
+| 6 | Maple Grove, Gravel Point, Gull Rock, Training | The wall tops, the largest surface on screen, are one flat grey speckle with no edge: from this camera they read unfinished | A lighter rim along the caps' edges, or joints every few tiles | 0 calls, 0 tris | **Yes**, second round |
 | 7 | All, fog | The veil lies over open ground only, its mask a texel a tile: the wall tops stand crisp above a fog bank cut at the walls, like a highlighted box | Blur the mask when it's built (a 3×3 box), the fog thinning over a tile | 0 at run time | **Yes**, second round |
 | 8 | All, heatwave | The haze hardly shows (2% darker, a faint warm tint) | A stronger warm grade, a shimmer | 0 to 1 call | **Yes**, second round: the warm grade (no shimmer) |
-| 9 | Center Perks, San Pancho, Irongate | A lamp's pool reaches through walls: 2, 4 and 4 cell tiles (and 18, 13 and 13 room tiles) lie within 2.5 tiles of a lamp across a wall. The rule and the 3D agree (both light them), so a cell's floor glows warm from a lamp outside and counts lit after Lights Out | The rule's pool stopping at walls (a line test), behind `Sim.rules235`, and the 3D's pool clipped alike | 0 calls; about 1,500 more triangles at night | **Yes**, second round |
+| 9 | Maple Grove, Sierra Seca, Gull Rock | A lamp's pool reaches through walls: 2, 4 and 4 cell tiles (and 18, 13 and 13 room tiles) lie within 2.5 tiles of a lamp across a wall. The rule and the 3D agree (both light them), so a cell's floor glows warm from a lamp outside and counts lit after Lights Out | The rule's pool stopping at walls (a line test), behind `Sim.rules235`, and the 3D's pool clipped alike | 0 calls; about 1,500 more triangles at night | **Yes**, second round |
 | 10 | All, by day, phone tier | A lamp's head casts its shadow on the grass, the 6 cm pole's shadow under a texel of the 1024 map: the head's shadow floats apart | None worth its cost (a thicker pole in the shadow pass only) | 1 call | No: the pole's shadow is there at noon and only thins at a low sun on the phone's tier; a draw call more for it isn't worth it |
 
 **Looked for and not found:** shadow acne or peter-panning at either tier, z-fighting (the pools sit
@@ -46,8 +46,8 @@ feet finds them).
 ## What was done (the picks)
 
 - **Moonlight** (`render/viewLight.ts`): `MOON_SKY`, `MOON_GROUND` and `MOON_LIFT`; the lockdown's red
-  pulses over it as before. Mean brightness of the night pictures held: Center Perks' yard 38 → 41,
-  Stalag Flucht's 69 → 69, San Pancho's 50 → 51, Shankton's 43 → 44 (of 255).
+  pulses over it as before. Mean brightness of the night pictures held: Maple Grove's yard 38 → 41,
+  Camp Frostberg's 69 → 69, Sierra Seca's 50 → 51, Gravel Point's 43 → 44 (of 255).
 - **Pools to the rule's reach** (`render/lights.ts`): `poolTexture()`, `POOL` (6 tiles across), its
   half-strength stop placed at `LAMP_LIT`. No lamp moved; `sim/ai/light.ts` untouched.
 - **Overcast shadows** (`render/viewLight.ts`): `OVERCAST_SHADOW`, `STORM_SHADOW`, `FOG_SHADOW`, eased
@@ -57,10 +57,10 @@ The second round:
 
 - **Cap stones** (`render/textures.ts`'s `capEdges`): every wall cap a stone a tile, lit on its west and
   south edges (the sun's side), shaded north and east, so a run of them reads as coping with its joints.
-  Stalag Flucht's are snow on stone, a shade greyer than the snow on the ground, their edges outlining
-  the walls; San Pancho's fired clay, darker than the sand and the plaza round them; Center Perks',
-  Shankton's and Training's grey, Irongate's granite, as they were but for the edges.
-- **San Pancho's plaza** (`redEarth`): a sun-faded brown, no longer the jumpsuits' orange. The uniforms
+  Camp Frostberg's are snow on stone, a shade greyer than the snow on the ground, their edges outlining
+  the walls; Sierra Seca's fired clay, darker than the sand and the plaza round them; Maple Grove's,
+  Gravel Point's and Training's grey, Gull Rock's granite, as they were but for the edges.
+- **Sierra Seca's plaza** (`redEarth`): a sun-faded brown, no longer the jumpsuits' orange. The uniforms
   are untouched.
 - **The fog's edge** (`render/Weather.ts`): its outdoor mask blurred over the tiles round when it's built,
   so the veil thins over a wall rather than stopping at it.
@@ -69,7 +69,7 @@ The second round:
   lamp's pool only if no tile that stops sight, as built, lies between it and the head: a wall does, a
   fence doesn't; integer samples an eighth of a tile apart), on `Dark.walls`, false under `Sim.rules235`
   (older runs light through walls as they did). `render/lights.ts` draws the warm pools tile by tile on
-  the tiles `lampSees` passes, one mesh (a quad a tile, about 1,500 triangles for Center Perks' 25
+  the tiles `lampSees` passes, one mesh (a quad a tile, about 1,500 triangles for Maple Grove's 25
   lamps). The 3D draws the new rule in an older run's replay too (the cones follow the run's rule).
 
 ## Proof
@@ -86,12 +86,12 @@ After both rounds:
 
 - `stealthtest`: every tile a lamp lights is one a lamp in reach sees clear, by a line of the test's own
   (floats, a thirty-second of a tile), outdoors in all five prisons; the cell tiles behind a wall from
-  every lamp (Center Perks 2, San Pancho 4, Irongate 4) dark after Lights Out and lit under the old
+  every lamp (Maple Grove 2, Sierra Seca 4, Gull Rock 4) dark after Lights Out and lit under the old
   rules; an older run's `darkNow` lights through walls. Its counts moved only by tiles behind a wall
-  (Shankton's lamp tiles 114 → 112, Irongate's 63 → 62 and rooms 596 → 586, Center Perks' rooms
+  (Gravel Point's lamp tiles 114 → 112, Gull Rock's 63 → 62 and rooms 596 → 586, Maple Grove's rooms
   902 → 901). The escape bots are byte-identical.
 - `perfprobe.ts`'s `check()` in the phone's profile: all 36 scenes within `perfbudget.json`, the same
-  draw calls in each, about a thousand more triangles at night (Center Perks' 23:30 107k → 108k).
+  draw calls in each, about a thousand more triangles at night (Maple Grove's 23:30 107k → 108k).
 - The map viewer's 3D photos retaken (all six and the five outsides: the caps are on every wall, the
   prison's wall behind the manhunt's outside too); `npm run maps` changed nothing else.
 - How to play: 30 pictures retaken at 915×412, each compared with the old pixel by pixel and by eye, the
@@ -110,8 +110,8 @@ After both rounds:
 - After the independent review: moonlight on the ground floor and roofs only (the tunnels and vents keep
   their own light); door tiles in a lamp's pool drawn (the rule lit them; `poolTiles`, the 3D's list,
   now skips only tiles both solid and opaque), `stealthtest` comparing every tile's lamp light with the
-  pool's tiles under both rules (it caught those doors when the old skip was put back: 1 at Center Perks,
-  2 at San Pancho, 1 at Irongate); an older run's replay draws the pools through walls as its rule
+  pool's tiles under both rules (it caught those doors when the old skip was put back: 1 at Maple Grove,
+  2 at Sierra Seca, 1 at Gull Rock); an older run's replay draws the pools through walls as its rule
   does, their mesh built the first time a frame asks. `perfprobe` again in budget (the auto quality
   pinned to the phone's tier for the run: on a busy machine it had stepped down to no shadows).
 - `npm test`: every test green; `budgettest` counts one more shared texture in every prison (the

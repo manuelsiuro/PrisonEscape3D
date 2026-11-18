@@ -13,7 +13,7 @@ import { CALLEE } from '../content/phone';
 import { itemDef } from '../content/items';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { MAP_W } from '../sim/world/World';
-import { CENTER_PERKS } from '../content/prisons/center-perks';
+import { MAPLE_GROVE } from '../content/prisons/maple-grove';
 import { HOLDER, jobRooms } from '../sim/systems/economy';
 import { prisonDay } from '../sim/systems/calendar';
 import { FEAT } from '../sim/systems/ledger';
@@ -111,10 +111,10 @@ export const DAYS: readonly Lesson[] = [
     ],
   },
   {
-    // Meals (2.25): a breakfast at Center Perks, the tray from the counter to a table and back.
+    // Meals (2.25): a breakfast at Maple Grove, the tray from the counter to a table and back.
     id: 'meals',
     icon: 'utensils',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 58,
     setup: (sim) => {
       clockTo(sim, at(9, 2));
@@ -149,10 +149,10 @@ export const DAYS: readonly Lesson[] = [
     ],
   },
   {
-    // Showers (2.26): the block at Center Perks, the water turned on, energy and heat, walked away from.
+    // Showers (2.26): the block at Maple Grove, the water turned on, energy and heat, walked away from.
     id: 'showers',
     icon: 'water',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 59,
     setup: (sim) => {
       clockTo(sim, at(16, 2));
@@ -174,10 +174,10 @@ export const DAYS: readonly Lesson[] = [
     ],
   },
   {
-    // Roll call (2.27): the morning's at Center Perks, the square, the warden's call, the badge.
+    // Roll call (2.27): the morning's at Maple Grove, the square, the warden's call, the badge.
     id: 'rollcall',
     icon: 'bell',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 60,
     setup: (sim) => {
       clockTo(sim, at(8, 2));
@@ -221,7 +221,7 @@ export const DAYS: readonly Lesson[] = [
     // Lights Out (2.28): home by the end of the grace, the dummy in and out of the bed at night, and to sleep.
     id: 'night',
     icon: 'moon',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 64,
     setup: (sim) => {
       clockTo(sim, at(22, 50));
@@ -253,7 +253,7 @@ export const DAYS: readonly Lesson[] = [
     // The gardener (P31): the Work Period in the vegetable garden, seedlings into a planter, a crate of produce for the kitchen.
     id: 'gardener',
     icon: 'sprout',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 62,
     setup: (sim) => {
       clockTo(sim, at(12, 1));
@@ -294,7 +294,7 @@ export const DAYS: readonly Lesson[] = [
     // The library (2.31): a book off the shelf, read on a chair, a set done.
     id: 'library',
     icon: 'book',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 146,
     setup: (sim) => {
       clockTo(sim, at(10, 2));
@@ -322,7 +322,7 @@ export const DAYS: readonly Lesson[] = [
     // The vending machine (2.32): a soda bought and drunk, then something that sticks and is thumped free.
     id: 'vending',
     icon: 'cart',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 147,
     setup: (sim) => {
       clockTo(sim, at(10, 2));
@@ -358,7 +358,7 @@ export const DAYS: readonly Lesson[] = [
     // The menu board and the water cooler (2.33): the day's dishes read, a scribble on the board, a cup at the cooler.
     id: 'menu',
     icon: 'utensils',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 148,
     setup: (sim) => {
       clockTo(sim, at(10, 2));
@@ -387,14 +387,14 @@ export const DAYS: readonly Lesson[] = [
     // The pay phone (P34): someone on it, a place in line, a secret overheard while waiting, a call home, the money at mail call.
     id: 'payphone',
     icon: 'phone',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 91,
     setup: (sim) => {
       clockTo(sim, at(10, 2));
       const s = sim.state;
       const c = sim.prison.comms!;
       s.cash = 10;
-      // Rusty on the phone, a long call (day 1: nobody else queues).
+      // Sonny on the phone, a long call (day 1: nobody else queues).
       const on = 0;
       const m = s.inmates[on];
       m.body.x = c.phone.x * UNIT + UNIT / 2;
@@ -431,7 +431,7 @@ export const DAYS: readonly Lesson[] = [
     // Cousin Lou (P34): a cake with a file in it, asked for on a tapped line in three phrases.
     id: 'cousin',
     icon: 'route',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 92,
     setup: (sim) => {
       clockTo(sim, at(10, 2));
@@ -468,7 +468,7 @@ export const DAYS: readonly Lesson[] = [
     // The internet kiosk (P35): logged in at the library's terminal, a letter home, an order off the shop, a course, mail call.
     id: 'kiosk',
     icon: 'monitor',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 93,
     setup: (sim) => {
       clockTo(sim, at(10, 2));
@@ -517,7 +517,7 @@ export const DAYS: readonly Lesson[] = [
     // The odd jobs board (P40): the board read, the Delivery taken (seed 94's middle pin), the parcel given, the job handed in.
     id: 'oddjob',
     icon: 'pin',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 94,
     setup: (sim) => {
       clockTo(sim, at(10, 5));

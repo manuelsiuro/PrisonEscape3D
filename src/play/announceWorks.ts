@@ -226,7 +226,7 @@ export function announceWorks(e: SimEvent, sim: Sim) {
       if (!e.on) {
         sound.powerDown();
         buzz('giveWay');
-        // Irongate's two generators (P12): the banner says which half went dead.
+        // Gull Rock's two generators (P12): the banner says which half went dead.
         const split = !!sim.world.def.grid;
         // P17: lightning (both halves at once: one banner) or the generator's service.
         if (e.by === 'storm') {

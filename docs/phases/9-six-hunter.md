@@ -15,8 +15,8 @@ sign of six riders; the state bought the estate and kept the name. The warden, *
 Master of the Hunt, runs it with exactly **six Hunters**, each with a hound. The Six keep a tally of who
 brought back which runner; the PA calls the inmates "hares".
 
-**Place in the campaign.** `difficulty: 6` ("hunting grounds", `security.6`), after Irongate in `PRISONS`
-(opened by escaping Irongate, `campaign.ts` as it is). Out of the Daily: its rhythm draws levels 1–5, so
+**Place in the campaign.** `difficulty: 6` ("hunting grounds", `security.6`), after Gull Rock in `PRISONS`
+(opened by escaping Gull Rock, `campaign.ts` as it is). Out of the Daily: its rhythm draws levels 1–5, so
 no past or future Daily changes (`dailytest`: the Six Hunter never comes up). `theme: 'forest'`.
 
 **The map** (`src/content/prisons/six-hunter/`, 64×64):
@@ -70,7 +70,7 @@ most fragile: v1.5.2). Hounds work from prison day 2, as everywhere (`DOG_FIRST_
 | Drag line | sock + aniseed (Int 30) | thrown: the trail washed out, and only the Hunters whose hound is on shift, in earshot, are pulled to it (`DRAG_NOISE`); spent either way |
 | Tar soap | soap + pine tar (Int 20) | washes the scent, twice |
 | Ghillie cloak | net + bed sheet + pine tar (Int 50) | worn: no trail laid on open ground; other clothes in the manhunt |
-| Antler pick | antler + tool handle + duct tape (Int 40) | digs; bone, heard as far as plastic (a tile less than a light shovel, two less than a sturdy one) |
+| Antler pick | antler + tool handle + duct tape (Int 40) | digs; bone, heard as far as plastic (a tile less than a reinforced shovel, two less than a heavy-duty one) |
 | Recall horn | the Huntmaster's belt | blown: every hound home to its kennel for an hour of game time (`RECALL_STEPS`, `state.recall`); the Hunters within 12 walking tiles hear it, a bang's noise (`HORN_NOISE`) |
 
 Every new recipe needs something found only here, so no other prison's handbook, tips or Intellect marks
@@ -97,7 +97,7 @@ manhunt). Gangs: the kitchen crew (Wren), the lifers (Moth, old Badger), the gym
 The same routes run under every holiday (`holidaybotstest`) and every twist (`dailytest`).
 
 **The outside** (`content/outside/six-hunter.ts`, final for the look's pass; redrawn after the review, which found
-the first a copy of Stalag Flucht's): the wooded valley of the Hollowrun. The logging road runs north from the gate
+the first a copy of Camp Frostberg's): the wooded valley of the Hollowrun. The logging road runs north from the gate
 over the river's bridge, through the sawmill's deer fence, to the siding where the timber train is loading (safety:
 the whole yard by the rails). The river bends across the valley, a ford in each reach (wading washes the trail),
 culverts under the road where the gullies cross, the woodcutters' track west and north to the hut, two wicket gates
@@ -105,8 +105,8 @@ in the fence, thickets along the banks. The Six as searchers: Harrow patrolling 
 wicket, Quiller the fence's west half; after the alarm Garrow with Duchess and Fell from the gate, Bracken and Larch
 with Brutus from the siding; roadblocks at the bridge and below the fence; the county's helicopter late (12 s).
 `hunttest`: the expert gets away from every start in every condition; the careful bot is caught 36% of the time in
-all (wall 67%, sea 42%, glider 33%, van 25%, gate 13%), at the hard end of the outsides' range (San Pancho's gate
-75%, Stalag Flucht's glider and Shankton's gate 67%).
+all (wall 67%, sea 42%, glider 33%, van 25%, gate 13%), at the hard end of the outsides' range (Sierra Seca's gate
+75%, Camp Frostberg's glider and Gravel Point's gate 67%).
 
 **Snapshots accepted** (2.36, read line by line): every change is a line added for the Six Hunter or a total that
 now counts it (`buttontest`'s presses, `hunttest`'s and `gossiptest`'s sums, the counts of items, recipes,

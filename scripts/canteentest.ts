@@ -6,7 +6,7 @@
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { placesOf, type Spot } from '../src/sim/ai/places';
@@ -43,7 +43,7 @@ const at = (bot: Bot, spot: Spot) => {
   p.facing = spot.face;
 };
 /** In the canteen at a meal, the crowd settled on its way. */
-function atBreakfast(seed = 3, prison = CENTER_PERKS) {
+function atBreakfast(seed = 3, prison = MAPLE_GROVE) {
   const bot = new Bot(prison, seed);
   check(bot.routineUntil(1, 9 * 60 + 2), 'breakfast');
   check(ROUTINE[bot.st.routine].id === 'breakfast', 'it is breakfast');
@@ -60,7 +60,7 @@ const freeSeat = (bot: Bot) =>
   const bot = atBreakfast();
   const places = placesOf(bot.sim.world);
   const counter = counterOf(bot);
-  check(counter >= 0 && places.counters.length > 0, 'Center Perks serves from a counter');
+  check(counter >= 0 && places.counters.length > 0, 'Maple Grove serves from a counter');
   check(traysHere(bot.sim) && mealSteps(bot.sim) === MEAL_STEPS, 'trays here, six seconds to eat');
 
   // A table with no tray: a rest, no meal.
@@ -265,7 +265,7 @@ const freeSeat = (bot: Bot) =>
   at(bot, placesOf(bot.sim.world).counters[0]);
   bot.act();
   const snap = JSON.parse(JSON.stringify(bot.sim.snapshot())) as Snapshot;
-  const back = new Sim(CENTER_PERKS, 9);
+  const back = new Sim(MAPLE_GROVE, 9);
   back.restore(snap);
   check(back.state.tray === TRAY.FULL, 'a save holds the tray');
   check(back.hash() === bot.sim.hash(), 'and hashes the same');
@@ -277,7 +277,7 @@ const freeSeat = (bot: Bot) =>
     delete m.seat;
     delete m.seatFace;
   }
-  const was = new Sim(CENTER_PERKS, 9);
+  const was = new Sim(MAPLE_GROVE, 9);
   old.state.eaten = MEAL_STEPS_224;
   was.restore(old as unknown as Snapshot);
   check(was.state.eaten === MEAL_STEPS, 'a meal eaten before the save stays eaten');
@@ -291,7 +291,7 @@ const freeSeat = (bot: Bot) =>
 
 // ------------------------------------------------------------------ older runs, and a prison with no counter
 {
-  const bot = new Bot(CENTER_PERKS, 31);
+  const bot = new Bot(MAPLE_GROVE, 31);
   bot.sim.rules224 = true;
   check(bot.routineUntil(1, 9 * 60 + 25), 'breakfast');
   check(!traysHere(bot.sim) && mealSteps(bot.sim) === MEAL_STEPS_224, 'older runs: no trays, three seconds');
@@ -309,15 +309,15 @@ const freeSeat = (bot: Bot) =>
   check(bot.st.eaten === MEAL_STEPS_224 && bot.st.tray === TRAY.NONE, 'older runs: the tray is just there');
 
   // A run saved before 2.25 and played on: a log of its own from here, since it plays on under the new rules.
-  const old = new RunRecorder(new Sim(CENTER_PERKS, 32), { seed: 32, game: '2.24.0' });
+  const old = new RunRecorder(new Sim(MAPLE_GROVE, 32), { seed: 32, game: '2.24.0' });
   for (let k = 0; k < 40; k++) old.step(0);
   const log = old.toLog();
   check(new RunRecorder(old.sim, { log, game: '2.36.0' }).toLog().seed === -1, 'a log from 2.24 is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 33), { seed: 33, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 33), { seed: 33, game: '2.44.0' });
   for (let k = 0; k < 40; k++) now.step(0);
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 33, 'a log from today is');
   // (Played under today's rules, a log of today's replays whole.)
-  const again = replayLog(now.toLog(), CENTER_PERKS);
+  const again = replayLog(now.toLog(), MAPLE_GROVE);
   check(!!again?.ok, 'and replays whole');
 
   const sim = new Sim(TRAINING, 1);
@@ -386,7 +386,7 @@ const freeSeat = (bot: Bot) =>
 }
 {
   // On film and talent nights the crowd sits down on dinner's plan: no meal, no tray, nobody at the counter.
-  const bot = new Bot(CENTER_PERKS, 61);
+  const bot = new Bot(MAPLE_GROVE, 61);
   bot.routineUntil(1, 18 * 60 + 5);
   const dinner = ROUTINE.findIndex((r) => r.id === 'dinner');
   const social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], serve: socialNow(bot.sim).serve };

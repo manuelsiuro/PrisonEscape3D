@@ -55,7 +55,7 @@ import type { QuizView } from '../ui/quiz';
 
 /** A clock time ("19:34") from minutes of the day. */
 const formatTime = (m: number) => hhmm(m % 1440);
-/** A guard by name ("Officer Pratt"), an item by its id. */
+/** A guard by name ("Officer Tibbs"), an item by its id. */
 const guardLabel = (sim: Sim, k: number) => guardWord(sim, 'guard.title', { name: sim.prison.guards[k]?.name ?? '' });
 const itemName = (id: string) => t(`item.${id}` as Key);
 

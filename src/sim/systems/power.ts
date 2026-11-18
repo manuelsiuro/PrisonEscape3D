@@ -43,7 +43,7 @@ export function devices(sim: SimContext) {
   });
 }
 
-/** The prison's generators (prop indexes, in map order): one, or HMP Irongate's two (P12). */
+/** The prison's generators (prop indexes, in map order): one, or HMP Gull Rock's two (P12). */
 export function generatorsOf(w: World): number[] {
   const out: number[] = [];
   w.props.forEach((p, k) => p.kind === 'generator' && out.push(k));
@@ -56,7 +56,7 @@ export const genOf = (w: World, prop: number) => Math.max(0, generatorsOf(w).ind
 /** Steps until a generator's power is back (0: running). */
 export const offFor = (s: SimState, gen: number) => (gen === 1 ? s.powerOff2 : s.powerOff);
 
-/** The generator that powers something (GDD §5.5; Irongate's split, §4.5): the prison's one, else the one the grid names. */
+/** The generator that powers something (GDD §5.5; Gull Rock's split, §4.5): the prison's one, else the one the grid names. */
 export function genFor(w: World, use: PowerUse): number {
   const grid = w.def.grid;
   if (!grid) return 0;
@@ -69,7 +69,7 @@ export const powered = (w: World, s: SimState, use: PowerUse) => offFor(s, genFo
 
 /**
  * The generator (GDD §5.5): switched off, what it powers (the electric fence, the
- * detectors, the cameras, the searchlights, the lights: all of them, or Irongate's half)
+ * detectors, the cameras, the searchlights, the lights: all of them, or Gull Rock's half)
  * goes dead for 45 s, and a guard is sent to put it right; switched back on by the player,
  * sooner.
  */

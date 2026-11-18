@@ -1,7 +1,7 @@
-center-perks box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
-stalag-flucht box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
-shankton box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
-san-pancho box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
-irongate box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
+maple-grove box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
+frostberg box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
+gravel-point box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
+sierra-seca box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
+gull-rock box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
 six-hunter box 6×4: zoom at the places desktop 1.70, upright 1.62, sideways 1.70, narrow 1.62
 the spot and the goal in the picture on every pitch and screen; the player on screen up to 3 tiles off the pitch

@@ -1,10 +1,10 @@
 produce: fruit +12 energy, a vegetable +10 energy +10 health, kept when it would do nothing; not before 2.43
-beds tended from the floor in front of them (else from the bed itself): center-perks 12 of 12, stalag-flucht 0 of 12, shankton 7 of 12, san-pancho 8 of 12, irongate 6 of 12, six-hunter 6 of 12, training 12 of 12
-center-perks: 3 seeds, days 1–4: 10 set off, 10 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 19 min
-stalag-flucht: 3 seeds, days 1–4: 9 set off, 8 tended, 1 gave up or called away, at most 1 a free time, the slowest there in 17 min
-shankton: 3 seeds, days 1–4: 14 set off, 14 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 12 min
-san-pancho: 3 seeds, days 1–4: 21 set off, 21 tended, 1 gave up or called away, at most 3 a free time, the slowest there in 19 min
-irongate: 3 seeds, days 1–4: 19 set off, 19 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 14 min
+beds tended from the floor in front of them (else from the bed itself): maple-grove 12 of 12, frostberg 0 of 12, gravel-point 7 of 12, sierra-seca 8 of 12, gull-rock 6 of 12, six-hunter 6 of 12, training 12 of 12
+maple-grove: 3 seeds, days 1–4: 10 set off, 10 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 19 min
+frostberg: 3 seeds, days 1–4: 9 set off, 8 tended, 1 gave up or called away, at most 1 a free time, the slowest there in 17 min
+gravel-point: 3 seeds, days 1–4: 14 set off, 14 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 12 min
+sierra-seca: 3 seeds, days 1–4: 21 set off, 21 tended, 1 gave up or called away, at most 3 a free time, the slowest there in 19 min
+gull-rock: 3 seeds, days 1–4: 19 set off, 19 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 14 min
 six-hunter: 3 seeds, days 1–4: 17 set off, 17 tended, 0 gave up or called away, at most 3 a free time, the slowest there in 17 min
 before 2.43: nobody but the player in the beds
 a neighbour's bed: never planted, his ripe crop taken only empty-handed (-15 seen, nothing unseen), watered when it wanted it +3 once a day

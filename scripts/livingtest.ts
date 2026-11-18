@@ -4,7 +4,7 @@
  * while they run, resting on an infirmary bed, getting up, a desk still searched from beside
  * its chair, inmates sitting and reading in free time, a save made seated.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { ROUTINE } from '../src/content/routine';
 import { placesOf } from '../src/sim/ai/places';
 import { Sim, type Snapshot } from '../src/sim/Sim';
@@ -24,7 +24,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 
 // ------------------------------------------------------------------ a meal
 {
-  const bot = new Bot(CENTER_PERKS, 3);
+  const bot = new Bot(MAPLE_GROVE, 3);
   check(bot.routineUntil(1, 9 * 60 + 25), 'breakfast');
   check(ROUTINE[bot.st.routine].id === 'breakfast' && bot.sim.playerZone === 'canteen', 'in the canteen for breakfast');
   // A seat nobody is heading for, the player on it facing the table.
@@ -48,7 +48,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   const rest = bot.st.energy - fed;
   check(rest >= 12 && rest <= 14, `sitting on: +${rest} in 130 steps (1.5 a second on top of the usual), no second meal`);
   // Saved and loaded seated: still seated, the meal still eaten.
-  const back = new Sim(CENTER_PERKS, 9);
+  const back = new Sim(MAPLE_GROVE, 9);
   back.restore(JSON.parse(JSON.stringify(bot.sim.snapshot())) as Snapshot);
   check(back.state.seat === seat && back.state.eaten === MEAL_STEPS, 'a save made seated loads seated');
   // A step gets the player up.
@@ -59,7 +59,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 
 // ------------------------------------------------------------------ a meal needs a meal, the action button gets up
 {
-  const bot = new Bot(CENTER_PERKS, 4);
+  const bot = new Bot(MAPLE_GROVE, 4);
   check(bot.routineUntil(1, 10 * 60 + 30), 'free time');
   const spot = placesOf(bot.sim.world).seats[0];
   at(bot, spot.tile, spot.face);
@@ -74,7 +74,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 
 // ------------------------------------------------------------------ showers, a bench, the infirmary
 {
-  const bot = new Bot(CENTER_PERKS, 5);
+  const bot = new Bot(MAPLE_GROVE, 5);
   check(bot.routineUntil(1, 16 * 60 + 5), 'the showers block');
   // Every head may be someone's: the player squeezes in under the first.
   const head = placesOf(bot.sim.world).showers[0];
@@ -88,7 +88,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   console.log(`shower: +${gain} in 5 s`);
 }
 {
-  const bot = new Bot(CENTER_PERKS, 6);
+  const bot = new Bot(MAPLE_GROVE, 6);
   check(bot.routineUntil(1, 10 * 60 + 30), 'free time again');
   // A yard bench: face it from the tile in front.
   const bench = propAt(bot.sim, 'bench');
@@ -119,7 +119,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 
 // ------------------------------------------------------------------ the desk beside its chair
 {
-  const bot = new Bot(CENTER_PERKS, 7);
+  const bot = new Bot(MAPLE_GROVE, 7);
   const places = placesOf(bot.sim.world);
   check(bot.walkTo(places.deskside[1]), 'beside the desk');
   bot.face(DIR.EAST);
@@ -136,7 +136,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 
 // ------------------------------------------------------------------ inmates in free time
 {
-  const bot = new Bot(CENTER_PERKS, 8);
+  const bot = new Bot(MAPLE_GROVE, 8);
   let sitting = 0;
   let reading = 0;
   bot.keepRoutine(
@@ -155,7 +155,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 
 // ------------------------------------------------------------------ a taken seat, a lockdown, a tool, a knockout
 {
-  const bot = new Bot(CENTER_PERKS, 7);
+  const bot = new Bot(MAPLE_GROVE, 7);
   check(bot.routineUntil(1, 10 * 60 + 30), 'free time for the edge cases');
   const spot = placesOf(bot.sim.world).seats[0];
   // Someone on the way to sit there: the player stays up, and is told so.
@@ -188,7 +188,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   check(bot.st.seat === -1, 'the tool button gets the player up');
 }
 {
-  const bot = new Bot(CENTER_PERKS, 8);
+  const bot = new Bot(MAPLE_GROVE, 8);
   check(bot.routineUntil(1, 16 * 60 + 5), 'the showers block again');
   const head = placesOf(bot.sim.world).showers[0];
   at(bot, head.tile, head.face);
@@ -201,7 +201,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 }
 {
   // Someone sitting on a yard bench: facing them is a talk, not a seat.
-  const bot = new Bot(CENTER_PERKS, 10);
+  const bot = new Bot(MAPLE_GROVE, 10);
   check(bot.routineUntil(1, 10 * 60 + 30), 'free time for a talk');
   const bench = bot.sim.world.props[propAt(bot.sim, 'bench')];
   const m = bot.st.inmates[0];
@@ -217,7 +217,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 {
   // Someone eating at the canteen, the player behind the free seat beside them: facing them
   // (at 45°) is a talk; facing the free seat is still a seat.
-  const bot = new Bot(CENTER_PERKS, 3);
+  const bot = new Bot(MAPLE_GROVE, 3);
   check(bot.routineUntil(1, 9 * 60 + 25), 'breakfast for a talk at the table');
   const w = bot.sim.world;
   const seats = placesOf(w).seats;

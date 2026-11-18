@@ -11,7 +11,7 @@ export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help' | 're
  * save just made into a slot; a leading "!" marks a failure).
  */
 /** In a lesson (`lesson`): no saving, a restart, and the way out goes back to the lessons. */
-/** `place`: where the run is ("Stalag Flucht · Day 3"), above the title; none in a lesson. */
+/** `place`: where the run is ("Camp Frostberg · Day 3"), above the title; none in a lesson. */
 /** In a Daily (`twists`, P26: its twists' chips): no saving to a slot, the twists under the title, and Try again. */
 export function showPause(
   click: () => void,

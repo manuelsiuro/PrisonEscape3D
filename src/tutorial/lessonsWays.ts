@@ -7,7 +7,7 @@ import { STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { slot } from '../sim/systems/items';
 import { containersOf } from '../sim/world/containers';
 import { LAYER, MAP_W } from '../sim/world/World';
-import { CENTER_PERKS } from '../content/prisons/center-perks';
+import { MAPLE_GROVE } from '../content/prisons/maple-grove';
 import { DAY_EVENTS, WEATHERS } from '../content/days';
 import { atWindow, checkpointOf } from '../sim/systems/getaway';
 import { atTail } from '../sim/systems/delivery';
@@ -99,12 +99,12 @@ export const WAYS: readonly Lesson[] = [
     // molten plastic; the generator room's purple door opened with the copy.
     id: 'keys',
     icon: 'key',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 152,
     setup: (sim) => {
       // (The evening's free time: four minutes, time enough to read and do it.)
       clockTo(sim, EVENING);
-      // (Officer Keller, out cold by the generator room's door for two minutes: a blow gives thirty seconds.)
+      // (Officer Garvey, out cold by the generator room's door for two minutes: a blow gives thirty seconds.)
       knockOut(sim, KELLER, 13, 37, 120 * STEPS_PER_SECOND);
       place(sim, 14, 37, 9);
       pockets(sim, 'putty', 'molten_plastic');
@@ -144,13 +144,13 @@ export const WAYS: readonly Lesson[] = [
     // Cameras and arches (2.37): contraband through the canteen's detector arch in a pouch; the woodshop's camera taped over.
     id: 'cams',
     icon: 'camera',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 153,
     setup: (sim) => {
       // (The evening's free time: four minutes, time enough to read and do it.)
       clockTo(sim, EVENING);
       place(sim, 44, 22, 13);
-      pockets(sim, 'light_cutters', 'pouch', 'duct_tape');
+      pockets(sim, 'reinforced_cutters', 'pouch', 'duct_tape');
       // (Nothing in hand: the cutters are contraband, a guard who sees them in hand minds.)
       sim.state.items.hand = 1;
     },
@@ -162,7 +162,7 @@ export const WAYS: readonly Lesson[] = [
         fail: (c) =>
           !carries(c.sim, 'pouch')
             ? 'lesson.cams.noPouch'
-            : !carries(c.sim, 'light_cutters')
+            : !carries(c.sim, 'reinforced_cutters')
               ? 'lesson.cams.noCutters'
               : eveningOver('lesson.cams.late')(c),
         goal: () => CANTEEN_ARCH,
@@ -183,7 +183,7 @@ export const WAYS: readonly Lesson[] = [
     // The stowaway (P18): hidden in the delivery's truck, away with it when it leaves.
     id: 'stowaway',
     icon: 'truck',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     // (A delivery day whose search is a quick look: tutorialtest holds it to that.)
     seed: STOW_SEED,
     setup: (sim) => {
@@ -211,7 +211,7 @@ export const WAYS: readonly Lesson[] = [
     // The bluff (P24): a guard's uniform and a fake ID at the checkpoint's window as the gatekeepers change shifts.
     id: 'bluff',
     icon: 'idCard',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 41,
     setup: (sim) => {
       clockTo(sim, at(19, 34));
@@ -246,7 +246,7 @@ export const WAYS: readonly Lesson[] = [
     // The glider (P24): off the roof's edge with the wind behind, out over the fence to the road.
     id: 'glider',
     icon: 'glider',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 42,
     routine: false,
     setup: (sim) => {
@@ -276,10 +276,10 @@ export const WAYS: readonly Lesson[] = [
     ],
   },
   {
-    // The grapnel (2.37): from the roof's west edge after Lights Out, hooked over the fence, down the sheet rope outside.
+    // The grapnel (2.37): from the roof's west edge after Lights Out, hooked over the fence, down the knotted sheets outside.
     id: 'grapnel',
     icon: 'hook',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 154,
     routine: false,
     setup: (sim) => {
@@ -287,7 +287,7 @@ export const WAYS: readonly Lesson[] = [
       // (Up the generator room's ladder, as the vents lesson ends.)
       place(sim, 12, 39, 9);
       sim.state.layer = LAYER.ROOF;
-      pockets(sim, 'grapnel', 'sheet_rope');
+      pockets(sim, 'grapnel', 'knotted_sheets');
       sim.state.items.hand = 0;
       fill(
         sim,
@@ -308,7 +308,7 @@ export const WAYS: readonly Lesson[] = [
         done: (c) => c.sim.state.escaped > 0,
         // (Dropped on the roof, it lies there to pick up again.)
         fail: (c) =>
-          !c.sim.state.escaped && !carries(c.sim, 'sheet_rope') && !onFloor(c.sim, 'sheet_rope') ? 'lesson.grapnel.noRope' : null,
+          !c.sim.state.escaped && !carries(c.sim, 'knotted_sheets') && !onFloor(c.sim, 'knotted_sheets') ? 'lesson.grapnel.noRope' : null,
       },
     ],
   },
@@ -316,7 +316,7 @@ export const WAYS: readonly Lesson[] = [
     // The takeover (2.37): four of the five guards out cold, the last put down, out through the gates left open.
     id: 'takeover',
     icon: 'siren',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 155,
     setup: (sim) => {
       clockTo(sim, MORNING);
@@ -363,7 +363,7 @@ export const WAYS: readonly Lesson[] = [
     // The paperwork escape, part one (P36): a blank release form forged and slipped into the release desk's tray, then the records at 22:00.
     id: 'forgery',
     icon: 'clipboard',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 43,
     setup: (sim) => {
       // (An hour and a half before the records at 22:00: time to read, forge, walk and file.)
@@ -399,7 +399,7 @@ export const WAYS: readonly Lesson[] = [
     // The paperwork escape, part two (P36): the name called at 10:00, cleared at the desk, out through the doors.
     id: 'release',
     icon: 'run',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 44,
     setup: (sim) => {
       clockTo(sim, DAY_TWO + at(9, 55));
@@ -423,7 +423,7 @@ export const WAYS: readonly Lesson[] = [
     // The parole board (P39): a week's record behind the player (forced: three days' work, the routine kept, one scuffle), the hearing at 10:00 in the visiting room.
     id: 'parole',
     icon: 'scale',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     // (The board asks about fights first, then work, then the heat: a lie to see through, two claims the file bears out.)
     seed: 145,
     setup: (sim) => {
@@ -457,11 +457,11 @@ export const WAYS: readonly Lesson[] = [
       { text: 'lesson.parole.over', done: () => true, least: 6 },
     ],
   },
-  // P41: the manhunt, outside Center Perks: into the woods, a thicket while a searcher goes by, clothes off a line, Lou's car.
+  // P41: the manhunt, outside Maple Grove: into the woods, a thicket while a searcher goes by, clothes off a line, Lou's car.
   {
     id: 'manhunt',
     icon: 'flag',
-    prison: CENTER_PERKS,
+    prison: MAPLE_GROVE,
     seed: 45,
     hunt: { kind: 'wall', searchers: [3], headStart: 0, minute: 23 * 60 + 30, lou: true },
     setup: () => {},

@@ -8,7 +8,7 @@
 import { HUDDLE, HUDDLE_FROM_DAY, HUDDLE_SLOTS, HUDDLE_STALL_STEPS } from '../src/content/huddles';
 import { DAY_EVENTS, WEATHERS } from '../src/content/days';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { isFloor, placesOf } from '../src/sim/ai/places';
 import { command, dirFromVector, OP, TALK } from '../src/sim/command';
@@ -163,7 +163,7 @@ for (const def of PRISONS) {
 // ------------------------------------------------------------------ a give-up is seen
 // (The measure above can fail: inmates held off their places, each put back where it stood every step, give up.)
 {
-  const bot = new Bot(CENTER_PERKS, 4);
+  const bot = new Bot(MAPLE_GROVE, 4);
   bot.st.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
   bot.routineUntil(2, 18 * 60 + 1);
   const gave = gaveUpCounter(bot);
@@ -194,17 +194,17 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ when there are none
 {
-  const day1 = new Bot(CENTER_PERKS, 3);
+  const day1 = new Bot(MAPLE_GROVE, 3);
   day1.routineUntil(1, 21 * 60 + 59);
   check(!day1.st.huddle, `none before day ${HUDDLE_FROM_DAY} (the escape bots' day)`);
   const train = new Bot(TRAINING, 3);
   train.routineUntil(2, 21 * 60);
   check(!train.st.huddle, 'none at the Training Block');
-  const old = new Bot(CENTER_PERKS, 3);
+  const old = new Bot(MAPLE_GROVE, 3);
   old.sim.rules238 = true;
   old.routineUntil(2, 21 * 60);
   check(!old.st.huddle, 'none in a run from before 2.39 (Sim.rules238)');
-  const film = new Bot(CENTER_PERKS, 3);
+  const film = new Bot(MAPLE_GROVE, 3);
   film.st.calendar = [[2, DAY_EVENTS.indexOf('movie'), WEATHERS.indexOf('clear')]];
   film.routineUntil(2, 18 * 60 + 1);
   let during = 0;
@@ -215,7 +215,7 @@ for (const def of PRISONS) {
     during += huddlesNow(film.sim).length;
   });
   check(shown > 0 && during === 0, `none while a film is on (the crowd at the screen: ${shown} minutes)`);
-  const locked = new Bot(CENTER_PERKS, 4);
+  const locked = new Bot(MAPLE_GROVE, 4);
   locked.st.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
   locked.routineUntil(2, 18 * 60 + 1);
   seatHuddle(
@@ -236,7 +236,7 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ the player joining
 {
-  const bot = new Bot(CENTER_PERKS, 6);
+  const bot = new Bot(MAPLE_GROVE, 6);
   bot.st.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
   bot.routineUntil(2, 18 * 60 + 1);
   const free = bot.st.inmates.map((_, k) => k).filter((k) => !staysPut(bot.sim, k));

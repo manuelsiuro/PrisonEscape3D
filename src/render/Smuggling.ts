@@ -35,7 +35,7 @@ const MAX_ARCHES = 12;
 const NO_DROPS: SmuggleFrame['drops'] = [];
 const NO_ARCHES: SmuggleFrame['arches'] = [];
 const NO_VISITORS: SmuggleFrame['visitors'] = [];
-/** A visitor on a chair sits this much higher than on a bench (the forearms land on Center Perks' counter top). */
+/** A visitor on a chair sits this much higher than on a bench (the forearms land on Maple Grove's counter top). */
 const CHAIR_LIFT = 0.04;
 /** One of n, by a look number and what's picked (the same visitor looks the same all morning). */
 const pick = (look: number, j: number, n: number) => Math.floor((Math.abs(Math.sin(look * 12.9898 + j * 78.233) * 43758.5453) % 1) * n);

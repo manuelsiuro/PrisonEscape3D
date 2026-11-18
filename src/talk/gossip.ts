@@ -262,7 +262,7 @@ function lastingFacts(sim: Sim): Fact[] {
     if (!twist(sim.state, 'nightOwl')) add({ kind: 'bedChecks', t1: BED_CHECK_MINUTES[0], t2: BED_CHECK_MINUTES[1] });
     add({ kind: 'dummy' });
   }
-  // One generator powering an electric fence (Irongate's two split it: no simple rule to tell).
+  // One generator powering an electric fence (Gull Rock's two split it: no simple rule to tell).
   if (!def.grid && generatorsOf(sim.world).length === 1 && hasTile(sim, TILE.ELECTRIC))
     add({ kind: 'fenceOff', n: POWER_OFF_STEPS / STEPS_PER_SECOND });
   add({ kind: 'brace', n: UNBRACED_RUN });

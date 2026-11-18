@@ -49,7 +49,7 @@ export const TILE = {
   BOULDER: 33,
   /** A landmine buried in the sand (GDD §4.4): walkable, and it goes off underfoot. */
   MINE: 34,
-  /** A wooden pier over the sea (HMP Irongate, GDD §4.5): walkable, and the sea under it floods a tunnel. */
+  /** A wooden pier over the sea (HMP Gull Rock, GDD §4.5): walkable, and the sea under it floods a tunnel. */
   PIER: 35,
 } as const;
 
@@ -107,7 +107,7 @@ export const TILE_INFO: Record<number, TileInfo> = {
 /** Damage a guard would notice (GDD §9.3): an open hole, a cut fence, a missing grate, a tunnel entrance. */
 export const DAMAGE_SHOWS: ReadonlySet<number> = new Set([TILE.HOLE, TILE.FENCE_CUT, TILE.GRATE_OPEN, TILE.SHAFT]);
 
-/** The sea is under it (HMP Irongate, GDD §4.5): a tunnel dug beneath floods at once. */
+/** The sea is under it (HMP Gull Rock, GDD §4.5): a tunnel dug beneath floods at once. */
 export const isSea = (k: number) => k === TILE.WATER || k === TILE.PIER;
 /** Tunnel floor (walkable, layer -1). */
 export const isTunnel = (k: number) => k === TILE.TUNNEL || k === TILE.BRACED;

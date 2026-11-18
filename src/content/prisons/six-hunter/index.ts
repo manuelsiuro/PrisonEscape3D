@@ -348,10 +348,10 @@ export const SIX_HUNTER: PrisonDef = {
     'garden',
   ],
   guards,
-  names: ['Badger', 'Wren', 'Stoat', 'Otter', 'Moth', 'Hare', 'Toad', 'Crow', 'Boar', 'Lynx', 'Fox'],
+  names: ['Vole', 'Robin', 'Marten', 'Mink', 'Beetle', 'Rabbit', 'Newt', 'Magpie', 'Ram', 'Wildcat', 'Polecat'],
   merchants: [3, 6, 9, 12],
-  // Gangs (2.36, session 16): the kitchen crew round Wren (the cook), the lifers round Moth (old Badger among them), the gym
-  // rats round Crow; their tables in the Trophy Hall at dinner, their corners of the yard and the sports ground of an evening.
+  // Gangs (2.36, session 16): the kitchen crew round Robin (the cook), the lifers round Beetle (old Vole among them), the gym
+  // rats round Magpie; their tables in the Trophy Hall at dinner, their corners of the yard and the sports ground of an evening.
   gangs: [
     { id: 'kitchen', boss: 3, members: [3, 5, 8], table: [40, 24, 42, 26], corner: [23, 29, 27, 29] },
     { id: 'lifers', boss: 6, members: [6, 2, 11], table: [46, 28, 48, 30], corner: [15, 29, 16, 30] },
@@ -428,7 +428,7 @@ export const SIX_HUNTER: PrisonDef = {
       { x: 27, z: 50.5 },
     ],
   },
-  // Smuggling: Fox sells burner phones; the drone drops on the yard's roll call box; visitors sit across the gatehouse's counter.
+  // Smuggling: Polecat sells burner phones; the drone drops on the yard's roll call box; visitors sit across the gatehouse's counter.
   smuggling: { fixer: 12, drop: [17, 23, 28, 27], visits: [24, 36, 29, 44] },
   // The checkpoint: papers shown at the foot of the drive, before the gate; the gatekeeper's booth on the grass west of it (off the truck's way).
   checkpoint: {

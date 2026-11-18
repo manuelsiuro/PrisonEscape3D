@@ -20,8 +20,8 @@
 import { itemDef, itemNumber, ITEMS } from '../src/content/items';
 import { JOBS } from '../src/content/jobs';
 import { LOOT } from '../src/content/loot';
-import { SHANKTON } from '../src/content/prisons/shankton';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { GRAVEL_POINT } from '../src/content/prisons/gravel-point';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { PRISONS } from '../src/content/prisons';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { ROUTINE } from '../src/content/routine';
@@ -251,7 +251,7 @@ function describe(sim: Sim, e: SimEvent): string {
   }
 }
 
-function run(bot: (sim: Sim) => Pilot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0, prison: PrisonDef = CENTER_PERKS) {
+function run(bot: (sim: Sim) => Pilot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0, prison: PrisonDef = MAPLE_GROVE) {
   const sim = new Sim(prison, seed);
   // Another job from day 1: the player takes it (its holder moves to the laundry).
   if (job > 0) [sim.state.jobs[0], sim.state.jobs[job]] = [sim.state.jobs[job], HOLDER.PLAYER];
@@ -286,8 +286,8 @@ function run(bot: (sim: Sim) => Pilot, steps: number, seed = 3, every?: (sim: Si
 }
 
 // ------------------------------------------------------------------ every job can be done in a day
-for (let job = 1; job < CENTER_PERKS.jobs.length; job++) {
-  const id = CENTER_PERKS.jobs[job].id;
+for (let job = 1; job < MAPLE_GROVE.jobs.length; job++) {
+  const id = MAPLE_GROVE.jobs[job].id;
   const { sim, log } = run(worker(true), DAY, 3, undefined, job);
   const paid = log.find((l) => l.includes('(wage)'));
   console.log(`${id}: ${paid ?? 'not paid'}`);
@@ -353,7 +353,7 @@ function readNow(a: ReturnType<typeof arena>) {
 }
 
 function arena(step = 0, seed = 5) {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   const st = sim.state;
   st.step = step;
   st.routine = ROUTINE.findIndex((_, k) => k === ROUTINE.length - 1 || ROUTINE[k + 1].start > clockAt(step).minuteOfDay);
@@ -520,7 +520,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   );
   // Speed walks faster.
   const pace = (spd: number) => {
-    const b = new Sim(CENTER_PERKS, 1);
+    const b = new Sim(MAPLE_GROVE, 1);
     b.state.spd = spd;
     put(b.state.player, 30, 26);
     const x0 = b.state.player.x;
@@ -535,7 +535,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 {
   const a = arena(stepAt(1, 10, 30));
   const { st } = a;
-  const who = st.inmates.findIndex((m) => m.cell === CENTER_PERKS.merchants[0]);
+  const who = st.inmates.findIndex((m) => m.cell === MAPLE_GROVE.merchants[0]);
   check(talkTo(a, who), 'the action button on an inmate starts a talk');
   const shop = st.shops[0];
   const k = shop.findIndex((v) => v);
@@ -729,12 +729,12 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 }
 {
   // The worker bot to 12:40 on day 1, saved, then both runs go on to 15:00: the same state.
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   const play = worker(true)(sim);
   while (sim.state.step < stepAt(1, 12, 40)) sim.step(play(sim));
   check(Object.keys(sim.state.machines).length > 0 || sim.state.quota > 0, 'mid-work: machines running or loads done');
   const snap = sim.snapshot();
-  const copy = new Sim(CENTER_PERKS, 99);
+  const copy = new Sim(MAPLE_GROVE, 99);
   copy.restore(snap);
   check(copy.hash() === sim.hash(), 'restored mid-work: the same state');
   const play2 = worker(true)(copy);
@@ -771,7 +771,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
     delete m.opinion;
     delete m.shift;
   }
-  const back = new Sim(CENTER_PERKS, 1);
+  const back = new Sim(MAPLE_GROVE, 1);
   back.restore(old);
   check(
     back.state.cash === 0 && back.playerJob === 0 && back.state.jobDay > back.today && back.state.inmates.every((m) => m.opinion === 50),
@@ -781,10 +781,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   check(true, 'and plays on');
 }
 
-// Shankton starts the player in the metalshop (Intellect 60) at Intellect 40: fired, they may
+// Gravel Point starts the player in the metalshop (Intellect 60) at Intellect 40: fired, they may
 // still have it back from the board; another job above their Intellect stays refused.
 {
-  const sim = new Sim(SHANKTON, 5);
+  const sim = new Sim(GRAVEL_POINT, 5);
   const st = sim.state;
   st.jobs[0] = HOLDER.NOBODY;
   st.jobs[5] = HOLDER.NOBODY;
@@ -801,7 +801,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 
 // Every station of every job is something the action button can do (the station logic is total).
 {
-  const sim = new Sim(CENTER_PERKS);
+  const sim = new Sim(MAPLE_GROVE);
   const ws: WorkState = {
     job: 0,
     onDuty: true,
@@ -901,7 +901,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 }
 {
   // How long a step takes with the economy running (the worker bot, a day).
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   const play = worker(true)(sim);
   const t0 = performance.now();
   for (let k = 0; k < DAY; k++) sim.step(play(sim));
@@ -957,7 +957,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.TALK, TALK.TIP);
   check(st.tips.length === 2 && a.has('refused', (e) => e.type === 'refused' && e.why === 'tipToday'), 'once a day');
   // Saved and loaded: what was carried and told stays.
-  const back = new Sim(CENTER_PERKS, 9);
+  const back = new Sim(MAPLE_GROVE, 9);
   back.restore(JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot);
   check(
     back.state.tips.join() === st.tips.join() && back.state.carried.join() === st.carried.join() && back.state.tipDay[who] === 1,
@@ -1008,8 +1008,8 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
     "the Training Block: only its guard's key and mold can be had",
   );
   check(
-    ['key_yellow', 'key_cyan', 'key_purple', 'key_green', 'key_red'].every((id) => obtainable(new Sim(CENTER_PERKS, 1).world).has(n(id))),
-    'Center Perks: every guard key can be had',
+    ['key_yellow', 'key_cyan', 'key_purple', 'key_green', 'key_red'].every((id) => obtainable(new Sim(MAPLE_GROVE, 1).world).has(n(id))),
+    'Maple Grove: every guard key can be had',
   );
 }
 
@@ -1039,14 +1039,14 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
     lines.push(`${def.id} ${held.length}`);
   }
   console.log(`inmates at work at 14:59 on day 1: ${lines.join(', ')}`);
-  // (2.25: Irongate's garden floor behind its planters is walled in: the gardener never stays stuck picking it.)
-  const irongate = PRISONS.find((p) => p.id === 'irongate')!;
-  const gardener = irongate.jobs.findIndex((j) => j.id === 'gardener');
+  // (2.25: Gull Rock's garden floor behind its planters is walled in: the gardener never stays stuck picking it.)
+  const gullRock = PRISONS.find((p) => p.id === 'gull-rock')!;
+  const gardener = gullRock.jobs.findIndex((j) => j.id === 'gardener');
   for (let seed = 1; seed <= 12; seed++) {
-    const bot = new Bot(irongate, seed);
+    const bot = new Bot(gullRock, seed);
     const at = (14 * 60 + 59 - 8 * 60) * STEPS_PER_MINUTE;
     bot.keepRoutine(() => bot.st.step >= at, at + 1);
     const h = bot.st.jobs[gardener];
-    check(h < 0 || bot.st.inmates[h].shift === 1, `irongate #${seed}: the gardener got to work`);
+    check(h < 0 || bot.st.inmates[h].shift === 1, `gullRock #${seed}: the gardener got to work`);
   }
 }

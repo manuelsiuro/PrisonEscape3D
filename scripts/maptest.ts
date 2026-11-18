@@ -57,7 +57,7 @@ for (const def of [...PRISONS, TRAINING]) {
       .join(', '),
   );
 
-  // The edge of the map is road (escapes end there), or the sea round an island (Irongate's ways out cross it).
+  // The edge of the map is road (escapes end there), or the sea round an island (Gull Rock's ways out cross it).
   for (let i = 0; i < MAP_W; i++) {
     for (const [x, z] of [
       [i, 0],
@@ -262,7 +262,7 @@ for (const def of [...PRISONS, TRAINING]) {
     let bay = 0;
     for (let z = bz0; z <= bz1; z++)
       for (let x = bx0; x <= bx1; x++) {
-        // (Irongate's helicopter sets down on its pad.)
+        // (Gull Rock's helicopter sets down on its pad.)
         const pad = w.props.some((q) => q.kind === 'helipad' && x >= q.x && x < q.x + q.w && z >= q.z && z < q.z + q.d);
         check(isFloor(w, x, z) || pad, `${def.id}: the delivery's bay ${x},${z} is open floor (or the helipad)`);
         bay++;
@@ -365,7 +365,7 @@ for (const def of [...PRISONS, TRAINING]) {
     }
     check(seen.size === ducts.length, `${def.id}: the ducts are one network`);
     check(ladders >= 1 && ladderFootOf(w) >= 0, `${def.id}: a ladder, with a free foot`);
-    // Vents with grates are a way out of the cell (Stalag Flucht's log cabins have none: its ladder stands in the generator hut).
+    // Vents with grates are a way out of the cell (Camp Frostberg's log cabins have none: its ladder stands in the generator hut).
     if (ducts.some((i) => vents.kind[i] === TILE.GRATE))
       check(
         ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1),

@@ -140,7 +140,7 @@ export class World {
   readonly doorRoom = new Uint8Array(MAP_W * MAP_H);
   /** Bit z set: the job room of zone z stands open (the Work Period, or someone still inside; derived by the simulation). A bigint: zones go past 31. */
   openRooms = 0n;
-  /** 1 on water a takeover bridges (Irongate's drawbridge, P12): walkable while `riot`. */
+  /** 1 on water a takeover bridges (Gull Rock's drawbridge, P12): walkable while `riot`. */
   readonly bridge = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 on doors shut for everyone but guards (the prison as built: inmates walk it, guards' eyes stop at it). */
   readonly doorShut = new Uint8Array(MAP_W * MAP_H);
@@ -161,7 +161,7 @@ export class World {
   readonly checkpoint = new Uint8Array(MAP_W * MAP_H);
   /** Waved through the checkpoint (P24): its way out open for the player alone; derived by the simulation. */
   waved = false;
-  /** 1 on ground only the checkpoint's way out leads to (Irongate's rock outside the ferry gate, Shankton's gatehouse): worked out once. */
+  /** 1 on ground only the checkpoint's way out leads to (Gull Rock's rock outside the ferry gate, Gravel Point's gatehouse): worked out once. */
   private beyondGate: Uint8Array | null = null;
   /** 1 on the release's way out (P36): its doors, and the drawbridge where it comes down for the player too. */
   readonly release = new Uint8Array(MAP_W * MAP_H);

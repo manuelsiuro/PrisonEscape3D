@@ -249,7 +249,7 @@ const BUILDERS: Record<PropKind, Builder> = {
       );
     return parts;
   },
-  /** Irongate's helipad (P12): a painted pad, its yellow ring, the white H, a lamp at each corner. */
+  /** Gull Rock's helipad (P12): a painted pad, its yellow ring, the white H, a lamp at each corner. */
   helipad: (w, d) => {
     const r = Math.min(w, d) / 2 - 0.15;
     const ring = new CylinderGeometry(r, r, 0.02, 32).translate(0, 0.01, 0);

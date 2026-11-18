@@ -3,7 +3,7 @@ import { seeded } from './rand';
 
 /**
  * Pixel-art textures drawn on small canvases (no image files): one tile each, nearest-pixel
- * filtering for the crisp Escapists look. Noise comes from a fixed seed, so the look never
+ * filtering for a crisp pixel-art look. Noise comes from a fixed seed, so the look never
  * changes between loads.
  */
 type Painter = (c: CanvasRenderingContext2D, n: number, rand: () => number) => void;
@@ -84,7 +84,7 @@ const BASE = {
     texture('dirt', 16, (c, n, r) => {
       speckle(c, n, r, '#9a7650', '#866443', '#ad8a62', 0.35);
     }),
-  /** Ground sown with mines (P11): the open ground's own look elsewhere (only San Pancho has any). */
+  /** Ground sown with mines (P11): the open ground's own look elsewhere (only Sierra Seca has any). */
   minefield: () =>
     texture('grass', 16, (c, n, r) => {
       speckle(c, n, r, '#5f9e43', '#54913b', '#6aa94b', 0.3);
@@ -302,7 +302,7 @@ const BASE = {
     }),
 };
 
-/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island, the Six Hunter's pine forest. */
+/** How a prison looks (PrisonDef.theme): Maple Grove's suburban green, Camp Frostberg's alpine snow, Gravel Point's industrial grey, Sierra Seca's desert, HMP Gull Rock's island, the Six Hunter's pine forest. */
 export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island' | 'forest';
 let theme: Theme = 'suburban';
 
@@ -409,7 +409,7 @@ const INDUSTRIAL: Partial<typeof BASE> = {
 };
 
 /**
- * The desert (San Pancho): pale sand, the minefield's raked and darker, a sun-bleached border
+ * The desert (Sierra Seca): pale sand, the minefield's raked and darker, a sun-bleached border
  * road, the plaza's packed red earth, adobe walls of plastered mud brick, sandy concrete, clay roofs.
  */
 const DESERT: Partial<typeof BASE> = {
@@ -496,7 +496,7 @@ const DESERT: Partial<typeof BASE> = {
 };
 
 /**
- * The island (HMP Irongate): wind-bitten turf over grey rock, the ferry landing's wet cobbles,
+ * The island (HMP Gull Rock): wind-bitten turf over grey rock, the ferry landing's wet cobbles,
  * salt-stained tarmac, granite ashlar walls under granite caps, slate roofs, concrete streaked
  * with rust and salt.
  */

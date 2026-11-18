@@ -162,7 +162,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
     workHud.paid = st.paid;
     hudState.work = workHud;
   } else hudState.work = null;
-  // Irongate's two generators (P12): the pill says which half is dead (both: the power).
+  // Gull Rock's two generators (P12): the pill says which half is dead (both: the power).
   const off = Math.max(st.powerOff, st.powerOff2);
   hudState.powerLeft = off > 0 ? (off - a) / STEPS_PER_SECOND : null;
   hudState.powerKey =

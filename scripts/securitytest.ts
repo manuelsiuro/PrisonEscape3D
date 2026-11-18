@@ -12,11 +12,11 @@
  * - snipers: by day, wanted out in the yard: aim, a warning shot, then hits until the player
  *   drops (solitary); cutting the fence in a tower's reach is seen; off duty at night;
  * - the takeover: all five guards out cold opens the gates; one coming round shuts them;
- * - the grapnel: refused without a sheet rope, over the fence with one; a live electric
+ * - the grapnel: refused without knotted sheets, over the fence with one; a live electric
  *   fence shocks;
  * - a save from before P7 loads with the power on and an empty tally.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { ROUTINE, routineAt } from '../src/content/routine';
 import { command, OP, SLOT } from '../src/sim/command';
 import { ESCAPES, HURT_BY, Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
@@ -78,7 +78,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 
 // ------------------------------------------------------------------ the generator
 {
-  const sim = new Sim(CENTER_PERKS, 21);
+  const sim = new Sim(MAPLE_GROVE, 21);
   const st = sim.state;
   quiet(sim, [4]);
   // Night (no snipers on the cut), every other guard asleep.
@@ -95,7 +95,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   const target = g.target;
   // The electric fence is safe to cut now.
   stand(sim, 27, 60, SOUTH);
-  carry(sim, 'sturdy_cutters');
+  carry(sim, 'heavy_cutters');
   const ev = run(sim, 60, command(0, OP.USE, 1));
   check(!ev.some((e) => e.type === 'shocked') && kind(sim, 27, 61) === TILE.FENCE_CUT, 'the dead electric fence cuts like any other');
   const back = run(sim, POWER_OFF_STEPS - 200);
@@ -118,7 +118,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   check(sim.power && by?.type === 'power' && by.by === 'player', 'switched back on by the player');
   // With the power on, the electric fence knocks the player out.
   stand(sim, 26, 60, SOUTH);
-  carry(sim, 'sturdy_cutters');
+  carry(sim, 'heavy_cutters');
   sim.step(command(0, OP.USE, 1));
   check(
     sim.events.some((e) => e.type === 'shocked'),
@@ -130,7 +130,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 {
   // The canteen arch at 43–44, 20 (from the corridor, north into the canteen).
   const pass = (setup: (sim: Sim) => void) => {
-    const sim = new Sim(CENTER_PERKS, 22);
+    const sim = new Sim(MAPLE_GROVE, 22);
     quiet(sim, [0, 1]);
     stand(sim, 44, 22, NORTH);
     setup(sim);
@@ -179,14 +179,14 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 // ------------------------------------------------------------------ cameras
 {
   // The woodshop camera (39, 25) sweeps south-east over the room.
-  const cam = CENTER_PERKS.cameras![1];
-  const sim = new Sim(CENTER_PERKS, 23);
+  const cam = MAPLE_GROVE.cameras![1];
+  const sim = new Sim(MAPLE_GROVE, 23);
   const st = sim.state;
   quiet(sim);
   // Chipping the woodshop's back wall in its eye.
   // Wait until it looks this way: its heading points at 42, 28 (south-east).
   stand(sim, 41, 29, SOUTH);
-  carry(sim, 'sturdy_pickaxe');
+  carry(sim, 'heavy_pickaxe');
   let ev: SimEvent[] = [];
   for (let k = 0; k < 400 && !st.lockdown; k++) {
     sim.step(command(0, OP.USE, 1));
@@ -195,11 +195,11 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   check(st.lockdown && ev.some((e) => e.type === 'spotted' && e.reason === 'camera'), 'work on a wall in a camera’s eye: the alarm');
   console.log(`camera: chipping in the woodshop → ${st.lockdown ? 'LOCKDOWN' : 'nothing'} (facing ${cameraFacing(cam.face, 1, st.step)})`);
   // Taped: blind for a minute, the same work unseen.
-  const sim2 = new Sim(CENTER_PERKS, 23);
+  const sim2 = new Sim(MAPLE_GROVE, 23);
   const st2 = sim2.state;
   quiet(sim2);
   stand(sim2, 40, 25, WEST);
-  carry(sim2, 'duct_tape', 'sturdy_pickaxe');
+  carry(sim2, 'duct_tape', 'heavy_pickaxe');
   sim2.step(command(0, OP.USE, 1));
   const taped = sim2.events.find((e) => e.type === 'camera');
   check(taped?.type === 'camera' && taped.blind && st2.cams[1] > 0 && !st2.items.inv[0], 'tape over the lens: blind (the tape used up)');
@@ -217,7 +217,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   console.log(`camera taped: ${seenBlind ? 'seen' : 'unseen'} for ${CAMERA_BLIND_STEPS / 20} s, then watching again`);
   // The control room camera: a guard's uniform passes; an inmate outfit is the alarm; no power, no camera.
   const room = (outfit: string, power = true) => {
-    const s3 = new Sim(CENTER_PERKS, 24);
+    const s3 = new Sim(MAPLE_GROVE, 24);
     quiet(s3);
     s3.state.items.inv[SLOT.OUTFIT] = slot(n(outfit));
     if (!power) s3.state.powerOff = POWER_OFF_STEPS;
@@ -237,14 +237,14 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 // ------------------------------------------------------------------ searchlights
 {
   const lit = (opts: { night?: boolean; outfit?: string; power?: boolean }) => {
-    const sim = new Sim(CENTER_PERKS, 25);
+    const sim = new Sim(MAPLE_GROVE, 25);
     const st = sim.state;
     quiet(sim, [3]);
     clockTo(sim, opts.night === false ? 13 * 60 : 23 * 60 + 30);
     if (opts.outfit) st.items.inv[SLOT.OUTFIT] = slot(n(opts.outfit));
     if (opts.power === false) st.powerOff = POWER_OFF_STEPS;
     // Follow the west beam for a second, standing where it is.
-    const path = CENTER_PERKS.searchlights![0];
+    const path = MAPLE_GROVE.searchlights![0];
     const at = { x: 0, z: 0 };
     const ev: SimEvent[] = [];
     for (let k = 0; k < 20; k++) {
@@ -268,10 +268,10 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   check(lit({ power: false }).heat === 0, 'not without power');
   console.log(`searchlight: a second in the beam → +${night.heat}%, ${night.sent} guard(s) sent; uniform, day, no power → 0`);
   // The beam stays in the open and away from the towers' feet.
-  const w = new Sim(CENTER_PERKS, 1).world;
+  const w = new Sim(MAPLE_GROVE, 1).world;
   const at = { x: 0, z: 0 };
   let ok = true;
-  for (const path of CENTER_PERKS.searchlights!) {
+  for (const path of MAPLE_GROVE.searchlights!) {
     for (let s = 0; s < 4000; s += 7) {
       beamAt(path, s, at);
       const t = Math.floor(at.z / UNIT) * MAP_W + Math.floor(at.x / UNIT);
@@ -283,7 +283,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 
 // ------------------------------------------------------------------ snipers
 {
-  const sim = new Sim(CENTER_PERKS, 26);
+  const sim = new Sim(MAPLE_GROVE, 26);
   const st = sim.state;
   quiet(sim);
   clockTo(sim, 13 * 60);
@@ -312,36 +312,36 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
       .join(' ')}`,
   );
   // Off duty at night.
-  const night = new Sim(CENTER_PERKS, 26);
+  const night = new Sim(MAPLE_GROVE, 26);
   quiet(night);
   clockTo(night, 23 * 60 + 30);
   stand(night, 12, 52, SOUTH);
   night.state.heat = 95;
   check(!run(night, 200).some((e) => e.type === 'shot'), 'no shots at night');
   // Cutting the fence by day within reach: seen.
-  const cut = new Sim(CENTER_PERKS, 27);
+  const cut = new Sim(MAPLE_GROVE, 27);
   quiet(cut);
   clockTo(cut, 13 * 60);
   stand(cut, 12, 60, SOUTH);
-  carry(cut, 'sturdy_cutters');
+  carry(cut, 'heavy_cutters');
   cut.step(command(0, OP.USE, 1));
   check(
     cut.events.some((e) => e.type === 'spotted' && e.reason === 'sniper') && cut.state.lockdown,
     'cutting the fence by day in a tower’s reach is seen',
   );
   // Out of reach (the north fence): nothing.
-  const far = new Sim(CENTER_PERKS, 27);
+  const far = new Sim(MAPLE_GROVE, 27);
   quiet(far);
   clockTo(far, 13 * 60);
   stand(far, 12, 3, NORTH);
-  carry(far, 'sturdy_cutters');
+  carry(far, 'heavy_cutters');
   far.step(command(0, OP.USE, 1));
   check(!far.state.lockdown, 'the north fence is out of the towers’ reach');
 }
 
 // ------------------------------------------------------------------ the takeover
 {
-  const sim = new Sim(CENTER_PERKS, 28);
+  const sim = new Sim(MAPLE_GROVE, 28);
   const st = sim.state;
   stand(sim, 30, 46, SOUTH);
   check(sim.world.blocked(30, 61), 'the perimeter gate is shut');
@@ -362,7 +362,7 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 
 // ------------------------------------------------------------------ the grapnel
 {
-  const sim = new Sim(CENTER_PERKS, 29);
+  const sim = new Sim(MAPLE_GROVE, 29);
   const st = sim.state;
   quiet(sim);
   stand(sim, 6, 20, WEST, LAYER.ROOF);
@@ -370,19 +370,19 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   sim.step(command(0, OP.USE, 1));
   check(
     sim.events.some((e) => e.type === 'cantStrike' && e.why === 'noRope') && !!st.items.inv[0],
-    'no sheet rope: refused, the grapnel kept',
+    'no knotted sheets: refused, the grapnel kept',
   );
-  carry(sim, 'grapnel', 'sheet_rope');
+  carry(sim, 'grapnel', 'knotted_sheets');
   sim.step(command(0, OP.USE, 1));
   check(
     st.escaped > 0 && ESCAPES[st.via] === 'roof' && !st.items.inv[0] && !st.items.inv[1],
     'over the fence and down the rope: out (both left behind)',
   );
   // Not from the middle of a roof.
-  const mid = new Sim(CENTER_PERKS, 29);
+  const mid = new Sim(MAPLE_GROVE, 29);
   quiet(mid);
   stand(mid, 9, 20, WEST, LAYER.ROOF);
-  carry(mid, 'grapnel', 'sheet_rope');
+  carry(mid, 'grapnel', 'knotted_sheets');
   mid.step(command(0, OP.USE, 1));
   check(!mid.state.escaped, 'only from a roof’s edge');
   console.log(`grapnel: without a rope refused; with one → ${st.escaped ? `out (${ESCAPES[st.via]})` : 'still up'}`);
@@ -390,13 +390,13 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
 
 // ------------------------------------------------------------------ an old save
 {
-  const sim = new Sim(CENTER_PERKS, 30);
+  const sim = new Sim(MAPLE_GROVE, 30);
   run(sim, 100);
   const snap = sim.snapshot();
   const old = structuredClone(snap) as Snapshot;
   for (const k of ['powerOff', 'scanned', 'cams', 'sniperAt', 'shots', 'lit', 'takeover', 'tally', 'via'])
     delete (old.state as unknown as Record<string, unknown>)[k];
-  const b = new Sim(CENTER_PERKS, 1);
+  const b = new Sim(MAPLE_GROVE, 1);
   b.restore(old);
   check(b.hash() === sim.hash(), 'a save from before P7 loads as the same state');
   check(b.power && b.state.tally.join() === '0,0,0,0' && b.state.cams.length === 3, 'power on, nothing tallied');

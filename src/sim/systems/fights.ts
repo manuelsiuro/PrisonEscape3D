@@ -65,7 +65,7 @@ export const blocking = (sim: Pick<SimContext, 'state' | 'rules234'>) => !sim.ru
 /** The weapon the player fights with: one in hand, else the one in the weapon slot (0: fists). */
 function weapon(sim: SimContext): { item: number; slot: number } {
   const it = sim.state.items;
-  // (P26: a Bare Hands Daily, fists only: no weapon does anything, molten chocolate neither.)
+  // (P26: a Bare Hands Daily, fists only: no weapon does anything, scalding cocoa neither.)
   if (twist(sim.state, 'bareHands')) return { item: 0, slot: SLOT.WEAPON };
   const inHand = itemOf(it.inv[it.hand]);
   if (inHand && itemDef(inHand).cat === 'weapon') return { item: inHand, slot: it.hand };
@@ -74,7 +74,7 @@ function weapon(sim: SimContext): { item: number; slot: number } {
 
 /**
  * A blow at the locked-on target (GDD §10.1): at the weapon's pace, within its reach, with a
- * clear line; Strength and the weapon against the target's outfit. Molten chocolate is
+ * clear line; Strength and the weapon against the target's outfit. Scalding cocoa is
  * thrown instead (3 tiles, out cold at once). Whoever is hit knows it: an inmate fights
  * back, a guard turns round (and sees who it was). Returns false with nobody locked on (the
  * press goes to the tool in hand).

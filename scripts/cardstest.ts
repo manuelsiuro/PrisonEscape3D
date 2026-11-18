@@ -47,7 +47,7 @@ import {
 import { ROUTINE } from '../src/content/routine';
 import type { ForcedDay } from '../src/sim/systems/calendar';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { DAY_EVENTS } from '../src/content/days';
 import { lineOfSight } from '../src/sim/ai/sight';
@@ -71,7 +71,7 @@ const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').
 const pct = (a: number, b: number) => `${Math.round((a * 100) / Math.max(1, b))}%`;
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet unless forced. */
-function game(prison = CENTER_PERKS, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
+function game(prison = MAPLE_GROVE, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = calendar;
   const seen: SimEvent[] = [];
@@ -546,8 +546,8 @@ function yardTile(sim: Sim): number {
     judge(600, 600, 60) === 'swish' && judge(640, 600, 60) === 'in' && judge(700, 600, 60) === 'rim' && judge(800, 600, 60) === 'air',
     'a shot judged: swish, in, rim, airball',
   );
-  // Center Perks, a calm clear day, then a storm with a gale behind or against the top spot.
-  const { sim, seen, step, to, talkTo, talk } = game(CENTER_PERKS, 5, [[0, 0, 0, -1, 0]]);
+  // Maple Grove, a calm clear day, then a storm with a gale behind or against the top spot.
+  const { sim, seen, step, to, talkTo, talk } = game(MAPLE_GROVE, 5, [[0, 0, 0, -1, 0]]);
   const s = sim.state;
   const c = courtOf(sim)!;
   const win: [number, number] = [0, 0];
@@ -574,7 +574,7 @@ function yardTile(sim: Sim): number {
     `the wind: behind the shot needs less (${behind[0]}), against it more (${against[0]}); the rain narrows it (±${behind[1]})`,
   );
   console.log(
-    `hoops: center-perks windows (calm) ${calm.join(', ')}; a gale behind ${behind[0]}±${behind[1]}, against ${against[0]}±${against[1]}`,
+    `hoops: maple-grove windows (calm) ${calm.join(', ')}; a gale behind ${behind[0]}±${behind[1]}, against ${against[0]}±${against[1]}`,
   );
   // A shot by commands, released at the best step.
   to(1, 10, 30);
@@ -692,7 +692,7 @@ function yardTile(sim: Sim): number {
     `hoops: a swish on the mark, an airball off it; practice +1 Speed at ${PRACTICE_MAKES}; a shootout won ${end?.mine}–${end?.theirs}; off the court, off`,
   );
   // Sports day: a shootout won counts as a bout won.
-  const sd = game(CENTER_PERKS, 6, [[0, DAY_EVENTS.indexOf('sports'), 0]]);
+  const sd = game(MAPLE_GROVE, 6, [[0, DAY_EVENTS.indexOf('sports'), 0]]);
   sd.to(2, 10, 30);
   const s2 = sd.sim.state;
   const c2 = courtOf(sd.sim)!;
@@ -827,7 +827,7 @@ function yardTile(sim: Sim): number {
   }
   console.log(`checkers: rules (forced captures, jumps that go on); his move the same every time; ${fares.join('; ')}`);
   // In the game: the old-timer, the board, a step, his answer, getting up, resigning.
-  const { sim, seen, step, to, talkTo, talk } = game(CENTER_PERKS, 8);
+  const { sim, seen, step, to, talkTo, talk } = game(MAPLE_GROVE, 8);
   const s = sim.state;
   const elder = elderOf(sim);
   to(1, 10, 30);
@@ -884,7 +884,7 @@ function yardTile(sim: Sim): number {
 // ------------------------------------------------------------------ saves
 {
   const twin = (a: Sim, cmds: number[]) => {
-    const b = new Sim(CENTER_PERKS, 1);
+    const b = new Sim(MAPLE_GROVE, 1);
     b.restore(JSON.parse(JSON.stringify(a.snapshot())));
     for (const c of cmds) {
       a.step(c);
@@ -893,7 +893,7 @@ function yardTile(sim: Sim): number {
     }
     return a.hash() === b.hash();
   };
-  const { sim, to, talkTo, talk, blind } = game(CENTER_PERKS, 21);
+  const { sim, to, talkTo, talk, blind } = game(MAPLE_GROVE, 21);
   const s = sim.state;
   to(1, 10, 30);
   talkTo(0, yardTile(sim));
@@ -950,7 +950,7 @@ function yardTile(sim: Sim): number {
   // Damaged ones dropped.
   const bad = sim.snapshot();
   Object.assign(bad.state, { cheat: { who: 99 }, shootout: { who: -4 }, shot: [1, 99], practice: 'x', board: { sq: [9] }, elder: [1] });
-  const fixed = new Sim(CENTER_PERKS, 1);
+  const fixed = new Sim(MAPLE_GROVE, 1);
   fixed.restore(bad);
   for (let k = 0; k < 20; k++) fixed.step(0);
   check(
@@ -966,7 +966,7 @@ function yardTile(sim: Sim): number {
   const old = sim.snapshot();
   const o = old.state as unknown as Record<string, unknown>;
   for (const k of ['cheat', 'shootout', 'shot', 'practice', 'board', 'elder']) delete o[k];
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(old);
   check(
     loaded.state.cheat === null && loaded.state.board === null && loaded.state.elder.length === 4,

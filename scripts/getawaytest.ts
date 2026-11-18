@@ -1,7 +1,7 @@
 /**
  * Bluff & glider (P24), rule by rule:
  * - the data: a checkpoint's window is floor just inside its first gate, its gates are perimeter
- *   gates, its booth stands where nobody walks; out through its gates (and Irongate's drawbridge)
+ *   gates, its booth stands where nobody walks; out through its gates (and Gull Rock's drawbridge)
  *   is the road; every prison lists `bluff` exactly where it has a checkpoint and `glider` exactly
  *   where a glide off the roof the ladder reaches can land out; the recipes and the phone's card;
  * - the bluff: only at the window with papers in the hotbar; refused outside 19:50–20:10, out of
@@ -17,10 +17,10 @@
  */
 import { BLUFF_HEAT, GLIDE_BASE, GLIDE_MAX, RUN_UP, SHIFT_FROM, SHIFT_TO, WAVED_STEPS } from '../src/content/getaways';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { IRONGATE } from '../src/content/prisons/irongate';
-import { SHANKTON } from '../src/content/prisons/shankton';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { GULL_ROCK } from '../src/content/prisons/gull-rock';
+import { GRAVEL_POINT } from '../src/content/prisons/gravel-point';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { RECIPES } from '../src/content/recipes';
@@ -67,7 +67,7 @@ for (const def of [...PRISONS, TRAINING]) {
       }
   check(routes.includes('glider') === out, `${def.id}: the glider listed exactly where it can land out (${out})`);
   // 2.5.1: every landing, in every wind and weather, out on the road or on ground walked to from the
-  // player's cell (never between two fences: neither in nor out); 2.5.0's could be (Shankton's).
+  // player's cell (never between two fences: neither in nor out); 2.5.0's could be (Gravel Point's).
   let landings = 0;
   let penned = 0;
   let pennedOld = 0;
@@ -92,7 +92,7 @@ for (const def of [...PRISONS, TRAINING]) {
     penned === 0,
     `${def.id}: every glide comes down out or on ground that walks home (${landings} landings, ${penned} between; 2.5.0: ${pennedOld})`,
   );
-  if (def.id === 'shankton') check(pennedOld > 0, 'shankton: 2.5.0 could come down between the fences (the case is covered)');
+  if (def.id === 'gravel-point') check(pennedOld > 0, 'gravel-point: 2.5.0 could come down between the fences (the case is covered)');
   if (!c) continue;
   for (const q of c.window)
     check(!w.blocked(q.x, q.z) && w.ground.kind[at(q.x, q.z)] !== TILE.DOOR, `${def.id}: the window ${q.x},${q.z} is floor to stand on`);
@@ -171,9 +171,9 @@ for (const def of [...PRISONS, TRAINING]) {
 }
 // 2.33.2: walked into from beside it, the booth stops the player; a run from before walks through it, and replays so.
 {
-  const b = CENTER_PERKS.checkpoint!.booth;
+  const b = MAPLE_GROVE.checkpoint!.booth;
   const push = (old: boolean) => {
-    const sim = new Sim(CENTER_PERKS, 1);
+    const sim = new Sim(MAPLE_GROVE, 1);
     sim.rules2331 = old;
     sim.state.player.x = (b.x - 1) * UNIT + UNIT / 2;
     sim.state.player.z = b.z * UNIT + UNIT / 2;
@@ -184,12 +184,12 @@ for (const def of [...PRISONS, TRAINING]) {
   const before = push(true);
   check(
     now === b.x - 1 && before > b.x,
-    `center-perks: the booth stops the player walking east into it (stopped on ${now}; before 2.33.2 on through to ${before})`,
+    `maple-grove: the booth stops the player walking east into it (stopped on ${now}; before 2.33.2 on through to ${before})`,
   );
-  const rec = new RunRecorder(new Sim(CENTER_PERKS, 1), { seed: 1, game: '2.33.1' });
+  const rec = new RunRecorder(new Sim(MAPLE_GROVE, 1), { seed: 1, game: '2.33.1' });
   for (let k = 0; k < 200; k++) rec.step(0);
-  const old = replayLog(rec.toLog(), CENTER_PERKS);
-  const today = replayLog({ ...rec.toLog(), game: '2.33.2' }, CENTER_PERKS);
+  const old = replayLog(rec.toLog(), MAPLE_GROVE);
+  const today = replayLog({ ...rec.toLog(), game: '2.33.2' }, MAPLE_GROVE);
   check(
     !!old?.ok && old.sim.rules2331 && !!today?.ok && !today.sim.rules2331,
     'a log from 2.33.1 replays with the booth walked through; one from 2.33.2 with it in the way',
@@ -245,9 +245,9 @@ const showAt = (sim: Sim, m: number) => {
 };
 
 {
-  const base = atTheWindow(CENTER_PERKS).snapshot();
+  const base = atTheWindow(MAPLE_GROVE).snapshot();
   const fresh = () => {
-    const sim = new Sim(CENTER_PERKS, 1);
+    const sim = new Sim(MAPLE_GROVE, 1);
     sim.restore(base);
     return sim;
   };
@@ -297,7 +297,7 @@ const showAt = (sim: Sim, m: number) => {
   sim = fresh();
   showAt(sim, SHIFT_FROM + 1);
   const s = sim.state;
-  const gates = CENTER_PERKS.checkpoint!.gates.map((q) => at(q.x, q.z));
+  const gates = MAPLE_GROVE.checkpoint!.gates.map((q) => at(q.x, q.z));
   check(s.waved === s.step + WAVED_STEPS && events(sim).some((e) => e.type === 'bluff' && e.on), 'waved through for 60 s');
   check(
     gates.every((g) => !sim.world.block[g]) && gates.every((g) => sim.world.npcBlock[g] === 1),
@@ -309,7 +309,7 @@ const showAt = (sim: Sim, m: number) => {
   check(s.waved === was, 'shown again while waved through: nothing new');
   // A save made now plays on the same as the game it was made from.
   const mid = sim.snapshot();
-  const twin = new Sim(CENTER_PERKS, 1);
+  const twin = new Sim(MAPLE_GROVE, 1);
   twin.restore(JSON.parse(JSON.stringify(mid)) as Snapshot);
   for (let k = 0; k < WAVED_STEPS + 40; k++) {
     sim.step(0);
@@ -370,7 +370,7 @@ const showAt = (sim: Sim, m: number) => {
   // A save from before P24 loads shut.
   const old = fresh().snapshot();
   delete (old.state as { waved?: number }).waved;
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(old);
   check(loaded.state.waved === 0, 'a save from before the bluff loads with the gates shut');
   check(!checkpointOf(new Sim(TRAINING, 1)), 'no checkpoint in the Training Block');
@@ -378,34 +378,34 @@ const showAt = (sim: Sim, m: number) => {
     `bluff: ${when.join(', ')}; ${refusals.join(', ')}; the gates for the player alone, 60 s, never shut on them, at once when wanted; out by ${outBy}`,
   );
 }
-// Irongate: the drawbridge comes down for the player alone; Shankton: the shell's gate and both of the gatehouse's.
+// Gull Rock: the drawbridge comes down for the player alone; Gravel Point: the shell's gate and both of the gatehouse's.
 {
-  const sim = atTheWindow(IRONGATE);
+  const sim = atTheWindow(GULL_ROCK);
   showAt(sim, SHIFT_FROM + 1);
   const bridge = at(30, 57);
   check(
     !sim.world.block[bridge] && sim.world.npcBlock[bridge] === 1 && sim.world.guardBlock[bridge] === 1,
-    'Irongate: the drawbridge down for the player alone',
+    'Gull Rock: the drawbridge down for the player alone',
   );
   for (let k = 0; k < 300 && !sim.state.escaped; k++) sim.step(command(5));
-  check(ESCAPES[sim.state.via] === 'bluff', `Irongate: out over the drawbridge (${ESCAPES[sim.state.via]})`);
-  const sh = atTheWindow(SHANKTON);
+  check(ESCAPES[sim.state.via] === 'bluff', `Gull Rock: out over the drawbridge (${ESCAPES[sim.state.via]})`);
+  const sh = atTheWindow(GRAVEL_POINT);
   showAt(sh, SHIFT_FROM + 1);
   check(
-    SHANKTON.checkpoint!.gates.every((q) => !sh.world.block[at(q.x, q.z)]),
-    'Shankton: the shell gate and both gatehouse gates open',
+    GRAVEL_POINT.checkpoint!.gates.every((q) => !sh.world.block[at(q.x, q.z)]),
+    'Gravel Point: the shell gate and both gatehouse gates open',
   );
   for (let k = 0; k < 400 && !sh.state.escaped; k++) sh.step(command(5));
-  check(ESCAPES[sh.state.via] === 'bluff', `Shankton: out through the gatehouse (${ESCAPES[sh.state.via]})`);
+  check(ESCAPES[sh.state.via] === 'bluff', `Gravel Point: out through the gatehouse (${ESCAPES[sh.state.via]})`);
   // Off the drawbridge onto the rock beside it: never shut out there (only the way back leads in).
-  const rock = atTheWindow(IRONGATE);
+  const rock = atTheWindow(GULL_ROCK);
   showAt(rock, SHIFT_FROM + 1);
   Object.assign(rock.state.player, { x: 33 * UNIT + UNIT / 2, z: 57 * UNIT + UNIT / 2 });
   rock.state.waved = rock.state.step + 2;
   for (let k = 0; k < 40; k++) rock.step(0);
   check(
     rock.state.waved > 0 && !rock.world.block[at(30, 57)],
-    'Irongate: on the rock past the gate, the drawbridge stays down until the player is back',
+    'Gull Rock: on the rock past the gate, the drawbridge stays down until the player is back',
   );
   Object.assign(rock.state.player, { x: 30 * UNIT + UNIT / 2, z: 54 * UNIT + UNIT / 2 });
   rock.step(0);
@@ -414,13 +414,13 @@ const showAt = (sim: Sim, m: number) => {
     !rock.world.pastCheckpoint(at(30, 54)) && !rock.world.pastCheckpoint(at(30, 59)) && rock.world.pastCheckpoint(at(33, 57)),
     'past the checkpoint: the rock outside, not the walkway or the landing',
   );
-  const sh2 = new Sim(SHANKTON, 1);
+  const sh2 = new Sim(GRAVEL_POINT, 1);
   check(
     sh2.world.pastCheckpoint(at(52, 60)) && !sh2.world.pastCheckpoint(at(40, 56)),
-    'Shankton: the gatehouse is past the checkpoint, the gravel round the shell is not',
+    'Gravel Point: the gatehouse is past the checkpoint, the gravel round the shell is not',
   );
   console.log(
-    `checkpoints: Irongate's drawbridge for the player alone, out over it, never shut on the rock past it; Shankton's three gates, its gatehouse held open`,
+    `checkpoints: Gull Rock's drawbridge for the player alone, out over it, never shut on the rock past it; Gravel Point's three gates, its gatehouse held open`,
   );
 }
 
@@ -454,9 +454,9 @@ const showAt = (sim: Sim, m: number) => {
     `glide reach (tailwind, quarter tail, cross, quarter head, head, quarter head, cross, quarter tail):\n  ${rows.join('\n  ')}`,
   );
 }
-// Where it goes and doesn't, at Stalag Flucht's generator hut.
+// Where it goes and doesn't, at Camp Frostberg's generator hut.
 {
-  const sim = new Sim(STALAG_FLUCHT, 1);
+  const sim = new Sim(FROSTBERG, 1);
   const w = sim.world;
   const s = sim.state;
   const still: Air = { wind: 0, force: 0, weather: 'clear' };
@@ -472,8 +472,8 @@ const showAt = (sim: Sim, m: number) => {
   check(tt(57, 24, 1, east) === null, 'a tile back from the edge: no glide');
   check(tt(58, 24, 1, east, LAYER.GROUND) === null, 'on the ground: no glide');
   check(tt(58, 24, 1, { ...east, weather: 'storm' })?.glide?.why === 'storm', 'in a storm: grounded');
-  // The run-up: off Irongate's outer wall (a roof one tile wide), facing out to sea: no room to run.
-  const iw = new World(IRONGATE);
+  // The run-up: off Gull Rock's outer wall (a roof one tile wide), facing out to sea: no room to run.
+  const iw = new World(GULL_ROCK);
   const runUp = glideFrom(iw, body(20, 4, 13), still);
   check(!!runUp && runUp.why === 'runUp', `no run-up behind: can't go (${runUp && runUp.why})`);
   // Nowhere to land: off that wall into the sea, room to run or not.
@@ -489,7 +489,7 @@ const showAt = (sim: Sim, m: number) => {
   for (const [t, facing] of launchSpots(w))
     for (let wind = 0; wind < 8; wind += 3)
       for (const force of [0, 2]) {
-        const twin = new Sim(STALAG_FLUCHT, 1);
+        const twin = new Sim(FROSTBERG, 1);
         twin.restore(snap);
         const ts = twin.state;
         ts.calendar = [[1, -1, -1, wind, force]];
@@ -528,7 +528,7 @@ const showAt = (sim: Sim, m: number) => {
   check(agree > 0, 'some glides flown');
   // Someone standing where it would land: down on the tile before, as the button says.
   {
-    const twin = new Sim(STALAG_FLUCHT, 1);
+    const twin = new Sim(FROSTBERG, 1);
     twin.restore(snap);
     const ts = twin.state;
     ts.calendar = [[1, -1, -1, 6, 1]];
@@ -549,7 +549,7 @@ const showAt = (sim: Sim, m: number) => {
     );
   }
   console.log(
-    `glider: the button's promise agrees with the flight ${agree}/${flown - (flown - agree)} times off Stalag Flucht's hut; still air ${g.dist} of ${g.reach} (a fence in the way)`,
+    `glider: the button's promise agrees with the flight ${agree}/${flown - (flown - agree)} times off Camp Frostberg's hut; still air ${g.dist} of ${g.reach} (a fence in the way)`,
   );
   void s;
   void RUN_UP;
@@ -557,7 +557,7 @@ const showAt = (sim: Sim, m: number) => {
 // Every glider prison: what the button says, flown, at a sample of edges and winds; the crew stays behind.
 {
   const tally: string[] = [];
-  for (const def of [CENTER_PERKS, SHANKTON]) {
+  for (const def of [MAPLE_GROVE, GRAVEL_POINT]) {
     const sim = new Sim(def, 2);
     const snap = sim.snapshot();
     const spots = launchSpots(sim.world);
@@ -605,16 +605,16 @@ const showAt = (sim: Sim, m: number) => {
 }
 // Forced wind days (bots, tests): the wind and its strength as forced, still calm in fog.
 {
-  const p = dayPlan('center-perks', 7, 3, [[3, -1, -1, 6, 2]]);
-  const fog = dayPlan('center-perks', 7, 3, [[3, -1, 1, 6, 2]]);
+  const p = dayPlan('maple-grove', 7, 3, [[3, -1, -1, 6, 2]]);
+  const fog = dayPlan('maple-grove', 7, 3, [[3, -1, 1, 6, 2]]);
   check(
     p.wind === 6 && p.windForce === 2 && fog.wind === 6 && fog.windForce === 0,
     'a forced wind: from where it says, as strong (calm in fog)',
   );
-  const s = new Sim(CENTER_PERKS, 1);
+  const s = new Sim(MAPLE_GROVE, 1);
   s.state.calendar = [[1, -1, -1, 2, 1]];
   const snap = s.snapshot();
-  const t2 = new Sim(CENTER_PERKS, 1);
+  const t2 = new Sim(MAPLE_GROVE, 1);
   t2.restore(JSON.parse(JSON.stringify(snap)) as Snapshot);
   check(today(t2).wind === 2 && today(t2).windForce === 1, 'a forced wind kept in a save');
   console.log('forced wind: kept, calm in fog, saved');
@@ -626,7 +626,7 @@ const showAt = (sim: Sim, m: number) => {
   const run = (feat: string, v: number) => {
     const feats: number[] = [];
     feats[FEAT[feat as keyof typeof FEAT]] = v;
-    return { prison: 'center-perks', feats, days: [], str: 40, spd: 40, int: 40 };
+    return { prison: 'maple-grove', feats, days: [], str: 40, spd: 40, int: 40 };
   };
   const esc = (via: string) => ({ ...run('glides', 0), via, day: 3, medal: null });
   check(find('papersPlease').escape!(esc('bluff')) && !find('papersPlease').escape!(esc('gate')), 'Papers, Please: out by the bluff');

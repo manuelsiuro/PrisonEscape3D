@@ -29,7 +29,7 @@ import {
 } from '../src/content/long';
 import { WEATHERS } from '../src/content/days';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE, routineEnd } from '../src/content/routine';
 import { placesOf } from '../src/sim/ai/places';
@@ -60,7 +60,7 @@ const track = (seen: SimEvent[], what: string) =>
   seen.filter((e): e is Extract<SimEvent, { type: 'track' }> => e.type === 'track' && e.what === what);
 
 /** A game straight to a moment, with nothing in the way: the blocks skipped aren't missed, no heat, no lockdown. */
-function game(def = CENTER_PERKS, seed = 5) {
+function game(def = MAPLE_GROVE, seed = 5) {
   const sim = new Sim(def, seed);
   const seen: SimEvent[] = [];
   const step = (cmd = 0) => {
@@ -225,7 +225,7 @@ for (const def of PRISONS) {
   );
 }
 {
-  const bot = planted(CENTER_PERKS, 5, true);
+  const bot = planted(MAPLE_GROVE, 5, true);
   bot.keepRoutine(() => bot.sim.clock.day >= 3, 2 * 24 * 60 * STEPS_PER_MINUTE);
   check(bot.sim.state.gardenBy === undefined, 'a run from before 2.43 had neighbours in the garden');
   console.log('before 2.43: nobody but the player in the beds');
@@ -259,7 +259,7 @@ for (const def of PRISONS) {
   s.plots[his] = [CROP.FRUIT, GROWN, 0, 0];
   face(his);
   check(!bedTarget(w, LAYER.GROUND, s.player, n('plastic_cup'), s.plots, s.gardenBy), 'his ripe bed taken with a cup in hand');
-  check(!bedTarget(w, LAYER.GROUND, s.player, n('light_shovel'), s.plots, s.gardenBy), 'his ripe bed taken with a shovel in hand');
+  check(!bedTarget(w, LAYER.GROUND, s.player, n('reinforced_shovel'), s.plots, s.gardenBy), 'his ripe bed taken with a shovel in hand');
   // (Seen: he stands beside the player.)
   const m = s.inmates[who];
   put(m.body, standFor(w, his).tile + 1);
@@ -346,7 +346,7 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ the rat's training, a timing game
 /** Evening free time on day 1 in the player's cell, a tame rat at `speed`, the track in hand and bait in the pockets. */
-function trainer(def = CENTER_PERKS, speed = RAT_START_SPEED, seed = 5) {
+function trainer(def = MAPLE_GROVE, speed = RAT_START_SPEED, seed = 5) {
   const g = game(def, seed);
   const s = g.sim.state;
   g.jump(1, 18, 30);
@@ -408,7 +408,7 @@ for (const def of PRISONS) {
       ['mashing', { mash: true }],
     ];
     for (const [name, o] of cases) {
-      const g = trainer(CENTER_PERKS, speed);
+      const g = trainer(MAPLE_GROVE, speed);
       const r = runLaps(g, o);
       out.push(`${name} ${r.hits}/${RAT_LAPS} +${r.gain}`);
       if (name === 'every pass') {
@@ -469,7 +469,7 @@ for (const def of PRISONS) {
   g.use();
   for (let k = 0; k < 40; k++) g.step();
   g.press();
-  const loaded = new Sim(CENTER_PERKS, 1);
+  const loaded = new Sim(MAPLE_GROVE, 1);
   loaded.restore(JSON.parse(JSON.stringify(g.sim.snapshot())));
   check(loaded.hash() === g.sim.hash() && loaded.state.ratRun?.length === 5, 'saved mid-session: loads the same');
   for (let k = 0; k < 300; k++) {
@@ -481,7 +481,7 @@ for (const def of PRISONS) {
   const bad = JSON.parse(JSON.stringify(g.sim.snapshot()));
   bad.state.ratRun = [1, 2];
   bad.state.gardenBy = [1, 2, 3];
-  const back = new Sim(CENTER_PERKS, 1);
+  const back = new Sim(MAPLE_GROVE, 1);
   back.restore(bad);
   check(back.state.ratRun?.length === 0, 'a damaged session: none running');
   check(
@@ -491,7 +491,7 @@ for (const def of PRISONS) {
   const none = JSON.parse(JSON.stringify(g.sim.snapshot()));
   delete none.state.ratRun;
   delete none.state.gardenBy;
-  const plain = new Sim(CENTER_PERKS, 1);
+  const plain = new Sim(MAPLE_GROVE, 1);
   plain.restore(none);
   check(plain.state.ratRun === undefined && plain.state.gardenBy === undefined, 'a save from before: neither');
   console.log('saves: mid-session loads and plays on the same; damaged ones set afresh; older ones have neither');

@@ -47,7 +47,7 @@ export async function shoot(k: number) {
 
 /**
  * A prison's outside as the manhunt draws it (P41 review): its houses, the prison behind its wall
- * (Irongate's island across the water), at 10:00 with nobody in it, before any alarm (no
+ * (Gull Rock's island across the water), at 10:00 with nobody in it, before any alarm (no
  * helicopter, no roadblocks). Started from a way out over the wall or by the gate (no vehicle left
  * lying about), then left: back to the title.
  */

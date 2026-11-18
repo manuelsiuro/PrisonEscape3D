@@ -3,7 +3,7 @@
  * and keyframe seeks are exact; walls stop the player; door frames guide them through; the
  * clock reads right.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { command } from '../src/sim/command';
 import { Recorder } from '../src/sim/Recorder';
 import { Sim } from '../src/sim/Sim';
@@ -30,7 +30,7 @@ const PLAN: Array<[number, number]> = [
 ];
 /** Plays the plan (repeated `loops` times) and returns the recorder. */
 function play(loops = 1, seed = 7) {
-  const rec = new Recorder(new Sim(CENTER_PERKS, seed));
+  const rec = new Recorder(new Sim(MAPLE_GROVE, seed));
   for (let k = 0; k < loops; k++) for (const [d, n] of PLAN) for (let i = 0; i < n; i++) rec.step(command(d === 0 ? 0 : d));
   return rec;
 }
@@ -44,7 +44,7 @@ const endStep = a.sim.state.step;
 console.log(`after ${endStep} steps: ${end}, player in ${a.sim.playerZone}`);
 
 // Snapshot, run on, restore, run the same: identical.
-const sim = new Sim(CENTER_PERKS, 7);
+const sim = new Sim(MAPLE_GROVE, 7);
 for (let i = 0; i < 50; i++) sim.step(command(S));
 const snap = sim.snapshot();
 for (let i = 0; i < 40; i++) sim.step(command(E));
@@ -63,24 +63,24 @@ long.seek(longStep);
 check(long.sim.hash() === longEnd, 'seeking back and forth through keyframes is exact');
 
 // Walls: walking north from the bed area only reaches the cell's back wall.
-const wall = new Sim(CENTER_PERKS);
+const wall = new Sim(MAPLE_GROVE);
 for (let i = 0; i < 200; i++) wall.step(command(N));
 check(wall.playerZone === 'playerCell', 'the back wall holds');
 check(tileOfBody(wall.state.player).z === 7, 'the player stops flush against the wall');
 
 // Straight south from the middle of the cell hits the wall beside the door (x = 9, door at 8).
-const blocked = new Sim(CENTER_PERKS);
+const blocked = new Sim(MAPLE_GROVE);
 for (let i = 0; i < 100; i++) blocked.step(command(S));
 check(blocked.playerZone === 'playerCell', 'the wall beside the door holds');
 
 // Half over the door frame: the frame guides the player through.
-const assisted = new Sim(CENTER_PERKS);
+const assisted = new Sim(MAPLE_GROVE);
 assisted.state.player.x = 8 * UNIT + UNIT / 2 + 380;
 for (let i = 0; i < 60 && tileOfBody(assisted.state.player).z < 13; i++) assisted.step(command(S));
 check(assisted.playerZone === 'cellBlock', 'a door frame slides the player into the doorway and out to the hall');
 
 // A direction with no compass point (17–31, a corrupt or hand-made log): standing still, never NaN.
-const odd = new Sim(CENTER_PERKS);
+const odd = new Sim(MAPLE_GROVE);
 const at = { x: odd.state.player.x, z: odd.state.player.z, facing: odd.state.player.facing };
 for (const d of [17, 29, 31]) for (let i = 0; i < 5; i++) odd.step(command(d));
 const p = odd.state.player;
@@ -89,7 +89,7 @@ for (let i = 0; i < 10; i++) odd.step(command(E));
 check(Number.isFinite(p.x) && p.x > at.x, 'and the player walks on afterwards');
 
 // Speed: about 3.6 tiles a second on open floor.
-const run = new Sim(CENTER_PERKS);
+const run = new Sim(MAPLE_GROVE);
 run.state.player.x = 10 * UNIT;
 run.state.player.z = 13 * UNIT + UNIT / 2;
 const x0 = run.state.player.x;
@@ -102,7 +102,7 @@ check(formatTime(clockAt(15 * 60 * STEPS_PER_MINUTE)) === '23:00', '15 hours lat
 const midnight = clockAt(16 * 60 * STEPS_PER_MINUTE);
 check(midnight.day === 2 && formatTime(midnight) === '00:00', 'midnight starts day 2');
 let hours = 0;
-const clock = new Sim(CENTER_PERKS);
+const clock = new Sim(MAPLE_GROVE);
 for (let i = 0; i < 3 * 60 * STEPS_PER_MINUTE; i++) {
   clock.step(0);
   hours += clock.events.filter((e) => e.type === 'hour').length;

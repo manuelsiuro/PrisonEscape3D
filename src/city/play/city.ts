@@ -71,8 +71,8 @@ const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const HELD: Record<string, number> = {
   bat: itemNumber('bat'),
   nail_bat: itemNumber('spiked_bat'),
-  knife: itemNumber('comb_blade'),
-  cleaver: itemNumber('comb_blade'),
+  knife: itemNumber('razor_comb'),
+  cleaver: itemNumber('razor_comb'),
   spear: itemNumber('broom'),
 };
 /** (2.59) Clothes found in a house: the ones a prisoner is released in. */

@@ -91,17 +91,17 @@ function wireOf(prison: string) {
 }
 
 export const CUTS: Cut[] = [
-  // 1. Cold open: dawn over Center Perks, the camera pulling back off the yard.
+  // 1. Cold open: dawn over Maple Grove, the camera pulling back off the yard.
   {
     id: 'open',
     beats: 4,
     tempo: 1,
-    shot: { prison: 'center-perks', route: 'glider', when: minute(8 * 60 + 1), light: 420 },
+    shot: { prison: 'maple-grove', route: 'glider', when: minute(8 * 60 + 1), light: 420 },
     cam: (u) => ({ zoom: lerp(1.1, 0.55, ease(u)), turn: lerp(-0.35, -0.1, u), tilt: 0.08 }),
     pre: 1,
   },
   // 2. The model prisoner: the day as it should be kept.
-  { id: 'rollcall', beats: 2, tempo: 1, shot: { prison: 'center-perks', route: 'glider', when: minute(8 * 60 + 20) }, cam: push(1.2, 1.4) },
+  { id: 'rollcall', beats: 2, tempo: 1, shot: { prison: 'maple-grove', route: 'glider', when: minute(8 * 60 + 20) }, cam: push(1.2, 1.4) },
   { id: 'work', beats: 2, tempo: 1, shot: { ...SHOTS.work }, cam: push(2.0, 2.3, { dx: 1 }) },
   { id: 'football', beats: 2, tempo: 1, shot: { ...SHOTS.football, after: 240 }, cam: push(1.5, 1.6) },
   { id: 'gym', beats: 2, tempo: 1, shot: { ...SHOTS.train }, cam: push(2.2, 2.6, { dz: -1.5 }) },
@@ -112,7 +112,7 @@ export const CUTS: Cut[] = [
     id: 'turn',
     beats: 4,
     tempo: 1,
-    shot: { prison: 'center-perks', route: 'tunnel', when: (s) => s.state.layer === LAYER.UNDER, after: -50 },
+    shot: { prison: 'maple-grove', route: 'tunnel', when: (s) => s.state.layer === LAYER.UNDER, after: -50 },
     cam: push(2.2, 2.6),
   },
   // 4. The plan.
@@ -120,14 +120,14 @@ export const CUTS: Cut[] = [
     id: 'vents',
     beats: 4,
     tempo: 2,
-    shot: { prison: 'center-perks', route: 'rooftop', when: onLayerFor(LAYER.VENTS, 10), light: 700 },
+    shot: { prison: 'maple-grove', route: 'rooftop', when: onLayerFor(LAYER.VENTS, 10), light: 700 },
     cam: push(1.8, 2.1),
   },
   {
     id: 'dig',
     beats: 2,
     tempo: 2,
-    shot: { prison: 'center-perks', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100) },
+    shot: { prison: 'maple-grove', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100) },
     cam: push(2.4, 2.7, { dz: -1.5 }),
   },
   {
@@ -135,9 +135,9 @@ export const CUTS: Cut[] = [
     beats: 2,
     tempo: 2,
     shot: {
-      prison: 'center-perks',
+      prison: 'maple-grove',
       route: 'cutout',
-      when: (s) => s.world.ground.kind[wireOf('center-perks')] === TILE.FENCE_CUT,
+      when: (s) => s.world.ground.kind[wireOf('maple-grove')] === TILE.FENCE_CUT,
       after: -22,
       light: 600,
     },
@@ -149,35 +149,35 @@ export const CUTS: Cut[] = [
   { id: 'rat', beats: 2, tempo: 2, shot: { ...SHOTS.rat, when: (_s, k) => k >= 60 }, cam: push(3.2, 3.5, { dx: 1.5, dz: -2 }) },
   // 5. Five prisons.
   {
-    id: 'center-perks',
+    id: 'maple-grove',
     beats: 4,
     tempo: 2,
-    shot: { prison: 'center-perks', route: 'cutout', when: minute(15 * 60 + 20), light: 1110 },
+    shot: { prison: 'maple-grove', route: 'cutout', when: minute(15 * 60 + 20), light: 1110 },
     cam: (u) => ({ zoom: 0.62, turn: lerp(0.25, -0.05, u), tilt: 0.1 }),
   },
   {
-    id: 'stalag-flucht',
+    id: 'frostberg',
     beats: 4,
     tempo: 2,
     shot: { ...SHOTS.weather, when: minute(15 * 60 + 20) },
     cam: (u) => ({ zoom: 0.7, turn: lerp(-0.25, 0.05, u), tilt: 0.1 }),
   },
   {
-    id: 'shankton',
+    id: 'gravel-point',
     beats: 4,
     tempo: 2,
-    shot: { prison: 'shankton', route: 'rooftop', when: minute(15 * 60 + 20), light: 1110 },
+    shot: { prison: 'gravel-point', route: 'rooftop', when: minute(15 * 60 + 20), light: 1110 },
     cam: (u) => ({ zoom: 0.7, turn: lerp(0.25, -0.05, u), tilt: 0.1 }),
   },
   {
-    id: 'san-pancho',
+    id: 'sierra-seca',
     beats: 4,
     tempo: 2,
     shot: { ...SHOTS.mines, when: (_s, k, n) => k >= n - 80 },
     cam: (u) => ({ zoom: lerp(1.0, 0.75, u), turn: lerp(-0.2, 0.05, u), tilt: 0.06 }),
   },
   {
-    id: 'irongate',
+    id: 'gull-rock',
     beats: 4,
     tempo: 2,
     shot: { ...SHOTS.island, when: (_s, k, n) => k >= n - 60 },
@@ -208,7 +208,7 @@ export const SPARE: Cut[] = [
   { id: 'garden', beats: 2, tempo: 1, shot: { ...SHOTS.garden }, cam: push(2.2, 2.5) },
   { id: 'hoops', beats: 2, tempo: 1, shot: { ...SHOTS.hoops, after: -10 }, cam: push(1.8, 2.1, { dz: -1.5 }) },
   { id: 'grounds', beats: 2, tempo: 1, shot: { ...SHOTS.grounds, when: (_s, k, n) => k >= n - 60 }, cam: push(1.3, 1.5) },
-  { id: 'dinner', beats: 2, tempo: 1, shot: { prison: 'center-perks', route: 'glider', when: minute(17 * 60 + 25) }, cam: push(1.5, 1.7) },
+  { id: 'dinner', beats: 2, tempo: 1, shot: { prison: 'maple-grove', route: 'glider', when: minute(17 * 60 + 25) }, cam: push(1.5, 1.7) },
 ];
 
 /** Each cut's first frame and length in frames (where the beats fall, rounded to frames). */

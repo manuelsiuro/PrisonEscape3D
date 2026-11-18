@@ -13,7 +13,7 @@
  * - guards walk their rounds for days without getting stuck; saves restore mid-chase.
  */
 import { ITEMS, itemNumber } from '../src/content/items';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { ROUTINE } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
@@ -108,7 +108,7 @@ const idle = () => 0;
 
 /** A day played by the model prisoner up to 10:00 (free time, 0 heat), every guard then planted out of the way. */
 function morning(seed: number): Sim {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   const play = modelPrisoner(sim);
   run(sim, play, (s) => minute(s) >= 10 * 60, DAY);
   sim.state.guards.forEach((g, k) => plant(g, 40 + k, 50, 5));
@@ -117,7 +117,7 @@ function morning(seed: number): Sim {
 
 // ------------------------------------------------------------------ sight
 {
-  const w = new Sim(CENTER_PERKS).world;
+  const w = new Sim(MAPLE_GROVE).world;
   const b = (x: number, z: number, f = 5) => bodyAt(x, z, f);
   check(canSee(w, b(28, 13, 1), b(33, 13)), 'a guard sees straight ahead');
   check(!canSee(w, b(28, 13, 9), b(33, 13)), '…not behind it');
@@ -170,7 +170,7 @@ function morning(seed: number): Sim {
 {
   /** A model day up to 23:30 (in bed by then), then out into the cell block corridor. */
   const night = (seed: number) => {
-    const sim = new Sim(CENTER_PERKS, seed);
+    const sim = new Sim(MAPLE_GROVE, seed);
     const play = modelPrisoner(sim);
     run(sim, play, (s) => minute(s) === 23 * 60 + 30, DAY);
     check(sim.state.heat === 0 && sim.playerZone === 'playerCell', 'the model prisoner is in its cell at 23:30');
@@ -253,7 +253,7 @@ function morning(seed: number): Sim {
   check(!sim.state.seen && sim.state.heat === 0, 'disguised behind a wall: never recognized');
 
   // A chase during the bed check doesn't cancel it: the guard takes it up again afterwards.
-  const b = new Sim(CENTER_PERKS, 4);
+  const b = new Sim(MAPLE_GROVE, 4);
   const play = modelPrisoner(b);
   run(b, play, (s) => minute(s) === 30 && s.state.step % STEPS_PER_MINUTE === 1, DAY);
   const warden = b.state.guards[0];
@@ -285,7 +285,7 @@ function morning(seed: number): Sim {
   console.log('review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard');
 
   // A bed check held up past the night is called off at 08:00 (never run by day).
-  const e = new Sim(CENTER_PERKS, 4);
+  const e = new Sim(MAPLE_GROVE, 4);
   const ep = modelPrisoner(e);
   run(e, ep, (s) => minute(s) === 7 * 60 + 59, DAY);
   const w0 = e.state.guards[0];
@@ -296,7 +296,7 @@ function morning(seed: number): Sim {
   check(!w0.resume && !w0.tasks.length && w0.mode !== GUARD.BED_CHECK, 'a bed check still waiting at 08:00 is called off');
 
   // No sleeping through a lockdown: the bed is offered as a container, not a bed.
-  const l = new Sim(CENTER_PERKS, 4);
+  const l = new Sim(MAPLE_GROVE, 4);
   const lp = modelPrisoner(l);
   run(l, lp, (s) => minute(s) === 23 * 60 + 30, DAY);
   l.state.guards.forEach((g, k) => plant(g, 40 + k, 50, 5));
@@ -360,7 +360,7 @@ function morning(seed: number): Sim {
 {
   /** Model prisoner; 22:40 off to the library (dummy in bed or not) until 08:00. */
   const sneak = (dummy: boolean) => {
-    const sim = new Sim(CENTER_PERKS, 8);
+    const sim = new Sim(MAPLE_GROVE, 8);
     const good = modelPrisoner(sim);
     const pilot = new Autopilot(sim.world);
     const bed = containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed');
@@ -395,7 +395,7 @@ function morning(seed: number): Sim {
 
 // ------------------------------------------------------------------ the shakedown
 {
-  const sim = new Sim(CENTER_PERKS, 12);
+  const sim = new Sim(MAPLE_GROVE, 12);
   const play = modelPrisoner(sim);
   const desk = containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
   const box = () => sim.state.items.containers[desk];
@@ -432,7 +432,7 @@ function morning(seed: number): Sim {
 
 // ------------------------------------------------------------------ rounds, and saves mid-chase
 {
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   // Ordinary days (P17): the rounds counted aren't about the day's events.
   sim.state.calendar = quietCalendar();
   const play = modelPrisoner(sim);
@@ -466,10 +466,10 @@ function morning(seed: number): Sim {
   check(sim.state.heat === 0, 'the model prisoner ends 3 days with 0 heat among guards');
 
   // A save in the middle of a chase restores to the same state and plays on the same.
-  const a = new Sim(CENTER_PERKS, 9);
+  const a = new Sim(MAPLE_GROVE, 9);
   run(a, idle, (s) => s.state.lockdown, DAY);
   run(a, idle, () => false, 40);
-  const b = new Sim(CENTER_PERKS, 9);
+  const b = new Sim(MAPLE_GROVE, 9);
   b.restore(a.snapshot());
   check(a.hash() === b.hash(), 'restored mid-chase: the same state');
   for (let i = 0; i < 3000; i++) {

@@ -621,7 +621,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.lockHealth = locked ? locked.hp / maxHealth(locked.str) : 0;
   // Security (GDD §5.4–5.6) as the sim has it: cameras on their sweep, the searchlights at night, a sniper's aim.
   const sec = f.security;
-  // What has power (Irongate's two generators each run their half, P12).
+  // What has power (Gull Rock's two generators each run their half, P12).
   sec.power = sim.powered('lights');
   sec.fence = sim.powered('fence');
   sec.arches = sim.powered('detectors');
@@ -676,7 +676,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   if (hook >= 0) {
     hookAt.x = (hook % MAP_W) + 0.5;
     hookAt.z = Math.floor(hook / MAP_W) + 0.5;
-    // Onto a roof (Shankton's gatehouse), the landing is up there.
+    // Onto a roof (Gravel Point's gatehouse), the landing is up there.
     hookAt.y = memo.tool!.layer === LAYER.ROOF ? ROOF_Y : 0;
   }
   sec.hook = hook >= 0 ? hookAt : null;
@@ -804,7 +804,7 @@ function dayFrame(sim: Sim, f: Frame) {
   const b = (plan.wind * Math.PI) / 4;
   w.windAngle = Math.atan2(Math.cos(b), -Math.sin(b));
   w.windForce = plan.windForce;
-  // (P26: a Big Freeze Daily snows on any prison, as Stalag Flucht always does.)
+  // (P26: a Big Freeze Daily snows on any prison, as Camp Frostberg always does.)
   w.snow = freezing(sim);
   const e = f.events;
   e.movie = eventOn(sim, 'movie');

@@ -46,11 +46,11 @@ export const DINNERS: readonly Dish[] = [
 
 /** Each prison's own dinner, served as often as any other (the Training Block has none). */
 export const HOUSE_DINNER: Readonly<Record<string, Dish>> = {
-  'center-perks': { id: 'burger', energy: 45 },
-  'stalag-flucht': { id: 'sausage', energy: 40, health: 5 },
-  shankton: { id: 'meatballs', energy: 40, health: 5 },
-  'san-pancho': { id: 'tacos', energy: 40, health: 5 },
-  irongate: { id: 'pie', energy: 40, health: 5 },
+  'maple-grove': { id: 'burger', energy: 45 },
+  frostberg: { id: 'sausage', energy: 40, health: 5 },
+  'gravel-point': { id: 'meatballs', energy: 40, health: 5 },
+  'sierra-seca': { id: 'tacos', energy: 40, health: 5 },
+  'gull-rock': { id: 'pie', energy: 40, health: 5 },
   'six-hunter': { id: 'venison', energy: 45, health: 5 },
 };
 

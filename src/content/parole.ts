@@ -100,7 +100,7 @@ export const TOPICS: ReadonlyArray<{ id: string; lines: readonly string[]; need?
 
 /**
  * Where the board sits in each campaign prison: the room the hearing is held in (the visiting
- * room; at Stalag Flucht, where nobody visits, the mess hut), the three members' places (seats
+ * room; at Camp Frostberg, where nobody visits, the mess hut), the three members' places (seats
  * across a table or counter, facing the camera: the way, 0–15 as DIR, they face), and the seat
  * the player is shown to across from them. Drawn only: nothing on the map changes.
  */
@@ -112,7 +112,7 @@ export interface HearingPlace {
 }
 export const HEARINGS: Record<string, HearingPlace> = {
   // The visiting room's east booths: the board on the visitors' side of the counter.
-  'center-perks': {
+  'maple-grove': {
     zone: 'visitation',
     board: [
       { x: 33, z: 40 },
@@ -123,7 +123,7 @@ export const HEARINGS: Record<string, HearingPlace> = {
     seat: { x: 34, z: 42 },
   },
   // The mess hut's west table, its north bench.
-  'stalag-flucht': {
+  frostberg: {
     zone: 'canteen',
     board: [
       { x: 6, z: 30 },
@@ -134,7 +134,7 @@ export const HEARINGS: Record<string, HearingPlace> = {
     seat: { x: 7, z: 32 },
   },
   // The canteen (where visitors sit): the north-west table.
-  shankton: {
+  'gravel-point': {
     zone: 'canteen',
     board: [
       { x: 26, z: 15 },
@@ -145,7 +145,7 @@ export const HEARINGS: Record<string, HearingPlace> = {
     seat: { x: 27, z: 17 },
   },
   // The canteen's two north tables.
-  'san-pancho': {
+  'sierra-seca': {
     zone: 'canteen',
     board: [
       { x: 19, z: 32 },
@@ -155,7 +155,7 @@ export const HEARINGS: Record<string, HearingPlace> = {
     face: 5,
     seat: { x: 20, z: 34 },
   },
-  irongate: {
+  'gull-rock': {
     zone: 'canteen',
     board: [
       { x: 30, z: 29 },

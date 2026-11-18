@@ -1,7 +1,7 @@
 /**
  * Guard dogs (P19), rule by rule:
- * - the data: Shankton's Brutus (Duffy), San Pancho's Canela (Ríos) and Bandido (Ochoa),
- *   Irongate's Admiral (Hask); each kennel on open floor a guard can walk to, a night dog's
+ * - the data: Gravel Point's Tonka (Malone), Sierra Seca's Chispa (Herrera) and Pirata (Lucero),
+ *   Gull Rock's Commodore (Coll); each kennel on open floor a guard can walk to, a night dog's
  *   handler on a night round, names unique in the prison; no dogs anywhere else;
  * - shifts: in the kennel all of day 1 (the escape bots' day), at the handler's heel from day 2
  *   10:00 to 22:00, 01:00–05:00 too for the night dogs, and in every lockdown; back to the
@@ -26,9 +26,9 @@
  */
 import { itemNumber } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
-import { IRONGATE } from '../src/content/prisons/irongate';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
-import { SHANKTON } from '../src/content/prisons/shankton';
+import { GULL_ROCK } from '../src/content/prisons/gull-rock';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
+import { GRAVEL_POINT } from '../src/content/prisons/gravel-point';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { pathTo } from '../src/sim/ai/path';
@@ -64,9 +64,9 @@ import { ROUTINE } from '../src/content/routine';
 import { check } from './assert';
 
 const DOGS: Record<string, string[]> = {
-  shankton: ['Brutus'],
-  'san-pancho': ['Canela', 'Bandido'],
-  irongate: ['Admiral'],
+  'gravel-point': ['Tonka'],
+  'sierra-seca': ['Chispa', 'Pirata'],
+  'gull-rock': ['Commodore'],
   'six-hunter': ['Duchess', 'Rascal', 'Pudding', 'Tinker', 'Brutus', 'Smudge'],
   training: ['Biscuit'],
 };
@@ -152,11 +152,11 @@ for (const p of [...PRISONS, TRAINING]) {
     check(tileOf(sim.state.dogs[k].body) === kennel, `${p.id}: ${def.name} starts by its kennel`);
   });
 }
-console.log('data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open floor, a walk from their rounds');
+console.log('data: Gravel Point 1 dog, Sierra Seca 2, Gull Rock 1; kennels on open floor, a walk from their rounds');
 
 // ------------------------------------------------------------------ shifts
 {
-  const { sim, to } = game(SAN_PANCHO);
+  const { sim, to } = game(SIERRA_SECA);
   const at = (k: number) => tileOf(sim.state.dogs[k].body);
   const kennel = (k: number) => dogDef(sim.world, k).kennel.z * MAP_W + dogDef(sim.world, k).kennel.x;
   const near = (k: number) => {
@@ -195,7 +195,7 @@ console.log('data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open flo
   to(2, 22, 30);
   check(at(0) === kennel(0) && at(1) === kennel(1) && sim.state.dogs.every((d) => d.mode === DOG.KENNEL), '22:30: back in the kennels');
   to(2, 2, 0);
-  check(at(0) === kennel(0) && sim.state.dogs[1].mode === DOG.HEEL, '02:00: Bandido on the night shift, Canela asleep in her kennel');
+  check(at(0) === kennel(0) && sim.state.dogs[1].mode === DOG.HEEL, '02:00: Pirata on the night shift, Chispa asleep in her kennel');
   to(2, 5, 30);
   check(sim.state.dogs[1].mode === DOG.KENNEL, '05:30: the night shift over');
   // A lockdown calls them all out, at any hour.
@@ -207,7 +207,7 @@ console.log('data: Shankton 1 dog, San Pancho 2, Irongate 1; kennels on open flo
     'a lockdown at 05:30: every dog out',
   );
   // A run logged before the dogs came: they stay in.
-  const old = new Sim(SAN_PANCHO, 5);
+  const old = new Sim(SIERRA_SECA, 5);
   old.noDogs = true;
   old.state.calendar = [[0, 0, 0]];
   while (old.state.step < 1440 * STEPS_PER_MINUTE + 4 * 60 * STEPS_PER_MINUTE) {
@@ -259,14 +259,14 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   const screwdriver = slot(n('screwdriver'), 25);
   // Contraband in the hotbar (not in hand): the dog smells it.
   {
-    const { sim, seen, step, stand } = byDog(SHANKTON, [[2, screwdriver]]);
+    const { sim, seen, step, stand } = byDog(GRAVEL_POINT, [[2, screwdriver]]);
     const handler = sim.state.guards[handlersOf(sim.world)[0]];
     stand();
-    check(noseFor(sim, 0) && smellsOfContraband(sim), 'the paw: Brutus could smell the screwdriver');
+    check(noseFor(sim, 0) && smellsOfContraband(sim), 'the paw: Tonka could smell the screwdriver');
     step(0, false);
     check(
       dogEvents(seen, 'sniff') === 1 && seen.some((e) => e.type === 'spotted' && e.reason === 'sniffed'),
-      'a screwdriver in the hotbar: Brutus smells it (and the player is spotted)',
+      'a screwdriver in the hotbar: Tonka smells it (and the player is spotted)',
     );
     check(sim.state.heat === SNIFF_HEAT, `+${SNIFF_HEAT} heat (${sim.state.heat})`);
     check(
@@ -275,7 +275,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     );
     check(
       sim.state.dogs[0].mode === DOG.POINT && handler.mode === GUARD.INVESTIGATE && handler.target === tileOf(sim.state.player),
-      'he points; Duffy comes to look where the player stands',
+      'he points; Malone comes to look where the player stands',
     );
     seen.length = 0;
     for (let k = 0; k < SNIFF_AGAIN - 5; k++) {
@@ -291,7 +291,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   }
   // A pouch in the hotbar keeps the smell in; a guard's uniform fools no dog; legal things smell of nothing.
   {
-    const { seen, step, stand } = byDog(SHANKTON, [
+    const { seen, step, stand } = byDog(GRAVEL_POINT, [
       [2, screwdriver],
       [3, slot(n('pouch'), 20)],
     ]);
@@ -302,14 +302,14 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     check(dogEvents(seen, 'sniff') === 0, 'a pouch in the hotbar: nothing smelled');
   }
   {
-    const { sim, seen, step, stand } = byDog(SHANKTON, [[2, screwdriver]]);
+    const { sim, seen, step, stand } = byDog(GRAVEL_POINT, [[2, screwdriver]]);
     sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
     stand();
     step();
     check(dogEvents(seen, 'sniff') === 1, "in a guard's uniform: smelled all the same");
   }
   {
-    const { seen, step, stand } = byDog(SHANKTON, [
+    const { seen, step, stand } = byDog(GRAVEL_POINT, [
       [2, slot(n('soap'))],
       [3, slot(n('jerky'))],
     ]);
@@ -320,17 +320,17 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     check(dogEvents(seen, 'sniff') === 0, 'soap and jerky: nothing to smell');
   }
   {
-    const { sim, seen, step, stand } = byDog(SHANKTON, [[2, screwdriver]]);
+    const { sim, seen, step, stand } = byDog(GRAVEL_POINT, [[2, screwdriver]]);
     sim.state.dogs[0].trust = TRUST_IGNORE;
     for (let k = 0; k < 40; k++) {
       stand();
       step();
     }
-    check(dogEvents(seen, 'sniff') === 0 && !noseFor(sim, 0), `trust ${TRUST_IGNORE}: Brutus lets it go (and the paw says so)`);
+    check(dogEvents(seen, 'sniff') === 0 && !noseFor(sim, 0), `trust ${TRUST_IGNORE}: Tonka lets it go (and the paw says so)`);
   }
   // The paw is on before every sniff: the player wandering about the dog with a screwdriver.
   {
-    const { sim, seen, step } = byDog(SAN_PANCHO, [[2, screwdriver]]);
+    const { sim, seen, step } = byDog(SIERRA_SECA, [[2, screwdriver]]);
     let sniffs = 0;
     let warned = true;
     const home = { x: sim.prison.spawn.x * UNIT + UNIT / 2, z: sim.prison.spawn.z * UNIT + UNIT / 2 };
@@ -353,7 +353,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   }
   // The paw at a shift's start: a dog smelling the player from its kennel as it comes on shift is warned of a step ahead.
   {
-    const g = game(SAN_PANCHO);
+    const g = game(SIERRA_SECA);
     g.to(2, 9, 59);
     g.blind();
     const sim = g.sim;
@@ -381,7 +381,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
 
 // ------------------------------------------------------------------ the trail
 {
-  let { sim, seen, step, to, blind } = game(SHANKTON);
+  let { sim, seen, step, to, blind } = game(GRAVEL_POINT);
   to(1, 23, 30);
   blind();
   // In the cell after Lights Out: nothing laid. Out of it, a tile at a time.
@@ -392,7 +392,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   step();
   check(outOfBounds(sim) && sim.state.scent.length === 0, 'day 1: no dogs at work, no trail laid yet');
   // (A game of its own: the player left out in the corridor all day 1 would be in trouble by now.)
-  ({ sim, seen, step, to, blind } = game(SHANKTON));
+  ({ sim, seen, step, to, blind } = game(GRAVEL_POINT));
   to(2, 23, 30);
   blind();
   putTile(sim.state.player, 20 + 25 * MAP_W);
@@ -448,7 +448,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   check(sim.state.feats[FEAT.washed] === 1, 'washing counted');
   // A shower in the showers block washes it off too.
   {
-    const g = game(SHANKTON);
+    const g = game(GRAVEL_POINT);
     const block = ROUTINE.find((r) => r.id === 'showers')!;
     g.to(2, Math.floor(block.start / 60), (block.start % 60) + 1);
     g.blind();
@@ -465,9 +465,9 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
   );
 }
 
-/** Shankton at 02:00 in prison day 2's night (Brutus on his night shift at Duffy's heel), the trail laid by hand along `tiles` (fresh). */
+/** Gravel Point at 02:00 in prison day 2's night (Tonka on his night shift at Malone's heel), the trail laid by hand along `tiles` (fresh). */
 function tracking(tiles: number[], seed = 5) {
-  const g = game(SHANKTON, seed);
+  const g = game(GRAVEL_POINT, seed);
   g.to(2, 2, 0);
   g.blind();
   const sim = g.sim;
@@ -483,7 +483,7 @@ function tracking(tiles: number[], seed = 5) {
 }
 
 {
-  // A trail along the corridor, up to the wall and through a hole hidden behind a poster: Brutus finds it.
+  // A trail along the corridor, up to the wall and through a hole hidden behind a poster: Tonka finds it.
   const row = Array.from({ length: 12 }, (_, k) => 22 + k + 25 * MAP_W);
   const hole = 33 + 23 * MAP_W;
   {
@@ -491,7 +491,7 @@ function tracking(tiles: number[], seed = 5) {
     setTile(sim, LAYER.GROUND, hole, TILE.HOLE_POSTER);
     let k = 0;
     for (; k < 2000 && !dogEvents(seen, 'dug'); k++) step(0, false);
-    check(dogEvents(seen, 'track') === 1, 'Brutus picks up the trail beside him');
+    check(dogEvents(seen, 'track') === 1, 'Tonka picks up the trail beside him');
     check(
       dogEvents(seen, 'dug') === 1 && sim.state.found.includes(placeKey(LAYER.GROUND, hole)),
       `he follows it to the hole behind the poster: found (${(k / 20).toFixed(1)} s)`,
@@ -502,7 +502,7 @@ function tracking(tiles: number[], seed = 5) {
     );
     check(d.mode === DOG.POINT, 'he stands barking at it');
   }
-  // Up through a grate behind a fake vent at the trail's end (the trail marks where the player left the floor): found too, covers fool no dog.
+  // Up through a grate behind a dummy vent grille at the trail's end (the trail marks where the player left the floor): found too, covers fool no dog.
   {
     const end = row[row.length - 1];
     const { sim, seen, step } = tracking(row);
@@ -510,7 +510,10 @@ function tracking(tiles: number[], seed = 5) {
     sim.world.setKind(LAYER.VENTS, end, TILE.GRATE_FAKE);
     sim.state.tiles[placeKey(LAYER.VENTS, end)] = TILE.GRATE_FAKE;
     for (let k = 0; k < 2000 && !dogEvents(seen, 'dug'); k++) step(0, false);
-    check(sim.state.found.includes(placeKey(LAYER.VENTS, end)), "a fake vent over the trail's end, where the player left the floor: found");
+    check(
+      sim.state.found.includes(placeKey(LAYER.VENTS, end)),
+      "a dummy vent grille over the trail's end, where the player left the floor: found",
+    );
   }
   // The same grate beside a trail that ends with the player simply back in bounds: nothing found.
   {
@@ -539,7 +542,7 @@ function tracking(tiles: number[], seed = 5) {
     for (let k = 0; k < 10; k++) step(0, false);
     sim.state.guards[handlersOf(sim.world)[0]].ko = 1e6;
     for (let k = 0; k < 2000; k++) step(0, false);
-    check(dogEvents(seen, 'dug') === 0 && d.mode === DOG.HEEL, 'its handler out cold: Brutus leaves the trail');
+    check(dogEvents(seen, 'dug') === 0 && d.mode === DOG.HEEL, 'its handler out cold: Tonka leaves the trail');
   }
   // Nothing there at its end: lost.
   {
@@ -556,7 +559,7 @@ function tracking(tiles: number[], seed = 5) {
       putTile(sim.state.player, row[row.length - 1]);
       step();
     }
-    check(dogEvents(seen, 'point') === 1, "the player at the trail's end: Brutus points at them");
+    check(dogEvents(seen, 'point') === 1, "the player at the trail's end: Tonka points at them");
   }
   // Washed off on the way: lost. A friend never follows it.
   {
@@ -577,7 +580,7 @@ function tracking(tiles: number[], seed = 5) {
     const a = tracking(row);
     for (let k = 0; k < 40; k++) a.step(0, false);
     const snap = a.sim.snapshot();
-    const b = new Sim(SHANKTON, 5);
+    const b = new Sim(GRAVEL_POINT, 5);
     reload(b, snap);
     for (let k = 0; k < 600; k++) {
       a.sim.step(0);
@@ -592,7 +595,7 @@ function tracking(tiles: number[], seed = 5) {
     sim.state.lockdown = true;
     sim.state.heat = 100;
     for (let k = 0; k < 5; k++) step(0, false);
-    check(dogEvents(seen, 'track') === 1, 'a lockdown: Brutus sets off along the trail from across the prison');
+    check(dogEvents(seen, 'track') === 1, 'a lockdown: Tonka sets off along the trail from across the prison');
   }
   console.log(
     'tracking: beside the trail a dog follows it to its end: the way the player went (cover or no cover: found, the alarm), the player, or lost',
@@ -629,14 +632,14 @@ function tracking(tiles: number[], seed = 5) {
     }
     throw new Error('nowhere to throw from');
   };
-  const { sim, seen, step, to, blind } = game(SAN_PANCHO);
+  const { sim, seen, step, to, blind } = game(SIERRA_SECA);
   to(2, 11, 0);
   blind();
   const d = sim.state.dogs[0];
   step(throwTo(sim, n('jerky')));
   check(
     dogEvents(seen, 'fed') === 1 && d.trust === TREAT_TRUST && sim.state.items.inv[0] === 0,
-    `jerky for Canela: eaten, trust ${d.trust}`,
+    `jerky for Chispa: eaten, trust ${d.trust}`,
   );
   const grounded = sim.state.items.ground.length;
   seen.length = 0;
@@ -681,11 +684,11 @@ function tracking(tiles: number[], seed = 5) {
   for (let k = 0; k < DAZE_STEPS - 10; k++) step();
   check(
     dogEvents(seen, 'dazed') === 1 && gone && d.body.x === pos[0] && d.body.z === pos[1],
-    `pepper: Canela sneezes ${DAZE_STEPS / 20} s on the spot, the trail gone`,
+    `pepper: Chispa sneezes ${DAZE_STEPS / 20} s on the spot, the trail gone`,
   );
   // Sleepy jerky: asleep, smelling nothing.
-  const other = new Sim(SAN_PANCHO, 5);
-  const g2 = game(SAN_PANCHO);
+  const other = new Sim(SIERRA_SECA, 5);
+  const g2 = game(SIERRA_SECA);
   g2.to(2, 11, 0);
   g2.blind();
   g2.step(throwTo(g2.sim, n('sleepy_jerky')));
@@ -711,7 +714,7 @@ function tracking(tiles: number[], seed = 5) {
 
 // ------------------------------------------------------------------ where they come from
 {
-  for (const p of [SHANKTON, SAN_PANCHO, IRONGATE, PRISONS[0]]) {
+  for (const p of [GRAVEL_POINT, SIERRA_SECA, GULL_ROCK, PRISONS[0]]) {
     const { sim, to } = game(p);
     const list = containersOf(sim.world);
     const counters = list.map((c, i) => [c, i] as const).filter(([c]) => c.table === 'canteenCounter');
@@ -729,7 +732,7 @@ function tracking(tiles: number[], seed = 5) {
     } else check(desk < 0 && !counters.some(([, i]) => has(i, 'jerky')), `${p.id}: no dogs, no treats`);
   }
   // A run logged before the dogs: no treats either (its containers as they were).
-  const old = new Sim(SAN_PANCHO, 5);
+  const old = new Sim(SIERRA_SECA, 5);
   old.noDogs = true;
   old.state.calendar = [[0, 0, 0]];
   while (old.state.step < 1440 * STEPS_PER_MINUTE + 60 * STEPS_PER_MINUTE) {
@@ -745,19 +748,19 @@ function tracking(tiles: number[], seed = 5) {
 
 // ------------------------------------------------------------------ an old save
 {
-  const sim = new Sim(IRONGATE, 3);
+  const sim = new Sim(GULL_ROCK, 3);
   const snap = sim.snapshot();
   const st = snap.state as unknown as Record<string, unknown>;
   delete st.dogs;
   delete st.scent;
-  const b = new Sim(IRONGATE, 9);
+  const b = new Sim(GULL_ROCK, 9);
   reload(b, snap);
   check(
     b.state.dogs.length === 1 &&
       b.state.dogs[0].mode === DOG.KENNEL &&
       tileOf(b.state.dogs[0].body) === 51 + 45 * MAP_W &&
       b.state.scent.length === 0,
-    'a save from before the dogs: Admiral in his kennel, no trail',
+    'a save from before the dogs: Commodore in his kennel, no trail',
   );
   console.log('saves: an old one loads the dogs in their kennels');
 }

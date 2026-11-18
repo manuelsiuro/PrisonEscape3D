@@ -339,7 +339,7 @@ export class SoundEffects extends SoundAmbience {
     this.hiss(0.16, 'bandpass', 900, 0.8, 0.12);
   }
 
-  /** A cup of molten chocolate thrown: a swish, then a hot splash. */
+  /** A cup of scalding cocoa thrown: a swish, then a hot splash. */
   splash() {
     this.hiss(0.14, 'bandpass', 1100, 0.8, 0.1);
     this.hiss(0.35, 'lowpass', 1600, 0.6, 0.26);

@@ -8,7 +8,7 @@ const SPAN = 28;
 const HIGH = 9;
 
 /**
- * Falling snow (Stalag Flucht, P9): a fixed cloud of soft points around the player, drifting
+ * Falling snow (Camp Frostberg, P9): a fixed cloud of soft points around the player, drifting
  * down and sideways and wrapping round, so the weather follows wherever they go. Hidden
  * indoors-below (tunnels, vents) and with reduced motion. No allocation per frame.
  */

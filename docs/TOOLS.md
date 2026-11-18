@@ -34,13 +34,13 @@ commit the pictures with the phase. Rules and non-places go in `scripts/dev/mapd
 sheet, the overlays). `mapviewertest` fails when `data.js` or a drawn picture no longer matches the
 game, or when a prison gets a field the viewer doesn't know yet; it can't see the 3D photos go stale.
 The 3D photos show permanent things only (the user's choice, 2026-11-04): cameras, searchlights,
-goals, beds, the rat track, Irongate's drawbridge up; nothing that comes with an event.
+goals, beds, the rat track, Gull Rock's drawbridge up; nothing that comes with an event.
 
 ## How to play's pictures
 
 A topic's picture is a `SHOTS` entry in `scripts/dev/helpshot.ts`: a bot's run or a lesson replayed
 in the dev build, posted to `public/help/` through the shot sink. A topic seen from the start is
-pictured at Center Perks. Retake a picture when what it shows changes.
+pictured at Maple Grove. Retake a picture when what it shows changes.
 
 ## A gamepad without one
 

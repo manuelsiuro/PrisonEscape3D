@@ -18,8 +18,8 @@ const mem = new Map<string, string>();
 
 const { decodeRuns, encodeRuns, fitLog, fromBase64, replayLog, RunRecorder, SUM_STEPS, toBase64 } = await import('../src/sim/runlog');
 const { Sim } = await import('../src/sim/Sim');
-const { CENTER_PERKS } = await import('../src/content/prisons/center-perks');
-const { STALAG_FLUCHT } = await import('../src/content/prisons/stalag-flucht');
+const { MAPLE_GROVE } = await import('../src/content/prisons/maple-grove');
+const { FROSTBERG } = await import('../src/content/prisons/frostberg');
 const { STEPS_PER_MINUTE, UNIT } = await import('../src/sim/tuning');
 const { Bot } = await import('./bots');
 const { readLog, keepReplay, readReplay } = await import('../src/game/logs');
@@ -45,9 +45,9 @@ console.log(`codec: ${runs.length} runs in ${bytes.length} bytes`);
 
 // Two days kept like a model prisoner, recorded as a game would be.
 const seed = 4242;
-const bot = new Bot(CENTER_PERKS, seed);
+const bot = new Bot(MAPLE_GROVE, seed);
 bot.routineUntil(3, 8 * 60);
-const rec = new RunRecorder(new Sim(CENTER_PERKS, seed), { seed, game: 'test' });
+const rec = new RunRecorder(new Sim(MAPLE_GROVE, seed), { seed, game: 'test' });
 const half = Math.floor(bot.cmds.length / 2);
 let saved: ReturnType<typeof rec.toLog> | null = null;
 let savedSnap: ReturnType<typeof rec.sim.snapshot> | null = null;
@@ -69,12 +69,12 @@ console.log(
 );
 check(log.sums.length === Math.floor(bot.cmds.length / SUM_STEPS), 'a checksum every game hour');
 check(perDay < 16000, 'a day of play takes under 16 KB');
-const back = replayLog(fitLog(JSON.parse(JSON.stringify(log)))!, CENTER_PERKS)!;
+const back = replayLog(fitLog(JSON.parse(JSON.stringify(log)))!, MAPLE_GROVE)!;
 check(
   back.ok && back.verified === log.sums.at(-1)![0] && back.sim.hash() === bot.sim.hash(),
   'the log replays to the very same state, every checksum matching',
 );
-check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own prison');
+check(replayLog(log, FROSTBERG) === null, 'a log only plays in its own prison');
 {
   // A state field added by a later version (as every phase does) leaves the checksums as they were.
   const { sumOf } = await import('../src/sim/runlog');
@@ -89,7 +89,7 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
 // Loaded from the save, two ways on: each branch's log replays whole.
 {
   const branch = (turn: number) => {
-    const sim = new Sim(CENTER_PERKS, 1);
+    const sim = new Sim(MAPLE_GROVE, 1);
     sim.restore(savedSnap!);
     const r = new RunRecorder(sim, { log: saved, game: 'test' });
     for (let k = 0; k < 3 * SUM_STEPS; k++) r.step(k % 200 < 100 ? turn : 0);
@@ -98,8 +98,8 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   const a = branch(1);
   const b = branch(9);
   check(a.sim.hash() !== b.sim.hash(), 'two branches went different ways');
-  const ra = replayLog(a.toLog(), CENTER_PERKS)!;
-  const rb = replayLog(b.toLog(), CENTER_PERKS)!;
+  const ra = replayLog(a.toLog(), MAPLE_GROVE)!;
+  const rb = replayLog(b.toLog(), MAPLE_GROVE)!;
   check(ra.ok && ra.sim.hash() === a.sim.hash() && rb.ok && rb.sim.hash() === b.sim.hash(), 'each branch from one save replays whole');
   check(a.toLog().seed === seed && a.toLog().from === 0, 'a branch keeps the run from its start');
   console.log(
@@ -118,7 +118,7 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   bad.data = toBase64(encodeRuns(raw));
   // The run changed from its first step on: the hours before it still check out.
   const from = at - raw[k][1];
-  const r = replayLog(bad, CENTER_PERKS)!;
+  const r = replayLog(bad, MAPLE_GROVE)!;
   check(
     !r.ok && r.verified === Math.floor(from / SUM_STEPS) * SUM_STEPS,
     `a changed log is caught, verified up to its last good hour (${r.verified / SUM_STEPS} h)`,
@@ -136,30 +136,30 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   raw[last] = [raw[last][0] === 0 ? 5 : 0, raw[last][1]];
   tail.data = toBase64(encodeRuns(raw));
   check(log.sums.at(-1)![0] === log.from + log.steps, 'the log ends on a checksum of its last step');
-  check(!replayLog(tail, CENTER_PERKS)!.ok, 'a change after the last hour is caught at the end');
+  check(!replayLog(tail, MAPLE_GROVE)!.ok, 'a change after the last hour is caught at the end');
   const short = { ...log, steps: log.steps + 10 };
-  check(!replayLog(short, CENTER_PERKS)!.ok, 'a log that says it is longer than its commands is not whole');
+  check(!replayLog(short, MAPLE_GROVE)!.ok, 'a log that says it is longer than its commands is not whole');
 }
 
 // A save without a log (made before logs): a new log from the loaded state.
 {
-  const sim = new Sim(CENTER_PERKS, 1);
+  const sim = new Sim(MAPLE_GROVE, 1);
   sim.restore(savedSnap!);
   const r = new RunRecorder(sim, { log: null, game: 'test' });
   for (let k = 0; k < SUM_STEPS + 5; k++) r.step(0);
   const l = r.toLog();
   check(l.seed === -1 && !!l.start && l.from === savedSnap!.state.step, 'a log of its own, from the loaded state');
-  check(replayLog(JSON.parse(JSON.stringify(l)), CENTER_PERKS)!.sim.hash() === sim.hash(), 'and it replays');
+  check(replayLog(JSON.parse(JSON.stringify(l)), MAPLE_GROVE)!.sim.hash() === sim.hash(), 'and it replays');
   // A log that doesn't end where the save does isn't carried on.
   const wrong = { ...saved!, steps: saved!.steps - 1 };
-  const sim2 = new Sim(CENTER_PERKS, 1);
+  const sim2 = new Sim(MAPLE_GROVE, 1);
   sim2.restore(savedSnap!);
   check(new RunRecorder(sim2, { log: wrong, game: 'test' }).toLog().seed === -1, 'a log that ends elsewhere is not carried on');
 }
 
 // Storage: a log next to each save, gone with it; an escape's log kept.
 {
-  const sim = new Sim(CENTER_PERKS, 1);
+  const sim = new Sim(MAPLE_GROVE, 1);
   sim.restore(savedSnap!);
   check(writeSave(2, sim, 'test', [], saved) && readLog(2)?.steps === saved!.steps, 'a save writes its log next to it');
   check(writeSave(2, sim, 'test') && readLog(2) === null, 'a save without a log leaves none behind');
@@ -168,11 +168,11 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   check(readLog(3) === null, 'deleting a save deletes its log');
   keepReplay(log, true);
   check(
-    readReplay()?.steps === log.steps && readReplay('center-perks')?.steps === log.steps,
+    readReplay()?.steps === log.steps && readReplay('maple-grove')?.steps === log.steps,
     "an escape's log: the last, and the prison's quickest",
   );
   keepReplay({ ...log, steps: 5 }, false);
-  check(readReplay()?.steps === 5 && readReplay('center-perks')?.steps === log.steps, 'a slower escape keeps the quickest');
+  check(readReplay()?.steps === 5 && readReplay('maple-grove')?.steps === log.steps, 'a slower escape keeps the quickest');
   // Storage full: every log and replay gives way to a save.
   const { replayBestKey } = await import('../src/game/storage');
   writeSave(1, sim, 'test', [], saved);
@@ -194,7 +194,7 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   mem.set('pe3d.other.game', 'x'.repeat(Math.max(0, logsSize - saveSize)));
   check(logsSize > saveSize + 500, `logs to make room with (${logsSize})`);
   check(writeSave('auto', sim, 'test', [], saved), 'storage full: the save is written');
-  check(!mem.has(KEYS.log1) && !mem.has(replayBestKey('center-perks')), 'every log and replay made room for it');
+  check(!mem.has(KEYS.log1) && !mem.has(replayBestKey('maple-grove')), 'every log and replay made room for it');
   mem.delete('pe3d.other.game');
   (globalThis as unknown as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage.setItem = setItem;
   mem.set(KEYS.replayLast, '{"v":1}');
@@ -209,7 +209,7 @@ console.log('replay ok');
 {
   // A run recorded by 1.10 (no events then): it replays whole, every day quiet as it was.
   const seed = 7;
-  const old = new Sim(CENTER_PERKS, seed);
+  const old = new Sim(MAPLE_GROVE, seed);
   old.state.calendar = quietCalendar();
   // (Nobody queued for the pay phone then, P34; checked in on arrival, a block skipped unminded, 2.23.)
   old.noQueue = true;
@@ -234,7 +234,7 @@ console.log('replay ok');
   const r = new RunRecorder(old, { seed, game: '1.10.1' });
   for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
   const log = r.toLog();
-  const back = replayLog(log, CENTER_PERKS);
+  const back = replayLog(log, MAPLE_GROVE);
   check(!!back?.ok && !!back?.sim.legacy, 'a log from before the day replays whole (its days quiet, its scuffles judged as they were)');
   // Carried on in 1.11: a log of its own from the game loaded (the two rules never mix in one log).
   const carried = new RunRecorder(old, { log, game: '1.11.0' });
@@ -253,9 +253,9 @@ console.log('replay ok');
   quiet.on = true;
 
   // An escape as the game keeps it: the bot's run from its start, its way out noted.
-  const plan = PLANS.find((p) => p.def === CENTER_PERKS)!;
+  const plan = PLANS.find((p) => p.def === MAPLE_GROVE)!;
   const tbot = runRoute(plan, 'tunnel')!;
-  const tsim = new Sim(CENTER_PERKS, 1);
+  const tsim = new Sim(MAPLE_GROVE, 1);
   tsim.restore(tbot.start!);
   const trec = new RunRecorder(tsim, { log: null, game: '2.35.0' });
   for (const c of tbot.cmds) trec.step(c);
@@ -263,7 +263,7 @@ console.log('replay ok');
   const end = esc.from + esc.steps;
 
   // The scout: whole, keyframes every half hour, the finale half an hour before the end, the escape its last highlight.
-  const s = scoutAll(JSON.parse(JSON.stringify(esc)), CENTER_PERKS)!;
+  const s = scoutAll(JSON.parse(JSON.stringify(esc)), MAPLE_GROVE)!;
   check(s.ok && s.end === end && s.verified === end && s.via === 'tunnel', 'the scout checks an escape whole, to its end');
   check(
     s.keys[0].step === esc.from && s.keys.slice(1).every((k) => k.step % KEY_STEPS === 0 && k.step <= end),
@@ -280,12 +280,12 @@ console.log('replay ok');
     'highlights in order',
   );
   console.log(
-    `tunnel escape at Center Perks: ${esc.steps} steps, ${s.keys.length} keyframes, highlights ${s.highlights.map((h) => `${h.kind}@${Math.round(h.step / STEPS_PER_MINUTE)}m`).join(' ')}`,
+    `tunnel escape at Maple Grove: ${esc.steps} steps, ${s.keys.length} keyframes, highlights ${s.highlights.map((h) => `${h.kind}@${Math.round(h.step / STEPS_PER_MINUTE)}m`).join(' ')}`,
   );
 
   // Its progress as it goes adds up to what it found (the worker posts these).
   {
-    const it = scout(esc, CENTER_PERKS, 1000);
+    const it = scout(esc, MAPLE_GROVE, 1000);
     let keys = 0;
     let marks = 0;
     let last = esc.from;
@@ -302,9 +302,9 @@ console.log('replay ok');
 
   // Seeking: from any keyframe, the tape steps to the next one exactly (the picture never drifts after a jump).
   {
-    const set = prepareReplay(esc, CENTER_PERKS)!;
+    const set = prepareReplay(esc, MAPLE_GROVE)!;
     const tape = new Tape(set.runs);
-    const other = prepareReplay(esc, CENTER_PERKS)!.sim;
+    const other = prepareReplay(esc, MAPLE_GROVE)!.sim;
     let checked = 0;
     for (let k = 0; k + 1 < s.keys.length; k++) {
       set.sim.restore(s.keys[k].snap);
@@ -337,15 +337,15 @@ console.log('replay ok');
 
   // Quiet times: a night asleep in bed (from 23:30) is one; no highlight is ever inside one.
   {
-    const nb = new Bot(CENTER_PERKS, 77);
+    const nb = new Bot(MAPLE_GROVE, 77);
     nb.routineUntil(1, 23 * 60 + 30);
-    const ns = new Sim(CENTER_PERKS, 1);
+    const ns = new Sim(MAPLE_GROVE, 1);
     ns.restore(nb.sim.snapshot());
     ns.state.sleeping = true;
     const nr = new RunRecorder(ns, { log: null, game: '2.35.0' });
     for (let k = 0; k < 10 * SUM_STEPS; k++) nr.step(0);
     const nl = nr.toLog();
-    const q = scoutAll(JSON.parse(JSON.stringify(nl)), CENTER_PERKS)!;
+    const q = scoutAll(JSON.parse(JSON.stringify(nl)), MAPLE_GROVE)!;
     const night = q.quiet[0];
     check(
       q.ok && !!night && night[0] <= nl.from + 1 && night[1] - night[0] > 6 * 60 * STEPS_PER_MINUTE,
@@ -356,7 +356,7 @@ console.log('replay ok');
       'no highlight inside a quiet time',
     );
     check(autoSpeed(night[0] + 100 * STEPS_PER_MINUTE, q.highlights, q.quiet) === AUTO_QUIET, 'Auto runs through it fastest');
-    const m = scoutAll(log, CENTER_PERKS)!;
+    const m = scoutAll(log, MAPLE_GROVE)!;
     check(m.ok && m.highlights.length === 0 && m.via === null, "the model prisoner's days: no highlights, no escape");
   }
 
@@ -365,7 +365,7 @@ console.log('replay ok');
     const bad = JSON.parse(JSON.stringify(esc)) as typeof esc;
     const at = bad.sums.findIndex(([k]) => k > esc.from + 2 * SUM_STEPS);
     bad.sums[at] = [bad.sums[at][0], 'deadbeef'];
-    const b = scoutAll(bad, CENTER_PERKS)!;
+    const b = scoutAll(bad, MAPLE_GROVE)!;
     check(
       !b.ok && b.end === b.verified && b.verified === bad.sums[at - 1][0],
       `a checksum missed: plays to the hour before (${b.end / SUM_STEPS} h)`,
@@ -378,7 +378,7 @@ console.log('replay ok');
         b.finale === null,
       'nothing past it: no keyframes, highlights or escape',
     );
-    check(scoutAll(esc, STALAG_FLUCHT) === null, 'a log only scouts in its own prison');
+    check(scoutAll(esc, FROSTBERG) === null, 'a log only scouts in its own prison');
   }
 
   // The director: slow at a highlight, fast between, fastest through quiet times.
@@ -403,12 +403,12 @@ console.log('replay ok');
   // A Daily's escape replays under its twists.
   {
     const mods = ['carePackage', 'badBlood'];
-    const dsim = new Sim(CENTER_PERKS, 99, mods);
+    const dsim = new Sim(MAPLE_GROVE, 99, mods);
     const drec = new RunRecorder(dsim, { seed: 99, game: '2.35.0' });
     for (let k = 0; k < 3 * SUM_STEPS; k++) drec.step(k % 300 < 150 ? 5 : 0);
     const dl = { ...drec.toLog(), daily: 3 };
-    check(dl.mods?.join() === mods.join() && scoutAll(dl, CENTER_PERKS)!.ok, "a Daily's log keeps its twists and scouts whole");
-    check(!scoutAll({ ...dl, mods: [] }, CENTER_PERKS)!.ok, 'without them it no longer checks');
+    check(dl.mods?.join() === mods.join() && scoutAll(dl, MAPLE_GROVE)!.ok, "a Daily's log keeps its twists and scouts whole");
+    check(!scoutAll({ ...dl, mods: [] }, MAPLE_GROVE)!.ok, 'without them it no longer checks');
   }
 
   // Replay files: out and back in, a guest's (never counted); anything else refused.
@@ -421,7 +421,7 @@ console.log('replay ok');
       "a replay file reads back as a guest's, with who played it",
     );
     check(
-      replayFileName(esc) === `prison-escape-center-perks-day${clockOf(end)}-tunnel.pe3d.json`,
+      replayFileName(esc) === `prison-escape-maple-grove-day${clockOf(end)}-tunnel.pe3d.json`,
       `a file name says what it is (${replayFileName(esc)})`,
     );
     check(
@@ -453,8 +453,8 @@ console.log('replay ok');
       'impossible numbers and a length its commands lack refused',
     );
     check(
-      readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'center-perks', state: null } })) === 'notReplay' &&
-        readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'center-perks', state: {} } })) === 'notReplay',
+      readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'maple-grove', state: null } })) === 'notReplay' &&
+        readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'maple-grove', state: {} } })) === 'notReplay',
       'a start that is no game refused (never thrown)',
     );
     check(
@@ -468,12 +468,12 @@ console.log('replay ok');
     keepReplay(esc, true);
     const kept = replaysKept();
     check(
-      kept.last?.via === 'tunnel' && kept.best.some((b) => b.prison === 'center-perks' && b.log.via === 'tunnel'),
+      kept.last?.via === 'tunnel' && kept.best.some((b) => b.prison === 'maple-grove' && b.log.via === 'tunnel'),
       'kept escapes carry their way out',
     );
     keepReplay({ ...esc, daily: 0 }, false);
     check(
-      replaysKept().last?.daily === 0 && replaysKept().best.find((b) => b.prison === 'center-perks')?.log.daily === undefined,
+      replaysKept().last?.daily === 0 && replaysKept().best.find((b) => b.prison === 'maple-grove')?.log.daily === undefined,
       "a Daily's escape is the last one, never a prison's quickest",
     );
   }
@@ -515,10 +515,10 @@ console.log('replay ok');
   {
     const stuck = { ...esc, data: toBase64(encodeRuns([...decodeRuns(fromBase64(esc.data)!)!, [0, 2 ** 34]])), steps: esc.steps + 2 ** 34 };
     const t0 = Date.now();
-    const st = scoutAll(stuck, CENTER_PERKS)!;
+    const st = scoutAll(stuck, MAPLE_GROVE)!;
     check(Date.now() - t0 < 5000 && st.end === end && st.keys.length === s.keys.length, 'a log running on past the escape stops at it');
     let worst = 0;
-    const it = scout(esc, CENTER_PERKS, 500);
+    const it = scout(esc, MAPLE_GROVE, 500);
     for (let r = it.next(); !r.done; r = it.next()) worst = Math.max(worst, r.value.verified - r.value.at);
     check(worst <= 0, 'progress never vouches past where it got');
   }
@@ -530,7 +530,7 @@ console.log('replay ok');
 {
   const { canSee } = await import('../src/sim/ai/sight');
   const { DIR_X } = await import('../src/sim/command');
-  const sim = new Sim(CENTER_PERKS, 4);
+  const sim = new Sim(MAPLE_GROVE, 4);
   for (let k = 0; k < 200; k++) sim.step(0);
   const snap = JSON.parse(JSON.stringify(sim.snapshot()));
   const odd = [20, -1, 2.5, 'x', null];
@@ -545,7 +545,7 @@ console.log('replay ok');
     g.face = odd[k % odd.length];
     if (k === 0) g.body.z = 1.5;
   });
-  const twin = new Sim(CENTER_PERKS, 1);
+  const twin = new Sim(MAPLE_GROVE, 1);
   twin.restore(snap);
   const s = twin.state;
   const bodies = [s.player, ...s.inmates.map((m) => m.body), ...s.guards.map((g) => g.body)];

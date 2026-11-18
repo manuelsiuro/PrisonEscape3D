@@ -28,7 +28,7 @@ const { recordEscape, recordOf } = await import('../src/game/records');
 const { readStats } = await import('../src/game/stats');
 const trophies = await import('../src/game/trophies');
 const { Bot } = await import('./bots');
-const { CENTER_PERKS } = await import('../src/content/prisons/center-perks');
+const { MAPLE_GROVE } = await import('../src/content/prisons/maple-grove');
 
 const ids = ACHIEVEMENTS.map((a) => a.id);
 const enT = en as Record<string, string>;
@@ -99,7 +99,7 @@ check(MEDALS.length === 3, 'three medals');
 
 // ------------------------------------------------------------------ a run: two days kept like a model prisoner
 migrateStorage();
-const bot = new Bot(CENTER_PERKS, 5);
+const bot = new Bot(MAPLE_GROVE, 5);
 trophies.startRun(bot.sim, true);
 const earnedOnTheWay: string[] = [];
 trophies.trophyHooks.onEarned = (list) => earnedOnTheWay.push(...list.map((a) => a.id));
@@ -130,7 +130,7 @@ console.log(`run achievements on the way: ${earnedOnTheWay.join(', ') || 'none'}
 const view = (over: Partial<Record<string, number>>, extra = {}) => {
   const feats = new Array(FEATS.length).fill(0);
   for (const [k, v] of Object.entries(over)) feats[FEAT[k as keyof typeof FEAT]] = v ?? 0;
-  return { prison: 'center-perks', feats, days: [0], str: 40, spd: 40, int: 40, ...extra };
+  return { prison: 'maple-grove', feats, days: [0], str: 40, spd: 40, int: 40, ...extra };
 };
 const runOf = (id: string) => ACHIEVEMENTS.find((a) => a.id === id)!.run!;
 check(!runOf('sweetTooth')(view({ chocolate: 4 })) && runOf('sweetTooth')(view({ chocolate: 5 })), 'Sweet Tooth at the fifth bar');
@@ -180,14 +180,14 @@ check(
 // An escape through the trophies: records first (the medal), then what it earned.
 {
   // Out on day 2 (the ledger of a whole run, nothing done wrong): the escape screen's moment.
-  const sim = new Sim(CENTER_PERKS, 9);
-  const run = new Bot(CENTER_PERKS, 9);
+  const sim = new Sim(MAPLE_GROVE, 9);
+  const run = new Bot(MAPLE_GROVE, 9);
   run.routineUntil(2, 9 * 60);
   sim.restore(run.sim.snapshot());
   sim.state.via = 2;
   trophies.startRun(sim, true);
-  const rec = recordEscape('center-perks', 'tunnel', 2, 2000);
-  check(rec.medal === 'gold' && rec.newMedal && rec.routeBest && rec.newRoute, 'a day-2 tunnel at Center Perks: gold, new');
+  const rec = recordEscape('maple-grove', 'tunnel', 2, 2000);
+  check(rec.medal === 'gold' && rec.newMedal && rec.routeBest && rec.newRoute, 'a day-2 tunnel at Maple Grove: gold, new');
   const got = trophies.escapeRun(rec).map((a) => a.id);
   console.log(`a day-2 tunnel escape earns: ${got.join(', ')}`);
   for (const id of ['freshAir', 'mole', 'quickStep', 'goldStandard', 'pacifist', 'ghost', 'cleanRecord', 'modelPrisoner', 'calm'])
@@ -196,12 +196,12 @@ check(
   check(readStats().escapes === 1, 'the escape counted');
   // The same save escaped from again (loaded, played out the same way): still one escape.
   trophies.startRun(sim, false);
-  trophies.escapeRun(recordEscape('center-perks', 'tunnel', 2, 2000));
+  trophies.escapeRun(recordEscape('maple-grove', 'tunnel', 2, 2000));
   check(readStats().escapes === 1, 'a save escaped from twice counts one escape');
   // Later, slower: the gold stays, nothing new.
-  const slow = recordEscape('center-perks', 'tunnel', 9, 13000);
+  const slow = recordEscape('maple-grove', 'tunnel', 9, 13000);
   check(
-    slow.medal === null && !slow.newMedal && !slow.routeBest && recordOf('center-perks').byRoute.tunnel.medal === 'gold',
+    slow.medal === null && !slow.newMedal && !slow.routeBest && recordOf('maple-grove').byRoute.tunnel.medal === 'gold',
     'a slower escape never takes the medal away',
   );
   check(trophies.unlockedCosmetics().has('goggles') && !trophies.unlockedCosmetics().has('crown'), 'cosmetics follow what was earned');
@@ -229,7 +229,7 @@ check(
 
 // A manhunt (P41) counted once a run, by its salt (full review): the same save hunted twice is one hunt.
 {
-  const h = { prison: 'center-perks', via: 'tunnel', safe: true, lou: false, progress: 1, spotted: 0, swapped: false, lit: 0 };
+  const h = { prison: 'maple-grove', via: 'tunnel', safe: true, lou: false, progress: 1, spotted: 0, swapped: false, lit: 0 };
   const was = readStats();
   trophies.huntRun(h, 77);
   trophies.huntRun({ ...h, safe: false }, 77);
@@ -256,14 +256,14 @@ check(
   mem.set(
     KEYS.escapes,
     JSON.stringify({
-      'center-perks': { routes: ['roof'], bestDay: 3, bestMinute: 5000 },
-      'stalag-flucht': { routes: ['fence', 'tunnel'], bestDay: 1, bestMinute: 900 },
+      'maple-grove': { routes: ['roof'], bestDay: 3, bestMinute: 5000 },
+      frostberg: { routes: ['fence', 'tunnel'], bestDay: 1, bestMinute: 900 },
     }),
   );
-  check(migrateStorage() === 2, 'records migrated to version 2');
-  const cp = recordOf('center-perks');
+  check(migrateStorage() === 3, 'records migrated to version 2 (and on to 3)');
+  const cp = recordOf('maple-grove');
   check(cp.byRoute.roof?.day === 3 && cp.byRoute.roof.medal === 'gold', "one way out: its quickest is the prison's, its medal earned");
-  check(Object.keys(recordOf('stalag-flucht').byRoute).length === 0, "several ways out: which was quickest isn't made up");
+  check(Object.keys(recordOf('frostberg').byRoute).length === 0, "several ways out: which was quickest isn't made up");
   const got = trophies.syncCareer(false).map((a) => a.id);
   console.log(`backfilled from version-1 records: ${got.join(', ')}`);
   for (const id of ['freshAir', 'overTheTop', 'snip', 'mole', 'dayOne', 'quickStep', 'goldStandard'])
@@ -273,13 +273,13 @@ check(
 
 // A game saved before the ledger: loads partial, its days unknown, and plays on counting.
 {
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   for (let k = 0; k < 30 * 20 * 60; k++) sim.step(0);
   const snap = JSON.parse(JSON.stringify(sim.snapshot()));
   delete snap.state.feats;
   delete snap.state.days;
   delete snap.state.mods;
-  const old = new Sim(CENTER_PERKS, 1);
+  const old = new Sim(MAPLE_GROVE, 1);
   old.restore(snap);
   check(
     old.state.feats[FEAT.partial] === 1 && old.state.days.length === 2 && old.state.days.every((d) => d === DAY.UNKNOWN),

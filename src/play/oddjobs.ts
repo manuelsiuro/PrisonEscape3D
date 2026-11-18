@@ -80,8 +80,8 @@ const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
 const KIND_ICON: readonly string[] = ['hand', 'box', 'search', 'arm', 'cards', 'checkers', 'rat', 'cookie', 'eye', 'gift', 'phone', 'cart'];
 
 /**
- * A guard as a job's words name him: by his title, as this prison has it ("Officer Pratt", "Hunter Garrow"; `subject`
- * to open a sentence: "Le gardien Pratt"), one without a name "a guard".
+ * A guard as a job's words name him: by his title, as this prison has it ("Officer Tibbs", "Hunter Garrow"; `subject`
+ * to open a sentence: "Le gardien Tibbs"), one without a name "a guard".
  */
 const guardName = (sim: Sim, k: number, form: 'guard.addressed' | 'guard.subject' = 'guard.addressed') => {
   const name = sim.prison.guards[k]?.name;
@@ -122,7 +122,7 @@ function metaOf(sim: Sim, d: Deal): { meta: string; perk: string } {
   };
 }
 
-/** A story's title and step ("Doc’s watch · 2/3"). */
+/** A story's title and step ("Prof’s watch · 2/3"). */
 function storyTitle(sim: Sim, step: number) {
   const chain = CHAINS[sim.prison.id];
   return t('oddjob.storyStep', { title: t(`oddjob.chain.${sim.prison.id}.title` as Key), n: step + 1, of: chain?.steps.length ?? 0 });

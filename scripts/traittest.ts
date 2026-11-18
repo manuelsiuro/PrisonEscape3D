@@ -20,7 +20,7 @@
  *   look away runs out on time, and is off at once at 80% heat;
  * - an old save loads with its salt mixed from its rng, every guard awake and unbribed.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { PRISONS } from '../src/content/prisons';
 import { TRAINING } from '../src/content/prisons/training';
 import { BRIBE, command, OP, SLOT, TALK } from '../src/sim/command';
@@ -111,12 +111,12 @@ for (const p of [...PRISONS, TRAINING]) {
   console.log(
     `roll: ${roll(1, SALT.SHAKEDOWN, 2).toString(16)} ${roll(1, SALT.NAP, 3, 1).toString(16)}; salt of seed 1 ${mix32(1).toString(16)}`,
   );
-  const sim = new Sim(CENTER_PERKS, 5);
+  const sim = new Sim(MAPLE_GROVE, 5);
   check(sim.state.salt === mix32(5), "a new game's salt is its seed mixed");
-  // Day 2 at 08:00: the cells as told, strict Dunn's three; the two old draws still made.
+  // Day 2 at 08:00: the cells as told, strict Lowry's three; the two old draws still made.
   const before = { rng: sim.state.rng };
-  randomInt(before, CENTER_PERKS.cells.length);
-  randomInt(before, CENTER_PERKS.cells.length - 1);
+  randomInt(before, MAPLE_GROVE.cells.length);
+  randomInt(before, MAPLE_GROVE.cells.length - 1);
   sim.events = [];
   shakedown(sim);
   const e = sim.events.find((x) => x.type === 'shakedown');
@@ -124,13 +124,13 @@ for (const p of [...PRISONS, TRAINING]) {
   check(sim.state.rng === before.rng, 'the shakedown still makes exactly its two old draws');
   check(
     cells.join() === shakedownCells(sim.world, sim.state.salt, 1).join() && cells.length === 3 && new Set(cells).size === 3,
-    `strict Dunn names three cells, as foretold (${cells.join(', ')})`,
+    `strict Lowry names three cells, as foretold (${cells.join(', ')})`,
   );
   const days = Array.from({ length: 6 }, (_, d) => shakedownCells(sim.world, sim.state.salt, d + 2).join('+'));
   check(new Set(days).size > 3, 'the cells change from day to day');
   console.log(`shakedowns, days 2–7: ${days.join(', ')}`);
   // A strict guard searches each desk half as long again: 6 s instead of 4.
-  const bot = new Bot(CENTER_PERKS, 12);
+  const bot = new Bot(MAPLE_GROVE, 12);
   let searching = 0;
   let first = '';
   bot.keepRoutine(
@@ -143,36 +143,36 @@ for (const p of [...PRISONS, TRAINING]) {
     3 * 1440 * STEPS_PER_MINUTE,
   );
   // (Counted at the end of each step: the last of its 6 s it is already done.)
-  check(searching === 6 * STEPS_PER_SECOND - 1, `strict Dunn searches a desk for 6 s (${searching} steps)`);
+  check(searching === 6 * STEPS_PER_SECOND - 1, `strict Lowry searches a desk for 6 s (${searching} steps)`);
   console.log(`first desk searched ${first}, ${searching + 1} steps`);
 }
 
 // ------------------------------------------------------------------ a lazy guard's nap
-const MOSS = 3;
+const FENTON = 3;
 {
-  const bot = new Bot(CENTER_PERKS, 1);
+  const bot = new Bot(MAPLE_GROVE, 1);
   const s = () => bot.st;
-  const moss = () => s().guards[MOSS];
+  const fenton = () => s().guards[FENTON];
   bot.routineUntil(2, 0);
-  bot.keepRoutine(() => moss().doing === DOING.DOZE, 6 * 60 * STEPS_PER_MINUTE);
-  const g = moss();
+  bot.keepRoutine(() => fenton().doing === DOING.DOZE, 6 * 60 * STEPS_PER_MINUTE);
+  const g = fenton();
   const minute = (8 * 60 + Math.floor(s().step / STEPS_PER_MINUTE)) % 1440;
   const tile = tileOfBody(g.body);
   const day = bot.sim.clock.day;
-  const length = NAP_MIN + rollInt(s().salt, SALT.NAP, MOSS, day, NAP_MAX - NAP_MIN + 1);
-  check(minute >= NAP_FROM && minute < NAP_TO, `Moss dozes off between 01:00 and 05:00 (${hhmm(s().step)})`);
+  const length = NAP_MIN + rollInt(s().salt, SALT.NAP, FENTON, day, NAP_MAX - NAP_MIN + 1);
+  check(minute >= NAP_FROM && minute < NAP_TO, `Fenton dozes off between 01:00 and 05:00 (${hhmm(s().step)})`);
   check(tile === 29 * MAP_W + 30 && g.plan === -2, 'at the nap stop of the night round (30, 29)');
   check(g.doze === length, `for as long as roll() says (${g.doze} steps)`);
   check(!awake(g) && alertOf(g) === ALERT.NONE, 'dozing: not awake, no cone');
   console.log(
-    `Moss dozes off at ${hhmm(s().step)} in the ${bot.sim.world.zoneAt(30, 29)}, for ${(length / STEPS_PER_MINUTE / 60).toFixed(2)} game hours`,
+    `Fenton dozes off at ${hhmm(s().step)} in the ${bot.sim.world.zoneAt(30, 29)}, for ${(length / STEPS_PER_MINUTE / 60).toFixed(2)} game hours`,
   );
   const nap = bot.sim.snapshot();
   const napStep = s().step;
 
   // Blind: the player out at night two tiles in front of it, in plain sight of where it looks.
   const ahead = (sim: Sim, d: number) => {
-    const b = sim.state.guards[MOSS].body;
+    const b = sim.state.guards[FENTON].body;
     const fx = Math.round(Math.cos(((b.facing - 1) * Math.PI) / 8));
     const fz = Math.round(Math.sin(((b.facing - 1) * Math.PI) / 8));
     put(sim.state.player, Math.floor(b.x / UNIT) + fx * d, Math.floor(b.z / UNIT) + fz * d);
@@ -184,25 +184,25 @@ const MOSS = 3;
     let saw = false;
     for (let k = 0; k < 4 * 30; k++) {
       bot.sim.step(0);
-      saw ||= moss().sees;
+      saw ||= fenton().sees;
     }
     return saw;
   };
   // (The others out cold meanwhile: nobody else sounds the alarm.)
-  const alone = () => s().guards.forEach((o, k) => k !== MOSS && (o.ko = 1e6));
+  const alone = () => s().guards.forEach((o, k) => k !== FENTON && (o.ko = 1e6));
   alone();
   ahead(bot.sim, 2);
-  check(!watched() && moss().doing === DOING.DOZE, "dozing, it doesn't see the player out at night right in front of it");
+  check(!watched() && fenton().doing === DOING.DOZE, "dozing, it doesn't see the player out at night right in front of it");
   reload(bot.sim, nap);
-  moss().doze = 0;
-  moss().doing = DOING.NOTHING;
+  fenton().doze = 0;
+  fenton().doing = DOING.NOTHING;
   alone();
   ahead(bot.sim, 2);
   check(watched(), '(awake, it would have)');
 
   // The player at its elbow: a second of it wakes it, facing them.
   reload(bot.sim, nap);
-  const b = moss().body;
+  const b = fenton().body;
   s().player.x = b.x + UNIT / 2;
   s().player.z = b.z;
   s().layer = LAYER.GROUND;
@@ -210,10 +210,10 @@ const MOSS = 3;
   let woke = -1;
   for (let k = 1; k <= 40 && woke < 0; k++) {
     bot.sim.step(0);
-    if (bot.sim.events.some((e) => e.type === 'nap' && !e.on && e.guard === MOSS)) woke = k;
+    if (bot.sim.events.some((e) => e.type === 'nap' && !e.on && e.guard === FENTON)) woke = k;
   }
   check(woke === STIR_STEPS, `the player at its elbow wakes it after ${STIR_STEPS} steps (${woke})`);
-  check(awake(moss()) && moss().body.facing === 1, 'awake, facing the player');
+  check(awake(fenton()) && fenton().body.facing === 1, 'awake, facing the player');
 
   // Noise: the ear says it'd be heard exactly when the noise wakes it (the other guards far away).
   let wakes = 0;
@@ -224,13 +224,13 @@ const MOSS = 3;
     for (let dx = -9; dx <= 9; dx += 3) {
       for (let dz = -6; dz <= 6; dz += 3) {
         reload(bot.sim, nap);
-        bot.st.guards.forEach((o, k) => k !== MOSS && put(o.body, 60, 62));
+        bot.st.guards.forEach((o, k) => k !== FENTON && put(o.body, 60, 62));
         const t = (29 + dz) * MAP_W + 30 + dx;
         const reach = kind === 'bang' ? BANG_NOISE : 6;
         const ear = hearers(bot.sim, { layer: LAYER.GROUND, tile: t, reach }, [], kind === 'bang').length > 0;
         bot.sim.events = [];
         makeNoise(bot.sim, kind, LAYER.GROUND, t, reach);
-        const up = moss().doze === 0;
+        const up = fenton().doze === 0;
         tried++;
         if (ear === up) agree++;
         if (up) wakes++;
@@ -244,27 +244,27 @@ const MOSS = 3;
   const wakesAt = (kind: 'strike' | 'bang' | 'ring', dx: number, dz: number, reach: number) => {
     reload(bot.sim, nap);
     makeNoise(bot.sim, kind, LAYER.GROUND, (29 + dz) * MAP_W + 30 + dx, reach);
-    return moss().doze === 0;
+    return fenton().doze === 0;
   };
   check(wakesAt('strike', 4, 0, 6) && !wakesAt('strike', 5, 0, 6), 'a strike wakes it with 2 tiles to spare');
   check(wakesAt('bang', 7, -2, BANG_NOISE) && !wakesAt('ring', 7, -2, BANG_NOISE), 'a bang anywhere in earshot');
   // A blow wakes it (as it would a guard asleep in bed), from where no doze would be stirred.
   reload(bot.sim, nap);
-  bot.st.guards.forEach((o, k) => k !== MOSS && (o.ko = 1e6));
-  s().player.x = moss().body.x + Math.round(1.2 * UNIT);
-  s().player.z = moss().body.z;
+  bot.st.guards.forEach((o, k) => k !== FENTON && (o.ko = 1e6));
+  s().player.x = fenton().body.x + Math.round(1.2 * UNIT);
+  s().player.z = fenton().body.z;
   s().player.facing = 9;
   s().layer = LAYER.GROUND;
   s().sleeping = false;
-  s().lock = s().inmates.length + MOSS;
+  s().lock = s().inmates.length + FENTON;
   bot.sim.step(command(0, OP.USE, 1));
-  check(moss().doze === 0 && awake(moss()) && bot.sim.events.some((e) => e.type === 'hit'), 'a blow wakes it');
+  check(fenton().doze === 0 && awake(fenton()) && bot.sim.events.some((e) => e.type === 'hit'), 'a blow wakes it');
   // A lockdown wakes it (it hunts the player with the rest).
   reload(bot.sim, nap);
   s().lockdown = true;
   bot.sim.step(0);
   check(
-    moss().doze === 0 && moss().mode === GUARD.CHASE && bot.sim.events.some((e) => e.type === 'nap' && e.guard === MOSS && !e.on),
+    fenton().doze === 0 && fenton().mode === GUARD.CHASE && bot.sim.events.some((e) => e.type === 'nap' && e.guard === FENTON && !e.on),
     'a lockdown wakes it (and says so)',
   );
 
@@ -276,38 +276,38 @@ const MOSS = 3;
   for (let k = 0; k < NAP_MAX + 10 && up < 0; k++) {
     bot.keepRoutine(() => true, 1);
     bot.step(command(0));
-    if (moss().doze === 0) up = s().step;
+    if (fenton().doze === 0) up = s().step;
   }
   const latest = (Math.floor(napStep / (1440 * STEPS_PER_MINUTE)) * 1440 + ((NAP_TO - 8 * 60 + 1440) % 1440)) * STEPS_PER_MINUTE;
   check(up === Math.min(napStep + length, latest), `it wakes when the nap is over: ${hhmm(up)}`);
   let more = 0;
   bot.keepRoutine(
     () => {
-      if (bot.sim.events.some((e) => e.type === 'nap' && e.on && e.guard === MOSS)) more++;
+      if (bot.sim.events.some((e) => e.type === 'nap' && e.on && e.guard === FENTON)) more++;
       return bot.sim.clock.minuteOfDay === 7 * 60;
     },
     8 * 60 * STEPS_PER_MINUTE,
   );
-  check(more === 0 && s().guards[MOSS].napDay === day, 'one nap a night');
-  const replay = new Sim(CENTER_PERKS, 1);
+  check(more === 0 && s().guards[FENTON].napDay === day, 'one nap a night');
+  const replay = new Sim(MAPLE_GROVE, 1);
   replay.restore(JSON.parse(JSON.stringify(cut)));
-  const left = new Sim(CENTER_PERKS, 1);
+  const left = new Sim(MAPLE_GROVE, 1);
   left.restore(JSON.parse(JSON.stringify(cut)));
   for (let k = 0; k < 600; k++) {
     replay.step(0);
     left.step(0);
   }
   check(
-    replay.hash() === left.hash() && replay.state.guards[MOSS].doze === left.state.guards[MOSS].doze,
+    replay.hash() === left.hash() && replay.state.guards[FENTON].doze === left.state.guards[FENTON].doze,
     'saved and loaded mid-nap, it naps on the same',
   );
-  console.log(`Moss up again at ${hhmm(up)}`);
+  console.log(`Fenton up again at ${hhmm(up)}`);
 }
 
 // ------------------------------------------------------------------ looking around, by trait
 {
   const look = (k: number) => {
-    const sim = new Sim(CENTER_PERKS, 1);
+    const sim = new Sim(MAPLE_GROVE, 1);
     const g = sim.state.guards[k];
     sendToLook(g, tileOfBody(g.body), NOISE_LOOK);
     let steps = 0;
@@ -317,7 +317,7 @@ const MOSS = 3;
     }
     return steps;
   };
-  const [steady, lazy, strict] = [look(4), look(MOSS), look(2)];
+  const [steady, lazy, strict] = [look(4), look(FENTON), look(2)];
   check(
     Math.abs(lazy - NOISE_LOOK * 0.75) <= 2 && Math.abs(strict - NOISE_LOOK * 1.5) <= 2 && Math.abs(steady - NOISE_LOOK) <= 1,
     `looking around: steady ${steady}, lazy ${lazy}, strict ${strict} steps`,
@@ -326,12 +326,12 @@ const MOSS = 3;
 }
 
 // ------------------------------------------------------------------ talking to a guard, and bribes
-const PRATT = 1;
-const DUNN = 2;
-const KELLER = 4;
+const TIBBS = 1;
+const LOWRY = 2;
+const GARVEY = 4;
 /** A game at 10:00 on day 1 (free time) with a guard met out in the open yard, the player just west of it facing it; the others far away. */
 function beside(k: number, seed = 1, minute = 10 * 60) {
-  const bot = new Bot(CENTER_PERKS, seed);
+  const bot = new Bot(MAPLE_GROVE, seed);
   bot.routineUntil(1, minute);
   const st = bot.st;
   st.guards.forEach((o, j) => j !== k && put(o.body, 60 - j, 62));
@@ -347,10 +347,10 @@ const talkTo = (bot: Bot, k: number) => {
 };
 const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) => e.type === type);
 {
-  // Pratt (corrupt): a talk, standing still facing the player; looking the other way.
-  const bot = beside(PRATT);
-  check(talkTo(bot, PRATT), 'E beside a guard on its round starts a talk');
-  const g = bot.st.guards[PRATT];
+  // Tibbs (corrupt): a talk, standing still facing the player; looking the other way.
+  const bot = beside(TIBBS);
+  check(talkTo(bot, TIBBS), 'E beside a guard on its round starts a talk');
+  const g = bot.st.guards[TIBBS];
   const at = [g.body.x, g.body.z];
   for (let k = 0; k < 60; k++) bot.step(0);
   const toPlayer = Math.round((Math.atan2(bot.st.player.z - g.body.z, bot.st.player.x - g.body.x) / (Math.PI / 8) + 16) % 16) + 1;
@@ -358,7 +358,7 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
     g.body.x === at[0] && g.body.z === at[1] && !g.body.moving && g.body.facing === toPlayer && bot.st.talk >= 0,
     'it stands still facing the player while they talk',
   );
-  const price = lookAwayPrice(CENTER_PERKS.difficulty);
+  const price = lookAwayPrice(MAPLE_GROVE.difficulty);
   bot.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
   const paid = events(bot, 'bribe')[0];
   check(
@@ -367,7 +367,7 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
       paid?.type === 'bribe' &&
       paid.kind === 'look' &&
       paid.price === price,
-    `Pratt looks the other way for 2 game hours, for $${price}`,
+    `Tibbs looks the other way for 2 game hours, for $${price}`,
   );
   bot.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
   check(
@@ -376,19 +376,19 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
   );
   const bribed = bot.sim.snapshot();
 
-  // Contraband in hand right in front of Pratt (still talking, it faces the player): no heat. In front of Keller: heat.
+  // Contraband in hand right in front of Tibbs (still talking, it faces the player): no heat. In front of Garvey: heat.
   const it = bot.st.items;
   it.inv[0] = slot(n('comb_shiv'));
   it.hand = 0;
   for (let k = 0; k < 20; k++) bot.sim.step(0);
-  check(bot.st.guards[PRATT].sees && bot.st.heat === 0, `contraband in plain sight of Pratt looking away: no heat (${bot.st.heat}%)`);
+  check(bot.st.guards[TIBBS].sees && bot.st.heat === 0, `contraband in plain sight of Tibbs looking away: no heat (${bot.st.heat}%)`);
   check(!bot.st.seen, 'nor does it count as seen (the eye stays shut, heat cools)');
-  const honest = beside(KELLER);
-  talkTo(honest, KELLER);
+  const honest = beside(GARVEY);
+  talkTo(honest, GARVEY);
   honest.st.items.inv[0] = slot(n('comb_shiv'));
   honest.st.items.hand = 0;
   for (let k = 0; k < 20; k++) honest.sim.step(0);
-  check(honest.st.guards[KELLER].sees && honest.st.heat === 20 * CONTRABAND_HEAT, `in front of Keller: ${honest.st.heat}%`);
+  check(honest.st.guards[GARVEY].sees && honest.st.heat === 20 * CONTRABAND_HEAT, `in front of Garvey: ${honest.st.heat}%`);
   reload(bot.sim, bribed);
   bot.op(OP.CLOSE);
   check(bot.st.talk === -1, 'the talk ends');
@@ -401,8 +401,8 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
     seenAt.push(...bot.sim.events);
   }
   check(
-    bot.st.guards[PRATT].sees && bot.st.heat === 100 && seenAt.some((e) => e.type === 'spotted' && e.reason === 'tampering'),
-    'tools at work in front of Pratt: tampering, 100%',
+    bot.st.guards[TIBBS].sees && bot.st.heat === 100 && seenAt.some((e) => e.type === 'spotted' && e.reason === 'tampering'),
+    'tools at work in front of Tibbs: tampering, 100%',
   );
   // It runs out on time: 2 game hours after it was paid for.
   reload(bot.sim, bribed);
@@ -411,60 +411,60 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
     bot.sim.step(0);
     if (bot.sim.events.some((e) => e.type === 'bribe' && e.kind === 'over')) over = bot.sim.state.step;
   }
-  check(over === bribed.state.guards[PRATT].bribed, `the look away ends after 2 game hours (${hhmm(over)})`);
+  check(over === bribed.state.guards[TIBBS].bribed, `the look away ends after 2 game hours (${hhmm(over)})`);
   // Off at once at 80% heat.
   reload(bot.sim, bribed);
   bot.sim.state.heat = 85;
   bot.sim.step(0);
   check(
-    bot.sim.state.guards[PRATT].bribed === 0 && bot.sim.events.some((e) => e.type === 'bribe' && e.kind === 'over'),
+    bot.sim.state.guards[TIBBS].bribed === 0 && bot.sim.events.some((e) => e.type === 'bribe' && e.kind === 'over'),
     'wanted (80%+): the look away is off',
   );
-  console.log(`Pratt looks away for $${price} (2 game hours), loses the paperwork for $${paperPrice(CENTER_PERKS.difficulty)}`);
+  console.log(`Tibbs looks away for $${price} (2 game hours), loses the paperwork for $${paperPrice(MAPLE_GROVE.difficulty)}`);
 }
 {
   // Losing the paperwork: −25 heat, once a day; not with nothing on file.
-  const bot = beside(PRATT);
+  const bot = beside(TIBBS);
   bot.st.heat = 50;
-  talkTo(bot, PRATT);
+  talkTo(bot, TIBBS);
   bot.op(OP.TALK, TALK.BRIBE, BRIBE.PAPER);
-  const price = paperPrice(CENTER_PERKS.difficulty);
+  const price = paperPrice(MAPLE_GROVE.difficulty);
   check(bot.st.heat === 50 - PAPER_HEAT && bot.st.cash === 500 - price, `the paperwork lost: ${bot.st.heat}% heat, $${bot.st.cash}`);
   bot.op(OP.TALK, TALK.BRIBE, BRIBE.PAPER);
   check(
     events(bot, 'refused').some((e) => e.type === 'refused' && e.why === 'paperToday') && bot.st.heat === 50 - PAPER_HEAT,
     'once a day',
   );
-  const clean = beside(PRATT);
-  talkTo(clean, PRATT);
+  const clean = beside(TIBBS);
+  talkTo(clean, TIBBS);
   clean.op(OP.TALK, TALK.BRIBE, BRIBE.PAPER);
   check(
     events(clean, 'refused').some((e) => e.type === 'refused' && e.why === 'clean') && clean.st.cash === 500,
     'nothing on file: nothing to lose',
   );
-  const poor = beside(PRATT);
+  const poor = beside(TIBBS);
   poor.st.cash = 10;
-  talkTo(poor, PRATT);
+  talkTo(poor, TIBBS);
   poor.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
   check(
-    events(poor, 'refused').some((e) => e.type === 'refused' && e.why === 'cash') && poor.st.guards[PRATT].bribed === 0,
+    events(poor, 'refused').some((e) => e.type === 'refused' && e.why === 'cash') && poor.st.guards[TIBBS].bribed === 0,
     'not enough cash: no deal',
   );
 }
 {
-  // Dunn (strict) reports it; Keller (steady) and Moss (lazy) say no.
-  const dunn = beside(DUNN);
-  check(talkTo(dunn, DUNN), 'a talk with Dunn');
-  dunn.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
+  // Lowry (strict) reports it; Garvey (steady) and Fenton (lazy) say no.
+  const lowry = beside(LOWRY);
+  check(talkTo(lowry, LOWRY), 'a talk with Lowry');
+  lowry.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
   check(
-    events(dunn, 'refused').some((e) => e.type === 'refused' && e.why === 'reported') &&
-      dunn.st.heat === BRIBE_REPORT_HEAT &&
-      dunn.st.cash === 500,
-    `strict Dunn reports the bribe: ${dunn.st.heat}% heat, the cash kept`,
+    events(lowry, 'refused').some((e) => e.type === 'refused' && e.why === 'reported') &&
+      lowry.st.heat === BRIBE_REPORT_HEAT &&
+      lowry.st.cash === 500,
+    `strict Lowry reports the bribe: ${lowry.st.heat}% heat, the cash kept`,
   );
-  for (const k of [KELLER, MOSS]) {
+  for (const k of [GARVEY, FENTON]) {
     const bot = beside(k);
-    check(talkTo(bot, k), `a talk with ${CENTER_PERKS.guards[k].name}`);
+    check(talkTo(bot, k), `a talk with ${MAPLE_GROVE.guards[k].name}`);
     bot.op(OP.TALK, TALK.BRIBE, BRIBE.PAPER);
     bot.st.heat = 30;
     bot.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
@@ -473,39 +473,39 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
         bot.st.heat === 30 &&
         bot.st.cash === 500 &&
         bot.st.guards[k].bribed === 0,
-      `${CENTER_PERKS.guards[k].name} won't take it`,
+      `${MAPLE_GROVE.guards[k].name} won't take it`,
     );
   }
 }
 {
   // Who talks: not one called away (the talk ends), not with the player wanted, not one asleep.
-  const bot = beside(KELLER);
-  talkTo(bot, KELLER);
-  sendToLook(bot.st.guards[KELLER], 30 * MAP_W + 30);
+  const bot = beside(GARVEY);
+  talkTo(bot, GARVEY);
+  sendToLook(bot.st.guards[GARVEY], 30 * MAP_W + 30);
   bot.step(0);
   check(bot.st.talk === -1 && events(bot, 'talk').some((e) => e.type === 'talk' && e.who === -1), 'called away, the guard ends the talk');
-  const hot = beside(KELLER);
+  const hot = beside(GARVEY);
   hot.st.heat = 85;
-  check(!canChat(hot.sim, KELLER) && !talkTo(hot, KELLER), 'nobody talks to a wanted player');
-  // Not past a change of duty: at 17:00 Pratt goes to its dinner post, and the talk ends.
-  const late = beside(PRATT, 1, 16 * 60 + 50);
-  talkTo(late, PRATT);
+  check(!canChat(hot.sim, GARVEY) && !talkTo(hot, GARVEY), 'nobody talks to a wanted player');
+  // Not past a change of duty: at 17:00 Tibbs goes to its dinner post, and the talk ends.
+  const late = beside(TIBBS, 1, 16 * 60 + 50);
+  talkTo(late, TIBBS);
   const ended = late.until(() => late.st.talk === -1, 60 * STEPS_PER_MINUTE);
   check(late.st.talk === -1 || !ended, 'talk started');
   check(ended && late.sim.clock.minuteOfDay >= 17 * 60, `a talk doesn't hold a guard past its block (ended ${hhmm(late.st.step)})`);
   // Nor one met the very step it's back from looking around (its duty not planned yet).
-  const back = beside(PRATT, 1, 16 * 60 + 50);
-  const bg = back.st.guards[PRATT];
+  const back = beside(TIBBS, 1, 16 * 60 + 50);
+  const bg = back.st.guards[TIBBS];
   bg.mode = GUARD.INVESTIGATE;
   bg.target = bg.goal = 28 * MAP_W + 33;
   bg.path = [];
   bg.timer = 1;
   bg.wait = 0;
-  check(talkTo(back, PRATT), 'a talk the step it is back from a look');
+  check(talkTo(back, TIBBS), 'a talk the step it is back from a look');
   const over = back.until(() => back.st.talk === -1, 60 * STEPS_PER_MINUTE);
   check(over, `that talk ends with its block too (ended ${hhmm(back.st.step)})`);
   // Wanted the very step a bribe is offered: refused, nothing paid, nothing reported.
-  for (const k of [PRATT, DUNN]) {
+  for (const k of [TIBBS, LOWRY]) {
     const bot = beside(k);
     talkTo(bot, k);
     bot.st.heat = 85;
@@ -515,19 +515,19 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
         bot.st.cash === 500 &&
         bot.st.heat === 85 &&
         bot.st.guards[k].bribed === 0,
-      `too hot to deal with ${CENTER_PERKS.guards[k].name}`,
+      `too hot to deal with ${MAPLE_GROVE.guards[k].name}`,
     );
   }
-  const night = beside(KELLER);
-  night.st.guards[KELLER].doing = DOING.SLEEP;
-  check(!canChat(night.sim, KELLER), 'nor to a guard asleep');
+  const night = beside(GARVEY);
+  night.st.guards[GARVEY].doing = DOING.SLEEP;
+  check(!canChat(night.sim, GARVEY), 'nor to a guard asleep');
   // Nor in a guard's uniform: face to face it would only end in a lockdown.
-  const dressed = beside(KELLER);
+  const dressed = beside(GARVEY);
   dressed.st.items.inv[SLOT.OUTFIT] = slot(itemNumber('guard_outfit'));
-  check(!canChat(dressed.sim, KELLER) && !talkTo(dressed, KELLER), 'not in a guard uniform');
+  check(!canChat(dressed.sim, GARVEY) && !talkTo(dressed, GARVEY), 'not in a guard uniform');
   // A report that makes the player wanted ends the talk, the refusal told all the same.
-  const hot2 = beside(DUNN);
-  talkTo(hot2, DUNN);
+  const hot2 = beside(LOWRY);
+  talkTo(hot2, LOWRY);
   hot2.st.heat = 65;
   hot2.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
   check(
@@ -538,14 +538,14 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
 
 // ------------------------------------------------------------------ an old save
 {
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   for (let k = 0; k < 200; k++) sim.step(0);
   const snap = JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot;
   const old = snap.state as unknown as Record<string, unknown>;
   delete old.salt;
   for (const g of snap.state.guards as unknown as Array<Record<string, unknown>>)
     for (const f of ['doze', 'napDay', 'stir', 'bribed', 'paperDay']) delete g[f];
-  const back = new Sim(CENTER_PERKS, 99);
+  const back = new Sim(MAPLE_GROVE, 99);
   back.restore(snap);
   const st = back.state;
   check(

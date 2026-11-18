@@ -224,7 +224,7 @@ const PROP_META: Record<PropKind, { w: number; d: number; sub: string; desc: str
     w: 3,
     d: 3,
     sub: 'Utility & Security',
-    desc: 'HMP Irongate concrete landing pad with yellow H markings.',
+    desc: 'HMP Gull Rock concrete landing pad with yellow H markings.',
     sizes: [[3, 3]],
     tags: ['escape'],
   },
@@ -592,8 +592,8 @@ function buildDecorEntries(): ModelEntry[] {
     if (hasGlow) tags.push('lit-at-night', 'electric');
     if (hasCanopy) tags.push('foliage', 'canopy');
     if (kind === 'tallyBoard' || kind === 'antlers') tags.push('six-hunter');
-    if (kind === 'lifebuoy' || kind === 'bollard' || kind === 'windsock' || kind === 'ropeCoil') tags.push('irongate');
-    if (kind === 'cactus' || kind === 'mineSign') tags.push('san-pancho');
+    if (kind === 'lifebuoy' || kind === 'bollard' || kind === 'windsock' || kind === 'ropeCoil') tags.push('gull-rock');
+    if (kind === 'cactus' || kind === 'mineSign') tags.push('sierra-seca');
 
     const variants: ModelEntry['variants'] = [
       {
@@ -785,8 +785,8 @@ function buildCharacterEntries(): ModelEntry[] {
   const heldOptions = [
     { value: 'none', label: 'Empty-Handed' },
     { value: 'baton', label: 'Guard Baton' },
-    { value: 'shovel', label: 'Sturdy Shovel' },
-    { value: 'pickaxe', label: 'Sturdy Pickaxe' },
+    { value: 'shovel', label: 'Heavy-duty Shovel' },
+    { value: 'pickaxe', label: 'Heavy-duty Pickaxe' },
     { value: 'cutters', label: 'Heavy Snips' },
     { value: 'broom', label: 'Push Broom' },
     { value: 'cup_of_tea', label: 'Cup of Tea' },
@@ -810,7 +810,7 @@ function buildCharacterEntries(): ModelEntry[] {
       id: 'inmate',
       name: 'Inmate (Orange Jumpsuit)',
       sub: 'Prisoners',
-      desc: 'Blocky Escapists-style inmate figure with skinned limb bones, blinking eyes, and number patch.',
+      desc: 'Blocky low-poly inmate figure with skinned limb bones, blinking eyes, and number patch.',
       look: { outfit: 0xf2701c, skin: 0xf1c6a0, hair: 0x3b2a1e, hairStyle: 0 },
       tags: ['character', 'inmate', 'animated', 'skinned'],
     },
@@ -1219,18 +1219,18 @@ function buildVehicleEntries(): ModelEntry[] {
     {
       key: 'truck',
       name: 'Delivery Box Truck (Suppliers)',
-      desc: 'Center Perks blue-and-white supply truck with orange stripe, crates inside, and rolling rear door.',
+      desc: 'Maple Grove blue-and-white supply truck with orange stripe, crates inside, and rolling rear door.',
       tags: ['vehicle', 'delivery', 'escape', 'animated'],
     },
     {
       key: 'redCross',
       name: 'Red Cross Parcel Truck (Canvas Hoops)',
-      desc: 'Stalag Flucht bowed canvas military parcel truck with Red Cross markings and rear canvas flaps.',
+      desc: 'Camp Frostberg bowed canvas military parcel truck with Red Cross markings and rear canvas flaps.',
       tags: ['vehicle', 'delivery', 'escape', 'animated', 'alpine'],
     },
     {
       key: 'produce',
-      name: 'San Pancho Produce Pickup Truck',
+      name: 'Sierra Seca Produce Pickup Truck',
       desc: 'Sun-faded teal pickup truck loaded with fruit/vegetable crates, stowaway tarp, and drop tailgate.',
       tags: ['vehicle', 'delivery', 'escape', 'animated', 'desert'],
     },
@@ -1318,7 +1318,7 @@ function buildVehicleEntries(): ModelEntry[] {
         label: 'Livery Paint',
         kind: 'select',
         options: [
-          { value: 0x2c4a6e, label: 'Police / Irongate Navy' },
+          { value: 0x2c4a6e, label: 'Police / Gull Rock Navy' },
           { value: 0x3b4d3a, label: 'Search & Rescue Olive' },
           { value: 0xc83e2b, label: 'Coast Guard Red' },
         ],
@@ -2019,11 +2019,11 @@ function buildFixtureEntries(): ModelEntry[] {
 
 function buildArchitectureEntries(): ModelEntry[] {
   const themes: Array<{ value: Theme; label: string }> = [
-    { value: 'suburban', label: 'Suburban (Center Perks)' },
-    { value: 'alpine', label: 'Alpine Snow (Stalag Flucht)' },
-    { value: 'industrial', label: 'Industrial (Shankton State)' },
-    { value: 'desert', label: 'Desert Adobe (San Pancho)' },
-    { value: 'island', label: 'Island Granite (HMP Irongate)' },
+    { value: 'suburban', label: 'Suburban (Maple Grove)' },
+    { value: 'alpine', label: 'Alpine Snow (Camp Frostberg)' },
+    { value: 'industrial', label: 'Industrial (Gravel Point State)' },
+    { value: 'desert', label: 'Desert Adobe (Sierra Seca)' },
+    { value: 'island', label: 'Island Granite (HMP Gull Rock)' },
     { value: 'forest', label: 'Pine Forest (The Six Hunter)' },
   ];
 
@@ -2342,10 +2342,10 @@ function buildArchitectureEntries(): ModelEntry[] {
           kind: 'select',
           options: [
             { value: 'forest', label: 'Scots Pine (The Six Hunter)' },
-            { value: 'suburban', label: 'Leafy Deciduous Tree (Center Perks)' },
-            { value: 'alpine', label: 'Snow-Tiered Fir (Stalag Flucht)' },
-            { value: 'industrial', label: 'Highway Olive Scrub (Shankton)' },
-            { value: 'desert', label: 'Giant Saguaro Cactus (San Pancho)' },
+            { value: 'suburban', label: 'Leafy Deciduous Tree (Maple Grove)' },
+            { value: 'alpine', label: 'Snow-Tiered Fir (Camp Frostberg)' },
+            { value: 'industrial', label: 'Highway Olive Scrub (Gravel Point)' },
+            { value: 'desert', label: 'Giant Saguaro Cactus (Sierra Seca)' },
           ],
           defaultValue: 'forest',
         },

@@ -8,7 +8,7 @@ import { fr } from '../src/i18n/fr';
 import { itemNumber } from '../src/content/items';
 import { J, JOB_LEN, KIND, LIFT } from '../src/content/oddjobs';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { nearestDir } from '../src/sim/ai/path';
@@ -161,7 +161,7 @@ check(
 
 // ------------------------------------------------------------------ the mop
 {
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const job = def.jobs.findIndex((j) => j.id === 'janitor');
   const bot = new Bot(def, 3);
   hire(bot.sim, job);
@@ -208,7 +208,7 @@ check(
 
 // ------------------------------------------------------------------ what lies in the hands and the bins
 {
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const bot = new Bot(def, 3);
   check(bot.routineUntil(1, WORK + 1), 'the laundry: to work');
   const room = jobRooms(bot.sim.world)[bot.st.jobs.indexOf(HOLDER.PLAYER)];
@@ -296,7 +296,7 @@ for (const def of PRISONS) {
 console.log(`legs in a Work Period (seed 3): ${work.join(', ')}`);
 {
   // The janitor mops along a round of the corridors.
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const sim = new Sim(def, 3);
   while (minute(sim) < WORK + 50) {
     sim.state.attended = true;
@@ -328,7 +328,7 @@ console.log(`legs in a Work Period (seed 3): ${work.join(', ')}`);
 }
 {
   // A lockdown stops work, out cold stops work, and its job goes as ever.
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const sim = new Sim(def, 3);
   while (minute(sim) < WORK + 20) {
     sim.state.attended = true;
@@ -347,7 +347,7 @@ console.log(`legs in a Work Period (seed 3): ${work.join(', ')}`);
 
 // ------------------------------------------------------------------ guards mind strangers
 /** The player in a room, a guard beside them in the room, looking at them. */
-function watched(def: typeof CENTER_PERKS, zone: string, seed = 3, job = -1, rules = false) {
+function watched(def: typeof MAPLE_GROVE, zone: string, seed = 3, job = -1, rules = false) {
   const bot = new Bot(def, seed);
   if (rules) {
     bot.sim.rules229 = true;
@@ -383,7 +383,7 @@ function watched(def: typeof CENTER_PERKS, zone: string, seed = 3, job = -1, rul
 const spottedAs = (sim: Sim, reason: string) => sim.events.some((e) => e.type === 'spotted' && e.reason === reason);
 for (const def of PRISONS) {
   const rooms = jobRooms(new Sim(def, 3).world);
-  // (San Pancho starts the player as its janitor, who has business everywhere: a machine job in another room, to be a stranger.)
+  // (Sierra Seca starts the player as its janitor, who has business everywhere: a machine job in another room, to be a stranger.)
   for (const r of rooms.filter((q) => q.def.id !== 'gardener')) {
     const job = rooms.findIndex((q) => q.def.flow === 'machine' && q.def.id !== 'gardener' && q.zone !== r.zone);
     const { bot, hold } = watched(def, r.def.zone, 3, job);
@@ -412,7 +412,7 @@ for (const def of PRISONS) {
   }
 }
 {
-  const def = CENTER_PERKS;
+  const def = MAPLE_GROVE;
   const mopper = def.jobs.findIndex((j) => j.id === 'janitor');
   const postie = def.jobs.findIndex((j) => j.id === 'mailman');
   const cook = def.jobs.findIndex((j) => j.id === 'kitchen');
@@ -525,7 +525,7 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
 
 // ------------------------------------------------------------------ saves and older runs
 {
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   while (minute(sim) < WORK + 30) {
     sim.state.attended = true;
     sim.step(0);
@@ -538,7 +538,7 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
   const bare = structuredClone(snap);
   for (const m of bare.state.inmates) delete (m as { duty?: number }).duty;
   delete (bare.state as { strayed?: number[] }).strayed;
-  const old = new Sim(CENTER_PERKS, 3);
+  const old = new Sim(MAPLE_GROVE, 3);
   old.restore(bare);
   check(
     old.state.inmates.every((m) => m.duty === 0),
@@ -553,7 +553,7 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
 }
 {
   // A 2.29 run through the Work Period replays as it was.
-  const was = new Sim(CENTER_PERKS, 24);
+  const was = new Sim(MAPLE_GROVE, 24);
   was.rules229 = true;
   was.rules230 = true;
   was.rules231 = true;
@@ -567,12 +567,12 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
     prev.sim.state.inmates.every((m) => m.duty === 0),
     'the old rules: nobody on a round',
   );
-  const replayed = replayLog(prev.toLog(), CENTER_PERKS);
+  const replayed = replayLog(prev.toLog(), MAPLE_GROVE);
   check(!!replayed?.ok && replayed.sim.rules229 === true, 'a 2.29 log through work replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, MAPLE_GROVE)?.ok, 'and would not under the new ones: the test can fail');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 24), { seed: 24, game: '2.44.0' });
   for (let k = 0; k < (WORK + 60 - 8 * 60) * STEPS_PER_MINUTE; k++) now.step(0);
-  check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
+  check(!!replayLog(now.toLog(), MAPLE_GROVE)?.ok, "a log of today's replays");
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 24, 'and is carried on');
 }

@@ -93,7 +93,7 @@ export const ROWS: Row[] = [
   walking('mop', 1, { item: 'mop' }),
   walking('book', 1, { item: 'thick_book' }),
   walking('cup', 1, { item: 'plastic_cup' }),
-  walking('shovel', 1, { item: 'light_shovel' }),
+  walking('shovel', 1, { item: 'reinforced_shovel' }),
   doing('idle', DOING.NOTHING),
   doing('eat', DOING.EAT),
   doing('read', DOING.READ, { item: 'thick_book' }),

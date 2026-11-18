@@ -158,7 +158,7 @@ export const dogName = (sim: Sim, k: number) => dogDef(sim.world, k).name;
 /** The tool button's face, refilled in place. */
 const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
 
-/** Who someone is (Cast id): "Rusty · cell 3", "Officer Keller · purple key". */
+/** Who someone is (Cast id): "Sonny · cell 3", "Officer Garvey · purple key". */
 function personName(sim: Sim, id: number): string {
   const s = sim.state;
   if (!isGuard(s, id)) return t('combat.inmateNamed', { name: inmateName(sim, id), n: s.inmates[id]?.cell ?? 0 });
@@ -316,7 +316,7 @@ export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionW
       const it = st.items;
       const mail = sim.onDuty && st.mail.includes(who) && it.inv.slice(0, 6).some((v) => itemOf(v) === LETTER && usesOf(v) - 1 === who);
       const n = st.inmates.length;
-      // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
+      // A guard by its title, as the sentence needs it ("Parler au gardien Tibbs").
       const guard = who >= n ? sim.prison.guards[who - n] : undefined;
       // (2.39: someone at an inmates' game who'll play the player: the press joins it, a talk offering that game.)
       // (Dice and cards are played for a stake: with less than the smallest on them, a plain talk.)
@@ -351,7 +351,7 @@ export function describePlan(sim: Sim, plan: Plan | null, held: number): ActionW
   }
 }
 
-/** A fixture's words: the generator says which way it would go (GDD §5.5), and at Irongate which one it is (P12); the helipad, whether the helicopter is in. */
+/** A fixture's words: the generator says which way it would go (GDD §5.5), and at Gull Rock which one it is (P12); the helipad, whether the helicopter is in. */
 function fixtureWords(sim: Sim, target: Extract<Target, { kind: 'fixture' }>, lang: string): ActionWords {
   if (target.use === 'vending') return say(`vending:${lang}`, 'act.vending', () => t('thing.vending'));
   if (target.use === 'cooler') return say(`cooler:${lang}`, 'act.drinkAt', () => t('thing.cooler'));

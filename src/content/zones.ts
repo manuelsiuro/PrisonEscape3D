@@ -33,12 +33,12 @@ export const ZONES = [
   'tunnels',
   'vents',
   'roof',
-  // P9 (Stalag Flucht): cabin A's locked storeroom.
+  // P9 (Camp Frostberg): cabin A's locked storeroom.
   'storeroom',
-  // P11 (San Pancho): the guards' walkway inside the inner wall, the minefield beyond it.
+  // P11 (Sierra Seca): the guards' walkway inside the inner wall, the minefield beyond it.
   'walkway',
   'minefield',
-  // P12 (HMP Irongate): the helipad's walled court, the dock behind its electric fence.
+  // P12 (HMP Gull Rock): the helipad's walled court, the dock behind its electric fence.
   'helipad',
   'dock',
   // P31 (sports grounds & gardens): the fenced sports ground, the vegetable garden.

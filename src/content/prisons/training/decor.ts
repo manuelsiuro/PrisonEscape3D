@@ -4,7 +4,7 @@ import type { DecorPlacement } from '../../decor';
 const TABLE = 0.52;
 
 /**
- * The Training Block dressed (P8+), as Center Perks is: each room reads as what it is. Pieces
+ * The Training Block dressed (P8+), as Maple Grove is: each room reads as what it is. Pieces
  * keep clear of what the lessons point at: the cell wall the pickaxe chips (20, 16), the
  * generator, the gate and its fence, and the ways between them.
  */

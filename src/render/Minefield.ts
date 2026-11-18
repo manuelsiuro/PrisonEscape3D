@@ -38,7 +38,7 @@ const MAX_CRATERS = 24;
  */
 export class Minefield {
   readonly group = new THREE.Group();
-  /** The mounds and lids, in squares the camera skips out of sight (chunks.ts: 1,024 mounds at San Pancho). */
+  /** The mounds and lids, in squares the camera skips out of sight (chunks.ts: 1,024 mounds at Sierra Seca). */
   private readonly pieces: THREE.InstancedMesh[] = [];
   private readonly craters: THREE.InstancedMesh;
   /** Each mine tile's mound and lid (none: no lid), to hide them under a crater. */

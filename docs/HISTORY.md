@@ -39,14 +39,14 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Getting out lesson (v1.1.6)
 - Learning recipes (v1.1.7)
 - Learning recipes reviewed (v1.1.8)
-- P9 Stalag Flucht (v1.2.0)
-- P10 Shankton (v1.3.0)
+- P9 Camp Frostberg (v1.2.0)
+- P10 Gravel Point (v1.3.0)
 - P10 review (v1.3.1)
 - P10 second review (v1.3.2)
-- P11 San Pancho (v1.4.0)
+- P11 Sierra Seca (v1.4.0)
 - P11 review (v1.4.1)
 - P11 second review (v1.4.2)
-- P12 HMP Irongate (v1.5.0)
+- P12 HMP Gull Rock (v1.5.0)
 - P12 review (v1.5.1)
 - v1.5.3
 - v1.5.4
@@ -232,3 +232,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 - City Escape: the fight with the dead gone over, three more kinds of them (v2.60.0)
 - City Escape: what its design promised and the build left out (v2.61.0)
+- Another game's names taken out (v2.62.0, not released yet)

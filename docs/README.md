@@ -17,7 +17,7 @@ record. Nothing was rewritten: rows and entries moved word for word.
 | The dev tools' procedures: the screen sweep, the render probes, the map viewer, How to play's pictures | [`TOOLS.md`](TOOLS.md) |
 | How the code is checked: types, lint, layout, the tests | [`PLAN.md`](PLAN.md) §6, [`.oxlintrc.json`](../.oxlintrc.json) (each rule turned off, why) |
 | What the game has, for players | [`FEATURES.md`](FEATURES.md) |
-| The original design | [`the_escapists_3d_complete_game_design_document.md`](source/the_escapists_3d_complete_game_design_document.md) (the GDD, the source of truth), [`game_idea.md`](source/game_idea.md), [`tech_plan.md`](source/tech_plan.md) (engineering, where the GDD says nothing) |
+| The original design | [`game_design_document.md`](source/game_design_document.md) (the GDD, the source of truth), [`game_idea.md`](source/game_idea.md), [`tech_plan.md`](source/tech_plan.md) (engineering, where the GDD says nothing) |
 
 **Finding one area's story.** Its row in `POLISH.md`, its file in `decisions/`, then search
 `history/` for its name (`grep -l "vending" docs/history/*.md`).

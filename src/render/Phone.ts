@@ -297,7 +297,7 @@ export class PhoneView {
     this.phone = g;
     this.group.add(g);
     this.carAt = { x: c.car.x + 0.5, z: c.car.z + 0.5, angle: headingAngle(c.car.face) };
-    // Pulling away: never off the road's end (Irongate's ferry landing is only a few tiles of it): no
+    // Pulling away: never off the road's end (Gull Rock's ferry landing is only a few tiles of it): no
     // harder than brings the nose (CAR_NOSE ahead of the middle) to the last road tile's edge as it fades out.
     const dx = Math.sign(DIR_X[c.car.face] ?? 0);
     const dz = Math.sign(DIR_Z[c.car.face] ?? 0);

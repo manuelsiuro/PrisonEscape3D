@@ -35,7 +35,7 @@ export class DayPieces {
   readonly events = new DayEvents();
   /** P42: the holidays' decor, sprays and fireworks; the holiday behind the title (the date's, as Settings have it). */
   readonly holidaysView = new HolidaysView();
-  /** Delivery day's vehicle (P18; Irongate's helicopter is the island's). */
+  /** Delivery day's vehicle (P18; Gull Rock's helicopter is the island's). */
   readonly delivery = new Delivery();
   /** The guard dogs, their kennels, the trail (P19). */
   readonly dogs = new Dogs();

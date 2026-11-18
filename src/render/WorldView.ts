@@ -173,7 +173,7 @@ export class WorldView {
     const k = this.kindAt(x, z);
     const nextTo = (x: number, z: number, f: (k: number) => boolean) =>
       [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(f);
-    // (A gate's second leaf touches only the first, the fence beyond it: P32 review, Stalag's garden gate.)
+    // (A gate's second leaf touches only the first, the fence beyond it: P32 review, Frostberg's garden gate.)
     const inFence = (x: number, z: number) =>
       nextTo(x, z, isFence) ||
       [
@@ -240,7 +240,7 @@ export class WorldView {
     const town = buildCityWalls(this.world, geo);
     if (town) this.group.add(...town.meshes);
     const brickTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
-    // Reinforced concrete is concrete on top too: from above, the walls no tool chips read as such (San Pancho's sand all round them).
+    // Reinforced concrete is concrete on top too: from above, the walls no tool chips read as such (Sierra Seca's sand all round them).
     // (2.36: the forest's fieldstone wears a cap of its own, its stones lit and shaded as every cap is since session 14.)
     const forest = this.world.def.theme === 'forest';
     const concreteTop = seeThrough(
@@ -353,7 +353,7 @@ export class WorldView {
         const ax = this.alongX(x, z, fenceLike);
         const t = z * MAP_W + x;
         this.fenceOf[t] = this.fenceMeshes.length;
-        // A junction (P32 review: Stalag's fence along z44 meeting the inner fence and the perimeter): the line
+        // A junction (P32 review: Frostberg's fence along z44 meeting the inner fence and the perimeter): the line
         // running through it whole, and a half panel toward the one that ends there, not a whole one sticking out past it.
         const w = fenceLike(this.kindAt(x - 1, z));
         const e = fenceLike(this.kindAt(x + 1, z));

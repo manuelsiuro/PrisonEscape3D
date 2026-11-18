@@ -12,9 +12,9 @@ import { disposeTree } from './batch';
 
 /** What the view needs of security each frame (filled by the game, reused). */
 export interface SecurityFrame {
-  /** The lights' generator running (the only one, or Irongate's GEN-2): lamps and room lights. */
+  /** The lights' generator running (the only one, or Gull Rock's GEN-2): lamps and room lights. */
   power: boolean;
-  /** The electric fence live, the detector arches on (Irongate: each on its own generator). */
+  /** The electric fence live, the detector arches on (Gull Rock: each on its own generator). */
   fence: boolean;
   arches: boolean;
   /** Each generator running (its lamp: green, or red and blinking). */

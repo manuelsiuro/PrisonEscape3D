@@ -5,7 +5,7 @@
 // the browser exposes its timer, and which part of the scene the calls come from.
 //   const pp = await import('/scripts/dev/perfprobe.ts');
 //   await pp.measure(3);                  // the game on screen as it is, for 3 s
-//   const rows = await pp.scenes();       // every prison × moment, and two with gatherings (or pp.scenes([['irongate', 1, 490]]))
+//   const rows = await pp.scenes();       // every prison × moment, and two with gatherings (or pp.scenes([['gull-rock', 1, 490]]))
 //   await pp.check();                     // every scene against perfbudget.json: what's drawn grew?
 //   await pp.record();                    // the new perfbudget.json's text, after a change meant to draw more
 // Run it with the phone's profile in DevTools (412×915 at 2.625, mobile, touch, an Android user agent: the
@@ -17,13 +17,13 @@ import { at } from './playat';
 import budget from './perfbudget.json';
 
 const MOMENTS = [7 * 60 + 50, 8 * 60 + 2, 12 * 60 + 10, 15 * 60 + 5, 18 * 60 + 40, 23 * 60 + 30];
-const PRISONS = ['training', 'center-perks', 'stalag-flucht', 'shankton', 'irongate', 'san-pancho', 'six-hunter'];
+const PRISONS = ['training', 'maple-grove', 'frostberg', 'gravel-point', 'gull-rock', 'sierra-seca', 'six-hunter'];
 /** 2.39.1: free time's gatherings, from day 2 (none on day 1, where the moments above are): a game of dice at Center
- * Perks, a game of cards at Irongate in the morning, shots at its hoop in the evening. */
+ * Perks, a game of cards at Gull Rock in the morning, shots at its hoop in the evening. */
 const GATHERINGS: Array<[string, number, number]> = [
-  ['center-perks', 2, 10 * 60 + 44],
-  ['irongate', 2, 10 * 60 + 36],
-  ['irongate', 3, 19 * 60 + 42],
+  ['maple-grove', 2, 10 * 60 + 44],
+  ['gull-rock', 2, 10 * 60 + 36],
+  ['gull-rock', 3, 19 * 60 + 42],
 ];
 
 type Acc = { frames: number; total: number[]; view: number[]; render: number[]; gaps: number[]; gpu: number[] };

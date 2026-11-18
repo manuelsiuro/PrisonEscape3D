@@ -82,7 +82,7 @@ export class Effects {
   /** 2.35: the bar over the locked-on person's head (its level shown now). */
   readonly bar = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }));
   private barLevel = -1;
-  /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
+  /** The lock-on ring, and the cup of scalding cocoa in flight (from, to, 0–1 along the way). */
   readonly ring = lockRing();
   readonly cup = new THREE.Mesh(
     new THREE.SphereGeometry(0.12, 10, 8),
@@ -206,7 +206,7 @@ export class Effects {
     this.cam.jolt(0.9);
   }
 
-  /** A cup of molten chocolate thrown at someone (Cast id): it arcs over, then splashes. */
+  /** A cup of scalding cocoa thrown at someone (Cast id): it arcs over, then splashes. */
   throwAt(on: number) {
     const b = this.who(on);
     if (!b) return;

@@ -5,7 +5,7 @@ training
   29,50 yard — E: dirt at 2
   48,36 sports — SW: a weights at 1
 
-center-perks
+maple-grove
   27,7 rollCall — SE: open ground
   38,7 rollCall — SW: open ground
   24,25 yard — SE: a bench at 2
@@ -32,7 +32,7 @@ center-perks
   6,55 sports — NE: a pullup at 1
   56,55 garden — NW: open ground
 
-stalag-flucht
+frostberg
   4,22 yard — SE: open ground
   37,22 yard — SW: open ground
   4,28 yard — NE: open ground
@@ -48,7 +48,7 @@ stalag-flucht
   60,60 sports — NW: open ground
   60,45 sports — SW: open ground
 
-shankton
+gravel-point
   39,28 rollCall — SW: open ground
   54,13 sports — SW: open ground
   6,6 perimeter — NW: the fence at 1
@@ -60,7 +60,7 @@ shankton
   20,57 perimeter — S: the fence at 1
   57,57 perimeter — SE: the fence at 1
 
-san-pancho
+sierra-seca
   27,22 yard — SE: open ground
   36,22 yard — SW: open ground
   26,46 sports — NE: open ground
@@ -68,7 +68,7 @@ san-pancho
   26,36 sports — SE: open ground
   39,36 sports — SW: open ground
 
-irongate
+gull-rock
   23,22 yard — SE: a wall at 5
   41,22 yard — SW: a wall at 5
   33,42 helipad — SE: a helipad at 2

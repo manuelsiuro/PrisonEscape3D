@@ -62,6 +62,7 @@ import { lineOfSight } from '../ai/sight';
 import { isFloor, placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
+import { idLetters } from '../../content/prisons/renamed';
 import type { SimState } from '../state';
 import type { OddJobFail, Refusal } from '../events';
 import { STEPS_PER_MINUTE } from '../tuning';
@@ -241,8 +242,8 @@ function perkOf(s: SimState, salt: number, day: number, n: number): { perk: numb
   return { perk: PERK.ITEM, item: itemNumber(RARE_ITEMS[rollInt(s.salt, salt, day, n + 7, RARE_ITEMS.length)]) };
 }
 
-/** A prison's own number for its deals' draws (the same seed deals differently in each prison). */
-const keyOf = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7) * 64;
+/** A prison's own number for its deals' draws (the same seed deals differently in each prison): its first id's letters, summed (renamed.ts). */
+const keyOf = idLetters;
 
 /** The board's pins on a prison day (PINS of them, fewer only in a prison with too little), pure: roll() under SALT.ODDJOBS. */
 export function dealsOf(sim: SimContext, day = prisonDay(sim.state.step)): Deal[] {
@@ -851,7 +852,7 @@ export function birthdayAtVisit(sim: SimContext) {
   cakeIn(sim, job, false);
 }
 
-/** Stalag Flucht's: in the Red Cross parcel on delivery day (from PARCEL_MINUTE), the first delivery after it's taken. */
+/** Camp Frostberg's: in the Red Cross parcel on delivery day (from PARCEL_MINUTE), the first delivery after it's taken. */
 function birthdayParcel(sim: SimContext, job: number[]) {
   const d = smugglingOf(sim);
   const s = sim.state;

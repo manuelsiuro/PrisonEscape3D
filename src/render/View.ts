@@ -405,7 +405,7 @@ export class View {
       retire([old.group], () => old.dispose());
       this.river = null;
     }
-    // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
+    // The prison's look (snow at Camp Frostberg): the textures drawn from here on follow it.
     setTheme(world.def.theme ?? 'suburban');
     this.world = world;
     this.pitch = pitch;
@@ -594,7 +594,7 @@ export class View {
     this.fx.bang(tile);
   }
 
-  /** A cup of molten chocolate thrown at someone (Cast id): it arcs over, then splashes. */
+  /** A cup of scalding cocoa thrown at someone (Cast id): it arcs over, then splashes. */
   throwAt(on: number) {
     this.fx.throwAt(on);
   }

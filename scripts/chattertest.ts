@@ -5,7 +5,7 @@
  *   typed (they come from the rules); voices fit who speaks; lines stay short enough for a
  *   phone; French typography (a space before ! ? : ;, made a narrow no-break space); every
  *   place and item a slot may name has its words in both languages.
- * - The director over two days of play (a model prisoner at Center Perks, a few friends
+ * - The director over two days of play (a model prisoner at Maple Grove, a few friends
  *   among the inmates): never more bubbles than the screen allows, only from people on
  *   screen, no line again among the last 40, nor a speaker's last 6, at least 80% distinct in
  *   every 100 bubbles, gossip only from friends close by, and silence once a bank is spent.
@@ -111,7 +111,7 @@ console.log(
 );
 
 // ------------------------------------------------------------------ the director at work
-/** Two days at Center Perks as a model prisoner, the screen a box around the player. */
+/** Two days at Maple Grove as a model prisoner, the screen a box around the player. */
 function run(prison = PRISONS[0], days = 2) {
   const bot = new Bot(prison, 5);
   const sim = bot.sim;
@@ -276,9 +276,9 @@ console.log(
   const said = dd.greeting(sim, who);
   check(low.has(said), `a merchant with a grudge greets coldly ("${said}")`);
 }
-// Irongate: the first generator runs the detectors and cameras only: no blackout talk.
+// Gull Rock: the first generator runs the detectors and cameras only: no blackout talk.
 {
-  const prison = PRISONS.find((p) => p.id === 'irongate')!;
+  const prison = PRISONS.find((p) => p.id === 'gull-rock')!;
   const bot = new Bot(prison, 2);
   const sim = bot.sim;
   const dd = new Director();
@@ -288,7 +288,7 @@ console.log(
   const waiting = (dd as unknown as { queue: Array<{ bank: string }> }).queue.map((p) => p.bank);
   check(
     !waiting.some((b) => b.startsWith('re.power')),
-    `GEN-1 off at Irongate: nobody talks of a blackout (${waiting.join(', ') || 'quiet'})`,
+    `GEN-1 off at Gull Rock: nobody talks of a blackout (${waiting.join(', ') || 'quiet'})`,
   );
-  console.log("greetings, replies and Irongate's generators checked");
+  console.log("greetings, replies and Gull Rock's generators checked");
 }

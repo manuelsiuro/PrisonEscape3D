@@ -83,7 +83,7 @@ export const BASICS: readonly Lesson[] = [
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 37, 26);
-      pockets(sim, 'light_cutters');
+      pockets(sim, 'reinforced_cutters');
       // Empty-handed to start: holding the cutters is the player's own move.
       sim.state.items.hand = 1;
     },
@@ -103,7 +103,7 @@ export const BASICS: readonly Lesson[] = [
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 21, 18, 1);
-      pockets(sim, 'light_cutters');
+      pockets(sim, 'reinforced_cutters');
       fill(sim, myDesk(sim));
     },
     steps: [
@@ -113,7 +113,7 @@ export const BASICS: readonly Lesson[] = [
         touch: 'lesson.stash.hideTouch',
         done: (c) => {
           const box = containersOf(c.sim.world)[myDesk(c.sim)];
-          return c.sim.state.items.containers[myDesk(c.sim)].slice(0, box.hidden).some((v) => itemOf(v) === n('light_cutters'));
+          return c.sim.state.items.containers[myDesk(c.sim)].slice(0, box.hidden).some((v) => itemOf(v) === n('reinforced_cutters'));
         },
       },
     ],
@@ -125,7 +125,7 @@ export const BASICS: readonly Lesson[] = [
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 20, 17, 13);
-      pockets(sim, 'light_pickaxe', 'poster');
+      pockets(sim, 'reinforced_pickaxe', 'poster');
       sim.state.energy = 100;
     },
     steps: [
@@ -209,7 +209,7 @@ export const BASICS: readonly Lesson[] = [
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 42, 22, 13);
-      pockets(sim, 'plastic_key_purple', 'light_cutters');
+      pockets(sim, 'plastic_key_purple', 'reinforced_cutters');
       // The cutters in hand from the start (the key opens its door from the pockets): at the
       // fence, the Cut button is there as soon as the player faces it.
       sim.state.items.hand = 1;

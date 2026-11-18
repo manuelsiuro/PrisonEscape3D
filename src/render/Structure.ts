@@ -173,7 +173,7 @@ export class Structure {
     brickTex.repeat.set(1, ROOF_Y - WALL_H);
     brickTex.needsUpdate = true;
     const side = (this.mats.roofSide = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.9 }));
-    // Over reinforced concrete (Shankton's shell), the slab's edge is concrete too.
+    // Over reinforced concrete (Gravel Point's shell), the slab's edge is concrete too.
     const concreteTex = TEX.reinforced().clone();
     concreteTex.repeat.set(1, ROOF_Y - WALL_H);
     concreteTex.needsUpdate = true;

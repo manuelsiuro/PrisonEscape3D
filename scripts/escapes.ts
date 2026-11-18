@@ -1,7 +1,7 @@
 /**
  * The escape bots (escapetest runs them; dailytest under the Daily's twists).
  *
- * The four Center Perks escapes (GDD §12), each won by a bot from day 1 through the real
+ * The four Maple Grove escapes (GDD §12), each won by a bot from day 1 through the real
  * simulation, every guard on duty, with ordinary commands. Each bot keeps the routine like a
  * model prisoner with its escape kit hidden in the desk's compartment (the recipe graph and
  * the economy tests prove the kit can be had), then goes:
@@ -10,19 +10,19 @@
  * - tunnel: Lights Out, the dummy in bed, under the desk and north beneath the wall and the
  *   fence, braced every third tile, dug up onto the road;
  * - rooftop: Lights Out, the dummy in bed, the cell's grate unscrewed (a fake cover behind),
- *   the vents to the ladder, the roof's edge, a grapnel over the fence and a sheet rope down;
+ *   the vents to the ladder, the roof's edge, a grapnel over the fence and knotted sheets down;
  * - takeover: Strength and Speed trained to 90, plated armor and nunchucks, two followers;
  *   one blow at a guard and every guard comes; all five out cold opens the gates.
- * Stalag Flucht and Shankton follow the same four routes on their own maps (`PLANS`); San
- * Pancho has its own three: the deep tunnel, the supply road's gate on cloned keys, the takeover.
+ * Camp Frostberg and Gravel Point follow the same four routes on their own maps (`PLANS`); San
+ * Sierra Seca has its own three: the deep tunnel, the supply road's gate on cloned keys, the takeover.
  * The snapshot pins each run: when it got out, how, the heat's peak, and the tally.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { IRONGATE } from '../src/content/prisons/irongate';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
-import { SHANKTON } from '../src/content/prisons/shankton';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { GULL_ROCK } from '../src/content/prisons/gull-rock';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
+import { GRAVEL_POINT } from '../src/content/prisons/gravel-point';
 import { SIX_HUNTER } from '../src/content/prisons/six-hunter';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { placesOf } from '../src/sim/ai/places';
 import { command, dirFromVector, EXT, OP, SLOT, TALK, tossArgs } from '../src/sim/command';
@@ -120,23 +120,23 @@ export interface Plan {
   generator?: [number, number];
   generatorFace?: number;
   fence?: [number, number, number];
-  /** A chain-link fence inside the electric one (Shankton's double perimeter), cut first: where to stand and which way. */
+  /** A chain-link fence inside the electric one (Gravel Point's double perimeter), cut first: where to stand and which way. */
   inner?: [number, number, number];
-  /** Detector arches on the way (Shankton): a contraband pouch in the kit. */
+  /** Detector arches on the way (Gravel Point): a contraband pouch in the kit. */
   pouch?: boolean;
-  /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug; what digs it (default the sturdy shovel). */
+  /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug; what digs it (default the heavy-duty shovel). */
   desk?: [number, number];
   shovel?: string;
   toilet?: [number, number];
   dig?: Array<[number, number, number]>;
-  /** Raft (Irongate; 2.36 the Six Hunter, on its one generator: `generator`): where to stand at GEN-2 and which way, the dock fence to cut from and which way, the pier's end and the sea's way; the walkway guard to let go by first (its night round's west end). */
+  /** Raft (Gull Rock; 2.36 the Six Hunter, on its one generator: `generator`): where to stand at GEN-2 and which way, the dock fence to cut from and which way, the pier's end and the sea's way; the walkway guard to let go by first (its night round's west end). */
   power2?: [number, number, number];
   dock?: [number, number, number];
   pier?: [number, number, number];
   walkwayGuard?: number;
   /** Raft (the Six Hunter): no guard up and about within this many tiles of the bank's fence before the power goes off (a Hunter walking the bank would see it cut). */
   clearBank?: number;
-  /** Helicopter (Irongate): the north roof's edge over the yard and the way across, the edge over the helipad court and the way down, the tile beside the pad (west of it). */
+  /** Helicopter (Gull Rock): the north roof's edge over the yard and the way across, the edge over the helipad court and the way down, the tile beside the pad (west of it). */
   chasm?: [number, number, number];
   court?: [number, number, number];
   pad?: [number, number];
@@ -144,24 +144,24 @@ export interface Plan {
   grate?: [number, number];
   ladder?: [number, number];
   edge?: [number, number, number];
-  /** Where the grapnel lands on a roof beyond the fence (Shankton's gatehouse): its far edge, and the way down the sheet rope. */
+  /** Where the grapnel lands on a roof beyond the fence (Gravel Point's gatehouse): its far edge, and the way down the knotted sheets. */
   rope?: [number, number, number];
   /** Takeover: where to wait for the first guard (out of the snipers' range), a tile outside the open gates. */
   rally?: [number, number];
-  /** Takeover: the first blow by hand, the chocolate only once it has raised the alarm (a guard knocked out unseen calls nobody in: San Pancho's lawless interior). */
+  /** Takeover: the first blow by hand, the chocolate only once it has raised the alarm (a guard knocked out unseen calls nobody in: Sierra Seca's lawless interior). */
   alarmFirst?: boolean;
   /** Takeover and gate: a tile outside the open gates (on the road). */
   gates: [number, number];
   /** Strength and Speed trained to (default 90, GDD §12: 90+), and whether to recruit the two strongest inmates. */
   trained?: number;
   strongest?: boolean;
-  /** Molten chocolate in the pockets (GDD §10.1: thrown, out cold at once), for a guard force too big to beat by hand. */
+  /** Scalding cocoa in the pockets (GDD §10.1: thrown, out cold at once), for a guard force too big to beat by hand. */
   chocolate?: number;
-  /** Takeover: the hour (game minutes) to go to the rally point at, the routine kept till then (Irongate: after roll call, not in the middle of every guard). */
+  /** Takeover: the hour (game minutes) to go to the rally point at, the routine kept till then (Gull Rock: after roll call, not in the middle of every guard). */
   startAt?: number;
-  /** Takeover: the chocolate kept for the riot guards (Irongate's armored four), the rest beaten by hand; and every chaser beaten before walking out (a riot guard catches a player who runs). */
+  /** Takeover: the chocolate kept for the riot guards (Gull Rock's armored four), the rest beaten by hand; and every chaser beaten before walking out (a riot guard catches a player who runs). */
   riotCups?: boolean;
-  /** Takeover: the rally point held (a chokepoint), the guards let come to it one doorway at a time instead of gone after (Irongate since P33: chased out into the yard, three at once are too many). */
+  /** Takeover: the rally point held (a chokepoint), the guards let come to it one doorway at a time instead of gone after (Gull Rock since P33: chased out into the yard, three at once are too many). */
   hold?: boolean;
   /** Stowaway (P18): what the delivery's vehicle takes (keys and a uniform from the desk), the tile to wait at before slipping to the tail. */
   stowKit?: string[];
@@ -178,7 +178,7 @@ export interface Plan {
 
 export const PLANS: Plan[] = [
   {
-    def: CENTER_PERKS,
+    def: MAPLE_GROVE,
     seed: 11,
     // (2.27: once the warden's walk along the line is over. In the middle of it the fight is lost: 1 seed in 24, against 24 of 24 from here.)
     startAt: 8 * 60 + 50,
@@ -199,13 +199,13 @@ export const PLANS: Plan[] = [
     edge: [6, 39, DIR.WEST],
     gates: [30, 62],
   },
-  // Stalag Flucht (GDD §4.2): the generator is in the guards' compound past the inner gate,
+  // Camp Frostberg (GDD §4.2): the generator is in the guards' compound past the inner gate,
   // the whole wire is live; the tunnel bends round the boulders north of cabin A; the cabin's
   // roof is a grapnel's throw from the north wire.
   {
-    def: STALAG_FLUCHT,
+    def: FROSTBERG,
     seed: 21,
-    name: (r) => `${STALAG_FLUCHT.id}: ${r}`,
+    name: (r) => `${FROSTBERG.id}: ${r}`,
     routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'glider', 'paperwork'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
     glide: [58, 24, DIR.EAST],
@@ -232,16 +232,16 @@ export const PLANS: Plan[] = [
     strongest: true,
     gates: [20, 62],
   },
-  // Shankton (GDD §4.3): no wall of the shell can be chipped. The generator room's own door
+  // Gravel Point (GDD §4.3): no wall of the shell can be chipped. The generator room's own door
   // leads out to the gravel, a chain-link fence and the live one beyond (the pouch gets the
   // kit through the corridors' detectors); the tunnel runs under the shell and both fences;
   // the vent maze reaches the generator room's ladder, the grapnel swings across onto the
-  // gatehouse roof astride both fences, a sheet rope down from there. Eight guards are too
-  // many to beat by hand: four cups of molten chocolate thrown, the rest with nunchucks.
+  // gatehouse roof astride both fences, knotted sheets down from there. Eight guards are too
+  // many to beat by hand: four cups of scalding cocoa thrown, the rest with nunchucks.
   {
-    def: SHANKTON,
+    def: GRAVEL_POINT,
     seed: 31,
-    name: (r) => `${SHANKTON.id}: ${r}`,
+    name: (r) => `${GRAVEL_POINT.id}: ${r}`,
     routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'bluff', 'glider', 'paperwork'],
     paperKit: ['pouch'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
@@ -264,7 +264,7 @@ export const PLANS: Plan[] = [
     chocolate: 4,
     gates: [51, 63],
   },
-  // San Pancho (GDD §4.4): no fence to cut, no roof to swing from. The deep tunnel runs north
+  // Sierra Seca (GDD §4.4): no fence to cut, no roof to swing from. The deep tunnel runs north
   // from the desk under the compound wall, the walkway, the inner wall, the minefield and the
   // outer wall, to come up on the road; the supply road is walked at night in a guard's
   // uniform on cloned keys (yellow out of the cell and the wing, red through the control room
@@ -272,9 +272,9 @@ export const PLANS: Plan[] = [
   // out of the towers' reach, the first blow by hand where the guard sees it (a guard
   // knocked out unseen in the lawless compound calls nobody in).
   {
-    def: SAN_PANCHO,
+    def: SIERRA_SECA,
     seed: 41,
-    name: (r) => `${SAN_PANCHO.id}: ${r}`,
+    name: (r) => `${SIERRA_SECA.id}: ${r}`,
     routes: ['tunnel', 'gate', 'takeover', 'stowaway', 'paperwork'],
     stowKit: ['plastic_key_red', 'guard_outfit'],
     keys: ['plastic_key_yellow', 'plastic_key_red', 'plastic_key_green'],
@@ -288,20 +288,20 @@ export const PLANS: Plan[] = [
     chocolate: 4,
     gates: [31, 62],
   },
-  // HMP Irongate (GDD §4.5): no tunnel (the sea floods it), no fence onto a road. The raft: a
+  // HMP Gull Rock (GDD §4.5): no tunnel (the sea floods it), no fence onto a road. The raft: a
   // guard's uniform and cloned keys (yellow out of the cell, purple into GEN-2, red through
   // the sally port and the dock's door), a pouch through the arches; GEN-2 off, the dock's
   // dead fence cut, the raft launched off the pier's end. The helicopter: the vents to GEN-1's
-  // ladder, a grapnel across the yard onto the south roofs, a sheet rope down into the court,
-  // the two riot guards put down with molten chocolate, aboard in uniform. The takeover in the
+  // ladder, a grapnel across the yard onto the south roofs, knotted sheets down into the court,
+  // the two riot guards put down with scalding cocoa, aboard in uniform. The takeover in the
   // cell block's vestibule, a chokepoint held till the prison falls (P33: the canteen's guard
   // across the yard now, three at once would come; the fifth cup on whoever is nearest), once roll call is over (ten guards, four in riot
   // gear: chocolate for the riot guards, every one put down), out by the sally port, the ferry gate and the
   // lowered drawbridge.
   {
-    def: IRONGATE,
+    def: GULL_ROCK,
     seed: 52,
-    name: (r) => `${IRONGATE.id}: ${r}`,
+    name: (r) => `${GULL_ROCK.id}: ${r}`,
     routes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff', 'paperwork'],
     paperKit: ['pouch'],
     bluffKit: ['plastic_key_red', 'guard_outfit', 'fake_id', 'pouch'],
@@ -376,7 +376,7 @@ export const PLANS: Plan[] = [
 function cutout(p: Plan) {
   const bot = new Bot(p.def, p.seed);
   const pouch = p.pouch ? ['pouch'] : [];
-  bot.stash(...p.keys, ...pouch, 'sturdy_cutters', 'bed_dummy', 'guard_outfit');
+  bot.stash(...p.keys, ...pouch, 'heavy_cutters', 'bed_dummy', 'guard_outfit');
   nightfall(bot, p.keys.length + pouch.length + 3);
   // Into the guard's uniform.
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
@@ -395,7 +395,7 @@ function cutout(p: Plan) {
     const mesh = tileOf(ix + (iface === DIR.EAST ? 1 : 0), iz + (iface === DIR.SOUTH ? 1 : 0));
     check(bot.sim.world.ground.kind[mesh] === TILE.FENCE, 'facing the chain-link');
     check(
-      bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[mesh] === TILE.FENCE_CUT),
+      bot.strikeUntil('heavy_cutters', () => bot.sim.world.ground.kind[mesh] === TILE.FENCE_CUT),
       'the chain-link cut',
     );
   }
@@ -405,7 +405,7 @@ function cutout(p: Plan) {
   bot.face(face);
   const wire = tileOf(fx + (face === DIR.EAST ? 1 : 0), fz + (face === DIR.SOUTH ? 1 : 0));
   check(bot.sim.world.ground.kind[wire] === TILE.ELECTRIC, 'facing the electric fence');
-  const cut = bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT);
+  const cut = bot.strikeUntil('heavy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT);
   check(cut && !bot.sim.power === true, 'cut through before the power came back');
   console.log(`  cutout: the fence cut ${((bot.st.step - cutAt) / 20).toFixed(1)} s after the power went off`);
   bot.walkTo(tileOf(fx + (face === DIR.EAST ? 2 : 0), fz + (face === DIR.SOUTH ? 2 : 0)), 200);
@@ -419,7 +419,7 @@ function cutout(p: Plan) {
 const BACK: Record<number, number> = { [DIR.NORTH]: DIR.SOUTH, [DIR.SOUTH]: DIR.NORTH, [DIR.EAST]: DIR.WEST, [DIR.WEST]: DIR.EAST };
 function tunnel(p: Plan) {
   const bot = new Bot(p.def, p.seed + 1);
-  const shovel = p.shovel ?? 'sturdy_shovel';
+  const shovel = p.shovel ?? 'heavy_shovel';
   bot.stash(shovel, 'timber_brace', 'timber_brace', 'timber_brace', 'bed_dummy');
   nightfall(bot, 5);
   const places = placesOf(bot.sim.world);
@@ -455,8 +455,8 @@ function tunnel(p: Plan) {
       shovel,
       () => bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL || bot.sim.events.some((e) => e.type === 'caveIn'),
     );
-    check(ok && bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL, `tile ${p.def === CENTER_PERKS ? z : `${x},${z}`} dug`);
-    check(bot.walkTo(tileOf(x, z), 400), `along to ${p.def === CENTER_PERKS ? z : `${x},${z}`}`);
+    check(ok && bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL, `tile ${p.def === MAPLE_GROVE ? z : `${x},${z}`} dug`);
+    check(bot.walkTo(tileOf(x, z), 400), `along to ${p.def === MAPLE_GROVE ? z : `${x},${z}`}`);
   });
   // Facing back along it (the way the last tile was dug from), up through the road.
   bot.face(BACK[p.dig![p.dig!.length - 1][2]]);
@@ -473,7 +473,7 @@ function tunnel(p: Plan) {
 function rooftop(p: Plan) {
   const bot = new Bot(p.def, p.seed + 2);
   if (!p.grate) return generatorRoof(p, bot);
-  bot.stash('screwdriver', 'fake_vent', 'grapnel', 'sheet_rope', 'bed_dummy');
+  bot.stash('screwdriver', 'dummy_vent', 'grapnel', 'knotted_sheets', 'bed_dummy');
   nightfall(bot, 5);
   const st = bot.st;
   // The cell's grate, from the floor under it.
@@ -486,7 +486,7 @@ function rooftop(p: Plan) {
   bot.act();
   check(st.layer === LAYER.VENTS, 'up into the vents');
   // The fake cover over the hole behind.
-  bot.hold('fake_vent');
+  bot.hold('dummy_vent');
   bot.use();
   check(bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_FAKE, 'a fake cover over the grate');
   // Crawl to the ladder and up.
@@ -505,12 +505,12 @@ function overTheWire(p: Plan, bot: Bot) {
   bot.face(edge[2]);
   bot.hold('grapnel');
   bot.use();
-  // Swung across onto a roof beyond the fence: to its far edge, and down the sheet rope.
+  // Swung across onto a roof beyond the fence: to its far edge, and down the knotted sheets.
   if (p.rope) {
     check(bot.st.layer === LAYER.ROOF, 'across onto the gatehouse roof');
     check(bot.walkTo(tileOf(p.rope[0], p.rope[1]), 400), 'at the gatehouse roof’s far edge');
     bot.face(p.rope[2]);
-    bot.hold('sheet_rope');
+    bot.hold('knotted_sheets');
     bot.use();
   }
   report(p.name('rooftop grapnel'), bot);
@@ -519,12 +519,12 @@ function overTheWire(p: Plan, bot: Bot) {
 }
 
 /**
- * The roof where the whole wire is live (Stalag Flucht): Lights Out, the dummy in bed, a
+ * The roof where the whole wire is live (Camp Frostberg): Lights Out, the dummy in bed, a
  * guard's uniform and keys to the generator hut; the power off, up its ladder, and over the
  * dead wire on the grapnel before it comes back.
  */
 function generatorRoof(p: Plan, bot: Bot) {
-  bot.stash(...p.keys, 'grapnel', 'sheet_rope', 'bed_dummy', 'guard_outfit');
+  bot.stash(...p.keys, 'grapnel', 'knotted_sheets', 'bed_dummy', 'guard_outfit');
   nightfall(bot, p.keys.length + 4);
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
   check(bot.walkTo(tileOf(...p.generator!)), 'at the generator');
@@ -549,8 +549,8 @@ function takeover(p: Plan) {
   st.str = p.trained ?? 90;
   st.spd = p.trained ?? 90;
   st.health = maxHealth(st.str);
-  const cups = Array<string>(p.chocolate ?? 0).fill('molten_chocolate');
-  // Irongate's takeover also carries a pouch through the arches (and takes its kit in two goes: too much for the pockets at once).
+  const cups = Array<string>(p.chocolate ?? 0).fill('scalding_cocoa');
+  // Gull Rock's takeover also carries a pouch through the arches (and takes its kit in two goes: too much for the pockets at once).
   const pouch = p.riotCups && p.pouch ? ['pouch'] : [];
   bot.stash('nunchucks', 'plated_outfit', ...cups, ...pouch);
   // Two friends: the first two inmates, or the two strongest (GDD §12: allies that can fight).
@@ -603,7 +603,7 @@ function takeover(p: Plan) {
     itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'),
     'armed and armored',
   );
-  // Nothing in hand on the way (a cup of molten chocolate is contraband in plain sight): an empty slot, or the pouch.
+  // Nothing in hand on the way (a cup of scalding cocoa is contraband in plain sight): an empty slot, or the pouch.
   if (cups.length) bot.op(OP.SELECT, pouch.length ? bot.slotOf('pouch') : st.items.inv.slice(0, 6).indexOf(0));
   // The routine kept until the fight's hour, where the plan says.
   if (p.startAt) check(bot.routineUntil(1, p.startAt), 'the routine kept till the fight');
@@ -659,21 +659,21 @@ function takeover(p: Plan) {
     }
     bot.pilot.stop();
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
-    // A cup of molten chocolate left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
+    // A cup of scalding cocoa left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
     // (With riot guards about, the cups kept for them; one more than they need goes on whoever is nearest.)
     const spare =
       p.riotCups &&
-      st.items.inv.filter((it) => it && itemOf(it) === n('molten_chocolate')).length >
+      st.items.inv.filter((it) => it && itemOf(it) === n('scalding_cocoa')).length >
         st.guards.filter((q, k) => awake(q) && p.def.guards[k].riot).length;
     if (
       cups.length &&
       (!p.alarmFirst || st.lockdown) &&
       (!p.riotCups || p.def.guards[g].riot || spare) &&
-      bot.slotOf('molten_chocolate') >= 0 &&
+      bot.slotOf('scalding_cocoa') >= 0 &&
       d < 2.8 * UNIT &&
       st.lock === inmates + g
     ) {
-      bot.hold('molten_chocolate');
+      bot.hold('scalding_cocoa');
       bot.op(OP.USE, 1);
       continue;
     }
@@ -691,7 +691,7 @@ function takeover(p: Plan) {
   check(bot.done && ESCAPES[st.via] === 'takeover', 'escaped in the takeover');
 }
 
-// ------------------------------------------------------------------ 5. the gate (San Pancho's supply road)
+// ------------------------------------------------------------------ 5. the gate (Sierra Seca's supply road)
 /**
  * Lights Out, the dummy in bed, a guard's uniform; the cloned keys open every door from the
  * cell to the road: out of the wing, across the plaza, through the control room, over the
@@ -710,7 +710,7 @@ function gate(p: Plan, seed: number) {
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
-// ------------------------------------------------------------------ 6. the raft (Irongate)
+// ------------------------------------------------------------------ 6. the raft (Gull Rock)
 /**
  * An escape kit too big for the pockets in one go: the uniform and the dummy first (worn and
  * put to bed), then the rest. The evening roll call kept, Lights Out, locked in.
@@ -757,9 +757,9 @@ function nightfallBig(bot: Bot, kit: string[]) {
  */
 function raft(p: Plan, seed: number) {
   const bot = new Bot(p.def, seed);
-  nightfallBig(bot, [...p.keys, ...(p.pouch ? ['pouch'] : []), 'sturdy_cutters', 'raft']);
+  nightfallBig(bot, [...p.keys, ...(p.pouch ? ['pouch'] : []), 'heavy_cutters', 'raft']);
   bot.hold(p.keys[0]);
-  // (Irongate: GEN-2, which runs the dock's fence; the Six Hunter: its one generator.)
+  // (Gull Rock: GEN-2, which runs the dock's fence; the Six Hunter: its one generator.)
   const two = !!p.power2;
   const [gx, gz, gface] = p.power2 ?? [...p.generator!, p.generatorFace!];
   check(bot.walkTo(tileOf(gx, gz), 3000), two ? 'at GEN-2' : 'at the generator');
@@ -794,7 +794,7 @@ function raft(p: Plan, seed: number) {
   );
   check(bot.sim.world.ground.kind[wire] === TILE.ELECTRIC, 'facing the electric fence');
   check(
-    bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && off(),
+    bot.strikeUntil('heavy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && off(),
     two ? 'cut through before GEN-2 came back' : 'cut through before the power came back',
   );
   console.log(
@@ -810,15 +810,15 @@ function raft(p: Plan, seed: number) {
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
-// ------------------------------------------------------------------ 7. the helicopter (Irongate)
+// ------------------------------------------------------------------ 7. the helicopter (Gull Rock)
 /**
  * Lights Out, the dummy in bed, a guard's uniform: the cell's grate, the vents to GEN-1's
- * ladder, the north roof; a grapnel across the yard onto the south roofs, a sheet rope down
- * into the helipad court; both riot guards put down (molten chocolate), aboard.
+ * ladder, the north roof; a grapnel across the yard onto the south roofs, knotted sheets down
+ * into the helipad court; both riot guards put down (scalding cocoa), aboard.
  */
 function helicopter(p: Plan, seed: number) {
   const bot = new Bot(p.def, seed);
-  nightfallBig(bot, ['screwdriver', 'fake_vent', 'grapnel', 'sheet_rope', 'molten_chocolate', 'molten_chocolate']);
+  nightfallBig(bot, ['screwdriver', 'dummy_vent', 'grapnel', 'knotted_sheets', 'scalding_cocoa', 'scalding_cocoa']);
   const st = bot.st;
   const grate = tileOf(...p.grate!);
   check(bot.walkTo(grate), 'under the grate');
@@ -828,7 +828,7 @@ function helicopter(p: Plan, seed: number) {
   );
   bot.act();
   check(st.layer === LAYER.VENTS, 'up into the vents');
-  bot.hold('fake_vent');
+  bot.hold('dummy_vent');
   bot.use();
   check(bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_FAKE, 'a fake cover over the grate');
   const [lx, lz] = p.ladder!;
@@ -841,14 +841,14 @@ function helicopter(p: Plan, seed: number) {
   bot.face(cface);
   bot.hold('grapnel');
   bot.use();
-  check(st.layer === LAYER.ROOF && bot.slotOf('sheet_rope') >= 0, 'across the yard onto the south roofs, the rope kept');
+  check(st.layer === LAYER.ROOF && bot.slotOf('knotted_sheets') >= 0, 'across the yard onto the south roofs, the rope kept');
   const [kx, kz, kface] = p.court!;
   check(bot.walkTo(tileOf(kx, kz), 800), 'at the edge over the helipad court');
   bot.face(kface);
-  bot.hold('sheet_rope');
+  bot.hold('knotted_sheets');
   bot.use();
   check(st.layer === LAYER.GROUND && bot.sim.playerZone === 'helipad', 'down the rope into the court');
-  // The two riot guards: a cup of molten chocolate each, thrown from where the player stands.
+  // The two riot guards: a cup of scalding cocoa each, thrown from where the player stands.
   const inmates = st.inmates.length;
   const helipad = p.def.guards.map((d, k) => (d.helipad ? k : -1)).filter((k) => k >= 0);
   for (const k of helipad) {
@@ -862,7 +862,7 @@ function helicopter(p: Plan, seed: number) {
       }
       bot.pilot.stop();
       if (st.lock !== inmates + k) bot.op(OP.LOCK, 2 + inmates + k);
-      bot.hold('molten_chocolate');
+      bot.hold('scalding_cocoa');
       bot.op(OP.USE, 1);
     }
     check(g.ko > 0, `helipad guard ${k} out cold`);
@@ -880,7 +880,7 @@ function helicopter(p: Plan, seed: number) {
  * Delivery day forced on day 1: the morning kept, then (with the kit from the desk: keys and a
  * uniform where the vehicle stands behind staff doors, a pouch through the arches) to the
  * vehicle's tail; in as soon as no guard is looking, and away with it at 14:31 on a day its
- * search is a quick look. Irongate's helicopter, on a day its search is thorough: out again at
+ * search is a quick look. Gull Rock's helicopter, on a day its search is thorough: out again at
  * 14:21, a firecracker thrown across the court, back in; the supervisor still looking where it
  * went off at 14:30, nobody searches.
  */
@@ -991,7 +991,7 @@ function glider(p: Plan, seed: number) {
   bot.st.calendar = [[1, -1, -1, wind, force]];
   const st = bot.st;
   if (p.grate) {
-    bot.stash('screwdriver', 'fake_vent', 'glider', 'bed_dummy');
+    bot.stash('screwdriver', 'dummy_vent', 'glider', 'bed_dummy');
     nightfall(bot, 4);
     const grate = tileOf(...p.grate);
     check(bot.walkTo(grate), 'under the grate');
@@ -1001,7 +1001,7 @@ function glider(p: Plan, seed: number) {
     );
     bot.act();
     check(st.layer === LAYER.VENTS, 'up into the vents');
-    bot.hold('fake_vent');
+    bot.hold('dummy_vent');
     bot.use();
     const [lx, lz] = p.ladder!;
     check(bot.walkTo(tileOf(lx, lz - 1), 3000), 'along the ducts to the ladder');
@@ -1114,7 +1114,7 @@ export function runRoute(p: Plan, route: Route): Bot | null {
 export function runAll() {
   for (const p of PLANS) {
     if (process.env.ONLY && p.def.id !== process.env.ONLY) continue;
-    if (p.def !== CENTER_PERKS) console.log(`== ${p.def.id}`);
+    if (p.def !== MAPLE_GROVE) console.log(`== ${p.def.id}`);
     for (const r of p.routes ?? ['cutout', 'tunnel', 'rooftop', 'takeover']) runRoute(p, r);
   }
 }

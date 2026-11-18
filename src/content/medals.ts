@@ -12,7 +12,7 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
   // (P24: the bluff wants the phone, its blank card and a guard's uniform; the glider Intellect 80 and the right wind, a day in a few.)
   // (P36: paperwork wants a blank form off the strict guard, Intellect 80 to forge it, and a quiet night before the morning out.)
   // (P39: parole is slow on purpose: applied for from day 3, the hearing a week on (the lawyer's a day sooner), out the morning after a grant.)
-  'center-perks': {
+  'maple-grove': {
     fence: [3, 5, 8],
     tunnel: [2, 4, 7],
     roof: [3, 5, 8],
@@ -23,7 +23,7 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
     paperwork: [6, 9, 13],
     parole: [12, 16, 21],
   },
-  'stalag-flucht': {
+  frostberg: {
     fence: [3, 6, 9],
     tunnel: [3, 5, 8],
     roof: [4, 6, 9],
@@ -33,7 +33,7 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
     paperwork: [7, 11, 15],
     parole: [12, 16, 21],
   },
-  shankton: {
+  'gravel-point': {
     fence: [4, 7, 10],
     tunnel: [4, 6, 10],
     roof: [4, 7, 10],
@@ -43,7 +43,7 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
     paperwork: [7, 10, 14],
     parole: [13, 17, 22],
   },
-  'san-pancho': {
+  'sierra-seca': {
     tunnel: [5, 8, 12],
     gate: [5, 8, 12],
     takeover: [7, 10, 14],
@@ -51,7 +51,7 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
     paperwork: [8, 11, 15],
     parole: [13, 17, 22],
   },
-  irongate: {
+  'gull-rock': {
     raft: [6, 9, 13],
     helicopter: [7, 10, 14],
     takeover: [8, 12, 16],
@@ -60,7 +60,7 @@ export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number,
     paperwork: [9, 13, 17],
     parole: [14, 18, 23],
   },
-  // 2.36: the Six Hunter (the hounds from day 2, the river, the granite: a step slower than Irongate's).
+  // 2.36: the Six Hunter (the hounds from day 2, the river, the granite: a step slower than Gull Rock's).
   'six-hunter': {
     raft: [7, 10, 14],
     tunnel: [6, 9, 13],

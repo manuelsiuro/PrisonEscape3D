@@ -6,7 +6,7 @@
  *   through, it comes round 30 s later; no heat;
  * - the same blow in a guard's sight: a lockdown;
  * - a wanted player is beaten down by a guard's baton (several blows, not one touch);
- * - the key-thief bot: molten chocolate knocks a guard out silently, its key is kept, the
+ * - the key-thief bot: scalding cocoa knocks a guard out silently, its key is kept, the
  *   guard wakes to find it gone: lockdown;
  * - the key-cloner bot: the key pressed into putty and put back in time: no lockdown; the
  *   mold and molten plastic make a plastic key that opens its doors and wears out;
@@ -16,7 +16,7 @@
  * - a save restored mid-fight plays on exactly the same.
  */
 import { itemDef, itemNumber } from '../src/content/items';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { RECIPES } from '../src/content/recipes';
 import { canSee } from '../src/sim/ai/sight';
 import { command, OP, SLOT } from '../src/sim/command';
@@ -97,7 +97,7 @@ function freeze(m: Inmate, x: number, z: number, facing = S) {
  * in its cell, routines attended (the bot is busy fighting).
  */
 function arena(seed = 3) {
-  const sim = new Sim(CENTER_PERKS, seed);
+  const sim = new Sim(MAPLE_GROVE, seed);
   const st = sim.state;
   st.guards.forEach((g, k) => plant(g, 40 + k * 2, 40, N));
   st.inmates.forEach((m) => freeze(m, sim.world.def.cells[m.cell - 1][0] + 1, sim.world.def.cells[m.cell - 1][1] + 1));
@@ -236,12 +236,12 @@ function arena(seed = 3) {
   const key = n(`key_${sim.world.def.guards[k].key}`);
   put(st.player, 30, 30);
   plant(g, 32, 30, E);
-  give('molten_chocolate', SLOT.WEAPON);
+  give('scalding_cocoa', SLOT.WEAPON);
   for (const m of st.inmates) freeze(m, 50, 50);
   op(OP.LOCK);
   check(st.lock === id, 'locked on to the guard');
   op(OP.USE, 1);
-  check(g.ko > 0 && !st.items.inv[SLOT.WEAPON], 'the molten chocolate knocks the guard out at once');
+  check(g.ko > 0 && !st.items.inv[SLOT.WEAPON], 'the scalding cocoa knocks the guard out at once');
   check(st.heat === 0, 'its back was turned: nobody saw');
   // Over to it, through its pockets: the key.
   for (let s = 0; s < 6; s++) step(command(E));
@@ -279,13 +279,13 @@ function arena(seed = 3) {
   put(st.player, 30, 30);
   plant(g, 32, 30, E);
   for (const m of st.inmates) freeze(m, 50, 50);
-  give('molten_chocolate', 0);
+  give('scalding_cocoa', 0);
   give('putty', 1);
   give('molten_plastic', 2);
   st.items.hand = 0;
   op(OP.LOCK);
   op(OP.USE, 1);
-  check(g.ko > 0, 'a cup of molten chocolate thrown from the hand works too');
+  check(g.ko > 0, 'a cup of scalding cocoa thrown from the hand works too');
   for (let s = 0; s < 6; s++) step(command(E));
   op(OP.INTERACT);
   const pocket = pocketOf(sim.world, id);
@@ -418,7 +418,7 @@ function arena(seed = 3) {
   op(OP.USE, 1);
   for (let k = 0; k < 15; k++) step();
   const snap = sim.snapshot();
-  const twin = new Sim(CENTER_PERKS, 1);
+  const twin = new Sim(MAPLE_GROVE, 1);
   twin.restore(snap);
   check(twin.hash() === sim.hash(), 'restored mid-fight: the same state');
   for (let k = 0; k < 200; k++) {
@@ -447,7 +447,7 @@ function arena(seed = 3) {
   for (let round = 0; round < 2; round++) {
     put(st.player, 30, 30);
     plant(g, 31, 30, E);
-    give('molten_chocolate', SLOT.WEAPON);
+    give('scalding_cocoa', SLOT.WEAPON);
     op(OP.LOCK, 2 + id);
     op(OP.USE, 1);
     op(OP.INTERACT);
@@ -473,7 +473,7 @@ function arena(seed = 3) {
   for (const m of st.inmates) freeze(m, 50, 50);
   put(st.player, 30, 30);
   plant(g, 31, 30, E);
-  give('molten_chocolate', SLOT.WEAPON);
+  give('scalding_cocoa', SLOT.WEAPON);
   op(OP.LOCK, 2 + id);
   op(OP.USE, 1);
   op(OP.INTERACT);
@@ -513,7 +513,7 @@ function arena(seed = 3) {
 
 // The night guard knocked out just before the bed check still does it when it comes round.
 {
-  const sim = new Sim(CENTER_PERKS, 15);
+  const sim = new Sim(MAPLE_GROVE, 15);
   const st = sim.state;
   while (clockAt(st.step).minuteOfDay !== 29 || clockAt(st.step).day < 2) {
     st.attended = true;
@@ -544,6 +544,6 @@ function arena(seed = 3) {
 
 // Every recipe is still craftable (weapons made in P2 are now used).
 check(
-  RECIPES.some((r) => r.result === 'molten_chocolate'),
-  'molten chocolate can be crafted',
+  RECIPES.some((r) => r.result === 'scalding_cocoa'),
+  'scalding cocoa can be crafted',
 );

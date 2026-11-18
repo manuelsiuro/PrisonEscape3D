@@ -20,12 +20,12 @@ import {
   type DayEvent,
   type Weather,
 } from '../src/content/days';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAY } from '../src/sim/systems/inmates';
 import { PRISONS } from '../src/content/prisons';
-import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
-import { IRONGATE } from '../src/content/prisons/irongate';
+import { SIERRA_SECA } from '../src/content/prisons/sierra-seca';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
+import { GULL_ROCK } from '../src/content/prisons/gull-rock';
 import { canSee } from '../src/sim/ai/sight';
 import { floorOf, placesOf } from '../src/sim/ai/places';
 import { command, OP, SLOT } from '../src/sim/command';
@@ -67,7 +67,7 @@ const hhmm = (dayMin: number) => {
 
 // ------------------------------------------------------------------ the plans
 {
-  const SALTS = [1, 2, 3, 4, 5, 6, 7, 8].map((k) => new Sim(CENTER_PERKS, k).state.salt);
+  const SALTS = [1, 2, 3, 4, 5, 6, 7, 8].map((k) => new Sim(MAPLE_GROVE, k).state.salt);
   let quietOne = true;
   let dealt = true;
   for (const p of PRISONS) {
@@ -127,18 +127,18 @@ const hhmm = (dayMin: number) => {
   check(dealt, 'every week deals each event card once');
   // Forcing: an exact day over every day; -1 keeps what's drawn.
   const salt = SALTS[0];
-  const forced = dayPlan('center-perks', salt, 3, [
+  const forced = dayPlan('maple-grove', salt, 3, [
     [0, E('feast'), W('rain')],
     [3, E('drill'), -1],
   ]);
   check(forced.event === 'drill' && forced.weather === 'rain', 'a forced day: the exact day wins, -1 keeps the rest');
   check(
-    dayPlan('center-perks', salt, 5, quietCalendar()).event === 'none' &&
-      dayPlan('center-perks', salt, 5, quietCalendar()).weather === 'clear',
+    dayPlan('maple-grove', salt, 5, quietCalendar()).event === 'none' &&
+      dayPlan('maple-grove', salt, 5, quietCalendar()).weather === 'clear',
     'the quiet calendar: nothing on',
   );
-  check(dayPlan('center-perks', salt, 1, [[1, E('movie'), W('fog')]]).event === 'movie', 'day 1 can be forced (bots, the Daily)');
-  check(dayPlan('center-perks', salt, 4, [], ['fogDays']).weather === 'fog', "the Daily's fog twist (dormant until P26)");
+  check(dayPlan('maple-grove', salt, 1, [[1, E('movie'), W('fog')]]).event === 'movie', 'day 1 can be forced (bots, the Daily)');
+  check(dayPlan('maple-grove', salt, 4, [], ['fogDays']).weather === 'fog', "the Daily's fog twist (dormant until P26)");
   // The day's clock: 08:00 to 08:00.
   check(
     prisonDay(0) === 1 && prisonDay(1440 * STEPS_PER_MINUTE - 1) === 1 && prisonDay(1440 * STEPS_PER_MINUTE) === 2,
@@ -149,8 +149,8 @@ const hhmm = (dayMin: number) => {
 
 // ------------------------------------------------------------------ helpers
 
-/** A model prisoner on Center Perks, every day forced; the events seen from the start. */
-function botFor(event: DayEvent, weather: Weather = 'clear', seed = 5, prison = CENTER_PERKS) {
+/** A model prisoner on Maple Grove, every day forced; the events seen from the start. */
+function botFor(event: DayEvent, weather: Weather = 'clear', seed = 5, prison = MAPLE_GROVE) {
   const bot = new Bot(prison, seed);
   bot.st.calendar = [
     [0, 0, 0],
@@ -252,7 +252,7 @@ function resumesSame(bot: Bot, steps: number): boolean {
     // The player just in front of it, holding a shiv.
     const gx = Math.floor(g.body.x / UNIT);
     const gz = Math.floor(g.body.z / UNIT);
-    st.items.inv[0] = slot(n('flimsy_cutters'));
+    st.items.inv[0] = slot(n('makeshift_cutters'));
     st.items.hand = 0;
     st.items.rev++;
     let best = 0;
@@ -486,15 +486,15 @@ function resumesSame(bot: Bot, steps: number): boolean {
   console.log(`storm: power cuts at ${cuts.map(hhmm).join(', ')}; ${offs} went off`);
   check(offs === cuts.length, "a storm's power cuts in the night, each when the plan says");
   check(today(s.bot.sim).day === 2 && planOf(s.bot.sim, 3).weather === 'clear', 'the storm passes with the day');
-  // A storm at Irongate cuts both halves (both generators).
-  const ig = botFor('none', 'storm', 4, IRONGATE);
+  // A storm at Gull Rock cuts both halves (both generators).
+  const ig = botFor('none', 'storm', 4, GULL_ROCK);
   ig.into(ig.plan().outages[0] + 1);
   const halves = ig.seen
     .filter((e) => e.type === 'power' && !e.on && e.by === 'storm')
     .map((e) => (e as { gen?: number }).gen)
     .sort()
     .join();
-  check(halves === '0,1', `Irongate: a storm's power cut takes both generators (${halves})`);
+  check(halves === '0,1', `Gull Rock: a storm's power cut takes both generators (${halves})`);
   // The sight in fog is the rule: an outdoor guard really sees the player 3 tiles ahead and not 5 (the cone is drawn sightOf long).
   const fog = botFor('none', 'fog');
   fog.until(2, 8 * 60 + 30);
@@ -519,7 +519,7 @@ function resumesSame(bot: Bot, steps: number): boolean {
 
 // ------------------------------------------------------------------ the heatwave
 {
-  const { bot, seen, until } = botFor('none', 'heatwave', 5, SAN_PANCHO);
+  const { bot, seen, until } = botFor('none', 'heatwave', 5, SIERRA_SECA);
   until(2, 15 * 60 + 5);
   const sim = bot.sim;
   const { open } = tiles(sim);
@@ -541,21 +541,21 @@ function resumesSame(bot: Bot, steps: number): boolean {
   for (let k = 0; k < 5; k++) bot.step(0);
   check(!bot.st.frozen && bot.st.cold === 0, 'a shower cools them at once');
   console.log(`heatwave: baked at ${bot.time.slice(-5)}; cooled under a shower`);
-  // Stalag Flucht's cold is as it was (never a heatwave there).
-  const cold = botFor('none', 'clear', 5, STALAG_FLUCHT);
+  // Camp Frostberg's cold is as it was (never a heatwave there).
+  const cold = botFor('none', 'clear', 5, FROSTBERG);
   cold.until(2, 12 * 60);
-  check(!cold.bot.st.frozen || !cold.seen.some((e) => e.type === 'cold' && e.hot), "Stalag Flucht's cold is the cold");
+  check(!cold.bot.st.frozen || !cold.seen.some((e) => e.type === 'cold' && e.hot), "Camp Frostberg's cold is the cold");
 }
 
 // ------------------------------------------------------------------ saves
 {
   // A save from before the day: today stays quiet whatever was drawn.
-  const sim = new Sim(CENTER_PERKS, 3);
+  const sim = new Sim(MAPLE_GROVE, 3);
   for (let k = 0; k < 1440 * STEPS_PER_MINUTE + 100; k++) sim.step(0);
   const snap = JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot;
   delete (snap.state as Partial<typeof snap.state>).calendar;
   delete (snap.state as Partial<typeof snap.state>).eventFlags;
-  const old = new Sim(CENTER_PERKS, 1);
+  const old = new Sim(MAPLE_GROVE, 1);
   old.restore(snap);
   check(
     old.state.calendar.length === 1 && old.state.calendar[0][0] === 2 && today(old).event === 'none' && today(old).weather === 'clear',
@@ -576,7 +576,7 @@ function resumesSame(bot: Bot, steps: number): boolean {
 
 // ------------------------------------------------------------------ the day's achievements
 {
-  const run = { prison: 'center-perks', feats: new Array(60).fill(0), days: [], str: 40, spd: 40, int: 40 };
+  const run = { prison: 'maple-grove', feats: new Array(60).fill(0), days: [], str: 40, spd: 40, int: 40 };
   const esc = (weather?: string) =>
     ACHIEVEMENTS.filter((a) => a.escape?.({ ...run, via: 'fence', day: 4, medal: null, weather })).map((a) => a.id);
   check(
@@ -628,14 +628,14 @@ function resumesSame(bot: Bot, steps: number): boolean {
     during.seen.some((e) => e.type === 'missed') && !during.seen.some((e) => e.type === 'today' && e.phase === 'commend'),
     'exercise missed while the inspectors are in: no commendation',
   );
-  // Irongate, GEN-1 already off: the storm still cuts GEN-2.
-  const ig = botFor('none', 'storm', 4, IRONGATE);
+  // Gull Rock, GEN-1 already off: the storm still cuts GEN-2.
+  const ig = botFor('none', 'storm', 4, GULL_ROCK);
   ig.into(ig.plan().outages[0] - 1);
   ig.bot.st.powerOff = 400;
   ig.into(ig.plan().outages[0] + 1);
   check(
     ig.seen.some((e) => e.type === 'power' && !e.on && e.by === 'storm' && e.gen === 1),
-    'Irongate: GEN-1 already off, the storm cuts GEN-2',
+    'Gull Rock: GEN-1 already off, the storm cuts GEN-2',
   );
   // Out cold for part of the drill's muster: excused, even back on one's feet before it closes.
   const ko = botFor('drill', 'clear', 6);

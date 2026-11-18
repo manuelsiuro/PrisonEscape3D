@@ -104,9 +104,9 @@ export const FIXER_JOB_OPINION = 50;
 export const PERK_ODDS = 35;
 export const DEBT_ODDS = 50;
 /** The rare items a job may end with (a tool, a pick, something for later). */
-export const RARE_ITEMS: readonly string[] = ['screwdriver', 'trowel', 'flimsy_cutters', 'lockpick', 'duct_tape', 'pouch'];
+export const RARE_ITEMS: readonly string[] = ['screwdriver', 'trowel', 'makeshift_cutters', 'lockpick', 'duct_tape', 'pouch'];
 /** What an inmate who owes the player hands over when the debt is called in (TALK.CALL_IN), by roll(). */
-export const DEBT_TOOLS: readonly string[] = ['screwdriver', 'trowel', 'flimsy_pickaxe', 'flimsy_cutters', 'metal_file'];
+export const DEBT_TOOLS: readonly string[] = ['screwdriver', 'trowel', 'makeshift_pickaxe', 'makeshift_cutters', 'metal_file'];
 
 /** A job failed or given up: what the one who asked thinks of it (opinion); a frame caught out: this much heat. */
 export const FAIL_OPINION = -15;
@@ -166,30 +166,33 @@ const step = (kind: number, variant: number, target: number, pay: number, perk: 
 });
 
 /**
- * The six stories. Center Perks: Doc the old-timer's lost watch (word from Mouse, the watch off a
- * guard, a proper game). Stalag Flucht: Ferret's tunnel (sugar for the cook's spade, a lookout, the
- * camp snitch framed). Shankton: the Preacher's collection (won back at Cheat off Weasel, a parcel to Smokes,
- * Weasel's cell tipped off). San Pancho: Toro's birthday (sugar for the party, a cake through
- * visiting, the birthday arm-wrestle lost). Irongate: Gull's message ashore (a whistle for the
- * signal, a parcel in Kipper's desk, the old-timer kept busy at checkers). The Six Hunter (2.36): Hare's seventh Hunter.
+ * The six stories. Maple Grove: Prof the old-timer's lost watch (word from Whisper, the watch off a
+ * guard, a proper game). Camp Frostberg: Digger's tunnel (sugar for the cook's spade, a lookout, the
+ * camp snitch framed). Gravel Point: the Reverend's collection (won back at Cheat off Shifty, a parcel to Cinders,
+ * Shifty's cell tipped off). Sierra Seca: Oso's birthday (sugar for the party, a cake through
+ * visiting, the birthday arm-wrestle lost). Gull Rock: Puffin's message ashore (a whistle for the
+ * signal, a parcel in Sprat's desk, the old-timer kept busy at checkers). The Six Hunter (2.36): Rabbit's seventh Hunter.
  */
 export const CHAINS: Record<string, ChainDef> = {
-  'center-perks': {
+  'maple-grove': {
     who: 5,
     steps: [step(KIND.DELIVER, 0, 4, 20), step(KIND.LIFT, LIFT.KEEPSAKE, 0, 40), step(KIND.CHECKERS, 1, 5, 30, PERK.DEBT)],
   },
-  'stalag-flucht': {
+  frostberg: {
     who: 2,
-    steps: [step(KIND.ERRAND, 0, 3, 20), step(KIND.LOOKOUT, 0, 0, 35), step(KIND.FRAME, 0, 10, 40, PERK.ITEM, 'light_shovel')],
+    steps: [step(KIND.ERRAND, 0, 3, 20), step(KIND.LOOKOUT, 0, 0, 35), step(KIND.FRAME, 0, 10, 40, PERK.ITEM, 'reinforced_shovel')],
   },
-  shankton: { who: 11, steps: [step(KIND.CHEAT, 1, 10, 25), step(KIND.DELIVER, 0, 4, 20), step(KIND.TIP, 0, 10, 40, PERK.DEBT)] },
-  'san-pancho': {
+  'gravel-point': { who: 11, steps: [step(KIND.CHEAT, 1, 10, 25), step(KIND.DELIVER, 0, 4, 20), step(KIND.TIP, 0, 10, 40, PERK.DEBT)] },
+  'sierra-seca': {
     who: 7,
     steps: [step(KIND.ERRAND, 0, 3, 15), step(KIND.CAKE, 0, 0, 35), step(KIND.WRESTLE, 0, 7, 30, PERK.ITEM, 'screwdriver')],
   },
-  irongate: { who: 3, steps: [step(KIND.LIFT, LIFT.WHISTLE, 0, 30), step(KIND.DROP, 0, 11, 35), step(KIND.CHECKERS, 0, 4, 30, PERK.DEBT)] },
-  // 2.36: the Six Hunter's "The seventh Hunter": Hare wants his name on the Hunters' tally (the Huntmaster's watch lifted, a
-  // lookout while he digs a hide, Boar beaten at arm-wrestling in front of everyone; a drag line for his trouble).
+  'gull-rock': {
+    who: 3,
+    steps: [step(KIND.LIFT, LIFT.WHISTLE, 0, 30), step(KIND.DROP, 0, 11, 35), step(KIND.CHECKERS, 0, 4, 30, PERK.DEBT)],
+  },
+  // 2.36: the Six Hunter's "The seventh Hunter": Rabbit wants his name on the Hunters' tally (the Huntmaster's watch lifted, a
+  // lookout while he digs a hide, Ram beaten at arm-wrestling in front of everyone; a drag line for his trouble).
   'six-hunter': {
     who: 7,
     steps: [step(KIND.LIFT, LIFT.KEEPSAKE, 0, 35), step(KIND.LOOKOUT, 0, 0, 30), step(KIND.WRESTLE, 1, 10, 35, PERK.ITEM, 'drag_line')],

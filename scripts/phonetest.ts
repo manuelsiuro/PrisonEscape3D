@@ -11,13 +11,13 @@
  * - Lou's tapped line: one phrase of each kind a line, ways of talking measured against every
  *   listener, codes learned, silence, hanging up, the fee only when understood;
  * - his jobs: the diversion (guards at the gate, back after), blown (ignored); the cake at a
- *   visit and through the frisk, eaten (the file), blown (seized), Stalag Flucht's parcel; the
+ *   visit and through the frisk, eaten (the file), blown (seized), Camp Frostberg's parcel; the
  *   car on the night (an escape drives off in it);
  * - saves mid-call and mid-queue, a save from before the phone.
  */
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
+import { FROSTBERG } from '../src/content/prisons/frostberg';
 import { TRAINING } from '../src/content/prisons/training';
 import { DAY_EVENTS } from '../src/content/days';
 import { DECOR } from '../src/content/decor';
@@ -66,7 +66,7 @@ const news = (seen: SimEvent[], what: string) => of(seen, 'phone').filter((e) =>
 const refusals = (seen: SimEvent[]) => of(seen, 'refused').map((e) => e.why);
 
 /** A game kept calm (lockdowns cleared each step), quiet days unless forced. */
-function game(prison = CENTER_PERKS, seed = 5, calendar: Array<[number, number, number]> = []) {
+function game(prison = MAPLE_GROVE, seed = 5, calendar: Array<[number, number, number]> = []) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = [[0, 0, 0], ...calendar];
   const seen: SimEvent[] = [];
@@ -277,7 +277,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
 {
   const g = game();
   const { sim, seen } = g;
-  const c = CENTER_PERKS.comms!;
+  const c = MAPLE_GROVE.comms!;
   // Find a free time on day 2+ with someone on the phone and a queue (the phone used before).
   sim.state.phoned[6] = 1;
   let found = false;
@@ -354,12 +354,12 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   let swings = 0;
   let cuts = 0;
   for (let seed = 1; seed <= 60; seed++) {
-    const g = game(CENTER_PERKS, seed);
+    const g = game(MAPLE_GROVE, seed);
     const { sim, seen } = g;
     g.jump(2, 10, 1);
     sim.state.line = [0, 1];
     for (const k of [0, 1]) sim.state.inmates[k].opinion = 50;
-    const c = CENTER_PERKS.comms!;
+    const c = MAPLE_GROVE.comms!;
     put(sim.state.player, c.line[2].x, c.line[2].z);
     g.ext(EXT.LINE, LINE.CUT);
     if (sim.state.line[0] === PLAYER_IN_LINE) cuts++;
@@ -382,7 +382,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   g.call(CALLEE.HOME);
   check(refusals(seen).at(-1) === 'phoneClosed', 'out of the free times: closed');
   g.jump(1, 10, 5);
-  put(sim.state.player, CENTER_PERKS.comms!.phone.x + 5, CENTER_PERKS.comms!.phone.z);
+  put(sim.state.player, MAPLE_GROVE.comms!.phone.x + 5, MAPLE_GROVE.comms!.phone.z);
   g.call(CALLEE.HOME);
   check(refusals(seen).at(-1) === 'notAtPhone', 'not at the phone: refused');
   g.toPhone();
@@ -418,7 +418,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   g.jump(9, 10, 5);
   g.toPhone();
   g.call(CALLEE.HOME);
-  put(sim.state.player, CENTER_PERKS.comms!.phone.x + 4, CENTER_PERKS.comms!.phone.z + 1);
+  put(sim.state.player, MAPLE_GROVE.comms!.phone.x + 4, MAPLE_GROVE.comms!.phone.z + 1);
   g.step();
   check(!sim.state.call && news(seen, 'hungUp').length === 1, 'walking away hangs up');
 }
@@ -467,7 +467,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   let empty = 0;
   let snitched = 0;
   for (let seed = 1; seed <= 12; seed++) {
-    const g = game(CENTER_PERKS, seed);
+    const g = game(MAPLE_GROVE, seed);
     const { sim, seen } = g;
     sim.noQueue = true;
     g.jump(2, 18, 5);
@@ -478,7 +478,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
     if (seed === 1) check(refusals(seen).at(-1) === 'badCell', "the player's own cell: refused");
     g.call(CALLEE.TIP, 0, cell);
     check(!!sim.state.call, `seed ${seed}: a tip called in`);
-    const k = CENTER_PERKS.guards.findIndex((d) => d.duties?.includes('shakedown'));
+    const k = MAPLE_GROVE.guards.findIndex((d) => d.duties?.includes('shakedown'));
     g.to(2, 18, 9);
     check(sim.state.guards[k].mode === GUARD.SHAKEDOWN || news(seen, 'tip')[0]?.who !== k, `seed ${seed}: the shakedown guard on his way`);
     const heat = sim.state.heat;
@@ -531,7 +531,7 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
 
 /** Lou's call played with a way of talking (a tier for each line, or 'learn': plain, plain, deep), at a seed; what came of it. */
 function louCall(tiers: number[], seed: number, learned = 0) {
-  const g = game(CENTER_PERKS, seed);
+  const g = game(MAPLE_GROVE, seed);
   const { sim, seen } = g;
   g.jump(1, 10, 5);
   g.toPhone();
@@ -573,7 +573,7 @@ function louCall(tiers: number[], seed: number, learned = 0) {
       const r = louCall(tiers, seed);
       if (!r?.lou) continue;
       n++;
-      const trait = r.ear < 0 ? 'nobody' : (CENTER_PERKS.guards[r.ear].trait ?? 'steady');
+      const trait = r.ear < 0 ? 'nobody' : (MAPLE_GROVE.guards[r.ear].trait ?? 'steady');
       const good = r.lou.ok && !r.lou.blown;
       byTrait[trait][0]++;
       if (good) byTrait[trait][1]++;
@@ -645,7 +645,7 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   g.to(1, 14, 1);
   const d = news(seen, 'diversion');
   check(d.length === 1, 'the diversion goes off');
-  const c = CENTER_PERKS.comms!;
+  const c = MAPLE_GROVE.comms!;
   const looking = sim.state.guards.filter((q) => q.mode === GUARD.INVESTIGATE && q.target === c.gate.z * MAP_W + c.gate.x);
   check(looking.length >= Math.min(DIVERT_GUARDS, 2), `guards go and look at the gate (${looking.length})`);
   g.to(1, 15, 30);
@@ -671,7 +671,7 @@ function louCall(tiers: number[], seed: number, learned = 0) {
 {
   // The cake: at the next visit, past the frisk; eaten: the file.
   const VISITING = DAY_EVENTS.indexOf('visiting');
-  const g = game(CENTER_PERKS, 5, [[2, VISITING, 0]]);
+  const g = game(MAPLE_GROVE, 5, [[2, VISITING, 0]]);
   const { sim, seen } = g;
   sim.state.lou[4] = 1;
   sim.state.lou[7] = 1;
@@ -707,7 +707,7 @@ function louCall(tiers: number[], seed: number, learned = 0) {
         .join(' ')})`,
     );
   // Blown: seized at the visit.
-  const h = game(CENTER_PERKS, 5, [[2, VISITING, 0]]);
+  const h = game(MAPLE_GROVE, 5, [[2, VISITING, 0]]);
   h.sim.state.lou[4] = 2;
   h.sim.state.lou[7] = 1;
   h.jump(2, 10, 10);
@@ -715,17 +715,17 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   h.step(command(0, OP.INTERACT));
   for (let k = 0; k < 200 && !news(h.seen, 'cakeSeized').length; k++) h.step();
   check(news(h.seen, 'cakeSeized').length === 1 && h.sim.state.lou[4] === 0, 'blown: the cake taken at the visit');
-  // Stalag Flucht: in the Red Cross parcel, into the desk.
+  // Camp Frostberg: in the Red Cross parcel, into the desk.
   const DELIVERY = DAY_EVENTS.indexOf('delivery');
-  const s = game(STALAG_FLUCHT, 5, [[2, DELIVERY, 0]]);
+  const s = game(FROSTBERG, 5, [[2, DELIVERY, 0]]);
   s.sim.state.lou[4] = 1;
   s.sim.state.lou[7] = 2;
   s.jump(2, 14, 40);
   s.to(2, 15, 0);
-  check(news(s.seen, 'cake').length === 0, 'Stalag Flucht: a cake asked for today waits for a parcel after today');
+  check(news(s.seen, 'cake').length === 0, 'Camp Frostberg: a cake asked for today waits for a parcel after today');
   s.sim.state.lou[7] = 1;
   s.to(2, 15, 2);
-  check(news(s.seen, 'cake').length === 1, 'Stalag Flucht: the cake in the Red Cross parcel');
+  check(news(s.seen, 'cake').length === 1, 'Camp Frostberg: the cake in the Red Cross parcel');
   void slot;
 }
 
@@ -797,7 +797,7 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   sim.state.lockdown = false;
   g.setCalm(true);
   // The queue's reach: not from the other side of the wall.
-  const c = CENTER_PERKS.comms!;
+  const c = MAPLE_GROVE.comms!;
   put(sim.state.player, c.phone.x, c.phone.z - 2);
   g.ext(EXT.LINE, LINE.JOIN);
   check(refusals(seen).at(-1) === 'notAtPhone' || refusals(seen).at(-1) === 'phoneClosed', 'no place in line from behind the wall');
@@ -813,8 +813,8 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   g.call(CALLEE.COUSIN, JOB.CAKE);
   g.ext(EXT.SAY, 0);
   const saved = JSON.parse(JSON.stringify(sim.state));
-  const back = new Sim(CENTER_PERKS, 5);
-  back.state = loadState(back.world, CENTER_PERKS, saved);
+  const back = new Sim(MAPLE_GROVE, 5);
+  back.state = loadState(back.world, MAPLE_GROVE, saved);
   check(JSON.stringify(back.state) === JSON.stringify(sim.state) && !!back.state.call, 'a save mid-call loads as it was');
   for (let k = 0; k < 50; k++) {
     sim.step(0);
@@ -824,8 +824,8 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   // A save from before the phone: nothing on it, nobody queuing.
   const old = JSON.parse(JSON.stringify(sim.state));
   for (const k of ['booth', 'line', 'turn', 'call', 'lou', 'phoned', 'rang']) delete old[k];
-  const o = new Sim(CENTER_PERKS, 5);
-  o.state = loadState(o.world, CENTER_PERKS, old);
+  const o = new Sim(MAPLE_GROVE, 5);
+  o.state = loadState(o.world, MAPLE_GROVE, old);
   check(
     o.state.booth.join() === '-1,0,0,0' &&
       o.state.line.length === 0 &&
@@ -837,8 +837,8 @@ function louCall(tiers: number[], seed: number, learned = 0) {
   const bad = JSON.parse(JSON.stringify(sim.state));
   bad.call.said = [9];
   bad.line = [99];
-  const b = new Sim(CENTER_PERKS, 5);
-  b.state = loadState(b.world, CENTER_PERKS, bad);
+  const b = new Sim(MAPLE_GROVE, 5);
+  b.state = loadState(b.world, MAPLE_GROVE, bad);
   check(b.state.call === null && b.state.line.length === 0, 'a damaged call and queue load as none');
 }
 console.log('phone ok');

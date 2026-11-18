@@ -1,18 +1,18 @@
-import { CENTER_PERKS_OUTSIDE } from './center-perks';
-import { IRONGATE_OUTSIDE } from './irongate';
-import { SAN_PANCHO_OUTSIDE } from './san-pancho';
-import { SHANKTON_OUTSIDE } from './shankton';
+import { MAPLE_GROVE_OUTSIDE } from './maple-grove';
+import { GULL_ROCK_OUTSIDE } from './gull-rock';
+import { SIERRA_SECA_OUTSIDE } from './sierra-seca';
+import { GRAVEL_POINT_OUTSIDE } from './gravel-point';
 import { SIX_HUNTER_OUTSIDE } from './six-hunter';
-import { STALAG_FLUCHT_OUTSIDE } from './stalag-flucht';
+import { FROSTBERG_OUTSIDE } from './frostberg';
 import type { OutsideDef } from './types';
 
 /** The outside of each campaign prison (P41), by prison id. The Training Block has none. */
 export const OUTSIDES: readonly OutsideDef[] = [
-  CENTER_PERKS_OUTSIDE,
-  STALAG_FLUCHT_OUTSIDE,
-  SHANKTON_OUTSIDE,
-  SAN_PANCHO_OUTSIDE,
-  IRONGATE_OUTSIDE,
+  MAPLE_GROVE_OUTSIDE,
+  FROSTBERG_OUTSIDE,
+  GRAVEL_POINT_OUTSIDE,
+  SIERRA_SECA_OUTSIDE,
+  GULL_ROCK_OUTSIDE,
   SIX_HUNTER_OUTSIDE,
 ];
 

@@ -79,7 +79,7 @@ export function groundTextures(): readonly THREE.Texture[] {
 
 /**
  * The contact shadows' layer carries on past the map's edge (P41 review: the manhunt's map, and
- * Irongate's sea, showed a hard rectangle where it stopped): the same multiplied layer, so the
+ * Gull Rock's sea, showed a hard rectangle where it stopped): the same multiplied layer, so the
  * same tone (the renderer's tone curve takes a little off even its white), and on open ground the
  * same average shade as its patches (sea and rivers none, as on the map). Four strips round the
  * map, a vertex at each tile's corner, its shade in the vertex colours (no canvas to keep).
@@ -244,8 +244,8 @@ function rollCallBounds(world: RollCallSource): { x0: number; z0: number; x1: nu
 }
 
 /**
- * Whether the roll call's paint would cross the football pitch (P29: Stalag Flucht's and
- * Shankton's roll call squares are their pitches): it goes on a layer of its own then, shown for
+ * Whether the roll call's paint would cross the football pitch (P29: Camp Frostberg's and
+ * Gravel Point's roll call squares are their pitches): it goes on a layer of its own then, shown for
  * roll call only, and the pitch's lines are left clean the rest of the day. `p`: the pitch in use
  * (a 2.5.0 replay's is the one it had then: football.ts pitchOf).
  */

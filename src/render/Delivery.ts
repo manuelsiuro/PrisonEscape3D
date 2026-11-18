@@ -24,8 +24,8 @@ const DRIVE = 5;
 const GATE_REACH = 3.2;
 
 /**
- * Delivery day in the picture (P18): the vehicle that comes once a week (Center Perks' supply
- * truck, Stalag Flucht's Red Cross truck, San Pancho's produce truck; Irongate's helicopter
+ * Delivery day in the picture (P18): the vehicle that comes once a week (Maple Grove's supply
+ * truck, Camp Frostberg's Red Cross truck, Sierra Seca's produce truck; Gull Rock's helicopter
  * is the island's): it backs in along its road over the five minutes before 12:30 (reversing
  * lights, the gates on its way opening for it), stands at its bay with its tailgate open
  * (crates inside), shuts it for the search at 14:30, and drives out at 14:31. A ring at its
@@ -428,7 +428,7 @@ function crates(z0: number, w: number, y: number, colors: readonly number[]): Pa
  * tiles wide and five long for the trucks, two by three for the produce truck).
  */
 export const DELIVERY_MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter'>, () => Model> = {
-  // Center Perks: a white box truck in the suppliers' blue, an orange stripe, a roller door.
+  // Maple Grove: a white box truck in the suppliers' blue, an orange stripe, a roller door.
   truck: () => {
     const W = 1.76;
     const body: Part[] = [
@@ -476,7 +476,7 @@ export const DELIVERY_MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter
     ];
     return { body, tailgate, lamps, wheels: wheels(W, [1.55, -1.0, -1.62], 0.34), wheelR: 0.34, gate: 'roller' };
   },
-  // Stalag Flucht: the Red Cross's truck, canvas over hoops, the cross on its sides and its roof.
+  // Camp Frostberg: the Red Cross's truck, canvas over hoops, the cross on its sides and its roof.
   redCross: () => {
     const W = 1.72;
     const canvas = 0xe7e1cf;
@@ -524,7 +524,7 @@ export const DELIVERY_MODELS: Record<Exclude<DeliveryDef['vehicle'], 'helicopter
     ];
     return { body, tailgate, lamps, wheels: wheels(W, [1.6, -1.05, -1.65], 0.36), wheelR: 0.36, gate: 'flaps' };
   },
-  // San Pancho: a sun-faded pickup, its bed piled with crates of fruit and veg, a tailgate that drops.
+  // Sierra Seca: a sun-faded pickup, its bed piled with crates of fruit and veg, a tailgate that drops.
   produce: () => {
     const W = 1.62;
     const fruit = [0xf28a1e, 0x5fae3a, 0xd93a2a, 0xf2cf3a, 0x8a4fc0];

@@ -3,7 +3,7 @@
 // Importing it from here keeps it on the game's own modules (a module imported by hand from the
 // console can be a second copy, its language switch or state not the game's). In the dev build:
 //   const p = await import('/scripts/dev/playat.ts');
-//   await p.at('stalag-flucht', 1, 9 * 60 + 1);   // the model prisoner's day up to then, on screen
+//   await p.at('frostberg', 1, 9 * 60 + 1);   // the model prisoner's day up to then, on screen
 //   await p.to(53, 10); await p.press('KeyE');     // walked there by keys, the action button
 //   p.freeze(); p.zoom(3);                         // held still, the canvas enlarged on the player
 //   await p.lang('fr'); p.info();

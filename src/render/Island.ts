@@ -91,7 +91,7 @@ const SHALLOW_PAST = 6;
 const SEA_Y = -0.42;
 
 /**
- * HMP Irongate's sea and shore (P12, render only): the ocean to the horizon, swells drifting
+ * HMP Gull Rock's sea and shore (P12, render only): the ocean to the horizon, swells drifting
  * across it, surf against the rocks, the island's rocky skirt down into the water, sea stacks,
  * the pier's posts, the ferry drawbridge (up until a takeover lowers it), the moored patrol
  * boat and ferry, and the supply helicopter on the court's pad at night (it comes in at 23:00

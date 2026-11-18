@@ -40,8 +40,8 @@ import { questionNow } from '../../src/sim/systems/quiz';
 import { RACE } from '../../src/sim/systems/races';
 import { tonight, turnFrom } from '../../src/sim/systems/talent';
 import { pointAt } from '../../src/sim/systems/tattoo';
-import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
-import { SAN_PANCHO } from '../../src/content/prisons/san-pancho';
+import { MAPLE_GROVE } from '../../src/content/prisons/maple-grove';
+import { SIERRA_SECA } from '../../src/content/prisons/sierra-seca';
 import { SIX_HUNTER } from '../../src/content/prisons/six-hunter';
 import { HEARINGS } from '../../src/content/parole';
 import { HOLIDAY } from '../../src/content/holidays';
@@ -236,13 +236,13 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 2.55,
     dx: 1,
   },
-  // 2.36: in the Kitchen Crew's colours at Center Perks, the evening: its members holding their corner of the
+  // 2.36: in the Kitchen Crew's colours at Maple Grove, the evening: its members holding their corner of the
   // courtyard, the turf painted bright; the initiation done by real commands on day 1.
   gangs: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 41);
+      const bot = new Bot(MAPLE_GROVE, 41);
       const st = bot.st;
-      const boss = st.inmates.findIndex((m) => m.cell === CENTER_PERKS.gangs![0].boss);
+      const boss = st.inmates.findIndex((m) => m.cell === MAPLE_GROVE.gangs![0].boss);
       // (Set before the first step, so the replay starts from it: a boss who already rates the player. Only commands after.)
       st.inmates[boss].opinion = 70;
       bot.routineUntil(1, 10 * 60 + 2);
@@ -266,12 +266,12 @@ export const SHOTS: Record<string, Shot> = {
       bot.op(OP.TALK, TALK.HAND_IN);
       bot.op(OP.CLOSE);
       bot.routineUntil(2, 18 * 60 + 20);
-      const corner = CENTER_PERKS.gangs![0].corner;
+      const corner = MAPLE_GROVE.gangs![0].corner;
       bot.walkTo((corner[3] - 1) * MAP_W + corner[2] + 2);
       bot.face(DIR.WEST);
       // (Until both of the crew hold their corner, standing about.)
       const there = () =>
-        CENTER_PERKS.gangs![0].members.every((c) => {
+        MAPLE_GROVE.gangs![0].members.every((c) => {
           const m = st.inmates.find((q) => q.cell === c)!;
           const x = Math.floor(m.body.x / UNIT);
           const z = Math.floor(m.body.z / UNIT);
@@ -285,10 +285,10 @@ export const SHOTS: Record<string, Shot> = {
     dx: -1.5,
     dz: -1.2,
   },
-  // 2.31: on a library chair at Center Perks with a book, a page half read, the readers and the librarian about.
+  // 2.31: on a library chair at Maple Grove with a book, a page half read, the readers and the librarian about.
   library: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 41);
+      const bot = new Bot(MAPLE_GROVE, 41);
       bot.routineUntil(2, 10 * 60 + 25);
       const shelf = containersOf(bot.sim.world).findIndex(
         (b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library',
@@ -304,13 +304,13 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 2.5,
     dz: -1,
   },
-  // 2.32: something just bought from Center Perks' vending machine, seen from the front.
+  // 2.32: something just bought from Maple Grove's vending machine, seen from the front.
   vending: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 41);
+      const bot = new Bot(MAPLE_GROVE, 41);
       bot.routineUntil(2, 10 * 60 + 25);
       bot.st.cash = 40;
-      const m = CENTER_PERKS.vending!;
+      const m = MAPLE_GROVE.vending!;
       bot.walkTo(m.line[0].z * MAP_W + m.line[0].x);
       bot.face(13);
       bot.act();
@@ -323,12 +323,12 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 2.35,
     dz: -1,
   },
-  // 2.33: Center Perks' menu board just scribbled on, two inmates having a word at the water cooler beside it.
+  // 2.33: Maple Grove's menu board just scribbled on, two inmates having a word at the water cooler beside it.
   menu: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 41);
+      const bot = new Bot(MAPLE_GROVE, 41);
       bot.routineUntil(2, 19 * 60 + 20);
-      const m = CENTER_PERKS.menu!;
+      const m = MAPLE_GROVE.menu!;
       bot.walkTo(m.z * MAP_W + m.x + 3);
       bot.face(13);
       bot.op(OP.EXT, EXT.MENU, MENU.SCRIBBLE);
@@ -345,11 +345,11 @@ export const SHOTS: Record<string, Shot> = {
     dx: 4,
     dz: -1,
   },
-  // 2.39: free time in Center Perks' roll call yard: a ring of three chatting, two at dice beside them.
+  // 2.39: free time in Maple Grove's roll call yard: a ring of three chatting, two at dice beside them.
   freetime: {
     make: () => {
       // (Set before the first step, which the picture's replay starts from: the clock moved on as a lesson's is.)
-      const bot = new Bot(CENTER_PERKS, 41);
+      const bot = new Bot(MAPLE_GROVE, 41);
       bot.st.calendar = [[2, DAY_EVENTS.indexOf('none'), WEATHERS.indexOf('clear')]];
       clockTo(bot.sim, DAY_TWO + atTime(18, 20));
       const rings = ringsOf(bot.sim.world);
@@ -365,10 +365,10 @@ export const SHOTS: Record<string, Shot> = {
     dx: 2,
     dz: -1,
   },
-  // 2.29: a set under way at Center Perks' gym, the crowd on the other machines.
+  // 2.29: a set under way at Maple Grove's gym, the crowd on the other machines.
   train: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 41);
+      const bot = new Bot(MAPLE_GROVE, 41);
       bot.routineUntil(1, 15 * 60 + 30);
       const w = bot.sim.world;
       const prop = w.props.findIndex(
@@ -485,12 +485,12 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 1.7,
   },
   race: {
-    // (2.41: a race night at San Pancho with a bet on: the owners at the start, a crowd either side of the track.)
+    // (2.41: a race night at Sierra Seca with a bet on: the owners at the start, a crowd either side of the track.)
     make: () => {
-      const bot = new Bot(SAN_PANCHO, 4);
+      const bot = new Bot(SIERRA_SECA, 4);
       bot.st.cash = 50;
       bot.routineUntil(3, 20 * 60 + 15);
-      const r = SAN_PANCHO.leisure!.race!;
+      const r = SIERRA_SECA.leisure!.race!;
       bot.walkTo(tile(r.x + 3, r.z - 1));
       bot.face(DIR.SOUTH);
       bot.op(OP.EXT, EXT.RACE, 0, 0);
@@ -620,7 +620,7 @@ export const SHOTS: Record<string, Shot> = {
     lesson: 'payphone',
     moves: (bot) => {
       // (In line beside the phone till the inmate on it hangs up: the handset free, in view.)
-      const c = CENTER_PERKS.comms!;
+      const c = MAPLE_GROVE.comms!;
       bot.walkTo(tile(c.line[0].x, c.line[0].z));
       bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
       bot.until(() => bot.st.booth[0] < 0 && bot.st.turn > 0, 20 * 60 * 20);
@@ -641,7 +641,7 @@ export const SHOTS: Record<string, Shot> = {
     moves: (bot) => {
       // (A tile beside the terminal, so the player doesn't hide it.)
       // (2.42: logged in, drawn beside it and turned in to it: the screen in view, the mail on it.)
-      const k = CENTER_PERKS.comms!.kiosk;
+      const k = MAPLE_GROVE.comms!.kiosk;
       bot.walkTo(tile(k.x, k.z));
       bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
       bot.until(() => false, 60);
@@ -653,7 +653,7 @@ export const SHOTS: Record<string, Shot> = {
   oddjobs: {
     lesson: 'oddjob',
     moves: (bot) => {
-      const b = CENTER_PERKS.board!;
+      const b = MAPLE_GROVE.board!;
       bot.walkTo(tile(b.x + 1, b.z + 1));
       bot.until(() => false, 60);
     },
@@ -667,7 +667,7 @@ export const SHOTS: Record<string, Shot> = {
   parole: {
     lesson: 'parole',
     moves: (bot) => {
-      const h = HEARINGS['center-perks'];
+      const h = HEARINGS['maple-grove'];
       bot.walkTo(tile(h.seat.x, h.seat.z));
       bot.until(() => !!bot.st.hearing && bot.st.hearing.q >= 0, 20 * 60 * 15);
       bot.until(() => false, 20);
@@ -677,11 +677,11 @@ export const SHOTS: Record<string, Shot> = {
     dz: -1,
   },
 
-  // 2.25: a meal at Center Perks, the room at work: the player a few tiles south of the serving counter with
+  // 2.25: a meal at Maple Grove, the room at work: the player a few tiles south of the serving counter with
   // their tray, turned to the camera, inmates fetching theirs and carrying them to the tables.
   meals: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 3);
+      const bot = new Bot(MAPLE_GROVE, 3);
       bot.routineUntil(1, 9 * 60 + 2);
       const spot = placesOf(bot.sim.world).counters[3];
       bot.walkTo(spot.tile);
@@ -697,10 +697,10 @@ export const SHOTS: Record<string, Shot> = {
     dz: -1.4,
   },
 
-  // 2.27: roll call at Center Perks, the warden at the player's orange square, the line behind.
+  // 2.27: roll call at Maple Grove, the warden at the player's orange square, the line behind.
   rollcall: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 3);
+      const bot = new Bot(MAPLE_GROVE, 3);
       bot.silent = true;
       bot.routineUntil(2, 8 * 60 + 15);
       bot.until(() => bot.st.calling > 0, 400);
@@ -712,10 +712,10 @@ export const SHOTS: Record<string, Shot> = {
     dz: 1,
   },
 
-  // 2.28: asleep at Center Perks, the blanket up, the block's lights out and the night running.
+  // 2.28: asleep at Maple Grove, the blanket up, the block's lights out and the night running.
   night: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 3);
+      const bot = new Bot(MAPLE_GROVE, 3);
       bot.routineUntil(1, 23 * 60 + 20);
       bot.act();
       bot.until(() => bot.sim.clock.minuteOfDay === 26, 40000);
@@ -727,10 +727,10 @@ export const SHOTS: Record<string, Shot> = {
     dz: 1,
   },
 
-  // 2.26: a shower turned on at Center Perks, the crowd arriving at the other heads.
+  // 2.26: a shower turned on at Maple Grove, the crowd arriving at the other heads.
   showers: {
     make: () => {
-      const bot = new Bot(CENTER_PERKS, 3);
+      const bot = new Bot(MAPLE_GROVE, 3);
       bot.routineUntil(1, 16 * 60 + 2);
       bot.walkTo(placesOf(bot.sim.world).showers[1].tile);
       bot.act();
@@ -744,14 +744,14 @@ export const SHOTS: Record<string, Shot> = {
     dz: 1,
   },
 
-  // P42: Christmas Day in Center Perks' canteen, free time on day 2 (a run begun under Christmas): the tree standing free with its
+  // P42: Christmas Day in Maple Grove's canteen, free time on day 2 (a run begun under Christmas): the tree standing free with its
   // presents (50.5,11.5), the player two tiles east of it facing it (beside, not in front: the camera looks from the south), the
   // lights along the north wall up and to the left (x 40–47, row 7). The camera aimed between the two, a little wider than play's.
   // (No picture yet: take it with h.take('holidays'), then give the topic its `pic`.)
   holidays: {
     make: () => {
       Bot.holiday = HOLIDAY.CHRISTMAS;
-      const bot = new Bot(CENTER_PERKS, 7);
+      const bot = new Bot(MAPLE_GROVE, 7);
       Bot.holiday = 0;
       bot.routineUntil(2, 10 * 60 + 5);
       const t = holidayDecor(bot.sim.world, HOLIDAY.CHRISTMAS).find((d) => d.what === 'tree')!;
@@ -767,20 +767,20 @@ export const SHOTS: Record<string, Shot> = {
   },
 
   // ------------------------------------------------------------ basics and escaping (P37)
-  ways: { prison: 'center-perks', route: 'cutout', when: (_s, k, n) => k >= n - 30, zoom: 2.2, light: 600 },
-  layers: { prison: 'center-perks', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100), zoom: 2.6, dz: -1.5 },
-  delivery: { prison: 'center-perks', route: 'stowaway', when: (s) => s.state.stowed, after: -6, zoom: 2.1 },
-  bluff: { prison: 'center-perks', route: 'bluff', when: on('bluff'), after: -4, zoom: 2.2 },
-  glider: { prison: 'center-perks', route: 'glider', when: on('glide'), after: -3, zoom: 1.8, dz: -1, light: 600, live: 0.5 },
+  ways: { prison: 'maple-grove', route: 'cutout', when: (_s, k, n) => k >= n - 30, zoom: 2.2, light: 600 },
+  layers: { prison: 'maple-grove', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100), zoom: 2.6, dz: -1.5 },
+  delivery: { prison: 'maple-grove', route: 'stowaway', when: (s) => s.state.stowed, after: -6, zoom: 2.1 },
+  bluff: { prison: 'maple-grove', route: 'bluff', when: on('bluff'), after: -4, zoom: 2.2 },
+  glider: { prison: 'maple-grove', route: 'glider', when: on('glide'), after: -3, zoom: 1.8, dz: -1, light: 600, live: 0.5 },
   // (Out of the tunnel onto the road, the escape camera turning on the prison behind.)
-  goal: { prison: 'center-perks', route: 'tunnel', when: (_s, k, n) => k >= n - 2, zoom: 0.74, light: 600, live: 2 },
+  goal: { prison: 'maple-grove', route: 'tunnel', when: (_s, k, n) => k >= n - 2, zoom: 0.74, light: 600, live: 2 },
   // (Cleared, in their own clothes, out through the doors by the desk: its lamp green.)
-  paperwork: { prison: 'center-perks', route: 'paperwork', when: (s) => s.state.release[1] > 0, after: 6, zoom: 2.2, dz: -1.2 },
-  power: { prison: 'center-perks', route: 'cutout', when: on('power'), after: 4, zoom: 2.2, dx: -1, dz: 1.5, light: 600 },
-  cams: { prison: 'center-perks', route: 'cutout', when: nearTile(7, 36, 5, (s) => s.state.powerOff === 0), zoom: 2, light: 600 },
-  // (At night with the power on: Center Perks' south-east tower and its beam up the east strip.)
-  towers: { prison: 'center-perks', route: 'glider', when: (_s, k, n) => k >= n - 40, zoom: 1.25, dx: 4, dz: 12 },
-  dogs: { prison: 'shankton', route: 'paperwork', when: dogNear(3.5, 2), after: 7, zoom: 2.3 },
+  paperwork: { prison: 'maple-grove', route: 'paperwork', when: (s) => s.state.release[1] > 0, after: 6, zoom: 2.2, dz: -1.2 },
+  power: { prison: 'maple-grove', route: 'cutout', when: on('power'), after: 4, zoom: 2.2, dx: -1, dz: 1.5, light: 600 },
+  cams: { prison: 'maple-grove', route: 'cutout', when: nearTile(7, 36, 5, (s) => s.state.powerOff === 0), zoom: 2, light: 600 },
+  // (At night with the power on: Maple Grove's south-east tower and its beam up the east strip.)
+  towers: { prison: 'maple-grove', route: 'glider', when: (_s, k, n) => k >= n - 40, zoom: 1.25, dx: 4, dz: 12 },
+  dogs: { prison: 'gravel-point', route: 'paperwork', when: dogNear(3.5, 2), after: 7, zoom: 2.3 },
   rat: {
     lesson: 'rat',
     moves: (bot) => {
@@ -809,10 +809,10 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 1.8,
     dz: -1.5,
   },
-  weather: { prison: 'stalag-flucht', route: 'tunnel', when: (_s, k, n) => k >= n - 30, zoom: 2.2, dz: -0.5 },
-  shell: { prison: 'shankton', route: 'rooftop', when: (_s, k, n) => k >= n - 60, zoom: 1.5, dz: 2.5, light: 1050 },
-  mines: { prison: 'san-pancho', route: 'gate', when: (_s, k, n) => k >= n - 40, zoom: 1.3, light: 1050 },
-  island: { prison: 'irongate', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 0.98, dx: -2 },
+  weather: { prison: 'frostberg', route: 'tunnel', when: (_s, k, n) => k >= n - 30, zoom: 2.2, dz: -0.5 },
+  shell: { prison: 'gravel-point', route: 'rooftop', when: (_s, k, n) => k >= n - 60, zoom: 1.5, dz: 2.5, light: 1050 },
+  mines: { prison: 'sierra-seca', route: 'gate', when: (_s, k, n) => k >= n - 40, zoom: 1.3, light: 1050 },
+  island: { prison: 'gull-rock', route: 'raft', when: (_s, k, n) => k >= n - 2, live: 1.2, light: 660, zoom: 0.98, dx: -2 },
   // 2.36: the kennel hand at the Six Hunter on day 1, a bowl of feed at the trough, the six hounds lying by their
   // kennels in the run beyond (they work from day 2), each in its own coat, Larch watching, the river to the east.
   // Taken at 1440×844 (ratio 1).

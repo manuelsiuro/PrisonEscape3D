@@ -171,7 +171,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'peaSouper', group: 'days', icon: 'fog', escape: (e) => e.weather === 'fog' },
   // Delivery day (P18).
   { id: 'offTheBooks', group: 'days', icon: 'clipboard', run: (r) => f(r, 'slipped') >= 1 },
-  { id: 'airMail', group: 'days', icon: 'heli', escape: (e) => e.via === 'stowaway' && e.prison === 'irongate' },
+  { id: 'airMail', group: 'days', icon: 'heli', escape: (e) => e.via === 'stowaway' && e.prison === 'gull-rock' },
   // Guard dogs (P19).
   { id: 'goodBoy', group: 'life', icon: 'bone', run: (r) => f(r, 'dogFriends') >= 1 },
   { id: 'blessYou', group: 'life', icon: 'wind', run: (r) => f(r, 'dogsPeppered') >= 1 },

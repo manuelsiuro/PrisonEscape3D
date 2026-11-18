@@ -12,7 +12,7 @@
  */
 import { KIOSK, KIOSK_LATE, KIOSK_PER_BLOCK, KIOSK_TURN_PRICE } from '../src/content/kiosk';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { ROUTINE, routineEnd } from '../src/content/routine';
 import { DOING } from '../src/sim/ai/doing';
 import { command, EXT, headingAngle, OP } from '../src/sim/command';
@@ -99,7 +99,7 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ a run from before 2.42
 {
-  const bot = loggedOnce(CENTER_PERKS, 5, true);
+  const bot = loggedOnce(MAPLE_GROVE, 5, true);
   bot.keepRoutine(() => bot.sim.clock.day >= 4, 3 * 24 * 60 * STEPS_PER_MINUTE);
   check(bot.sim.state.kioskBy === undefined, 'a run from before 2.42 had inmates at the kiosk');
   console.log('before 2.42: nobody but the player at the kiosk');
@@ -107,7 +107,7 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ the player and the one at it
 {
-  const sim = new Sim(CENTER_PERKS, 4);
+  const sim = new Sim(MAPLE_GROVE, 4);
   const s = sim.state;
   const k = kioskOf(sim)!;
   // (Day 2's free time, the player beside the kiosk, an inmate typing on it.)
@@ -168,7 +168,7 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ saves
 {
-  const sim = new Sim(CENTER_PERKS, 2);
+  const sim = new Sim(MAPLE_GROVE, 2);
   const base = structuredClone(sim.state);
   const load = (by: unknown) => loadState(sim.world, sim.prison, { ...structuredClone(base), kioskBy: by as number[] }).kioskBy;
   const absent = loadState(sim.world, sim.prison, structuredClone(base)).kioskBy;

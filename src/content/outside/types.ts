@@ -80,7 +80,7 @@ export interface OutsideDef {
 
 /**
  * What each character of an outside picture is (sim/hunt/world.ts builds the world from it):
- * - `.` grass (snow at Stalag Flucht, sand at San Pancho), `,` road, `a` asphalt, `d` a dirt
+ * - `.` grass (snow at Camp Frostberg, sand at Sierra Seca), `,` road, `a` asphalt, `d` a dirt
  *   track, `g` gravel (loud underfoot), `r` a railway line (loud underfoot);
  * - `T` a tree, `k` a cactus (a tall saguaro), `o` a rock, `c` crates or a wreck: solid, and
  *   they block sight;

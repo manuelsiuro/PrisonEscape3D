@@ -7,7 +7,7 @@
  * - a bot walks to a desk, opens it, takes, drops, picks up, crafts, wears and sleeps,
  *   all through ordinary commands; restocks respect hidden slots and the player's own desk.
  */
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { ITEMS, itemDef, itemNumber, type Source } from '../src/content/items';
 import { LOOT } from '../src/content/loot';
 import { choices, RECIPES } from '../src/content/recipes';
@@ -118,7 +118,7 @@ console.log(`obtainable in P2 from reachable containers and crafting: ${today.si
 const at = (sim: Sim) => `day ${sim.clock.day} ${formatTime(sim.clock)}`;
 // Without guards: the bot spends the day at its desk and the bench, missing the routine, and
 // guards would rightly drag it to solitary (their rules have their own test, guardtest).
-const sim = new Sim({ ...CENTER_PERKS, guards: [] }, 11);
+const sim = new Sim({ ...MAPLE_GROVE, guards: [] }, 11);
 const rec = new Recorder(sim);
 const w = sim.world;
 const list = containersOf(w);
@@ -223,20 +223,20 @@ check(it().open === -1, 'walking away closes the desk');
   console.log(`replay: ${endStep} steps, ${rec.log.length} commands, state ${end}`);
 }
 
-// Crafting: a sheet rope needs two sheets; get the second from cell 3's bed.
+// Crafting: knotted sheets needs two sheets; get the second from cell 3's bed.
 const bed3 = list.findIndex((c) => c.prop.kind === 'bed' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === 3);
-const sheetRope = RECIPES.findIndex((r) => r.result === 'sheet_rope');
-check(canCraft(it(), sheetRope) === 'missing', 'one sheet is not enough for a sheet rope');
+const sheetRope = RECIPES.findIndex((r) => r.result === 'knotted_sheets');
+check(canCraft(it(), sheetRope) === 'missing', 'one sheet is not enough for knotted sheets');
 check(walkTo(bed3), "the bot reaches cell 3's bed");
 op(OP.INTERACT);
 // Make room, then take the sheet.
 for (let k = 2; k < HOTBAR; k++) if (it().inv[k]) op(OP.DROP, k);
 op(OP.MOVE, SLOT.CONTAINER + 1, 2);
-check(canCraft(it(), sheetRope) === 'ok', 'two sheets make a sheet rope');
+check(canCraft(it(), sheetRope) === 'ok', 'two sheets make knotted sheets');
 op(OP.CRAFT, maskOf(ingredientSlots(it(), sheetRope)!));
 check(
-  it().inv.some((v) => itemOf(v) === itemNumber('sheet_rope')) && it().known.includes(sheetRope),
-  'the sheet rope is crafted and in the handbook',
+  it().inv.some((v) => itemOf(v) === itemNumber('knotted_sheets')) && it().known.includes(sheetRope),
+  'the knotted sheets is crafted and in the handbook',
 );
 check(!it().inv.some((v) => itemOf(v) === itemNumber('bed_sheet')), 'both sheets were used');
 
@@ -294,7 +294,7 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
 
 // ------------------------------------------------------------------ the workbench crafts exactly what is on it
 {
-  const fresh = () => ({ ...new Sim(CENTER_PERKS, 1).state.items, inv: [0, 0, 0, 0, 0, 0, 0, 0], int: 100 });
+  const fresh = () => ({ ...new Sim(MAPLE_GROVE, 1).state.items, inv: [0, 0, 0, 0, 0, 0, 0, 0], int: 100 });
   const n = itemNumber;
   const events: never[] = [];
   const craftNow = (st: ReturnType<typeof fresh>, slots: number[]) => craftWith(st, maskOf(slots), events);
@@ -343,8 +343,8 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
 
 // ------------------------------------------------------------------ second review: piles, stale previews, the cell toilet
 {
-  const st = { ...new Sim(CENTER_PERKS, 1).state.items, inv: [0, 0, 0, 0, 0, 0, 0, 0], int: 100 };
-  const body = new Sim(CENTER_PERKS, 1).state.player;
+  const st = { ...new Sim(MAPLE_GROVE, 1).state.items, inv: [0, 0, 0, 0, 0, 0, 0, 0], int: 100 };
+  const body = new Sim(MAPLE_GROVE, 1).state.player;
   const ev: Array<{ type: string }> = [];
   for (let k = 0; k < PILE + 1; k++) {
     st.inv[0] = slot(itemNumber('sock'));
@@ -372,7 +372,7 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
   );
 
   // The player's own toilet is restocked like the others (only the desk and bed are kept).
-  const s2 = new Sim(CENTER_PERKS, 4);
+  const s2 = new Sim(MAPLE_GROVE, 4);
   const mine = containersOf(s2.world).findIndex((c) => c.mine && c.prop.kind === 'toilet');
   s2.state.items.containers[mine][0] = 0;
   let refilled = false;

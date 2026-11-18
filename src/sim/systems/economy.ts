@@ -153,7 +153,7 @@ export interface WorkState {
 
 /**
  * Whether the player may take job j: Intellect enough for it, or it's the job the prison gave
- * them on day 1 (Shankton starts the player in the metalshop at Intellect 40 of 60: fired once,
+ * them on day 1 (Gravel Point starts the player in the metalshop at Intellect 40 of 60: fired once,
  * they may still have it back).
  */
 export const qualifies = (w: World, int: number, j: number) => int >= jobRooms(w)[j].def.int || w.def.jobs[j]?.cell === 1;

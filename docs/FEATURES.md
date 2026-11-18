@@ -6,7 +6,7 @@ nothing to do with prisons.
 
 Numbers are as of **v2.24.0**, read from the content modules. For the rules of a single feature
 go to [`PLAN.md`](PLAN.md); for the original design, the
-[game design document](source/the_escapists_3d_complete_game_design_document.md).
+[game design document](source/game_design_document.md).
 
 **Contents:** [At a glance](#at-a-glance) · [Platforms](#platforms) · [Controls](#controls) ·
 [Game modes](#game-modes) · [Core mechanics](#core-mechanics) · [People and money](#people-and-money) ·
@@ -172,9 +172,9 @@ night checks, tucked into the bed by the action button even after Lights Out. Th
 | Category | Count | Examples |
 |---|---|---|
 | Materials | 77 | Sock, soap, wire, timber, duct tape, chocolate |
-| Gear | 20 | Bed dummy, poster, fake wall, sheet rope, contraband pouch |
+| Gear | 20 | Bed dummy, poster, fake wall, knotted sheets, contraband pouch |
 | Tools | 17 | Three strengths of shovel, pickaxe and cutters, screwdrivers |
-| Weapons | 11 | Shiv, sock mace, spiked bat, baton, molten chocolate |
+| Weapons | 11 | Shiv, sock mace, spiked bat, baton, scalding cocoa |
 | Keys | 10 | Five door colours, each as a stolen or a cast plastic key |
 | Outfits | 6 | Cushioned, plated, guard's uniform, own clothes, costume |
 | Molds | 5 | Taken from a guard's key to cast a copy |
@@ -203,7 +203,7 @@ Each map has four layers with cutaway views: **tunnels**, **ground**, **vents** 
 - **Destructible:** pickaxes chip walls, cutters cut fences, screwdrivers open vents, shovels dig.
 - **Tunnels:** need timber braces every 2 tiles or they cave in. Dirt is evidence, flushed down
   toilets or left below ground.
-- **Cover-ups:** posters, fake walls, fake vents and fake fences hide damage from guards who would
+- **Cover-ups:** posters, fake walls, dummy vent grille and fake fences hide damage from guards who would
   otherwise raise the alarm.
 - **Doors and keys:** five colours of key door. Keys are stolen or cast from a mold, and doors can be
   picked with a timing mini-game.
@@ -319,22 +319,22 @@ Each way out is a different plan built from the systems above.
 
 | | Fence | Tunnel | Roof | Takeover | Gate | Stowaway | Bluff | Glider | Paperwork | Parole | Raft | Helicopter | Total |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Center Perks | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | | | 9 |
-| Stalag Flucht | ✓ | ✓ | ✓ | ✓ | | ✓ | | ✓ | ✓ | ✓ | | | 8 |
-| Shankton | ✓ | ✓ | ✓ | ✓ | | | ✓ | ✓ | ✓ | ✓ | | | 8 |
-| San Pancho | | ✓ | | ✓ | ✓ | ✓ | | | ✓ | ✓ | | | 6 |
-| HMP Irongate | | | | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | 7 |
+| Maple Grove | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | | | 9 |
+| Camp Frostberg | ✓ | ✓ | ✓ | ✓ | | ✓ | | ✓ | ✓ | ✓ | | | 8 |
+| Gravel Point | ✓ | ✓ | ✓ | ✓ | | | ✓ | ✓ | ✓ | ✓ | | | 8 |
+| Sierra Seca | | ✓ | | ✓ | ✓ | ✓ | | | ✓ | ✓ | | | 6 |
+| HMP Gull Rock | | | | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | 7 |
 | The Six Hunter | | ✓ | | | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | 7 |
 
 ## The prisons
 
 | Prison | Security | Setting | Inmates | Guards | Dogs | Cameras | Its own twist |
 |---|---|---|---|---|---|---|---|
-| **Center Perks** | Minimum | Suburban | 7 | 5 | 0 | 3 | Chain-link fences: learn the ropes |
-| **Stalag Flucht** | Medium | Alpine | 9 | 6 | 0 | 2 | Cold that saps energy, granite under the snow, live wire |
-| **Shankton State Pen** | High | Industrial | 11 | 8 | 1 | 10 | Concrete no tool can chip, detector chokepoints, two fences |
-| **San Pancho** | Maximum | Desert | 13 | 8 | 2 | 8 | Minefield between two walls, snipers day and night, hostile inmates |
-| **HMP Irongate** | Supermax | Island | 13 | 10 | 1 | 8 | Flooding tunnels, two generators, armored riot guards |
+| **Maple Grove** | Minimum | Suburban | 7 | 5 | 0 | 3 | Chain-link fences: learn the ropes |
+| **Camp Frostberg** | Medium | Alpine | 9 | 6 | 0 | 2 | Cold that saps energy, granite under the snow, live wire |
+| **Gravel Point State Pen** | High | Industrial | 11 | 8 | 1 | 10 | Concrete no tool can chip, detector chokepoints, two fences |
+| **Sierra Seca** | Maximum | Desert | 13 | 8 | 2 | 8 | Minefield between two walls, snipers day and night, hostile inmates |
+| **HMP Gull Rock** | Supermax | Island | 13 | 10 | 1 | 8 | Flooding tunnels, two generators, armored riot guards |
 | **The Six Hunter** | Hunting grounds | Forest | 11 | 6 | 6 | 4 | Six Hunters each with a hound, a river round it that floods tunnels, the recall horn, the kennel hand's pack |
 
 Every prison also has a sports field, vegetable garden, stage, library with kiosk, pay phone, vending

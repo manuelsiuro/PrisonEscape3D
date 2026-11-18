@@ -20,7 +20,7 @@ import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { RECIPES } from '../src/content/recipes';
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { DOING } from '../src/sim/ai/doing';
 import { placesOf } from '../src/sim/ai/places';
 import { command, OP } from '../src/sim/command';
@@ -125,7 +125,7 @@ for (const def of PRISONS) {
   check(!places.readSeats.some((q) => quiz.some((o) => o.z * MAP_W + o.x === q.tile)), `${def.id}: no chair on a quiz place`);
   // From every shelf tile, by real commands, whoever's about: its panel opens and it hands out a book.
   bot.routineUntil(1, 10 * 60 + 1);
-  // (San Pancho's model prisoner is floored by 10:00 on every seed, as before 2.31: not what's being tested here.)
+  // (Sierra Seca's model prisoner is floored by 10:00 on every seed, as before 2.31: not what's being tested here.)
   bot.st.ko = 0;
   bot.st.health = 100;
   for (const m of bot.st.inmates) {
@@ -195,9 +195,9 @@ for (const def of PRISONS) {
   check(bot.st.book === 0, `${def.id}: the book left behind on leaving`);
 }
 
-// ---------------------------------------------------------------- the rules, at Center Perks
+// ---------------------------------------------------------------- the rules, at Maple Grove
 const reader = (seed = 3) => {
-  const bot = new Bot(CENTER_PERKS, seed);
+  const bot = new Bot(MAPLE_GROVE, seed);
   bot.routineUntil(1, 10 * 60 + 1);
   bot.walkTo(placesOf(bot.sim.world).shelves[0].tile);
   bot.face(13);
@@ -423,7 +423,7 @@ const human = (react: number, old = false) => {
     b.st.tips.length > 0 && subjectOf(RECIPES[b.st.tips[b.st.tips.length - 1]].result) !== 2,
     'its next recipe comes from another shelf',
   );
-  // What's next: the lowest mark above, with its job and recipes. At Center Perks from 40: 50.
+  // What's next: the lowest mark above, with its job and recipes. At Maple Grove from 40: 50.
   const n = reader();
   const next = nextUnlock(n.sim)!;
   check(
@@ -606,7 +606,7 @@ const human = (react: number, old = false) => {
 }
 {
   // Old rules: the set at the shelf as it was, no book, no limit, the added chairs for show.
-  const old = new Bot(CENTER_PERKS, 3);
+  const old = new Bot(MAPLE_GROVE, 3);
   old.sim.rules230 = true;
   old.sim.rules231 = true;
   old.sim.rules232 = true;
@@ -626,7 +626,7 @@ const human = (react: number, old = false) => {
     if (old.st.energy < 30) old.st.energy = 100;
   }
   check(old.st.items.int === was + 16 && !headFull(old.sim), `the old rules: no limit (${old.st.items.int})`);
-  const def = PRISONS.find((p) => p.id === 'irongate')!;
+  const def = PRISONS.find((p) => p.id === 'gull-rock')!;
   const iron = new Bot(def, 3);
   iron.sim.rules230 = true;
   iron.sim.rules231 = true;
@@ -656,7 +656,7 @@ const human = (react: number, old = false) => {
     }
   }
   // A log from 2.30 replays under its own rules, and isn't carried on; today's is.
-  const was230 = new Sim(CENTER_PERKS, 24);
+  const was230 = new Sim(MAPLE_GROVE, 24);
   was230.rules230 = true;
   was230.rules231 = true;
   was230.rules232 = true;
@@ -665,18 +665,18 @@ const human = (react: number, old = false) => {
   was230.rules234 = true;
   const prev = new RunRecorder(was230, { seed: 24, game: '2.30.0' });
   for (let k = 0; k < 4800; k++) prev.step(0);
-  check(!!replayLog(prev.toLog(), CENTER_PERKS)?.ok, 'a 2.30 log replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
+  check(!!replayLog(prev.toLog(), MAPLE_GROVE)?.ok, 'a 2.30 log replays whole under the old rules');
+  check(!replayLog({ ...prev.toLog(), game: '2.36.0' }, MAPLE_GROVE)?.ok, 'and would not under the new ones: the test can tell');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.36.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.44.0' });
+  const now = new RunRecorder(new Sim(MAPLE_GROVE, 24), { seed: 24, game: '2.44.0' });
   for (let k = 0; k < 4800; k++) now.step(0);
-  check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
+  check(!!replayLog(now.toLog(), MAPLE_GROVE)?.ok, "a log of today's replays");
   check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.44.0' }).toLog().seed === 24, 'and is carried on');
   // A save with a book in hand comes back with it; a mid-page one too.
   const s = reader();
   s.read(0);
   const snap = s.sim.snapshot();
-  const back = new Sim(CENTER_PERKS, 3);
+  const back = new Sim(MAPLE_GROVE, 3);
   back.restore(snap);
   check(back.state.book === 1 && back.state.readFrom === s.st.readFrom && back.state.train === s.st.train, 'a save mid-page');
   // A save from before 2.34 mid-page: its place was at the old pace, so the book opens at its first page again; one from now keeps its place.

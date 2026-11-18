@@ -1,13 +1,13 @@
-import { CENTER_PERKS } from './center-perks';
-import { IRONGATE } from './irongate';
-import { SAN_PANCHO } from './san-pancho';
-import { SHANKTON } from './shankton';
+import { MAPLE_GROVE } from './maple-grove';
+import { GULL_ROCK } from './gull-rock';
+import { SIERRA_SECA } from './sierra-seca';
+import { GRAVEL_POINT } from './gravel-point';
 import { SIX_HUNTER } from './six-hunter';
-import { STALAG_FLUCHT } from './stalag-flucht';
+import { FROSTBERG } from './frostberg';
 import type { EscapeRoute, PrisonDef } from './types';
 
-/** The campaign in order (GDD §4; 2.36: the Six Hunter after Irongate). The tutorial's Training Block is apart (content/prisons/training). */
-export const PRISONS: readonly PrisonDef[] = [CENTER_PERKS, STALAG_FLUCHT, SHANKTON, SAN_PANCHO, IRONGATE, SIX_HUNTER];
+/** The campaign in order (GDD §4; 2.36: the Six Hunter after Gull Rock). The tutorial's Training Block is apart (content/prisons/training). */
+export const PRISONS: readonly PrisonDef[] = [MAPLE_GROVE, FROSTBERG, GRAVEL_POINT, SIERRA_SECA, GULL_ROCK, SIX_HUNTER];
 
 /** A campaign prison by its id (undefined for none, the Training Block included). */
 export const prisonById = (id: unknown): PrisonDef | undefined => PRISONS.find((p) => p.id === id);

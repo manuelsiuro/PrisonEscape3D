@@ -1,0 +1,452 @@
+import { comms } from '../../phone';
+import { court } from '../../leisure';
+import { pitch } from '../../team';
+import { quizAt, stage } from '../../nights';
+import { AIM, type PropPlacement } from '../../props';
+import type { GuardDef, PrisonDef, Rect } from '../types';
+import { L0 } from './L0.map';
+import { L1 } from './L1.map';
+import { LM1 } from './Lm1.map';
+import { FROSTBERG_DECOR } from './decor';
+
+/**
+ * Cells: two log cabins of five, three along the north side of each hall (doors south) and
+ * two along its south side (doors north). Cell 1, the player's, is cabin A's first; cabin A's
+ * last corner is a locked storeroom, cabin B's a common room open to its hall.
+ */
+const cells: Rect[] = [];
+const props: PropPlacement[] = [];
+const cell = (x0: number, top: boolean) => {
+  const z0 = top ? 7 : 16;
+  cells.push([x0, z0, x0 + 3, z0 + 3]);
+  props.push(
+    { kind: 'bed', x: x0, z: top ? z0 : z0 + 2, d: 2, rot: top ? 0 : 2 },
+    { kind: 'desk', x: x0 + 3, z: top ? z0 : z0 + 3, rot: 3 },
+    { kind: 'toilet', x: x0 + 3, z: top ? z0 + 3 : z0, rot: 3 },
+    { kind: 'chair', x: x0 + 2, z: top ? z0 : z0 + 3, rot: 1 },
+  );
+};
+for (const cabin of [5, 24]) {
+  for (const k of [0, 1, 2]) cell(cabin + k * 5, true);
+  for (const k of [0, 1]) cell(cabin + k * 5, false);
+}
+
+props.push(
+  // Cabin A's storeroom.
+  { kind: 'shelf', x: 15, z: 19, w: 2, rot: 2 },
+  // Cabin B's common room: a table by the stove.
+  { kind: 'table', x: 35, z: 17, w: 2 },
+  { kind: 'chair', x: 35, z: 16, rot: 0 },
+  { kind: 'chair', x: 36, z: 16, rot: 0 },
+  { kind: 'chair', x: 35, z: 18, rot: 2 },
+  { kind: 'chair', x: 36, z: 18, rot: 2 },
+  // Canteen: two rows of tables either side of the door, benches along them, the serving counter on the east wall.
+  ...[31, 34].flatMap((z) =>
+    [6, 14].flatMap((x) => [
+      { kind: 'table', x, z, w: 3 } as const,
+      { kind: 'seat', x, z: z - 1, w: 3 } as const,
+      { kind: 'seat', x, z: z + 1, w: 3, rot: 2 } as const,
+    ]),
+  ),
+  { kind: 'counter', x: 18, z: 31, d: 3, rot: 3 },
+  // Kitchen.
+  { kind: 'freezer', x: 5, z: 37, d: 2, rot: 1 },
+  { kind: 'oven', x: 8, z: 39, rot: 2 },
+  { kind: 'oven', x: 9, z: 39, rot: 2 },
+  { kind: 'counter', x: 14, z: 39, w: 3, rot: 2 },
+  // Gym.
+  { kind: 'treadmill', x: 25, z: 30, d: 2 },
+  { kind: 'treadmill', x: 27, z: 30, d: 2 },
+  { kind: 'weights', x: 34, z: 32 },
+  { kind: 'weights', x: 36, z: 32 },
+  { kind: 'jobBoard', x: 37, z: 30, rot: 3 },
+  // Showers: heads along the south wall, either side.
+  ...[25, 26, 27, 33, 34, 35].map((x) => ({ kind: 'shower', x, z: 39, rot: 2 }) as const),
+  // Woodshop (the west block).
+  { kind: 'bin', x: 5, z: 46 },
+  { kind: 'workbench', x: 8, z: 47, w: 2 },
+  { kind: 'workbench', x: 13, z: 47, w: 2 },
+  { kind: 'bin', x: 18, z: 49 },
+  // Library.
+  { kind: 'shelf', x: 5, z: 54, w: 3 },
+  { kind: 'shelf', x: 14, z: 54, w: 3 },
+  { kind: 'table', x: 6, z: 56, w: 2 },
+  { kind: 'table', x: 14, z: 56, w: 2 },
+  // Laundry (the east block).
+  { kind: 'bin', x: 24, z: 46 },
+  { kind: 'washer', x: 25, z: 46 },
+  { kind: 'washer', x: 26, z: 46 },
+  { kind: 'bin', x: 29, z: 49 },
+  // Metalshop: the metal bin, two presses, the output bin.
+  { kind: 'bin', x: 31, z: 46 },
+  { kind: 'press', x: 32, z: 47, w: 2 },
+  { kind: 'press', x: 35, z: 47, w: 2 },
+  { kind: 'bin', x: 37, z: 49 },
+  // Infirmary.
+  { kind: 'bed', x: 24, z: 56, d: 2, rot: 2 },
+  { kind: 'bed', x: 26, z: 56, d: 2, rot: 2 },
+  { kind: 'bed', x: 29, z: 56, d: 2, rot: 2 },
+  // Janitor's closet.
+  { kind: 'bin', x: 31, z: 54 },
+  { kind: 'shelf', x: 35, z: 54, w: 2 },
+  // The guards' barracks: four bunks for the night's sleepers, a table.
+  { kind: 'bed', x: 46, z: 6, d: 2 },
+  { kind: 'bed', x: 48, z: 6, d: 2 },
+  { kind: 'bed', x: 55, z: 6, d: 2 },
+  { kind: 'bed', x: 57, z: 6, d: 2 },
+  { kind: 'table', x: 50, z: 10, w: 3 },
+  // The generator hut, and the ladder up to its roof against the north wall (GDD §4.2: [L]).
+  { kind: 'generator', x: 54, z: 24, w: 2, d: 2 },
+  { kind: 'ladder', x: 57, z: 23 },
+  { kind: 'controlDesk', x: 49, z: 23, w: 2, rot: 0 },
+  // Solitary (since P32 its north half: the sports ground took the south).
+  { kind: 'bed', x: 47, z: 41, d: 2, rot: 2 },
+  { kind: 'bed', x: 56, z: 41, d: 2, rot: 2 },
+  // Yard benches along the roll call square.
+  { kind: 'bench', x: 8, z: 23, w: 2 },
+  { kind: 'bench', x: 32, z: 23, w: 2 },
+  { kind: 'bench', x: 8, z: 27, w: 2, rot: 2 },
+  { kind: 'bench', x: 32, z: 27, w: 2, rot: 2 },
+  // Chairs: the library's tables, the barracks' table.
+  ...[6, 7, 14, 15].map((x) => ({ kind: 'chair', x, z: 57, rot: 2 }) as const),
+  ...[50, 51, 52].flatMap((x) => [{ kind: 'chair', x, z: 9, rot: 0 } as const, { kind: 'chair', x, z: 11, rot: 2 } as const]),
+  // Lamps: the yard's corners (leaning into it), the avenue's crossroads (two heads), the path along
+  // the south fence, the east compound's two fences (each facing its fence).
+  ...[
+    [4, 22, AIM.SE],
+    [37, 22, AIM.SW],
+    [4, 28, AIM.NE],
+    [37, 28, AIM.NW],
+    [21, 44, AIM.E, 2],
+    [3, 59, AIM.SW],
+    [38, 59, AIM.S],
+    [44, 16, AIM.W],
+    [59, 16, AIM.E],
+    [44, 34, AIM.W],
+    [59, 34, AIM.E],
+  ].map(([x, z, aim, heads]) => ({ kind: 'lamp', x, z, aim, heads: heads === 2 ? 2 : 1 }) as const),
+);
+
+// The sports ground (P32), the guards' compound's south end behind its own electric fence: the
+// weights corner by the gate, the bleachers by the pitch, lamps. The garden (P32), along the
+// north wire behind cabin B (clear of the boulders under cabin A's): the gardener's tool shed,
+// planters and produce crate by its gate.
+props.push(
+  { kind: 'weights', x: 44, z: 45 },
+  { kind: 'weights', x: 46, z: 45 },
+  { kind: 'pullup', x: 48, z: 45, w: 2 },
+  { kind: 'bleachers', x: 47, z: 49, w: 6 },
+  ...[
+    [43, 60, AIM.NE],
+    [60, 60, AIM.NW],
+    [60, 45, AIM.SW],
+  ].map(([x, z, aim]) => ({ kind: 'lamp', x, z, aim }) as const),
+  { kind: 'toolShed', x: 37, z: 4, w: 2, d: 2 },
+  ...[24, 27, 30, 33].map((x) => ({ kind: 'planter', x, z: 4, w: 3 }) as const),
+  { kind: 'crate', x: 38, z: 3 },
+);
+
+/** Two rows of five on the snow, facing the warden at the north end. */
+const rollCall = [23, 25].flatMap((z) => [14, 17, 20, 23, 26].map((x) => ({ x, z })));
+
+/**
+ * Six guards (GDD §4.2). Directions: 1 east, 5 south, 9 west, 13 north.
+ * - The warden walks the cabins and the yard, takes roll call, and at night keeps the
+ *   cabins and does the bed checks.
+ * - The canteen guard watches meals and walks the canteen and kitchen.
+ * - The gym guard walks the gym and showers, watches showers, and searches cells at the
+ *   morning shakedown.
+ * - The yard guard walks the yard and the avenue, watches exercise (from the sports ground,
+ *   P32), and walks the yard at night.
+ * - The east guard keeps the guards' compound: the inner gate, the barracks, the generator hut, solitary.
+ * - The workshop guard walks the service blocks' corridors and rooms.
+ * The canteen, gym, east and workshop guards sleep in the barracks at night.
+ * Keys (GDD §10.2): the warden red (the storeroom, the barracks, solitary), the canteen and
+ * workshop guards cyan (kitchen, workshops, laundry, janitor), the gym guard yellow (cell
+ * doors after dark), the yard guard green, the east guard purple (the inner gate, the generator hut).
+ */
+const guards: GuardDef[] = [
+  {
+    name: 'Richter',
+    about: { nick: 'KAISER', home: 'LUZERN', team: 'ADLER' },
+    beat: [
+      { x: 8, z: 13, wait: 3, face: 1 },
+      { x: 21, z: 13, wait: 2, face: 5 },
+      { x: 30, z: 13, wait: 3, face: 9 },
+      { x: 21, z: 24, wait: 3, face: 5 },
+    ],
+    posts: { rollCall: { x: 20, z: 21, face: 5 }, eveningRollCall: { x: 20, z: 21, face: 5 } },
+    night: [
+      { x: 8, z: 13, wait: 4, face: 1 },
+      { x: 21, z: 13, wait: 3, face: 5 },
+      { x: 30, z: 13, wait: 4, face: 9 },
+      { x: 21, z: 21, wait: 3, face: 13 },
+    ],
+    duties: ['bedCheck'],
+    key: 'red',
+  },
+  {
+    name: 'Kranz',
+    about: { nick: 'BRUMMI', home: 'KASSEL', team: 'BULLEN' },
+    beat: [
+      { x: 11, z: 31, wait: 3, face: 5 },
+      { x: 17, z: 35, wait: 3, face: 9 },
+      { x: 12, z: 38, wait: 3, face: 9 },
+      { x: 11, z: 27, wait: 2, face: 13 },
+    ],
+    posts: { breakfast: { x: 11, z: 33, face: 1 }, dinner: { x: 11, z: 33, face: 1 } },
+    key: 'cyan',
+  },
+  {
+    name: 'Bauer',
+    about: { nick: 'PAPST', home: 'MAINZ', team: 'FALKEN' },
+    trait: 'strict',
+    beat: [
+      { x: 31, z: 31, wait: 3, face: 5 },
+      { x: 35, z: 34, wait: 2, face: 9 },
+      { x: 30, z: 37, wait: 3, face: 5 },
+      { x: 30, z: 27, wait: 2, face: 13 },
+    ],
+    posts: { showers: { x: 30, z: 37, face: 5 } },
+    duties: ['shakedown'],
+    key: 'yellow',
+  },
+  {
+    name: 'Wendt',
+    about: { nick: 'MURMEL', home: 'BOZEN', team: 'BIBER' },
+    trait: 'lazy',
+    beat: [
+      { x: 10, z: 42, wait: 3, face: 1 },
+      { x: 30, z: 42, wait: 3, face: 9 },
+      { x: 40, z: 30, wait: 3, face: 9 },
+      { x: 30, z: 22, wait: 2, face: 5 },
+    ],
+    posts: { exercise: { x: 50, z: 47, face: 5 } },
+    night: [
+      { x: 21, z: 22, wait: 3, face: 5 },
+      { x: 10, z: 42, wait: 3, face: 1 },
+      { x: 40, z: 42, wait: 3, face: 9, nap: true },
+      { x: 40, z: 10, wait: 3, face: 5 },
+    ],
+    key: 'green',
+  },
+  {
+    name: 'Hensel',
+    about: { nick: 'FUCHS', home: 'PASSAU', team: 'LUCHSE' },
+    trait: 'corrupt',
+    beat: [
+      { x: 43, z: 31, wait: 3, face: 9 },
+      { x: 51, z: 16, wait: 3, face: 5 },
+      { x: 53, z: 26, wait: 3, face: 1 },
+      { x: 53, z: 31, wait: 2, face: 5 },
+      { x: 51, z: 37, wait: 3, face: 13 },
+    ],
+    key: 'purple',
+  },
+  {
+    name: 'Reiter',
+    about: { nick: 'SPATZ', home: 'DRESDEN', team: 'KICKERS' },
+    beat: [
+      { x: 8, z: 51, wait: 3, face: 1 },
+      { x: 11, z: 48, wait: 3, face: 5 },
+      { x: 30, z: 51, wait: 2, face: 9 },
+      { x: 34, z: 49, wait: 3, face: 13 },
+      { x: 27, z: 55, wait: 3, face: 13 },
+    ],
+    key: 'cyan',
+  },
+];
+
+/** Level 2: medium security, an alpine POW camp (GDD §4.2). */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 30, z: 32 },
+  { kind: 'mat', x: 28, z: 33, w: 2 },
+  { kind: 'mat', x: 45, z: 48 },
+];
+
+/** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
+const READING: PropPlacement[] = [{ kind: 'deskChair', x: 8, z: 56, rot: 3 }];
+
+export const FROSTBERG: PrisonDef = {
+  id: 'frostberg',
+  difficulty: 2,
+  theme: 'alpine',
+  decor: FROSTBERG_DECOR,
+  ground: L0,
+  vents: L1,
+  under: LM1,
+  zones: [
+    // The prisoners' compound is all yard, but for the roll call square and the buildings.
+    ['yard', 3, 3, 41, 60],
+    ['rollCall', 12, 22, 29, 26],
+    ['cellBlock', 5, 12, 18, 14],
+    ['cellBlock', 24, 12, 37, 14],
+    ['cellBlock', 34, 15, 37, 19],
+    ['storeroom', 15, 16, 18, 19],
+    ['canteen', 5, 30, 18, 35],
+    ['kitchen', 5, 37, 18, 39],
+    ['gym', 24, 30, 37, 34],
+    ['showers', 24, 36, 37, 39],
+    ['woodshop', 5, 46, 18, 49],
+    ['laundry', 24, 46, 29, 49],
+    ['metalshop', 31, 46, 37, 49],
+    ['corridor', 5, 51, 18, 52],
+    ['corridor', 24, 51, 37, 52],
+    ['library', 5, 54, 18, 57],
+    ['infirmary', 24, 54, 29, 57],
+    ['janitor', 31, 54, 37, 57],
+    // The guards' compound: its open ground is the perimeter.
+    ['guardQuarters', 46, 6, 57, 13],
+    ['generator', 49, 23, 57, 28],
+    ['solitary', 46, 39, 57, 42],
+    // P32: the sports ground behind its fence, and the garden behind cabin B.
+    ['sports', 43, 45, 60, 60],
+    ['garden', 23, 3, 38, 5],
+  ],
+  cells,
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 9, z: 30 }, { kind: 'cooler', x: 18, z: 35, rot: 2 }],
+  // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue. Every
+  // other place along the north wall is taken (the odd jobs board's reader at 5, the stage at 10, the door, the counter)
+  // or worse: at 13, beside the door, the crowd at meals pressed together half as much again. Here it takes the end of
+  // the west bench (sat at from its ends only), so a meal runs a minute or two longer.
+  vending: {
+    x: 9,
+    z: 30,
+    line: [
+      { x: 9, z: 31 },
+      { x: 9, z: 32 },
+      { x: 9, z: 33 },
+      { x: 9, z: 34 },
+    ],
+  },
+  // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
+  // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
+  menu: { x: 16, z: 30, w: 2 },
+  // (Its decor stood a tile west, on a guard's stop: in the corner now, clear of it.)
+  cooler: {
+    x: 18,
+    z: 35,
+    spots: [
+      { x: 18, z: 34 },
+      { x: 17, z: 34 },
+    ],
+  },
+  rollCall,
+  spawn: { x: 6, z: 9 },
+  reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
+  guards,
+  names: ['Digger', 'Spud', 'Crumpet', 'Lofty', 'Tug', 'Pongo', 'Dusty', 'Nipper', 'Tommo'],
+  merchants: [3, 7, 9],
+  // 2.36, gangs and turf: three huts' cliques; their tables in the mess hut (the bench by the menu board stays everyone's), their corners of the parade ground
+  // south of the roll call lines. Tug keeps to himself.
+  gangs: [
+    { id: 'kitchen', boss: 3, members: [3, 4, 8], table: [14, 33, 16, 35], corner: [3, 27, 9, 28] },
+    { id: 'lifers', boss: 9, members: [9, 5, 2], table: [6, 33, 8, 35], corner: [33, 27, 38, 28] },
+    { id: 'gymRats', boss: 7, members: [7, 10], table: [14, 31, 16, 32], corner: [23, 27, 27, 28] },
+  ],
+  crew: ['digger', 'lookout', 'smuggler', 'digger', 'lookout', 'muscle', 'digger', 'smuggler', 'muscle'],
+  // The player starts in the kitchen (GDD §4.2); the woodshop is open (Intellect 40, as the player starts).
+  jobs: [
+    { id: 'kitchen', cell: 1 },
+    { id: 'laundry', cell: 4 },
+    { id: 'woodshop', cell: 0 },
+    { id: 'metalshop', cell: 6 },
+    { id: 'janitor', cell: 8 },
+    { id: 'gardener', cell: 3 },
+  ],
+  // Cameras (GDD §5.6): the generator hut, the barracks.
+  cameras: [
+    { x: 57, z: 28, face: 11 },
+    { x: 57, z: 13, face: 11 },
+  ],
+  // Searchlights at night, one per tower: the west wire, the north wire past the cabins, the
+  // guards' compound, the south wire.
+  searchlights: [
+    [
+      { x: 3, z: 8 },
+      { x: 3, z: 40 },
+    ],
+    [
+      { x: 58, z: 4 },
+      { x: 44, z: 4 },
+      { x: 44, z: 20 },
+      { x: 60, z: 36 },
+    ],
+    [
+      { x: 38, z: 59 },
+      { x: 4, z: 59 },
+    ],
+  ],
+  rules: { cold: true },
+  // (P24: a glider off the generator hut's east edge, with the wind behind it.)
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'glider', 'paperwork', 'parole'],
+  // Delivery day (P18): the Red Cross truck backs in through the south gate and up the camp's
+  // middle path (a lane left beside it); the south guard walks round it, and searches it two
+  // days in five.
+  delivery: {
+    vehicle: 'redCross',
+    bay: [20, 54, 21, 58],
+    tail: { x: 20, z: 53 },
+    face: 5,
+    supervisor: 5,
+    round: [
+      { x: 22, z: 53, wait: 5, face: 13 },
+      { x: 22, z: 57, wait: 3, face: 5 },
+      { x: 20, z: 60, wait: 5, face: 13 },
+      { x: 25, z: 59, wait: 3, face: 9 },
+      { x: 22, z: 57, wait: 3, face: 13 },
+    ],
+    thorough: 40,
+    road: [
+      { x: 21, z: 68 },
+      { x: 21, z: 56.5 },
+    ],
+  },
+  // Smuggling (P21): Nipper sells burner phones; the drone drops on the open ground east of roll
+  // call; nobody visits up here: a Red Cross parcel comes with the truck instead.
+  smuggling: { fixer: 9, drop: [30, 22, 38, 28], parcel: true },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the sports ground, the beds in the garden (P32).
+  leisure: {
+    hoop: court(56, 45, 5),
+    oldTimer: 5,
+    // (The beds along the wire, the planters behind them: cabin B's wall hides the two rows in front of it from the camera.)
+    garden: { x: 24, z: 3, w: 12, d: 1 },
+    race: { x: 9, z: 13, dir: 1, len: 6 },
+    pitch: pitch(45, 51, 14, 7),
+    track: { x: 44, z: 50, w: 16, d: 9 },
+    // (Where the pitch was before 2.5.1, for replays of runs from then.)
+    pitchWas: pitch(13, 22, 13, 5),
+    stage: stage(11, 30, 5),
+    quiz: quizAt(13, [9, 56], [10, 56], [11, 56], [12, 56]),
+    librarian: { cell: 6, x: 8, z: 56, face: 9 },
+  },
+  // Rebuilt in 2.8 (P32): the sports ground in the guards' compound, the garden along the north wire.
+  // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
+  // (P36: the release reported in the yard at the front gate.)
+  comms: comms(
+    [13, 51, 13],
+    [
+      [14, 51],
+      [15, 51],
+      [16, 51],
+      [17, 51],
+    ],
+    [20, 60],
+    [24, 63, 1],
+    [17, 54, 13],
+    {
+      at: [
+        [20, 60],
+        [21, 60],
+      ],
+      gates: [
+        [20, 61],
+        [21, 61],
+      ],
+    },
+  ),
+  // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
+  board: { x: 5, z: 30, face: 13 },
+  map: 1,
+};

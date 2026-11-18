@@ -187,7 +187,7 @@ function ratStatus(sim: Sim): string {
   return s.layer === LAYER.GROUND && !s.stowed && !sim.away ? t('rat.statusReady', { n: RAT_REACH }) : t('rat.statusFloor');
 }
 
-/** A container's name after a colon ("Officer Pratt's pockets", "Desk · Ray's cell"). */
+/** A container's name after a colon ("Officer Tibbs's pockets", "Desk · Ray's cell"). */
 function targetName(sim: Sim, container: number): string {
   if (container < 0) return '';
   const who = ownerOf(sim.world, container);

@@ -183,7 +183,7 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
 // ------------------------------------------------------------------ never stuck
 {
   /** What a character can be left with: an item held each way, a tray, a block, a blow given or taken, a wash, the warden's eye. */
-  const ITEMS = ['', 'light_shovel', 'key_yellow', 'plastic_cup', 'mop', 'dirty_laundry', 'thick_book'];
+  const ITEMS = ['', 'reinforced_shovel', 'key_yellow', 'plastic_cup', 'mop', 'dirty_laundry', 'thick_book'];
   const EXTRAS: Array<[string, (c: Char, k: number) => void]> = [
     ['plain', () => {}],
     ['tray', (c, k) => c.trayPose(k < 60 ? TRAY_AT.HANDS : TRAY_AT.TABLE, 1 - k / 200)],
@@ -493,7 +493,7 @@ const held = (c: Char, id: string) => c.hold(id ? itemNumber(id) : 0, id ? itemG
   let x = 0;
   let s = 12345;
   const rnd = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
-  const ITEMS = ['', 'light_shovel', 'plastic_cup', 'mop', 'dirty_laundry', 'thick_book', 'baton', 'soda'];
+  const ITEMS = ['', 'reinforced_shovel', 'plastic_cup', 'mop', 'dirty_laundry', 'thick_book', 'baton', 'soda'];
   let finite = true;
   for (let n = 0; n < 600; n++) {
     const d = ALL[Math.floor(rnd() * ALL.length)];

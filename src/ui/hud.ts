@@ -33,7 +33,7 @@ export interface HudState {
   work: { place: string; quota: number; of: number; paid: boolean; late: boolean } | null;
   /** Security (GDD §5.5, §12): seconds until the power comes back (null: on), and until the first guard comes round in a takeover (null: none). */
   powerLeft: number | null;
-  /** What the power pill says (Irongate's generators each kill their half, P12). */
+  /** What the power pill says (Gull Rock's generators each kill their half, P12). */
   powerKey: 'hud.powerOut' | 'hud.powerOutCams' | 'hud.powerOutFence';
   takeoverLeft: number | null;
   /** Waved through the checkpoint (P24): seconds its gates stay open for the player (null: shut). */

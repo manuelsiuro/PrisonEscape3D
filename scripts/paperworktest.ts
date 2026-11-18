@@ -16,7 +16,7 @@
  * - saves with a name listed, from before P36, damaged numbers.
  */
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { itemDef, itemNumber } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
 import { FORGE_INT, FREED_STEPS, RECORDS_HEAT, RELEASE_FAIL_HEAT } from '../src/content/paperwork';
@@ -69,7 +69,7 @@ function reachFrom(w: World, from: number[]): Uint8Array {
 const roadIn = (w: World, seen: Uint8Array) => seen.some((v, i) => v && w.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'outside');
 
 /** A game kept calm (lockdowns cleared each step unless asked), quiet days. */
-function game(prison = CENTER_PERKS, seed = 5) {
+function game(prison = MAPLE_GROVE, seed = 5) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = [[0, 0, 0]];
   const seen: SimEvent[] = [];
@@ -177,9 +177,9 @@ function game(prison = CENTER_PERKS, seed = 5) {
   g.to(2, 8, 1);
   check(
     pockets.some((v) => itemOf(v) === n('release_form')),
-    'a blank form taken: Dunn has a new one at 08:00',
+    'a blank form taken: Lowry has a new one at 08:00',
   );
-  console.log(`form: off ${CENTER_PERKS.guards[2].name}, forged with ink at Intellect ${FORGE_INT}`);
+  console.log(`form: off ${MAPLE_GROVE.guards[2].name}, forged with ink at Intellect ${FORGE_INT}`);
 }
 
 // ------------------------------------------------------------------ the tray
@@ -284,7 +284,7 @@ function game(prison = CENTER_PERKS, seed = 5) {
     g.to(1, 22, 1);
     return g;
   };
-  const r = CENTER_PERKS.comms!.release;
+  const r = MAPLE_GROVE.comms!.release;
   {
     const g = listed();
     const { sim, seen } = g;
@@ -369,8 +369,8 @@ function game(prison = CENTER_PERKS, seed = 5) {
   g.toDesk();
   g.step(INTERACT);
   const saved = JSON.parse(JSON.stringify(s));
-  const back = new Sim(CENTER_PERKS, 5);
-  back.state = loadState(back.world, CENTER_PERKS, saved);
+  const back = new Sim(MAPLE_GROVE, 5);
+  back.state = loadState(back.world, MAPLE_GROVE, saved);
   check(JSON.stringify(back.state) === JSON.stringify(s) && back.state.release[0] === 2, 'a save with the name listed loads as it was');
   for (let k = 0; k < 400; k++) {
     sim.step(0);
@@ -379,13 +379,13 @@ function game(prison = CENTER_PERKS, seed = 5) {
   check(sim.hash() === back.hash(), 'and plays on the same');
   const old = JSON.parse(JSON.stringify(s));
   delete old.release;
-  const o = new Sim(CENTER_PERKS, 5);
-  o.state = loadState(o.world, CENTER_PERKS, old);
+  const o = new Sim(MAPLE_GROVE, 5);
+  o.state = loadState(o.world, MAPLE_GROVE, old);
   check(o.state.release.join() === '0,0,0', 'a save from before P36: no name listed');
   const bad = JSON.parse(JSON.stringify(s));
   bad.release = [99, 1e12];
-  const b = new Sim(CENTER_PERKS, 5);
-  b.state = loadState(b.world, CENTER_PERKS, bad);
+  const b = new Sim(MAPLE_GROVE, 5);
+  b.state = loadState(b.world, MAPLE_GROVE, bad);
   check(b.state.release.join() === '0,0,0', 'damaged numbers load as none');
 }
 console.log('paperwork ok');

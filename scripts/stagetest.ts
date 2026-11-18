@@ -13,7 +13,7 @@
  *   without the player.
  */
 import { PRISONS } from '../src/content/prisons';
-import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { MAPLE_GROVE } from '../src/content/prisons/maple-grove';
 import { TRAINING } from '../src/content/prisons/training';
 import { DAY_BOOKS, DAY_EVENTS, MOVIE_NOISE } from '../src/content/days';
 import { itemNumber, KEY_ITEM_COLORS } from '../src/content/items';
@@ -74,7 +74,7 @@ const TALENT = DAY_EVENTS.indexOf('talent');
 const QUIZ = DAY_EVENTS.indexOf('quiz');
 
 /** A game kept calm (heat and lockdowns cleared each step), day 1 forced to a card (else quiet). */
-function game(card: number, prison = CENTER_PERKS, seed = 5) {
+function game(card: number, prison = MAPLE_GROVE, seed = 5) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = [
     [0, 0, 0],
@@ -264,7 +264,7 @@ function playSong(
   seed = 5,
   given?: ReturnType<typeof game>,
 ) {
-  const g = given ?? game(TALENT, CENTER_PERKS, seed);
+  const g = given ?? game(TALENT, MAPLE_GROVE, seed);
   const { sim } = g;
   const st = stageOf(sim.world)!;
   if (!given) {
@@ -432,7 +432,7 @@ function playSong(
     'a performer the player keeps from the boards: his act stands (no music)',
   );
   // Some acts on, one knocked out: placed among those that stood.
-  const k = game(TALENT, CENTER_PERKS, 1);
+  const k = game(TALENT, MAPLE_GROVE, 1);
   const kacts = tonight(k.sim);
   k.jump(1, 18, 45);
   const top = kacts.reduce((b, a, i) => (a.mark > kacts[b].mark ? i : b), 0);
@@ -587,7 +587,7 @@ function playSong(
 
 /** A quiz night played by a bot: each question answered `wait` steps in (right if `knows`, else a guess), or never (wait < 0). */
 function playQuiz(seed: number, wait: number, knows: boolean, before216 = false) {
-  const g = game(QUIZ, CENTER_PERKS, seed);
+  const g = game(QUIZ, MAPLE_GROVE, seed);
   const { sim } = g;
   sim.rules215 = before216;
   const pl = quizOf(sim.world)!;
@@ -708,8 +708,8 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
   g.ext(EXT.STAGE, 1, 0);
   for (let k = 0; k < 200; k++) g.step();
   const saved = JSON.parse(JSON.stringify(sim.state));
-  const back = new Sim(CENTER_PERKS, 5);
-  back.state = loadState(back.world, CENTER_PERKS, saved);
+  const back = new Sim(MAPLE_GROVE, 5);
+  back.state = loadState(back.world, MAPLE_GROVE, saved);
   check(JSON.stringify(back.state) === JSON.stringify(sim.state), 'a save mid-act loads as it was');
   for (let k = 0; k < 100; k++) {
     const cmd = k % 7 === 0 ? command(0, OP_EXT, EXT.NOTE, k % 3) : 0;
@@ -728,30 +728,30 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
   q.ext(EXT.QUIZ, 0);
   for (let k = 0; k < QUIZ_GATHER + 100; k++) q.step();
   const qs = JSON.parse(JSON.stringify(q.sim.state));
-  const qb = new Sim(CENTER_PERKS, 5);
-  qb.state = loadState(qb.world, CENTER_PERKS, qs);
+  const qb = new Sim(MAPLE_GROVE, 5);
+  qb.state = loadState(qb.world, MAPLE_GROVE, qs);
   check(JSON.stringify(qb.state) === JSON.stringify(q.sim.state) && !!qb.state.quiz, 'a save mid-quiz loads as it was');
   const bad = JSON.parse(JSON.stringify(q.sim.state));
   bad.quiz.who = [0, 0, 1];
   bad.show = { song: 9, hits: [] };
-  const fixed = loadState(qb.world, CENTER_PERKS, bad);
+  const fixed = loadState(qb.world, MAPLE_GROVE, bad);
   check(fixed.quiz === null && fixed.show === null, 'a damaged act or quiz loads as none');
   // A save from before stage nights: the cards they took the places of, on the day it's loaded and the next.
-  const plain = new Sim(CENTER_PERKS, 7);
+  const plain = new Sim(MAPLE_GROVE, 7);
   plain.state.calendar = [];
   let day = 2;
-  while (dayPlan('center-perks', plain.state.salt, day).event !== 'talent' && day < 40) day++;
+  while (dayPlan('maple-grove', plain.state.salt, day).event !== 'talent' && day < 40) day++;
   plain.state.step = at(day, 12);
   const old = JSON.parse(JSON.stringify(plain.state));
   for (const k of ['show', 'stageDay', 'quiz', 'quizDay']) delete old[k];
-  const loaded = loadState(plain.world, CENTER_PERKS, old);
-  const was = DAY_BOOKS['center-perks'].beforeStage!;
+  const loaded = loadState(plain.world, MAPLE_GROVE, old);
+  const was = DAY_BOOKS['maple-grove'].beforeStage!;
   check(
-    dayPlan('center-perks', loaded.salt, day, loaded.calendar).event === was.talent && loaded.show === null && loaded.stageDay === 0,
+    dayPlan('maple-grove', loaded.salt, day, loaded.calendar).event === was.talent && loaded.show === null && loaded.stageDay === 0,
     `a save from before P30 on a talent night: ${was.talent} instead`,
   );
-  const fresh = loadState(plain.world, CENTER_PERKS, JSON.parse(JSON.stringify(plain.state)));
-  check(dayPlan('center-perks', fresh.salt, day, fresh.calendar).event === 'talent', 'a save from after: the talent night stands');
+  const fresh = loadState(plain.world, MAPLE_GROVE, JSON.parse(JSON.stringify(plain.state)));
+  check(dayPlan('maple-grove', fresh.salt, day, fresh.calendar).event === 'talent', 'a save from after: the talent night stands');
   // A save from 2.5.0 made at 19:40, its acts played: loaded, none of them turns into a no-show.
   {
     const n = game(TALENT);
@@ -761,24 +761,24 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
     check(k0 > 0 && tonight(n.sim).every((_, k) => acted(n.sim.state, k)), 'the acts so far stood');
     const old250 = JSON.parse(JSON.stringify(n.sim.state));
     delete old250.acted;
-    const twin = new Sim(CENTER_PERKS, 5);
-    twin.state = loadState(twin.world, CENTER_PERKS, old250);
+    const twin = new Sim(MAPLE_GROVE, 5);
+    twin.state = loadState(twin.world, MAPLE_GROVE, old250);
     check(
       tonight(twin).every((_, k) => !noShow(twin, k)),
       'a save from 2.5.0 mid talent night: its acts stand (none a no-show)',
     );
-    const now = new Sim(CENTER_PERKS, 5);
-    now.state = loadState(now.world, CENTER_PERKS, JSON.parse(JSON.stringify(n.sim.state)));
+    const now = new Sim(MAPLE_GROVE, 5);
+    now.state = loadState(now.world, MAPLE_GROVE, JSON.parse(JSON.stringify(n.sim.state)));
     check(JSON.stringify(now.state.acted) === JSON.stringify(n.sim.state.acted), 'one from 2.5.1 keeps its own');
     // Made before the acts began (18:00): nothing stands yet, so a rival who misses his slot that evening is a no-show as ever.
     const early = JSON.parse(JSON.stringify(n.sim.state));
     delete early.acted;
     early.step = at(1, 18);
-    const e250 = new Sim(CENTER_PERKS, 5);
-    e250.state = loadState(e250.world, CENTER_PERKS, early);
+    const e250 = new Sim(MAPLE_GROVE, 5);
+    e250.state = loadState(e250.world, MAPLE_GROVE, early);
     check(e250.state.acted.length === 0, `a save from 2.5.0 made before the acts: none stands yet (${JSON.stringify(e250.state.acted)})`);
     early.step = at(1, 19, 13);
-    const mid = loadState(e250.world, CENTER_PERKS, early);
+    const mid = loadState(e250.world, MAPLE_GROVE, early);
     check(mid.acted[1] === 3, `made at 19:13: the two acts begun stand, the rest are judged as ever (${JSON.stringify(mid.acted)})`);
   }
   // A log from before stage nights.
@@ -788,7 +788,7 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
   );
   const log = {
     v: 1 as const,
-    prison: 'center-perks',
+    prison: 'maple-grove',
     seed: 7,
     game: '2.4.0',
     from: 0,
@@ -796,7 +796,7 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
     data: '',
     sums: [] as Array<[number, string]>,
   };
-  const set = prepareReplay(log, CENTER_PERKS);
+  const set = prepareReplay(log, MAPLE_GROVE);
   check(!!set && planOfDay(set.sim, day) === was.talent, 'a replay of a 2.4.0 run deals the old card that night');
   check(
     beforeFixes('2.5.0') &&
@@ -807,8 +807,8 @@ function playQuiz(seed: number, wait: number, knows: boolean, before216 = false)
       !beforeFixes('3.0.0'),
     'logs from 2.5.0 and before are from before the P23–P30 fixes',
   );
-  const was250 = prepareReplay({ ...log, game: '2.5.0' }, CENTER_PERKS);
-  const now251 = prepareReplay({ ...log, game: '2.5.1' }, CENTER_PERKS);
+  const was250 = prepareReplay({ ...log, game: '2.5.0' }, MAPLE_GROVE);
+  const now251 = prepareReplay({ ...log, game: '2.5.1' }, MAPLE_GROVE);
   check(
     !!was250 && was250.sim.rules250 && !!now251 && !now251.sim.rules250,
     "a replay of a 2.5.0 run plays by its rules (no no-shows, no clocks), one from 2.5.1 by today's",
@@ -879,7 +879,7 @@ function planOfDay(sim: Sim, day: number) {
   // A damaged act from the future, a quiz put ahead of now: none.
   const bad = JSON.parse(JSON.stringify(h.sim.state));
   bad.show.from = bad.step + 5000;
-  check(loadState(h.sim.world, CENTER_PERKS, bad).show === null, 'an act begun after its save: none (never a player held still for ever)');
+  check(loadState(h.sim.world, MAPLE_GROVE, bad).show === null, 'an act begun after its save: none (never a player held still for ever)');
   // Late in the evening, no quiz.
   const q = game(QUIZ);
   const pl = quizOf(q.sim.world)!;
@@ -909,7 +909,7 @@ function planOfDay(sim: Sim, day: number) {
     'a contestant knocked out: the quiz is off',
   );
   // Straight-Laced (P26): no question about who takes bribes or who dozes.
-  const sl = new Sim(CENTER_PERKS, 3, ['straightLaced']);
+  const sl = new Sim(MAPLE_GROVE, 3, ['straightLaced']);
   let asked = 0;
   for (let day = 1; day <= 30; day++) asked += questionsOf(sl, day).filter((x) => x.id === 'trait.corrupt' || x.id === 'trait.lazy').length;
   check(asked === 0, 'under Straight-Laced, no bribe or nap questions');

@@ -280,4 +280,4 @@ export const STRIKE_TWO = 85;
 /** 2.41: the host (the librarian, else the nearest inmate up and about) comes from up to QUIZ_CALL tiles; stands up to HOST_OUT tiles in front of the places. */
 export const HOST_OUT = 3;
 /** 2.41: the prisons with a warden of their own to ask about (`warden.<id>` in the text): quiztest checks it's every prison's. */
-export const WARDENS: readonly string[] = ['center-perks', 'stalag-flucht', 'shankton', 'san-pancho', 'irongate', 'six-hunter'];
+export const WARDENS: readonly string[] = ['maple-grove', 'frostberg', 'gravel-point', 'sierra-seca', 'gull-rock', 'six-hunter'];

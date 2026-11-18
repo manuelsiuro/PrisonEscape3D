@@ -19,7 +19,7 @@ export interface TitleInfo {
   /** The tutorial's progress ("3 of 9 lessons"), and whether it's where a newcomer should start. */
   tutorial: string;
   newcomer: boolean;
-  /** The Daily Escape (P26): today's ("#12 · Shankton · 2 twists"), whether it's done today, the streak; locked before a first escape. */
+  /** The Daily Escape (P26): today's ("#12 · Gravel Point · 2 twists"), whether it's done today, the streak; locked before a first escape. */
   daily: { line: string; done: boolean; streak: number; locked: boolean };
   /** Achievements earned (12 of 42), and whether some are new since the shelf was last opened (P16). */
   trophies: { n: number; of: number };

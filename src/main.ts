@@ -114,8 +114,8 @@ if (import.meta.env.DEV)
     __aimUI: aimUI,
     // The update offer, as a new version would show it.
     __offerUpdate: () => offerUpdate('9.9.9', () => location.reload()),
-    // The manhunt (P41) straight away, from the title: __manhunt('stalag-flucht', 'wall', { minute: 1410, lou: true, crew: 1 }).
-    __manhunt: (prison = 'center-perks', kind: Carry['kind'] = 'wall', more: Partial<Carry> = {}) => {
+    // The manhunt (P41) straight away, from the title: __manhunt('frostberg', 'wall', { minute: 1410, lou: true, crew: 1 }).
+    __manhunt: (prison = 'maple-grove', kind: Carry['kind'] = 'wall', more: Partial<Carry> = {}) => {
       const def = prisonById(prison) ?? PRISONS[0];
       document.querySelector('.title-screen')?.remove();
       startGame(new Sim(def, 5));
@@ -128,7 +128,7 @@ if (import.meta.env.DEV)
         kind,
         spd: 40,
         outfit: n('inmate_outfit'),
-        kit: [n('light_cutters'), n('jerky'), n('pepper'), n('sleepy_jerky')],
+        kit: [n('reinforced_cutters'), n('jerky'), n('pepper'), n('sleepy_jerky')],
         crew: 0,
         lou: false,
         headStart: 15,
