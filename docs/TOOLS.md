@@ -42,6 +42,14 @@ A topic's picture is a `SHOTS` entry in `scripts/dev/helpshot.ts`: a bot's run o
 in the dev build, posted to `public/help/` through the shot sink. A topic seen from the start is
 pictured at Maple Grove. Retake a picture when what it shows changes.
 
+## The prison cards' pictures
+
+Choose a prison's cards (and the Daily's) show each prison in 3D: `CARDS` in `scripts/dev/cardshot.ts` (2.63.1),
+the whole prison from a low angle in its own light, staged as the trailer stages its shots. In the dev build at
+1280×800, isolated: `look(id)` to frame one (`stop()` after), `send()` to post all six through the shot sink
+to `public/prisons/` (640×400 WebP; `helptest` checks they're there and under 90 kB). Retake them when a
+prison's map or look changes.
+
 ## A gamepad without one
 
 `scripts/dev/fakepad.ts` (2.45) plugs a pretend standard gamepad into the dev build: `install('xbox' | 'ps' |

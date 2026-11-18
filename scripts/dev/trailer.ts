@@ -494,6 +494,9 @@ export async function peek(id: string, u = 0) {
   return at;
 }
 
+/** Any cut (not only the trailer's: cardshot.ts's) staged and held at its first frame, for a picture: stop() after. */
+export const hold = (c: Cut) => shoot(c, 0, 1, false);
+
 /** The page's own clock back, the camera the game's, the title. */
 export function stop() {
   rig(false);

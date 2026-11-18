@@ -14,6 +14,13 @@ export const prisonName = (def: PrisonDef) => t(`prison.${def.id}` as Key);
 export const securityOf = (def: PrisonDef) => t(`security.${def.difficulty}` as Key);
 
 /**
+ * The card's picture (2.63.1): the whole prison from a low angle in its own light, rendered by the game
+ * (scripts/dev/cardshot.ts, public/prisons/). The drawn scene under it shows if it fails to load.
+ */
+export const scenePic = (def: PrisonDef) =>
+  `<img class="pc-pic" src="./prisons/${def.id}.webp" alt="" width="640" height="400" decoding="async">`;
+
+/**
  * A prison's level as stars: five, lit up to its difficulty; past the campaign's five (the Six Hunter, level 6), a
  * star more, in the Hunters' red (`.past`), so the sixth reads as beyond the scale rather than one of six.
  */
@@ -46,7 +53,7 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
       : `<span class="pc-lock">${icon('lock', 14)}${t('prisons.locked', { name: prisonName(PRISONS[k - 1]) })}</span>`;
     // Locked cards stay focusable (aria-disabled), so a keyboard can reach what opens them.
     return `<button class="prison-card theme-${def.theme ?? 'suburban'}${open ? '' : ' locked'}" data-k="${k}" ${open ? '' : 'aria-disabled="true"'} style="--i:${k}">
-      <span class="pc-scene" aria-hidden="true"><span class="pc-level${def.difficulty > 5 ? ' past' : ''}">${k + 1}</span></span>
+      <span class="pc-scene" aria-hidden="true">${scenePic(def)}<span class="pc-level${def.difficulty > 5 ? ' past' : ''}">${k + 1}</span></span>
       <span class="pc-body">
         <span class="pc-head"><b>${prisonName(def)}</b><span class="pc-stars" aria-hidden="true">${stars}</span></span>
         <small class="pc-sec">${securityOf(def)}</small>

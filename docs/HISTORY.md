@@ -234,3 +234,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape: what its design promised and the build left out (v2.61.0)
 - Another game's names taken out (v2.62.0)
 - The game named Over the Wall (v2.63.0)
+- The prison cards in 3D (v2.63.1, not released yet)

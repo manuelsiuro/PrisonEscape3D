@@ -8,7 +8,7 @@ import { h, TOUCH } from '../dom';
 import { icon } from '../icons';
 import { medalDisc, routeIcon } from './trophies';
 import { earnedRow } from './escaped';
-import { prisonName, securityOf, starsOf } from './prisons';
+import { prisonName, scenePic, securityOf, starsOf } from './prisons';
 
 /**
  * The Daily Escape's screens (P26): the day's card (the prison, the twists, the tries so far,
@@ -148,7 +148,7 @@ export function showDaily(info: DailyInfo, click: () => void): Promise<DailyChoi
       <div class="dc-cols"><div class="dc-left">
       ${tabs}
       <p class="daily-when"><b>${t('daily.name', { n: n + 1 })}</b><span>${dailyDay(n)}</span>${n < info.today ? `<em>${t('daily.lateNote')}</em>` : ''}</p>
-      <div class="daily-prison theme-${d.prison.theme ?? 'suburban'}"><span class="pc-scene" aria-hidden="true"></span><span class="dp-text"><b>${prisonName(d.prison)}</b><small>${securityOf(d.prison)}</small></span><span class="pc-stars" aria-hidden="true">${stars}</span></div>
+      <div class="daily-prison theme-${d.prison.theme ?? 'suburban'}"><span class="pc-scene" aria-hidden="true">${scenePic(d.prison)}</span><span class="dp-text"><b>${prisonName(d.prison)}</b><small>${securityOf(d.prison)}</small></span><span class="pc-stars" aria-hidden="true">${stars}</span></div>
       <ul class="daily-twists" aria-label="${t('daily.twists')}">${twistRows(d.twists)}</ul>
       </div><div class="dc-right">
       ${bestRow}

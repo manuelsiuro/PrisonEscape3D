@@ -1,7 +1,7 @@
 /**
  * How to play (P37): every topic's words are there in both languages, in the same shape (as many
  * steps, chips and lines in French as in English); every item, recipe, icon, lesson, prison and
- * topic it names exists; every picture is in public/help/. Prints how the guide reads: how many
+ * topic it names exists; every picture is in public/help/ (and each prison card's in public/prisons/). Prints how the guide reads: how many
  * words on each page before the fine print, against the old paragraphs.
  */
 import { existsSync, statSync } from 'node:fs';
@@ -114,6 +114,12 @@ for (const key of Object.keys(E)) {
     bad(`help.oddjobs.nums: the pay is $${lo}–${hi}, the fixer's up to $${fixer}`);
   if (!F['help.oddjobs.nums']?.includes(`${lo}–${hi}\u202f$|`) || !F['help.oddjobs.nums']?.includes(`${fixer}\u202f$`))
     bad(`help.oddjobs.nums (fr): the pay is ${lo}–${hi} $, the fixer's up to ${fixer} $`);
+}
+// 2.63.1: each prison card's picture (Choose a prison, the Daily's card): there, and small.
+for (const def of PRISONS) {
+  const f = `public/prisons/${def.id}.webp`;
+  if (!existsSync(f)) bad(`${def.id}: no card picture ${f} (scripts/dev/cardshot.ts)`);
+  else if (statSync(f).size > 90_000) bad(`${f}: ${Math.round(statSync(f).size / 1000)} kB, over 90`);
 }
 if (problems.length) throw new Error(problems.join('\n'));
 console.log(

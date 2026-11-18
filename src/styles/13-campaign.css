@@ -130,6 +130,31 @@
   transform: scale(0.98);
 }
 
+/*
+ * The card's picture (2.63.1): the prison in 3D, filling the scene whatever its shape (a banner on wide screens,
+ * a strip on phones), the drawn scene under it as the fallback. Hovered or focused, it drifts slowly closer.
+ */
+.pc-pic {
+  position: absolute;
+  inset: 0;
+  /* (Over the drawn scene's wall and fence, which are its fallback; under the level's badge.) */
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 50% 55%;
+  transition: transform 6s cubic-bezier(0.2, 0.6, 0.3, 1);
+}
+
+.prison-card:not(.locked):hover .pc-pic,
+.prison-card:not(.locked):focus-visible .pc-pic {
+  transform: scale(1.08);
+}
+
+body.reduced-motion .pc-pic {
+  transform: none !important;
+}
+
 /* The scene: a strip of the prison's world, its level number on it. */
 .pc-scene {
   position: relative;
@@ -291,7 +316,7 @@
 
 .pc-level {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   top: 8px;
   left: 8px;
   display: grid;
