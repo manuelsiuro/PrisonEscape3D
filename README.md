@@ -89,7 +89,7 @@ and their hounds follow every trail, a river floods every tunnel, and the kennel
     <td width="33%" align="center"><img src="docs/screenshots/map-six-hunter.webp" alt="The Six Hunter from above"><br><b>The Six Hunter</b><br>hunting grounds<br><em>A hunting lodge in a pine valley: six Hunters with their hounds, a river that floods tunnels, a fieldstone wall.</em></td>
   </tr>
   <tr>
-    <td colspan="3" align="center"><img src="docs/screenshots/prisons.webp" alt="Choosing a prison" width="720"><br><b>Choose a prison</b><br><em>With the ways out you've found and your best time in each.</em></td>
+    <td colspan="3" align="center"><img src="docs/screenshots/prisons.webp" alt="Choosing a prison: a card each, with the prison in 3D, the next ones locked" width="720"><br><b>Choose a prison</b><br><em>Each prison in 3D on its card, with the ways out you've found and your best time in each.</em></td>
   </tr>
 </table>
 
