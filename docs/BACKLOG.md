@@ -72,8 +72,8 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 - **The repository's size:** shrunk 795 → 39 MB on 2026-11-18 (the user's go): `git filter-repo`
   took the 743 old versions of `assets/maps/*` pictures out of history (every commit, message and tag
   kept, today's files the same tree). Every commit and tag has a new id: an older clone (the Roblox
-  port's) must be cloned again, never pulled into. The backup from before is outside the repo
-  (`../PrisonEscape3D-backup-2026-11-18.git`). Since 2.34.1 the pictures change only with a map.
+  port's) must be cloned again, never pulled into. The backup from before was deleted
+  (the user, 2026-11-18). Since 2.34.1 the pictures change only with a map.
 - **Shader programs first made mid-play** (found 2026-11-07, v2.36.0): `View.warmDay` now links every
   program at load (the worst frames 934 → 250 ms), but a few things are first built mid-play and still
   stall about 80 ms once each (the shower water, a night mesh, a holiday piece's shadow, the team view).
