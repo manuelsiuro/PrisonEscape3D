@@ -333,7 +333,10 @@ export type CityEvent =
    * Fallen: `final` in Hardcore (the city is lost); a Survivor wakes at home (`moved`: in another district). 2.64: `bed`, home is a bed
    * slept in (else where the city began); `pile`, the place where what was carried lies (-1: nothing was).
    */
-  | { type: 'dead'; final: boolean; moved: boolean; bed?: boolean; pile?: number };
+  | { type: 'dead'; final: boolean; moved: boolean; bed?: boolean; pile?: number; by?: FellBy };
+
+/** 2.64: what a fall came from: one of the dead (its kind), a bloater's burst, fire, hunger. */
+export type FellBy = `z${number}` | 'burst' | 'fire' | 'hunger';
 
 export class City {
   readonly plan: CityPlan;
@@ -716,7 +719,7 @@ export class City {
     s.hunger = Math.max(0, s.hunger - (s.sleeping ? HUNGER_ASLEEP : HUNGER_AWAKE));
     s.energy = s.sleeping ? Math.min(FULL, s.energy + ENERGY_ASLEEP) : Math.max(0, s.energy - ENERGY_AWAKE);
     if (s.hunger === 0) {
-      if (minute % STARVE_EVERY === 0) this.hurt(1);
+      if (minute % STARVE_EVERY === 0) this.hurt(1, 'hunger');
       if (!this.starved) this.events.push({ type: 'starving' });
       this.starved = true;
     } else {
@@ -742,8 +745,8 @@ export class City {
     this.events.push({ type: 'sleep', on: false, why });
   }
 
-  /** Health lost; at nothing, fallen. */
-  hurt(n: number) {
+  /** Health lost; at nothing, fallen. `by` (2.64): what did it, for the end card (`z` and a kind of the dead, `burst`, `fire`, `hunger`). */
+  hurt(n: number, by: FellBy) {
     const s = this.state;
     s.health = Math.max(0, s.health - n);
     if (s.health > 0) return;
@@ -754,7 +757,7 @@ export class City {
     s.deaths++;
     if (s.mode === MODE.HARDCORE) {
       s.over = 1;
-      this.events.push({ type: 'dead', final: true, moved: false });
+      this.events.push({ type: 'dead', final: true, moved: false, by });
       return;
     }
     // A Survivor: what they carried lies where they fell; they wake at home the next morning.
@@ -797,7 +800,7 @@ export class City {
     // (Woken where the city began, unless a bed was slept in since: as `home` says, not a flag, which a save's mending can part from it.)
     const sp = this.districtOf(this.plan.start).spawn;
     const bed = !(d === this.plan.start && tile === sp.z * MAP_W + sp.x);
-    this.events.push({ type: 'dead', final: false, moved, bed, pile: pileAt });
+    this.events.push({ type: 'dead', final: false, moved, bed, pile: pileAt, by });
   }
 
   // ------------------------------------------------------------------ boxes and pockets

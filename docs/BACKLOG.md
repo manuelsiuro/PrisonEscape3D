@@ -65,9 +65,7 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
   is cut away with its wall round the player, so the window being broken isn't seen from where it is
   broken. (The last nights' waits, harder with a bat since 2.61, were shortened in 2.63.2.)
 - The 2026-11-19 review's polish, in four batches (the user's go for each): 1, a first day that works (2.64,
-  done); 2, readable screens and fights (banners over each other and the radio, a marker under the player,
-  hits that show, the button's target outlined, searched furniture, landmark signs over the street, the
-  metro's padlock, the end cards, the pocket card's words, reduced motion's warnings); 3, fair last nights
+  done); 2, readable screens and fights (2.64.1, done); 3, fair last nights
   and real choices (the weapon for the target, a molotov never at the feet, the tunnel and a checkpoint
   warned before a hold is lost, resting till dusk or the tide, the three ways out balanced by better bots;
   the user to choose whether cleared ground stays cleared); 4, the look (light that fades, dark rooms

@@ -259,7 +259,7 @@ const walkTo = (c: City, t: number, most = 60) => {
   walkTo(c, c.tunnel.way[6]);
   const fellAt = c.tile;
   s.inv[0] = [1, 2];
-  c.hurt(1000);
+  c.hurt(1000, 'z0');
   c.step(0);
   check(
     s.deaths === 1 && s.district === s.home[0] && s.district !== TUNNEL && s.ready === 0 && !s.over,
@@ -280,7 +280,7 @@ const walkTo = (c: City, t: number, most = 60) => {
   press(h);
   h.state.readyAt = h.state.step - STORY.metroHold * MIN;
   press(h);
-  h.hurt(1000);
+  h.hurt(1000, 'z0');
   check(h.state.over === 1, 'Hardcore: fallen in the tunnel, the city is lost');
   // A save made down there loads down there and plays on the same; one from before the tunnel loads.
   const live = atStairs(4);

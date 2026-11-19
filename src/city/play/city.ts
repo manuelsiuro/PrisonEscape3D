@@ -1,6 +1,6 @@
 import { itemNumber } from '../../content/items';
 import { readPrisoner } from '../../game/prisoner';
-import { t, type Key } from '../../i18n';
+import { t, textStamp, type Key } from '../../i18n';
 import { buzz } from '../../app/haptics';
 import { banner, click, controls, hint, settings, sleepVeil, sound, view } from '../../play/context';
 import { play, tickPlayClock, type SideRun } from '../../play/game';
@@ -63,7 +63,8 @@ interface CityRun extends SideRun {
   paused: boolean;
   /** Written to storage since it last changed district or was paused. */
   saved: boolean;
-  resolve: () => void;
+  /** The run over: back to the title, or (2.64, an end card's "A new city") on to a new city. */
+  resolve: (again: boolean) => void;
 }
 
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
@@ -93,6 +94,18 @@ const [cityView, cityHud, veil, pockets] = inPlace('city', () => {
 /** A bite: the screen's edges flash red. */
 const bitten = h('div', 'city-bitten');
 document.body.append(bitten);
+/**
+ * The screen's edge reddened by a bite, a burn or a burst. 2.64: always taken off after its moment (with the game's reduced motion
+ * it is held, not animated, and a flash left on would hold for good, the setting turned on mid-city too).
+ */
+let biteOff = 0;
+function flashBite() {
+  bitten.classList.remove('on');
+  void bitten.offsetWidth;
+  bitten.classList.add('on');
+  clearTimeout(biteOff);
+  biteOff = window.setTimeout(() => bitten.classList.remove('on'), 600);
+}
 pockets.onOp = (op, a = 0) => {
   click();
   run()?.ops.push([op, a]);
@@ -117,7 +130,7 @@ const run = (): CityRun | null => play.side as CityRun | null;
  * controls the city's. `fresh`: a new city (the story's first card). Resolves when it's left for
  * the title (saved as it is).
  */
-export function runCity(city: City, fresh: boolean): Promise<void> {
+export function runCity(city: City, fresh: boolean): Promise<boolean> {
   return new Promise((resolve) => {
     const s = city.state;
     const r: CityRun = {
@@ -198,7 +211,8 @@ function stage(r: CityRun, first = false) {
   lightsShown = -1;
   carsShown = -1;
   firesShown = -1;
-  goalAt = -1;
+  emptiedShown = '';
+  goalAt = '';
   marksShown = '?';
   sound.setScene(darkNow(c) ? 'outdoorNight' : 'outdoorDay');
 }
@@ -333,7 +347,9 @@ async function pauseCity() {
   await under(r, async () => {
     for (;;) {
       const c = r.city;
-      const place = `${t('city.title')} · ${placeName(c)} · ${t('city.hud.day', { n: c.day })}`;
+      // (2.64: and how death is taken, the one thing about this city a player can't see on the screen.)
+      const mode = t(c.state.mode === MODE.HARDCORE ? 'city.mode.hardcore' : 'city.mode.survivor');
+      const place = `${t('city.title')} · ${placeName(c)} · ${t('city.hud.day', { n: c.day })} · ${mode}`;
       // (The city's own line: it says "vous" in French, the prisons' "tu".)
       const choice = await showPause(click, r.saved, false, r.saved ? t('city.pause.saved') : '', false, place);
       if (choice === 'settings') await showSettings(settings, settingsChanged, click);
@@ -345,7 +361,7 @@ async function pauseCity() {
 }
 
 /** The city comes down (back to the title): saved as it is, its HUD and pieces away. */
-export function stopCity() {
+export function stopCity(again = false) {
   const r = run();
   if (!r) return;
   save(r);
@@ -362,7 +378,7 @@ export function stopCity() {
   veil.classList.remove('on');
   bitten.classList.remove('on', 'low');
   document.body.classList.remove('is-playing', 'city-on');
-  r.resolve();
+  r.resolve(again);
 }
 
 // ------------------------------------------------------------------ the player's input
@@ -460,7 +476,7 @@ function cityFrame(r: CityRun, dt: number, now: number) {
       if (controls.steering) r.pilot.stop();
       const op = r.ops.shift();
       c.step(command(controls.steering ? controls.dir() : r.pilot.dir(p), op?.[0] ?? 0, op?.[1] ?? 0));
-      if (c.events.length) goalAt = -1;
+      if (c.events.length) goalAt = '';
       for (const e of c.events) cityEvent(r, e);
       // (Over, or carried home: what was waiting is dropped, and nothing slides from the old place.)
       if (c.state.over || c.events.some((e) => e.type === 'dead')) break;
@@ -611,9 +627,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'burn':
       sound.grunt();
       buzz('missed');
-      bitten.classList.remove('on');
-      void bitten.offsetWidth;
-      bitten.classList.add('on');
+      flashBite();
       banner.toast(t('city.toast.burning'), 'bad', 1600);
       break;
     case 'burnt':
@@ -671,9 +685,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       view.playerFlinch();
       view.jolt(0.35);
       buzz('missed');
-      bitten.classList.remove('on');
-      void bitten.offsetWidth;
-      bitten.classList.add('on');
+      flashBite();
       break;
     case 'swing':
       sound.swish();
@@ -681,7 +693,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (e.hit) {
         sound.thwack();
         // (Where it landed: a burst the colour of old blood, the camera jolted; harder for one put down or caught unawares.)
-        view.puff((e.x ?? 0) / UNIT, (e.z ?? 0) / UNIT, 0x8f2f2a, e.dead ? 12 : e.unseen ? 9 : 5);
+        // (2.64: bigger and brighter: five dark specks were lost on the tarmac, and at night altogether.)
+        view.puff((e.x ?? 0) / UNIT, (e.z ?? 0) / UNIT, 0xc0392b, e.dead ? 20 : e.unseen ? 15 : 10);
         view.jolt(e.dead ? 0.55 : e.unseen ? 0.4 : 0.22);
         if (e.unseen) {
           banner.toast(t('city.toast.unseen'), 'good', 1600);
@@ -701,6 +714,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (now() - fellHeard > 60) sound.dud();
       fellHeard = now();
       cityView.fellFx(e.x / UNIT, e.z / UNIT, headingAngle(e.facing), e.kind, e.seed, now() / 1000, !!e.lying);
+      cityView.stain(e.x / UNIT, e.z / UNIT, now() / 1000, e.seed);
       break;
     case 'scream':
       sound.shriek();
@@ -714,9 +728,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       if (e.harm) {
         view.playerFlinch();
         buzz('missed');
-        bitten.classList.remove('on');
-        void bitten.offsetWidth;
-        bitten.classList.add('on');
+        flashBite();
         banner.toast(t('city.toast.burst'), 'bad', 2600);
       }
       tip('city.bloater', 'city.tip.bloater');
@@ -844,7 +856,10 @@ function cityEvent(r: CityRun, e: CityEvent) {
       cityHud.say(t(`city.say.${e.beat}` as Key));
       break;
     case 'act':
-      banner.show(t('city.act.n', { n: e.act }), t(`city.act.${e.act}` as Key), 'routine', 4200, 'book');
+      // (2.64: the last act begins as a way out is set going: its own banner says what to do, and one banner at a time
+      // would put the act's over it at once. The journal still says the act.)
+      if (!c.events.some((x) => x.type === 'ready'))
+        banner.show(t('city.act.n', { n: e.act }), t(`city.act.${e.act}` as Key), 'routine', 4200, 'book');
       save(r);
       break;
     case 'scouted':
@@ -888,7 +903,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
           notes,
           errands: c.state.errand.reduce((n, v) => n + v, 0),
         });
-        void under(r, () => showCityEscaped(c, feats, click)).then(() => stopCity());
+        void under(r, () => showCityEscaped(c, feats, click)).then((next) => stopCity(next === 'new'));
       }
       break;
     case 'dead':
@@ -899,7 +914,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       buzz('missed');
       if (e.final) {
         save(r);
-        void under(r, () => showCityOver(c.day, placeName(c), click)).then(() => stopCity());
+        void under(r, () => showCityOver(c, placeName(c), click)).then((next) => stopCity(next === 'new'));
         break;
       }
       // A Survivor: home, the next morning, behind a blink of dark (and the chase's music left where they fell).
@@ -977,12 +992,36 @@ function frameOf(r: CityRun, a: number): Frame {
           : tg.key.startsWith('c')
             ? carTiles(c, Number(tg.key.slice(1)))
             : c.tilesOf(Number(tg.key));
+    // (Its edges, as the prisons give them: 2.64, the far ones a tile on, where the frame had been a tile short since 2.47.)
     focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
-    focus.x1 = Math.max(...tiles.map((i) => i % MAP_W));
+    focus.x1 = Math.max(...tiles.map((i) => i % MAP_W)) + 1;
     focus.z0 = Math.min(...tiles.map((i) => Math.floor(i / MAP_W)));
-    focus.z1 = Math.max(...tiles.map((i) => Math.floor(i / MAP_W)));
+    focus.z1 = Math.max(...tiles.map((i) => Math.floor(i / MAP_W))) + 1;
+    // (2.64: framed at the top of what stands there: on the floor, a car or a freezer hid its own frame.)
+    focus.y = tg.key.startsWith('c') ? (tg.prop === 'wreck' ? 0.8 : 1.05) : tg.prop ? topOf(tg.prop) + 0.03 : 0.035;
   }
   f.focus = tg ? focus : null;
+  // (2.64: the furniture searched and emptied here, ticked on its top.)
+  const here = `${c.state.district}:`;
+  const emptied = Object.keys(c.state.boxes).filter(
+    (k) => k.startsWith(here) && /^\d+$/.test(k.slice(here.length)) && c.state.boxes[k].every((st) => !st[0]),
+  );
+  const emptiedKey = `${c.state.district}|${emptied.join()}`;
+  if (emptiedKey !== emptiedShown) {
+    emptiedShown = emptiedKey;
+    cityView.setEmptied(
+      emptied.map((k) => {
+        const prop = Number(k.slice(here.length));
+        const tiles = c.tilesOf(prop);
+        const kind = c.district.props[prop]?.kind ?? '';
+        return {
+          x: tiles.reduce((n, i) => n + (i % MAP_W), 0) / tiles.length + 0.5,
+          z: tiles.reduce((n, i) => n + Math.floor(i / MAP_W), 0) / tiles.length + 0.5,
+          y: topOf(kind),
+        };
+      }),
+    );
+  }
   const mine = `${c.state.district}:g`;
   const lying = Object.keys(c.state.boxes).filter((k) => k.startsWith(mine) && c.state.boxes[k].some((st) => st[0]));
   const key = lying.join();
@@ -996,7 +1035,22 @@ function frameOf(r: CityRun, a: number): Frame {
   f.ground = piles;
   return f;
 }
-const focus = { x0: 0, z0: 0, x1: 0, z1: 0 };
+const focus = { x0: 0, z0: 0, x1: 0, z1: 0, y: 0.035 };
+let emptiedShown = '';
+/** 2.64: the top of each piece of furniture that is searched (its model's), for the focus frame and the emptied tick. */
+const TOP: Record<string, number> = {
+  bed: 0.47,
+  table: 0.52,
+  bin: 0.52,
+  counter: 0.55,
+  desk: 0.56,
+  crate: 0.56,
+  workbench: 0.65,
+  shelf: 1.32,
+  freezer: 1.52,
+  vending: 1.68,
+};
+const topOf = (kind: string) => TOP[kind] ?? 0.6;
 /** The barred doors the view last put its boards on (`City.barsRev`). */
 let barsShown = -1;
 let locksShown = -1;
@@ -1020,6 +1074,7 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
       moving: false,
       chasing: false,
       reeling: false,
+      struck: 0,
       lunging: false,
       seed: 0,
       kind: 0,
@@ -1033,6 +1088,7 @@ function deadOf(r: CityRun, a: number): DeadFrame[] {
     o.moving = z.body.moving && !r.paused;
     o.chasing = z.mode === ZED.CHASE;
     o.reeling = z.reel > 0;
+    o.struck = z.reel > 0 ? z.reel / kindStats(z.kind).reel : 0;
     o.seed = z.pace;
     o.kind = z.kind ?? 0;
     o.lunging = z.near > 0;
@@ -1091,13 +1147,15 @@ function pocketsOf(r: CityRun): PocketsState {
   st.blows = w?.[1] ?? 0;
   st.blowsOf = cityItem(w?.[0] ?? 0)?.wear ?? 0;
   st.ready = s.step - s.swung >= BLOW.every;
+  st.torchOn = s.torchOn > 0;
+  st.torchLeft = s.torch;
   // (What each recipe lacks: looked at only while the panel is up.)
   st.recipes = pockets.makeOpen ? CITY_RECIPES.map((_, k) => c.canMake(k)) : NO_RECIPES;
   return st;
 }
 
 /** The story's line and where it points, worked out again each game minute and whenever something happened. */
-let goalAt = -1;
+let goalAt = '';
 let marksShown = '';
 const goalNow = { text: '', marks: [] as number[], key: '' };
 const cityMusic = new CityMusic();
@@ -1130,7 +1188,8 @@ function landmarkOf(r: CityRun, time: number): LandmarkFrame {
 
 function goalOf(r: CityRun) {
   const c = r.city;
-  const minute = Math.floor(c.state.step / STEPS_PER_SECOND);
+  // (2.64: and the words: a language switched mid-city redraws the line at once, not at the next change.)
+  const minute = `${Math.floor(c.state.step / STEPS_PER_SECOND)}|${textStamp()}`;
   if (goalAt === minute) return goalNow;
   goalAt = minute;
   const list = objectives(c);

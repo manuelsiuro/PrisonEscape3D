@@ -189,7 +189,7 @@ export function stepFires(c: City) {
   if (burning(c, c.tile)) {
     c.events.push({ type: 'burn', harm: RANGED.burnPlayer });
     if (s.sleeping) c.wakeNow('attacked');
-    c.hurt(RANGED.burnPlayer);
+    c.hurt(RANGED.burnPlayer, 'fire');
   }
 }
 

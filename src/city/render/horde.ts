@@ -20,6 +20,8 @@ export interface DeadFrame {
   chasing: boolean;
   reeling: boolean;
   lunging: boolean;
+  /** 2.64: how fresh the blow it reels from is (1 just struck, 0 none): a flash, then the flush. */
+  struck: number;
   /** Its own number (its clothes and its gait). */
   seed: number;
   /** What it is (ZKIND: 0 a shambler, 1 a runner, 2 a brute, 3 a crawler, 4 a screamer, 5 a bloater). */
@@ -190,6 +192,8 @@ const SIZE = [1.3, 1.16, 1.85, 1.24, 1.22, 1.46];
 const NOWHERE = new THREE.Matrix4().makeScale(0, 0, 0);
 const SHADE = 0x1c2230;
 const HURT = 0xff9a8a;
+/** 2.64: the moment a blow lands: near white, for the first of its reel. */
+const FLASH = 0xfff4ec;
 
 interface Fallen {
   mesh: THREE.Mesh;
@@ -347,7 +351,7 @@ export class Horde {
       } else this.eyes.setMatrixAt(k, NOWHERE);
       // (Its colours: a shape out of the light; its own clothes; a flush where a blow has just landed.)
       this.tint.set(!shown ? SHADE : look === LOOK.CIVIL ? TINTS[d.seed % TINTS.length] : kind === 1 ? 0xf0ece4 : 0xffffff);
-      if (shown && d.reeling) this.tint.lerp(this.paint.set(HURT), 0.55);
+      if (shown && d.reeling) this.tint.lerp(this.paint.set(d.struck > 0.6 ? FLASH : HURT), d.struck > 0.6 ? 0.85 : 0.55);
       this.bodies[look].setColorAt(this.counts[look]++, this.tint);
       // The legs: a stride as it walks; trailing behind a crawler.
       const stride = crawl ? 0.12 : kind === 1 ? 0.9 : kind === 5 ? 0.35 : 0.55;
@@ -390,7 +394,7 @@ export class Horde {
         this.arms.setMatrixAt(k * 2 + side, this.m);
         this.hands.setMatrixAt(k * 2 + side, this.m);
         this.paint.set(shown ? (look === LOOK.CIVIL ? TINTS[d.seed % TINTS.length] : SLEEVE[look]) : SHADE);
-        if (shown && d.reeling) this.paint.lerp(this.tint.set(HURT), 0.4);
+        if (shown && d.reeling) this.paint.lerp(this.tint.set(d.struck > 0.6 ? FLASH : HURT), d.struck > 0.6 ? 0.8 : 0.4);
         this.arms.setColorAt(k * 2 + side, this.paint);
         this.hands.setColorAt(k * 2 + side, this.paint.set(shown ? 0xffffff : SHADE));
       }

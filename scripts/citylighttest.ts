@@ -521,7 +521,7 @@ const run = (c: City, n: number) =>
     use(e, 'lantern');
     clock(e, 23);
     e.state.lights[e.state.district][0][2] = e.state.step + 60 * MIN;
-    e.hurt(1000);
+    e.hurt(1000, 'z0');
     check(!e.anyLight && e.lit.every((v) => !v), 'after a fall, what burnt out in the night is out');
   }
   // Another district's burn on while the player is away, and are gone when they've burnt out.

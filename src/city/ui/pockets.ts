@@ -20,6 +20,9 @@ export interface PocketsState {
   targetOpen: boolean;
   /** 2.64: the box open is a bed that can be slept in from its card (not one the story still has something in). */
   sleepable: boolean;
+  /** 2.64: the torch: on, and its battery's game minutes left (its card says both). */
+  torchOn: boolean;
+  torchLeft: number;
   searched: boolean;
   searching: number;
   asleep: boolean;
@@ -45,7 +48,7 @@ const iconOf = (n: number) => (icons ??= ['', ...photos(CITY_ITEMS.map((d) => ({
 /** What a thing does when used, in a line ("+30 hunger · +12 energy"); '' for what isn't used. */
 /** 2.52: the pockets' lights, used to light something: their line and their button. */
 const LIGHTS: Record<string, { line: Key; verb: Key; icon: 'flame' | 'bulb' | 'hand' }> = {
-  torch: { line: 'city.gives.torch', verb: 'city.thing.torch', icon: 'bulb' },
+  torch: { line: 'city.gives.torch', verb: 'city.thing.torchOn', icon: 'bulb' },
   lantern: { line: 'city.gives.lantern', verb: 'city.thing.setDown', icon: 'flame' },
   fuel: { line: 'city.gives.fuel', verb: 'city.thing.light', icon: 'flame' },
   // (2.55: thrown.)
@@ -201,7 +204,7 @@ export class CityPockets {
     }
     // (The thing whose card was up is gone: the card too.)
     if (this.picked >= 0 && !s.inv[this.picked]?.[0]) this.picked = -1;
-    const inv = `${JSON.stringify(s.inv)}|${this.picked}|${s.box}`;
+    const inv = `${JSON.stringify(s.inv)}|${this.picked}|${s.box}|${s.torchOn}|${s.torchLeft >= 60 ? Math.round(s.torchLeft / 60) : s.torchLeft}|${textStamp()}`;
     if (inv !== this.shownInv) {
       this.shownInv = inv;
       this.bar.innerHTML = Array.from({ length: POCKETS }, (_, k) => {
@@ -215,12 +218,16 @@ export class CityPockets {
       this.card.classList.toggle('hidden', this.picked < 0);
       if (this.picked >= 0) {
         const [item, n] = s.inv[this.picked];
-        const line = useLine(item);
+        const torch = cityItem(item)!.id === 'torch';
+        // (2.64: the torch's card says whether it's on and what's left of its battery, and its button what a press does.)
+        const line = torch
+          ? `${useLine(item)} · ${s.torchLeft >= 60 ? t('city.thing.torchLeft', { h: Math.round(s.torchLeft / 60) }) : s.torchLeft > 0 ? t('city.thing.torchMinutes', { n: s.torchLeft }) : t('city.thing.torchEmpty')}`
+          : useLine(item);
         this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${counted(item, n)}</b><small>${line || (cityItem(item)!.wear !== undefined ? t(cityItem(item)!.id === 'crossbow' ? 'city.thing.shots' : 'city.thing.blows', { n, of: cityItem(item)!.wear! }) : t(`city.kindOf.${cityItem(item)!.kind}` as Key))}</small></div></div>
-          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat'))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
+          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(torch ? (s.torchOn ? 'city.thing.torchOff' : 'city.thing.torchOn') : (LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
-    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable}`;
+    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable}|${textStamp()}`;
     if (box !== this.shownBox) {
       this.shownBox = box;
       this.panel.classList.toggle('hidden', !s.box);
@@ -232,6 +239,10 @@ export class CityPockets {
           ${
             filled
               ? `<div class="slot-grid">${s.slots.map((st, k) => (st[0] ? `<button class="slot filled" data-slot="${k}" title="${itemName(st[0])}" aria-label="${t('city.box.take', { what: counted(st[0], st[1]) })}">${slotInner(st[0], st[1])}</button>` : '')).join('')}</div>
+          <p class="box-names">${s.slots
+            .filter((st) => st[0])
+            .map((st) => counted(st[0], st[1]))
+            .join(' · ')}</p>
           <div class="ct-actions">${sleep}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
               : `<p class="card-note">${t('city.box.empty')}</p>${sleep ? `<div class="ct-actions">${sleep}</div>` : ''}`
           }`;
@@ -262,7 +273,7 @@ export class CityPockets {
             const short = r.from.filter(([id, n]) => have(id) < n).map(([id]) => t(`city.item.${id}` as Key));
             const missing = why === 'parts' && short.length ? t('city.make.missing', { what: short.join(', ') }) : '';
             const need = r.bench ? t('city.make.bench') : r.stove ? t('city.make.stove') : '';
-            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-r="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="${why === 'bench' || why === 'stove' || missing ? 'lack' : ''}">${(why === 'bench' || why === 'stove' ? need : '') || missing || need || useLine(made) || t(`city.kindOf.${cityItem(made)!.kind}` as Key)}</small></span><span class="cr-parts">${parts}</span></button></li>`;
+            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-r="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="${why === 'bench' || why === 'stove' || missing ? 'lack' : ''}">${(why === 'bench' || why === 'stove' ? need : '') || (missing && need ? `${missing} · ${need}` : missing) || need || useLine(made) || t(`city.kindOf.${cityItem(made)!.kind}` as Key)}</small></span><span class="cr-parts">${parts}</span></button></li>`;
           }).join('')}</ul>`;
       }
     }
