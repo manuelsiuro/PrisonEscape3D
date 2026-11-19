@@ -690,6 +690,15 @@ const print = (c: City) => fnv1a(JSON.stringify(c.snapshot().state));
           if (armed) c.state.inv[0] = [cityItemNumber('bat'), 40];
           stand(c, out, nearestDir(-dx, -dz));
           check(c.target()?.kind === 'pane' && c.target()?.tile === t, `seed ${seed}: before a window the button is ${c.target()?.kind}`);
+          // (2.64: a car beside comes before the glass: a search is never taken for breaking it.)
+          {
+            const by = [out + 1, out - 1, out + W, out - W].find((i) => i !== t && !c.grid[i] && !c.carAt[i]);
+            if (by !== undefined) {
+              c.carAt[by] = 1;
+              check(c.target()?.kind === 'box' && c.target()?.key === 'c0', `seed ${seed}: a car beside a window: ${c.target()?.kind}`);
+              c.carAt[by] = 0;
+            }
+          }
           // (One of the dead out of sight 12 tiles off, idle: it hears the glass.)
           const ear = c.zedPlaces.streets.find(
             (i) => Math.max(Math.abs((i % W) - (out % W)), Math.abs(Math.floor(i / W) - Math.floor(out / W))) === 12,

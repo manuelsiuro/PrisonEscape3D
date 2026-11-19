@@ -4,7 +4,7 @@
  */
 import { cityItem, cityItemNumber } from '../src/city/content/items';
 import { STORY } from '../src/city/content/story';
-import { gatesOpen, objectives, towards, wants } from '../src/city/sim/story';
+import { gatesOpen, holds, objectives, towards, wants } from '../src/city/sim/story';
 import { COP, FULL, SLEEP_FROM, SLEEP_TO, type City } from '../src/city/sim/City';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { nearestDir } from '../src/sim/ai/path';
@@ -101,6 +101,15 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
     if (!s.inv.some((st) => !st[0])) {
       const k = s.inv.findIndex((st) => !cityItem(st[0])?.use && !cityItem(st[0])?.attack && !keep(st[0]));
       if (k >= 0) return command(0, COP.DROP, k);
+      // (2.64: full of food and weapons, as a player wouldn't be: a weapon that never strikes (another is stronger), then the
+      // least filling food past four stacks. Before, its pockets stayed full for days and it walked past every battery.)
+      const strikes = c.weapon();
+      const spare = s.inv.findIndex((st) => cityItem(st[0])?.attack && st !== strikes && !keep(st[0]));
+      if (spare >= 0) return command(0, COP.DROP, spare);
+      const food = s.inv
+        .map((st, k) => ({ k, hunger: cityItem(st[0])?.use?.hunger ?? 0, health: cityItem(st[0])?.use?.health ?? 0 }))
+        .filter((f) => f.hunger > 0 && f.health <= 5 && !keep(s.inv[f.k][0]));
+      if (food.length > 4) return command(0, COP.DROP, food.sort((a, b) => a.hunger - b.hunger)[0].k);
     }
     // (Night is for sleeping, unless the stomach is nearly empty: then food first.)
     const night = (c.minute >= SLEEP_FROM || c.minute < SLEEP_TO) && s.hunger > FULL * 0.2;
@@ -110,14 +119,18 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
     // (2.58: what's behind a chained door is left alone: it has no crowbar's use.)
     const shut = (k: number) => c.lockedLot(c.district.lotAt[props[k].z * MAP_W + props[k].x] - 1);
     const want = (k: number) =>
-      !skip.has(`${s.district}:${k}`) && !shut(k) && (bedtime ? props[k].kind === 'bed' && c.searched(`${k}`) : !c.searched(`${k}`));
+      !skip.has(`${s.district}:${k}`) &&
+      !shut(k) &&
+      (bedtime ? props[k].kind === 'bed' && c.searched(`${k}`) && !holds(c, k) : !c.searched(`${k}`));
     // (2.54: it walks past cars, as it did before they could be searched: its runs stay what they were.)
     const beside = c.target();
     const t = beside?.key.startsWith('c') ? null : beside;
     if (t && (t.kind === 'box' || t.kind === 'bed') && (want(Number(t.key)) || (bedtime && t.prop === 'bed' && Number(t.key) === goal))) {
       pilot.stop();
       goal = -1;
-      return command(0, COP.ACT);
+      // (2.64: a bed looked into is slept in, whatever is stored in it: before, one holding something was opened, found full
+      // pockets, shut, and opened again all night.)
+      return bedtime && t.prop === 'bed' && c.sleepable() >= 0 ? command(0, COP.SLEEP) : command(0, COP.ACT);
     }
     if (goal < 0 || !want(goal)) {
       // The nearest wanted piece (as the crow flies); none here by day: through a checkpoint.

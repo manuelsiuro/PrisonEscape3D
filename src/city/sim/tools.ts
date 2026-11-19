@@ -44,8 +44,15 @@ export function freshTools() {
     snare: 0,
     bleed: 0,
     panes: {} as Record<string, number[]>,
+    rev: CITY_REV,
   };
 }
+
+/**
+ * 2.64: the rules a city was begun under, so one under way keeps what was drawn for it: 0 before 2.64; 1 a first day that works
+ * (boards and bats about, a bat with the radio).
+ */
+export const CITY_REV = 1;
 
 /** A save's fields made sound before the city is built from it (one from before them: no locked building). */
 export function soundTools(st: {
@@ -56,7 +63,9 @@ export function soundTools(st: {
   snare?: unknown;
   bleed?: unknown;
   panes?: unknown;
+  rev?: unknown;
 }) {
+  if (!Number.isInteger(st.rev) || (st.rev as number) < 0 || (st.rev as number) > CITY_REV) st.rev = 0;
   if (st.outfit !== 1) st.outfit = 0;
   if (!Number.isInteger(st.bleed) || (st.bleed as number) < 0 || (st.bleed as number) > BLEED.most) st.bleed = 0;
   const panes: Record<string, number[]> = {};

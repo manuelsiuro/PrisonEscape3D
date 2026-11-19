@@ -139,6 +139,31 @@ export async function showCityIntro(click: () => void): Promise<void> {
   click();
 }
 
+/**
+ * 2.64: a Survivor's fall, said so it can't be missed (a banner of five seconds was, and the day jumped with no word): the day woken
+ * to, where (a bed slept in, or by the bus: nowhere else is home yet), where what was carried lies, and that the nights grow worse.
+ * 'map': the map asked for, to see the pile.
+ */
+export async function showCityFell(day: number, bed: boolean, pileWhere: string | null, click: () => void): Promise<'go' | 'map'> {
+  const out = await modal<'go' | 'map'>(
+    `<div class="card city-intro city-fell">
+      <h2>${icon('heart', 22)}${t('city.fell.title')}</h2>
+      <p class="city-fell-woke"></p>
+      <p class="city-fell-pile"></p>
+      <p class="city-fell-more">${t('city.fell.more')}</p>
+      <div class="actions">${pileWhere ? `<button class="big-btn" data-c="map">${icon('map', 18)}${t('city.fell.map')}</button>` : ''}<button class="big-btn primary" data-c="go">${icon('walk', 18)}${t('city.fell.go')}</button></div>
+    </div>`,
+    'go',
+    '[data-c="go"]',
+    (el) => {
+      el.querySelector('.city-fell-woke')!.textContent = t(bed ? 'city.fell.bed' : 'city.fell.bus', { n: day });
+      el.querySelector('.city-fell-pile')!.textContent = pileWhere ? t('city.fell.pile', { where: pileWhere }) : t('city.fell.none');
+    },
+  );
+  click();
+  return out;
+}
+
 /** Hardcore: the city is lost. */
 export async function showCityOver(day: number, where: string, click: () => void): Promise<void> {
   await modal<'back'>(

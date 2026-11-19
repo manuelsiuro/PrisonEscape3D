@@ -1,7 +1,7 @@
 import { t, textStamp, type Key } from '../../i18n';
 import { keyLabel } from '../../i18n/keys';
 import { photos } from '../../render/itemIcons';
-import { h, setText } from '../../ui/dom';
+import { h, setText, TOUCH } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../content/items';
 import { PEOPLE } from '../content/people';
@@ -18,6 +18,8 @@ export interface PocketsState {
   target: Target | null;
   /** The target is the box open now (the button shuts it); it has been looked into before. */
   targetOpen: boolean;
+  /** 2.64: the box open is a bed that can be slept in from its card (not one the story still has something in). */
+  sleepable: boolean;
   searched: boolean;
   searching: number;
   asleep: boolean;
@@ -102,6 +104,7 @@ export class CityPockets {
   private shownBox = '';
   private shownAct = '';
   private shownHit = '';
+  private shownKeys = '';
   private lang = '';
   /** The pocket whose card is up (-1 none). */
   picked = -1;
@@ -141,6 +144,7 @@ export class CityPockets {
       if (!el) return;
       if (el.dataset.slot !== undefined) this.onOp(COP.TAKE, Number(el.dataset.slot));
       else if (el.dataset.c === 'all') this.onOp(COP.TAKE_ALL);
+      else if (el.dataset.c === 'sleep') this.onOp(COP.SLEEP);
       else this.onOp(COP.CLOSE);
     });
     this.card.addEventListener('click', (e) => {
@@ -216,18 +220,20 @@ export class CityPockets {
           <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat'))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
-    const box = `${s.box}|${JSON.stringify(s.slots)}`;
+    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable}`;
     if (box !== this.shownBox) {
       this.shownBox = box;
       this.panel.classList.toggle('hidden', !s.box);
       if (s.box) {
         const filled = s.slots.some((st) => st[0]);
+        // (2.64: a bed used as a stash is still slept in, from here: its button opens it while it holds something.)
+        const sleep = s.sleepable ? `<button class="big-btn" data-c="sleep">${icon('moon', 16)}${t('city.act.sleep')}</button>` : '';
         this.panel.innerHTML = `<div class="box-head"><b>${t(s.box as Key)}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${
             filled
               ? `<div class="slot-grid">${s.slots.map((st, k) => (st[0] ? `<button class="slot filled" data-slot="${k}" title="${itemName(st[0])}" aria-label="${t('city.box.take', { what: counted(st[0], st[1]) })}">${slotInner(st[0], st[1])}</button>` : '')).join('')}</div>
-          <div class="ct-actions"><button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
-              : `<p class="card-note">${t('city.box.empty')}</p>`
+          <div class="ct-actions">${sleep}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
+              : `<p class="card-note">${t('city.box.empty')}</p>${sleep ? `<div class="ct-actions">${sleep}</div>` : ''}`
           }`;
       }
     }
@@ -285,7 +291,7 @@ export class CityPockets {
                       : tg.kind === 'pile' || s.searched
                         ? 'city.act.look'
                         : 'city.act.search';
-    const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${s.person}`;
+    const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${s.person}|${textStamp()}`;
     if (key !== this.shownAct) {
       this.shownAct = key;
       this.act.classList.toggle('hidden', !tg);
@@ -307,7 +313,9 @@ export class CityPockets {
                         ? (`city.box.${tg.prop}` as Key)
                         : 'city.box.pile',
         );
-        this.act.innerHTML = `<i class="act-round">${icon(tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        // (2.64: on a keyboard, the key on the button; an open box's button shuts it, and says so by its icon too.)
+        const cap = TOUCH ? '' : `<kbd class="city-key">${keyLabel('KeyE')}</kbd>`;
+        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);
@@ -315,6 +323,11 @@ export class CityPockets {
       }
     }
     // (2.60) The blow's button: what strikes, the blows left in it round the button and by number, greyed while the arm comes back.
+    if (!TOUCH && this.shownKeys !== textStamp()) {
+      this.shownKeys = textStamp();
+      const cap = this.hit.querySelector('.city-key') ?? this.hit.querySelector('.tool-round')!.appendChild(h('kbd', 'city-key'));
+      cap.textContent = keyLabel('Space');
+    }
     const hitKey = `${s.weapon}|${s.blows}`;
     if (hitKey !== this.shownHit) {
       this.shownHit = hitKey;

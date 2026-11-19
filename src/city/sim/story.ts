@@ -25,7 +25,7 @@ import {
 import type { District } from '../gen/district';
 import { CITY_N, gateOpen, LANES, neighbour, streamOf } from '../gen/plan';
 import { TUNNEL } from '../gen/tunnel';
-import type { City, Target } from './City';
+import { SLEEP_FROM, SLEEP_TO, type City, type Target } from './City';
 import { nightAt, noise } from './dead';
 import { joined, lockedLots } from './tools';
 
@@ -567,13 +567,20 @@ export function objectives(c: City): Objective[] {
     return { id: name, done, at: done ? undefined : spot(THINGS.indexOf(id)) };
   };
   const exit = (w: number) => ({ district: P.wayDistrict[w - 1], tile: P.exits[w - 1] });
-  if (s.act === 1)
-    return [{ id: 'eat', done: (s.flags & FLAG.ATE) !== 0 }, { id: 'sleep', done: (s.flags & FLAG.SLEPT) !== 0 }, thing('radio', 'radio')];
-  if (s.act === 2)
-    return [
-      { id: 'batteries', done: c.count(BATTERY) >= STORY.batteries, n: Math.min(STORY.batteries, c.count(BATTERY)), of: STORY.batteries },
-      thing('aerial'),
-    ];
+  const mend = (): Objective[] => [
+    { id: 'batteries', done: c.count(BATTERY) >= STORY.batteries, n: Math.min(STORY.batteries, c.count(BATTERY)), of: STORY.batteries },
+    thing('aerial'),
+  ];
+  // (2.64: the radio found, what it wants is listed at once: the day isn't spent with nothing to do but wait for night's bed.
+  // Mended before the first night, the story goes on to the third act as it always could. The bed comes last by day, when it's
+  // refused, so the line under the meters is something that can be done now; first from its hour.)
+  if (s.act === 1) {
+    const bed: Objective = { id: 'sleep', done: (s.flags & FLAG.SLEPT) !== 0 };
+    const rest = [thing('radio', 'radio'), ...(has(c, 'radio') ? mend() : [])];
+    const bedtime = c.minute >= SLEEP_FROM || c.minute < SLEEP_TO;
+    return [{ id: 'eat', done: (s.flags & FLAG.ATE) !== 0 }, ...(bedtime ? [bed, ...rest] : [...rest, bed])];
+  }
+  if (s.act === 2) return mend();
   if (s.act === 3)
     return [
       ...WAYS.map((_, k): Objective => {

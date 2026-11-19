@@ -272,10 +272,18 @@ function folk(who: number): Part[] {
   return parts;
 }
 
-/** An awning over a street door, in the colour of what the building is (C4): the city read from above. A landmark's is wider, with a white band. */
+/**
+ * An awning over a street door, in the colour of what the building is (C4): the city read from above. A landmark's is wider, with a
+ * white band. 2.64: every one has a pale edge along its front, so a door reads as one against walls of the same colour (a house's
+ * brown on brick was missed, and players walked round looking for the way in).
+ */
 function awning(color: number, big: boolean): Part[] {
   const w = big ? 1.5 : 0.96;
-  const out = [box(w, 0.06, 0.62, color, 0, WALL_H - 0.34, 0.2), box(w, 0.2, 0.05, color, 0, WALL_H - 0.5, 0.5)];
+  const out = [
+    box(w, 0.06, 0.62, color, 0, WALL_H - 0.34, 0.2),
+    box(w, 0.2, 0.05, color, 0, WALL_H - 0.5, 0.5),
+    box(w, 0.07, 0.1, 0xf4f1ea, 0, WALL_H - 0.335, 0.46),
+  ];
   if (big) out.push(box(w, 0.07, 0.16, 0xf4f1ea, 0, WALL_H - 0.335, 0.28));
   return out;
 }

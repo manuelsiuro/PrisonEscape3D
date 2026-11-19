@@ -12,7 +12,7 @@ import { command, headingAngle } from '../../sim/command';
 import { hhmm } from '../../sim/systems/clock';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../../sim/tuning';
 import { MAP_W } from '../../sim/world/World';
-import { h } from '../../ui/dom';
+import { h, touchWords } from '../../ui/dom';
 import { hideLoading } from '../../ui/loading';
 import { showHelp } from '../../ui/screens/help';
 import { showPause } from '../../ui/screens/pause';
@@ -29,7 +29,7 @@ import { TOOLS } from '../sim/tools';
 import { CityHud, type CityHudState } from '../ui/hud';
 import { paintDistrict } from '../ui/mapPaint';
 import { CityPockets, itemName, type PocketsState } from '../ui/pockets';
-import { showCityEscaped, showCityIntro, showCityJournal, showCityMap, showCityOver, showCityPerson } from '../ui/screens';
+import { showCityEscaped, showCityFell, showCityIntro, showCityJournal, showCityMap, showCityOver, showCityPerson } from '../ui/screens';
 import { PEOPLE } from '../content/people';
 import { NOTES } from '../content/story';
 import { recordRun, type Feat } from '../record';
@@ -155,7 +155,7 @@ export function runCity(city: City, fresh: boolean): Promise<void> {
     if (fresh)
       void under(r, () => showCityIntro(click)).then(() => {
         arrive(r);
-        tip('city.search', 'city.tip.search');
+        tip('city.search', touchWords() ? 'city.tip.search' : 'city.tip.searchKeys');
       });
     else arrive(r);
   });
@@ -296,13 +296,13 @@ async function openJournal() {
   if (way && play.side === r) r.ops.push([COP.CHOOSE, way]);
 }
 
-/** One tip at a time: a second within eight seconds waits for its next occasion (it isn't spent). */
+/** One tip at a time: a second within eight seconds waits for its next occasion (it isn't spent); `urgent` (2.64) doesn't wait. */
 let tipped = -1e9;
 let fellHeard = -1e9;
 let crackled = -1e9;
 const now = () => performance.now();
-function tip(name: string, key: Key) {
-  if (seenTip(name) || now() - tipped < 8000) return;
+function tip(name: string, key: Key, urgent = false) {
+  if (seenTip(name) || (!urgent && now() - tipped < 8000)) return;
   tipped = now();
   coachOnce(name, key, undefined, 'bulb');
 }
@@ -554,11 +554,13 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'took':
       sound.pickup();
       // (The first things in the pockets: what to do with them.)
-      if (cityItem(e.item)?.use) tip('city.eat', 'city.tip.eat');
+      if (cityItem(e.item)?.use) tip('city.eat', touchWords() ? 'city.tip.eat' : 'city.tip.eatKeys');
       else if (cityItem(e.item)?.attack) tip('city.weapon', 'city.tip.weapon');
-      else if (cityItem(e.item)?.id === 'plank' || cityItem(e.item)?.id === 'nails') tip('city.boards', 'city.tip.boards');
+      else if (cityItem(e.item)?.id === 'plank' || cityItem(e.item)?.id === 'nails')
+        tip('city.boards', touchWords() ? 'city.tip.boards' : 'city.tip.boardsKeys');
       else if (cityItem(e.item)?.id === 'fuel' || cityItem(e.item)?.id === 'torch') tip('city.light', 'city.tip.light');
-      else if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt') tip('city.thrown', 'city.tip.thrown');
+      else if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt')
+        tip('city.thrown', touchWords() ? 'city.tip.thrown' : 'city.tip.thrownKeys');
       else if (cityItem(e.item)?.id === 'crowbar' || cityItem(e.item)?.id === 'cutters') tip('city.tools', 'city.tip.tools');
       break;
     case 'stored':
@@ -620,6 +622,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'torch':
       sound.click();
       if (e.spent) banner.toast(t('city.toast.torchSpent'), 'info', 2800, 'bulb');
+      // (2.64: a battery put in is said, with those left: the radio wants two.)
+      else if (e.battery !== undefined) banner.toast(t('city.toast.torchBattery', { n: e.battery }), 'info', 3200, 'bulb');
       break;
     case 'refused':
       banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400, 'bulb');
@@ -655,7 +659,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
       else if (kind === 3) sound.rasp();
       else if (kind === 5) sound.gurgle();
       else if (kind !== 4) sound.moan();
-      tip('city.spotted', 'city.tip.spotted');
+      // (2.64: the first sight is the moment to say it: not after a bite, held back by a tip about the dark a moment before.)
+      tip('city.spotted', 'city.tip.spotted', true);
       break;
     }
     case 'pound':
@@ -754,7 +759,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'made':
       sound.stow(false);
       banner.toast(t('city.toast.made', { what: itemName(e.item) }), 'good', 2200);
-      if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt') tip('city.thrown', 'city.tip.thrown');
+      if (cityItem(e.item)?.id === 'crossbow' || cityItem(e.item)?.id === 'bolt')
+        tip('city.thrown', touchWords() ? 'city.tip.thrown' : 'city.tip.thrownKeys');
       break;
     case 'cantMake':
       banner.toast(t(`city.toast.cant.${e.why}` as Key), 'info', 2400, 'bulb');
@@ -818,7 +824,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
       banner.toast(t('city.toast.traded', { what: itemName(e.item) }), 'good', 2200);
       break;
     case 'found':
-      if (e.thing === 0) tip('city.journal', 'city.tip.journal');
+      if (e.thing === 0) tip('city.journal', touchWords() ? 'city.tip.journal' : 'city.tip.journalKeys');
       sound.chime();
       banner.toast(t('city.toast.found', { what: t(`city.kit.${THINGS[e.thing]}` as Key) }), 'good', 3200);
       save(r);
@@ -909,8 +915,14 @@ function cityEvent(r: CityRun, e: CityEvent) {
       }
       play.acc = 0;
       sound.setScene(nightAt(c.minute) ? 'outdoorNight' : 'outdoorDay');
-      banner.show(t('city.fell.title'), t('city.fell.sub'), 'alarm', 5200, 'heart');
       save(r);
+      // (2.64: a card, not a banner: where they woke, where their things lie (the map, asked for, shows the pile).)
+      {
+        const pile = e.pile ?? -1;
+        void under(r, () => showCityFell(c.day, e.bed ?? false, pile >= 0 ? c.plan.names[pile] : null, click)).then((go) => {
+          if (go === 'map' && play.side === r) void openMap();
+        });
+      }
       break;
     default:
       break;
@@ -1057,6 +1069,7 @@ function pocketsOf(r: CityRun): PocketsState {
   st.slots = c.box();
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
+  st.sleepable = st.box === 'city.box.bed' && c.sleepable() >= 0;
   st.searched = !!tg && c.searched(tg.key);
   const work = s.search.startsWith('d')
     ? BAR_STEPS

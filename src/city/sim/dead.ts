@@ -229,18 +229,27 @@ export function strike(c: City) {
   const fz = DIR_Z[p.facing] ?? 0;
   let best = -1;
   let bestD = Infinity;
+  // (2.64: none ahead, the nearest in reach on any side: the player turns to it. One at their side or back bit them unanswered.)
+  let side = -1;
+  let sideD = Infinity;
   s.zeds.forEach((z, k) => {
     const dx = z.body.x - p.x;
     const dz = z.body.z - p.z;
     // (2.61: one on its feet before one lying down: the blow goes where the danger is.)
     const d2 = dx * dx + dz * dz + (isDown(z) ? 1e9 : 0);
+    if (dx * dx + dz * dz > reach * reach || !lineOfSight(c.world, p.x, p.z, z.body.x, z.body.z)) return;
     // (Ahead, or on top of them.)
-    if (dx * dx + dz * dz > reach * reach || (dx * dx + dz * dz > 400 * 400 && dx * fx + dz * fz <= 0)) return;
-    if (d2 < bestD && lineOfSight(c.world, p.x, p.z, z.body.x, z.body.z)) {
-      bestD = d2;
-      best = k;
+    if (dx * dx + dz * dz > 400 * 400 && dx * fx + dz * fz <= 0) {
+      if (d2 < sideD) [sideD, side] = [d2, k];
+      return;
     }
+    if (d2 < bestD) [bestD, best] = [d2, k];
   });
+  // (And one lying ahead doesn't take the blow from one on its feet beside or behind: the blow goes where the danger is.)
+  if (side >= 0 && (best < 0 || (isDown(s.zeds[best]) && !isDown(s.zeds[side])))) {
+    best = side;
+    p.facing = nearestDir(s.zeds[side].body.x - p.x, s.zeds[side].body.z - p.z);
+  }
   noise(c, c.tile, BLOW.noise);
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
   const z = s.zeds[best];
