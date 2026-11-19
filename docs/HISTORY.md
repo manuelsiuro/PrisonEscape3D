@@ -235,4 +235,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - Another game's names taken out (v2.62.0)
 - The game named Over the Wall (v2.63.0)
 - The prison cards in 3D (v2.63.1)
-- City Escape: the last nights' waits shortened (v2.63.2, not released yet)
+- City Escape: the last nights' waits shortened (v2.63.2)
