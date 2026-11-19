@@ -57,10 +57,9 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
   (since 2.60 the dead are a dozen draws, not one; 2.61's fog on the boat's night), the French read by
   a native speaker, its sounds listened to (2.60 added five), a whole city played to its end by a
   person under the rules of 2.58 to 2.61.
-- Nothing of the design is left unbuilt after 2.61, nor of the reviews or the look. Known and left: with
-  a bat the endings' last nights are harder (night 5, 32 cities: the helicopter 30 to 25, the metro 27 to
-  21; the user may want the holds shortened); a pane is cut away with its wall round the player, so the
-  window being broken isn't seen from where it is broken.
+- Nothing of the design is left unbuilt after 2.61, nor of the reviews or the look. Known and left: a pane
+  is cut away with its wall round the player, so the window being broken isn't seen from where it is
+  broken. (The last nights' waits, harder with a bat since 2.61, were shortened in 2.63.2.)
 
 ## 5. Upkeep
 

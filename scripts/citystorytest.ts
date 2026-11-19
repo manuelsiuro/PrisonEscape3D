@@ -288,6 +288,9 @@ const ids = (c: City) =>
     for (const e of c.events) if (e.type === 'breach') first = e.tile;
   }
   check(c.district.lots[other].doors.includes(first), 'boarded into another building, the beacon lit: its doors hold');
+  // (The beacon's clock started again: the doors' tearing above took longer than the helicopter's wait, 60 minutes
+  // since 2.63.2, and back in the hospital it would land.)
+  s.readyAt = s.step;
   stand(c, d, c.story.exits[0]);
   // The dead on: they come for it, a few at a time, and the count is the night's.
   c.peace = false;
