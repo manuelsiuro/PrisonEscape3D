@@ -238,3 +238,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape: the last nights' waits shortened (v2.63.2)
 - City Escape, a first day that works (v2.64.0)
 - City Escape, readable screens and fights (v2.64.1, not released yet)
+
+## [v2.65 to v2.69](history/v2.65-v2.69.md)
+
+- City Escape, fair last nights and real choices (v2.65.0, not released yet)

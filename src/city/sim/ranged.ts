@@ -53,10 +53,21 @@ function ahead(c: City, reach: number, from = 0): number {
   return best;
 }
 
-/** Where a thing thrown lands: on the nearest of the dead ahead, else as far as it goes the way faced (-1: a wall in the thrower's face). */
-function landing(c: City): number {
-  const k = ahead(c, RANGED.throwReach);
-  if (k >= 0) return tileAt(c.state.zeds[k].body.x, c.state.zeds[k].body.z);
+/** Tiles between two, either way (a square's rings). */
+const apart = (a: number, b: number) =>
+  Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
+
+/**
+ * Where a thing thrown lands: on the nearest of the dead ahead, else as far as it goes the way faced (-1: a wall in the thrower's face).
+ * 2.65: `clear`, tiles it must land beyond (a molotov: past its fire's spread): one of the dead nearer is thrown over; -2, nowhere far enough.
+ */
+function landing(c: City, clear = 0): number {
+  const here = c.tile;
+  const k = ahead(c, RANGED.throwReach, clear ? (clear + 0.5) * UNIT : 0);
+  if (k >= 0) {
+    const at = tileAt(c.state.zeds[k].body.x, c.state.zeds[k].body.z);
+    if (apart(at, here) > clear) return at;
+  }
   const p = c.state.player;
   const fx = DIR_X[p.facing] ?? 0;
   const fz = DIR_Z[p.facing] ?? 0;
@@ -67,9 +78,9 @@ function landing(c: City): number {
     const z = Math.floor((p.z + Math.trunc((fz * n * UNIT) / (2 * fl))) / UNIT);
     // (A wall, what stands in the way, a barred door: it goes no further.)
     if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || c.grid[z * MAP_W + x] || c.bars.includes(z * MAP_W + x)) break;
-    if (z * MAP_W + x !== c.tile) last = z * MAP_W + x;
+    if (z * MAP_W + x !== here) last = z * MAP_W + x;
   }
-  return last;
+  return clear && last >= 0 && apart(last, here) <= clear ? -2 : last;
 }
 
 /** A molotov broken on a tile: the fire there and on the open tiles round it, with a clear line. */
@@ -98,7 +109,9 @@ function setFire(c: City, at: number) {
 export function useThrown(c: City, item: number, slot: number): boolean {
   if (item !== BOTTLE && item !== MOLOTOV) return false;
   const s = c.state;
-  const to = landing(c);
+  // (2.65: a molotov never breaks where its fire reaches the thrower: too near, it isn't thrown, and says so.)
+  const to = landing(c, item === MOLOTOV ? RANGED.fireSpread : 0);
+  if (to === -2) return (c.events.push({ type: 'refused', why: 'tooNear' }), true);
   if (to < 0) return (c.events.push({ type: 'refused', why: 'noRoom' }), true);
   const st = s.inv[slot];
   if (--st[1] <= 0) st[0] = st[1] = 0;

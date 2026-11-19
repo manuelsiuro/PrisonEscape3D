@@ -94,8 +94,11 @@ export const STORY = {
   heliHold: 60,
   /** The metro's gates wind open this many game minutes after the generator starts (2.63.2: 40; 60 from 2.58, 90 before). */
   metroHold: 40,
-  /** 2.56: the tunnel: how many of the dead stand along it, and its danger (as a district's: what's asked of any place). */
-  tunnelDead: 8,
+  /**
+   * 2.56: the tunnel: how many of the dead stand along it, and its danger (as a district's: what's asked of any place). 2.65: 5 (8 before):
+   * unarmed on 32 cities, the metro was won 5 times against the others' 22 (night 1), 13 of its losses in the tunnel; at 5, 18.
+   */
+  tunnelDead: 5,
   tunnelDanger: 3,
   /** The boat leaves on the night's high tide: from, to (minutes of the day; over midnight). */
   tideFrom: 23 * 60,

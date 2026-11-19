@@ -483,6 +483,9 @@ export function storyMinute(c: City) {
 /** What the action button would do for the story here: the way out's own tile, in reach. */
 export function storyTarget(c: City): Target | null {
   const s = c.state;
+  // (2.65: on the foot of the tunnel's stairs, the way back up into the station. Before, going down could not be undone.)
+  if (s.district === TUNNEL)
+    return !s.over && c.tile === c.tunnel.start ? { kind: 'way', key: 'u', tile: c.tunnel.start, prop: null } : null;
   if (!s.way || s.over || s.district !== c.story.wayDistrict[s.way - 1]) return null;
   if (s.ready && (s.way === 1 || (s.way === 3 && !gatesOpen(c)))) return null;
   const tile = s.ready && s.way === 2 && c.story.pier >= 0 ? c.story.pier : c.story.exits[s.way - 1];
@@ -492,6 +495,7 @@ export function storyTarget(c: City): Target | null {
 /** The action at the way out: set going (every thing it takes in the kit), or taken. */
 export function storyAct(c: City) {
   const s = c.state;
+  if (s.district === TUNNEL) return c.ascend();
   if (!s.ready) {
     if (missing(c, s.way).length) return void c.events.push({ type: 'refused', why: 'parts' });
     if (s.way === 1 && !nightAt(c.minute)) return void c.events.push({ type: 'refused', why: 'notNight' });
@@ -572,8 +576,9 @@ export function objectives(c: City): Objective[] {
     thing('aerial'),
   ];
   // (2.64: the radio found, what it wants is listed at once: the day isn't spent with nothing to do but wait for night's bed.
-  // Mended before the first night, the story goes on to the third act as it always could. The bed comes last by day, when it's
-  // refused, so the line under the meters is something that can be done now; first from its hour.)
+  // Mended before the first night, the story goes on to the third act as it always could. The bed comes last by day, when a rest
+  // doesn't tick it (2.65; before, a bed was refused by day), so the line under the meters is something that can be done now; first
+  // from its hour.)
   if (s.act === 1) {
     const bed: Objective = { id: 'sleep', done: (s.flags & FLAG.SLEPT) !== 0 };
     const rest = [thing('radio', 'radio'), ...(has(c, 'radio') ? mend() : [])];

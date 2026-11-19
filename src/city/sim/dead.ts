@@ -11,10 +11,10 @@ import { ESCAPE_KINDS, isBuilding } from '../content/districts';
 import { cityItem } from '../content/items';
 import { districtX, districtZ } from '../gen/plan';
 import { STORY } from '../content/story';
-import { crowded, type City } from './City';
+import { crowded, type City, type Stack } from './City';
 import { going } from './story';
 import { lampLit, torchLit, wayToDark } from './light';
-import { TUNNEL } from '../gen/tunnel';
+import { PLACES, TUNNEL } from '../gen/tunnel';
 import { shoot } from './ranged';
 
 /**
@@ -175,10 +175,41 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
   return false;
 }
 
-/** The district just entered: its dead put down for the hour it is. */
+/** 2.65: the dusk the night's dead came at last: its day (0, before the first). */
+const duskOf = (c: City) => (c.minute >= NIGHT_FROM ? c.day : c.day - 1);
+
+/** 2.65: how many of the dead were put down in a place (a district, the tunnel) since the last dusk. */
+export function clearedIn(c: City, d = c.state.district): number {
+  const cl = c.state.cleared;
+  return cl.length && cl[0] === duskOf(c) ? (cl[1 + d] ?? 0) : 0;
+}
+
+/** 2.65: one more put down here: counted until the next dusk (the first since, the counts begin again). */
+function countDown(c: City) {
+  const s = c.state;
+  const dusk = duskOf(c);
+  if (s.cleared.length !== PLACES + 1 || s.cleared[0] !== dusk) s.cleared = [dusk, ...Array<number>(PLACES).fill(0)];
+  s.cleared[1 + s.district]++;
+}
+
+/**
+ * The district just entered: its dead put down for the hour it is. 2.65: less those put down there since the last dusk (indoors first):
+ * ground cleared stays cleared until nightfall, when the night's come back a few at a time. Before, a checkpoint crossed twice put
+ * every one of them back.
+ */
 export function populate(c: City) {
   c.state.zeds = [];
   const q = quota(c);
+  const gone = clearedIn(c);
+  // (By day with nothing set going nobody comes before nightfall: what is said of it holds.)
+  const day = !nightAt(c.minute) && !going(c) && c.state.district !== TUNNEL;
+  if (gone) {
+    const less = Math.min(gone, q.indoors + q.streets);
+    const inside = Math.min(q.indoors, less);
+    q.indoors -= inside;
+    q.streets -= less - inside;
+    if (less && day) c.events.push({ type: 'quiet', n: less, all: q.indoors + q.streets === 0 });
+  }
   const at = c.zedPlaces;
   // (2.53: by day they wait where daylight doesn't reach; after dark, anywhere indoors.)
   // (Only the dark they can stand in: not a shelter's, not a lit room's. No more than one to `darkEach` tiles of it: the rest indoors anywhere, as before.)
@@ -186,8 +217,14 @@ export function populate(c: City) {
     ? []
     : at.deep.filter((i) => !c.lit[i] && !c.shelter(c.district.lotAt[i] - 1) && !c.safeLots.has(c.district.lotAt[i] - 1));
   const inDark = Math.min(q.indoors, Math.floor(dark.length / DEAD.darkEach));
-  for (let k = 0; k < q.indoors; k++) put(c, k < inDark ? dark : at.indoors, ZED.IDLE);
-  for (let k = 0; k < q.streets; k++) put(c, at.streets, ZED.WANDER);
+  let short = 0;
+  for (let k = 0; k < q.indoors; k++) if (!put(c, k < inDark ? dark : at.indoors, ZED.IDLE)) short++;
+  for (let k = 0; k < q.streets; k++) if (!put(c, at.streets, ZED.WANDER)) short++;
+  // (By day, one that found no place isn't put down at the next entry either: the district stays as it was seen.)
+  if (day) for (let k = 0; k < short; k++) countDown(c);
+  // (2.65: come back by the tunnel's stairs: the generator's din calls the station's dead, and the tunnel's heard the player.)
+  if (c.climbed && (going(c) === 1 || c.state.district === TUNNEL)) noise(c, c.tile, MAP_W);
+  if (c.state.district === TUNNEL) c.climbed = false;
 }
 
 /** A noise the dead hear: those within its reach (tiles) and not already after someone go and look. */
@@ -208,22 +245,58 @@ export function noise(c: City, tile: number, reach: number, again = false) {
   }
 }
 
+/** The longest reach of the weapons carried, in tiles past the fists'. */
+const longest = (c: City) => Math.max(0, ...c.state.inv.map((st) => (cityItem(st[0])?.attack ? (cityItem(st[0])?.reach ?? 0) : 0)));
+
+/** A blow's harm with a weapon of this `attack` (0: fists): doubled on one that never saw it coming, halved worn out. */
+const blowOf = (attack: number, unseen: boolean, tired: boolean) =>
+  Math.ceil((BLOW.fists + attack * 2) / (tired ? 2 : 1)) * (unseen ? BLOW.unseen : 1);
+
+/**
+ * 2.65: the weapon that strikes this one of the dead, of those carried that reach it (null: fists), with no button to choose: one that
+ * puts it down for good (a blade, or any on a crawler or a bloater), else one that knocks it down, else the strongest; of two alike, the
+ * stronger, then the longer. One lying down is finished by any blow: a blade if there is one. Before, the strongest always struck, so a
+ * knife carried with a nailed bat never did, nor a spear against a bloater from out of its burst.
+ */
+export function armFor(c: City, z: Zed, unseen: boolean, tired: boolean): Stack | null {
+  const p = c.state.player;
+  const d2 = (z.body.x - p.x) ** 2 + (z.body.z - p.z) ** 2;
+  const lies = isDown(z);
+  const forGood = z.kind === ZKIND.CRAWLER || z.kind === ZKIND.BLOATER;
+  // (What a choice is worth: 2 puts it down for good, 1 knocks it down; then its harm, then its reach.)
+  const worth = (st: Stack | null): number[] => {
+    const it = cityItem(st?.[0] ?? 0);
+    const harm = blowOf(it?.attack ?? 0, unseen, tired);
+    const edge = it?.edge ? 1 : 0;
+    if (lies) return [edge, harm, it?.reach ?? 0];
+    const empties = harm >= z.hp;
+    return [empties ? (edge || forGood ? 2 : 1) : 0, harm, it?.reach ?? 0];
+  };
+  let best: Stack | null = null;
+  let bestW = d2 <= BLOW.reach * BLOW.reach ? worth(null) : [-1];
+  for (const st of c.state.inv) {
+    const it = cityItem(st[0]);
+    if (!it?.attack) continue;
+    const r = BLOW.reach + (it.reach ?? 0) * UNIT;
+    if (d2 > r * r) continue;
+    const w = worth(st);
+    const k = w.findIndex((v, i) => v !== (bestW[i] ?? -1));
+    if (k >= 0 && w[k] > (bestW[k] ?? -1)) [best, bestW] = [st, w];
+  }
+  return best;
+}
+
 /** The player's blow: the nearest of the dead ahead and in reach is struck; its noise carries either way. */
 export function strike(c: City) {
   const s = c.state;
   // (2.55: a loaded crossbow shoots the one ahead that is out of arm's reach; the blow is for those in it.)
-  const arm = BLOW.reach + (cityItem(c.weapon()?.[0] ?? 0)?.reach ?? 0) * UNIT;
-  if (shoot(c, arm)) return;
+  // (2.65: as far as the longest carried reaches: the spear's one more tile is never lost behind a stronger weapon.)
+  const reach = BLOW.reach + longest(c) * UNIT;
+  if (shoot(c, reach)) return;
   if (s.step - s.swung < BLOW.every || s.sleeping) return;
   s.swung = s.step;
-  // (One weapon strikes: its blow, its reach, its wear.)
-  const held = cityItem(c.weapon()?.[0] ?? 0);
-  const weapon = held?.attack ?? 0;
-  const long = held?.reach ?? 0;
   const tired = s.energy <= 0;
   s.energy = Math.max(0, s.energy - BLOW.energy);
-  const blow = Math.ceil((BLOW.fists + weapon * 2) / (tired ? 2 : 1));
-  const reach = BLOW.reach + long * UNIT;
   const p = s.player;
   const fx = DIR_X[p.facing] ?? 0;
   const fz = DIR_Z[p.facing] ?? 0;
@@ -253,15 +326,19 @@ export function strike(c: City) {
   noise(c, c.tile, BLOW.noise);
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
   const z = s.zeds[best];
+  // (2.60: one that isn't after anyone never saw it coming.)
+  const unseen = z.mode !== ZED.CHASE;
+  // (2.65: the weapon for this one, of those that reach it: its blow, its edge, its wear.)
+  const arm = armFor(c, z, unseen, tired);
+  const held = cityItem(arm?.[0] ?? 0);
+  c.struck = arm?.[0] ?? 0;
   // (2.61: one lying knocked down is finished by any blow.)
   if (isDown(z)) {
     c.events.push({ type: 'swing', hit: true, dead: true, x: z.body.x, z: z.body.z, left: 0 });
-    c.wearWeapon();
+    c.wearWeapon(arm);
     return void putDown(c, [z]);
   }
-  // (2.60: one that isn't after anyone never saw it coming.)
-  const unseen = z.mode !== ZED.CHASE;
-  const harm = blow * (unseen ? BLOW.unseen : 1);
+  const harm = blowOf(held?.attack ?? 0, unseen, tired);
   const K = kindStats(z.kind);
   z.hp -= harm;
   z.reel = K.reel;
@@ -277,7 +354,7 @@ export function strike(c: City) {
   z.body.facing = nearestDir(p.x - z.body.x, p.z - z.body.z);
   const dead = z.hp <= 0 && !down;
   c.events.push({ type: 'swing', hit: true, dead, x: z.body.x, z: z.body.z, unseen, left: Math.max(0, z.hp) / K.health, down });
-  c.wearWeapon();
+  c.wearWeapon(arm);
   if (down) {
     // (Followed through: the next blow comes at once, to finish it or to meet the next.)
     s.swung = s.step - BLOW.every + DOWN.follow;
@@ -307,6 +384,7 @@ export function putDown(c: City, list: Zed[]) {
     if (at < 0) continue;
     s.zeds.splice(at, 1);
     s.kills++;
+    countDown(c);
     c.events.push({ type: 'fell', x: z.body.x, z: z.body.z, facing: z.body.facing, kind: z.kind ?? 0, seed: z.pace, lying: isDown(z) });
     if (z.kind !== ZKIND.BLOATER) continue;
     // (2.61: a wall between stops it.)
@@ -328,6 +406,8 @@ export function putDown(c: City, list: Zed[]) {
       if (s.over || c.events.some((e) => e.type === 'dead')) return;
     }
   }
+  // (2.65: the last of them here, by day and nothing set going: nothing more comes before nightfall. Said after any burst.)
+  if (list.length && !s.zeds.length && !nightAt(c.minute) && !going(c) && s.district !== TUNNEL) c.events.push({ type: 'cleared' });
 }
 
 /**

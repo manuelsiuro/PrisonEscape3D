@@ -32,12 +32,13 @@ import {
   withCuts,
   type CutSpot,
 } from './tools';
-import type { Beat } from '../content/story';
+import { STORY, type Beat } from '../content/story';
 import {
   castOff,
   choose,
   freshStory,
   giveErrand,
+  going,
   holds,
   meet,
   trade,
@@ -107,10 +108,15 @@ const MEND_AWAKE = 10;
 const MEND_ASLEEP = 4;
 /** Under a quarter fed, or worn out: a slower walk (thousandths). */
 const WEAK_SPEED = 820;
-/** Sleep is for the night (from 20:00) or the tired (energy under this); it ends at 06:00, or rested by day. */
+/** A night's sleep is from 20:00 to 06:00; by day (2.65) a bed is a rest till 20:00, tired or not (before: only the tired, till rested). */
 export const SLEEP_FROM = 20 * 60;
 export const SLEEP_TO = 6 * 60;
-const TIRED = 60_000;
+/** 2.65: woken this many minutes before the boat's tide, once it is made ready. */
+const TIDE_WAKE = 30;
+/** 2.65: a checkpoint held back during a last night: steps another step on it still crosses, once the stick is let go. */
+const LEAVE_WARN = 200;
+/** Why a sleeper woke (2.65: a rest by day, at dusk; the boat ready, for its tide; `rested` and its early waking gone). */
+export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding';
 /** A Survivor who fell wakes at home the next morning with this much health, hunger and energy. */
 const WAKE = { health: 40, hunger: 15_000, energy: 60_000 };
 /** A pile's most slots (what a save takes). */
@@ -227,6 +233,8 @@ export interface CityState {
   panes: Record<string, number[]>;
   // 2.64, optional on load: the rules the city was begun under (tools.ts's CITY_REV; a save without it: 0).
   rev: number;
+  // 2.65, optional on load: the dead put down since the last dusk, [that dusk, then a count for each place] (empty: none yet).
+  cleared: number[];
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -247,7 +255,7 @@ export type CityEvent =
   | { type: 'used'; item: number }
   | { type: 'dropped'; item: number }
   | { type: 'full' }
-  | { type: 'sleep'; on: boolean; why?: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked' | 'pounding' }
+  | { type: 'sleep'; on: boolean; why?: Woken }
   /** The dead: one has seen the player; a bite; the player's blow (landed, and whether it put one down, where); dusk coming (minutes), night fallen or over. */
   | { type: 'spotted'; zed: number }
   | { type: 'bite'; harm: number }
@@ -268,7 +276,6 @@ export type CityEvent =
   | {
       type: 'refused';
       why:
-        | 'notTired'
         | 'tooHungry'
         | 'notHungry'
         | 'noNeed'
@@ -283,6 +290,7 @@ export type CityEvent =
         | 'noFire'
         | 'alreadyLit'
         | 'noRoom'
+        | 'tooNear'
         | 'crowbar'
         | 'cutters';
     }
@@ -298,6 +306,11 @@ export type CityEvent =
   | { type: 'scorched'; dead: number }
   | { type: 'burn'; harm: number }
   | { type: 'fireOut' }
+  /** 2.65: a district entered with fewer of the dead (`n` put down there since dusk stay down; `all`: none left); the last of them here put down by day. */
+  | { type: 'quiet'; n: number; all: boolean }
+  | { type: 'cleared' }
+  /** 2.65: a step onto a checkpoint held back while the beacon or the generator runs (another, after letting go, crosses). */
+  | { type: 'leaving'; way: number }
   /** 2.58: a locked door being forced or a fence being cut (the work begun); a building forced open; a fence cut through (the district is put up again). */
   | { type: 'forcing'; what: 'lock' | 'fence' | 'pane' }
   | { type: 'casting' }
@@ -438,6 +451,23 @@ export class City {
     this.districts.clear();
     this.enter(this.state.district, true);
   }
+  /** 2.65: by day a bed is a rest till dusk (SLEEP_FROM); from then until the morning, a night's sleep. */
+  get restsTillDusk(): boolean {
+    return this.minute >= SLEEP_TO && this.minute < SLEEP_FROM;
+  }
+  /** 2.65: back up the tunnel's stairs into the station, the gates still open and the generator running (story.ts asks). */
+  ascend() {
+    const s = this.state;
+    s.search = '';
+    this.close();
+    const d = this.story.wayDistrict[2];
+    this.surface();
+    this.events.push({ type: 'travel', from: TUNNEL, to: d, side: SIDE.E, first: false });
+    // (Not a way out of a chase: up there the generator's din calls the station's dead, and down again the tunnel's come.)
+    this.climbed = true;
+  }
+  /** 2.65: the stairs climbed since the tunnel was last entered (not saved: a load puts them down as at first). */
+  climbed = false;
   /** Up at the metro's stairs again (a save that has no business in the tunnel). */
   surface() {
     const s = this.state;
@@ -455,7 +485,9 @@ export class City {
     const from = s.district;
     const first = ((s.visited >> TUNNEL) & 1) === 0;
     this.enter(TUNNEL);
-    s.player = bodyAt(this.tunnel.start % MAP_W, Math.floor(this.tunnel.start / MAP_W), s.player.facing);
+    // (2.65: a step in from the stairs' foot, whose tile is now the way back up: a second press at the gates doesn't climb straight back.)
+    const at = this.tunnel.way[1] ?? this.tunnel.start;
+    s.player = bodyAt(at % MAP_W, Math.floor(at / MAP_W), s.player.facing);
     this.events.push({ type: 'travel', from, to: TUNNEL, side: SIDE.W, first });
   }
 
@@ -663,6 +695,7 @@ export class City {
       if (!s.over && !this.events.some((e) => e.type === 'dead')) stepFires(this);
       return;
     }
+    if (!dir) this.letGo = true;
     const weak = s.hunger < FULL / 4 || s.energy <= 0 || s.step < s.snare;
     const px = s.player.x;
     const pz = s.player.z;
@@ -704,9 +737,24 @@ export class City {
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
     const here = this.tile;
     if (here === this.lastTile) return;
+    // (2.65: walked off the tile held on beside a checkpoint: the next step onto one is warned again.)
+    if (this.heldOn >= 0 && here !== this.heldOn && !this.district.gates.some((g) => g.tiles.includes(here))) this.heldOn = -1;
     // (Walked away from the open box: shut.)
     if (s.open && !this.inReach(s.open)) this.close();
     const gate = this.district.gates.find((g) => g.tiles.includes(here));
+    // (2.65: the beacon lit or the generator running here: a checkpoint is a step that ends it. The first is held back and said; once
+    // the stick has been let go, another crosses. Before, a street ran out under a player kiting the dead and the night was lost.)
+    // (The step that crosses comes from the tile it was held on: one walked off kiting the dead and back is warned again.)
+    const from = tileAt(px, pz);
+    if (gate && going(this) === 1 && !(this.letGo && s.step - this.warned <= LEAVE_WARN && from === this.heldOn)) {
+      s.player.x = px;
+      s.player.z = pz;
+      if (s.step - this.warned > 1) this.events.push({ type: 'leaving', way: s.way });
+      this.warned = s.step;
+      this.heldOn = from;
+      this.letGo = false;
+      return;
+    }
     if (gate) this.cross(gate);
     storyMoved(this);
     this.look();
@@ -732,15 +780,22 @@ export class City {
     if (s.over || !s.sleeping) return;
     if (s.hunger === 0) this.wake('hungry');
     else if (this.minute === SLEEP_TO) this.wake('morning');
-    else if (s.energy >= FULL && this.minute > SLEEP_TO && this.minute < SLEEP_FROM) this.wake('rested');
+    // (2.65: a rest by day lasts till dusk, an hour before the dark: before, the day was walked through or waited out.)
+    else if (this.minute === SLEEP_FROM) this.wake('dusk');
+    // (2.65: the boat made ready, woken for its tide wherever they sleep.)
+    else if (this.minute === STORY.tideFrom - TIDE_WAKE && s.ready && s.way === 2) this.wake('tide');
   }
   private starved = false;
+  /** 2.65: the step a checkpoint was last held back, and whether the stick has been let go since (not saved: a load warns again). */
+  private warned = -9999;
+  private letGo = false;
+  private heldOn = -1;
 
   /** Woken (the dead's bite). */
   wakeNow(why: 'attacked' | 'pounding') {
     if (this.state.sleeping) this.wake(why);
   }
-  private wake(why: 'morning' | 'rested' | 'hungry' | 'stirred' | 'attacked' | 'pounding') {
+  private wake(why: Woken) {
     this.state.sleeping = false;
     this.events.push({ type: 'sleep', on: false, why });
   }
@@ -821,7 +876,8 @@ export class City {
     const here = this.tile;
     // (Standing on the way out's own tile: it is what's meant, whatever lies there.)
     const way = storyTarget(this);
-    if (way && way.tile === here) return way;
+    // (2.65: a pile on the tunnel's stairs is picked up before they are climbed: under there the way's tile is walked over.)
+    if (way && way.tile === here && !(way.key === 'u' && this.boxOf(`g${here}`)?.some((st) => st[0]))) return way;
     // (Beside a survivor: them, before what lies underfoot, or a reward dropped there would take them away.)
     for (const p of this.people)
       if (Math.abs((p.tile % MAP_W) - (here % MAP_W)) + Math.abs(Math.floor(p.tile / MAP_W) - Math.floor(here / MAP_W)) === 1)
@@ -1027,17 +1083,16 @@ export class City {
     return k >= 0 && this.district.props[k]?.kind === 'bed' && this.searched(key) && !holds(this, k) ? k : -1;
   }
 
-  /** To bed, beside the one targeted: refused while starving, and by day unless tired. */
+  /** To bed, beside the one targeted: refused while starving. By day (2.65), a rest till dusk, tired or not. */
   private sleep() {
     const s = this.state;
     if (s.hunger === 0) return void this.events.push({ type: 'refused', why: 'tooHungry' });
-    if (s.energy >= TIRED && this.minute < SLEEP_FROM && this.minute >= SLEEP_TO)
-      return void this.events.push({ type: 'refused', why: 'notTired' });
     s.sleeping = true;
     // (2.52: the torch isn't left burning through the night.)
     s.torchOn = 0;
     s.home = [s.district, this.tile];
-    storyDid(this, 'slept');
+    // (2.65: a rest by day is home, but not the first act's night in a bed.)
+    if (!this.restsTillDusk) storyDid(this, 'slept');
     this.close();
     this.events.push({ type: 'sleep', on: true });
   }
@@ -1345,18 +1400,30 @@ export class City {
     this.events.push({ type: 'broke', item });
     st[0] = st[1] = 0;
   }
-  wearWeapon() {
-    const best = this.weapon();
-    if (!best || cityItem(best[0])?.wear === undefined) return;
-    if (--best[1] > 0) return;
-    this.events.push({ type: 'broke', item: best[0] });
-    best[0] = best[1] = 0;
+  /** A blow landed: the weapon that struck (`dead.ts`'s `armFor`; null: fists) wears. */
+  wearWeapon(arm: Stack | null) {
+    if (!arm?.[0] || cityItem(arm[0])?.wear === undefined) return;
+    if (--arm[1] > 0) return;
+    this.events.push({ type: 'broke', item: arm[0] });
+    arm[0] = arm[1] = 0;
+  }
+  /** 2.65: the weapon of the last blow (0: fists or none yet). For the picture and the card only: not saved. */
+  struck = 0;
+  /** The weapon in hand: the one that struck last, while it is carried; else the strongest. */
+  inHand(): Stack | null {
+    const last = this.struck > 0 ? this.state.inv.find((st) => st[0] === this.struck) : undefined;
+    return last ?? this.weapon();
   }
 
   /** Through a gate: the same street on the neighbour's side, a tile in from its border. */
   private cross(gate: Gate) {
     const s = this.state;
     s.search = '';
+    this.climbed = false;
+    // (A crossing forgets a checkpoint held back: the next last night's first step onto one is warned again.)
+    this.warned = -9999;
+    this.heldOn = -1;
+    this.letGo = false;
     this.close();
     const from = s.district;
     const first = ((s.visited >> gate.to) & 1) === 0;
