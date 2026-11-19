@@ -90,10 +90,10 @@ export const isBeat = (v: unknown): v is Beat => typeof v === 'string' && (BEATS
 export const STORY = {
   /** Batteries the radio takes (from the pockets, with the aerial). */
   batteries: 2,
-  /** The beacon is lit after dark; the helicopter comes this many game minutes later. */
-  heliHold: 90,
-  /** The metro's gates wind open this many game minutes after the generator starts. */
-  metroHold: 60,
+  /** The beacon is lit after dark; the helicopter comes this many game minutes later (2.63.2: 60; 90 from 2.59, 120 before). */
+  heliHold: 60,
+  /** The metro's gates wind open this many game minutes after the generator starts (2.63.2: 40; 60 from 2.58, 90 before). */
+  metroHold: 40,
   /** 2.56: the tunnel: how many of the dead stand along it, and its danger (as a district's: what's asked of any place). */
   tunnelDead: 8,
   tunnelDanger: 3,
