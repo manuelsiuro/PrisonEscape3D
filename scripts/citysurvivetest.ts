@@ -138,6 +138,12 @@ const idle = (c: City, minutes: number) => {
     c.state.inv.every((st) => !st[0]) && c.state.boxes[`${c.state.district}:g${fell}`]?.[0]?.[1] === 3,
     'what they carried lies where they fell',
   );
+  // (2.64: the fall says where they woke (never slept: by the bus) and where the pile is, for its card.)
+  const said = c.events.find((e) => e.type === 'dead');
+  check(said?.type === 'dead' && said.bed === false && said.pile === c.state.district, `the fall's card: ${JSON.stringify(said)}`);
+  c.hurt(500);
+  const again = [...c.events].reverse().find((e) => e.type === 'dead');
+  check(again?.type === 'dead' && again.pile === -1, `a fall with nothing carried: ${JSON.stringify(again)}`);
   const h = new City(5, MODE.HARDCORE);
   h.hurt(500);
   check(h.state.over === 1 && h.events.some((e) => e.type === 'dead' && e.final), 'Hardcore: the city is lost');
@@ -197,6 +203,49 @@ const idle = (c: City, minutes: number) => {
   );
 }
 
+// ------------------------------------------------------------------ the rules' revision (2.64)
+{
+  // What the start district holds, all of it searched: boards (two planks and nails) and a bat, under each revision.
+  const SEEDS = 30;
+  const PLANK = cityItemNumber('plank');
+  const NAILS = cityItemNumber('nails');
+  const BAT = cityItemNumber('bat');
+  const tally = [
+    { boards: 0, bat: 0 },
+    { boards: 0, bat: 0 },
+  ];
+  for (let seed = 1; seed <= SEEDS; seed++) {
+    const c = new City(seed);
+    c.peace = true;
+    c.step(0);
+    for (const rev of [0, 1]) {
+      c.state.rev = rev;
+      const n = new Map<number, number>();
+      c.district.props.forEach((_, k) => {
+        for (const [item, count] of (c as unknown as { stock(p: number): Array<[number, number]> }).stock(k))
+          n.set(item, (n.get(item) ?? 0) + (item === BAT ? 1 : count));
+      });
+      if ((n.get(PLANK) ?? 0) >= 2 && (n.get(NAILS) ?? 0) >= 1) tally[rev].boards++;
+      if (n.get(BAT)) tally[rev].bat++;
+    }
+  }
+  check(tally[1].bat === SEEDS, `a bat in the start district in ${tally[1].bat} of ${SEEDS} cities`);
+  check(tally[1].boards >= SEEDS * 0.8, `boards in the start district in ${tally[1].boards} of ${SEEDS} cities`);
+  // A save from before the revision keeps its rules (what its furniture holds); a new city has the newest.
+  const c = new City(4);
+  c.step(0);
+  check(c.state.rev === 1, `a new city's rules: ${c.state.rev}`);
+  const old = JSON.parse(JSON.stringify(c.snapshot()));
+  delete old.state.rev;
+  check(loadCity(old)?.state.rev === 0, 'a save from before the revision takes the newest rules');
+  const odd = JSON.parse(JSON.stringify(c.snapshot()));
+  odd.state.rev = 99;
+  check(loadCity(odd)?.state.rev === 0, 'a revision that is not is kept');
+  say(
+    `the rules' revision: a city begun from 2.64 is 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before and ${tally[1].boards} after, a bat found in ${tally[0].bat} and ${tally[1].bat}`,
+  );
+}
+
 // ------------------------------------------------------------------ what the review found (2.47)
 {
   // A save made on the step of a crossing, of a new city's start, of a fall: loaded, it plays on as the live city does.
@@ -250,6 +299,29 @@ const idle = (c: City, minutes: number) => {
   c.state.boxes[`${c.state.district}:${bed}`] = [[TIN, 1]];
   c.step(0);
   check(c.target()?.kind === 'box' && c.target()?.key === `${bed}`, 'a bed holding something is looked into');
+  // (2.64: and still slept in, from its card's Sleep, when sleep may be: by day only tired.)
+  {
+    const was = { energy: c.state.energy, home: c.state.home, flags: c.state.flags };
+    c.step(command(0, COP.SLEEP));
+    check(!c.state.sleeping, 'a bed holding something slept in by day, not tired');
+    c.state.energy = 10_000;
+    c.step(command(0, COP.SLEEP));
+    check(
+      c.state.sleeping && c.state.boxes[`${c.state.district}:${bed}`]?.[0]?.[0] === TIN,
+      'a bed holding something not slept in from its card',
+    );
+    Object.assign(c.state, was, { sleeping: false });
+    // (The bed's card open, the player turned to something else beside: its Sleep is still the bed's.)
+    c.state.open = `${bed}`;
+    const facing = c.state.player.facing;
+    c.state.player.facing = nearestDir(
+      -((bedTile % MAP_W) - (beside % MAP_W)),
+      -(Math.floor(bedTile / MAP_W) - Math.floor(beside / MAP_W)),
+    );
+    check(c.sleepable() === bed, `the bed's card open, turned away: ${c.sleepable()}`);
+    c.state.open = '';
+    c.state.player.facing = facing;
+  }
   c.step(command(0, COP.ACT));
   c.step(command(0, COP.TAKE_ALL));
   c.step(command(0, COP.CLOSE));

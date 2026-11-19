@@ -147,7 +147,8 @@ const ids = (c: City) =>
   c.peace = true;
   c.step(0);
   const s = c.state;
-  check(s.act === 1 && ids(c) === '·eat ·sleep ·radio', `a new city's first act: ${ids(c)}`);
+  // (2.64: by day the bed comes last, refused till 20:00: the line under the meters is something that can be done now.)
+  check(s.act === 1 && ids(c) === '·eat ·radio ·sleep', `a new city's first act: ${ids(c)}`);
   // Nothing is heard without the radio; the kit is not the pockets.
   s.inv[0] = [cityItemNumber('tin'), 1];
   s.hunger = 50_000;
@@ -159,6 +160,19 @@ const ids = (c: City) =>
     'the radio found and heard',
   );
   check(s.act === 1 && s.inv.every((st) => st[0] !== 0 || st[1] === 0), 'the radio takes no pocket');
+  // (2.64: the radio found, what it wants is on the list at once, the bed last by day and first from 20:00; a bat lies with it.)
+  check(ids(c) === '✓eat ✓radio ·batteries 0/2 ·kit.aerial ·sleep', `the first act, the radio found: ${ids(c)}`);
+  const radio = c.story.things[0];
+  check(
+    (s.boxes[`${radio.district}:${radio.prop}`] ?? []).some((st) => st[0] === cityItemNumber('bat')),
+    'no bat with the radio',
+  );
+  {
+    const at = s.step;
+    s.step += (20 * 60 + 5 - c.minute) * MIN;
+    check(ids(c).startsWith('✓eat ·sleep'), `the first act at night: ${ids(c)}`);
+    s.step = at;
+  }
   s.flags |= FLAG.SLEPT;
   c.step(0);
   for (let k = 0; k < MIN; k++) c.step(0);
@@ -787,6 +801,8 @@ const ids = (c: City) =>
     for (const st of t.state.boxes[`${sp.district}:${sp.prop}`]) st[0] = st[1] = 0;
     t.step(0);
     check(t.target()?.kind === 'box', `seed ${seed}: the armoury's bed, emptied, is a ${t.target()?.kind}`);
+    // (2.64: nor from its card: no Sleep offered there.)
+    check(t.sleepable() < 0, `seed ${seed}: the armoury's bed can be slept in from its card`);
     t.state.flags |= FLAG.KEY;
     const got = fetch(t, THINGS.indexOf('flare'));
     check(got.some((e) => e.type === 'found') && t.target()?.kind === 'bed', `seed ${seed}: the flare gun out of its bed with the key`);

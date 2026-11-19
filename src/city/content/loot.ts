@@ -125,9 +125,31 @@ const WRECK: Weights = [
 /** Cars searched (2.54): draws for a car and for a wreck; one car in `alarmOneIn` has an alarm, heard `alarmReach` tiles off for `alarmMinutes` game minutes. */
 export const CARS = { draws: 1, wreckDraws: 1, alarmOneIn: 6, alarmReach: 12, alarmMinutes: 20 } as const;
 
+/**
+ * 2.64 (a city begun under rules' revision 1): what was missing on the first nights. Boards were out of reach in three start
+ * districts in four (houses held no planks or nails), and a bat in one city in seven (only houses held one, rarely).
+ */
+const MORE: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
+  // (A house's shelf, the odd-jobs one: what else the house holds stays as it was, food first.)
+  [
+    'house',
+    'shelf',
+    [
+      ['plank', 12],
+      ['nails', 9],
+    ],
+  ],
+  ['garage', null, [['bat', 2]]],
+  ['warehouse', null, [['bat', 1]]],
+];
+const MORE_CAR: Weights = [['bat', 1]];
+
 /** A car's list, or a wreck's. */
-export function carLoot(wreck: boolean): { list: Array<[number, number]>; total: number } {
-  const list: Array<[number, number]> = (wreck ? WRECK : CAR).map(([id, w]) => [cityItemNumber(id), w]);
+export function carLoot(wreck: boolean, rev = 0): { list: Array<[number, number]>; total: number } {
+  const list: Array<[number, number]> = [...(wreck ? WRECK : CAR), ...(rev && !wreck ? MORE_CAR : [])].map(([id, w]) => [
+    cityItemNumber(id),
+    w,
+  ]);
   return { list, total: list.reduce((n, [, w]) => n + w, 0) };
 }
 
@@ -186,8 +208,9 @@ export const LOOT_BY_PROP: Partial<Record<PropKind, Weights>> = {
 };
 
 /** The list a piece of furniture draws from, as [item number, weight], and the weights' sum. */
-export function lootList(use: LotUse, prop: PropKind): { list: Array<[number, number]>; total: number } {
+export function lootList(use: LotUse, prop: PropKind, rev = 0): { list: Array<[number, number]>; total: number } {
   const list: Array<[number, number]> = [];
-  for (const [id, w] of [...(LOOT_BY_USE[use] ?? HOME), ...(LOOT_BY_PROP[prop] ?? [])]) list.push([cityItemNumber(id), w]);
+  const more = rev ? MORE.filter(([u, p]) => u === use && (p === null || p === prop)).flatMap(([, , w]) => w) : [];
+  for (const [id, w] of [...(LOOT_BY_USE[use] ?? HOME), ...more, ...(LOOT_BY_PROP[prop] ?? [])]) list.push([cityItemNumber(id), w]);
   return { list, total: list.reduce((n, [, w]) => n + w, 0) };
 }

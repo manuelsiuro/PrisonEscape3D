@@ -162,6 +162,57 @@ function quiet(seed: number, day: number, minute: number): City {
   );
 }
 
+// ------------------------------------------------------------------ the blow turns to one at the side (2.64)
+{
+  let tried = 0;
+  let turned = 0;
+  let ahead = 0;
+  let standing = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    const c = quiet(seed, 1, 12 * 60);
+    const { at, dir } = street(c, 4);
+    const side = [at + (dir === 1 ? W : 1), at - (dir === 1 ? W : 1)].find((t) => !c.grid[t]);
+    if (side === undefined) continue;
+    tried++;
+    // Faced along the street, one beside: struck, and the player turned to it.
+    stand(c, at, at + dir);
+    const z = zed(c, side, 0, ZED.CHASE);
+    z.seen = c.state.step;
+    const ev = step(c, command(0, COP.HIT));
+    const swing = ev.find((e) => e.type === 'swing');
+    const want = nearestDir((side % W) - (at % W), Math.floor(side / W) - Math.floor(at / W));
+    if (swing?.type === 'swing' && swing.hit && c.state.player.facing === want) turned++;
+    // One ahead as well, further: the one ahead is still the one struck, and the player keeps their facing.
+    c.state.zeds = [];
+    c.state.swung = -9999;
+    stand(c, at, at + dir);
+    const front = zed(c, at + dir, 0, ZED.CHASE);
+    front.seen = c.state.step;
+    const by = zed(c, side, 0, ZED.CHASE);
+    by.seen = c.state.step;
+    const facing = c.state.player.facing;
+    step(c, command(0, COP.HIT));
+    if (front.hp < kindStats(0).health && by.hp === kindStats(0).health && c.state.player.facing === facing) ahead++;
+    // One lying ahead, one on its feet at the side: the one on its feet is struck.
+    c.state.zeds = [];
+    c.state.swung = -9999;
+    stand(c, at, at + dir);
+    const lying = zed(c, at + dir, 0, ZED.IDLE);
+    lying.hp = 0;
+    lying.down = DOWN.steps;
+    const up = zed(c, side, 0, ZED.CHASE);
+    up.seen = c.state.step;
+    step(c, command(0, COP.HIT));
+    if (up.hp < kindStats(0).health && c.state.zeds.includes(lying)) standing++;
+  }
+  check(tried >= 4 && turned === tried, `the blow on one at the side: struck and turned to in ${turned} of ${tried}`);
+  check(ahead === tried, `one ahead and one at the side: the one ahead struck in ${ahead} of ${tried}`);
+  check(standing === tried, `one lying ahead and one on its feet at the side: the one on its feet struck in ${standing} of ${tried}`);
+  say(
+    `the blow: the nearest of the dead ahead in reach; none ahead (or only one lying down), the nearest in reach on any side, the player turned to it (${tried} cities)`,
+  );
+}
+
 // ------------------------------------------------------------------ a crawler
 {
   const c = quiet(3, 2, 12 * 60);

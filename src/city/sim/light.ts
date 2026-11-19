@@ -200,6 +200,9 @@ export function useLight(c: City, item: number): boolean {
       if (!c.count(BATTERY)) return (c.events.push({ type: 'refused', why: 'noBattery' }), true);
       c.spend(BATTERY, 1);
       s.torch = LIGHT.torchMinutes;
+      // (2.64: said, with how many are left: the radio wants two, and a torch took one unseen.)
+      s.torchOn = 1;
+      return (c.events.push({ type: 'torch', on: true, spent: false, battery: c.count(BATTERY) }), true);
     }
     s.torchOn = 1;
     c.events.push({ type: 'torch', on: true, spent: false });

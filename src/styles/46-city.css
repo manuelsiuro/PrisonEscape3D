@@ -586,6 +586,23 @@
   }
 }
 
+/* 2.64: on a keyboard, the key that does what the round button does, at its corner. */
+.city-act .act-round,
+.city-hit .tool-round {
+  position: relative;
+}
+
+.city-key {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
 /* The blow's button, over the action button. */
 .city-hit {
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
@@ -1374,6 +1391,22 @@
 
 .city-intro h2 {
   margin-bottom: 12px;
+}
+
+/* 2.64: a fall's card: its mark beside the title, in the health meter's red. */
+.city-fell h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.city-fell h2 svg {
+  color: var(--city-health-70);
+}
+
+.city-fell-more {
+  color: var(--city-amber-83);
 }
 
 @media (max-height: 460px) {

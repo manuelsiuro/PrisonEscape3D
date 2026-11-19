@@ -170,6 +170,13 @@ export function paintStreets(c: CanvasRenderingContext2D, R: number, world: Worl
         c.fillStyle = 'rgba(60, 56, 50, 0.5)';
         if (dz) c.fillRect(x * R + 2, dz > 0 ? (z + 1) * R + 3 : z * R - 4, w, 1);
         else c.fillRect(dx > 0 ? (x + 1) * R + 3 : x * R - 4, z * R + 2, 1, w);
+        // (2.64: a doormat in the doorway itself, in a colour no floor is: the step outside lies under the awning from this camera,
+        // and a door read as one more gap in the wall.)
+        const m = Math.round(R * 0.16);
+        c.fillStyle = 'rgba(60, 40, 22, 0.85)';
+        c.fillRect(x * R + m, z * R + m, R - 2 * m, R - 2 * m);
+        c.fillStyle = 'rgba(204, 152, 64, 0.95)';
+        c.fillRect(x * R + m + 1, z * R + m + 1, R - 2 * m - 2, R - 2 * m - 2);
         break;
       }
     }

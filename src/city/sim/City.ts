@@ -88,6 +88,8 @@ export const COP = {
   CHOOSE: 10,
   TRADE: 11,
   GIVE: 12,
+  /** 2.64: sleep in the bed beside, whatever is stored in it (its open box's button). */
+  SLEEP: 13,
 } as const;
 
 /** The pockets. */
@@ -116,6 +118,15 @@ const PILE_SLOTS = 64;
 /** Steps to bar a door or take its boards down. */
 export const BAR_STEPS = 40;
 const BOARDS = cityItemNumber('boards');
+/**
+ * 2.64 (a city begun under rules' revision 1): whoever left the radio meant to hold out: a bat (this many blows left of its 40) and a
+ * door's boards in planks and nails lie with it, so the first fight needn't be bare-handed nor the first night's door left open.
+ */
+const RADIO_KIT: ReadonlyArray<[number, number]> = [
+  [cityItemNumber('bat'), 30],
+  [cityItemNumber('plank'), 2],
+  [cityItemNumber('nails'), 1],
+];
 const STOVE = cityItemNumber('stove');
 const CROWBAR = cityItemNumber('crowbar');
 const CUTTERS = cityItemNumber('cutters');
@@ -214,6 +225,8 @@ export interface CityState {
   // 2.61, optional on load: the health still to bleed from bites (BLEED); the windows broken, by district (their tiles).
   bleed: number;
   panes: Record<string, number[]>;
+  // 2.64, optional on load: the rules the city was begun under (tools.ts's CITY_REV; a save without it: 0).
+  rev: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -276,7 +289,7 @@ export type CityEvent =
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
   | { type: 'burnt'; kind: number; tile: number }
-  | { type: 'torch'; on: boolean; spent: boolean }
+  | { type: 'torch'; on: boolean; spent: boolean; battery?: number }
   /** 2.54: a car's alarm set off by a search (`tile`: the car's), or stopped. */
   | { type: 'alarm'; on: boolean; tile: number }
   /** 2.55: a thing thrown (a bottle, a molotov) from a tile to another; a bolt shot at one of the dead; the dead a fire put down; the player burnt; the last fire out. */
@@ -316,8 +329,11 @@ export type CityEvent =
   | { type: 'escaped'; way: number }
   /** Hunger bites (once each time it reaches nothing). */
   | { type: 'starving' }
-  /** Fallen: `final` in Hardcore (the city is lost); a Survivor wakes at home (`moved`: in another district). */
-  | { type: 'dead'; final: boolean; moved: boolean };
+  /**
+   * Fallen: `final` in Hardcore (the city is lost); a Survivor wakes at home (`moved`: in another district). 2.64: `bed`, home is a bed
+   * slept in (else where the city began); `pile`, the place where what was carried lies (-1: nothing was).
+   */
+  | { type: 'dead'; final: boolean; moved: boolean; bed?: boolean; pile?: number };
 
 export class City {
   readonly plan: CityPlan;
@@ -341,6 +357,8 @@ export class City {
       this.state = { ...from.state, player: { ...from.state.player } };
       // (2.58: a city begun before the chains has none, whoever builds it from its save.)
       if ((this.state as { locks?: number }).locks === undefined) this.state.locks = 0;
+      // (2.64: and one begun before the rules' revision keeps the rules it was begun under.)
+      if ((this.state as { rev?: number }).rev === undefined) this.state.rev = 0;
       for (const [k, v] of Object.entries({
         ...freshSurvival(),
         ...freshStory(),
@@ -748,6 +766,7 @@ export class City {
     const top = under ? this.districtGrid(this.story.wayDistrict[2]) : null;
     const beside = (top && [stairs + MAP_W, stairs - MAP_W, stairs + 1, stairs - 1].find((i) => !top[i])) ?? stairs;
     const pile = () => (under ? (s.boxes[`${this.story.wayDistrict[2]}:g${beside}`] ??= []) : this.boxOf(`g${this.tile}`, true));
+    const pileAt = !s.inv.some((st) => st[0]) ? -1 : under ? this.story.wayDistrict[2] : s.district;
     for (const st of s.inv) {
       if (!st[0]) continue;
       // (Onto the pile already there, if they fell here before: never more slots than a save takes.)
@@ -775,7 +794,10 @@ export class City {
     s.hunger = Math.max(s.hunger, WAKE.hunger);
     s.energy = Math.max(s.energy, WAKE.energy);
     this.look();
-    this.events.push({ type: 'dead', final: false, moved });
+    // (Woken where the city began, unless a bed was slept in since: as `home` says, not a flag, which a save's mending can part from it.)
+    const sp = this.districtOf(this.plan.start).spawn;
+    const bed = !(d === this.plan.start && tile === sp.z * MAP_W + sp.x);
+    this.events.push({ type: 'dead', final: false, moved, bed, pile: pileAt });
   }
 
   // ------------------------------------------------------------------ boxes and pockets
@@ -825,10 +847,6 @@ export class City {
           : null;
     const faced = (fx ? doorAt(here + fx) : null) ?? (fz ? doorAt(here + fz * MAP_W) : null);
     if (faced) return faced;
-    // (2.61: a chained building's window faced from outside: broken, and climbed through.)
-    const pane = fx && this.panes[here + fx] ? here + fx : fz && this.panes[here + fz * MAP_W] ? here + fz * MAP_W : -1;
-    if (pane >= 0 && this.district.lotAt[here] !== this.district.lotAt[pane])
-      return { kind: 'pane', key: `x${pane}`, tile: pane, prop: null };
     // (Beside the way out's tile: it comes after the furniture faced, before the furniture merely beside.)
     for (let a = 0; a < around.length; a++) {
       const [dx, dz] = around[a];
@@ -861,6 +879,11 @@ export class City {
       const car = this.carAt[tz * MAP_W + tx];
       if (car) return { kind: 'box', key: `c${car - 1}`, tile: tz * MAP_W + tx, prop: isWreck(this, car - 1) ? 'wreck' : 'car' };
     }
+    // (2.61: a chained building's window faced from outside: broken, and climbed through. 2.64: after the furniture and the cars
+    // beside, since glass breaking is heard far off and cuts bare hands: a search is never taken for it.)
+    const pane = fx && this.panes[here + fx] ? here + fx : fz && this.panes[here + fz * MAP_W] ? here + fz * MAP_W : -1;
+    if (pane >= 0 && this.district.lotAt[here] !== this.district.lotAt[pane])
+      return { kind: 'pane', key: `x${pane}`, tile: pane, prop: null };
     // (2.58) The army's fence where a street runs up to it on both sides: cut through. Last of all.
     for (const f of this.fences)
       if (f.tiles.some((t) => Math.abs((t % MAP_W) - x) + Math.abs(Math.floor(t / MAP_W) - z) === 1))
@@ -897,16 +920,21 @@ export class City {
   private stock(prop: number): Stack[] {
     const p = this.district.props[prop];
     const lot = this.district.lotAt[p.z * MAP_W + p.x];
-    const { list, total } = lootList(lot ? this.district.lots[lot - 1].use : 'house', p.kind);
+    const rev = this.state.rev;
+    const { list, total } = lootList(lot ? this.district.lots[lot - 1].use : 'house', p.kind, rev);
     const rnd = streamOf(this.state.seed, 5000 + this.state.district * 1000 + prop);
     // (2.58: a building that was locked was never picked over: a draw more, and fewer of them empty.)
     const kept = lot > 0 && this.wasLocked(lot - 1);
-    return this.draws(list, total, (SEARCHED[p.kind] ?? 0) + (kept ? TOOLS.moreDraws : 0), rnd, kept ? TOOLS.emptyDraws : EMPTY_DRAWS);
+    const out = this.draws(list, total, (SEARCHED[p.kind] ?? 0) + (kept ? TOOLS.moreDraws : 0), rnd, kept ? TOOLS.emptyDraws : EMPTY_DRAWS);
+    const radio = this.story.things[0];
+    if (rev >= 1 && radio.district === this.state.district && radio.prop === prop)
+      for (const [item, n] of RADIO_KIT) this.put(out, BOX_SLOTS, item, n);
+    return out;
   }
   /** What a car or a wreck holds (2.54), drawn once from the seed, its district and its first tile. */
   private stockCar(first: number): Stack[] {
     const wreck = isWreck(this, first);
-    const { list, total } = carLoot(wreck);
+    const { list, total } = carLoot(wreck, this.state.rev);
     return this.draws(
       list,
       total,
@@ -987,6 +1015,30 @@ export class City {
     return n;
   }
 
+  /** 2.64: the bed that can be slept in from its card: the box open if a bed, else the one the button takes (-1: none). */
+  sleepable(): number {
+    const s = this.state;
+    const t = this.target();
+    const key = /^\d+$/.test(s.open) && this.inReach(s.open) ? s.open : (t?.key ?? '');
+    const k = /^\d+$/.test(key) ? Number(key) : -1;
+    return k >= 0 && this.district.props[k]?.kind === 'bed' && this.searched(key) && !holds(this, k) ? k : -1;
+  }
+
+  /** To bed, beside the one targeted: refused while starving, and by day unless tired. */
+  private sleep() {
+    const s = this.state;
+    if (s.hunger === 0) return void this.events.push({ type: 'refused', why: 'tooHungry' });
+    if (s.energy >= TIRED && this.minute < SLEEP_FROM && this.minute >= SLEEP_TO)
+      return void this.events.push({ type: 'refused', why: 'notTired' });
+    s.sleeping = true;
+    // (2.52: the torch isn't left burning through the night.)
+    s.torchOn = 0;
+    s.home = [s.district, this.tile];
+    storyDid(this, 'slept');
+    this.close();
+    this.events.push({ type: 'sleep', on: true });
+  }
+
   private act(op: number, a: number) {
     const s = this.state;
     if (op === COP.NONE) return;
@@ -1000,18 +1052,7 @@ export class City {
       if (s.open && t.key.startsWith('c')) return this.close();
       // (Pressed again while searching: the search goes on.)
       if (s.search === t.key) return;
-      if (t.kind === 'bed') {
-        if (s.hunger === 0) return void this.events.push({ type: 'refused', why: 'tooHungry' });
-        if (s.energy >= TIRED && this.minute < SLEEP_FROM && this.minute >= SLEEP_TO)
-          return void this.events.push({ type: 'refused', why: 'notTired' });
-        s.sleeping = true;
-        // (2.52: the torch isn't left burning through the night.)
-        s.torchOn = 0;
-        s.home = [s.district, this.tile];
-        storyDid(this, 'slept');
-        this.close();
-        return void this.events.push({ type: 'sleep', on: true });
-      }
+      if (t.kind === 'bed') return this.sleep();
       if (t.kind === 'door') {
         // (Hammering, or prising the boards off: a moment's work, heard as a blow is.)
         s.search = t.key;
@@ -1047,6 +1088,13 @@ export class City {
       return void this.events.push({ type: 'search', key: t.key });
     }
     if (op === COP.CLOSE) return this.close();
+    // (2.64: a bed used as a stash is still a bed: one looked into, whatever it holds, the story's armoury's bed aside. The bed open
+    // (its card's Sleep) before the one the button would take: turned to a desk beside it, the card still shows the bed.)
+    if (op === COP.SLEEP) {
+      const bed = this.sleepable();
+      if (bed >= 0) this.sleep();
+      return;
+    }
     if (op === COP.HIT) return strike(this);
     if (op === COP.MAKE) return this.make(a);
     if (op === COP.CHOOSE) return choose(this, a);

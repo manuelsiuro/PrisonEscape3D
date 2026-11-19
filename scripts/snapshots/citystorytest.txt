@@ -9,24 +9,24 @@ a Survivor's fall keeps the kit and the way chosen and stops what was set going;
 the survivors: met, then an errand each in turn (things brought, or the dead put down since it was asked); the fence's first pays the armoury's key, the others' teach a recipe; swaps only beside them and only with the things; a word hands nothing over, their card's button does; pay that doesn't fit lies underfoot and they keep the button; none of the dead put down in their buildings; a save carries them
 runners from night 3 and one brute from night 5 where the danger is 2 or more, at night only; a brute at a barred door pounds it open in 80 steps without seeing through it, a shambler never; one brute a district a night; a thing of the armoury's in an emptied bed is still looked into
 the records: a way out counted, the quickest kept, ten feats each had once
-a bot follows the story to each way out on 4 cities (the dead away): 12 of 12 left, by day 4.8 (helicopter), 4.8 (boat), 4.8 (metro) on average
-  1 heli: day 6, fcb55eb6
-  1 boat: day 6, 55b424d2
-  1 metro: day 6, 47572227
-  2 heli: day 4, a15e917c
-  2 boat: day 4, 7f12f4e8
-  2 metro: day 4, 4aef18ba
-  3 heli: day 3, 0e3cbb7f
-  3 boat: day 3, 87c9b8a3
-  3 metro: day 3, 22ddc390
-  4 heli: day 6, 7f271722
-  4 boat: day 6, 86b79de4
-  4 metro: day 6, ec7fb20d
+a bot follows the story to each way out on 4 cities (the dead away): 12 of 12 left, by day 4.5 (helicopter), 4.3 (boat), 4.3 (metro) on average
+  1 heli: day 6, f3aa9789
+  1 boat: day 5, 00d3a811
+  1 metro: day 5, fc4e590c
+  2 heli: day 5, bc14b070
+  2 boat: day 5, b9132f6d
+  2 metro: day 5, 14be3a71
+  3 heli: day 2, b25a3233
+  3 boat: day 2, 90bfa47e
+  3 metro: day 2, 116f6ab8
+  4 heli: day 5, 3d49710a
+  4 boat: day 5, ef698320
+  4 metro: day 5, d554b95d
 the holds alone with the dead about (a bat, three bandages, the first night, a bot that keeps moving): the helicopter 6 of 6, the metro 5 of 6
-with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 2 of 6 left, 41 falls in all
-  1 heli: still there on day 13 (act 2), fell 10, 39 put down
-  1 boat: still there on day 13 (act 2), fell 10, 39 put down
-  1 metro: still there on day 13 (act 2), fell 10, 39 put down
-  2 heli: left on day 6, fell 2, 40 put down
-  2 boat: left on day 4, fell 0, 22 put down
-  2 metro: still there on day 13 (act 4), fell 9, 39 put down
+with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 2 of 6 left, 27 falls in all
+  1 heli: still there on day 13 (act 4), fell 4, 112 put down
+  1 boat: left on day 9, fell 1, 70 put down
+  1 metro: still there on day 13 (act 4), fell 4, 103 put down
+  2 heli: still there on day 13 (act 4), fell 9, 47 put down
+  2 boat: left on day 4, fell 0, 17 put down
+  2 metro: still there on day 13 (act 4), fell 9, 35 put down

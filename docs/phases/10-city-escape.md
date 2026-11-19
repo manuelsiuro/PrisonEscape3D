@@ -323,6 +323,11 @@ In two slices.
   `content/windows.ts` (`lotPanes`, `FACE_STYLE`, read by `render/facades.ts` and `tools.ts`
   `lockedPanes`); `sim/story.ts` `busNotes`, `notePlaces`; `CityView.drawFog`, the lanterns'
   `hearthFlame`; the HUD's `bleeding`. `cityfighttest`, `cityzedtest`, `citytooltest`, `citystorytest`.
+- **A first day that works (2.64).** `state.rev` (`tools.ts` `CITY_REV`): what a city's furniture holds is
+  drawn under the revision it was begun in (`loot.ts` `MORE`, `carLoot`; `City.ts` `RADIO_KIT` in `stock`).
+  `City.sleep()` and `COP.SLEEP` (the box's Sleep in `ui/pockets.ts`); `strike` turns to one at the side;
+  the `dead` event's `bed` and `pile`, `ui/screens.ts` `showCityFell`; `render/streets.ts` the doormats.
+  `citysurvivetest` (the revision), `cityfighttest`, `citytooltest`, `citystorytest`.
 
 ## Proof, stage by stage
 
