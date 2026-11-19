@@ -444,7 +444,7 @@ const ids = (c: City) =>
   s.zeds = [];
   // A fall on the pier's end (a Survivor): the engine stays fitted, and back on the tile the button is the boat, not the pile.
   s.inv[0] = [cityItemNumber('tin'), 2];
-  c.hurt(200);
+  c.hurt(200, 'z0');
   check(s.ready === 1 && s.way === 2 && !s.over, 'a fall with the engine fitted takes it out');
   stand(c, d, c.story.pier);
   check(c.target()?.kind === 'way', `on the pier's end with a pile underfoot the button is ${c.target()?.kind}`);
@@ -477,7 +477,7 @@ const ids = (c: City) =>
   stand(c, c.story.wayDistrict[2], c.story.exits[2]);
   press(c, COP.CHOOSE, 3);
   press(c, COP.ACT);
-  c.hurt(200);
+  c.hurt(200, 'z0');
   check(
     !s.over && !s.ready && s.way === 3 && s.kit === (1 << THINGS.length) - 1 && s.act === 4,
     'a Survivor fell: the kit and the way kept, the generator stopped',
@@ -496,7 +496,7 @@ const ids = (c: City) =>
     while (b.minute !== 22 * 60) b.step(0);
     press(b, COP.ACT);
     check(b.state.ready === 1, 'the beacon lit');
-    b.hurt(200);
+    b.hurt(200, 'z0');
     check(!b.state.ready && b.state.way === 1 && b.state.heard.includes('fell'), 'a fall leaves the beacon lit');
   }
   const again = loadCity(JSON.parse(JSON.stringify(c.snapshot())))!;
@@ -546,7 +546,7 @@ const ids = (c: City) =>
   hard.peace = true;
   hard.step(0);
   hard.state.kit = 3;
-  hard.hurt(200);
+  hard.hurt(200, 'z0');
   check(hard.state.over === 1 && hard.state.won === 0, 'Hardcore: a fall is not the end');
   say(
     `a Survivor's fall keeps the kit and the way chosen and stops what was set going; a save carries the story; one from before it starts at the first act with what its searched furniture held; ${bad.length} damaged stories start again with the city kept`,

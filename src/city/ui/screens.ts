@@ -164,22 +164,29 @@ export async function showCityFell(day: number, bed: boolean, pileWhere: string 
   return out;
 }
 
-/** Hardcore: the city is lost. */
-export async function showCityOver(day: number, where: string, click: () => void): Promise<void> {
-  await modal<'back'>(
+/** 2.64: an end card's two ways on: a new city (first), or the title. */
+const endActions = () =>
+  `<div class="actions"><button class="big-btn" data-c="back">${icon('home', 18)}${t('pause.quit')}</button><button class="big-btn primary" data-c="new">${icon('play', 18)}${t('city.new.title')}</button></div>`;
+
+/** Hardcore: the city is lost. 2.64: said what did it; a new city a press away. */
+export async function showCityOver(city: City, where: string, click: () => void): Promise<'back' | 'new'> {
+  const by = city.events.find((e) => e.type === 'dead')?.by;
+  const out = await modal<'back' | 'new'>(
     `<div class="card city-intro city-over">
       <h2>${t('city.over.title')}</h2>
       <p class="city-over-line"></p>
+      ${by ? `<p class="city-over-by">${t(`city.over.by.${by}` as Key)}</p>` : ''}
       <p>${t('city.over.text')}</p>
-      <div class="actions"><button class="big-btn primary" data-c="back">${icon('home', 18)}${t('pause.quit')}</button></div>
+      ${endActions()}
     </div>`,
     'back',
-    '[data-c="back"]',
+    '[data-c="new"]',
     (el) => {
-      el.querySelector('.city-over-line')!.textContent = t('city.over.line', { n: day, where });
+      el.querySelector('.city-over-line')!.textContent = t('city.over.line', { n: city.day, where });
     },
   );
   click();
+  return out;
 }
 
 /** A tile's size on the city's map (CSS pixels are the canvas's own: it's scaled to fit). */
@@ -347,7 +354,7 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
               : s.ready && s.way !== 2
                 ? ''
                 : `<button class="big-btn primary" data-c="way${n}">${t('city.journal.choose')}</button>`;
-        return `<div class="cj-way${s.way === n ? ' chosen' : ''}"><b>${icon(w.id === 'heli' ? 'heli' : w.id === 'boat' ? 'boat' : 'lock', 16)}${t(`city.way.${n}` as Key)}<small>${city.plan.names[city.story.wayDistrict[k]]}</small></b><p>${t(`city.way.sub.${n}` as Key)}</p><ul>${needs}</ul>${state}</div>`;
+        return `<div class="cj-way${s.way === n ? ' chosen' : ''}"><b>${icon(w.id === 'heli' ? 'heli' : w.id === 'boat' ? 'boat' : 'train', 16)}${t(`city.way.${n}` as Key)}<small>${city.plan.names[city.story.wayDistrict[k]]}</small></b><p>${t(`city.way.sub.${n}` as Key)}</p><ul>${needs}</ul>${state}</div>`;
       }).join('')}</div></section>`;
   const hasRadio = (s.kit & thingBit('radio')) !== 0;
   const heard = [...s.heard].reverse();
@@ -392,23 +399,24 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
 }
 
 /** Out of the city: by which way, how it went, and the last thing on the radio. */
-export async function showCityEscaped(city: City, feats: readonly Feat[], click: () => void): Promise<void> {
+export async function showCityEscaped(city: City, feats: readonly Feat[], click: () => void): Promise<'back' | 'new'> {
   const s = city.state;
   let notes = 0;
   for (let n = 0; n < NOTES; n++) if (s.notes & (1 << n)) notes++;
-  await modal<'back'>(
+  const out = await modal<'back' | 'new'>(
     `<div class="card city-intro city-escaped">
       <h2>${icon('flag', 20)}${t('city.escaped.title')}<small>${t(`city.way.${s.won}` as Key)}</small></h2>
       <p>${t(`city.escaped.${s.won}` as Key)}</p>
-      <p class="city-over-line">${t('city.escaped.line', { n: city.day, kills: s.kills, deaths: s.deaths, notes, of: NOTES })}</p>
+      <p class="city-over-line">${t(s.deaths === 0 ? 'city.escaped.line0' : s.deaths === 1 ? 'city.escaped.line1' : 'city.escaped.line', { n: city.day, kills: s.kills, deaths: s.deaths, notes, of: NOTES })}</p>
       <blockquote><small>${t('city.escaped.last')}</small>${t(`city.say.win${s.won}` as Key)}</blockquote>
       ${feats.length ? `<ul class="city-feats new">${feats.map((f) => featRow(f, true, true)).join('')}</ul>` : ''}
-      <div class="actions"><button class="big-btn primary" data-c="back">${icon('home', 18)}${t('pause.quit')}</button></div>
+      ${endActions()}
     </div>`,
     'back',
-    '[data-c="back"]',
+    '[data-c="new"]',
   );
   click();
+  return out;
 }
 
 /** What a survivor's open errand wants, in a line ('' none open). */

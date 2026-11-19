@@ -323,7 +323,7 @@ export function putDown(c: City, list: Zed[]) {
     noise(c, tileAt(z.body.x, z.body.z), BLOATER.noise);
     if (hit) {
       if (s.sleeping) c.wakeNow('attacked');
-      c.hurt(BLOATER.harm);
+      c.hurt(BLOATER.harm, 'burst');
       // (Fallen to it: a Survivor is carried home, the district's dead left behind.)
       if (s.over || c.events.some((e) => e.type === 'dead')) return;
     }
@@ -490,7 +490,7 @@ export function stepDead(c: City) {
               c.events.push({ type: 'snared' });
             }
             if (s.sleeping) c.wakeNow('attacked');
-            c.hurt(harm);
+            c.hurt(harm, `z${z.kind ?? 0}`);
             if (s.over || c.events.some((e) => e.type === 'dead')) return;
             // (2.61: and it bleeds.)
             c.bleedFor(harm);

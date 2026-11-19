@@ -328,6 +328,9 @@ In two slices.
   `City.sleep()` and `COP.SLEEP` (the box's Sleep in `ui/pockets.ts`); `strike` turns to one at the side;
   the `dead` event's `bed` and `pile`, `ui/screens.ts` `showCityFell`; `render/streets.ts` the doormats.
   `citysurvivetest` (the revision), `cityfighttest`, `citytooltest`, `citystorytest`.
+- **Readable screens and fights (2.64.1).** `CityView`: `you`, `stain`, `setEmptied`; `DeadFrame.struck`;
+  `Focus.y` (shared `render/Pickups.ts`, the prisons' unset); `hurt(n, by)` and the `dead` event's `by`;
+  `runCity` resolves whether a new city follows (`play/flow.ts`); `flashBite`.
 
 ## Proof, stage by stage
 

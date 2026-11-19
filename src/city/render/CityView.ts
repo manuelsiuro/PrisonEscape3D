@@ -27,6 +27,9 @@ export type { DeadFrame } from './horde';
  * district: a single draw. Built when a district is entered; reads its plan, never the simulation.
  */
 
+/** 2.64: a fallen one's stain lasts this many seconds; this many at most in a district. */
+const STAIN_SECONDS = 90;
+const STAINS = 40;
 /** Dusty paint for the cars left behind. */
 const PAINTS = [0x7c8794, 0x8f4a42, 0x4d6a82, 0xa39a84, 0x5c6b58, 0x9a8a4a, 0x6b5a72, 0xb9b4a8];
 const RUST = 0x6b4630;
@@ -343,6 +346,21 @@ export class CityView {
   readonly root = new THREE.Group();
   /** After dark: a faint pool of light round the player. */
   private readonly glow: THREE.Mesh;
+  /**
+   * 2.64: a pale ring under the player's feet, always: from this camera their top is dark hair, and at night they were one dark
+   * shape among the dead. Brighter after dark.
+   */
+  private readonly you = new THREE.Mesh(
+    new THREE.RingGeometry(0.32, 0.44, 32).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xf4f1ea, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false }),
+  );
+  /** 2.64: where one of the dead fell, a stain that fades over a minute and a half (render only, the district's alone). */
+  private readonly stains = new THREE.Group();
+  private readonly stainGeo = mergeGeometries([
+    new THREE.CircleGeometry(0.3, 12).rotateX(-Math.PI / 2),
+    new THREE.CircleGeometry(0.2, 10).rotateX(-Math.PI / 2).translate(0.24, 0, 0.1),
+    new THREE.CircleGeometry(0.13, 8).rotateX(-Math.PI / 2).translate(-0.2, 0, -0.22),
+  ]);
 
   constructor() {
     this.glow = new THREE.Mesh(
@@ -351,10 +369,14 @@ export class CityView {
     );
     this.glow.renderOrder = 0.44;
     this.glow.visible = false;
+    this.you.renderOrder = 0.46;
+    this.you.visible = false;
     this.root.add(
       this.group,
       this.horde.group,
       this.glow,
+      this.you,
+      this.stains,
       this.bars,
       this.locks,
       this.marks,
@@ -883,6 +905,61 @@ export class CityView {
     this.glow.scale.setScalar(this.torch ? TORCH_SEES / 2.6 : 1);
     (this.glow.material as THREE.MeshBasicMaterial).color.set(this.torch ? 0xffe2a0 : 0x9fb8ff);
     (this.glow.material as THREE.MeshBasicMaterial).opacity = this.torch ? 0.2 : 0.09;
+    this.you.visible = true;
+    this.you.position.set(me.x, 0.035, me.z);
+    (this.you.material as THREE.MeshBasicMaterial).opacity = night || this.dim?.[mine] === 1 ? 0.8 : 0.45;
+    // (The stains: each fades out over its time, and goes.)
+    for (const s of [...this.stains.children] as THREE.Mesh[]) {
+      const left = 1 - (time - (s.userData.at as number)) / STAIN_SECONDS;
+      if (left <= 0) {
+        (s.material as THREE.Material).dispose();
+        this.stains.remove(s);
+      } else (s.material as THREE.MeshBasicMaterial).opacity = 0.55 * Math.min(1, left * 4);
+    }
+  }
+
+  /**
+   * 2.64: furniture searched and emptied: a small pale tick on its top, so nothing is looked into twice for nothing (only the
+   * button said so, standing beside it). `list`: where each one's top is.
+   */
+  private emptied: THREE.InstancedMesh | null = null;
+  setEmptied(list: ReadonlyArray<{ x: number; z: number; y: number }>) {
+    if (!this.emptied) {
+      const short = new THREE.BoxGeometry(0.07, 0.02, 0.16).translate(-0.05, 0, 0.04).rotateY(Math.PI / 4);
+      const long = new THREE.BoxGeometry(0.07, 0.02, 0.3).translate(0.07, 0, -0.02).rotateY(-Math.PI / 5);
+      this.emptied = new THREE.InstancedMesh(
+        mergeGeometries([short, long]),
+        new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false }),
+        256,
+      );
+      this.emptied.renderOrder = 2;
+      this.emptied.frustumCulled = false;
+      this.root.add(this.emptied);
+    }
+    const m = new THREE.Matrix4();
+    const n = Math.min(list.length, 256);
+    for (let k = 0; k < n; k++) this.emptied.setMatrixAt(k, m.makeTranslation(list[k].x, list[k].y + 0.02, list[k].z));
+    this.emptied.count = n;
+    this.emptied.instanceMatrix.needsUpdate = true;
+  }
+
+  /** 2.64: one of the dead fell here: a dark stain on the ground (the oldest goes past the most kept). */
+  stain(x: number, z: number, time: number, seed: number) {
+    if (this.stains.children.length >= STAINS) {
+      const old = this.stains.children[0] as THREE.Mesh;
+      (old.material as THREE.Material).dispose();
+      this.stains.remove(old);
+    }
+    const m = new THREE.Mesh(
+      this.stainGeo,
+      new THREE.MeshBasicMaterial({ color: 0x3a0d0b, transparent: true, opacity: 0.55, depthWrite: false }),
+    );
+    m.position.set(x, 0.025, z);
+    m.scale.set(1 + (seed % 5) * 0.08, 1, 0.8 + (seed % 3) * 0.1);
+    m.rotation.y = (seed % 16) * 0.39;
+    m.renderOrder = 0.43;
+    m.userData.at = time;
+    this.stains.add(m);
   }
   /**
    * 2.61: the docks' fog on the boat's night (the rules: the dead see two tiles): a low bank of it over everything, thinning to
@@ -1095,6 +1172,10 @@ void main() {
     this.group.clear();
     this.horde.clear();
     this.glow.visible = false;
+    this.you.visible = false;
+    if (this.emptied) this.emptied.count = 0;
+    for (const s of this.stains.children) ((s as THREE.Mesh).material as THREE.Material).dispose();
+    this.stains.clear();
     // (2.61: the docks' fog goes with the city: a boat's escape, a quit mid-fog.)
     if (this.fog) this.fog.visible = false;
     disposeTree(this.bars, () => false, new Set([kitMaterial]));

@@ -504,7 +504,7 @@ function quiet(seed: number, day: number, minute: number): City {
   );
   // A fall stops it.
   c.state.bleed = 8;
-  c.hurt(200);
+  c.hurt(200, 'z0');
   check(c.state.bleed === 0, 'a fall leaves nothing bleeding');
   say(
     `a bite bleeds half its harm more, a point every ${BLEED.every / 20} seconds (${BLEED.most} at the most), never the last point; a bandage or a medkit stops it, at full health too (pills don't); a fall leaves nothing bleeding`,

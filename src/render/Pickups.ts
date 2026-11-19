@@ -38,6 +38,8 @@ export interface Focus {
   z0: number;
   x1: number;
   z1: number;
+  /** 2.64 (City Escape): the height to frame it at (its top, so what stands there doesn't hide the frame); none: the floor. */
+  y?: number;
 }
 
 /**
@@ -72,7 +74,7 @@ export class Pickups {
   /** Each item's tile, and the tile whose items wait for something thrown there to land (-1 none). */
   private readonly tiles: number[] = [];
   private hidden = -1;
-  private readonly box = { x0: 0, z0: 0, x1: 1, z1: 1 };
+  private readonly box: Focus = { x0: 0, z0: 0, x1: 1, z1: 1 };
 
   constructor() {
     // Each bracket: two thin bars meeting at a corner, lying on the floor.
@@ -107,7 +109,8 @@ export class Pickups {
     // The focus frame eases in, breathes, and snaps to the new target.
     this.shown += ((focus ? 1 : 0) - this.shown) * Math.min(1, dt * 10);
     this.frame.visible = this.shown > 0.02;
-    if (focus) Object.assign(this.box, focus);
+    // (Its height too, or none: a prison's frame after the city's never floats.)
+    if (focus) Object.assign(this.box, focus, { y: focus.y });
     if (!this.frame.visible) return;
     const pad = 0.1 + (motion ? Math.sin(time * 5) * 0.04 : 0);
     const { x0, z0, x1, z1 } = this.box;
@@ -117,7 +120,8 @@ export class Pickups {
       [x1 + pad, z1 + pad],
       [x0 - pad, z1 + pad],
     ];
-    this.frame.children.forEach((c, k) => c.position.set(corners[k][0], 0.035, corners[k][1]));
+    const y = this.box.y ?? 0.035;
+    this.frame.children.forEach((c, k) => c.position.set(corners[k][0], y, corners[k][1]));
     this.frameMat.opacity = this.shown * 0.95;
   }
 

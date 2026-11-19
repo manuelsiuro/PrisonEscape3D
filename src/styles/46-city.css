@@ -314,11 +314,23 @@
   }
 }
 
-/* A phone turned: the map beside its legend, both within the height there is. */
+/* A phone turned: the map beside its legend, both within the height there is (2.64: the legend in two columns: in one,
+   its sixteen lines ran the card past the screen and took its Close with them). */
 @media (max-height: 480px) {
   .city-map-pic {
     max-height: calc(100vh - 150px);
     margin: 0 auto;
+  }
+
+  .city-map-body {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    margin: 6px 0 8px;
+  }
+
+  .city-map-legend {
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 10px;
+    font-size: 11px;
   }
 
   .city-minimap {
@@ -586,6 +598,14 @@
   }
 }
 
+/* 2.64: what a box holds, by name: a touch has no hover to read an icon by. */
+.city-box .box-names {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: rgba(var(--white-rgb), 0.78);
+}
+
 /* 2.64: on a keyboard, the key that does what the round button does, at its corner. */
 .city-act .act-round,
 .city-hit .tool-round {
@@ -686,6 +706,22 @@
   .cm-health.bleeding .cm-drip {
     animation: none;
   }
+}
+
+/* 2.64: the game's own reduced motion stills every animation: the bite's edge is held (and taken off by the play code),
+   the low edge kept, rather than both vanishing. */
+body.reduced-motion .city-bitten.on {
+  animation: none;
+  opacity: 0.55;
+}
+
+body.reduced-motion .city-bitten.low {
+  animation: none;
+  opacity: 0.4;
+}
+
+body.reduced-motion .city-bitten.low.on {
+  opacity: 0.55;
 }
 
 /* ------------------------------------------------------------ shelters and making (2.47) */
@@ -876,6 +912,15 @@
   line-height: 1.3;
 }
 
+/* 2.64: a banner up (an act, nightfall, a way out set going): the radio's line makes way below it, both read. */
+.city-radio {
+  transition: margin-top 0.2s ease-out;
+}
+
+.banner-up .city-radio {
+  margin-top: calc(var(--banner-h, 70px) + 14px);
+}
+
 @keyframes city-radio-in {
   from {
     opacity: 0;
@@ -923,6 +968,14 @@
 
 .city-escaped h2 {
   justify-content: center;
+  /* (2.64: the end of a city, said as one.) */
+  font-size: 34px;
+}
+
+/* 2.64: what ended a Hardcore city. */
+.city-over-by {
+  font-weight: 700;
+  color: var(--city-health-70);
 }
 
 .city-journal h2 small,
@@ -1144,8 +1197,9 @@
     -webkit-line-clamp: 1;
   }
 
+  /* (2.64: no wider than the column left of the open box, which lies along the top from 330px: it ran under it.) */
   .city-radio {
-    width: min(calc(100% - 330px), 440px);
+    width: min(calc(100% - 330px), 306px);
     margin-left: 0;
     padding: 6px 11px;
   }

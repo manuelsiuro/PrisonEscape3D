@@ -327,7 +327,7 @@ let wreckAt: { seed: number; d: number; first: number } | null = null;
   search(f);
   f.step(command(0, COP.CLOSE));
   check(f.state.alarm.length === 2, 'sounding before the fall');
-  f.hurt(1000);
+  f.hurt(1000, 'z0');
   f.step(0);
   check(f.state.deaths === 1 && f.state.alarm.length === 0, `after a fall the alarm is ${f.state.alarm}`);
   // Not heard from the next district; back, the car stays searched and silent.

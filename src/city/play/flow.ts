@@ -6,7 +6,7 @@ import { hhmm } from '../../sim/systems/clock';
 import { hideLoading, showLoading } from '../../ui/loading';
 import { ask } from '../../ui/screens/ask';
 import { deleteCitySave, readCitySave } from '../save';
-import { City, loadCity } from '../sim/City';
+import { City, loadCity, MODE } from '../sim/City';
 import { showCityMenu, showNewCity } from '../ui/screens';
 import { cityBackdrop, clearBackdrop, runCity } from './city';
 
@@ -25,11 +25,20 @@ export async function cityFlow(): Promise<void> {
   const behind = (first && loadCity(first.snap)) || new City(BACKDROP_SEED);
   cityBackdrop(behind);
   hideLoading();
+  // (2.64: an end card's "A new city": straight to the new city's card.)
+  let again = false;
   for (;;) {
     const saved = readCitySave();
-    const choice = saved
-      ? await showCityMenu(`${saved.name} · ${t('city.hud.day', { n: saved.day })} · ${hhmm(saved.minute)}`, click)
-      : 'new';
+    // (A city behind the new city's card again: the one left was cleared with it.)
+    if (again) cityBackdrop(new City(BACKDROP_SEED));
+    const choice = again
+      ? 'new'
+      : saved
+        ? await showCityMenu(
+            `${saved.name} · ${t('city.hud.day', { n: saved.day })} · ${hhmm(saved.minute)} · ${t(saved.mode === MODE.HARDCORE ? 'city.mode.hardcore' : 'city.mode.survivor')}`,
+            click,
+          )
+        : 'new';
     if (choice === 'back') return clearBackdrop();
     let city: City | null = null;
     if (choice === 'continue' && saved) {
@@ -53,7 +62,7 @@ export async function cityFlow(): Promise<void> {
       await showLoading();
       city = new City(Date.now() & 0x7fffffff, mode);
     }
-    await runCity(city, choice !== 'continue');
-    return;
+    again = await runCity(city, choice !== 'continue');
+    if (!again) return;
   }
 }

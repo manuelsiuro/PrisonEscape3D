@@ -86,7 +86,8 @@ function sign(use: LotUse, size: number): Part[] {
   });
   // Its two legs, then the lot tipped back about its foot.
   parts.push(box(0.08, 0.14, 0.08, DARK, -size * 0.3, 0, 0), box(0.08, 0.14, 0.08, DARK, size * 0.3, 0, 0));
-  for (const p of parts) p.rotateX(-0.55);
+  // (2.64: smaller and tipped further back, nearer flat: stood up, it hid the street beyond it from this camera, the dead in it.)
+  for (const p of parts) p.rotateX(-1.0);
   return parts;
 }
 
@@ -209,7 +210,7 @@ export function landmarkParts(lm: LandmarkPlan, out: Part[]) {
   }
   const [nw, ne, sw] = lm.corners.map(xz);
   const top = WALL_H + 0.07;
-  place(out, sign(lm.use, lm.use === 'mall' ? 2.3 : 1.7), lm.signX, top, lot.z0 + 0.5);
+  place(out, sign(lm.use, lm.use === 'mall' ? 1.4 : 1.0), lm.signX, top, lot.z0 + 0.5);
   switch (lm.use) {
     case 'station':
       place(out, totem(paint), ne[0], top, ne[1]);

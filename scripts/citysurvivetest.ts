@@ -128,7 +128,7 @@ const idle = (c: City, minutes: number) => {
   for (let k = 0; k < 200; k++) c.step(command(9));
   const fell = c.tile;
   const day = c.day;
-  c.hurt(500);
+  c.hurt(500, 'z0');
   check(c.state.health === 40 && !c.state.over && c.state.deaths === 1, `a Survivor wakes with 40 health: ${c.state.health}`);
   check(
     c.tile === c.state.home[1] && c.minute === START_MINUTE && c.day === day + 1,
@@ -141,11 +141,11 @@ const idle = (c: City, minutes: number) => {
   // (2.64: the fall says where they woke (never slept: by the bus) and where the pile is, for its card.)
   const said = c.events.find((e) => e.type === 'dead');
   check(said?.type === 'dead' && said.bed === false && said.pile === c.state.district, `the fall's card: ${JSON.stringify(said)}`);
-  c.hurt(500);
+  c.hurt(500, 'z0');
   const again = [...c.events].reverse().find((e) => e.type === 'dead');
   check(again?.type === 'dead' && again.pile === -1, `a fall with nothing carried: ${JSON.stringify(again)}`);
   const h = new City(5, MODE.HARDCORE);
-  h.hurt(500);
+  h.hurt(500, 'z0');
   check(h.state.over === 1 && h.events.some((e) => e.type === 'dead' && e.final), 'Hardcore: the city is lost');
   const step = h.state.step;
   h.step(command(9));
@@ -352,7 +352,7 @@ const idle = (c: City, minutes: number) => {
   const piles = () => Object.keys(c.state.boxes).filter((k) => k.includes(':g')).length;
   const before = piles();
   c.state.hunger = 0;
-  c.hurt(500);
+  c.hurt(500, 'z0');
   check(piles() === before, 'a fall with empty pockets leaves no pile');
   check(c.state.hunger === 15_000, `a fall mends hunger only to 15: ${c.state.hunger}`);
   say(
