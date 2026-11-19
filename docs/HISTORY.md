@@ -237,9 +237,9 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - The prison cards in 3D (v2.63.1)
 - City Escape: the last nights' waits shortened (v2.63.2)
 - City Escape, a first day that works (v2.64.0)
-- City Escape, readable screens and fights (v2.64.1, not released yet)
+- City Escape, readable screens and fights (v2.64.1, out with the next release)
 
 ## [v2.65 to v2.69](history/v2.65-v2.69.md)
 
-- City Escape, fair last nights and real choices (v2.65.0, not released yet)
+- City Escape, fair last nights and real choices (v2.65.0, out with the next release)
 - City Escape, the look (v2.65.1, not released yet)
