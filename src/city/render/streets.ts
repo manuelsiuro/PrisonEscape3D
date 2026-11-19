@@ -31,8 +31,9 @@ export function paintStreets(c: CanvasRenderingContext2D, R: number, world: Worl
     for (let x = 0; x < MAP_W; x++) if (road(x, z)) n++;
     row[z] = n > MAP_W * 0.6 ? 1 : 0;
   }
-  const WHITE = 'rgba(226, 226, 218, 0.62)';
-  const FAINT = 'rgba(226, 226, 218, 0.34)';
+  // (2.65: worn paint, not fresh: at night the brighter lines glared across a dark city.)
+  const WHITE = 'rgba(214, 214, 206, 0.5)';
+  const FAINT = 'rgba(214, 214, 206, 0.28)';
 
   // What years did to the tarmac, under the paint.
   for (let z = 0; z < MAP_H; z++)
@@ -90,7 +91,8 @@ export function paintStreets(c: CanvasRenderingContext2D, R: number, world: Worl
         [1, 0],
       ]) {
         if (kind(x + dx, z + dz) !== TILE.ASPHALT) continue;
-        c.fillStyle = 'rgba(196, 198, 200, 0.9)';
+        // (2.65: a kerb's stone, not a white line: at night it outshone everything.)
+        c.fillStyle = 'rgba(146, 148, 150, 0.85)';
         if (dz) c.fillRect(px, dz < 0 ? pz - 2 : pz + R, R, 2);
         else c.fillRect(dx < 0 ? px - 2 : px + R, pz, 2, R);
         c.fillStyle = 'rgba(14, 14, 16, 0.4)';
@@ -137,6 +139,15 @@ export function paintStreets(c: CanvasRenderingContext2D, R: number, world: Worl
       }
     }
 
+  /** 2.65: a dark stain soaked into the ground (oil, rust), soft at its edge. */
+  const stain = (px: number, pz: number, r: number, rgb: string) => {
+    const g = c.createRadialGradient(px, pz, 0, px, pz, r);
+    g.addColorStop(0, `rgba(${rgb}, 0.55)`);
+    g.addColorStop(0.6, `rgba(${rgb}, 0.3)`);
+    g.addColorStop(1, `rgba(${rgb}, 0)`);
+    c.fillStyle = g;
+    c.fillRect(px - r, pz - r, r * 2, r * 2);
+  };
   // The lots: bays in a car park, a step before each street door.
   district.lots.forEach((l) => {
     if (l.use === 'parking') {
@@ -147,6 +158,52 @@ export function paintStreets(c: CanvasRenderingContext2D, R: number, world: Worl
         for (let x = l.x0; x <= l.x1 + 1; x++) c.fillRect(x * R - 1, z * R + 1, 1, R - 2);
         if ((z - l.z0) % 3 === 0) c.fillRect(l.x0 * R, (z + 1) * R - 1, (l.x1 - l.x0 + 1) * R, 1);
       }
+      // (2.65: what cars left in their bays, an arrow down each lane now and then: a car park, not a bare square of tarmac.)
+      for (let z = l.z0; z <= l.z1; z++)
+        for (let x = l.x0; x <= l.x1; x++) {
+          const h = hash(x, z, 41);
+          const lane = (z - l.z0) % 3 === 2;
+          if (!lane && h % 5 < 2)
+            stain(
+              x * R + R * (0.25 + ((h >> 4) & 7) * 0.07),
+              z * R + R * (0.3 + ((h >> 10) & 3) * 0.13),
+              R * (0.18 + ((h >> 7) & 7) * 0.04),
+              '12, 12, 14',
+            );
+          if (lane && x % 4 === 1 && x < l.x1) {
+            const px = x * R + R / 2;
+            const pz = z * R + R / 2;
+            const way = (z - l.z0) % 6 === 2 ? 1 : -1;
+            c.fillStyle = FAINT;
+            c.fillRect(px - R * 0.32 * way, pz - 1, R * 0.5 * way, 2);
+            c.beginPath();
+            c.moveTo(px + R * 0.3 * way, pz);
+            c.lineTo(px + R * 0.1 * way, pz - R * 0.14);
+            c.lineTo(px + R * 0.1 * way, pz + R * 0.14);
+            c.fill();
+          }
+        }
+    }
+    // (2.65: a dock's yard: a yellow line round its working ground, container slots marked on it, rust where the boxes stood.)
+    if (l.use === 'yard') {
+      const YELLOW = 'rgba(214, 170, 52, 0.55)';
+      c.fillStyle = YELLOW;
+      const x0 = l.x0 * R + R * 0.3;
+      const z0 = l.z0 * R + R * 0.3;
+      const x1 = (l.x1 + 1) * R - R * 0.3;
+      const z1 = (l.z1 + 1) * R - R * 0.3;
+      c.fillRect(x0, z0, x1 - x0, 2);
+      c.fillRect(x0, z1 - 2, x1 - x0, 2);
+      c.fillRect(x0, z0, 2, z1 - z0);
+      c.fillRect(x1 - 2, z0, 2, z1 - z0);
+      for (let z = l.z0 + 1; z < l.z1; z += 3)
+        for (let x = l.x0 + 1; x < l.x1 - 1; x += 3) {
+          const h = hash(x, z, 43);
+          c.fillStyle = 'rgba(214, 170, 52, 0.3)';
+          c.fillRect(x * R, z * R, 2 * R, 1);
+          c.fillRect(x * R, (z + 1) * R, 2 * R, 1);
+          if (h % 2 === 0) stain(x * R + R, z * R + R / 2, R * 0.6, '92, 48, 24');
+        }
     }
     for (const door of l.doors) {
       const x = door % MAP_W;

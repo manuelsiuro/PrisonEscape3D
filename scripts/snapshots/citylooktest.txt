@@ -2,5 +2,5 @@
 windows and roofs' things: 1172 pieces a district on walls only, 25392 triangles at most
 street furniture a district: 63.7 lamps, 14.0 signals, 11.9 hydrants, on bare pavement, clear of doors and gates
 city furniture: armchair, bed, crate, rackShed, rackShop, table, till, ward, each within its tiles
-streets painted: 2730 marks a district (1958 at least), on the map, the same each time
+streets painted: 2863 marks a district (2079 at least), on the map, the same each time
 the metro's tunnel keeps the prisons' walls

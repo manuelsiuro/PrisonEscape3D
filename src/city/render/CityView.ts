@@ -329,7 +329,8 @@ const TORCH_SEES = 6.5;
 /** 2.61: the docks' fog: clear within so many tiles of the player, thick from so many; its colour. */
 const FOG_CLEAR = 2.2;
 const FOG_THICK = 5.5;
-const FOG_TINT = 0x8d99a3;
+// (2.65: a night's fog, blue-grey: the pale one glowed like day over a dark city.)
+const FOG_TINT = 0x37424e;
 /** How dark a building's depths are drawn by day (2.53). */
 const GLOOM = 0.5;
 const GLOOM_NIGHT = 0.5;
@@ -337,6 +338,31 @@ const DARK_IRON = 0x2a2f36;
 /** A flame: a narrow cone on its foot; a work lamp: a small bright box. */
 const FLAME_GEO = new THREE.ConeGeometry(0.2, 0.55, 6).translate(0, 0.27, 0);
 const HOT_GEO = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);
+/** 2.65: the least of a light's pool on a tile it lights (the edge of what the dead keep out of). */
+const LIT_FLOOR = 0.18;
+/** 2.65: a light's glow on the floor, its edge faded out (a square drawn with a round soft spot). */
+const SOFT_GEO = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
+let softSpot: THREE.Texture | null = null;
+/** A white spot fading to nothing at its rim, smoothly (made once, in the browser). */
+function soft(): THREE.Texture | null {
+  if (softSpot || typeof document === 'undefined') return softSpot;
+  const n = 128;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = n;
+  const g = cv.getContext('2d');
+  if (!g) return null;
+  const r = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  for (let k = 0; k <= 8; k++) {
+    const f = k / 8;
+    // (Falling off as light does, then gone well before the square's edge.)
+    r.addColorStop(f, `rgba(255,255,255,${(1 - f * f) ** 1.6})`);
+  }
+  g.fillStyle = r;
+  g.fillRect(0, 0, n, n);
+  softSpot = new THREE.CanvasTexture(cv);
+  softSpot.colorSpace = THREE.SRGBColorSpace;
+  return softSpot;
+}
 const LAMP_GEO = new THREE.BoxGeometry(0.18, 0.1, 0.18).translate(0, 0.06, 0);
 
 export class CityView {
@@ -363,9 +389,10 @@ export class CityView {
   ]);
 
   constructor() {
+    // (2.65: soft at its rim, as light is: a flat disc had an edge.)
     this.glow = new THREE.Mesh(
-      new THREE.CircleGeometry(2.6, 28).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0x9fb8ff, transparent: true, opacity: 0.09, depthWrite: false, toneMapped: false }),
+      new THREE.PlaneGeometry(5.2, 5.2).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x9fb8ff, transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false, map: soft() }),
     );
     this.glow.renderOrder = 0.44;
     this.glow.visible = false;
@@ -400,16 +427,21 @@ export class CityView {
   private readonly poolMat = new THREE.MeshBasicMaterial({
     color: 0xffc46a,
     transparent: true,
-    opacity: 0.12,
+    opacity: 0.45,
     depthWrite: false,
     toneMapped: false,
+    vertexColors: true,
+    // (2.65: light added to what it falls on, as light is: a wash over the dark tarmac was all but lost.)
+    blending: THREE.AdditiveBlending,
   });
   private readonly hotMat = new THREE.MeshBasicMaterial({
     color: 0xffd890,
     transparent: true,
-    opacity: 0.3,
+    opacity: 0.5,
     depthWrite: false,
     toneMapped: false,
+    map: soft(),
+    blending: THREE.AdditiveBlending,
   });
   private readonly flameMat = new THREE.MeshBasicMaterial({ color: 0xffa23a, toneMapped: false });
   private readonly coreMat = new THREE.MeshBasicMaterial({ color: 0xfff0a8, toneMapped: false });
@@ -425,8 +457,14 @@ export class CityView {
   private lit: Uint8Array | null = null;
   private dim: Uint8Array | null = null;
   private torch = false;
-  /** `dim`: the tiles daylight doesn't reach (City.dim). */
-  setLights(list: ReadonlyArray<readonly [number, number, number]>, lit: Uint8Array, dim: Uint8Array) {
+  /** `dim`: the tiles daylight doesn't reach (City.dim); `solid` (2.65): what stands in the way (walls, furniture), for the shade's edges. */
+  setLights(
+    list: ReadonlyArray<readonly [number, number, number]>,
+    lit: Uint8Array,
+    dim: Uint8Array,
+    solid?: Uint8Array,
+    lotAt?: Uint8Array,
+  ) {
     const keep = new Set<THREE.Material>([kitMaterial, this.poolMat, this.hotMat, this.flameMat, this.coreMat, this.gloomMat]);
     disposeTree(this.lights, () => false, keep);
     this.lights.clear();
@@ -434,10 +472,28 @@ export class CityView {
     this.lit = list.length ? lit : null;
     this.dim = dim;
     this.gloom = null;
-    // (2.57: a body of shade standing in each dark room, waist high: what stands in it is in the dark, the
-    // roof's edge over it is not, and its foot fades out across the floor beside it. One surface, seen through once: the top
-    // of every dark tile, a side where the next tile is in the light.)
-    const isDark = (x: number, z: number) => x >= 0 && z >= 0 && x < W && z < H && !!dim[z * W + x] && !(list.length && lit[z * W + x]);
+    // (2.57: a body of shade standing in each dark room, waist high: what stands in it is in the dark, the roof's edge over it is not.
+    // 2.65: one sheet, its edges soft: each corner as dark as the share of the open tiles round it that are dark (walls and furniture
+    // not counted, so a room is as dark against its walls as in its middle). Before, it stepped tile by tile where daylight came in
+    // and its walls of shade stood like blocks.)
+    const inside = (x: number, z: number) => x >= 0 && z >= 0 && x < W && z < H;
+    const isDark = (x: number, z: number) => inside(x, z) && !!dim[z * W + x] && !(list.length && lit[z * W + x]);
+    const counts = (x: number, z: number) => inside(x, z) && !solid?.[z * W + x];
+    const corner = (cx: number, cz: number) => {
+      let dark = 0;
+      let open = 0;
+      for (const [x, z] of [
+        [cx - 1, cz - 1],
+        [cx, cz - 1],
+        [cx - 1, cz],
+        [cx, cz],
+      ]) {
+        if (isDark(x, z)) dark++;
+        else if (counts(x, z)) open++;
+      }
+      const a = dark + open ? dark / (dark + open) : 0;
+      return a * a * (3 - 2 * a);
+    };
     const pos: number[] = [];
     const rgba: number[] = [];
     const quad = (p: number[], a: number[]) => {
@@ -447,26 +503,17 @@ export class CityView {
       }
     };
     const TOP = 0.8;
-    const LOW = 0.032;
-    const FADE = 0.7;
+    const near = new Uint8Array(W * H);
+    for (let z = 0; z < H; z++)
+      for (let x = 0; x < W; x++)
+        if (isDark(x, z))
+          for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (inside(x + dx, z + dz)) near[(z + dz) * W + x + dx] = 1;
     for (let z = 0; z < H; z++)
       for (let x = 0; x < W; x++) {
-        if (!isDark(x, z)) continue;
-        quad([x, TOP, z, x, TOP, z + 1, x + 1, TOP, z + 1, x + 1, TOP, z], [1, 1, 1, 1]);
-        // (Each side: the wall of shade down to the floor, then its foot fading out over the floor next to it (under a wall, unseen).)
-        if (!isDark(x, z + 1)) {
-          quad([x, TOP, z + 1, x, LOW, z + 1, x + 1, LOW, z + 1, x + 1, TOP, z + 1], [1, 1, 1, 1]);
-          quad([x, LOW, z + 1, x, LOW, z + 1 + FADE, x + 1, LOW, z + 1 + FADE, x + 1, LOW, z + 1], [1, 0, 0, 1]);
-        }
-        if (!isDark(x, z - 1)) quad([x, LOW, z - FADE, x, LOW, z, x + 1, LOW, z, x + 1, LOW, z - FADE], [0, 1, 1, 0]);
-        if (!isDark(x + 1, z)) {
-          quad([x + 1, TOP, z + 1, x + 1, LOW, z + 1, x + 1, LOW, z, x + 1, TOP, z], [1, 1, 1, 1]);
-          quad([x + 1, LOW, z, x + 1, LOW, z + 1, x + 1 + FADE, LOW, z + 1, x + 1 + FADE, LOW, z], [1, 1, 0, 0]);
-        }
-        if (!isDark(x - 1, z)) {
-          quad([x, TOP, z, x, LOW, z, x, LOW, z + 1, x, TOP, z + 1], [1, 1, 1, 1]);
-          quad([x - FADE, LOW, z, x - FADE, LOW, z + 1, x, LOW, z + 1, x, LOW, z], [0, 0, 1, 1]);
-        }
+        if (!near[z * W + x]) continue;
+        const a = [corner(x, z), corner(x, z + 1), corner(x + 1, z + 1), corner(x + 1, z)];
+        if (a.every((v) => v === 0)) continue;
+        quad([x, TOP, z, x, TOP, z + 1, x + 1, TOP, z + 1, x + 1, TOP, z], a);
       }
     if (pos.length) {
       const g = new THREE.BufferGeometry();
@@ -477,17 +524,46 @@ export class CityView {
       this.lights.add(this.gloom);
     }
     if (!list.length) return;
-    // The pool: a quad a lit tile, in one piece.
-    const quads: THREE.BufferGeometry[] = [];
+    // The pool: a quad a lit tile, in one piece. 2.65: bright by a fire or a lantern and fading out to its reach (each corner by its
+    // distance from the nearest), even over a generator's building: before, a flat wash of tiles in a stepped cross.
+    const spots = list
+      .filter(([, kind]) => kind !== 2)
+      .map(([tile, kind]) => ({ x: (tile % W) + 0.5, z: Math.floor(tile / W) + 0.5, r: (kind === 0 ? 4 : 3) + 0.5 }));
+    // (A generator's building: its own wash all through, whatever else burns near; by its lot, or failing that, out of every flame's reach.)
+    const powered = new Set(list.filter(([, kind]) => kind === 2).map(([tile]) => lotAt?.[tile] ?? 0));
+    const byPower = (i: number) =>
+      lotAt
+        ? lotAt[i] > 0 && powered.has(lotAt[i])
+        : !spots.some((s) => Math.max(Math.abs((i % W) + 0.5 - s.x), Math.abs(Math.floor(i / W) + 0.5 - s.z)) < s.r);
+    const glow = (x: number, z: number) => {
+      let a = 0;
+      for (const s of spots) {
+        const f = Math.max(0, 1 - Math.hypot(x - s.x, z - s.z) / s.r);
+        a = Math.max(a, Math.sqrt(f) * (0.4 + 0.6 * f));
+      }
+      return a;
+    };
+    const pPos: number[] = [];
+    const pRgba: number[] = [];
     for (let i = 0; i < W * H; i++) {
       if (!lit[i]) continue;
-      const q = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-      q.translate((i % W) + 0.5, 0.034, Math.floor(i / W) + 0.5);
-      quads.push(q);
+      const x = i % W;
+      const z = Math.floor(i / W);
+      const power = byPower(i);
+      // (A floor under every lit tile: where the light ends is where the dead stop, and it shows, faintly.)
+      const at = (cx: number, cz: number) => Math.max(power ? 0.75 : 0, LIT_FLOOR, glow(cx, cz));
+      const c = [at(x, z), at(x, z + 1), at(x + 1, z + 1), at(x + 1, z)];
+      const p = [x, 0.034, z, x, 0.034, z + 1, x + 1, 0.034, z + 1, x + 1, 0.034, z];
+      for (const k of [0, 1, 2, 0, 2, 3]) {
+        pPos.push(p[k * 3], p[k * 3 + 1], p[k * 3 + 2]);
+        pRgba.push(1, 1, 1, c[k]);
+      }
     }
-    if (quads.length) {
-      const pool = new THREE.Mesh(mergeGeometries(quads), this.poolMat);
-      for (const q of quads) q.dispose();
+    if (pPos.length) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(pRgba, 4));
+      const pool = new THREE.Mesh(g, this.poolMat);
       pool.renderOrder = 0.45;
       this.lights.add(pool);
     }
@@ -517,7 +593,7 @@ export class CityView {
       if (kind === 1) flame.scale.setScalar(0.55);
       // (The hot middle of its light, on the floor round it.)
       if (kind !== 2) {
-        const hot = new THREE.Mesh(HOT_GEO, this.hotMat);
+        const hot = new THREE.Mesh(SOFT_GEO, this.hotMat);
         hot.position.set(x, 0.038, z);
         hot.scale.setScalar(kind === 0 ? 1.9 : 1.4);
         hot.renderOrder = 0.46;
@@ -535,6 +611,10 @@ export class CityView {
   /** Cars searched (2.54): a small red light on the roof of each car whose alarm would still go off (`at`: the car's middle, in tiles). */
   private readonly alarms = new THREE.Group();
   private readonly alarmMat = new THREE.MeshBasicMaterial({ color: 0xff3b30, toneMapped: false });
+  /** 2.65: the tunnel's rock and its ballast (`setTunnel`). */
+  // (Cut away round the player as the walls under it are: a cap over the south wall stood over their legs.)
+  private readonly rockMat = seeThrough(new THREE.MeshBasicMaterial({ vertexColors: true }));
+  private readonly ballastMat = new THREE.MeshBasicMaterial({ color: 0x24211d, transparent: true, opacity: 0.55, depthWrite: false });
   setAlarms(at: ReadonlyArray<{ x: number; z: number }>) {
     for (const m of this.alarms.children) (m as THREE.Mesh).geometry.dispose();
     this.alarms.clear();
@@ -554,10 +634,55 @@ export class CityView {
     depthWrite: false,
     toneMapped: false,
   });
-  setTunnel(way: readonly number[] | null) {
-    disposeTree(this.track, () => false, new Set<THREE.Material>([kitMaterial, this.shaftMat]));
+  setTunnel(way: readonly number[] | null, rows?: readonly string[]) {
+    disposeTree(this.track, () => false, new Set<THREE.Material>([kitMaterial, this.shaftMat, this.rockMat, this.ballastMat]));
     this.track.clear();
     if (!way?.length) return;
+    // (2.65: under the ground: the rock over the walls rough and dark, not a building's tiled roof; the floor ballast, not a pale
+    // concrete. Render only; drawn over the world's own tops and floor.)
+    if (rows) {
+      const rock: number[] = [];
+      const rockRgb: number[] = [];
+      const floor: THREE.BufferGeometry[] = [];
+      const top = WALL_H + 0.015;
+      for (let i = 0; i < W * H; i++) {
+        const x = i % W;
+        const z = Math.floor(i / W);
+        const ch = rows[z]?.[x];
+        if (ch === '_') {
+          floor.push(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(x + 0.5, 0.012, z + 0.5));
+          continue;
+        }
+        const h = mix32(Math.imul(i + 1, 0x9e3779b1));
+        // (Linear colour: a dark stone, each tile a little different.)
+        const v = 0.017 + ((h & 255) / 255) * 0.007;
+        const tint = [v * 1.12, v, v * 0.85];
+        // (Each corner a little higher than the wall's top, shared by the tiles round it: rock, not a cap laid flat, and no cracks.)
+        const y = (cx: number, cz: number) => top + 0.006 + ((mix32(Math.imul(cz * 65 + cx + 1, 0x85ebca6b)) >>> 0) % 8) * 0.009;
+        const c = [
+          [x, y(x, z), z],
+          [x, y(x, z + 1), z + 1],
+          [x + 1, y(x + 1, z + 1), z + 1],
+          [x + 1, y(x + 1, z), z],
+        ];
+        for (const k of [0, 1, 2, 0, 2, 3]) {
+          rock.push(...c[k]);
+          rockRgb.push(...tint);
+        }
+      }
+      if (rock.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(rock, 3));
+        g.setAttribute('color', new THREE.Float32BufferAttribute(rockRgb, 3));
+        this.track.add(new THREE.Mesh(g, this.rockMat));
+      }
+      if (floor.length) {
+        const m = new THREE.Mesh(mergeGeometries(floor), this.ballastMat);
+        for (const g of floor) g.dispose();
+        m.renderOrder = 0.2;
+        this.track.add(m);
+      }
+    }
     const parts: Part[] = [];
     const SLEEPER = 0x4a3a2c;
     const RAIL = 0x7c8794;
@@ -688,11 +813,14 @@ export class CityView {
     this.alarms.visible = still || time % 1.5 < 0.2 || (time % 1.5 > 0.4 && time % 1.5 < 0.6);
     // (After dark the rooms keep a thinner shade: no moon gets in, and a pale floor doesn't outshine the street. 2.57.)
     this.gloomMat.opacity = night ? GLOOM_NIGHT : GLOOM;
-    this.poolMat.opacity = night ? 0.3 : 0.06;
+    // (2.65: added light, fading to its reach: stronger at its heart than the flat wash it was.)
+    this.poolMat.opacity = night ? 0.5 : 0.08;
+    this.sheenMat.opacity = night ? 0.16 : 0;
+    this.sheenMat.visible = night;
     // (2.61: a warm wash that fades at its rim, a flicker in it; by day hardly there.)
     this.hearthMat.opacity = night ? (still ? 0.62 : 0.62 + Math.sin(time * 7) * 0.05) : 0.08;
     this.hearthFlame.color.set(night ? 0xffc46a : 0xc9b894);
-    this.hotMat.opacity = night ? 0.3 : 0.08;
+    this.hotMat.opacity = night ? 0.45 : 0.1;
     for (const f of this.flames) {
       if (f.userData.kind === 2) continue;
       const base = f.userData.kind === 1 ? 0.55 : 1;
@@ -904,7 +1032,7 @@ export class CityView {
     // (The torch: a wider, warmer pool round the player.)
     this.glow.scale.setScalar(this.torch ? TORCH_SEES / 2.6 : 1);
     (this.glow.material as THREE.MeshBasicMaterial).color.set(this.torch ? 0xffe2a0 : 0x9fb8ff);
-    (this.glow.material as THREE.MeshBasicMaterial).opacity = this.torch ? 0.2 : 0.09;
+    (this.glow.material as THREE.MeshBasicMaterial).opacity = this.torch ? 0.34 : 0.16;
     this.you.visible = true;
     this.you.position.set(me.x, 0.035, me.z);
     (this.you.material as THREE.MeshBasicMaterial).opacity = night || this.dim?.[mine] === 1 ? 0.8 : 0.45;
@@ -1022,7 +1150,12 @@ void main() {
   }
 
   /** A district's pieces put up (the last one's taken down); `landmark`: its landmark's own (landmarkPlan). */
-  set(plan: CityPlan, district: District, own: LandmarkPlan | null = null) {
+  set(
+    plan: CityPlan,
+    district: District,
+    own: LandmarkPlan | null = null,
+    sea: ReadonlyArray<readonly [number, number, number, number]> = [],
+  ) {
     this.clear();
     // (What its dead wear: the tunnel has no gate, and its own.)
     this.horde.setPlace(district.gates.length ? district.kind : null, district.index === plan.start);
@@ -1154,6 +1287,21 @@ void main() {
       else if (g.side === SIDE.W) parts.push(box(far, 0.012, ROAD_W, ROAD, -far / 2, 0, down));
       else parts.push(box(far, 0.012, ROAD_W, ROAD, W + far / 2, 0, down));
     }
+    // (2.65: water under the night sky: a faint sheen, not a hole in the ground. Render only, the city's own; by day not drawn.)
+    const wet: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (district.rows[Math.floor(i / MAP_W)][i % MAP_W] !== '~') continue;
+      wet.push(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate((i % MAP_W) + 0.5, 0.02, Math.floor(i / MAP_W) + 0.5));
+    }
+    // (And the docks' sea on past the map's edge, as the water is drawn: no seam where the sheen stopped.)
+    for (const [x0, z0, x1, z1] of sea)
+      wet.push(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2).translate((x0 + x1) / 2, 0.02, (z0 + z1) / 2));
+    if (wet.length) {
+      const sheen = new THREE.Mesh(mergeGeometries(wet), this.sheenMat);
+      for (const g of wet) g.dispose();
+      sheen.renderOrder = 0.3;
+      this.group.add(sheen);
+    }
     if (!parts.length) return;
     const mesh = new THREE.Mesh(merge(parts), kitMaterial);
     mesh.castShadow = true;
@@ -1167,8 +1315,17 @@ void main() {
     }
   }
 
+  /** 2.65: the night sky on water (`drawLights` sets how much). */
+  private readonly sheenMat = new THREE.MeshBasicMaterial({
+    color: 0x5f7fa6,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    toneMapped: false,
+    blending: THREE.AdditiveBlending,
+  });
   clear() {
-    disposeTree(this.group, () => false, new Set([kitMaterial, this.landMat, this.facadeMat]));
+    disposeTree(this.group, () => false, new Set([kitMaterial, this.landMat, this.facadeMat, this.sheenMat]));
     this.group.clear();
     this.horde.clear();
     this.glow.visible = false;

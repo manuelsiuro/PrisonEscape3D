@@ -45,6 +45,13 @@ function fakeCanvas(at: string) {
     arc: (x: number, y: number, r: number) => inside(x - r, y - r, 2 * r, 2 * r),
     ellipse: (x: number, y: number, rx: number, ry: number) => inside(x - rx - 1, y - rx - ry, 2 * rx + 2, 2 * (rx + ry)),
     fill: () => void n++,
+    // (2.65: a stain's soft edge, an arrow's head.)
+    createRadialGradient: (x: number, y: number, _r0: number, _x1: number, _y1: number, r: number) => (
+      inside(x - r, y - r, 2 * r, 2 * r),
+      { addColorStop: () => {} }
+    ),
+    moveTo: (x: number, y: number) => inside(x, y, 0, 0),
+    lineTo: (x: number, y: number) => inside(x, y, 0, 0),
   };
   return { c: c as unknown as CanvasRenderingContext2D, count: () => n };
 }

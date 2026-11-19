@@ -40,6 +40,7 @@ import { CityMusic } from '../music';
 import { LEVEL, LIGHT_KIND } from '../content/light';
 import { lampLit, lightLevel, lightsHere, murky, torchLit } from '../sim/light';
 import { TUNNEL } from '../gen/tunnel';
+import { riverBeyond } from '../../render/WorldView';
 import { alarmCars, carTiles } from '../sim/cars';
 import { DECO } from '../gen/district';
 import { landmarkPlan } from '../render/landmarkPlan';
@@ -147,7 +148,8 @@ export function runCity(city: City, fresh: boolean): Promise<boolean> {
     };
     stage(r, true);
     view.setPrisoner(readPrisoner());
-    view.zoomTo(1.1);
+    // (2.65: a phone upright sees a little wider: ten tiles across were too few to see the dead coming from the side.)
+    view.zoomTo(innerWidth < innerHeight ? 0.92 : 1.1);
     cityHud.show(true);
     pockets.show(true);
     sleepVeil.querySelector('span')!.textContent = t('city.sleep.asleep');
@@ -193,8 +195,9 @@ function stage(r: CityRun, first = false) {
           c.grid,
           c.people.map((q) => q.tile),
         ),
+    riverBeyond(c.world),
   );
-  cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null);
+  cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null, c.district.rows);
   // (The survivors face the nearest street door of their building: whoever comes in.)
   cityView.setPeople(c.people, (tile) => {
     const lot = c.district.lots[c.district.lotAt[tile] - 1];
@@ -236,12 +239,13 @@ export function cityBackdrop(c: City) {
           c.grid,
           c.people.map((q) => q.tile),
         ),
+    riverBeyond(c.world),
   );
-  cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null);
+  cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null, c.district.rows);
   cityView.setLocks(c.locked, c.district, c.state.panes[c.state.district] ?? []);
   cityView.setBars(c.bars, c.district);
   // (By day, nothing lit: not what the last city left.)
-  cityView.setLights([], c.lit, c.dim);
+  cityView.setLights([], c.lit, c.dim, c.grid, c.district.lotAt);
   cityView.drawLights(0, true, false, false);
 }
 export function clearBackdrop() {
@@ -519,7 +523,7 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   if (lightsShown !== c.lightsRev) {
     lightsShown = c.lightsRev;
-    cityView.setLights(lightsHere(c), c.lit, c.dim);
+    cityView.setLights(lightsHere(c), c.lit, c.dim, c.grid, c.district.lotAt);
   }
   cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, darkNow(c), torchLit(c) || lampLit(c));
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, darkNow(c), f);
