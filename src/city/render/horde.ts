@@ -42,6 +42,11 @@ const DARK = 0x1a1414;
 const BLOOD = 0x7a2a26;
 const WHITE = 0xf2f2f2;
 
+/** After dark, the eyes: a shambler's sickly green, a runner's burn orange (2.65). */
+const EYES = 0xd8ff6a;
+const RUNNER_EYES = 0xff7a2e;
+/** 2.65: a runner's ashen pallor over its clothes and skin, frail and quick: told from a shambler at a glance. */
+const RUNNER_ASH = 0xd4d9dc;
 /** The looks. The first eight are worn by shamblers, runners and crawlers; the last three are a kind's own. */
 const LOOK = {
   CIVIL: 0,
@@ -223,6 +228,7 @@ export class Horde {
   private readonly size = new THREE.Vector3();
   private readonly tint = new THREE.Color();
   private readonly paint = new THREE.Color();
+  private readonly ash = new THREE.Color();
   private readonly counts = new Array<number>(LOOKS).fill(0);
   /** Where they are: what its dead wear. */
   private place: DistrictKind | null = null;
@@ -247,7 +253,8 @@ export class Horde {
     this.eyes = mesh(
       merge([box(0.08, 0.07, 0.03, 0xffffff, -0.09, 1.135, 0.215), box(0.08, 0.07, 0.03, 0xffffff, 0.09, 1.135, 0.215)], false),
       MOST,
-      new THREE.MeshBasicMaterial({ color: 0xd8ff6a, toneMapped: false, transparent: true }),
+      // (2.65: each pair its own colour: a runner's burn orange.)
+      new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false, transparent: true }),
     );
     this.eyes.renderOrder = 0.5;
     const strip = () => new THREE.PlaneGeometry(1, 0.09).rotateX(-Math.PI / 2);
@@ -266,15 +273,17 @@ export class Horde {
   }
 
   /** A whole figure of a look, standing, its arms hanging: what topples when one is put down. */
-  private figure(look: number, seed: number): THREE.BufferGeometry {
-    // (A civilian's clothes are its own: one figure for each of their colours.)
+  private figure(look: number, seed: number, ashen = false): THREE.BufferGeometry {
+    // (A civilian's clothes are its own: one figure for each of their colours. 2.65: a runner's ashen, as it stood.)
     const own = look === LOOK.CIVIL ? TINTS[seed % TINTS.length] : 0xffffff;
-    const key = look * 16 + (look === LOOK.CIVIL ? seed % TINTS.length : 0);
+    const key = (look * 16 + (look === LOOK.CIVIL ? seed % TINTS.length : 0)) * 2 + (ashen ? 1 : 0);
     let g = this.figures.get(key);
     if (g) return g;
+    const ash = new THREE.Color(RUNNER_ASH);
     const tintOf = (p: Part, colour: number) => {
       const c = p.getAttribute('color');
       const t = new THREE.Color(colour);
+      if (ashen) t.lerp(ash, 0.45);
       for (let k = 0; k < c.count; k++) c.setXYZ(k, c.getX(k) * t.r, c.getY(k) * t.g, c.getZ(k) * t.b);
       return p;
     };
@@ -301,12 +310,14 @@ export class Horde {
   /** One of them put down (tiles): its body topples back and sinks away. A bloater leaves nothing: it burst. */
   fell(x: number, z: number, facing: number, kind: number, seed: number, time: number, lying = false) {
     if (kind === 5) return;
-    const mesh = new THREE.Mesh(this.figure(lookOf(kind, seed, this.place, this.start), seed), kitMaterial);
+    const mesh = new THREE.Mesh(this.figure(lookOf(kind, seed, this.place, this.start), seed, kind === 1), kitMaterial);
     mesh.castShadow = true;
     mesh.position.set(x, 0, z);
     mesh.rotation.order = 'YXZ';
     mesh.rotation.y = facing;
     mesh.scale.setScalar(SIZE[kind] ?? 1.3);
+    // (2.65: a runner falls as slight as it stood.)
+    if (kind === 1) mesh.scale.x *= 0.84;
     this.group.add(mesh);
     // (2.61: finished where it lay knocked down: already over, it only sinks.)
     this.fallen.push({ mesh, born: lying ? time - 0.34 : time, crawler: kind === 3 });
@@ -331,7 +342,20 @@ export class Horde {
       const flat = d.down;
       const twitch = d.stir && !still ? Math.sin(time * 23 + d.seed) * 0.06 : 0;
       const lean =
-        flat > 0 ? -flat * (Math.PI / 2 - 0.06) + twitch : crawl ? 1.32 : d.reeling ? -0.5 : d.chasing ? (kind === 1 ? 0.42 : 0.2) : 0.08;
+        flat > 0
+          ? -flat * (Math.PI / 2 - 0.06) + twitch
+          : crawl
+            ? 1.32
+            : d.reeling
+              ? -0.5
+              : d.chasing
+                ? kind === 1
+                  ? 0.42
+                  : 0.2
+                : // (2.65: a runner hunched even standing, ready to go: told from a shambler before it moves.)
+                  kind === 1
+                  ? 0.24
+                  : 0.08;
       const sway =
         (d.moving ? Math.sin(beat) * (kind === 5 ? 0.16 : kind === 2 ? 0.12 : 0.09) : Math.sin(beat * 0.4) * 0.03) * (crawl ? 0.4 : 1);
       this.e.set(lean, d.facing, sway, 'YXZ');
@@ -339,7 +363,7 @@ export class Horde {
       const s = SIZE[kind] ?? 1.3;
       this.at.set(d.x, flat > 0 ? 0.14 * flat : crawl ? 0.2 : d.moving ? Math.abs(Math.sin(beat)) * 0.05 : 0, d.z);
       // (A runner is slight.)
-      this.size.set(kind === 1 ? s * 0.88 : s, s, s);
+      this.size.set(kind === 1 ? s * 0.84 : s, s, s);
       this.base.compose(this.at, this.q, this.size);
       this.bodies[look].setMatrixAt(this.counts[look], this.base);
       const { murk, shown } = seen(d);
@@ -347,10 +371,13 @@ export class Horde {
         // (A brute's head and a bloater's are smaller and sit lower: their eyes with them.)
         if (kind === 2 || kind === 5) this.eyes.setMatrixAt(k, this.m.multiplyMatrices(this.base, this.j.makeScale(0.86, 0.833, 0.86)));
         else this.eyes.setMatrixAt(k, this.base);
+        this.eyes.setColorAt(k, this.paint.set(kind === 1 ? RUNNER_EYES : EYES));
         murky = true;
       } else this.eyes.setMatrixAt(k, NOWHERE);
       // (Its colours: a shape out of the light; its own clothes; a flush where a blow has just landed.)
-      this.tint.set(!shown ? SHADE : look === LOOK.CIVIL ? TINTS[d.seed % TINTS.length] : kind === 1 ? 0xf0ece4 : 0xffffff);
+      // (2.65: a runner's a colder, greyer cast over whatever it wears: before, near white, the same as a shambler's.)
+      this.tint.set(!shown ? SHADE : look === LOOK.CIVIL ? TINTS[d.seed % TINTS.length] : 0xffffff);
+      if (shown && kind === 1) this.tint.lerp(this.paint.set(RUNNER_ASH), 0.45);
       if (shown && d.reeling) this.tint.lerp(this.paint.set(d.struck > 0.6 ? FLASH : HURT), d.struck > 0.6 ? 0.85 : 0.55);
       this.bodies[look].setColorAt(this.counts[look]++, this.tint);
       // The legs: a stride as it walks; trailing behind a crawler.
@@ -394,9 +421,12 @@ export class Horde {
         this.arms.setMatrixAt(k * 2 + side, this.m);
         this.hands.setMatrixAt(k * 2 + side, this.m);
         this.paint.set(shown ? (look === LOOK.CIVIL ? TINTS[d.seed % TINTS.length] : SLEEVE[look]) : SHADE);
+        if (shown && kind === 1) this.paint.lerp(this.ash.set(RUNNER_ASH), 0.45);
         if (shown && d.reeling) this.paint.lerp(this.tint.set(d.struck > 0.6 ? FLASH : HURT), d.struck > 0.6 ? 0.8 : 0.4);
         this.arms.setColorAt(k * 2 + side, this.paint);
-        this.hands.setColorAt(k * 2 + side, this.paint.set(shown ? 0xffffff : SHADE));
+        this.paint.set(shown ? 0xffffff : SHADE);
+        if (shown && kind === 1) this.paint.lerp(this.ash.set(RUNNER_ASH), 0.45);
+        this.hands.setColorAt(k * 2 + side, this.paint);
       }
       // Its health, once struck: over its head, the width of its shoulders.
       if (shown && d.hp < 1 && d.hp > 0) {
@@ -426,6 +456,7 @@ export class Horde {
     this.eyes.count = murky ? n : 0;
     this.eyes.visible = murky;
     this.eyes.instanceMatrix.needsUpdate = true;
+    if (this.eyes.instanceColor) this.eyes.instanceColor.needsUpdate = true;
     for (const bar of [this.barBack, this.barFill]) {
       bar.count = bars;
       bar.visible = bars > 0;

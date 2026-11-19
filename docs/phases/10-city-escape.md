@@ -337,6 +337,10 @@ In two slices.
   `City.step`'s checkpoint held back (`leaving`; `warned`, `letGo`, not saved); `restsTillDusk`, the `dusk` and
   `tide` wakes (`Woken`); `ascend()` and the tunnel's `u` target (arriving at `tunnel.way[1]`); `STORY.tunnelDead`
   5. `citylastnightstest`, `citystorytest`, `citytunneltest`, `citymaketest`, `citysurvivetest`.
+- **The look (2.65.1).** `CityView`: `soft()` (a radial texture for the hot spots and the glow), the pool's per-corner
+  alpha (additive), the shade's graded corners (`setLights(…, solid)`), `sheenMat` on water at night, `FOG_TINT`, the
+  tunnel's `rockMat` and `ballastMat` (`setTunnel(way, rows)`); `horde.ts` `RUNNER_ASH`, `RUNNER_EYES`; `streets.ts`
+  the worn paint, the car parks' stains and arrows, the yards' line. Render only: no test moved.
 
 ## Proof, stage by stage
 

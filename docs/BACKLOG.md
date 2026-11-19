@@ -65,8 +65,8 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
   broken. (The last nights' waits, harder with a bat since 2.61, were shortened in 2.63.2.)
 - The 2026-11-19 review's polish, in four batches (the user's go for each): 1, a first day that works (2.64,
   done); 2, readable screens and fights (2.64.1, done); 3, fair last nights
-  and real choices (2.65, done); 4, the look (light that fades, dark rooms
-  without blocks, the fog dark at night, the tunnel underground, runners told apart, portrait's view).
+  and real choices (2.65, done); 4, the look (2.65.1, done). Left of it: a phone's speed with the new
+  light and shade (§2).
 
 ## 5. Upkeep
 
