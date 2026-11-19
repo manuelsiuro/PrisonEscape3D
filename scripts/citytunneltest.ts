@@ -147,7 +147,8 @@ const walkTo = (c: City, t: number, most = 60) => {
   check(s.district !== TUNNEL && !gatesOpen(c), 'the gates shut: nobody goes down');
   s.readyAt = s.step - STORY.metroHold * MIN;
   const ev = press(c);
-  check(s.district === TUNNEL && c.tile === c.tunnel.start, `down the stairs: in ${s.district} at ${c.tile}`);
+  // (2.65: a step in from the stairs' foot, whose tile is the way back up.)
+  check(s.district === TUNNEL && c.tile === c.tunnel.way[1], `down the stairs: in ${s.district} at ${c.tile}`);
   check(
     ev.some((e) => e.type === 'travel' && e.to === TUNNEL && e.first),
     'said as a crossing is',
@@ -167,7 +168,7 @@ const walkTo = (c: City, t: number, most = 60) => {
     c.dim.every((v, i) => v === (c.district.rows[Math.floor(i / W)][i % W] === '_' ? 1 : 0)),
     'every open tile of it is out of the daylight',
   );
-  check(c.target() === null, 'nothing for the button at the foot of the stairs');
+  check(c.target() === null, 'nothing for the button a step in from the stairs');
   check(
     objectives(c).length === 1 && objectives(c)[0].id === 'through3' && objectives(c)[0].at?.tile === c.tunnel.end,
     'the journal points to the ladder',

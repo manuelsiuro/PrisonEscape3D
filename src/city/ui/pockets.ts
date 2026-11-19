@@ -20,6 +20,8 @@ export interface PocketsState {
   targetOpen: boolean;
   /** 2.64: the box open is a bed that can be slept in from its card (not one the story still has something in). */
   sleepable: boolean;
+  /** 2.65: a bed by day is a rest till dusk. */
+  rest: boolean;
   /** 2.64: the torch: on, and its battery's game minutes left (its card says both). */
   torchOn: boolean;
   torchLeft: number;
@@ -227,14 +229,16 @@ export class CityPockets {
           <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(torch ? (s.torchOn ? 'city.thing.torchOff' : 'city.thing.torchOn') : (LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
-    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable}|${textStamp()}`;
+    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${textStamp()}`;
     if (box !== this.shownBox) {
       this.shownBox = box;
       this.panel.classList.toggle('hidden', !s.box);
       if (s.box) {
         const filled = s.slots.some((st) => st[0]);
         // (2.64: a bed used as a stash is still slept in, from here: its button opens it while it holds something.)
-        const sleep = s.sleepable ? `<button class="big-btn" data-c="sleep">${icon('moon', 16)}${t('city.act.sleep')}</button>` : '';
+        const sleep = s.sleepable
+          ? `<button class="big-btn" data-c="sleep">${icon('moon', 16)}${t(s.rest ? 'city.act.rest' : 'city.act.sleep')}</button>`
+          : '';
         this.panel.innerHTML = `<div class="box-head"><b>${t(s.box as Key)}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${
             filled
@@ -298,7 +302,9 @@ export class CityPockets {
                   : s.targetOpen
                     ? 'city.act.close'
                     : tg.kind === 'bed'
-                      ? 'city.act.sleep'
+                      ? s.rest
+                        ? 'city.act.rest'
+                        : 'city.act.sleep'
                       : tg.kind === 'pile' || s.searched
                         ? 'city.act.look'
                         : 'city.act.search';
@@ -311,7 +317,9 @@ export class CityPockets {
           tg.kind === 'npc'
             ? (`city.person.${s.person}.name` as Key)
             : tg.kind === 'way'
-              ? (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
+              ? s.way === 'up3'
+                ? 'city.box.stairs'
+                : (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
               : tg.kind === 'door'
                 ? 'city.box.door'
                 : tg.kind === 'lock'

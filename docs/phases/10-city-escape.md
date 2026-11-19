@@ -331,6 +331,12 @@ In two slices.
 - **Readable screens and fights (2.64.1).** `CityView`: `you`, `stain`, `setEmptied`; `DeadFrame.struck`;
   `Focus.y` (shared `render/Pickups.ts`, the prisons' unset); `hurt(n, by)` and the `dead` event's `by`;
   `runCity` resolves whether a new city follows (`play/flow.ts`); `flashBite`.
+- **Fair last nights and real choices (2.65).** `dead.ts` `armFor` (the weapon for the one struck, `City.struck`
+  and `inHand()` for the hand and the card; `wearWeapon(arm)`), `clearedIn` and `state.cleared` (`populate` takes
+  them off, the `quiet` and `cleared` events); `ranged.ts` `landing(c, clear)` and the `tooNear` refusal;
+  `City.step`'s checkpoint held back (`leaving`; `warned`, `letGo`, not saved); `restsTillDusk`, the `dusk` and
+  `tide` wakes (`Woken`); `ascend()` and the tunnel's `u` target (arriving at `tunnel.way[1]`); `STORY.tunnelDead`
+  5. `citylastnightstest`, `citystorytest`, `citytunneltest`, `citymaketest`, `citysurvivetest`.
 
 ## Proof, stage by stage
 

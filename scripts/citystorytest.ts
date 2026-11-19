@@ -229,7 +229,11 @@ const ids = (c: City) =>
   // Walked out of the district: the beacon goes out, the things are kept, the way stays chosen.
   const snap = JSON.stringify(c.snapshot());
   const gate = c.district.gates[0];
+  // (2.65: the first step on a checkpoint is held back and said; the stick let go, the next crosses.)
   ev = [...stand(c, c.state.district, gate.tiles[0])];
+  check(s.ready === 1 && ev.some((e) => e.type === 'leaving' && e.way === 1), 'a checkpoint not held back during the beacon');
+  c.step(0);
+  ev = [...c.events];
   check(
     !s.ready && s.act === 4 && ev.some((e) => e.type === 'ready' && !e.on) && s.heard.includes('lost'),
     'the beacon stays lit behind the player',
@@ -359,7 +363,7 @@ const ids = (c: City) =>
   check(c.target()?.kind === 'way' && objectives(c)[0].id === 'down3', `the gates open: ${ids(c)}`);
   press(c, COP.ACT);
   // (2.56: down into the tunnel, a tenth map; its far end is the way out.)
-  check(s.district === TUNNEL && c.tile === c.tunnel.start && !s.over && s.ready === 1, `the gates taken: in ${s.district} at ${c.tile}`);
+  check(s.district === TUNNEL && c.tile === c.tunnel.way[1] && !s.over && s.ready === 1, `the gates taken: in ${s.district} at ${c.tile}`);
   check(objectives(c)[0].id === 'through3' && objectives(c)[0].at?.tile === c.tunnel.end, `in the tunnel: ${ids(c)}`);
   check(c.target() === null && lightLevel(c) === LEVEL.DIM, 'nothing to press down there; the lamp is the light');
   // Every tile of its way walked, by the stick: out at the foot of the ladder.

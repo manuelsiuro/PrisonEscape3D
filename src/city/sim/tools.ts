@@ -3,7 +3,7 @@ import { isBuilding, type LotUse } from '../content/districts';
 import { SEARCHED } from '../content/loot';
 import { decoSolid, type District, type Gate } from '../gen/district';
 import { CITY_N, gateOpen, LANES, laneAt, neighbour, OPPOSITE, ROAD_W, SIDE, streamOf, type CityPlan } from '../gen/plan';
-import { TUNNEL } from '../gen/tunnel';
+import { PLACES, TUNNEL } from '../gen/tunnel';
 import { BLEED } from '../content/dead';
 import { lotPanes } from '../content/windows';
 import type { City } from './City';
@@ -45,6 +45,7 @@ export function freshTools() {
     bleed: 0,
     panes: {} as Record<string, number[]>,
     rev: CITY_REV,
+    cleared: [] as number[],
   };
 }
 
@@ -64,7 +65,14 @@ export function soundTools(st: {
   bleed?: unknown;
   panes?: unknown;
   rev?: unknown;
+  cleared?: unknown;
 }) {
+  // (2.65: [the dusk they were put down since, then how many in each place]; anything else, none.)
+  const cl = st.cleared;
+  st.cleared =
+    Array.isArray(cl) && cl.length === PLACES + 1 && cl.every((n) => Number.isInteger(n) && (n as number) >= 0 && (n as number) < 1e6)
+      ? cl
+      : [];
   if (!Number.isInteger(st.rev) || (st.rev as number) < 0 || (st.rev as number) > CITY_REV) st.rev = 0;
   if (st.outfit !== 1) st.outfit = 0;
   if (!Number.isInteger(st.bleed) || (st.bleed as number) < 0 || (st.bleed as number) > BLEED.most) st.bleed = 0;

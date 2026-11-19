@@ -395,16 +395,19 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
     d2.step(command(0, COP.HIT));
     return d2.events.some((e) => e.type === 'swing' && e.hit);
   };
+  // (2.65: the spear itself strikes one two tiles off when carried with a nailed bat: the weapon for the one struck.)
   check(
     !blow([['nail_bat', 1]], 2) &&
-      !blow(
+      blow(
         [
           ['nail_bat', 1],
           ['spear', 1],
         ],
         2,
-      ),
-    'a spear in the pockets lends the nailed bat no reach',
+      ) &&
+      d2.state.inv[0][1] === 50 &&
+      d2.state.inv[1][1] === 34,
+    'a nailed bat alone misses two tiles off; carried with a spear, the spear strikes there (and wears)',
   );
   check(blow([['spear', 1]], 2), 'a spear alone reaches two tiles');
   blow(
@@ -451,7 +454,7 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
   bad.state.bars = null;
   check(!!loadCity(bad) && Object.keys(loadCity(bad)!.state.bars).length === 0, 'bars that are no record: none, the save still loads');
   say(
-    'a press as the work ends begins nothing; boards stop sight; nothing is barred with one of the dead in the doorway; one weapon strikes (the strongest), alone to wear; the nailed bat takes the more worn bat; old and damaged saves load sound',
+    'a press as the work ends begins nothing; boards stop sight; nothing is barred with one of the dead in the doorway; the weapon for the one struck strikes (the spear two tiles off), alone to wear; the nailed bat takes the more worn bat; old and damaged saves load sound',
   );
 }
 

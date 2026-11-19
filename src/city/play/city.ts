@@ -642,6 +642,20 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'refused':
       banner.toast(t(`city.toast.${e.why}` as Key), 'info', 2400, 'bulb');
       break;
+    case 'quiet':
+      // (2.65: ground cleared stays cleared till nightfall.)
+      banner.toast(t(e.all ? 'city.toast.quietAll' : 'city.toast.quiet'), 'good', 3200);
+      break;
+    case 'cleared':
+      banner.toast(t('city.toast.cleared'), 'good', 3600);
+      tip('city.clear', 'city.tip.clear');
+      break;
+    case 'leaving':
+      // (2.65: a last night isn't ended by a street running out under the player. A walk by tap stops there: another tap crosses.)
+      r.pilot.stop();
+      banner.toast(t(e.way === 1 ? 'city.toast.leaving1' : 'city.toast.leaving3'), 'bad', 3600);
+      buzz('missed');
+      break;
     case 'starving':
       banner.toast(t('city.toast.starving'), 'bad', 3600);
       buzz('missed');
@@ -651,7 +665,8 @@ function cityEvent(r: CityRun, e: CityEvent) {
       r.pilot.stop();
       r.ops.length = 0;
       if (e.on) {
-        sleepVeil.querySelector('span')!.textContent = t('city.sleep.asleep');
+        // (2.65: by day, a rest till dusk.)
+        sleepVeil.querySelector('span')!.textContent = t(c.restsTillDusk ? 'city.sleep.resting' : 'city.sleep.asleep');
         sound.yawn();
         save(r);
       } else {
@@ -973,8 +988,8 @@ function frameOf(r: CityRun, a: number): Frame {
   f.surface = c.world.ground.kind[c.tile];
   f.tilesRev = c.world.rev;
   f.outfit = c.state.outfit ? OWN_CLOTHES : INMATE_OUTFIT;
-  // (2.60: the weapon that strikes, in hand: the prisons' thing of the same shape.)
-  f.held = HELD[cityItem(c.weapon()?.[0] ?? 0)?.id ?? ''] ?? 0;
+  // (2.60: the weapon that strikes, in hand: the prisons' thing of the same shape. 2.65: the one that struck last.)
+  f.held = HELD[cityItem(c.inHand()?.[0] ?? 0)?.id ?? ''] ?? 0;
   const dest = r.pilot.destination;
   if (dest >= 0) {
     tapAt.x = (dest % MAP_W) + 0.5;
@@ -1126,6 +1141,7 @@ function pocketsOf(r: CityRun): PocketsState {
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
   st.sleepable = st.box === 'city.box.bed' && c.sleepable() >= 0;
+  st.rest = c.restsTillDusk;
   st.searched = !!tg && c.searched(tg.key);
   const work = s.search.startsWith('d')
     ? BAR_STEPS
@@ -1140,9 +1156,10 @@ function pocketsOf(r: CityRun): PocketsState {
   st.asleep = s.sleeping;
   st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
   st.person = tg?.kind === 'npc' ? PEOPLE[Number(tg.key.slice(1))].id : '';
-  st.way = tg?.kind === 'way' ? `${s.ready ? 'go' : 'begin'}${s.way}` : '';
+  // (2.65: in the tunnel, the way back up.)
+  st.way = tg?.kind === 'way' ? (s.district === TUNNEL ? 'up3' : `${s.ready ? 'go' : 'begin'}${s.way}`) : '';
   // (2.60: what strikes, a crossbow aside: it shoots, its count is its shots.)
-  const w = c.weapon();
+  const w = c.inHand();
   st.weapon = w?.[0] ?? 0;
   st.blows = w?.[1] ?? 0;
   st.blowsOf = cityItem(w?.[0] ?? 0)?.wear ?? 0;

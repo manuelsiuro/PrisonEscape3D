@@ -299,12 +299,9 @@ const idle = (c: City, minutes: number) => {
   c.state.boxes[`${c.state.district}:${bed}`] = [[TIN, 1]];
   c.step(0);
   check(c.target()?.kind === 'box' && c.target()?.key === `${bed}`, 'a bed holding something is looked into');
-  // (2.64: and still slept in, from its card's Sleep, when sleep may be: by day only tired.)
+  // (2.64: and still slept in, from its card's Sleep. 2.65: by day, tired or not, a rest till dusk.)
   {
     const was = { energy: c.state.energy, home: c.state.home, flags: c.state.flags };
-    c.step(command(0, COP.SLEEP));
-    check(!c.state.sleeping, 'a bed holding something slept in by day, not tired');
-    c.state.energy = 10_000;
     c.step(command(0, COP.SLEEP));
     check(
       c.state.sleeping && c.state.boxes[`${c.state.district}:${bed}`]?.[0]?.[0] === TIN,

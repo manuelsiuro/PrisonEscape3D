@@ -34,7 +34,8 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
       pilot = new Autopilot(c.world, () => c.grid);
       goal = -1;
     }
-    if (s.sleeping) return 0;
+    // (2.65: a bed by day is a rest till dusk: a nap for the tired, got up from once rested, as the city once woke it.)
+    if (s.sleeping) return s.energy >= FULL && c.minute > SLEEP_TO && c.minute < SLEEP_FROM ? command(1) : 0;
     // One of the dead within arm's reach: turned on and struck, before anything else.
     let near = -1;
     let nearD = (1.5 * 1024) ** 2;
