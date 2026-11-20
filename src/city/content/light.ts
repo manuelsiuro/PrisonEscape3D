@@ -6,7 +6,8 @@
  * Never renumber the kinds: saves store them.
  */
 /** 2.67: CAMP, a campfire built (content/build.ts): a lantern's reach, it cooks as a fire does. */
-export const LIGHT_KIND = { FIRE: 0, LANTERN: 1, POWER: 2, CAMP: 3 } as const;
+/** 2.69: FLARE, a flare thrown (content/gear.ts): a fire's reach, half an hour; it cooks nothing. */
+export const LIGHT_KIND = { FIRE: 0, LANTERN: 1, POWER: 2, CAMP: 3, FLARE: 4 } as const;
 
 export const LIGHT = {
   /** A battery's worth of torch (game minutes). */

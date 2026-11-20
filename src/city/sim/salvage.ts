@@ -159,7 +159,7 @@ export function facedBreak(c: City, walls = false): string {
     if (k) return breakKey(String(k - 1));
     const car = c.carAt[t];
     if (car && !(c.state.stripped[c.state.district] ?? []).includes(car - 1)) return breakKey(`c${car - 1}`);
-    if (walls && c.count(SLEDGE) && innerWall(c.district, t, c.safeLots)) return breakKey(`w${t}`);
+    if (walls && c.carried(SLEDGE) && innerWall(c.district, t, c.safeLots)) return breakKey(`w${t}`);
   }
   return '';
 }
@@ -207,7 +207,7 @@ export function atWork(c: City, key: string): boolean {
 export function canWork(c: City, key: string): boolean {
   const w = workOf(c, key);
   if (!w) return false;
-  return w.wall ? c.count(SLEDGE) > 0 : breaker(c, !!w.sal?.metal).rate > 0;
+  return w.wall ? c.carried(SLEDGE) > 0 : breaker(c, !!w.sal?.metal).rate > 0;
 }
 
 /** Work begun on a key (refused, and said, when nothing carried can break it). */
@@ -218,7 +218,7 @@ export function startBreak(c: City, key: string) {
   const w = workOf(c, key);
   if (!w || !atWork(c, key)) return;
   const metal = w.wall || !!w.sal?.metal;
-  if (w.wall ? !c.count(SLEDGE) : breaker(c, metal).rate <= 0)
+  if (w.wall ? !c.carried(SLEDGE) : breaker(c, metal).rate <= 0)
     return void c.events.push({ type: 'refused', why: w.wall ? 'sledge' : 'tooHard' });
   c.close();
   s.search = key;

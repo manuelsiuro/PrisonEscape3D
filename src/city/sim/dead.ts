@@ -4,6 +4,7 @@ import { builtHere, poundPiece, removePiece, wornStep, type Built } from './buil
 import { PIECES, pieceOf, BUILD } from '../content/build';
 import { RUSH, TRAP, BASE_SIEGE } from '../content/rush';
 import { rushFollows, rushMinute } from './rush';
+import { armourBite, hiddenBy, inSmoke } from './gear';
 import { lineOfSight } from '../../sim/ai/sight';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import { randomInt } from '../../sim/rng';
@@ -56,6 +57,8 @@ export interface Zed {
   down?: number;
   /** 2.68, optional: one of the Rush's (1): after the player wherever they are, through boards and what's built, not shy of light. */
   rush?: number;
+  /** 2.69, optional: blinded by smoke until this step (it sees nobody meanwhile). */
+  blind?: number;
 }
 
 /** 2.61: one of the dead lying knocked down. */
@@ -669,8 +672,11 @@ export function stepDead(c: City) {
   const shown = night && c.anyLight ? c.lit[here] === 1 : false;
   const dark = (night ? !shown : c.dim[here] === 1 && !c.lit[here]) && !torchLit(c) && !lampLit(c);
   // (Asleep in strong light, they lie in plain view: seen as far as anyone is at night.)
-  const sight =
-    (s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay) * UNIT;
+  const seen0 = s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay;
+  // (2.69: a poncho worn, awake: seen a tile less, never under two.)
+  const sight = Math.max(Math.min(seen0, 2), seen0 - (s.sleeping ? 0 : hiddenBy(c))) * UNIT;
+  // (2.69: in a smoke cloud, nobody is seen, and nobody sees out of it.)
+  const smoked = s.smoke.length > 0;
   // (The beacon's and the generator's call is stronger than any light.)
   const shy = c.anyLight && going(c) !== 1;
   for (let k = s.zeds.length - 1; k >= 0; k--) {
@@ -701,7 +707,13 @@ export function stepDead(c: City) {
     // It looks (every fifth step, each on its own): the player in sight is gone after.
     // (2.60: a crawler sees no further than its three tiles.)
     const far = z.kind === ZKIND.CRAWLER ? Math.min(sight, CRAWLER.sight * UNIT) : sight;
-    if ((s.step + k) % 5 === 0 && d2 <= far * far && lineOfSight(c.world, b.x, b.z, p.x, p.z, c.tile)) {
+    if (
+      (s.step + k) % 5 === 0 &&
+      d2 <= far * far &&
+      !(z.blind !== undefined && z.blind > s.step) &&
+      !(smoked && inSmoke(c, here)) &&
+      lineOfSight(c.world, b.x, b.z, p.x, p.z, c.tile)
+    ) {
       if (z.mode !== ZED.CHASE) {
         c.events.push({ type: 'spotted', zed: k });
         // (2.60: a screamer says so to every one of them near.)
@@ -743,7 +755,8 @@ export function stepDead(c: City) {
           b.facing = nearestDir(dx, dz);
           if (++z.near >= kindStats(z.kind).lunge && s.step - z.bit >= DEAD.biteEvery) {
             z.bit = s.step;
-            const harm = kindStats(z.kind).bite;
+            // (2.69: what's worn takes its share, and wears.)
+            const harm = armourBite(c, kindStats(z.kind).bite);
             c.events.push({ type: 'bite', harm });
             // (2.60: a crawler's bite holds a leg.)
             if (z.kind === ZKIND.CRAWLER) {

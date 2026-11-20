@@ -558,6 +558,33 @@
   }
 }
 
+/* 2.69: what's worn, under the corner map: the armour (its wear) and the bag (how full), each a pocket's slot. */
+.city-worn {
+  position: fixed;
+  z-index: 6;
+  right: max(12px, env(safe-area-inset-right));
+  top: calc(max(12px, env(safe-area-inset-top)) + 58px + 132px + 8px);
+  display: flex;
+  gap: 6px;
+}
+.city-worn .slot {
+  width: 48px;
+  height: 48px;
+}
+@media (max-width: 620px) {
+  .city-worn {
+    top: calc(max(12px, env(safe-area-inset-top)) + 58px + 96px + 8px);
+  }
+}
+/* A recipe still to learn: a question mark where its picture would be. */
+.city-recipe .result.unknown {
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(var(--white-rgb), 0.55);
+}
+
 /* ------------------------------------------------------------ the dead (2.47) */
 .city-chased {
   color: var(--white);

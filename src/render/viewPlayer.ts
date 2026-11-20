@@ -42,6 +42,7 @@ export class PlayerView {
   x = 0;
   z = 0;
   private outfit = -1;
+  private vest = -1;
   /** The tattoos inked in the prison the player is drawn with (P29). */
   private inkedShown: number[] = [];
   /** Your prisoner (P16): how the player looks (null: the plain jumpsuit). */
@@ -85,14 +86,17 @@ export class PlayerView {
   }
 
   /** Dresses the player: your prisoner in the outfit (a white vest with none on; the guard cap with the guard's uniform). */
-  dress(outfit: number, inked: readonly number[] = []) {
+  dress(outfit: number, inked: readonly number[] = [], vest = -1) {
     // (The designs compared one by one: no string a frame.)
     const same = inked.length === this.inkedShown.length && inked.every((d, k) => d === this.inkedShown[k]);
-    if (outfit === this.outfit && same) return;
+    if (outfit === this.outfit && vest === this.vest && same) return;
     this.outfit = outfit;
+    this.vest = vest;
     this.inkedShown = inked.slice();
     const old = this.c;
-    this.look = lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked);
+    // (2.69: City Escape's armour: a vest of its own colour over what's worn.)
+    const color = vest >= 0 ? vest : outfit ? itemDef(outfit).color : null;
+    this.look = lookFor(this.prisoner, color, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked);
     // (P36: their own clothes on release: an off-white tee over jeans, nothing like a guard's navy.)
     if (outfit === OWN_CLOTHES) this.look = { ...this.look, trousers: OWN_JEANS };
     // (P42: the costume on costume night: a witch's robe and hat. It fools nobody.)

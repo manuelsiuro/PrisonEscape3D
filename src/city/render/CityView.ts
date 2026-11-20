@@ -440,7 +440,68 @@ export class CityView {
       this.fires,
       this.fx,
       this.track,
+      this.ticks,
+      this.smoke,
     );
+  }
+
+  /** 2.69: smoke clouds where a smoke bomb landed: soft grey billows over its reach, drifting (still with reduced motion). */
+  private readonly smoke = new THREE.Group();
+  private readonly smokeMat = new THREE.MeshLambertMaterial({ color: 0xc9ccd0, transparent: true, opacity: 0.62, depthWrite: false });
+  private readonly smokeGeo = new THREE.IcosahedronGeometry(0.5, 1);
+  private smokeAt = '?';
+  setSmoke(tiles: readonly number[]) {
+    const key = tiles.join();
+    if (key === this.smokeAt) return;
+    this.smokeAt = key;
+    this.smoke.clear();
+    for (const tile of tiles) {
+      const cx = (tile % W) + 0.5;
+      const cz = Math.floor(tile / W) + 0.5;
+      for (let k = 0; k < 14; k++) {
+        const h = mix32(tile * 31 + k);
+        const a = (k / 14) * Math.PI * 2 + (h & 7) * 0.2;
+        const r = k < 4 ? 0.4 : 0.9 + ((h >> 3) & 7) * 0.15;
+        const m = new THREE.Mesh(this.smokeGeo, this.smokeMat);
+        m.position.set(cx + Math.cos(a) * r, 0.35 + ((h >> 6) & 7) * 0.08, cz + Math.sin(a) * r);
+        m.scale.setScalar(1 + ((h >> 9) & 7) * 0.12);
+        m.userData = { seed: (h & 1023) / 1023, base: m.position.y, size: m.scale.x };
+        m.renderOrder = 0.6;
+        this.smoke.add(m);
+      }
+    }
+  }
+  drawSmoke(time: number, still: boolean) {
+    if (still) return;
+    for (const m of this.smoke.children) {
+      const u = m.userData as { seed: number; base: number; size: number };
+      m.position.y = u.base + Math.sin(time * 0.8 + u.seed * 6) * 0.08;
+      m.scale.setScalar(u.size * (1 + Math.sin(time * 0.6 + u.seed * 9) * 0.08));
+      m.rotation.y = time * 0.15 + u.seed * 3;
+    }
+  }
+
+  /** 2.69: the noisemakers set down: a red alarm clock on its tile, its bells on top. */
+  private readonly ticks = new THREE.Group();
+  private ticksAt = '?';
+  setTicks(tiles: readonly number[]) {
+    const key = tiles.join();
+    if (key === this.ticksAt) return;
+    this.ticksAt = key;
+    disposeTree(this.ticks, () => false, new Set([kitMaterial]));
+    if (!tiles.length) return;
+    const parts: Part[] = [];
+    for (const tile of tiles) {
+      const x = (tile % W) + 0.5;
+      const z = Math.floor(tile / W) + 0.5;
+      parts.push(
+        cyl(0.11, 0.08, 0xd23a3a, x + 0.22, 0.02, z + 0.2, 12),
+        cyl(0.085, 0.01, 0xf2f2ee, x + 0.22, 0.1, z + 0.2, 12),
+        cyl(0.045, 0.04, 0xc4cad0, x + 0.15, 0.1, z + 0.2, 8),
+        cyl(0.045, 0.04, 0xc4cad0, x + 0.29, 0.1, z + 0.2, 8),
+      );
+    }
+    this.ticks.add(new THREE.Mesh(merge(parts), kitMaterial));
   }
 
   /**
@@ -553,7 +614,8 @@ export class CityView {
     // distance from the nearest), even over a generator's building: before, a flat wash of tiles in a stepped cross.
     const spots = list
       .filter(([, kind]) => kind !== 2)
-      .map(([tile, kind]) => ({ x: (tile % W) + 0.5, z: Math.floor(tile / W) + 0.5, r: (kind === 0 ? 4 : 3) + 0.5 }));
+      // (2.69: a flare reaches as far as a fire.)
+      .map(([tile, kind]) => ({ x: (tile % W) + 0.5, z: Math.floor(tile / W) + 0.5, r: (kind === 0 || kind === 4 ? 4 : 3) + 0.5 }));
     // (A generator's building: its own wash all through, whatever else burns near; by its lot, or failing that, out of every flame's reach.)
     const powered = new Set(list.filter(([, kind]) => kind === 2).map(([tile]) => lotAt?.[tile] ?? 0));
     const byPower = (i: number) =>
@@ -598,7 +660,9 @@ export class CityView {
       const z = Math.floor(tile / W) + 0.5;
       // (A fire: over the barrel's rim; a lantern: on the floor; a generator: a work lamp on a stand beside its top.)
       // (2.67: a campfire's low among its logs.)
-      const y = kind === 0 ? 0.62 : kind === 1 ? 0.2 : kind === 3 ? 0.16 : 0.95;
+      // (2.69: a flare: a red stick on the ground, its flame at its end.)
+      const y = kind === 0 ? 0.62 : kind === 1 ? 0.2 : kind === 3 ? 0.16 : kind === 4 ? 0.06 : 0.95;
+      if (kind === 4) put(things, [rod(0.025, 0.22, 0xe0563a, 0, 0.03, 0, 6)], x - 0.1, z, 0.4);
       if (kind === 1)
         put(
           things,
@@ -618,11 +682,12 @@ export class CityView {
       }
       if (kind === 1) flame.scale.setScalar(0.55);
       if (kind === 3) flame.scale.setScalar(0.85);
+      if (kind === 4) flame.scale.setScalar(0.5);
       // (The hot middle of its light, on the floor round it.)
       if (kind !== 2) {
         const hot = new THREE.Mesh(SOFT_GEO, this.hotMat);
         hot.position.set(x, 0.038, z);
-        hot.scale.setScalar(kind === 0 ? 1.9 : 1.4);
+        hot.scale.setScalar(kind === 0 || kind === 4 ? 1.9 : 1.4);
         hot.renderOrder = 0.46;
         this.lights.add(hot);
       }
@@ -792,10 +857,15 @@ export class CityView {
     }
   }
   /** Something thrown from a place to another (in tiles; `fire`: a molotov), or a bolt shot. */
-  throwFx(from: { x: number; z: number }, to: { x: number; z: number }, kind: 'bottle' | 'molotov' | 'bolt') {
+  throwFx(from: { x: number; z: number }, to: { x: number; z: number }, kind: 'bottle' | 'molotov' | 'bolt' | 'stone') {
     const bolt = kind === 'bolt';
+    // (2.69: a slingshot's stone: a small lump on a bottle's arc.)
     const m = new THREE.Mesh(
-      bolt ? new THREE.BoxGeometry(0.04, 0.04, 0.5) : new THREE.BoxGeometry(0.12, 0.2, 0.12),
+      bolt
+        ? new THREE.BoxGeometry(0.04, 0.04, 0.5)
+        : kind === 'stone'
+          ? new THREE.BoxGeometry(0.07, 0.07, 0.07)
+          : new THREE.BoxGeometry(0.12, 0.2, 0.12),
       bolt ? this.boltMat : kind === 'molotov' ? this.flameMat : this.thrownMat,
     );
     m.userData = { from, to, born: -1, dur: bolt ? 0.12 : 0.28, bolt };

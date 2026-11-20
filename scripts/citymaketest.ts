@@ -7,8 +7,12 @@
  */
 import { check } from './assert';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../src/city/content/items';
-import { LOOT_BY_PROP, LOOT_BY_USE } from '../src/city/content/loot';
+import { LOOT_BY_PROP, LOOT_BY_USE, lootList } from '../src/city/content/loot';
+import { USES } from '../src/city/content/districts';
+import { CITY_REV } from '../src/city/sim/tools';
+import type { PropKind } from '../src/content/props';
 import { CITY_RECIPES, recipeParts } from '../src/city/content/recipes';
+import { PIECE } from '../src/city/content/build';
 import { BAR_STEPS, City, COP, FULL, loadCity, type Stack } from '../src/city/sim/City';
 import { ZED } from '../src/city/sim/dead';
 import { findPath, nearestDir } from '../src/sim/ai/path';
@@ -38,6 +42,10 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
 {
   const found = new Set<string>();
   for (const list of [...Object.values(LOOT_BY_USE), ...Object.values(LOOT_BY_PROP)]) for (const [id] of list ?? []) found.add(id);
+  // (2.64 on: what each revision adds where it'd be kept, for a city begun now.)
+  for (const use of USES)
+    for (const prop of ['shelf', 'desk', 'bed', ...Object.keys(LOOT_BY_PROP)] as PropKind[])
+      for (const [item] of lootList(use, prop, CITY_REV).list) found.add(cityItem(item)!.id);
   const made = new Set(CITY_RECIPES.map((r) => r.makes));
   for (const r of CITY_RECIPES) {
     check(!!cityItem(N(r.makes)), `${r.makes} is no item`);
@@ -57,9 +65,15 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
   c.step(0);
   // (What the survivors teach is known here: their errands are citystorytest's.)
   c.state.errand = [1, 1, 1, 1];
+  // (2.69: the manuals read: reading them is citycrafttest's.)
+  c.state.manuals = 7;
   const bench = c.district.props.findIndex((p, k) => p.kind === 'workbench' && beside(c, c.tilesOf(k)) !== undefined);
   check(bench >= 0, 'seed 2 start: a workbench to stand beside');
   const atBench = beside(c, c.tilesOf(bench))!;
+  // (2.69: a workshop built beside where the bench is stood at, for what wants one.)
+  const shopAt = [atBench - 1, atBench + 1, atBench - MAP_W, atBench + MAP_W].find((i) => !c.grid[i] && !c.breakAt[i] && !c.carAt[i])!;
+  c.state.built[c.state.district] = [[shopAt, PIECE.workshop, 100, 1, 0]];
+  c.reenter();
   const street = c.tile;
   const done: string[] = [];
   CITY_RECIPES.forEach((r, k) => {
@@ -79,7 +93,8 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
     if (r.bench || r.stove) {
       c.step(command(0, COP.MAKE, k));
       check(
-        c.events.some((e) => e.type === 'cantMake' && e.why === (r.bench ? 'bench' : 'stove')) && r.from.every(([id]) => has(c, id) > 0),
+        c.events.some((e) => e.type === 'cantMake' && e.why === (r.bench ? 'bench' : 'stove')) &&
+          r.from.every(([id]) => has(c, id) > 0 || (cityItem(N(id))?.wear !== undefined && c.count(N(id)) > 0)),
         `${r.makes} made with no ${r.bench ? 'workbench' : 'stove'}`,
       );
     }
@@ -97,7 +112,7 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
     );
     const got = c.state.inv.find((st) => st[0] === makes)!;
     check(!!got && got[1] === (cityItem(makes)?.wear ?? r.n), `${r.makes}: ${got?.[1]} in the pocket`);
-    done.push(`${r.makes}${r.bench ? ' (bench)' : r.stove ? ' (stove)' : ''}`);
+    done.push(`${r.makes}${r.shop ? ' (workshop)' : r.bench ? ' (bench)' : r.stove ? ' (stove)' : ''}`);
   });
   // Pockets full of what a recipe doesn't take: the thing made lies underfoot.
   stand(c, street);

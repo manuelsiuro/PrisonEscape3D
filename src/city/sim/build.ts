@@ -4,6 +4,7 @@ import { BUILD, COMFORT, PIECE, PIECES, pieceOf, type PieceDef } from '../conten
 import { cityItem, cityItemNumber } from '../content/items';
 import { LIGHT_KIND } from '../content/light';
 import { TRAP } from '../content/rush';
+import { BAG } from './gear';
 import { STEPS_PER_MINUTE } from '../../sim/tuning';
 import { TUNNEL } from '../gen/tunnel';
 import type { City, Stack } from './City';
@@ -127,7 +128,7 @@ export function lacking(c: City, from: ReadonlyArray<readonly [string, number]>)
 export const repairCost = (def: PieceDef, hp: number): Array<[string, number]> =>
   def.from
     // (2.68, the review: a sentry's crossbow is in it still: a repair takes only the scrap and wire.)
-    .map(([id, n]) => [id, id === 'crossbow' ? 0 : Math.ceil((n * (def.hp - hp)) / def.hp / 2)] as [string, number])
+    .map(([id, n]) => [id, id === 'crossbow' || id === def.keeps ? 0 : Math.ceil((n * (def.hp - hp)) / def.hp / 2)] as [string, number])
     .filter(([, n]) => n > 0);
 
 /** The work a press begins: a piece put up (kind on the tile faced), repaired, taken down. Refused, and said. */
@@ -183,7 +184,9 @@ export function finishBuild(c: City, key: string) {
     if (why !== 'ok') return void c.events.push({ type: 'cantBuild', why });
     const def = pieceOf(kind)!;
     // (2.68: a sentry keeps its crossbow's blows, for when it's taken down: the most worn one goes, as `spend` takes it.)
-    const blows = def.trap === 'sentry' ? Math.min(...s.inv.filter((st) => st[0] === CROSSBOW).map((st) => st[1])) : 0;
+    // (The review: the pockets and the bag alike, as `spend` takes it.)
+    const bows = [...s.inv, ...(s.bag ? (s.boxes[BAG] ?? []) : [])].filter((st) => st[0] === CROSSBOW).map((st) => st[1]);
+    const blows = def.trap === 'sentry' && bows.length ? Math.min(...bows) : 0;
     for (const [id, n] of def.from) c.spend(cityItemNumber(id), n);
     builtHere(c).push([tile, kind, def.hp, s.player.facing, blows * BUILD.sentryWear]);
     changed(c);
@@ -205,12 +208,12 @@ export function finishBuild(c: City, key: string) {
   // Taken down: half of what it took, less for the damage; a chest's things on the ground; a campfire out.
   // (2.68: a sentry's crossbow comes back whole, with the blows it had, and its bolts.)
   const back: Stack[] = def.from
-    .map(([id, n]) => [cityItemNumber(id), id === 'crossbow' ? 0 : Math.floor((n * p[2]) / def.hp / 2)] as Stack)
+    .map(([id, n]) => [cityItemNumber(id), id === 'crossbow' ? 0 : id === def.keeps ? n : Math.floor((n * p[2]) / def.hp / 2)] as Stack)
     .filter(([, n]) => n > 0);
   const sentry = def.trap === 'sentry';
   const bolts = sentry ? p[4] % BUILD.sentryWear : 0;
   p[4] -= bolts;
-  removePiece(c, p);
+  removePiece(c, p, true);
   for (const [item, n] of back) c.hand(item, n);
   if (sentry) c.handWorn(CROSSBOW, Math.max(1, Math.floor(p[4] / BUILD.sentryWear)));
   if (bolts) c.hand(BOLT, bolts);
@@ -218,7 +221,7 @@ export function finishBuild(c: City, key: string) {
 }
 
 /** A piece gone (taken down, or broken by the dead): what it held on the ground, its light out, the world without it. */
-export function removePiece(c: City, p: Built) {
+export function removePiece(c: City, p: Built, takenDown = false) {
   const s = c.state;
   const list = builtHere(c);
   list.splice(list.indexOf(p), 1);
@@ -232,6 +235,9 @@ export function removePiece(c: City, p: Built) {
   }
   // (2.68: a sentry broken by the dead: its bolts on the ground. Taken down, they were handed back first.)
   if (pieceOf(p[1])?.trap === 'sentry' && p[4] % BUILD.sentryWear) c.drop(p[0], BOLT, p[4] % BUILD.sentryWear);
+  // (2.69, the review: a workshop broken by the dead or the nights: its toolkit on the ground, whole.)
+  const keeps = pieceOf(p[1])?.keeps;
+  if (keeps && !takenDown) c.drop(p[0], cityItemNumber(keeps), 1);
   if (pieceOf(p[1])!.solid) c.world.parked[p[0]] = c.world.propSolid[p[0]] = 0;
   changed(c);
 }
@@ -303,9 +309,14 @@ export function comfortAt(c: City, tile: number): { points: number; level: numbe
 }
 export const comfortRates = (level: number) => COMFORT[level] ?? COMFORT[0];
 
-/** A built workbench beside a tile. */
+/** A built workbench beside a tile (2.69: or a workshop, which is one). */
 export const benchBeside = (c: City, tile: number) =>
-  [tile - MAP_W, tile + 1, tile + MAP_W, tile - 1].some((t) => t >= 0 && t < N && c.pieceAt[t] === PIECE.workbench + 1);
+  [tile - MAP_W, tile + 1, tile + MAP_W, tile - 1].some(
+    (t) => t >= 0 && t < N && (c.pieceAt[t] === PIECE.workbench + 1 || c.pieceAt[t] === PIECE.workshop + 1),
+  );
+/** 2.69: a workshop built beside a tile. */
+export const shopBeside = (c: City, tile: number) =>
+  [tile - MAP_W, tile + 1, tile + MAP_W, tile - 1].some((t) => t >= 0 && t < N && c.pieceAt[t] === PIECE.workshop + 1);
 
 /** A built camp bed's tile, if it is the open box (its card's Sleep). */
 export const openCot = (c: City): number => {

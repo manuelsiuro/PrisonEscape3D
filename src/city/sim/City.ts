@@ -23,6 +23,7 @@ import {
   applyBuilt,
   atBuild,
   benchBeside,
+  shopBeside,
   comfortAt,
   comfortRates,
   finishBuild,
@@ -36,6 +37,21 @@ import {
   type BuildWhy,
 } from './build';
 import { baseReturned, freshRush, leftDistrict, noSleep, rushCrossing, rushOnWaking, soundRush } from './rush';
+import {
+  BAG,
+  bagSlots,
+  freshGear,
+  knows,
+  leaveGear,
+  repairItem,
+  soundGear,
+  stepGear,
+  takeOff,
+  useGear,
+  useTrick,
+  walkKept,
+  wantsShop,
+} from './gear';
 import {
   atWork,
   breakStep,
@@ -132,6 +148,10 @@ export const COP = {
 
 /** 2.67: COP.BUILD's argument from here on: what's done to the open built piece (0 repair, 1 take down, 2 feed). */
 export const PIECE_OPS = 200;
+/** 2.69: COP.MAKE's argument from here on: a pocket's worn thing mended at a bench (+ its slot). */
+export const REPAIR_OPS = 200;
+/** 2.69: COP.USE's argument from here on: armour taken off (+0), the bag taken off (+1), the bag opened or shut (+2). */
+export const GEAR_OPS = 240;
 /** The pockets. */
 export const POCKETS = 8;
 /** Hunger and energy are kept in thousandths of a point (whole numbers): a full bar. */
@@ -286,6 +306,13 @@ export interface CityState {
   /** The waves put down this Rush, [its night, how many]; the Rush's dead about at a crossing, coming after the player. */
   waves: number[];
   follow: number;
+  // 2.69, optional on load (sim/gear.ts): the manuals read (a bit each); worn: armour [item, wear left], a bag (its item); the smoke
+  // clouds and the noisemakers set down in the district the player is in ([tile, until], [tile, the step it rings]).
+  manuals: number;
+  armour: Stack;
+  bag: number;
+  smoke: number[][];
+  ticks: number[][];
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -318,7 +345,7 @@ export type CityEvent =
   | { type: 'snared' }
   /** C2c: a thing made (or why not); a weapon worn out; a door barred or its boards taken down (the work begun, then done). */
   | { type: 'made'; item: number }
-  | { type: 'cantMake'; why: 'parts' | 'bench' | 'stove' | 'unknown' }
+  | { type: 'cantMake'; why: 'parts' | 'bench' | 'stove' | 'unknown' | 'shop' }
   | { type: 'broke'; item: number }
   | { type: 'barring'; on: boolean }
   | { type: 'barred'; on: boolean; tile: number; shelter: boolean }
@@ -346,7 +373,10 @@ export type CityEvent =
         | 'cutters'
         | 'tooHard'
         | 'sledge'
-        | 'rush';
+        | 'rush'
+        | 'known'
+        | 'bagFull'
+        | 'tooMany';
     }
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
@@ -356,7 +386,7 @@ export type CityEvent =
   | { type: 'alarm'; on: boolean; tile: number }
   /** 2.55: a thing thrown (a bottle, a molotov) from a tile to another; a bolt shot at one of the dead; the dead a fire put down; the player burnt; the last fire out. */
   | { type: 'thrown'; item: number; from: number; to: number }
-  | { type: 'shot'; from: number; x: number; z: number; dead: boolean }
+  | { type: 'shot'; from: number; x: number; z: number; dead: boolean; item?: number }
   | { type: 'scorched'; dead: number }
   | { type: 'burn'; harm: number }
   | { type: 'fireOut' }
@@ -378,6 +408,12 @@ export type CityEvent =
   | { type: 'repaired'; kind: number; tile: number }
   | { type: 'unbuilt'; kind: number; tile: number }
   | { type: 'pieceDown'; kind: number; tile: number; spent?: boolean }
+  /** 2.69: a manual read (its recipes, how many); armour or a bag put on or taken off; a worn thing mended; a noisemaker set down, ringing. */
+  | { type: 'learnt'; manual: number; n: number }
+  | { type: 'worn'; item: number; on: boolean }
+  | { type: 'mended'; item: number }
+  | { type: 'set'; item: number; tile: number }
+  | { type: 'ring'; tile: number }
   /**
    * 2.68: the Rush: said (`warn`, minutes to nightfall), begun, a wave come (its number, how many), held (supplies on `tile`); a trap
    * at work (a sentry's shot at x, z); back at a base after nights away (how many pieces damaged, lost).
@@ -458,6 +494,7 @@ export class City {
         ...freshSalvage(),
         ...freshBuild(),
         ...freshRush(),
+        ...freshGear(),
       }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
@@ -481,6 +518,7 @@ export class City {
         ...freshSalvage(),
         ...freshBuild(),
         ...freshRush(),
+        ...freshGear(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -624,6 +662,8 @@ export class City {
     if (!kept) this.state.alarm = [];
     // (2.55: nor does a fire burn on behind them.)
     if (!kept) this.state.fires = [];
+    // (2.69: nor its smoke and noisemakers.)
+    if (!kept) leaveGear(this);
     this.firesRev++;
     dayDark(this);
     // (2.53: by day the dead wait where it's dark.)
@@ -659,6 +699,8 @@ export class City {
   carsRev = 0;
   /** 2.55: a count the view watches (a fire lit, gone out, a district entered). */
   firesRev = 0;
+  /** 2.69: bumps when a noisemaker is set down or done (the view's clocks). */
+  ticksRev = 0;
   /** 2.52: the tiles in strong light in the district the player is in; whether anything burns here; a count the view watches. */
   lit = new Uint8Array(N);
   /** 2.53: the tiles daylight doesn't reach (deep in a building): dark by day as the street is by night. */
@@ -834,13 +876,16 @@ export class City {
       if (!this.peace) stepDead(this);
       // (2.55: what burns goes on burning, and wakes whoever lies in it.)
       if (!s.over && !this.events.some((e) => e.type === 'dead')) stepFires(this);
+      if (!s.over) stepGear(this);
       return;
     }
     if (!dir) this.letGo = true;
     const weak = s.hunger < FULL / 4 || s.energy <= 0 || s.step < s.snare;
     const px = s.player.x;
     const pz = s.player.z;
-    walk(this.world, s.player, dir, weak ? Math.trunc((WALK_SPEED * WEAK_SPEED) / 1000) : WALK_SPEED);
+    // (2.69: scrap armour weighs.)
+    const pace = Math.trunc((WALK_SPEED * walkKept(this)) / 1000);
+    walk(this.world, s.player, dir, weak ? Math.trunc((pace * WEAK_SPEED) / 1000) : pace);
     // (Nobody walks through the dead: a step that would bring them closer to one already against them isn't taken.)
     if (dir && crowded(s.zeds, px, pz, s.player.x, s.player.z)) {
       s.player.x = px;
@@ -888,6 +933,8 @@ export class City {
     // (2.55: what burns, burns whoever stands in it.)
     stepFires(this);
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
+    // (2.69: smoke thins, a noisemaker rings.)
+    stepGear(this);
     const here = this.tile;
     if (here === this.lastTile) return;
     // (2.65: walked off the tile held on beside a checkpoint: the next step onto one is warned again.)
@@ -979,8 +1026,10 @@ export class City {
     const top = under ? this.districtGrid(this.story.wayDistrict[2]) : null;
     const beside = (top && [stairs + MAP_W, stairs - MAP_W, stairs + 1, stairs - 1].find((i) => !top[i])) ?? stairs;
     const pile = () => (under ? (s.boxes[`${this.story.wayDistrict[2]}:g${beside}`] ??= []) : this.boxOf(`g${this.tile}`, true));
-    const pileAt = !s.inv.some((st) => st[0]) ? -1 : under ? this.story.wayDistrict[2] : s.district;
-    for (const st of s.inv) {
+    // (2.69: what was in the bag too; the bag itself, and what's worn, stay on.)
+    const carried = [...s.inv, ...(s.bag ? (s.boxes[BAG] ?? []) : [])];
+    const pileAt = !carried.some((st) => st[0]) ? -1 : under ? this.story.wayDistrict[2] : s.district;
+    for (const st of carried) {
       if (!st[0]) continue;
       // (Onto the pile already there, if they fell here before: never more slots than a save takes.)
       this.put(pile(), PILE_SLOTS, st[0], st[1]);
@@ -1022,7 +1071,8 @@ export class City {
 
   // ------------------------------------------------------------------ boxes and pockets
   private boxKey(key: string) {
-    return `${this.state.district}:${key}`;
+    // (2.69: the bag on the back is the city's, not a district's.)
+    return key === BAG ? BAG : `${this.state.district}:${key}`;
   }
   /** A box's slots (`make`: an empty one made where there's none), or what's in it so far. */
   private boxOf(key: string, make: true): Stack[];
@@ -1123,7 +1173,7 @@ export class City {
   }
   private inReach(key: string): boolean {
     const here = this.tile;
-    if (key === 'w') return true;
+    if (key === 'w' || key === BAG) return true;
     if (key.startsWith('n')) return this.target()?.key === key;
     const at = key.startsWith('c')
       ? carTiles(this, Number(key.slice(1)))
@@ -1384,7 +1434,7 @@ export class City {
       if (key) startBreak(this, key);
       return;
     }
-    if (op === COP.MAKE) return this.make(a);
+    if (op === COP.MAKE) return a >= REPAIR_OPS ? repairItem(this, a - REPAIR_OPS) : this.make(a);
     if (op === COP.CHOOSE) return choose(this, a);
     if (op === COP.TRADE) return trade(this, a >> 2, a & 3);
     if (op === COP.GIVE) return giveErrand(this, a);
@@ -1402,10 +1452,24 @@ export class City {
       if (full) this.events.push({ type: 'full' });
       return;
     }
+    // (2.69: what's worn taken off; the bag opened.)
+    if (op === COP.USE && a >= GEAR_OPS) {
+      if (a - GEAR_OPS < 2) return takeOff(this, a - GEAR_OPS);
+      if (!s.bag) return;
+      // (2.69, the review: whatever box was open is shut first, as any other is: a pile picked clean goes.)
+      const wasBag = s.open === BAG;
+      this.close();
+      s.open = wasBag ? '' : BAG;
+      return void this.events.push(
+        s.open ? { type: 'open', key: BAG, found: this.box().filter((x) => x[0]).length, first: false } : { type: 'close' },
+      );
+    }
     const st = s.inv[a];
     if (!st?.[0]) return;
     const item = st[0];
     if (op === COP.USE) {
+      // (2.69: a manual read, armour or a bag put on; a smoke bomb or a flare thrown, a noisemaker set down.)
+      if (useGear(this, item, a) || useTrick(this, item, a)) return;
       // (2.52: a light is lit, not eaten.)
       if (useLight(this, item)) return;
       // (2.55: a bottle or a molotov is thrown.)
@@ -1435,7 +1499,7 @@ export class City {
       return;
     }
     if (op === COP.STORE && s.open) {
-      const slots = s.open.startsWith('p') ? pieceSlots(this, s.open) : BOX_SLOTS;
+      const slots = s.open === BAG ? bagSlots(this) : s.open.startsWith('p') ? pieceSlots(this, s.open) : BOX_SLOTS;
       if (!slots) return void this.events.push({ type: 'full' });
       const left = this.put(this.boxOf(s.open, true), slots, item, st[1]);
       if (left === st[1]) return void this.events.push({ type: 'full' });
@@ -1455,13 +1519,22 @@ export class City {
   /** How many of an item the pockets hold (a weapon: how many of them, whatever blows each has left). */
   count(item: number): number {
     const each = cityItem(item)?.wear !== undefined;
+    // (2.69: what's in the bag counts for making and building, as the pockets do.)
+    const bag = this.state.bag ? (this.state.boxes[BAG] ?? []) : [];
+    return [...this.state.inv, ...bag].reduce((n, st) => n + (st[0] === item ? (each ? 1 : st[1]) : 0), 0);
+  }
+  /** 2.69: how many of an item the pockets alone hold (what's used in hand: a sledgehammer, a torch), the bag left out. */
+  carried(item: number): number {
+    const each = cityItem(item)?.wear !== undefined;
     return this.state.inv.reduce((n, st) => n + (st[0] === item ? (each ? 1 : st[1]) : 0), 0);
   }
   /** That many of an item out of the pockets. */
   spend(item: number, n: number) {
     const each = cityItem(item)?.wear !== undefined;
     // (Of several weapons alike, the most worn goes first.)
-    const stacks = each ? [...this.state.inv].sort((a, b) => a[1] - b[1]) : this.state.inv;
+    // (2.69: the pockets first, then the bag.)
+    const all = [...this.state.inv, ...(this.state.bag ? (this.state.boxes[BAG] ?? []) : [])];
+    const stacks = each ? [...all].sort((a, b) => a[1] - b[1]) : all;
     for (const st of stacks) {
       if (!n) break;
       if (st[0] !== item) continue;
@@ -1473,14 +1546,18 @@ export class City {
   }
 
   /** Whether a recipe can be made now, or what's missing. */
-  canMake(k: number): 'ok' | 'parts' | 'bench' | 'stove' | 'unknown' {
+  canMake(k: number): 'ok' | 'parts' | 'bench' | 'stove' | 'unknown' | 'shop' {
     const r = CITY_RECIPES[k];
     if (!r) return 'parts';
     if (r.taught !== undefined && this.state.errand[r.taught] < 1) return 'unknown';
+    // (2.69: from a manual, read.)
+    if (!knows(this, r)) return 'unknown';
     if (recipeParts(r).from.some(([item, n]) => this.count(item) < n)) return 'parts';
     // (2.52: a fire barrel burning beside them cooks as the stove does.)
     if (r.stove && !this.count(STOVE) && !atFire(this)) return 'stove';
     if (r.bench && !this.atBench()) return 'bench';
+    // (2.69: the workshop: a workbench with the toolkit, built.)
+    if (wantsShop(this, r) && !shopBeside(this, this.tile)) return 'shop';
     return 'ok';
   }
   /** A workbench on a tile beside the player. */
@@ -1791,6 +1868,7 @@ const zedsOk = (list: unknown): list is Zed[] =>
       (z.pound === undefined || (Number.isInteger(z.pound) && z.pound >= 0)) &&
       (z.down === undefined || (Number.isInteger(z.down) && z.down > 0 && z.down <= DOWN.steps)) &&
       (z.rush === undefined || z.rush === 1) &&
+      (z.blind === undefined || (Number.isInteger(z.blind) && z.blind >= 0)) &&
       Array.isArray(z.path) &&
       z.path.every((i) => Number.isInteger(i) && i >= 0 && i < N),
   );
@@ -1835,6 +1913,7 @@ export function loadCity(snap: unknown): City | null {
   soundSalvage(st);
   soundBuild(st);
   soundRush(st);
+  soundGear(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

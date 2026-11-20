@@ -56,6 +56,8 @@ export interface Frame {
   /** The item in the player's hand and the outfit they wear (item numbers, 0 for none). */
   held: number;
   outfit: number;
+  /** 2.69 (City Escape), optional: the vest's colour over the outfit (armour worn); none: the outfit's own. */
+  vest?: number;
   /** 2.36: the colours of the player's gang (a 3D colour; 0 none). */
   colours: number;
   /** 2.36: the gangs' turf painted on the floor: 0 not at all (none here, or a replay from before them), 1 faint, 2 the tables held (dinner), 3 the corners (the evening). */

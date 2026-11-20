@@ -1,0 +1,11 @@
+13 recipes from manuals, unknown in a new city, known in one begun before; read: manual_weapons 6, manual_sewing 4, manual_tricks 3 recipes
+made by real commands: machete, barbed_bat, long_spear, slingshot, steel_crossbow, scrap_armour, satchel, hiking_pack, padded_jacket, poncho, smoke_bomb, noisemaker, flare; away from the bench: machete: bench, long_spear: bench, steel_crossbow: bench, scrap_armour: bench, hiking_pack: bench; beside a plain workbench, scrap armour wants a workshop; taken down, the toolkit back
+at a bench, a bat with 6 blows mended to 26, a jacket with 4 bites left to 19; refused away from one
+a shambler's bite (8) through padded_jacket 6, sports_pads 7, scrap_armour 5, riot_gear 4, poncho 8, each a bite more worn, worn to nothing it falls apart; taken off into a pocket; scrap armour walks 1720 to 1840; in a poncho not seen six tiles off by day
+a satchel worn and opened; things stored in it count for making (a bandage made from them); not taken off full; a fall leaves its things on the pile, the bag on
+a slingshot shoots scrap for 12 and knocks a runner down; with both crossbows, the steel one, for 40
+a smoke bomb: the one after the player loses them, the cloud gone in 15 s; a noisemaker rings 30 s after it is set and calls one of the dead 12 tiles off; a flare lights where it lands
+everything searched, 6 cities: manual_weapons 3.0, manual_sewing 3.0, manual_tricks 5.7, toolkit 5.0, riot_gear 2.0, sports_pads 2.8 a city; none in one begun before
+the second Rush held, a manual among the supplies (manual_weapons)
+a sentry from a crossbow in the bag keeps its blows and the save loads; the bag taken off from its panel shuts it; a fifth noisemaker is too many; a sledgehammer in the bag isn't in hand; a workshop broken leaves its toolkit; in a city begun before, the workshop's recipes want a bench; every light's toasts are written
+a save keeps the manuals read, what is worn, the bag and its things, smoke and noisemakers; a damaged one made sound; one from before loads

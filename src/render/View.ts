@@ -704,7 +704,7 @@ export class View {
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
   draw(f: Frame, dt: number, time: number) {
     this.noiseFx.group.visible = true;
-    this.me.dress(f.outfit, f.inked);
+    this.me.dress(f.outfit, f.inked, f.vest ?? -1);
     // (2.36: the player's gang's colours.)
     this.player.colours(f.colours);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)

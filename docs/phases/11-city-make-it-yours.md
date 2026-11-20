@@ -130,6 +130,12 @@ lamp, trough, lantern; the trap, fence and seed shapes).
   scrap armour (−45%, a little slower), riot gear (−50%, the armoury), camouflage poncho (seen a tile
   less), raincoat (never soaked). **Bags** in a back slot: satchel +2 pockets, hiking pack +4.
 
+- **As built (2.69):** three manuals, the workshop, mending, the upgrades, the weapons and tricks above, five armours and two
+  bags (the rules: `decisions/city.md`'s rows). Claude's picks: the other manuals (gardening, fishing, cooking, field
+  medicine…) come with batch 5; the powered station (floodlight, electric fence) waits for a generator piece; the
+  raincoat for the weather; the bag a box of its own whose things count for making, not more pockets (eight slots and the
+  Make and Build buttons fill a phone's bar).
+
 ### Survival with weight (batch 5)
 - **Thirst**: a full bar lasts about 20 hours awake; under 25 slower, at 0 health lost, as hunger.
 - **States**, icons with a timer by the meters. Good: well fed (a cooked meal: health back twice as fast
@@ -186,6 +192,6 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 | 1 | Breaking and salvage: furniture, cars, wrecks, inner walls; the axe and the sledgehammer | 2.66.0 | built, merged, not released |
 | 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | built, merged, not released |
 | 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | built, merged, not released |
-| 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | | |
+| 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | 2.69.0 | built, merged, not released |
 | 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | | |
 | 6 | Events, skills, Holdout, the dog | | |

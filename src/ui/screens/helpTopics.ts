@@ -456,6 +456,17 @@ HELP.city = [
         listIcons: ['pick', 'needle', 'hook', 'bell', 'shirt', 'target'],
         see: ['cityRush', 'cityBuild', 'cityFight'],
       }),
+      // (2.69, C5: crafting that grows.)
+      T('cityGear', 'book', '#7a9ac8', {
+        pic: true,
+        listIcons: ['sword', 'shirt', 'toss', 'hammer', 'wrench'],
+        see: ['cityMake', 'cityWear', 'cityBuild'],
+      }),
+      T('cityWear', 'shield', '#6a8a6a', {
+        pic: true,
+        listIcons: ['shield', 'eye', 'box', 'fog', 'clock', 'flame'],
+        see: ['cityGear', 'cityFight', 'cityRush'],
+      }),
     ],
   },
   {

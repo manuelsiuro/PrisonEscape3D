@@ -5,8 +5,8 @@ import { randomInt } from '../../sim/rng';
 import { UNIT } from '../../sim/tuning';
 import { centerX, centerZ, tileAt } from '../../sim/world/grid';
 import { MAP_H, MAP_W } from '../../sim/world/World';
-import { kindStats } from '../content/dead';
-import { cityItemNumber } from '../content/items';
+import { DOWN, kindStats, ZKIND } from '../content/dead';
+import { cityItem, cityItemNumber } from '../content/items';
 import { RANGED } from '../content/ranged';
 import type { City } from './City';
 import { isDown, noise, putDown, ZED, type Zed } from './dead';
@@ -22,8 +22,8 @@ import { isDown, noise, putDown, ZED, type Zed } from './dead';
 const N = MAP_W * MAP_H;
 const BOTTLE = cityItemNumber('bottle');
 const MOLOTOV = cityItemNumber('molotov');
-const CROSSBOW = cityItemNumber('crossbow');
 const BOLT = cityItemNumber('bolt');
+const SLINGSHOT = cityItemNumber('slingshot');
 
 /** What burns in the district the player is in: [tile, the step it goes out]. */
 export const freshRanged = () => ({ fires: [] as number[][] });
@@ -61,7 +61,7 @@ const apart = (a: number, b: number) =>
  * Where a thing thrown lands: on the nearest of the dead ahead, else as far as it goes the way faced (-1: a wall in the thrower's face).
  * 2.65: `clear`, tiles it must land beyond (a molotov: past its fire's spread): one of the dead nearer is thrown over; -2, nowhere far enough.
  */
-function landing(c: City, clear = 0): number {
+export function landing(c: City, clear = 0): number {
   const here = c.tile;
   const k = ahead(c, RANGED.throwReach, clear ? (clear + 0.5) * UNIT : 0);
   if (k >= 0) {
@@ -124,8 +124,20 @@ export function useThrown(c: City, item: number, slot: number): boolean {
   return true;
 }
 
-/** The crossbow carried with a bolt for it. */
-export const loaded = (c: City) => c.count(CROSSBOW) > 0 && c.count(BOLT) > 0;
+/**
+ * The ranged weapon that shoots now: of those carried with their ammunition (a crossbow and a bolt; 2.69: a steel crossbow, a
+ * slingshot and scrap), the one that hurts most. Null: none.
+ */
+export function loaded(c: City): { item: number; ammo: number; harm: number; reach: number; every: number; heard: number } | null {
+  let best: ReturnType<typeof loaded> = null;
+  for (const st of c.state.inv) {
+    const sh = cityItem(st[0])?.shoots;
+    if (!sh || (best && best.harm >= sh.harm)) continue;
+    const ammo = cityItemNumber(sh.ammo);
+    if (c.count(ammo) > 0) best = { ...sh, item: st[0], ammo };
+  }
+  return best;
+}
 
 /**
  * The blow's button with a loaded crossbow: one of the dead ahead and out of arm's reach is shot
@@ -133,29 +145,32 @@ export const loaded = (c: City) => c.count(CROSSBOW) > 0 && c.count(BOLT) > 0;
  * and the blow goes as it always did.
  */
 export function shoot(c: City, armsReach: number): boolean {
-  if (!loaded(c)) return false;
+  const gun = loaded(c);
+  if (!gun) return false;
   const s = c.state;
   if (nearIn(c, armsReach)) return false;
-  const k = ahead(c, RANGED.shotReach, armsReach);
+  const k = ahead(c, gun.reach, armsReach);
   if (k < 0) return false;
-  if (s.step - s.swung < RANGED.shotEvery || s.sleeping) return true;
+  if (s.step - s.swung < gun.every || s.sleeping) return true;
   s.swung = s.step;
-  c.spend(BOLT, 1);
+  c.spend(gun.ammo, 1);
   const z = s.zeds[k];
   const at = tileAt(z.body.x, z.body.z);
-  z.hp -= RANGED.shotHarm;
+  z.hp -= gun.harm;
   z.reel = kindStats(z.kind).reel;
+  // (2.69: a slingshot's stone knocks a runner off its feet.)
+  if (gun.item === SLINGSHOT && z.kind === ZKIND.RUNNER && z.hp > 0) z.down = DOWN.steps;
   z.near = 0;
   z.mode = ZED.CHASE;
   z.seen = s.step;
   z.last = c.tile;
   z.body.facing = nearestDir(s.player.x - z.body.x, s.player.z - z.body.z);
   const dead = z.hp <= 0;
-  noise(c, c.tile, RANGED.shotNoise);
-  // (The bolt: found again where it struck, one time in a few.)
-  if (randomInt(s, RANGED.boltBack) === 0) c.leave(at, BOLT, 1);
-  c.events.push({ type: 'shot', from: c.tile, x: z.body.x, z: z.body.z, dead });
-  c.wearItem(CROSSBOW);
+  noise(c, c.tile, gun.heard);
+  // (The bolt: found again where it struck, one time in a few. A slingshot's scrap isn't looked for.)
+  if (gun.ammo === BOLT && randomInt(s, RANGED.boltBack) === 0) c.leave(at, BOLT, 1);
+  c.events.push({ type: 'shot', from: c.tile, x: z.body.x, z: z.body.z, dead, item: gun.item });
+  c.wearItem(gun.item);
   if (dead) putDown(c, [z]);
   return true;
 }
