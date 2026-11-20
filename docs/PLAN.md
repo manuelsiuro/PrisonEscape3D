@@ -150,6 +150,7 @@ Every phase is built and released. The plans, phase by phase with what each ship
 - [Parole, odd jobs, the manhunt, holidays (P39–P42, v2.18–v2.21)](phases/7-after-hours.md): P39 The parole board, P40 The odd jobs board, P41 The manhunt, P42 Holidays
 - [The Six Hunter (v2.36)](phases/9-six-hunter.md): the sixth prison past the five, its pack of six, jobs, items, ways out, its look and its finish, as built
 - [City Escape (v2.46 on)](phases/10-city-escape.md): the second mode, a generated city to survive and escape, in four stages, all built (C1 Foundations, C2 Survival, C3 The story and the ways out, C4 The finish); on the title for everyone since 2.49
+- [City Escape, stage C5: Make it yours (v2.66 on)](phases/11-city-make-it-yours.md): the testers' asks (2026-11-20): breaking and salvage, building a base, the Rush, crafting that grows, survival with weight, a city that doesn't wait; six batches
 - [Reviews and the gameplay polish series (v2.21.1 on)](phases/8-polish.md): every review and polish pass, one row each with the snapshots it moved (each area's choices and limits: `POLISH.md`)
 
 ## 5. Mapping the GDD to phases
@@ -211,8 +212,8 @@ feel) and the known limits.
 **Status (2026-11-19): v2.65.1.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
-45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 81 help topics,
-6,206 text keys in English and French, 102 test scripts. A second mode, City Escape, built in four
+45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 82 help topics,
+6,226 text keys in English and French, 103 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
 2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
 metro's tunnel), and its full review's findings from 2.57 to 2.60 (a town's own look, chained buildings and fences cut,

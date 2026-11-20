@@ -433,6 +433,12 @@ HELP.city = [
         listIcons: ['fist', 'lock', 'cutters'],
         see: ['cityFood', 'cityPeople', 'cityShelter'],
       }),
+      // (2.66, C5: breaking things.)
+      T('cityBreak', 'pick', '#c98a4a', {
+        pic: true,
+        listIcons: ['fist', 'hammer', 'wrench', 'ear'],
+        see: ['cityMake', 'cityTools', 'cityShelter'],
+      }),
     ],
   },
   {

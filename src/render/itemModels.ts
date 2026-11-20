@@ -102,6 +102,9 @@ export const ITEM_SHAPES: Record<string, Shape> = {
   trowel: (c, a) => [stick(0.16, 0.03, a, -0.14), box(0.24, 0.02, 0.12, c, 0.08)],
   shovel: (c, a) => [stick(0.4, 0.025, a, -0.08), box(0.16, 0.025, 0.18, c, 0.2), box(0.03, 0.04, 0.12, a, -0.28)],
   pickaxe: (c, a) => [stick(0.42, 0.025, a), box(0.06, 0.04, 0.36, c, 0.2)],
+  // (City Escape, 2.66: an axe, its head to one side of the haft; a sledgehammer, a block of iron on a long haft.)
+  axe: (c, a) => [stick(0.44, 0.025, a), box(0.09, 0.045, 0.12, c, 0.18, 0, 0.05), box(0.035, 0.047, 0.17, METAL, 0.18, 0, 0.1)],
+  sledge: (c, a) => [stick(0.46, 0.028, a, -0.02), box(0.1, 0.1, 0.2, c, 0.21)],
   cutters: (c, a) => [
     turn(box(0.36, 0.03, 0.04, a), 0.25, -0.02, 0.04),
     turn(box(0.36, 0.03, 0.04, a), -0.25, -0.02, -0.04),

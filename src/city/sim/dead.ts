@@ -1,4 +1,5 @@
 import { findPath, nearestDir } from '../../sim/ai/path';
+import { canWork, facedBreak, startBreak } from './salvage';
 import { lineOfSight } from '../../sim/ai/sight';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import { randomInt } from '../../sim/rng';
@@ -294,9 +295,7 @@ export function strike(c: City) {
   const reach = BLOW.reach + longest(c) * UNIT;
   if (shoot(c, reach)) return;
   if (s.step - s.swung < BLOW.every || s.sleeping) return;
-  s.swung = s.step;
   const tired = s.energy <= 0;
-  s.energy = Math.max(0, s.energy - BLOW.energy);
   const p = s.player;
   const fx = DIR_X[p.facing] ?? 0;
   const fz = DIR_Z[p.facing] ?? 0;
@@ -323,8 +322,18 @@ export function strike(c: City) {
     best = side;
     p.facing = nearestDir(s.zeds[side].body.x - p.x, s.zeds[side].body.z - p.z);
   }
+  // (2.66: none of the dead in reach, something faced that breaks: the blows go into it, a moment's work.)
+  // (Not with one of the dead within three tiles: a swing to meet it is a swing. Nor what nothing carried breaks: a swing too.)
+  if (best < 0 && !s.zeds.some((z) => !isDown(z) && Math.hypot(z.body.x - p.x, z.body.z - p.z) < 3 * UNIT)) {
+    const work = facedBreak(c);
+    if (work && canWork(c, work)) return startBreak(c, work);
+  }
+  s.swung = s.step;
+  s.energy = Math.max(0, s.energy - BLOW.energy);
   noise(c, c.tile, BLOW.noise);
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
+  // (One of the dead struck: what was being broken is left.)
+  if (s.search.startsWith('b')) s.search = '';
   const z = s.zeds[best];
   // (2.60: one that isn't after anyone never saw it coming.)
   const unseen = z.mode !== ZED.CHASE;

@@ -501,6 +501,17 @@
   font-size: 14px;
 }
 
+/* 2.66: a piece that nothing carried can break: its button greyed (a press says what would). */
+.city-box .big-btn[aria-disabled='true'] {
+  opacity: 0.55;
+}
+/* 2.66: what a piece breaks up into, under what it holds. */
+.city-box .city-breaks {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
 /* A first search: the action button fills round as it goes. */
 .city-act.cutting .act-round {
   background: conic-gradient(var(--ok) calc(var(--cut, 0) * 360deg), var(--orange-2) 0);

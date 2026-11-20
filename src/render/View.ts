@@ -346,6 +346,11 @@ export class View {
    * floors, walls, doors, furniture and decor built for it, redrawn from the state; the rest is
    * made afresh.
    */
+  /** 2.66 (City Escape): furniture broken up, gone from the picture (by its place in the world's list). */
+  hideProps(gone: readonly number[]) {
+    this.worldView?.hideProps(gone);
+  }
+
   setWorld(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null) {
     this.snores.clear();
     // The escape camera ends with the game (the title's picture is the classic angle again).

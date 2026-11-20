@@ -243,3 +243,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 
 - City Escape, fair last nights and real choices (v2.65.0, out with the next release)
 - City Escape, the look (v2.65.1)
+- City Escape, breaking things (v2.66.0, not released yet)
