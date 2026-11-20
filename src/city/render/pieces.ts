@@ -149,6 +149,100 @@ export function pieceParts(kind: number, worn: number, seed: number): Part[] {
         box(0.7, 0.022, 0.08, w(0xd8c8a0), 0, 0, -0.18),
       );
       break;
+    // 2.68: the traps.
+    case 'spikes':
+      // Two boards flat on the ground, nails standing up through them in rows.
+      out.push(box(0.96, 0.05, 0.2, w(WOOD), 0, 0, -0.12), box(0.96, 0.05, 0.2, w(WOOD_DARK), 0, 0, 0.12));
+      for (let k = 0; k < 7; k++)
+        for (const z of [-0.16, -0.08, 0.08, 0.16])
+          out.push(
+            box(0.025, 0.12 - ((h >> (k + (z > 0 ? 8 : 0))) & 1) * 0.03, 0.025, NAIL, -0.39 + k * 0.13 + (z > 0 ? 0.06 : 0), 0.05, z),
+          );
+      break;
+    case 'barbedWire': {
+      // Two stakes, three strands between them, barbs along each.
+      out.push(box(0.07, 0.62, 0.07, w(WOOD_DARK), -0.45, 0, 0), box(0.07, 0.62, 0.07, w(WOOD_DARK), 0.45, 0, 0));
+      // (Thick enough, and pale, to read from the camera's height.)
+      for (const [k, y] of [0.14, 0.32, 0.5].entries()) {
+        out.push(box(0.92, 0.03, 0.03, w(0xa8aeb6), 0, y + (k === 1 ? 0.01 : 0), 0));
+        for (let j = 0; j < 7; j++) {
+          const barb = box(0.07, 0.022, 0.022, w(0xc4cad0), -0.39 + j * 0.13 + (k % 2) * 0.06, y, 0);
+          barb.rotateY(0.8);
+          out.push(barb);
+        }
+      }
+      // (A loose coil along the ground between the stakes.)
+      for (let j = 0; j < 9; j++) {
+        const a = (j / 9) * Math.PI * 2;
+        out.push(box(0.035, 0.035, 0.035, w(0xa8aeb6), -0.36 + j * 0.09, 0.05 + Math.sin(a) * 0.05 + 0.05, Math.cos(a) * 0.1));
+      }
+      break;
+    }
+    case 'snare': {
+      // A stake, a cord to a loop of wire laid open on the ground.
+      out.push(box(0.05, 0.3, 0.05, w(WOOD_DARK), 0.32, 0, -0.3));
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        const s2 = box(0.13, 0.015, 0.015, w(0xb87333), 0, 0.01, 0);
+        s2.rotateY(-a + Math.PI / 2);
+        s2.translate(Math.cos(a) * 0.17, 0, Math.sin(a) * 0.17);
+        out.push(s2);
+      }
+      const cord = tilted(0.42, 0.012, 0.012, w(CLOTH), 0, 0.16, 0.12, -0.15);
+      cord.rotateY(0.75);
+      out.push(cord);
+      break;
+    }
+    case 'cans': {
+      // A line between two sticks, tin cans hanging from it.
+      out.push(box(0.05, 0.5, 0.05, w(WOOD_DARK), -0.45, 0, 0), box(0.05, 0.5, 0.05, w(WOOD_DARK), 0.45, 0, 0));
+      out.push(box(0.92, 0.025, 0.025, w(CLOTH), 0, 0.44, 0));
+      for (let k = 0; k < 5; k++) {
+        const x = -0.32 + k * 0.16;
+        const y = 0.2 + ((h >> k) & 1) * 0.04;
+        out.push(box(0.012, 0.44 - y - 0.14, 0.012, w(CLOTH), x, y + 0.14, 0));
+        out.push(cyl(0.065, 0.14, [0xd8dde2, 0xd23a3a, 0xb8bec4][(k + h) % 3], x, y, 0, 8));
+        out.push(cyl(0.066, 0.03, 0xe8e2d0, x, y + 0.05, 0, 8));
+      }
+      break;
+    }
+    case 'scarecrow': {
+      // A post, a crossbar for arms, an old coat on it, a sack for a head and a hat.
+      const coat = [0x5a4a3a, 0x3f5a4c, 0x6a3a32][h % 3];
+      out.push(
+        box(0.08, 1.5, 0.08, w(WOOD_DARK), 0, 0, 0),
+        box(0.9, 0.07, 0.07, w(WOOD_DARK), 0, 1.08, 0),
+        box(0.46, 0.56, 0.2, w(coat), 0, 0.6, 0),
+        box(0.84, 0.16, 0.16, w(coat), 0, 1.02, 0),
+        box(0.12, 0.2, 0.12, w(CLOTH), 0.47, 0.95, 0),
+        box(0.12, 0.2, 0.12, w(CLOTH), -0.47, 0.95, 0),
+        box(0.26, 0.28, 0.24, w(0xc9b58a), 0, 1.2, 0),
+        box(0.05, 0.04, 0.02, 0x1a1612, -0.06, 1.34, 0.12),
+        box(0.05, 0.04, 0.02, 0x1a1612, 0.06, 1.34, 0.12),
+        cyl(0.24, 0.03, w(0x4a3a2a), 0, 1.48, 0, 12),
+        cyl(0.13, 0.16, w(0x4a3a2a), 0, 1.5, 0, 10),
+      );
+      break;
+    }
+    case 'sentry': {
+      // A crossbow on a post braced by three legs, a box of bolts at its foot.
+      out.push(box(0.36, 0.06, 0.36, w(WOOD_DARK), 0, 0, 0), box(0.09, 0.82, 0.09, w(WOOD_DARK), 0, 0.06, 0));
+      for (let k = 0; k < 3; k++) {
+        const leg = tilted(0.06, 0.6, 0.06, w(WOOD_DARK), 0.5, 0, 0.3, 0);
+        leg.translate(-0.13, 0, 0);
+        leg.rotateY((k * Math.PI * 2) / 3);
+        out.push(leg);
+      }
+      out.push(
+        box(0.1, 0.07, 0.62, w(0x6a4a2a), 0, 0.88, 0.04),
+        box(0.66, 0.05, 0.05, w(IRON_DARK), 0, 0.9, 0.26),
+        box(0.014, 0.014, 0.4, 0xd8d0c0, -0.32, 0.92, 0.06),
+        box(0.014, 0.014, 0.4, 0xd8d0c0, 0.32, 0.92, 0.06),
+        box(0.02, 0.02, 0.5, IRON, 0, 0.96, 0.1),
+        box(0.18, 0.14, 0.12, w(IRON_DARK), 0.22, 0, -0.18),
+      );
+      break;
+    }
   }
   // (Worn past half: a split, darker gap, as the dead's blows leave it.)
   if (worn > 0.5 && (id === 'plankWall' || id === 'barricade' || id === 'door' || id === 'metalWall'))

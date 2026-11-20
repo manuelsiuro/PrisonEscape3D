@@ -346,6 +346,8 @@ const print = (c: City) => fnv1a(JSON.stringify(c.snapshot().state));
   /** A night asleep behind boards in a one-door house of the start, on a given night: who came to the door. */
   const night = (seed: number, n: number, lantern: boolean) => {
     const c = new City(seed);
+    // (2.68: nights 3 and 9 are the Rush's, slept through by nobody: the siege measured as a city without it has it.)
+    c.state.rev = 3;
     c.step(0);
     const dist = c.district;
     const lot = dist.lots.findIndex(

@@ -103,6 +103,14 @@ lamp, trough, lantern; the trap, fence and seed shapes).
   Fallen: as now.
 - **The three ways out** become a Rush at a place the player fortifies (the hospital's pad, the metro
   station, the pier) before lighting the beacon or the generator.
+- **As built (2.68):** the Rush, a base left and the six traps that need no power (the rules: `decisions/city.md`'s
+  rows). Claude's picks: a Rush only in cities begun from 2.68; waves of 3 and one more each wave, each Rush and each
+  step of danger; the Rush's dead about following across a checkpoint; supplies of planks, scrap, food, bandages and bolts
+  (manuals and armour come with batch 4); the dead through what's built by the cheapest way, so walls make a door of the
+  weak point. The ways out only in part: their called dead now pound through what's built in their way (a pad walled
+  round holds them up), but their nights keep 2.63.2's measured waits and counts. Left for later: the pit, the fire
+  line, the floodlight and the electric fence (batch 4's generator and shovel); window boards (nothing breaks a window
+  yet); a generator's noise raising a sleeper's odds (no generator piece yet).
 
 ### Crafting that grows (batch 4)
 - **Stations**: by hand; a workbench (found, or built); the workshop (a bench with the vise and toolbox
@@ -176,8 +184,8 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 | # | Batch | Version | State |
 |---|---|---|---|
 | 1 | Breaking and salvage: furniture, cars, wrecks, inner walls; the axe and the sledgehammer | 2.66.0 | built, merged, not released |
-| 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | built, not released |
-| 3 | The Rush; traps and defences; a base left takes the nights' harm | | |
+| 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | built, merged, not released |
+| 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | built, merged, not released |
 | 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | | |
 | 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | | |
 | 6 | Events, skills, Holdout, the dog | | |

@@ -19,6 +19,8 @@ export interface PieceDef {
   comfort: number;
   /** Stands across the way (a wall, a door): drawn turned to the facing it was built from. */
   across?: true;
+  /** 2.68: a trap, working on the dead by itself (content/rush.ts's TRAP; sim/dead.ts). */
+  trap?: 'spikes' | 'wire' | 'snare' | 'cans' | 'scare' | 'sentry';
 }
 
 export const PIECES: readonly PieceDef[] = [
@@ -125,6 +127,77 @@ export const PIECES: readonly PieceDef[] = [
   },
   { id: 'chair', from: [['plank', 2]], hp: 30, solid: false, comfort: 1 },
   { id: 'rug', from: [['cloth', 3]], hp: 20, solid: false, comfort: 1 },
+  // 2.68: the traps. Walked over by everyone (the player knows where they are), but the scarecrow and the sentry.
+  {
+    id: 'spikes',
+    from: [
+      ['plank', 2],
+      ['nails', 3],
+    ],
+    hp: 30,
+    solid: false,
+    comfort: 0,
+    across: true,
+    trap: 'spikes',
+  },
+  {
+    id: 'barbedWire',
+    from: [
+      ['wire', 2],
+      ['scrap', 1],
+    ],
+    hp: 40,
+    solid: false,
+    comfort: 0,
+    across: true,
+    trap: 'wire',
+  },
+  {
+    id: 'snare',
+    from: [
+      ['wire', 1],
+      ['plank', 1],
+    ],
+    hp: 3,
+    solid: false,
+    comfort: 0,
+    trap: 'snare',
+  },
+  {
+    id: 'cans',
+    from: [
+      ['scrap', 1],
+      ['wire', 1],
+    ],
+    hp: 20,
+    solid: false,
+    comfort: 0,
+    across: true,
+    trap: 'cans',
+  },
+  {
+    id: 'scarecrow',
+    from: [
+      ['plank', 2],
+      ['cloth', 2],
+    ],
+    hp: 40,
+    solid: true,
+    comfort: 0,
+    trap: 'scare',
+  },
+  {
+    id: 'sentry',
+    from: [
+      ['crossbow', 1],
+      ['scrap', 2],
+      ['wire', 1],
+    ],
+    hp: 60,
+    solid: true,
+    comfort: 0,
+    trap: 'sentry',
+  },
 ];
 
 export const pieceOf = (kind: number): PieceDef | undefined => PIECES[kind];
@@ -153,6 +226,8 @@ export const BUILD = {
   comfortReach: 6,
   hideout: 3,
   home: 6,
+  /** 2.68: a sentry's `more`: its bolts, and its crossbow's blows left times this. */
+  sentryWear: 16,
 } as const;
 
 /** How a sleeper's comfort tells: energy back asleep (thousandths a game minute) and a point of health every so many minutes. */

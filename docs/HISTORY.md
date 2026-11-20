@@ -245,3 +245,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape, the look (v2.65.1)
 - City Escape, breaking things (v2.66.0, not released yet)
 - City Escape, building a base (v2.67.0, not released yet)
+- City Escape, nights: the Rush and traps (v2.68.0, not released yet)

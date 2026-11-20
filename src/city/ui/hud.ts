@@ -30,6 +30,9 @@ export interface CityHudState {
   /** 2.52: the light where the player stands (LEVEL; -1: by day, not shown), and the torch's minutes left while it's on (0: off). */
   light: number;
   torch: number;
+  /** 2.68: the Rush: '' none due; else its line (due at 22:00, or under way: the wave, hold till 05:00), `rushOn` while it is. */
+  rush: string;
+  rushOn: boolean;
   /** The story's line now ('' none), and where it points in this district (tiles; `marksKey` changes with them). */
   goal: string;
   marks: readonly number[];
@@ -55,6 +58,7 @@ export class CityHud {
   private readonly canvas: HTMLCanvasElement;
   private shownRev = -1;
   private shownLight = '?';
+  private shownRush = '?';
   private shownChasing = -1;
   private shownBleeding: boolean | null = null;
   private meters: Record<string, number> = {};
@@ -92,6 +96,7 @@ export class CityHud {
       </div>
       <div class="hud-row city-light-row">
         <span class="pill city-light hidden" role="status">${icon('flame', 14)}<span></span></span>
+        <span class="pill city-rush hidden" role="status">${icon('siren', 14)}<span></span></span>
       </div>
       <div class="city-radio hidden" role="status" aria-live="polite">${icon('megaphone', 18)}<div><b></b><p></p></div></div>`,
     );
@@ -117,6 +122,7 @@ export class CityHud {
     this.shownRev = -1;
     this.shownChasing = -1;
     this.shownLight = '?';
+    this.shownRush = '?';
     this.shownNight = null;
     this.meters = {};
     this.shownGoal = '';
@@ -210,6 +216,13 @@ export class CityHud {
                 : t('city.light.dim', { t: `${Math.floor(s.torch / 60)}:${String(s.torch % 60).padStart(2, '0')}` })
               : t('city.light.dark'),
         );
+    }
+    if (s.rush + s.rushOn !== this.shownRush) {
+      this.shownRush = s.rush + s.rushOn;
+      const pill = this.el.querySelector<HTMLElement>('.city-rush')!;
+      pill.classList.toggle('hidden', !s.rush);
+      pill.classList.toggle('on', s.rushOn);
+      setText(pill.querySelector('span')!, s.rush);
     }
     if (s.goal !== this.shownGoal) {
       this.shownGoal = s.goal;

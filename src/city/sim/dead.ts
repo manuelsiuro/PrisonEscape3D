@@ -1,6 +1,9 @@
 import { findPath, nearestDir } from '../../sim/ai/path';
 import { canWork, facedBreak, startBreak } from './salvage';
-import { poundPiece } from './build';
+import { builtHere, poundPiece, removePiece, wornStep, type Built } from './build';
+import { PIECES, pieceOf, BUILD } from '../content/build';
+import { RUSH, TRAP, BASE_SIEGE } from '../content/rush';
+import { rushFollows, rushMinute } from './rush';
 import { lineOfSight } from '../../sim/ai/sight';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import { randomInt } from '../../sim/rng';
@@ -51,6 +54,8 @@ export interface Zed {
   pound?: number;
   /** 2.61, optional: knocked down, the steps it lies before it gets up (finished meanwhile by any blow). */
   down?: number;
+  /** 2.68, optional: one of the Rush's (1): after the player wherever they are, through boards and what's built, not shy of light. */
+  rush?: number;
 }
 
 /** 2.61: one of the dead lying knocked down. */
@@ -230,6 +235,8 @@ export function populate(c: City) {
   // (2.65: come back by the tunnel's stairs: the generator's din calls the station's dead, and the tunnel's heard the player.)
   if (c.climbed && (going(c) === 1 || c.state.district === TUNNEL)) noise(c, c.tile, MAP_W);
   if (c.state.district === TUNNEL) c.climbed = false;
+  // (2.68: crossed into mid-Rush: half the last wave follows.)
+  rushFollows(c);
 }
 
 /** A noise the dead hear: those within its reach (tiles) and not already after someone go and look. */
@@ -431,9 +438,15 @@ export function putDown(c: City, list: Zed[]) {
 function siege(c: City) {
   const s = c.state;
   const lot = c.lot;
-  if (lot < 0 || !c.shelter(lot)) return;
+  // (2.68: or a base: a sleeper with pieces built round them, inside walls of their own or not.)
+  const shelter = lot >= 0 && c.shelter(lot);
+  const base = !shelter && c.anyBuilt() && builtHere(c).some(([t]) => cheb(t, c.tile) <= BUILD.comfortReach);
+  if (!shelter && !base) return;
   const nightNo = (c.minute < NIGHT_TO ? c.day - 1 : c.day) + s.deaths;
-  const odds = Math.min(SIEGE.most, (nightNo - SIEGE.fromNight + 1) * SIEGE.perNight);
+  // (2.68: asleep in a light, a few chances more: a fire in the open is seen.)
+  // (Only for a base: a shelter's odds are as they were, in every city.)
+  const lit = base && c.lit[c.tile] ? BASE_SIEGE.litMore : 0;
+  const odds = Math.min(SIEGE.most, (nightNo - SIEGE.fromNight + 1) * SIEGE.perNight) + (odds0(nightNo) ? lit : 0);
   if (odds <= 0 || randomInt(s, 100) >= odds) return;
   const here = c.tile;
   let best: Zed | null = null;
@@ -448,13 +461,155 @@ function siege(c: City) {
     }
   }
   if (!best) return;
-  // (Its way goes by the boards: only a locked door stops it.)
-  const path = findPath(c.world, tileAt(best.body.x, best.body.z), (i) => i === here, here, 2500, undefined, c.lockGrid);
+  // (Its way goes by the boards: only a locked door stops it. 2.68: and through what's built, pounded on the way.)
+  const from = tileAt(best.body.x, best.body.z);
+  const path = c.anyBuilt()
+    ? throughPath(c, from, here, true, false)
+    : findPath(c.world, from, (i) => i === here, here, 2500, undefined, c.lockGrid);
   if (!path?.length) return;
   best.mode = ZED.SEEK;
   best.goal = here;
   best.path = path;
   best.pound = 0;
+}
+
+/** Whether a night is one the dead look for sleepers on at all (the third on). */
+const odds0 = (nightNo: number) => nightNo >= SIEGE.fromNight;
+
+const cheb = (a: number, b: number) =>
+  Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
+
+/**
+ * 2.68: a wave of the Rush: so many put down in the streets, out of sight, each one after the player wherever they are (it looks
+ * where they are now and then: `RUSH.retarget`). A brute in the second and the last from the second Rush, a bloater from the third.
+ * How many were put down (fewer where the streets are short of room).
+ */
+export function rushWave(c: City, size: number, rush: number, wave: number): number {
+  const s = c.state;
+  let put0 = 0;
+  for (let j = 0; j < size && s.zeds.length < 180; j++) {
+    if (!put(c, c.zedPlaces.streets, ZED.WANDER)) continue;
+    const z = s.zeds[s.zeds.length - 1];
+    const kind =
+      j === 0 && rush >= RUSH.bruteFrom && (wave === 1 || wave === 3)
+        ? ZKIND.BRUTE
+        : j === 1 && rush >= RUSH.bloaterFrom
+          ? ZKIND.BLOATER
+          : (z.kind ?? 0);
+    if (kind === ZKIND.BRUTE || kind === ZKIND.BLOATER) {
+      z.kind = kind;
+      z.hp = kindStats(kind).health;
+    }
+    z.rush = 1;
+    z.mode = ZED.SEEK;
+    z.goal = -1;
+    z.path = [];
+    put0++;
+  }
+  return put0;
+}
+
+/**
+ * 2.68: the way through what's built (and, with `boards`, the barred doors) when there's none round it: the cheapest, each piece in
+ * it weighing by the blows it takes (a barricade before a plank wall, a plank wall before a metal one: the dead go for the weak
+ * point, where the traps are), no step slipped diagonally past a piece or a wall. Before (2.67), the shortest, as if nothing stood.
+ */
+const PER_BLOW = 4;
+const BOARDS_COST = 240;
+const tcost = new Int32Array(N);
+const tfrom = new Int32Array(N);
+const tseen = new Uint32Array(N);
+let tsearch = 0;
+export function throughPath(c: City, start: number, goal: number, boards: boolean, brute: boolean): number[] | null {
+  if (start === goal || start < 0 || goal < 0) return null;
+  const grid = boards ? c.lockGrid : c.zedGrid;
+  const list = builtHere(c);
+  const hpAt = new Map<number, number>();
+  for (const p of list) if (stops(c, p[0])) hpAt.set(p[0], p[2]);
+  const open = (i: number) => !grid[i] || hpAt.has(i);
+  // (What it costs to step onto a tile: a piece's blows, the boards' while they hold.)
+  const extra = (i: number) => {
+    const hp = hpAt.get(i);
+    if (hp !== undefined) return Math.ceil(hp / (brute ? BUILD.bruteHarm : 1)) * PER_BLOW;
+    return boards && c.zedGrid[i] && !c.lockGrid[i] ? (brute ? BOARDS_COST / 4 : BOARDS_COST) : 0;
+  };
+  tsearch++;
+  // A plain binary heap of [cost, tile] packed: cost × N + tile.
+  const heap: number[] = [];
+  const push = (v: number) => {
+    heap.push(v);
+    let k = heap.length - 1;
+    while (k > 0) {
+      const up = (k - 1) >> 1;
+      if (heap[up] <= heap[k]) break;
+      [heap[up], heap[k]] = [heap[k], heap[up]];
+      k = up;
+    }
+  };
+  const pop = () => {
+    const top = heap[0];
+    const last = heap.pop()!;
+    if (heap.length) {
+      heap[0] = last;
+      let k = 0;
+      for (;;) {
+        const l = 2 * k + 1;
+        const r = l + 1;
+        let m = k;
+        if (l < heap.length && heap[l] < heap[m]) m = l;
+        if (r < heap.length && heap[r] < heap[m]) m = r;
+        if (m === k) break;
+        [heap[m], heap[k]] = [heap[k], heap[m]];
+        k = m;
+      }
+    }
+    return top;
+  };
+  tcost[start] = 0;
+  tseen[start] = tsearch;
+  tfrom[start] = -1;
+  push(start);
+  let explored = 0;
+  while (heap.length && explored++ < 4500) {
+    const v = pop();
+    const i = v % N;
+    const g = (v - i) / N;
+    if (g > tcost[i]) continue;
+    if (i === goal) {
+      const path: number[] = [];
+      for (let k = i; k !== start; k = tfrom[k]) path.push(k);
+      return path.reverse();
+    }
+    const x = i % MAP_W;
+    const z = (i - x) / MAP_W;
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dz) continue;
+        const nx = x + dx;
+        const nz = z + dz;
+        if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H) continue;
+        const j = nz * MAP_W + nx;
+        if (!open(j)) continue;
+        // (Diagonally only between two clear tiles: nothing, built or not, at either corner.)
+        if (dx && dz && (grid[i + dx] || grid[i + dz * MAP_W])) continue;
+        const ng = g + (dx && dz ? 14 : 10) + extra(j);
+        if (tseen[j] === tsearch && tcost[j] <= ng) continue;
+        tseen[j] = tsearch;
+        tcost[j] = ng;
+        tfrom[j] = i;
+        push(ng * N + j);
+      }
+  }
+  return null;
+}
+
+/** 2.68: the way to the player for one of the Rush's: round what's built when it can, else through it (the boards too). */
+function rushWay(c: City, from: number, here: number, brute: boolean): number[] {
+  return (
+    findPath(c.world, from, (i) => i === here, here, 2500, undefined, brute ? c.lockGrid : c.zedGrid) ??
+    throughPath(c, from, here, true, brute) ??
+    []
+  );
 }
 
 /** One step of the dead: the night's come and the day's go, each one looks, walks and bites. */
@@ -488,6 +643,11 @@ export function stepDead(c: City) {
     }
     // (2.58: boards hold, but not unnoticed for ever: from the third night one of the dead near by may find a sleeper's barred door.)
     if (above && night && m % 60 === 0 && s.sleeping) siege(c);
+    // (2.68: the Rush: said, begun, its waves, held.)
+    rushMinute(c);
+    if (s.over) return;
+    // (2.68: a scarecrow draws those near it who are after nobody, each minute of the night.)
+    if (above && night) scare(c);
     // The night's come a few at a time, out of sight.
     const set = going(c);
     if ((night || set === 1) && m % (set ? STORY.trickle : DEAD.trickle) === 0) {
@@ -555,13 +715,20 @@ export function stepDead(c: City) {
       z.seen = s.step;
       z.last = here;
     }
-    let speed: number = DEAD.wander;
     const brute = z.kind === ZKIND.BRUTE;
+    // (2.68: one of the Rush's knows where the player is: it looks again now and then, and comes the way through what's in the way.)
+    if (z.rush && z.mode !== ZED.CHASE && (s.step + k) % RUSH.retarget === 0 && (z.goal !== here || !z.path.length)) {
+      z.mode = ZED.SEEK;
+      z.goal = here;
+      z.path = rushWay(c, tileAt(b.x, b.z), here, brute);
+      z.pound ??= 0;
+    }
+    let speed: number = DEAD.wander;
     // (A brute goes by the doors as if nothing barred them, and pounds its way through.)
     const grid = brute ? c.lockGrid : c.zedGrid;
     if (z.mode === ZED.CHASE) {
-      // (2.58: after someone, it goes round as any of them does: the boards are a brute's to pound.)
-      if (!brute) z.pound = undefined;
+      // (2.58: after someone, it goes round as any of them does: the boards are a brute's to pound. 2.68: and the Rush's.)
+      if (!brute && !z.rush) z.pound = undefined;
       speed = kindStats(z.kind).chase;
       if (s.step - z.seen > DEAD.lose) {
         z.mode = ZED.SEEK;
@@ -596,9 +763,8 @@ export function stepDead(c: City) {
         if (z.goal !== here || (!z.path.length && (s.step + k) % 12 === 0)) {
           z.goal = here;
           z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, grid) ?? [];
-          // (2.67: no way round what's built: the way through it, to pound the first piece in it.)
-          if (!z.path.length && c.anyBuilt())
-            z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, brute ? c.openLock : c.openGrid) ?? [];
+          // (2.67: no way round what's built: the way through it, to pound the first piece in it. 2.68: the Rush's, the boards too.)
+          if (!z.path.length && (c.anyBuilt() || z.rush)) z.path = throughPath(c, tileAt(b.x, b.z), here, brute || !!z.rush, brute) ?? [];
         }
       }
     }
@@ -623,13 +789,16 @@ export function stepDead(c: City) {
         z.goal = z.path.length ? z.path[z.path.length - 1] : -1;
       } else if (z.goal >= 0 && !z.path.length && tileAt(b.x, b.z) !== z.goal) {
         z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === z.goal, z.goal, 900, undefined, c.zedGrid) ?? [];
+        // (2.68: no way round what's built: through it, for those called (the Rush, a way out set going) and one at a sleeper's door.)
+        if (!z.path.length && c.anyBuilt() && (z.rush || z.pound !== undefined || going(c) === 1))
+          z.path = throughPath(c, tileAt(b.x, b.z), z.goal, z.pound !== undefined, brute) ?? [];
         if (!z.path.length) z.goal = -1;
       }
       if (z.goal < 0 || tileAt(b.x, b.z) === z.goal) {
         z.mode = c.zedIndoor[tileAt(b.x, b.z)] && !night ? ZED.IDLE : ZED.WANDER;
         z.goal = -1;
         z.path = [];
-        if (!brute) z.pound = undefined;
+        if (!brute && !z.rush) z.pound = undefined;
       }
     }
     if (z.mode === ZED.WANDER && !z.path.length && (s.step + k * 7) % 40 === 0) {
@@ -653,7 +822,7 @@ export function stepDead(c: City) {
     // Along its way.
     const next = z.path[0];
     // (2.52: one that isn't after anyone won't step out of the dark into strong light: it turns back.)
-    if (shy && !brute && z.mode !== ZED.CHASE && c.lit[next] && !c.lit[tileAt(b.x, b.z)]) {
+    if (shy && !brute && !z.rush && z.mode !== ZED.CHASE && c.lit[next] && !c.lit[tileAt(b.x, b.z)]) {
       z.path = [];
       z.pound = undefined;
       if (z.mode === ZED.SEEK) {
@@ -671,7 +840,9 @@ export function stepDead(c: City) {
     }
     const bx = b.x;
     const bz = b.z;
-    walk(c.zedWorld, b, nearestDir(wx, wz), Math.trunc((speed * z.pace) / 1000));
+    // (2.68: in barbed wire, slowed.)
+    const wired = c.pieceAt[tileAt(b.x, b.z)] === WIRE + 1;
+    walk(c.zedWorld, b, nearestDir(wx, wz), Math.trunc((speed * z.pace * (wired ? TRAP.wireSlow : 1000)) / 1_000_000));
     // (Bodies don't pass through each other: a step into the player isn't taken, nor one of a pack's into another of it.)
     const pd = (p.x - b.x) ** 2 + (p.z - b.z) ** 2;
     if (
@@ -686,7 +857,7 @@ export function stepDead(c: City) {
     // (Against something that wasn't there when the way was found: looked for again.)
     // (A brute at a barred door: it pounds, and the boards give.)
     if (b.x === bx && b.z === bz) {
-      if ((brute || z.pound !== undefined) && c.bars.includes(next)) {
+      if ((brute || z.pound !== undefined || z.rush) && c.bars.includes(next)) {
         z.pound = (z.pound ?? 0) + 1;
         if (z.pound % 16 === 1) {
           c.events.push({ type: 'pound', tile: next });
@@ -696,18 +867,153 @@ export function stepDead(c: City) {
         // (At the boards, it knows where they went: the chase isn't given up while it pounds.)
         z.seen = s.step;
         if (z.pound >= (brute ? BRUTE.pound : SIEGE.pound)) {
-          z.pound = brute ? 0 : undefined;
+          z.pound = brute || z.rush ? 0 : undefined;
           c.breach(next);
         }
-      } else if (z.mode === ZED.CHASE && c.pieceAt[next]) {
+      } else if ((z.mode === ZED.CHASE || z.rush || z.pound !== undefined || going(c) === 1) && inWay(c, tileAt(bx, bz), next) >= 0) {
         // (2.67: a piece built in its way: pounded until it gives, the chase kept up meanwhile.)
+        // (2.68: a corner cut between two pieces, the way through them has it: one of the two.)
+        const at = inWay(c, tileAt(bx, bz), next);
         z.seen = s.step;
-        b.facing = nearestDir(centerX(next) - b.x, centerZ(next) - b.z);
-        poundPiece(c, next, brute, s.step + k);
+        b.facing = nearestDir(centerX(at) - b.x, centerZ(at) - b.z);
+        poundPiece(c, at, brute, s.step + k);
       } else {
         z.path = [];
-        if (!brute) z.pound = undefined;
+        if (!brute && !z.rush) z.pound = undefined;
       }
+    }
+  }
+  // (2.68: the traps, once everyone has moved.)
+  if (!s.over) stepTraps(c);
+}
+
+const WIRE = PIECES.findIndex((p) => p.trap === 'wire');
+/** 2.68: a piece on a tile that stops the dead (a wall, a barricade, a door; not a trap or a rug walked over). */
+const stops = (c: City, tile: number) => {
+  const def = c.pieceAt[tile] ? pieceOf(c.pieceAt[tile] - 1) : undefined;
+  return !!def && (def.solid || !!def.door);
+};
+
+/**
+ * 2.68: the piece in the way of a step from one tile to the next: on the next, or (a diagonal step, which no body takes between two
+ * things) on one of the two corners beside it. -1: none.
+ */
+function inWay(c: City, from: number, next: number): number {
+  if (stops(c, next)) return next;
+  const dx = (next % MAP_W) - (from % MAP_W);
+  const dz = Math.floor(next / MAP_W) - Math.floor(from / MAP_W);
+  if (!dx || !dz) return -1;
+  if (stops(c, from + dx)) return from + dx;
+  if (stops(c, from + dz * MAP_W)) return from + dz * MAP_W;
+  return -1;
+}
+
+/** 2.68: a trap worn by its work: a point less; at none, gone (said as a piece the dead broke). */
+function wearTrap(c: City, p: Built) {
+  const was = wornStep(p);
+  p[2]--;
+  if (wornStep(p) !== was) c.piecesRev++;
+  if (p[2] > 0) return;
+  removePiece(c, p);
+  c.events.push({ type: 'pieceDown', kind: p[1], tile: p[0], spent: true });
+}
+
+/**
+ * 2.68: the traps at work. Spikes and barbed wire hurt the dead on them (the wire slows them: `stepDead`'s walk), a snare holds one,
+ * cans on a wire rattle (heard, and a sleeper near woken), a sentry crossbow shoots the nearest it sees while it has bolts. Each wears
+ * with use. The player walks over them unharmed: they know where they are.
+ */
+function stepTraps(c: City) {
+  const s = c.state;
+  if (!c.anyBuilt() || !s.zeds.length) return;
+  const fallen: Zed[] = [];
+  const hit = (z: Zed, harm: number) => {
+    if (z.hp <= 0) return;
+    z.hp -= harm;
+    if (z.hp <= 0) fallen.push(z);
+  };
+  // On a trap's tile.
+  for (let k = 0; k < s.zeds.length; k++) {
+    const z = s.zeds[k];
+    if (isDown(z)) continue;
+    const zt = tileAt(z.body.x, z.body.z);
+    const kind = c.pieceAt[zt] - 1;
+    const trap = kind >= 0 ? PIECES[kind]?.trap : undefined;
+    if (!trap) continue;
+    const p = builtHere(c).find((q) => q[0] === zt);
+    if (!p) continue;
+    if (trap === 'spikes' && (s.step + k) % TRAP.spikesEvery === 0) {
+      hit(z, TRAP.spikesHarm);
+      c.events.push({ type: 'trap', what: 'spikes', tile: zt });
+      wearTrap(c, p);
+    } else if (trap === 'wire' && (s.step + k) % TRAP.wireEvery === 0) {
+      hit(z, TRAP.wireHarm);
+      c.events.push({ type: 'trap', what: 'wire', tile: zt });
+      wearTrap(c, p);
+    } else if (trap === 'snare' && p[4] <= s.step && z.reel <= 0) {
+      // (Held where it stands: not a brute, which tears free.)
+      if (z.kind === ZKIND.BRUTE) continue;
+      z.reel = TRAP.snareHold;
+      z.body.moving = false;
+      p[4] = s.step + TRAP.snareHold + TRAP.snareRearm;
+      c.events.push({ type: 'trap', what: 'snare', tile: zt });
+      wearTrap(c, p);
+    }
+  }
+  // The pieces that look about them: cans (every fifth step), and sentries (each on its own beat).
+  for (const p of [...builtHere(c)]) {
+    const trap = PIECES[p[1]]?.trap;
+    if (trap === 'cans' && (s.step + p[0]) % 5 === 0 && p[4] <= s.step) {
+      const near = s.zeds.some((z) => !isDown(z) && cheb(tileAt(z.body.x, z.body.z), p[0]) <= TRAP.cansReach);
+      if (!near) continue;
+      p[4] = s.step + TRAP.cansRearm;
+      c.events.push({ type: 'trap', what: 'cans', tile: p[0] });
+      // (Heard: by the dead near, and by a sleeper within reach, who wakes in time.)
+      noise(c, p[0], TRAP.cansHeard);
+      if (s.sleeping && cheb(p[0], c.tile) <= TRAP.cansWake) c.wakeNow('rattle');
+      wearTrap(c, p);
+    } else if (trap === 'sentry' && p[4] % BUILD.sentryWear > 0 && (s.step + p[0]) % TRAP.sentryEvery === 0) {
+      const sx = centerX(p[0]);
+      const sz = centerZ(p[0]);
+      let best: Zed | null = null;
+      let bestD = (TRAP.sentryReach * UNIT) ** 2 + 1;
+      for (const z of s.zeds) {
+        if (isDown(z) || z.hp <= 0) continue;
+        const d = (z.body.x - sx) ** 2 + (z.body.z - sz) ** 2;
+        if (d < bestD && lineOfSight(c.world, sx, sz, z.body.x, z.body.z, p[0])) {
+          bestD = d;
+          best = z;
+        }
+      }
+      if (!best) continue;
+      p[4]--;
+      hit(best, TRAP.sentryHarm);
+      c.events.push({ type: 'trap', what: 'sentry', tile: p[0], x: best.body.x, z: best.body.z });
+      noise(c, p[0], 2);
+    }
+  }
+  if (fallen.length) putDown(c, fallen);
+}
+
+/** 2.68: each minute of the night, a scarecrow draws those within reach who are after nobody (not the Rush's: they know better). */
+function scare(c: City) {
+  const s = c.state;
+  if (!c.anyBuilt()) return;
+  for (const p of builtHere(c)) {
+    if (PIECES[p[1]]?.trap !== 'scare') continue;
+    // (To a tile beside it: it stands in the way itself.)
+    const x = p[0] % MAP_W;
+    const by = [p[0] + MAP_W, p[0] - MAP_W, x < MAP_W - 1 ? p[0] + 1 : -1, x > 0 ? p[0] - 1 : -1].find(
+      (t) => t >= 0 && t < N && !c.zedGrid[t],
+    );
+    if (by === undefined) continue;
+    for (const z of s.zeds) {
+      if (z.mode === ZED.CHASE || z.rush || z.pound !== undefined || isDown(z) || z.goal === by) continue;
+      const zt = tileAt(z.body.x, z.body.z);
+      if (cheb(zt, p[0]) > TRAP.scareReach || cheb(zt, p[0]) <= 1) continue;
+      z.mode = ZED.SEEK;
+      z.goal = by;
+      z.path = [];
     }
   }
 }

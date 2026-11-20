@@ -35,6 +35,7 @@ import {
   type Built,
   type BuildWhy,
 } from './build';
+import { baseReturned, freshRush, leftDistrict, noSleep, rushCrossing, rushOnWaking, soundRush } from './rush';
 import {
   atWork,
   breakStep,
@@ -152,7 +153,7 @@ const TIDE_WAKE = 30;
 /** 2.65: a checkpoint held back during a last night: steps another step on it still crosses, once the stick is let go. */
 const LEAVE_WARN = 200;
 /** Why a sleeper woke (2.65: a rest by day, at dusk; the boat ready, for its tide; `rested` and its early waking gone). */
-export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding';
+export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding' | 'rattle';
 /** A Survivor who fell wakes at home the next morning with this much health, hunger and energy. */
 const WAKE = { health: 40, hunger: 15_000, energy: 60_000 };
 /** A pile's most slots (what a save takes). */
@@ -279,6 +280,12 @@ export interface CityState {
   holes: Record<string, number[]>;
   // 2.67, optional on load (sim/build.ts): the pieces built, by district: [tile, kind, health, facing, more].
   built: Record<string, Built[]>;
+  // 2.68, optional on load (sim/rush.ts): the Rushes held; the step each place was last left (0: never, or back since; empty: none yet).
+  held: number;
+  left: number[];
+  /** The waves put down this Rush, [its night, how many]; the Rush's dead about at a crossing, coming after the player. */
+  waves: number[];
+  follow: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -338,7 +345,8 @@ export type CityEvent =
         | 'crowbar'
         | 'cutters'
         | 'tooHard'
-        | 'sledge';
+        | 'sledge'
+        | 'rush';
     }
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
@@ -369,7 +377,14 @@ export type CityEvent =
   | { type: 'built'; kind: number; tile: number }
   | { type: 'repaired'; kind: number; tile: number }
   | { type: 'unbuilt'; kind: number; tile: number }
-  | { type: 'pieceDown'; kind: number; tile: number }
+  | { type: 'pieceDown'; kind: number; tile: number; spent?: boolean }
+  /**
+   * 2.68: the Rush: said (`warn`, minutes to nightfall), begun, a wave come (its number, how many), held (supplies on `tile`); a trap
+   * at work (a sentry's shot at x, z); back at a base after nights away (how many pieces damaged, lost).
+   */
+  | { type: 'rush'; what: 'warn' | 'begin' | 'wave' | 'held'; n: number; soon?: number; wave?: number; size?: number; tile?: number }
+  | { type: 'trap'; what: 'spikes' | 'wire' | 'snare' | 'cans' | 'sentry'; tile: number; x?: number; z?: number }
+  | { type: 'baseHeld'; damaged: number; lost: number; nights: number }
   | { type: 'cantBuild'; why: BuildWhy }
   | { type: 'fed'; tile: number }
   /** 2.59: somebody's clothes found and put on. */
@@ -442,6 +457,7 @@ export class City {
         ...freshTools(),
         ...freshSalvage(),
         ...freshBuild(),
+        ...freshRush(),
       }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
@@ -464,6 +480,7 @@ export class City {
         ...freshTools(),
         ...freshSalvage(),
         ...freshBuild(),
+        ...freshRush(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -524,6 +541,7 @@ export class City {
     this.close();
     const d = this.story.wayDistrict[2];
     this.surface();
+    baseReturned(this);
     this.events.push({ type: 'travel', from: TUNNEL, to: d, side: SIDE.E, first: false });
     // (Not a way out of a chase: up there the generator's din calls the station's dead, and down again the tunnel's come.)
     this.climbed = true;
@@ -546,6 +564,8 @@ export class City {
     this.close();
     const from = s.district;
     const first = ((s.visited >> TUNNEL) & 1) === 0;
+    // (2.68, the review: the station's district left for the tunnel, a base there takes the nights as any left.)
+    leftDistrict(this, from);
     this.enter(TUNNEL);
     // (2.65: a step in from the stairs' foot, whose tile is now the way back up: a second press at the gates doesn't climb straight back.)
     const at = this.tunnel.way[1] ?? this.tunnel.start;
@@ -927,7 +947,7 @@ export class City {
   private heldOn = -1;
 
   /** Woken (the dead's bite). */
-  wakeNow(why: 'attacked' | 'pounding') {
+  wakeNow(why: 'attacked' | 'pounding' | 'rattle') {
     if (this.state.sleeping) this.wake(why);
   }
   private wake(why: Woken) {
@@ -973,7 +993,10 @@ export class City {
     this.firesRev++;
     const [d, tile] = s.home;
     const moved = d !== s.district;
-    if (moved) this.enter(d);
+    if (moved) {
+      leftDistrict(this, s.district);
+      this.enter(d);
+    }
     s.arrive = 1;
     s.zeds = [];
     s.player = bodyAt(tile % MAP_W, Math.floor(tile / MAP_W));
@@ -986,6 +1009,10 @@ export class City {
     // (Hunger is not mended by a fall: a little, so the morning isn't spent starving again at once.)
     s.hunger = Math.max(s.hunger, WAKE.hunger);
     s.energy = Math.max(s.energy, WAKE.energy);
+    // (2.68: carried home past a night: the base there, if any, took it; a Rush's day said on waking.)
+    if (moved) baseReturned(this);
+    s.follow = 0;
+    rushOnWaking(this);
     this.look();
     // (Woken where the city began, unless a bed was slept in since: as `home` says, not a flag, which a save's mending can part from it.)
     const sp = this.districtOf(this.plan.start).spawn;
@@ -1279,6 +1306,8 @@ export class City {
   private sleep() {
     const s = this.state;
     if (s.hunger === 0) return void this.events.push({ type: 'refused', why: 'tooHungry' });
+    // (2.68: not on the Rush's night: from 20:00 until 05:00.)
+    if (noSleep(this)) return void this.events.push({ type: 'refused', why: 'rush' });
     s.sleeping = true;
     // (2.52: the torch isn't left burning through the night.)
     s.torchOn = 0;
@@ -1576,6 +1605,14 @@ export class City {
   }
 
   /** New things into slots: a weapon each in a slot of its own with all its blows, the rest as `put`. */
+  /** 2.68: a thing that wears handed back with so many blows left (a sentry's crossbow taken down). */
+  handWorn(item: number, blows: number) {
+    if (this.put(this.state.inv, POCKETS, item, blows)) {
+      this.put(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, item, blows);
+      this.events.push({ type: 'full' });
+    }
+    this.events.push({ type: 'took', item, n: 1 });
+  }
   private give(into: Stack[], slots: number, item: number, n: number): number {
     const wear = cityItem(item)?.wear;
     return wear === undefined ? this.put(into, slots, item, n) : this.put(into, slots, item, wear);
@@ -1631,7 +1668,11 @@ export class City {
     this.close();
     const from = s.district;
     const first = ((s.visited >> gate.to) & 1) === 0;
+    // (2.68: the step the district was left: a base there takes the nights meanwhile; the Rush's dead about, to follow.)
+    leftDistrict(this, from);
+    rushCrossing(this);
     this.enter(gate.to);
+    baseReturned(this);
     const p = s.player;
     if (gate.side === SIDE.N) p.z = (MAP_H - 2) * UNIT + UNIT / 2;
     else if (gate.side === SIDE.S) p.z = UNIT + UNIT / 2;
@@ -1749,6 +1790,7 @@ const zedsOk = (list: unknown): list is Zed[] =>
       (z.kind === undefined || (Number.isInteger(z.kind) && z.kind >= 1 && z.kind <= 5)) &&
       (z.pound === undefined || (Number.isInteger(z.pound) && z.pound >= 0)) &&
       (z.down === undefined || (Number.isInteger(z.down) && z.down > 0 && z.down <= DOWN.steps)) &&
+      (z.rush === undefined || z.rush === 1) &&
       Array.isArray(z.path) &&
       z.path.every((i) => Number.isInteger(i) && i >= 0 && i < N),
   );
@@ -1792,6 +1834,7 @@ export function loadCity(snap: unknown): City | null {
   soundTools(st);
   soundSalvage(st);
   soundBuild(st);
+  soundRush(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

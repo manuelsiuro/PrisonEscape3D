@@ -70,7 +70,9 @@ for (let seed = 1; seed <= SEEDS; seed++) {
 }
 // (2.61: bites bleed and the dead only go down to a blunt blow, the blow followed through: on 100 cities 1.82 falls a week before,
 // 1.91 after; these ten read 2.3 and 1.6.)
-check(total.deaths <= SEEDS * 2.5, `the scavenger fell ${total.deaths} times in ${SEEDS} weeks: the dead are too many`);
+// (2.68: the Rush, nights 3 and 6 of its week: it never builds or hides, and falls on about 38 Rush nights in 100. On 80 cities
+// 1.1 and 1.2 falls a week without it, 2.9 and 3.1 with it.)
+check(total.deaths <= SEEDS * 3.5, `the scavenger fell ${total.deaths} times in ${SEEDS} weeks: the dead are too many`);
 check(total.kills >= SEEDS * 5, `the scavenger put down only ${total.kills} of the dead in ${SEEDS} weeks: where are they?`);
 say(
   `${SEEDS} cities, a scavenger bot ${DAYS} days in each, the dead about: it fell ${per(total.deaths)} times a week (it fights what comes in reach and never hides)`,
@@ -240,7 +242,8 @@ const idle = (c: City, minutes: number) => {
   // A save from before the revision keeps its rules (what its furniture holds); a new city has the newest.
   const c = new City(4);
   c.step(0);
-  check(c.state.rev === CITY_REV && CITY_REV === 3, `a new city's rules: ${c.state.rev}`);
+  // (2.68's revision, 4, brings the Rush: what the furniture holds is revision 3's.)
+  check(c.state.rev === CITY_REV && CITY_REV === 4, `a new city's rules: ${c.state.rev}`);
   const old = JSON.parse(JSON.stringify(c.snapshot()));
   delete old.state.rev;
   check(loadCity(old)?.state.rev === 0, 'a save from before the revision takes the newest rules');
@@ -248,7 +251,7 @@ const idle = (c: City, minutes: number) => {
   odd.state.rev = 99;
   check(loadCity(odd)?.state.rev === 0, 'a revision that is not is kept');
   say(
-    `the rules' revision: a city begun from 2.67 is 3, from 2.66 2, from 2.64 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before 2.64, then ${tally[1].boards}, ${tally[2].boards} and ${tally[3].boards}, a bat found in ${tally[0].bat}, ${tally[1].bat}, ${tally[2].bat} and ${tally[3].bat}`,
+    `the rules' revision: a city begun from 2.68 is 4 (the Rush), from 2.67 3, from 2.66 2, from 2.64 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before 2.64, then ${tally[1].boards}, ${tally[2].boards} and ${tally[3].boards}, a bat found in ${tally[0].bat}, ${tally[1].bat}, ${tally[2].bat} and ${tally[3].bat}`,
   );
 }
 

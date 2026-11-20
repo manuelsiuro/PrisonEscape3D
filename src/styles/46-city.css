@@ -586,6 +586,34 @@
   opacity: 0.8;
 }
 
+/* 2.68: the Rush: due tonight (a warning), then under way (red, a slow pulse). */
+.city-rush {
+  flex: none;
+  gap: 5px;
+  margin-left: 6px;
+  padding: 3px 10px 3px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--city-night-17);
+  background: rgba(var(--city-amber-83-rgb), 0.92);
+}
+.hud .city-rush .ic {
+  color: inherit;
+}
+.city-rush.on {
+  color: var(--white);
+  background: rgba(var(--city-you-65-rgb), 0.9);
+  animation: city-rush-beat 1.6s ease-in-out infinite;
+}
+@keyframes city-rush-beat {
+  50% {
+    background: rgba(var(--city-you-65-rgb), 0.65);
+  }
+}
+body.reduced-motion .city-rush.on {
+  animation: none;
+}
+
 /* A bite: the screen's edges flash red. */
 .city-bitten {
   position: fixed;
@@ -763,6 +791,10 @@
   }
 
   .cm-health.bleeding .cm-drip {
+    animation: none;
+  }
+
+  .city-rush.on {
     animation: none;
   }
 }

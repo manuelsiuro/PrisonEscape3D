@@ -8,6 +8,7 @@ import { PEOPLE } from '../content/people';
 import { CITY_RECIPES } from '../content/recipes';
 import { COP, PIECE_OPS, POCKETS, type Stack, type Target } from '../sim/City';
 import { PIECES } from '../content/build';
+import { TRAP } from '../content/rush';
 
 /** 2.67: each piece's icon in the Build panel. */
 const PIECE_ICONS: Record<string, Parameters<typeof icon>[0]> = {
@@ -22,6 +23,12 @@ const PIECE_ICONS: Record<string, Parameters<typeof icon>[0]> = {
   table: 'utensils',
   chair: 'person',
   rug: 'sparkle',
+  spikes: 'pick',
+  barbedWire: 'needle',
+  snare: 'hook',
+  cans: 'bell',
+  scarecrow: 'shirt',
+  sentry: 'target',
 };
 
 /** What the pockets, the open box and the action button show (C2), worked out by the play layer each frame. */
@@ -76,6 +83,8 @@ export interface PieceCard {
   canRepair: 'ok' | 'hammer' | 'parts' | 'full';
   fire: number;
   chest: boolean;
+  /** 2.68: a sentry's bolts (-1: not one). */
+  bolts: number;
 }
 
 /** The city's things photographed (by item number; 0 unused), once. */
@@ -322,10 +331,10 @@ export class CityPockets {
         const pc = s.piece;
         const cost = pc?.repair.map(([item, n]) => counted(item, n)).join(', ') ?? '';
         const pieceNote = pc
-          ? `<p class="card-note city-piece">${icon('shield', 14)} ${t('city.piece.health', { n: pc.hp, of: pc.max })}${pc.fire >= 0 ? ` · ${pc.fire > 0 ? t('city.piece.burns', { h: Math.max(1, Math.round(pc.fire / 60)) }) : t('city.piece.out')}` : ''}${pc.canRepair !== 'full' ? ` · ${t('city.piece.repairCost', { what: cost })}` : ''}</p>`
+          ? `<p class="card-note city-piece">${icon('shield', 14)} ${t('city.piece.health', { n: pc.hp, of: pc.max })}${pc.fire >= 0 ? ` · ${pc.fire > 0 ? t('city.piece.burns', { h: Math.max(1, Math.round(pc.fire / 60)) }) : t('city.piece.out')}` : ''}${pc.bolts >= 0 ? ` · ${t('city.piece.bolts', { n: pc.bolts, of: TRAP.sentryMost })}` : ''}${pc.canRepair !== 'full' ? ` · ${t('city.piece.repairCost', { what: cost })}` : ''}</p>`
           : '';
         const pieceBtns = pc
-          ? `${pc.fire >= 0 ? `<button class="big-btn" data-c="feed">${icon('flame', 16)}${t(pc.fire > 0 ? 'city.piece.feed' : 'city.piece.light')}</button>` : ''}${pc.canRepair !== 'full' ? `<button class="big-btn ghost" data-c="repair"${pc.canRepair === 'ok' ? '' : ' aria-disabled="true"'}>${icon('wrench', 16)}${t('city.piece.repair')}</button>` : ''}<button class="big-btn ghost" data-c="down">${icon('down', 16)}${t('city.piece.down')}</button>`
+          ? `${pc.fire >= 0 ? `<button class="big-btn" data-c="feed">${icon('flame', 16)}${t(pc.fire > 0 ? 'city.piece.feed' : 'city.piece.light')}</button>` : ''}${pc.bolts >= 0 && pc.bolts < TRAP.sentryMost ? `<button class="big-btn" data-c="feed">${icon('target', 16)}${t('city.piece.load')}</button>` : ''}${pc.canRepair !== 'full' ? `<button class="big-btn ghost" data-c="repair"${pc.canRepair === 'ok' ? '' : ' aria-disabled="true"'}>${icon('wrench', 16)}${t('city.piece.repair')}</button>` : ''}<button class="big-btn ghost" data-c="down">${icon('down', 16)}${t('city.piece.down')}</button>`
           : '';
         this.panel.innerHTML = `<div class="box-head"><b>${t(s.box as Key)}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${

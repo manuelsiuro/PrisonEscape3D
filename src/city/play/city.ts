@@ -48,6 +48,8 @@ import { cityItemNumber } from '../content/items';
 import { breaker, workOf, workTotal } from '../sim/salvage';
 import { BUILD, PIECES } from '../content/build';
 import { buildList, buildSpot, builtList, canBuild, comfortAt, lacking, pieceAtTile, repairCost, wornStep } from '../sim/build';
+import { rushDue, rushNumber, wavesIn } from '../sim/rush';
+import { RUSH } from '../content/rush';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
@@ -360,6 +362,8 @@ async function openJournal() {
 let tipped = -1e9;
 let fellHeard = -1e9;
 let crackled = -1e9;
+/** 2.68: when a trap was last heard (spikes under a pack aren't a drum roll). */
+let trapHeard = -1e9;
 const now = () => performance.now();
 function tip(name: string, key: Key, urgent = false) {
   if (seenTip(name) || (!urgent && now() - tipped < 8000)) return;
@@ -770,7 +774,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
         if (e.why && e.why !== 'stirred')
           banner.toast(
             t(`city.toast.woke.${e.why}` as Key),
-            e.why === 'hungry' || e.why === 'attacked' || e.why === 'pounding' ? 'bad' : 'good',
+            e.why === 'hungry' || e.why === 'attacked' || e.why === 'pounding' || e.why === 'rattle' ? 'bad' : 'good',
             3000,
           );
         if (e.why === 'pounding') tip('city.siege', 'city.tip.siege');
@@ -865,7 +869,9 @@ function cityEvent(r: CityRun, e: CityEvent) {
       tip('city.crawler', 'city.tip.crawler');
       break;
     case 'dusk':
-      tip('city.dusk', 'city.tip.dusk');
+      // (2.68: a Rush's day: its own warning says what the night is; no sleep to think about.)
+      if (rushDue(c) > 0 && e.soon > 60) break;
+      if (rushDue(c) < 0) tip('city.dusk', 'city.tip.dusk');
       banner.show(t('city.dusk.title'), t(e.soon > 60 ? 'city.dusk.two' : 'city.dusk.half'), 'alarm', 5200, 'moon');
       sound.chime();
       break;
@@ -924,11 +930,70 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'pieceDown':
       sound.dud();
       sound.pound();
-      banner.toast(t('city.toast.pieceDown', { what: t(`city.piece.${PIECES[e.kind]?.id ?? 'barricade'}` as Key) }), 'bad', 3200);
+      // (2.68: a trap worn out by its work is spent, not broken through.)
+      banner.toast(
+        t(e.spent ? 'city.toast.spent' : 'city.toast.pieceDown', { what: t(`city.piece.${PIECES[e.kind]?.id ?? 'barricade'}` as Key) }),
+        'bad',
+        3200,
+      );
       save(r);
       break;
     case 'cantBuild':
       banner.toast(t(`city.build.why.${e.why}` as Key), 'info', 2400, 'bulb');
+      break;
+    // 2.68: the Rush: said at dawn and before dusk, begun, each wave, held (supplies dropped); the traps at work; a base come back to.
+    case 'rush':
+      if (e.what === 'warn') {
+        sound.sting();
+        banner.show(t('city.rush.warn.title'), t(e.soon! > 180 ? 'city.rush.warn.dawn' : 'city.rush.warn.dusk'), 'alarm', 6400, 'siren');
+        // (Dispatch says it too, with the radio found: a line of her own each time, not one of the story's said once.)
+        if (c.state.kit & 1) {
+          sound.crackle();
+          cityHud.say(t(`city.rush.say.${Math.min(3, rushNumber(e.n))}` as Key));
+        }
+        tip('city.rush', 'city.tip.rush');
+      } else if (e.what === 'begin') {
+        sound.sting();
+        banner.show(t('city.rush.begin.title'), t('city.rush.begin.sub'), 'alarm', 6000, 'siren');
+      } else if (e.what === 'wave') {
+        sound.roar();
+        view.jolt(0.25);
+        buzz('missed');
+        banner.toast(t('city.rush.wave', { n: e.wave!, of: RUSH.waves.length, k: e.size! }), 'bad', 3600);
+      } else {
+        sound.parcelThump();
+        sound.cheer();
+        banner.show(t('city.rush.held.title'), t('city.rush.held.sub'), 'routine', 6000, 'gift');
+        save(r);
+      }
+      break;
+    case 'trap': {
+      const x = (e.tile % MAP_W) + 0.5;
+      const z = Math.floor(e.tile / MAP_W) + 0.5;
+      // (A trap's sound at most every so often: spikes under a pack would be a drum roll.)
+      const at = now();
+      if (e.what === 'sentry') {
+        cityView.throwFx({ x, z }, { x: e.x! / UNIT, z: e.z! / UNIT }, 'bolt');
+        sound.twang();
+      } else if (e.what === 'cans') {
+        sound.diceRattle();
+        banner.toast(t('city.toast.cans'), 'bad', 2400);
+      } else if (at - trapHeard > 350) {
+        trapHeard = at;
+        if (e.what === 'snare') sound.stamp();
+        else sound.thwack();
+        view.puff(x, z, e.what === 'spikes' ? 0x8a2a22 : 0x6a5a4a, 5);
+      }
+      break;
+    }
+    case 'baseHeld':
+      banner.show(
+        t('city.base.title'),
+        e.damaged || e.lost ? t(e.lost ? 'city.base.lost' : 'city.base.damaged', { n: e.damaged, k: e.lost }) : t('city.base.whole'),
+        e.lost ? 'alarm' : 'routine',
+        5200,
+        'home',
+      );
       break;
     case 'fed':
       sound.ignite();
@@ -1337,6 +1402,8 @@ function pocketsOf(r: CityRun): PocketsState {
                   : 'ok',
           fire: bdef.id !== 'campfire' ? -1 : fire && fire[2] > s.step ? Math.ceil((fire[2] - s.step) / STEPS_PER_MINUTE) : 0,
           chest: bdef.id === 'chest',
+          // (2.68: a sentry's bolts.)
+          bolts: bdef.trap === 'sentry' ? bp[4] % BUILD.sentryWear : -1,
         }
       : null;
   // (2.66: the open piece, if it breaks: what it gives, and whether anything carried can break it.)
@@ -1464,6 +1531,17 @@ function hudOf(r: CityRun): CityHudState {
   // (2.53: the first time in a building's dark by day.)
   if (out && !darkNow(c) && st.light !== LEVEL.LIT && !r.paused && !c.state.sleeping) tip('city.dark', 'city.tip.dark');
   st.torch = lamp ? -1 : torch ? c.state.torch : 0;
+  // (2.68: the Rush due tonight, from dawn: the time left to its first wave; under way, the wave and the hour it ends.)
+  const due = rushDue(c);
+  st.rushOn = due === 0;
+  st.rush =
+    due < 0
+      ? ''
+      : due === 0
+        ? wavesIn(c)
+          ? t('city.rush.hud.wave', { n: wavesIn(c), of: RUSH.waves.length })
+          : t('city.rush.hud.on')
+        : t('city.rush.hud.due', { t: `${Math.floor(due / 60)}:${String(due % 60).padStart(2, '0')}` });
   const goal = goalOf(r);
   st.goal = goal.text;
   st.marks = goal.marks;
