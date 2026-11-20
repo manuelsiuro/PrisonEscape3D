@@ -4,7 +4,8 @@ import { BUILD, COMFORT, PIECE, PIECES, pieceOf, type PieceDef } from '../conten
 import { cityItem, cityItemNumber } from '../content/items';
 import { LIGHT_KIND } from '../content/light';
 import { TRAP } from '../content/rush';
-import { BAG } from './gear';
+import { BAG, knowsManual, manualExists } from './gear';
+import { growingOp, newGrowing } from './survival';
 import { STEPS_PER_MINUTE } from '../../sim/tuning';
 import { TUNNEL } from '../gen/tunnel';
 import type { City, Stack } from './City';
@@ -84,7 +85,9 @@ export function buildSpot(c: City): number {
   return t;
 }
 
-export type BuildWhy = 'ok' | 'hammer' | 'parts' | 'most' | 'here' | 'blocked' | 'gate' | 'people' | 'story';
+export type BuildWhy = 'ok' | 'hammer' | 'parts' | 'most' | 'here' | 'blocked' | 'gate' | 'people' | 'story' | 'unknown';
+/** 2.70: a piece from a manual not read (in a city begun from then). */
+const unknownPiece = (c: City, def: PieceDef) => def.manual !== undefined && !knowsManual(c, def.manual);
 
 const cheb = (a: number, b: number) =>
   Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
@@ -93,6 +96,7 @@ const cheb = (a: number, b: number) =>
 export function canBuild(c: City, kind: number, tile: number): BuildWhy {
   const def = pieceOf(kind);
   if (!def) return 'parts';
+  if (unknownPiece(c, def)) return 'unknown';
   if (!c.count(HAMMER)) return 'hammer';
   if (lacking(c, def.from).length) return 'parts';
   const s = c.state;
@@ -152,6 +156,8 @@ export function startPiece(c: City, what: number) {
   }
   if (what === 1) return begin(c, `t${tile}`, BUILD.downSteps);
   if (what === 2) return feed(c, p);
+  // (2.70: a planter's seeds, its watering, its harvest; a barrel's drink, a bottle filled at it.)
+  if (what >= 3) return growingOp(c, p, what);
 }
 function begin(c: City, key: string, steps: number) {
   const s = c.state;
@@ -191,6 +197,7 @@ export function finishBuild(c: City, key: string) {
     builtHere(c).push([tile, kind, def.hp, s.player.facing, blows * BUILD.sentryWear]);
     changed(c);
     if (kind === PIECE.campfire) addLight(c, tile, LIGHT_KIND.CAMP, BUILD.fireMinutes);
+    newGrowing(c, builtHere(c)[builtHere(c).length - 1]);
     c.events.push({ type: 'built', kind, tile });
     return;
   }
@@ -330,8 +337,18 @@ export const openCot = (c: City): number => {
 export const pieceSlots = (c: City, key: string): number => (c.pieceAt[Number(key.slice(1))] === PIECE.chest + 1 ? BUILD.chestSlots : 0);
 
 /** The pieces the Build panel lists, with what each lacks now ('ok'). */
-export const buildList = (c: City): Array<'ok' | 'hammer' | 'parts'> =>
-  PIECES.map((def) => (!c.count(HAMMER) ? 'hammer' : lacking(c, def.from).length ? 'parts' : 'ok'));
+export const buildList = (c: City): Array<'ok' | 'hammer' | 'parts' | 'unknown' | 'none'> =>
+  PIECES.map((def) =>
+    def.manual !== undefined && !manualExists(c, def.manual)
+      ? 'none'
+      : unknownPiece(c, def)
+        ? 'unknown'
+        : !c.count(HAMMER)
+          ? 'hammer'
+          : lacking(c, def.from).length
+            ? 'parts'
+            : 'ok',
+  );
 
 /** What a piece's name is in the text tables. */
 export const pieceName = (kind: number) => `city.piece.${PIECES[kind]?.id ?? 'barricade'}`;

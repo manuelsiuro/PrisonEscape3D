@@ -5,6 +5,8 @@ import { PIECES, pieceOf, BUILD } from '../content/build';
 import { RUSH, TRAP, BASE_SIEGE } from '../content/rush';
 import { rushFollows, rushMinute } from './rush';
 import { armourBite, hiddenBy, inSmoke } from './gear';
+import { blowShare, fogSight, rainingNow } from './survival';
+import { RAIN_HEARING } from '../content/survival';
 import { lineOfSight } from '../../sim/ai/sight';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import { randomInt } from '../../sim/rng';
@@ -246,6 +248,8 @@ export function populate(c: City) {
 export function noise(c: City, tile: number, reach: number, again = false) {
   // (The docks' fog, the boat ready: sound carries.)
   if (going(c) === 2) reach *= STORY.fogHearing;
+  // (2.70: in the rain or a storm, half as far.)
+  if (rainingNow(c)) reach = Math.ceil((reach * RAIN_HEARING) / 100);
   for (const z of c.state.zeds) {
     if (z.mode === ZED.CHASE || isDown(z)) continue;
     // (2.58: one at a sleeper's boards isn't called off them by what it hears behind them.)
@@ -343,7 +347,8 @@ export function strike(c: City) {
     if (work && canWork(c, work)) return startBreak(c, work);
   }
   s.swung = s.step;
-  s.energy = Math.max(0, s.energy - BLOW.energy);
+  // (2.70: rested, a blow costs half.)
+  s.energy = Math.max(0, s.energy - Math.trunc((BLOW.energy * blowShare(c)) / 1000));
   noise(c, c.tile, BLOW.noise);
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
   // (One of the dead struck: what was being broken is left.)
@@ -672,7 +677,9 @@ export function stepDead(c: City) {
   const shown = night && c.anyLight ? c.lit[here] === 1 : false;
   const dark = (night ? !shown : c.dim[here] === 1 && !c.lit[here]) && !torchLit(c) && !lampLit(c);
   // (Asleep in strong light, they lie in plain view: seen as far as anyone is at night.)
-  const seen0 = s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay;
+  const seen1 = s.sleeping ? (shown ? DEAD.sightNight : DEAD.sightAsleep) : fog ? STORY.fogSight : dark ? DEAD.sightNight : DEAD.sightDay;
+  // (2.70: the morning fog: three tiles at the most.)
+  const seen0 = fogSight(c) ? Math.min(seen1, fogSight(c)) : seen1;
   // (2.69: a poncho worn, awake: seen a tile less, never under two.)
   const sight = Math.max(Math.min(seen0, 2), seen0 - (s.sleeping ? 0 : hiddenBy(c))) * UNIT;
   // (2.69: in a smoke cloud, nobody is seen, and nobody sees out of it.)

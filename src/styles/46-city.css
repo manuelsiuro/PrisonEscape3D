@@ -17,6 +17,7 @@
   --city-folk-78: #6fd0c4;
   --city-health-70: #ff6b6b;
   --city-energy-80: #7fc8ff;
+  --city-water-72: #5ab8d8;
   --city-you-65: #ff5a4a;
   --city-you-65-rgb: 255, 90, 74;
 }
@@ -383,6 +384,52 @@
 
 .cm-energy {
   color: var(--city-energy-80);
+}
+
+/* 2.70: thirst; the states (a chip each, good or bad). */
+.cm-thirst {
+  color: var(--city-water-72);
+}
+.city-moods {
+  margin-top: 5px;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.city-mood {
+  flex: none;
+  gap: 4px;
+  padding: 3px 9px 3px 6px;
+  font-size: 11.5px;
+  color: var(--city-moon-86);
+  background: rgba(var(--city-night-26-rgb), 0.85);
+}
+.city-mood.good {
+  color: var(--city-home-86);
+}
+.city-mood.bad {
+  color: var(--city-health-70);
+}
+/* Four meters on a narrow screen: shorter bars. */
+@media (max-width: 620px) {
+  .city-meters:has(.cm-thirst:not(.hidden)) .city-meter > i {
+    width: 44px;
+  }
+}
+/* (A narrow screen: the states wrap short of the corner map.) */
+@media (max-width: 620px) {
+  .city-moods {
+    max-width: calc(100vw - 140px - env(safe-area-inset-right));
+  }
+}
+/* (A phone held upright: four meters clear of the corner map.) */
+@media (max-width: 440px) {
+  .city-meters:has(.cm-thirst:not(.hidden)) .city-meter > i {
+    width: 28px;
+  }
+  .city-meters:has(.cm-thirst:not(.hidden)) .city-meter {
+    padding: 4px 6px 4px 5px;
+    gap: 4px;
+  }
 }
 
 .city-meter.low {

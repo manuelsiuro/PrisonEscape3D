@@ -51,7 +51,25 @@ import {
   useTrick,
   walkKept,
   wantsShop,
+  manualExists,
 } from './gear';
+import {
+  ate,
+  atWater,
+  castDone,
+  energyShare,
+  freshNeeds,
+  hungerTimes,
+  mendDivisor,
+  moodOn,
+  needsMinute,
+  needsOn,
+  parched,
+  smokerBeside,
+  soundNeeds,
+  waterBeside,
+  wokeRested,
+} from './survival';
 import {
   atWork,
   breakStep,
@@ -173,7 +191,7 @@ const TIDE_WAKE = 30;
 /** 2.65: a checkpoint held back during a last night: steps another step on it still crosses, once the stick is let go. */
 const LEAVE_WARN = 200;
 /** Why a sleeper woke (2.65: a rest by day, at dusk; the boat ready, for its tide; `rested` and its early waking gone). */
-export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding' | 'rattle';
+export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding' | 'rattle' | 'parched';
 /** A Survivor who fell wakes at home the next morning with this much health, hunger and energy. */
 const WAKE = { health: 40, hunger: 15_000, energy: 60_000 };
 /** A pile's most slots (what a save takes). */
@@ -200,7 +218,7 @@ const empty = (): Stack => [0, 0];
 
 /** What the action button would do now: search a piece of furniture, look at what lies on the ground, sleep in a bed. */
 export interface Target {
-  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane' | 'wall' | 'piece';
+  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane' | 'wall' | 'piece' | 'water';
   /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile; 2.58: a locked door: 'k' + its tile, a fence: 'f' + its first tile). */
   key: string;
   tile: number;
@@ -313,6 +331,11 @@ export interface CityState {
   bag: number;
   smoke: number[][];
   ticks: number[][];
+  // 2.70, optional on load (sim/survival.ts): thirst (0–FULL); the step each state lasts till (MOOD's place; 0 none).
+  thirst: number;
+  moods: number[];
+  /** 2.70: the step the last sleep began (rested from a night of six hours). */
+  sleptAt: number;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -345,7 +368,7 @@ export type CityEvent =
   | { type: 'snared' }
   /** C2c: a thing made (or why not); a weapon worn out; a door barred or its boards taken down (the work begun, then done). */
   | { type: 'made'; item: number }
-  | { type: 'cantMake'; why: 'parts' | 'bench' | 'stove' | 'unknown' | 'shop' }
+  | { type: 'cantMake'; why: 'parts' | 'bench' | 'stove' | 'unknown' | 'shop' | 'smoker' }
   | { type: 'broke'; item: number }
   | { type: 'barring'; on: boolean }
   | { type: 'barred'; on: boolean; tile: number; shelter: boolean }
@@ -376,7 +399,14 @@ export type CityEvent =
         | 'rush'
         | 'known'
         | 'bagFull'
-        | 'tooMany';
+        | 'tooMany'
+        | 'notThirsty'
+        | 'watered'
+        | 'barrelDry'
+        | 'tooThirsty'
+        | 'noSeeds'
+        | 'noWater'
+        | 'noBottle';
     }
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
@@ -413,6 +443,17 @@ export type CityEvent =
   | { type: 'worn'; item: number; on: boolean }
   | { type: 'mended'; item: number }
   | { type: 'set'; item: number; tile: number }
+  /**
+   * 2.70: a state begun or ended (MOOD's place); the weather said at dawn (WEATHER's place); fresh food gone off (how much);
+   * thirst run out; water drunk (dirty or not); a cast done (what came of it); a planter planted, watered, harvested, a bottle filled.
+   */
+  | { type: 'mood'; mood: number; on: boolean }
+  | { type: 'weather'; kind: number; day: number }
+  | { type: 'spoiled'; n: number }
+  | { type: 'thirsty' }
+  | { type: 'drank'; dirty: boolean }
+  | { type: 'fished'; n: number }
+  | { type: 'grow'; what: 'planted' | 'watered' | 'harvested' | 'filled'; tile: number }
   | { type: 'ring'; tile: number }
   /**
    * 2.68: the Rush: said (`warn`, minutes to nightfall), begun, a wave come (its number, how many), held (supplies on `tile`); a trap
@@ -458,7 +499,7 @@ export type CityEvent =
   | { type: 'dead'; final: boolean; moved: boolean; bed?: boolean; pile?: number; by?: FellBy };
 
 /** 2.64: what a fall came from: one of the dead (its kind), a bloater's burst, fire, hunger. */
-export type FellBy = `z${number}` | 'burst' | 'fire' | 'hunger';
+export type FellBy = `z${number}` | 'burst' | 'fire' | 'hunger' | 'thirst';
 
 export class City {
   readonly plan: CityPlan;
@@ -495,6 +536,7 @@ export class City {
         ...freshBuild(),
         ...freshRush(),
         ...freshGear(),
+        ...freshNeeds(),
       }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
@@ -519,6 +561,7 @@ export class City {
         ...freshBuild(),
         ...freshRush(),
         ...freshGear(),
+        ...freshNeeds(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -880,7 +923,7 @@ export class City {
       return;
     }
     if (!dir) this.letGo = true;
-    const weak = s.hunger < FULL / 4 || s.energy <= 0 || s.step < s.snare;
+    const weak = s.hunger < FULL / 4 || s.energy <= 0 || s.step < s.snare || parched(this);
     const px = s.player.x;
     const pz = s.player.z;
     // (2.69: scrap armour weighs.)
@@ -898,7 +941,13 @@ export class City {
       const breaking = s.search.startsWith('b');
       // (2.67: building, repairing, taking down: at it while beside its tile.)
       const building = /^[hrt]/.test(s.search);
-      if (dir || !(breaking ? atWork(this, s.search) : building ? atBuild(this, s.search) : this.target()?.key === s.search)) s.search = '';
+      // (2.70: a cast: at it while the water is the button's.)
+      const fishing = s.search.startsWith('F');
+      // (The review: the rod still in the pockets, or the cast is over.)
+      const at = fishing
+        ? this.target()?.key === `q${s.search.slice(1)}` && this.carried(cityItemNumber('fishing_rod')) > 0
+        : this.target()?.key === s.search;
+      if (dir || !(breaking ? atWork(this, s.search) : building ? atBuild(this, s.search) : at)) s.search = '';
       else if (breaking) ended = breakStep(this);
       else if (building) {
         if (--s.searchLeft <= 0) {
@@ -911,7 +960,8 @@ export class City {
         const key = s.search;
         s.search = '';
         ended = true;
-        if (key.startsWith('d')) this.bar(Number(key.slice(1)));
+        if (key.startsWith('F')) castDone(this, Number(key.slice(1)));
+        else if (key.startsWith('d')) this.bar(Number(key.slice(1)));
         else if (key === 'w') castOff(this);
         else if (key.startsWith('k')) this.force(Number(key.slice(1)));
         else if (key.startsWith('x')) this.smash(Number(key.slice(1)));
@@ -964,23 +1014,35 @@ export class City {
   private minutePassed() {
     const s = this.state;
     const minute = Math.floor(s.step / STEPS_PER_MINUTE);
-    s.hunger = Math.max(0, s.hunger - (s.sleeping ? HUNGER_ASLEEP : HUNGER_AWAKE));
+    // (2.70, a city begun from then: queasy, hunger twice as fast; refreshed, energy half; soaked, half again.)
+    s.hunger = Math.max(0, s.hunger - (s.sleeping ? HUNGER_ASLEEP : HUNGER_AWAKE) * hungerTimes(this));
     // (2.67: asleep, what's built round the bed: a Hideout or a Home gives energy and health back faster.)
     const rest = s.sleeping ? comfortRates(comfortAt(this, this.tile).level) : null;
-    s.energy = rest ? Math.min(FULL, s.energy + rest.energy) : Math.max(0, s.energy - ENERGY_AWAKE);
+    s.energy = rest
+      ? Math.min(FULL, s.energy + rest.energy)
+      : Math.max(0, s.energy - Math.trunc((ENERGY_AWAKE * energyShare(this)) / 1000));
     if (s.hunger === 0) {
       if (minute % STARVE_EVERY === 0) this.hurt(1, 'hunger');
       if (!this.starved) this.events.push({ type: 'starving' });
       this.starved = true;
     } else {
       this.starved = false;
-      if (s.hunger > FULL / 2 && minute % (rest ? rest.mend : MEND_AWAKE) === 0) s.health = Math.min(100, s.health + 1);
+      // (2.70: well fed, twice as often.)
+      const every = Math.max(1, Math.round((rest ? rest.mend : MEND_AWAKE) / mendDivisor(this)));
+      // (2.70: no health back with nothing to drink, as with nothing to eat.)
+      if (s.hunger > FULL / 2 && (!needsOn(this) || s.thirst > 0) && minute % every === 0) s.health = Math.min(100, s.health + 1);
     }
+    // (2.70: thirst, the states, the rain, the weather at dawn.)
+    if (!s.over) needsMinute(this);
+    // (A fall to thirst this minute: nothing more of it. Only in a city with thirst: one under way runs on as it did.)
+    if (needsOn(this) && (s.over || this.events.some((e) => e.type === 'dead'))) return;
     if (!s.over) storyMinute(this);
     if (!s.over) lightMinute(this);
     if (!s.over) carMinute(this);
     if (s.over || !s.sleeping) return;
     if (s.hunger === 0) this.wake('hungry');
+    // (2.70, the review: thirst run dry wakes a sleeper too.)
+    else if (needsOn(this) && s.thirst === 0) this.wake('parched');
     else if (this.minute === SLEEP_TO) this.wake('morning');
     // (2.65: a rest by day lasts till dusk, an hour before the dark: before, the day was walked through or waited out.)
     else if (this.minute === SLEEP_FROM) this.wake('dusk');
@@ -998,6 +1060,8 @@ export class City {
     if (this.state.sleeping) this.wake(why);
   }
   private wake(why: Woken) {
+    // (2.70: a whole night slept: rested. The review: six hours of it at least, not two minutes before six.)
+    if (why === 'morning') wokeRested(this);
     this.state.sleeping = false;
     this.events.push({ type: 'sleep', on: false, why });
   }
@@ -1058,6 +1122,8 @@ export class City {
     // (Hunger is not mended by a fall: a little, so the morning isn't spent starving again at once.)
     s.hunger = Math.max(s.hunger, WAKE.hunger);
     s.energy = Math.max(s.energy, WAKE.energy);
+    // (2.70: nor is it a drink: a little, as hunger has, or a fall from thirst would follow another before noon.)
+    s.thirst = Math.max(s.thirst, WAKE.hunger);
     // (2.68: carried home past a night: the base there, if any, took it; a Rush's day said on waking.)
     if (moved) baseReturned(this);
     s.follow = 0;
@@ -1161,6 +1227,10 @@ export class City {
     for (const f of this.fences)
       if (f.tiles.some((t) => Math.abs((t % MAP_W) - x) + Math.abs(Math.floor(t / MAP_W) - z) === 1))
         return { kind: 'fence', key: `f${f.tiles[0]}`, tile: f.tiles[0], prop: null };
+    // (2.70: a pond or the sea beside: drunk from, or fished with a rod in the pockets. After a window and the fence: the
+    // review found a chained building's window by the sea whose button was the water's.)
+    const water = waterBeside(this);
+    if (water >= 0) return { kind: 'water', key: `q${water}`, tile: water, prop: null };
     // (2.66) An inner wall faced, a sledgehammer carried: broken through. Last of all.
     const wall = facedBreak(this, true);
     if (wall.startsWith('bw')) return { kind: 'wall', key: wall, tile: Number(wall.slice(2)), prop: null };
@@ -1356,9 +1426,12 @@ export class City {
   private sleep() {
     const s = this.state;
     if (s.hunger === 0) return void this.events.push({ type: 'refused', why: 'tooHungry' });
+    if (needsOn(this) && s.thirst === 0) return void this.events.push({ type: 'refused', why: 'tooThirsty' });
     // (2.68: not on the Rush's night: from 20:00 until 05:00.)
     if (noSleep(this)) return void this.events.push({ type: 'refused', why: 'rush' });
     s.sleeping = true;
+    // (2.70: when sleep began, for a night's rest.)
+    s.sleptAt = s.step;
     // (2.52: the torch isn't left burning through the night.)
     s.torchOn = 0;
     s.home = [s.district, this.tile];
@@ -1376,6 +1449,7 @@ export class City {
       if (!t) return;
       if (t.kind === 'way') return storyAct(this);
       if (t.kind === 'wall') return startBreak(this, t.key);
+      if (t.kind === 'water') return atWater(this, t.tile);
       if (t.kind === 'piece') return s.open === t.key ? this.close() : this.openBox(t.key, false);
       if (t.kind === 'npc') return meet(this, Number(t.key.slice(1)));
       if (s.open === t.key) return this.close();
@@ -1478,17 +1552,24 @@ export class City {
       if (!use) return void this.events.push({ type: 'refused', why: 'noUse' });
       // (Nothing wasted: a full stomach isn't fed, unless the thing mends or wakes too.)
       // (2.61: a bandage or a medkit stops a wound bleeding, whatever the health.)
-      const stanch = s.bleed > 0 && cityItem(item)?.kind === 'med' && (use.health ?? 0) >= 20;
+      const stanch = s.bleed > 0 && cityItem(item)?.kind === 'med' && ((use.health ?? 0) >= 20 || cityItem(item)?.stanch === true);
+      // (2.70: thirst, in a city begun from then; and what settles a stomach, queasy.)
+      const thirsty = needsOn(this) && (use.thirst ?? 0) > 0 && s.thirst < FULL - 2000;
+      const settles = !!cityItem(item)?.settles && moodOn(this, 3);
       const needed =
         stanch ||
+        thirsty ||
+        settles ||
         ((use.hunger ?? 0) > 0 && s.hunger < FULL - 2000) ||
         ((use.energy ?? 0) > 0 && s.energy < FULL - 5000) ||
         ((use.health ?? 0) > 0 && s.health < 100);
       if (!needed) return void this.events.push({ type: 'refused', why: cityItem(item)?.kind === 'med' ? 'noNeed' : 'notHungry' });
       s.hunger = Math.min(FULL, s.hunger + (use.hunger ?? 0) * 1000);
       s.energy = Math.min(FULL, s.energy + (use.energy ?? 0) * 1000);
+      if (needsOn(this)) s.thirst = Math.min(FULL, s.thirst + (use.thirst ?? 0) * 1000);
       if (--st[1] <= 0) st[0] = st[1] = 0;
       this.events.push({ type: 'used', item });
+      ate(this, item);
       if ((use.hunger ?? 0) > 0) storyDid(this, 'ate');
       // (2.58: what's eaten never kills: raw fish takes health down to one point at the worst.)
       s.health = Math.max(1, Math.min(100, s.health + (use.health ?? 0)));
@@ -1546,9 +1627,11 @@ export class City {
   }
 
   /** Whether a recipe can be made now, or what's missing. */
-  canMake(k: number): 'ok' | 'parts' | 'bench' | 'stove' | 'unknown' | 'shop' {
+  canMake(k: number): 'ok' | 'parts' | 'bench' | 'stove' | 'unknown' | 'shop' | 'smoker' | 'none' {
     const r = CITY_RECIPES[k];
     if (!r) return 'parts';
+    // (2.70: not in a city begun before: hidden.)
+    if (r.manual !== undefined && !manualExists(this, r.manual)) return 'none';
     if (r.taught !== undefined && this.state.errand[r.taught] < 1) return 'unknown';
     // (2.69: from a manual, read.)
     if (!knows(this, r)) return 'unknown';
@@ -1558,6 +1641,8 @@ export class City {
     if (r.bench && !this.atBench()) return 'bench';
     // (2.69: the workshop: a workbench with the toolkit, built.)
     if (wantsShop(this, r) && !shopBeside(this, this.tile)) return 'shop';
+    // (2.70: what's smoked, beside a smoker built.)
+    if (r.smoker && !smokerBeside(this, this.tile)) return 'smoker';
     return 'ok';
   }
   /** A workbench on a tile beside the player. */
@@ -1571,7 +1656,8 @@ export class City {
   }
   private make(k: number) {
     const why = this.canMake(k);
-    if (why !== 'ok') return void this.events.push({ type: 'cantMake', why });
+    // ('none': not in this city: refused as unknown.)
+    if (why !== 'ok') return void this.events.push({ type: 'cantMake', why: why === 'none' ? 'unknown' : why });
     const r = CITY_RECIPES[k];
     const { makes, from } = recipeParts(r);
     for (const [item, n] of from) this.spend(item, n);
@@ -1914,6 +2000,7 @@ export function loadCity(snap: unknown): City | null {
   soundBuild(st);
   soundRush(st);
   soundGear(st);
+  soundNeeds(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

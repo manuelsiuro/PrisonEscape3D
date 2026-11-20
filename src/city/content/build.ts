@@ -23,6 +23,10 @@ export interface PieceDef {
   trap?: 'spikes' | 'wire' | 'snare' | 'cans' | 'scare' | 'sentry';
   /** 2.69: what goes into it whole and comes back whole when it's taken down (never in a repair's cost): a workshop's toolkit. */
   keeps?: string;
+  /** 2.70: built only once its manual is read (MANUALS' place), in a city begun from then. */
+  manual?: number;
+  /** 2.70: what it does: a planter grows, a rain barrel fills, a smoker smokes (sim/survival.ts). */
+  grows?: 'planter' | 'barrel' | 'smoker';
 }
 
 export const PIECES: readonly PieceDef[] = [
@@ -213,6 +217,44 @@ export const PIECES: readonly PieceDef[] = [
     solid: true,
     comfort: 0,
     keeps: 'toolkit',
+  },
+  // 2.70: what feeds and waters a base: a planter, a rain barrel (the garden's manual), a smoker (the fishing's).
+  {
+    id: 'planter',
+    from: [
+      ['plank', 3],
+      ['nails', 1],
+    ],
+    hp: 40,
+    solid: true,
+    comfort: 1,
+    manual: 3,
+    grows: 'planter',
+  },
+  {
+    id: 'rainBarrel',
+    from: [
+      ['scrap', 3],
+      ['plank', 1],
+    ],
+    hp: 60,
+    solid: true,
+    comfort: 0,
+    manual: 3,
+    grows: 'barrel',
+  },
+  {
+    id: 'smoker',
+    from: [
+      ['scrap', 3],
+      ['plank', 2],
+      ['nails', 1],
+    ],
+    hp: 60,
+    solid: true,
+    comfort: 1,
+    manual: 4,
+    grows: 'smoker',
   },
 ];
 

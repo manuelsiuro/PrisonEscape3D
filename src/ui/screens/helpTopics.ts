@@ -467,6 +467,22 @@ HELP.city = [
         listIcons: ['shield', 'eye', 'box', 'fog', 'clock', 'flame'],
         see: ['cityGear', 'cityFight', 'cityRush'],
       }),
+      // (2.70, C5: survival with weight.)
+      T('cityThirst', 'water', '#5ab8d8', {
+        pic: true,
+        listIcons: ['utensils', 'brew', 'moon', 'drop', 'rain'],
+        see: ['cityFood', 'cityGarden', 'cityWeather'],
+      }),
+      T('cityWeather', 'rain', '#8aa0b8', {
+        pic: true,
+        listIcons: ['rain', 'fog', 'heat', 'storm'],
+        see: ['cityThirst', 'cityGarden'],
+      }),
+      T('cityGarden', 'sprout', '#6aa84a', {
+        pic: true,
+        listIcons: ['sprout', 'water', 'fish', 'flame', 'utensils'],
+        see: ['cityThirst', 'cityGear', 'cityBuild'],
+      }),
     ],
   },
   {

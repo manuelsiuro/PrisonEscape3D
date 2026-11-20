@@ -168,7 +168,7 @@ the checks after: fixes introduce bugs too.
 
 ## 7b. When the mechanic is City Escape's
 
-The same steps, with the city's own places (2.57 to 2.60 were run this way). Its record is `docs/decisions/city.md`
+The same steps, with the city's own places (2.57 to 2.60 were run this way). Its record is `docs/decisions/city.md` and `city-c5.md`
 (the rules as they stand), `docs/phases/10-city-escape.md` (the code; stage C5's, 2.66 on, `docs/phases/11-city-make-it-yours.md`) and its two rows in `docs/POLISH.md`; "all six
 prisons" becomes "twelve cities or more, every district" (a city is made from a seed: `new City(seed)`).
 

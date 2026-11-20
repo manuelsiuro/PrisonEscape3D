@@ -243,7 +243,8 @@ const idle = (c: City, minutes: number) => {
   const c = new City(4);
   c.step(0);
   // (2.68's revision, 4, brings the Rush; 2.69's, 5, manuals, the toolkit and armour where they'd be kept: the first nights' things are revision 3's.)
-  check(c.state.rev === CITY_REV && CITY_REV === 5, `a new city's rules: ${c.state.rev}`);
+  // (2.70's, 6: thirst, the weather, water and seeds where they'd be kept.)
+  check(c.state.rev === CITY_REV && CITY_REV === 6, `a new city's rules: ${c.state.rev}`);
   const old = JSON.parse(JSON.stringify(c.snapshot()));
   delete old.state.rev;
   check(loadCity(old)?.state.rev === 0, 'a save from before the revision takes the newest rules');
@@ -251,7 +252,7 @@ const idle = (c: City, minutes: number) => {
   odd.state.rev = 99;
   check(loadCity(odd)?.state.rev === 0, 'a revision that is not is kept');
   say(
-    `the rules' revision: a city begun from 2.69 is 5 (manuals), from 2.68 4 (the Rush), from 2.67 3, from 2.66 2, from 2.64 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before 2.64, then ${tally[1].boards}, ${tally[2].boards} and ${tally[3].boards}, a bat found in ${tally[0].bat}, ${tally[1].bat}, ${tally[2].bat} and ${tally[3].bat}`,
+    `the rules' revision: a city begun from 2.70 is 6 (thirst, weather), from 2.69 5 (manuals), from 2.68 4 (the Rush), from 2.67 3, from 2.66 2, from 2.64 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before 2.64, then ${tally[1].boards}, ${tally[2].boards} and ${tally[3].boards}, a bat found in ${tally[0].bat}, ${tally[1].bat}, ${tally[2].bat} and ${tally[3].bat}`,
   );
 }
 

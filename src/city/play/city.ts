@@ -50,6 +50,8 @@ import { BUILD, PIECES } from '../content/build';
 import { buildList, buildSpot, builtList, canBuild, comfortAt, lacking, pieceAtTile, repairCost, wornStep } from '../sim/build';
 import { rushDue, rushNumber, wavesIn } from '../sim/rush';
 import { BAG, bagSlots, bagThings } from '../sim/gear';
+import { barrel, fishesAt, fogSight, garden, moodOn, needsOn, outdoors, rainingNow, weatherNow } from '../sim/survival';
+import { MOODS, WEATHER } from '../content/survival';
 import { RUSH } from '../content/rush';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import type { LandmarkFrame } from '../render/landmarks';
@@ -569,6 +571,16 @@ function cityFrame(r: CityRun, dt: number, now: number) {
         kind: q[1],
         worn: wornStep(q) / 3,
         angle: pieceAngle(q[1], q[3]),
+        // (2.70: a planter's growth, a barrel's water: read, nothing written.)
+        stage:
+          PIECES[q[1]]?.grows === 'planter'
+            ? (() => {
+                const g = garden(c, q, false);
+                return g.planted ? Math.min(4, g.grown + 1) : 0;
+              })()
+            : PIECES[q[1]]?.grows === 'barrel'
+              ? barrel(c, q, false)
+              : 0,
       })),
     );
   }
@@ -638,7 +650,11 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   cityView.drawLights(now / 1000, r.paused || settings.reducedMotion, darkNow(c), torchLit(c) || lampLit(c));
   cityView.drawDead(deadOf(r, a), now / 1000, r.paused || settings.reducedMotion, darkNow(c), f);
   // (2.61: the boat's night in the docks, in fog as the rules have it.)
-  cityView.drawFog(going(c) === 2, f, now / 1000, r.paused || settings.reducedMotion);
+  // (2.70: the morning fog of a foggy day, as the boat's night's; the rain and a storm round the player.)
+  cityView.drawFog(going(c) === 2 || fogSight(c) > 0, f, now / 1000, r.paused || settings.reducedMotion);
+  const sky = weatherNow(c);
+  // (Not indoors: the review saw it rain on a kitchen.)
+  cityView.drawRain(rainingNow(c) && outdoors(c), WEATHER[sky] === 'storm', f, now / 1000, r.paused || settings.reducedMotion);
   view.draw(f, dt, now / 1000);
   cityView.facePeople(f.x, f.z);
   cityView.drawLandmark(landmarkOf(r, now / 1000));
@@ -971,6 +987,57 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'cantBuild':
       banner.toast(t(`city.build.why.${e.why}` as Key), 'info', 2400, 'bulb');
+      break;
+    // 2.70: a state begun or ended; the day's weather at dawn; food gone off; thirst; a drink; a cast; the garden and the barrel.
+    case 'mood': {
+      const m = MOODS[e.mood];
+      // (Begun, said; ended, only the bad ones' end: "dried off", "your stomach settles".)
+      if (e.on) banner.toast(t(`city.toast.mood.${m}` as Key), m === 'queasy' || m === 'soaked' ? 'bad' : 'good', 2600);
+      else if (m === 'queasy' || m === 'soaked') banner.toast(t(`city.toast.moodOff.${m}` as Key), 'good', 2400);
+      if (e.on && m === 'queasy') tip('city.queasy', 'city.tip.queasy');
+      break;
+    }
+    case 'weather': {
+      const w = WEATHER[e.kind];
+      if (w !== 'clear')
+        banner.show(
+          t(`city.weather.${w}` as Key),
+          t(`city.weather.${w}.sub` as Key),
+          'routine',
+          5200,
+          w === 'heat' ? 'heat' : w === 'fog' ? 'fog' : w === 'storm' ? 'storm' : 'rain',
+        );
+      // (Dispatch says it, with the radio found.)
+      if (c.state.kit & 1 && w !== 'clear') {
+        sound.crackle();
+        cityHud.say(t(`city.weather.say.${w}` as Key));
+      }
+      if (w !== 'clear') tip('city.weather', 'city.tip.weather');
+      break;
+    }
+    case 'spoiled':
+      banner.toast(t('city.toast.spoiled', { n: e.n }), 'bad', 3200);
+      tip('city.spoil', 'city.tip.spoil');
+      break;
+    case 'thirsty':
+      banner.toast(t('city.toast.thirsty'), 'bad', 3600);
+      buzz('missed');
+      break;
+    case 'drank':
+      sound.gulp();
+      banner.toast(t(e.dirty ? 'city.toast.drankDirty' : 'city.toast.drank'), e.dirty ? 'info' : 'good', 2400);
+      break;
+    case 'fished':
+      sound.pour();
+      banner.toast(e.n ? t('city.toast.fished', { n: e.n }) : t('city.toast.noBite'), e.n ? 'good' : 'info', 2400);
+      break;
+    case 'grow':
+      if (e.what === 'harvested') sound.pluck();
+      else if (e.what === 'planted') sound.plant();
+      else sound.pour();
+      banner.toast(t(`city.toast.grow.${e.what}` as Key), 'good', 2400);
+      if (e.what === 'planted') tip('city.garden', 'city.tip.garden');
+      save(r);
       break;
     // 2.69: a manual read; something worn or taken off; mended; a noisemaker set down, ringing.
     case 'learnt':
@@ -1449,6 +1516,8 @@ function pocketsOf(r: CityRun): PocketsState {
   st.bagSlots = bagSlots(c);
   st.bagUsed = bagThings(c).filter((x) => x[0]).length;
   st.bagThings = bagThings(c);
+  // (2.70: the button at water fishes with a rod carried, unless thirsty: then it drinks.)
+  st.rod = fishesAt(c);
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
   st.sleepable = (st.box === 'city.box.bed' || st.box === 'city.piece.cot') && c.sleepable() >= 0;
@@ -1479,6 +1548,15 @@ function pocketsOf(r: CityRun): PocketsState {
           chest: bdef.id === 'chest',
           // (2.68: a sentry's bolts.)
           bolts: bdef.trap === 'sentry' ? bp[4] % BUILD.sentryWear : -1,
+          // (2.70: a planter's stage, a barrel's drinks: read, nothing written.)
+          ...(() => {
+            const g = bdef.grows === 'planter' ? garden(c, bp, false) : null;
+            return {
+              planter: g ? (g.planted ? Math.min(4, g.grown + 1) : 0) : -1,
+              watered: !!g?.watered,
+              drinks: bdef.grows === 'barrel' ? barrel(c, bp, false) : -1,
+            };
+          })(),
         }
       : null;
   // (2.66: the open piece, if it breaks: what it gives, and whether anything carried can break it.)
@@ -1595,6 +1673,13 @@ function hudOf(r: CityRun): CityHudState {
   st.bleeding = c.state.bleed > 0;
   st.hunger = c.state.hunger / FULL;
   st.energy = c.state.energy / FULL;
+  // (2.70: thirst, the states on and their time left, the day's weather, in a city begun from then.)
+  st.thirst = needsOn(c) ? c.state.thirst / FULL : -1;
+  st.moods = MOODS.map((m, k) => [m, moodOn(c, k) ? Math.ceil((c.state.moods[k] - c.state.step) / STEPS_PER_MINUTE) : 0] as const).filter(
+    ([, left]) => left > 0,
+  );
+  const w = weatherNow(c);
+  st.weather = needsOn(c) && w ? t(`city.weather.${WEATHER[w]}` as Key) : '';
   st.chasing = c.state.zeds.reduce((n, z) => n + (z.mode === ZED.CHASE ? 1 : 0), 0);
   // (2.52: the light they stand in, said at night and whenever the torch is on.)
   const torch = torchLit(c);

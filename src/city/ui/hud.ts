@@ -1,4 +1,4 @@
-import { t, textStamp } from '../../i18n';
+import { t, textStamp, type Key } from '../../i18n';
 import { keyLabel } from '../../i18n/keys';
 import { h, setText } from '../../ui/dom';
 import { icon } from '../../ui/icons';
@@ -25,6 +25,10 @@ export interface CityHudState {
   bleeding: boolean;
   hunger: number;
   energy: number;
+  /** 2.70: thirst (0–1; -1: a city without it); the states on, with their game minutes left; the day's weather ('' clear or none). */
+  thirst: number;
+  moods: ReadonlyArray<readonly [mood: string, minutes: number]>;
+  weather: string;
   /** How many of the dead are after the player. */
   chasing: number;
   /** 2.52: the light where the player stands (LEVEL; -1: by day, not shown), and the torch's minutes left while it's on (0: off). */
@@ -38,6 +42,15 @@ export interface CityHudState {
   marks: readonly number[];
   marksKey: string;
 }
+
+/** 2.70: each state's icon. */
+const MOOD_ICON: Record<string, Parameters<typeof icon>[0]> = {
+  wellFed: 'utensils',
+  refreshed: 'brew',
+  rested: 'moon',
+  queasy: 'drop',
+  soaked: 'rain',
+};
 
 /** How much the corner map is enlarged: about a third of the district's width shows. */
 const ZOOM = 3;
@@ -58,6 +71,7 @@ export class CityHud {
   private readonly canvas: HTMLCanvasElement;
   private shownRev = -1;
   private shownLight = '?';
+  private shownMoods = '?';
   private shownRush = '?';
   private shownChasing = -1;
   private shownBleeding: boolean | null = null;
@@ -89,8 +103,10 @@ export class CityHud {
         <span class="city-meter cm-health" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('heart', 14)}<i><i></i></i><b class="cm-drip" aria-hidden="true">${icon('drop', 12)}</b></span>
         <span class="city-meter cm-hunger" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('utensils', 14)}<i><i></i></i></span>
         <span class="city-meter cm-energy" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('bolt', 14)}<i><i></i></i></span>
+        <span class="city-meter cm-thirst hidden" role="meter" aria-valuemin="0" aria-valuemax="100">${icon('water', 14)}<i><i></i></i></span>
         <span class="pill hud-alert city-chased hidden" role="status">${icon('siren', 15)}<span></span></span>
       </div>
+      <div class="hud-row city-moods hidden"></div>
       <div class="hud-row city-goal-row">
         <button class="pill city-goal hidden">${icon('clipboard', 15)}<span></span></button>
       </div>
@@ -123,6 +139,7 @@ export class CityHud {
     this.shownChasing = -1;
     this.shownLight = '?';
     this.shownRush = '?';
+    this.shownMoods = '?';
     this.shownNight = null;
     this.meters = {};
     this.shownGoal = '';
@@ -166,7 +183,8 @@ export class CityHud {
     setText(this.name, s.name);
     setText(this.place, s.place ? `${s.kind} · ${s.place}` : s.kind);
     setText(this.time, s.time);
-    setText(this.day, t('city.hud.day', { n: s.day }));
+    // (2.70: the day's weather beside the day.)
+    setText(this.day, s.weather ? `${t('city.hud.day', { n: s.day })} · ${s.weather}` : t('city.hud.day', { n: s.day }));
     if (s.night !== this.shownNight) {
       this.shownNight = s.night;
       this.sky.innerHTML = icon(s.night ? 'moon' : 'sun', 16);
@@ -176,6 +194,7 @@ export class CityHud {
       ['cm-health', s.health, 'city.meter.health'],
       ['cm-hunger', s.hunger, 'city.meter.hunger'],
       ['cm-energy', s.energy, 'city.meter.energy'],
+      ['cm-thirst', Math.max(0, s.thirst), 'city.meter.thirst'],
     ] as const) {
       const pct = Math.round(v * 100);
       if (this.meters[cls] === pct) continue;
@@ -185,6 +204,20 @@ export class CityHud {
       el.classList.toggle('low', pct <= 25);
       el.setAttribute('aria-valuenow', String(pct));
       el.setAttribute('aria-label', t(label));
+    }
+    this.el.querySelector('.cm-thirst')!.classList.toggle('hidden', s.thirst < 0);
+    // 2.70: the states: a chip each, its time left (hours, or minutes in the last hour); the bad ones red.
+    const mk = s.moods.map(([m, left]) => `${m}:${left >= 60 ? Math.round(left / 60) + 'h' : left}`).join() + textStamp();
+    if (mk !== this.shownMoods) {
+      this.shownMoods = mk;
+      const row = this.el.querySelector<HTMLElement>('.city-moods')!;
+      row.classList.toggle('hidden', !s.moods.length);
+      row.innerHTML = s.moods
+        .map(
+          ([m, left]) =>
+            `<span class="pill city-mood ${m === 'queasy' || m === 'soaked' ? 'bad' : 'good'}" title="${t(`city.mood.${m}.d` as Key)}">${icon(MOOD_ICON[m] ?? 'heart', 13)}<span>${t(`city.mood.${m}` as Key)} ${left >= 60 ? `${Math.round(left / 60)} h` : `${left} min`}</span></span>`,
+        )
+        .join('');
     }
     if (s.bleeding !== this.shownBleeding) {
       this.shownBleeding = s.bleeding;

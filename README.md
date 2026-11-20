@@ -100,7 +100,8 @@ on its side, in a city the army walled in and left. **Find food, find out what h
 
 The city is new every time: nine districts, each its own map, joined by checkpoints in the army's fences.
 Search houses, shops and the cars left in the street (some still have their alarms). Eat, sleep, make
-weapons, bandages and meals (thirty-one recipes, thirteen of them from manuals found in the city). Break
+weapons, bandages and meals (thirty-nine recipes, twenty of them from manuals found in the city). Keep from
+thirst through rain, fog, heat and storms, grow vegetables, catch rain in a barrel and fish the park's pond. Break
 furniture, cars and inner walls for planks, scrap and wire, and build a base with a hammer: walls, a door,
 a bed, a campfire, a workshop, and six traps before it. Every third night is the Rush, four waves coming
 for you wherever you are. The dead keep to the dark indoors by day and come out everywhere at night:
@@ -201,8 +202,8 @@ On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows
 ## Technical notes
 
 Vite + TypeScript + Three.js, with **no models, textures or sound files**: the prisons, characters and
-items are built in code, and the music and sound effects are synthesized. About 143,000 lines of TypeScript
-in 494 files (formatted by Prettier), and 62,000 more in the tests and tools.
+items are built in code, and the music and sound effects are synthesized. About 150,000 lines of TypeScript
+in 505 files (formatted by Prettier), and 65,000 more in the tests and tools.
 
 ### Running it
 
@@ -231,7 +232,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 106 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 107 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

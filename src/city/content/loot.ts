@@ -231,6 +231,79 @@ const MORE5: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
   ['office', null, [['manual_tricks', 1]]],
 ];
 
+/** 2.70 (revision 6): water and food that grows, what keeps you dry, the three manuals where they'd be kept. */
+const MORE6: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
+  ['house', 'toilet', [['dirty_water', 8]]],
+  ['clinic', 'toilet', [['dirty_water', 6]]],
+  ['hospital', 'toilet', [['dirty_water', 6]]],
+  [
+    'house',
+    'shelf',
+    [
+      ['seeds', 3],
+      ['manual_garden', 1],
+      ['manual_cooking', 1],
+      ['raincoat', 1],
+    ],
+  ],
+  [
+    'shop',
+    null,
+    [
+      ['seeds', 2],
+      ['coffee', 2],
+      ['manual_garden', 1],
+      ['manual_cooking', 1],
+      ['raincoat', 1],
+    ],
+  ],
+  [
+    'mall',
+    null,
+    [
+      ['seeds', 1],
+      ['coffee', 2],
+      ['manual_cooking', 1],
+      ['raincoat', 2],
+    ],
+  ],
+  [
+    'office',
+    null,
+    [
+      ['coffee', 4],
+      ['water', 3],
+    ],
+  ],
+  // (Water where it'd be kept: thirst is a meter of its own now.)
+  ['house', 'freezer', [['water', 5]]],
+  ['house', 'table', [['water', 2]]],
+  ['shop', null, [['water', 3]]],
+  ['mall', null, [['water', 3]]],
+  ['warehouse', null, [['water', 2]]],
+  ['garage', null, [['water', 1]]],
+  [
+    'rangers',
+    null,
+    [
+      ['seeds', 3],
+      ['herbs', 3],
+      ['manual_garden', 2],
+      ['manual_fishing', 1],
+      ['raincoat', 1],
+    ],
+  ],
+  [
+    'boathouse',
+    null,
+    [
+      ['manual_fishing', 3],
+      ['fishing_rod', 2],
+    ],
+  ],
+  ['clinic', null, [['herbs', 2]]],
+];
+
 /** A car's list, or a wreck's. */
 export function carLoot(wreck: boolean, rev = 0): { list: Array<[number, number]>; total: number } {
   const list: Array<[number, number]> = [...(wreck ? WRECK : CAR), ...(rev && !wreck ? MORE_CAR : [])].map(([id, w]) => [
@@ -297,7 +370,13 @@ export const LOOT_BY_PROP: Partial<Record<PropKind, Weights>> = {
 /** The list a piece of furniture draws from, as [item number, weight], and the weights' sum. */
 export function lootList(use: LotUse, prop: PropKind, rev = 0): { list: Array<[number, number]>; total: number } {
   const list: Array<[number, number]> = [];
-  const more = [...(rev ? MORE : []), ...(rev >= 2 ? MORE2 : []), ...(rev >= 3 ? MORE3 : []), ...(rev >= 5 ? MORE5 : [])]
+  const more = [
+    ...(rev ? MORE : []),
+    ...(rev >= 2 ? MORE2 : []),
+    ...(rev >= 3 ? MORE3 : []),
+    ...(rev >= 5 ? MORE5 : []),
+    ...(rev >= 6 ? MORE6 : []),
+  ]
     .filter(([u, p]) => u === use && (p === null || p === prop))
     .flatMap(([, , w]) => w);
   for (const [id, w] of [...(LOOT_BY_USE[use] ?? HOME), ...more, ...(LOOT_BY_PROP[prop] ?? [])]) list.push([cityItemNumber(id), w]);

@@ -30,7 +30,7 @@ const aged = (c: number, worn: number) => {
   return ((((c >> 16) & 255) * k) << 16) | ((((c >> 8) & 255) * k) << 8) | ((c & 255) * k);
 };
 
-export function pieceParts(kind: number, worn: number, seed: number): Part[] {
+export function pieceParts(kind: number, worn: number, seed: number, stage = 0): Part[] {
   const id = PIECES[kind]?.id;
   const w = (c: number) => aged(c, worn);
   const h = mix32(seed);
@@ -164,6 +164,40 @@ export function pieceParts(kind: number, worn: number, seed: number): Part[] {
         box(0.18, 0.04, 0.02, IRON, -0.08, 1.12, -0.26),
         box(0.03, 0.22, 0.02, 0xb03a30, 0.12, 0.98, -0.26),
         box(0.12, 0.12, 0.02, IRON_DARK, 0.3, 1.0, -0.26),
+      );
+      break;
+    // 2.70: a planter (its plants by `stage`: 0 bare soil, 1–3 growing, 4 ripe), a rain barrel (`stage` its drinks: the water's
+    // height), a smoker (a box on legs, a chimney, smoke-dark).
+    case 'planter': {
+      out.push(
+        box(0.86, 0.32, 0.6, w(WOOD), 0, 0, 0),
+        box(0.9, 0.06, 0.64, w(WOOD_DARK), 0, 0.32, 0),
+        box(0.78, 0.04, 0.52, 0x4a3424, 0, 0.3, 0),
+      );
+      for (let k = 0; k < 6 && stage > 0; k++) {
+        const x = -0.28 + (k % 3) * 0.28;
+        const z = k < 3 ? -0.13 : 0.13;
+        const h0 = 0.06 + stage * 0.07 + ((h >> k) & 1) * 0.03;
+        out.push(box(0.04, h0, 0.04, 0x4a8a3a, x, 0.34, z));
+        out.push(box(0.14 + stage * 0.02, 0.03, 0.1, stage >= 4 ? 0x6aa84a : 0x5a9a42, x, 0.34 + h0, z));
+        if (stage >= 4) out.push(box(0.08, 0.08, 0.08, k % 2 ? 0xe08a2a : 0xd9483b, x + 0.05, 0.34 + h0 * 0.6, z));
+      }
+      break;
+    }
+    case 'rainBarrel': {
+      out.push(cyl(0.3, 0.8, w(IRON_DARK), 0, 0, 0, 14), cyl(0.31, 0.05, w(IRON), 0, 0.2, 0, 14), cyl(0.31, 0.05, w(IRON), 0, 0.6, 0, 14));
+      const level = Math.min(8, stage) / 8;
+      out.push(cyl(0.27, 0.01, level > 0 ? 0x4a8ab0 : 0x2a2420, 0, 0.12 + level * 0.66, 0, 14));
+      out.push(box(0.5, 0.03, 0.08, w(WOOD_DARK), 0, 0.82, 0), box(0.08, 0.03, 0.5, w(WOOD_DARK), 0, 0.82, 0));
+      break;
+    }
+    case 'smoker':
+      out.push(
+        box(0.6, 0.6, 0.5, w(IRON_DARK), 0, 0.2, 0),
+        ...[-0.24, 0.24].flatMap((x) => [-0.19, 0.19].map((z) => box(0.06, 0.2, 0.06, w(IRON_DARK), x, 0, z))),
+        box(0.12, 0.5, 0.12, w(IRON_DARK), 0.18, 0.8, -0.12),
+        box(0.62, 0.04, 0.52, 0x2a2420, 0, 0.8, 0),
+        box(0.3, 0.2, 0.02, w(IRON), 0, 0.38, 0.26),
       );
       break;
     // 2.68: the traps.

@@ -20,6 +20,8 @@ export interface CityRecipe {
   manual?: number;
   /** 2.69: made only beside a workshop built (a workbench with the toolkit). */
   shop?: true;
+  /** 2.70: made only beside a smoker built. */
+  smoker?: true;
 }
 
 export const CITY_RECIPES: readonly CityRecipe[] = [
@@ -327,6 +329,77 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
       ['tape', 1],
     ],
     manual: 2,
+  },
+  // 2.70 (C5 batch 5): survival with weight. Dirty water boiled, known to all; the rest from the garden's, the fishing and the cooking manuals.
+  {
+    makes: 'water',
+    n: 1,
+    from: [['dirty_water', 1]],
+    stove: true,
+  },
+  {
+    makes: 'tea',
+    n: 1,
+    from: [
+      ['herbs', 1],
+      ['water', 1],
+    ],
+    stove: true,
+    manual: 5,
+  },
+  {
+    makes: 'roast_veg',
+    n: 1,
+    from: [['veg', 2]],
+    stove: true,
+    manual: 5,
+  },
+  {
+    makes: 'fish_soup',
+    n: 1,
+    from: [
+      ['fish', 1],
+      ['veg', 1],
+      ['water', 1],
+    ],
+    stove: true,
+    manual: 5,
+  },
+  {
+    makes: 'poultice',
+    n: 1,
+    from: [
+      ['herbs', 2],
+      ['cloth', 1],
+    ],
+    manual: 5,
+  },
+  {
+    makes: 'jerky',
+    n: 2,
+    from: [['fish', 2]],
+    smoker: true,
+    manual: 4,
+  },
+  {
+    makes: 'fishing_rod',
+    n: 1,
+    from: [
+      ['plank', 1],
+      ['wire', 1],
+      ['nails', 1],
+    ],
+    manual: 4,
+  },
+  {
+    makes: 'preserves',
+    n: 1,
+    from: [
+      ['fruit', 3],
+      ['bottle', 1],
+    ],
+    stove: true,
+    manual: 3,
   },
 ];
 

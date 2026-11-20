@@ -262,6 +262,8 @@ const ids = (c: City) =>
 {
   // The beacon: more of the dead, by day's count too, and boards torn off one door at a time.
   const c = new City(5);
+  // (2.70: the last nights' long waits stand idle: measured as a city without thirst has them.)
+  c.state.rev = 5;
   c.step(0);
   const s = c.state;
   s.kit = (1 << THINGS.length) - 1;
@@ -329,6 +331,8 @@ const ids = (c: City) =>
 {
   // The generator: any hour; the gates open after the wait and not before; the dead come up inside the station.
   const c = new City(5);
+  // (2.70: the last nights' long waits stand idle: measured as a city without thirst has them.)
+  c.state.rev = 5;
   c.step(0);
   const s = c.state;
   s.kit = (1 << THINGS.length) - 1;
@@ -383,6 +387,8 @@ const ids = (c: City) =>
 {
   // The boat: fitted at any hour, taken only on the tide, from the pier's end; the fog (a short sight, sound carrying).
   const c = new City(5);
+  // (2.70: the last nights' long waits stand idle: measured as a city without thirst has them.)
+  c.state.rev = 5;
   c.peace = true;
   c.step(0);
   const s = c.state;

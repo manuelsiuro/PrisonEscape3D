@@ -247,3 +247,7 @@ Every release, in order, one line each; the full entry (what changed, what the r
 - City Escape, building a base (v2.67.0, out with the next release)
 - City Escape, nights: the Rush and traps (v2.68.0, out with the next release)
 - City Escape, crafting that grows (v2.69.0)
+
+## [v2.70 to v2.74](history/v2.70-v2.74.md)
+
+- City Escape, survival with weight (v2.70.0, not released yet)

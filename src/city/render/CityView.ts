@@ -1031,12 +1031,13 @@ export class CityView {
    */
   private readonly pieces = new THREE.Group();
   private readonly pieceMat = seeThrough(kitMaterial.clone(), 0.6);
-  setPieces(list: ReadonlyArray<{ tile: number; kind: number; worn: number; angle: number }>) {
+  setPieces(list: ReadonlyArray<{ tile: number; kind: number; worn: number; angle: number; stage?: number }>) {
     disposeTree(this.pieces, () => false, new Set([kitMaterial, this.pieceMat]));
     this.pieces.clear();
     if (!list.length) return;
     const parts: Part[] = [];
-    for (const p of list) put(parts, pieceParts(p.kind, p.worn, p.tile), (p.tile % W) + 0.5, Math.floor(p.tile / W) + 0.5, p.angle);
+    for (const p of list)
+      put(parts, pieceParts(p.kind, p.worn, p.tile, p.stage ?? 0), (p.tile % W) + 0.5, Math.floor(p.tile / W) + 0.5, p.angle);
     const mesh = new THREE.Mesh(merge(parts), this.pieceMat);
     mesh.castShadow = mesh.receiveShadow = true;
     this.pieces.add(mesh);
@@ -1252,6 +1253,60 @@ export class CityView {
    * nothing round the player, drifting. Render only.
    */
   private fog: THREE.Mesh | null = null;
+  /**
+   * 2.70: rain round the player: thin streaks falling (a storm's harder, and its lightning a moment's white light over the
+   * street); with reduced motion, the streaks held still. Off: hidden.
+   */
+  private rain: THREE.LineSegments | null = null;
+  private rainSeed: Float32Array | null = null;
+  private readonly flash = new THREE.AmbientLight(0xdfe8ff, 0);
+  drawRain(on: boolean, storm: boolean, me: { x: number; z: number }, time: number, still: boolean) {
+    if (!on) {
+      if (this.rain) this.rain.visible = false;
+      this.flash.intensity = 0;
+      return;
+    }
+    const COUNT = 900;
+    if (!this.rain) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(COUNT * 6), 3));
+      this.rain = new THREE.LineSegments(
+        geo,
+        new THREE.LineBasicMaterial({ color: 0xdce8f4, transparent: true, opacity: 0.75, depthWrite: false }),
+      );
+      this.rain.frustumCulled = false;
+      this.rain.renderOrder = 0.7;
+      this.rainSeed = new Float32Array(COUNT * 3);
+      for (let k = 0; k < COUNT; k++) {
+        const h = mix32(k * 7919);
+        this.rainSeed[k * 3] = ((h & 1023) / 1023 - 0.5) * 26;
+        this.rainSeed[k * 3 + 1] = (((h >> 10) & 1023) / 1023 - 0.5) * 20;
+        this.rainSeed[k * 3 + 2] = ((h >> 20) & 1023) / 1023;
+      }
+      this.group.add(this.rain, this.flash);
+    }
+    this.rain.visible = true;
+    // (A district put up again empties the group: the rain and its flash go back in.)
+    if (!this.rain.parent) this.group.add(this.rain, this.flash);
+    const pos = this.rain.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const seed = this.rainSeed!;
+    const speed = storm ? 1.6 : 1.1;
+    const len = storm ? 0.9 : 0.6;
+    for (let k = 0; k < COUNT; k++) {
+      const x = me.x + seed[k * 3] - (storm ? 0.25 : 0.1);
+      const z = me.z + seed[k * 3 + 1];
+      const y = 6 * (1 - ((seed[k * 3 + 2] + (still ? 0 : time * speed)) % 1));
+      pos.setXYZ(k * 2, x, y, z);
+      pos.setXYZ(k * 2 + 1, x + (storm ? 0.25 : 0.1), y - len, z);
+    }
+    pos.needsUpdate = true;
+    // (A storm's lightning: now and then, a flash and its afterglow; never with reduced motion.)
+    if (storm && !still) {
+      const beat = time % 9;
+      this.flash.intensity = beat < 0.12 ? 2.2 : beat < 0.25 ? 0 : beat < 0.33 ? 1.4 : 0;
+    } else this.flash.intensity = 0;
+  }
+
   drawFog(on: boolean, me: { x: number; z: number }, time: number, still: boolean) {
     if (!on) {
       if (this.fog) this.fog.visible = false;

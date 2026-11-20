@@ -10,7 +10,7 @@ object and make survival more fun". The design below was approved as proposed ("
 
 This file is the stage's design and its roadmap, as [`10-city-escape.md`](10-city-escape.md) was for
 C1 to C4 (the mode's own design, [`../source/city_escape_design.md`](../source/city_escape_design.md),
-is never edited: a rule that departs from it gets its row in [`../decisions/city.md`](../decisions/city.md)
+is never edited: a rule that departs from it gets its row in [`../decisions/city-c5.md`](../decisions/city-c5.md)
 when it is built). Each batch is a vertical slice (rules, picture, phone and desktop, both languages,
 How to play, tests) released at the user's word.
 
@@ -103,7 +103,7 @@ lamp, trough, lantern; the trap, fence and seed shapes).
   Fallen: as now.
 - **The three ways out** become a Rush at a place the player fortifies (the hospital's pad, the metro
   station, the pier) before lighting the beacon or the generator.
-- **As built (2.68):** the Rush, a base left and the six traps that need no power (the rules: `decisions/city.md`'s
+- **As built (2.68):** the Rush, a base left and the six traps that need no power (the rules: `decisions/city-c5.md`'s
   rows). Claude's picks: a Rush only in cities begun from 2.68; waves of 3 and one more each wave, each Rush and each
   step of danger; the Rush's dead about following across a checkpoint; supplies of planks, scrap, food, bandages and bolts
   (manuals and armour come with batch 4); the dead through what's built by the cheapest way, so walls make a door of the
@@ -131,7 +131,7 @@ lamp, trough, lantern; the trap, fence and seed shapes).
   less), raincoat (never soaked). **Bags** in a back slot: satchel +2 pockets, hiking pack +4.
 
 - **As built (2.69):** three manuals, the workshop, mending, the upgrades, the weapons and tricks above, five armours and two
-  bags (the rules: `decisions/city.md`'s rows). Claude's picks: the other manuals (gardening, fishing, cooking, field
+  bags (the rules: `decisions/city-c5.md`'s rows). Claude's picks: the other manuals (gardening, fishing, cooking, field
   medicine…) come with batch 5; the powered station (floodlight, electric fence) waits for a generator piece; the
   raincoat for the weather; the bag a box of its own whose things count for making, not more pockets (eight slots and the
   Make and Build buttons fill a phone's bar).
@@ -152,6 +152,11 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 - **Weather** from the seed, said by Dispatch at dawn: clear, rain (barrels fill, the garden watered, the
   dead hear half as far, soaked), morning fog (everyone sees three tiles), heat (thirst half again as
   fast), storm (thunder covers noise, lightning lights the street).
+
+- **As built (2.70):** thirst, the five states, fresh food going off, the weather, drinking and fishing at water, the
+  planter, the rain barrel, the smoker, seven cooked things and three manuals (the rules: `decisions/city-c5.md`'s rows).
+  Claude's picks: everything in a city begun from 2.70 only; hens, eggs and the omelette wait for batch 6 (a survivor's
+  swap); fishing a timed cast, not a tug to time; cosy stays the comfort of 2.67's Home, not a state of its own.
 
 ### A city that doesn't wait (batch 6)
 - **Events**, one or two a day from day 2, on the map with a time, all optional: a supply drop, a cry for
@@ -193,5 +198,5 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 | 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | released with 2.69.0 |
 | 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | released with 2.69.0 |
 | 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | 2.69.0 | released |
-| 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | | |
+| 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | 2.70.0 | built, merged, not released |
 | 6 | Events, skills, Holdout, the dog | | |

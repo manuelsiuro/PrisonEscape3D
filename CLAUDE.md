@@ -21,7 +21,7 @@ updating it.
 **City Escape** (`src/city/`, v2.46 on) is a second mode with its own simulation, generator and screens,
 built in four stages (on the title since 2.49; its parked items and its reviews' findings since, to 2.60):
 its design is `docs/source/city_escape_design.md`, its rules where they depart from it
-`docs/decisions/city.md`, its roadmap, its code and the seams it shares with the prison game
+`docs/decisions/city.md` (stage C5's: `city-c5.md`), its roadmap, its code and the seams it shares with the prison game
 `docs/phases/10-city-escape.md`, stage C5 (breaking, building, the Rush, crafting; 2.66 on)
 `docs/phases/11-city-make-it-yours.md`. It adds nothing to the prisons' lists or state; dev builds expose
 `window.__city()`; its tests are `city*test` with their bots in `citybots.ts`, its help pictures

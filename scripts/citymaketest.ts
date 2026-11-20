@@ -44,7 +44,7 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
   for (const list of [...Object.values(LOOT_BY_USE), ...Object.values(LOOT_BY_PROP)]) for (const [id] of list ?? []) found.add(id);
   // (2.64 on: what each revision adds where it'd be kept, for a city begun now.)
   for (const use of USES)
-    for (const prop of ['shelf', 'desk', 'bed', ...Object.keys(LOOT_BY_PROP)] as PropKind[])
+    for (const prop of ['shelf', 'desk', 'bed', 'toilet', 'table', ...Object.keys(LOOT_BY_PROP)] as PropKind[])
       for (const [item] of lootList(use, prop, CITY_REV).list) found.add(cityItem(item)!.id);
   const made = new Set(CITY_RECIPES.map((r) => r.makes));
   for (const r of CITY_RECIPES) {
@@ -65,14 +65,21 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
   c.step(0);
   // (What the survivors teach is known here: their errands are citystorytest's.)
   c.state.errand = [1, 1, 1, 1];
-  // (2.69: the manuals read: reading them is citycrafttest's.)
-  c.state.manuals = 7;
+  // (2.69: the manuals read: reading them is citycrafttest's and cityneedstest's.)
+  c.state.manuals = 63;
   const bench = c.district.props.findIndex((p, k) => p.kind === 'workbench' && beside(c, c.tilesOf(k)) !== undefined);
   check(bench >= 0, 'seed 2 start: a workbench to stand beside');
   const atBench = beside(c, c.tilesOf(bench))!;
   // (2.69: a workshop built beside where the bench is stood at, for what wants one.)
   const shopAt = [atBench - 1, atBench + 1, atBench - MAP_W, atBench + MAP_W].find((i) => !c.grid[i] && !c.breakAt[i] && !c.carAt[i])!;
-  c.state.built[c.state.district] = [[shopAt, PIECE.workshop, 100, 1, 0]];
+  // (2.70: and a smoker beside it, for what's smoked.)
+  const smokeAt = [atBench - 1, atBench + 1, atBench - MAP_W, atBench + MAP_W].find(
+    (i) => i !== shopAt && !c.grid[i] && !c.breakAt[i] && !c.carAt[i],
+  );
+  c.state.built[c.state.district] = [
+    [shopAt, PIECE.workshop, 100, 1, 0],
+    ...(smokeAt !== undefined ? [[smokeAt, PIECE.smoker, 60, 1, 0] as [number, number, number, number, number]] : []),
+  ];
   c.reenter();
   const street = c.tile;
   const done: string[] = [];
@@ -98,7 +105,7 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
         `${r.makes} made with no ${r.bench ? 'workbench' : 'stove'}`,
       );
     }
-    if (r.bench) stand(c, atBench);
+    if (r.bench || r.smoker) stand(c, atBench);
     if (r.stove) c.state.inv[7] = [N('stove'), 1];
     c.step(command(0, COP.MAKE, k));
     const { makes, from } = recipeParts(r);

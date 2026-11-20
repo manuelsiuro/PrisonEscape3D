@@ -48,7 +48,12 @@ export function soundGear(st: { manuals?: unknown; armour?: unknown; bag?: unkno
 /** 2.69: a recipe's workshop wanted (a city begun before 2.69 has no toolkit to build one: a bench does there). */
 export const wantsShop = (c: City, r: CityRecipe) => !!r.shop && c.state.rev >= 5;
 /** Whether a recipe is known: a survivor's teaching aside, its manual read (a city begun before 2.69 knows them all). */
-export const knows = (c: City, r: CityRecipe) => r.manual === undefined || c.state.rev < 5 || (c.state.manuals & (1 << r.manual)) !== 0;
+export const knows = (c: City, r: CityRecipe) => r.manual === undefined || knowsManual(c, r.manual);
+/** A manual's recipes known: read, or a city begun before its revision's loot held it (2.69's three: 5; 2.70's three: 6). */
+export const knowsManual = (c: City, m: number) =>
+  m < 3 ? c.state.rev < 5 || (c.state.manuals & (1 << m)) !== 0 : c.state.rev >= 6 && (c.state.manuals & (1 << m)) !== 0;
+/** 2.70, the review: 2.70's manuals' recipes and pieces don't exist in a city begun before (no weather, no seeds, no water to fish): hidden. */
+export const manualExists = (c: City, m: number) => m < 3 || c.state.rev >= 6;
 /** The bag's slots (0: none worn), and its things (read only). */
 export const bagSlots = (c: City) => cityItem(c.state.bag)?.slots ?? 0;
 export const bagThings = (c: City): readonly Stack[] => (c.state.bag ? (c.state.boxes[BAG] ?? []) : []);
