@@ -33,11 +33,14 @@ src/city/
                       Since: light.ts (2.52), cars.ts (2.54), ranged.ts (2.55), tools.ts (2.58: chained
                       buildings, fences cut, clothes); render/ facades.ts, streets.ts, streetThings.ts,
                       cityProps.ts, cityTex.ts (2.57), horde.ts (2.60: the dead); gen/tunnel.ts (2.56);
-                      content/windows.ts (2.61: where windows are, for the rules and the picture)
+                      content/windows.ts (2.61: where windows are, for the rules and the picture); stage C5
+                      (`11-city-make-it-yours.md`): salvage.ts (2.66: breaking), build.ts and render/pieces.ts
+                      (2.67: building, the traps since 2.68), rush.ts (2.68: the Rush, a base left), gear.ts
+                      (2.69: manuals, mending, what's worn, the tricks), each with its numbers in content/
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
   record.ts           the ways out taken and the feats, in a slot of their own (read by the city's menu)
 src/styles/46-city.css
-scripts/city*test.ts (fifteen: `PLAN.md` §6 says what each proves);
+scripts/city*test.ts (twenty: `PLAN.md` §6 says what each proves);
 citybots.ts (the scavenger, the quester)
 ```
 

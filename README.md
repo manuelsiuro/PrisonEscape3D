@@ -100,9 +100,13 @@ on its side, in a city the army walled in and left. **Find food, find out what h
 
 The city is new every time: nine districts, each its own map, joined by checkpoints in the army's fences.
 Search houses, shops and the cars left in the street (some still have their alarms). Eat, sleep, make
-weapons, bandages and meals (fifteen recipes). The dead keep to the dark indoors by day and come out
-everywhere at night: runners, brutes, screamers and bloaters on the later nights. Fight them with a bat or
-a crossbow, burn them, draw them off with a thrown bottle, bar a house's doors to sleep, keep a fire lit.
+weapons, bandages and meals (thirty-one recipes, thirteen of them from manuals found in the city). Break
+furniture, cars and inner walls for planks, scrap and wire, and build a base with a hammer: walls, a door,
+a bed, a campfire, a workshop, and six traps before it. Every third night is the Rush, four waves coming
+for you wherever you are. The dead keep to the dark indoors by day and come out everywhere at night:
+runners, brutes, screamers and bloaters on the later nights. Fight them with a bat, a machete or a
+crossbow, burn them, blind them with smoke, draw them off with a noisemaker, wear armour against their
+bites, bar a house's doors to sleep, keep a fire lit.
 A voice on a radio and your journal lead through five acts to three ways out (a helicopter, a boat or the
 metro tunnel), each with a last night of its own. Four survivors have errands, swaps and recipes to
 teach. Play as Survivor, or as Hardcore with one life.

@@ -185,7 +185,10 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
   light, the dead at its edge, interiors dark by day), `citycartest` (2.54: cars searched, the alarm), `cityrangedtest`
   (2.55: thrown and shot, fire), `citytunneltest` (2.56: the metro's tunnel), `citylooktest` (2.57: a town's look), `citytooltest`
   (2.58: chained buildings, fences cut, a sleeper's door, the boat), `cityfighttest` (2.60: the kinds of the dead, the unseen
-  blow, their looks); their bots are in `citybots.ts`.
+  blow, their looks), `citylastnightstest` (2.65: fair last nights, the weapon for the one struck), `citysalvagetest` (2.66:
+  breaking things), `citybuildtest` (2.67: building a base), `cityrushtest` (2.68: the Rush, traps, a base left, a bot
+  holding a Rush), `citycrafttest` (2.69: manuals, the workshop, mending, armour, bags, the tricks); their bots are in
+  `citybots.ts`.
 - **Speech** (`chattertest`, `gossiptest`): the phrase banks in both languages, the director
   over days of play, every piece of gossip checked against the running game.
 - **The action button** (`buttontest`, v2.34.2): in every prison, at a time in each block, beside every
@@ -217,7 +220,9 @@ Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the game
 stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
 2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
 metro's tunnel), and its full review's findings from 2.57 to 2.60 (a town's own look, chained buildings and fences cut,
-a sleeper's door, the endings re-tuned, checkpoints, clothes, the fight and three more kinds of the dead).
+a sleeper's door, the endings re-tuned, checkpoints, clothes, the fight and three more kinds of the dead). Stage C5, the
+testers' asks (`phases/11-city-make-it-yours.md`): breaking, building a base, the Rush and traps, crafting that grows
+(2.66 to 2.69); two batches to come.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

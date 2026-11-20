@@ -22,7 +22,8 @@ updating it.
 built in four stages (on the title since 2.49; its parked items and its reviews' findings since, to 2.60):
 its design is `docs/source/city_escape_design.md`, its rules where they depart from it
 `docs/decisions/city.md`, its roadmap, its code and the seams it shares with the prison game
-`docs/phases/10-city-escape.md`. It adds nothing to the prisons' lists or state; dev builds expose
+`docs/phases/10-city-escape.md`, stage C5 (breaking, building, the Rush, crafting; 2.66 on)
+`docs/phases/11-city-make-it-yours.md`. It adds nothing to the prisons' lists or state; dev builds expose
 `window.__city()`; its tests are `city*test` with their bots in `citybots.ts`, its help pictures
 `scripts/dev/cityshot.ts` (`docs/TOOLS.md`). Polishing it: the `polish-gameplay` skill's City Escape part.
 
