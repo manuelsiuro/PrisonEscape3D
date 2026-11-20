@@ -20,7 +20,7 @@ import { showSettings } from '../../ui/screens/settings';
 import { BLOW, DOWN, kindStats } from '../content/dead';
 import { CityView, type DeadFrame } from '../render/CityView';
 import { nightAt, ZED, type Zed } from '../sim/dead';
-import { cityItem } from '../content/items';
+import { CITY_ITEMS, cityItem } from '../content/items';
 import { SEARCH_STEPS } from '../content/loot';
 import { CITY_RECIPES } from '../content/recipes';
 import { deleteCitySave, writeCitySave } from '../save';
@@ -49,6 +49,7 @@ import { breaker, workOf, workTotal } from '../sim/salvage';
 import { BUILD, PIECES } from '../content/build';
 import { buildList, buildSpot, builtList, canBuild, comfortAt, lacking, pieceAtTile, repairCost, wornStep } from '../sim/build';
 import { rushDue, rushNumber, wavesIn } from '../sim/rush';
+import { BAG, bagSlots, bagThings } from '../sim/gear';
 import { RUSH } from '../content/rush';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import type { LandmarkFrame } from '../render/landmarks';
@@ -83,7 +84,13 @@ const HELD: Record<string, number> = {
   knife: itemNumber('razor_comb'),
   cleaver: itemNumber('razor_comb'),
   spear: itemNumber('broom'),
+  // (2.69.)
+  machete: itemNumber('razor_comb'),
+  barbed_bat: itemNumber('spiked_bat'),
+  long_spear: itemNumber('broom'),
 };
+const GUARD_OUTFIT = itemNumber('guard_outfit');
+const GHILLIE = itemNumber('ghillie_cloak');
 /** (2.59) Clothes found in a house: the ones a prisoner is released in. */
 const OWN_CLOTHES = itemNumber('own_clothes');
 /** What lies on the ground is drawn as a parcel (the view's items are the prisons'). */
@@ -364,6 +371,10 @@ let fellHeard = -1e9;
 let crackled = -1e9;
 /** 2.68: when a trap was last heard (spikes under a pack aren't a drum roll). */
 let trapHeard = -1e9;
+/** 2.69: a noisemaker ringing till then (its sound again every two seconds), and the last ring. */
+let ringUntil = -1e9;
+let rang = -1e9;
+let ticksShown = -1;
 const now = () => performance.now();
 function tip(name: string, key: Key, urgent = false) {
   if (seenTip(name) || (!urgent && now() - tipped < 8000)) return;
@@ -605,6 +616,17 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     alarmHeard = now;
     sound.carAlarm();
   }
+  // (2.69: a noisemaker ringing, again every two seconds; a smoke cloud billowing where it landed.)
+  if (now < ringUntil && !r.paused && now - rang > 2000 && c.state.ticks.length) {
+    rang = now;
+    sound.phone();
+  }
+  cityView.setSmoke(c.state.smoke.filter(([, until]) => until > c.state.step).map(([tile]) => tile));
+  cityView.drawSmoke(now / 1000, r.paused || settings.reducedMotion);
+  if (ticksShown !== c.ticksRev) {
+    ticksShown = c.ticksRev;
+    cityView.setTicks(c.state.ticks.map((tk) => tk[0]));
+  }
   if (firesShown !== c.firesRev) {
     firesShown = c.firesRev;
     cityView.setFires(c.state.fires.map((f) => f[0]));
@@ -700,19 +722,28 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'thrown': {
       const mid = (i: number) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 });
-      const fire = cityItem(e.item)?.id === 'molotov';
+      const id = cityItem(e.item)?.id;
+      const fire = id === 'molotov' || id === 'flare';
       cityView.throwFx(mid(e.from), mid(e.to), fire ? 'molotov' : 'bottle');
       sound.swish();
-      // (Heard as it lands, when its arc ends.)
+      // (Heard as it lands, when its arc ends. 2.69: a smoke bomb hisses, a flare catches.)
       setTimeout(() => {
         if (play.side !== r) return;
-        sound.shatter();
-        if (fire) sound.ignite();
+        if (id === 'smoke_bomb') sound.scrub();
+        else if (id === 'flare') sound.ignite();
+        else sound.shatter();
+        if (id === 'molotov') sound.ignite();
       }, 260);
+      if (id === 'smoke_bomb') tip('city.smoke', 'city.tip.smoke');
       break;
     }
     case 'shot':
-      cityView.throwFx({ x: (e.from % MAP_W) + 0.5, z: Math.floor(e.from / MAP_W) + 0.5 }, { x: e.x / UNIT, z: e.z / UNIT }, 'bolt');
+      // (2.69: a slingshot's stone flies as a bottle does, small.)
+      cityView.throwFx(
+        { x: (e.from % MAP_W) + 0.5, z: Math.floor(e.from / MAP_W) + 0.5 },
+        { x: e.x / UNIT, z: e.z / UNIT },
+        cityItem(e.item ?? 0)?.id === 'slingshot' ? 'stone' : 'bolt',
+      );
       sound.twang();
       if (e.dead) sound.dud();
       break;
@@ -940,6 +971,39 @@ function cityEvent(r: CityRun, e: CityEvent) {
       break;
     case 'cantBuild':
       banner.toast(t(`city.build.why.${e.why}` as Key), 'info', 2400, 'bulb');
+      break;
+    // 2.69: a manual read; something worn or taken off; mended; a noisemaker set down, ringing.
+    case 'learnt':
+      sound.chime();
+      banner.show(
+        t('city.learnt.title'),
+        t('city.learnt.sub', {
+          what: t(`city.item.${CITY_ITEMS.find((d) => d.manual === e.manual)?.id ?? 'manual_weapons'}` as Key),
+          n: e.n,
+        }),
+        'routine',
+        5200,
+        'book',
+      );
+      save(r);
+      break;
+    case 'worn':
+      sound.stow(!e.on);
+      banner.toast(t(e.on ? 'city.toast.wearing' : 'city.toast.tookOff', { what: itemName(e.item) }), 'good', 2400);
+      if (e.on && cityItem(e.item)?.kind === 'bag') tip('city.bag', 'city.tip.bag');
+      save(r);
+      break;
+    case 'mended':
+      sound.stow(false);
+      banner.toast(t('city.toast.mended', { what: itemName(e.item) }), 'good', 2400);
+      break;
+    case 'set':
+      sound.tapClick();
+      banner.toast(t('city.toast.ticking'), 'info', 3000, 'clock');
+      break;
+    case 'ring':
+      ringUntil = now() + 10_000;
+      sound.phone();
       break;
     // 2.68: the Rush: said at dawn and before dusk, begun, each wave, held (supplies dropped); the traps at work; a base come back to.
     case 'rush':
@@ -1209,7 +1273,10 @@ function frameOf(r: CityRun, a: number): Frame {
   f.minuteOfDay = c.state.district === TUNNEL ? 0 : c.minute + ((c.state.step % STEPS_PER_SECOND) + a) / STEPS_PER_SECOND;
   f.surface = c.world.ground.kind[c.tile];
   f.tilesRev = c.world.rev;
-  f.outfit = c.state.outfit ? OWN_CLOTHES : INMATE_OUTFIT;
+  // (2.69: armour worn: riot gear as a uniform with its helmet, a poncho as the ghillie cloak, the rest a vest of its colour.)
+  const armour = cityItem(c.state.armour[0])?.id;
+  f.outfit = armour === 'riot_gear' ? GUARD_OUTFIT : armour === 'poncho' ? GHILLIE : c.state.outfit ? OWN_CLOTHES : INMATE_OUTFIT;
+  f.vest = armour && armour !== 'riot_gear' && armour !== 'poncho' ? cityItem(c.state.armour[0])!.color : undefined;
   // (2.60: the weapon that strikes, in hand: the prisons' thing of the same shape. 2.65: the one that struck last.)
   f.held = HELD[cityItem(c.inHand()?.[0] ?? 0)?.id ?? ''] ?? 0;
   const dest = r.pilot.destination;
@@ -1364,16 +1431,24 @@ function pocketsOf(r: CityRun): PocketsState {
   const open = s.open;
   st.box = !open
     ? ''
-    : open.startsWith('g')
-      ? 'city.box.pile'
-      : open.startsWith('c')
-        ? c.district.deco[Number(open.slice(1))] === DECO.WRECK
-          ? 'city.box.wreck'
-          : 'city.box.car'
-        : open.startsWith('p')
-          ? `city.piece.${PIECES[(c.pieceAt[Number(open.slice(1))] || 1) - 1].id}`
-          : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
+    : open === BAG
+      ? 'city.box.bag'
+      : open.startsWith('g')
+        ? 'city.box.pile'
+        : open.startsWith('c')
+          ? c.district.deco[Number(open.slice(1))] === DECO.WRECK
+            ? 'city.box.wreck'
+            : 'city.box.car'
+          : open.startsWith('p')
+            ? `city.piece.${PIECES[(c.pieceAt[Number(open.slice(1))] || 1) - 1].id}`
+            : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
   st.slots = c.box();
+  // (2.69: what's worn.)
+  st.armour = s.armour;
+  st.bag = s.bag;
+  st.bagSlots = bagSlots(c);
+  st.bagUsed = bagThings(c).filter((x) => x[0]).length;
+  st.bagThings = bagThings(c);
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
   st.sleepable = (st.box === 'city.box.bed' || st.box === 'city.piece.cot') && c.sleepable() >= 0;

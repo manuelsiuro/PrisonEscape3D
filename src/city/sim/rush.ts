@@ -1,7 +1,7 @@
 import { NIGHT_FROM, NIGHT_TO, STEPS_PER_MINUTE } from '../../sim/tuning';
 import { MAP_H, MAP_W } from '../../sim/world/World';
 import { pieceOf } from '../content/build';
-import { cityItemNumber } from '../content/items';
+import { CITY_ITEMS, cityItem, cityItemNumber } from '../content/items';
 import { LEFT, RUSH, SUPPLIES } from '../content/rush';
 import { PLACES, TUNNEL } from '../gen/tunnel';
 import { builtHere, removePiece } from './build';
@@ -100,6 +100,14 @@ export function rushMinute(c: City) {
     const tier = SUPPLIES[Math.min(s.held, SUPPLIES.length - 1)];
     s.held++;
     for (const [id, count] of tier) c.drop(c.tile, cityItemNumber(id), count);
+    // (2.69, a city begun from then: a manual not yet read nor carried from the second Rush held; a padded jacket from the third.)
+    if (s.rev >= 5 && s.held >= 2) {
+      const manual = CITY_ITEMS.findIndex(
+        (d) => d.manual !== undefined && !(s.manuals & (1 << d.manual)) && !c.count(cityItemNumber(d.id)),
+      );
+      if (manual >= 0) c.drop(c.tile, manual + 1, 1);
+      if (s.held >= 3) c.drop(c.tile, cityItemNumber('padded_jacket'), cityItem(cityItemNumber('padded_jacket'))!.wear!);
+    }
     c.events.push({ type: 'rush', what: 'held', n, tile: c.tile });
   }
 }

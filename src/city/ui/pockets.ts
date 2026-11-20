@@ -6,7 +6,8 @@ import { icon } from '../../ui/icons';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../content/items';
 import { PEOPLE } from '../content/people';
 import { CITY_RECIPES } from '../content/recipes';
-import { COP, PIECE_OPS, POCKETS, type Stack, type Target } from '../sim/City';
+import { COP, GEAR_OPS, PIECE_OPS, POCKETS, REPAIR_OPS, type Stack, type Target } from '../sim/City';
+import { REPAIR } from '../content/recipes';
 import { PIECES } from '../content/build';
 import { TRAP } from '../content/rush';
 
@@ -62,7 +63,13 @@ export interface PocketsState {
   /** A door in reach is barred (the button takes its boards down). */
   barred: boolean;
   /** What each recipe lacks now ('ok': it can be made). */
-  recipes: ReadonlyArray<'ok' | 'parts' | 'bench' | 'stove' | 'unknown'>;
+  recipes: ReadonlyArray<'ok' | 'parts' | 'bench' | 'stove' | 'unknown' | 'shop'>;
+  /** 2.69: what's worn: armour [item, bites left] ([0, 0] none); a bag (its item, 0 none), its slots and how many hold something. */
+  armour: Stack;
+  bag: number;
+  bagSlots: number;
+  bagUsed: number;
+  bagThings: readonly Stack[];
   /** The survivor in reach (their id; '' none). */
   person: string;
   /** The way out in reach: what the button does with it ('begin1'–'3', 'go2', 'go3'; '' none). */
@@ -100,11 +107,33 @@ const LIGHTS: Record<string, { line: Key; verb: Key; icon: 'flame' | 'bulb' | 'h
   // (2.55: thrown.)
   bottle: { line: 'city.gives.bottle', verb: 'city.thing.throw', icon: 'hand' },
   molotov: { line: 'city.gives.molotov', verb: 'city.thing.throw', icon: 'flame' },
+  // (2.69: the tricks.)
+  smoke_bomb: { line: 'city.gives.smoke', verb: 'city.thing.throw', icon: 'hand' },
+  flare: { line: 'city.gives.flare', verb: 'city.thing.throw', icon: 'flame' },
+  noisemaker: { line: 'city.gives.noisemaker', verb: 'city.thing.setDown', icon: 'hand' },
+};
+
+/** 2.69: what a press of a worn thing's or a manual's card button does, and its icon. */
+const WEAR: Partial<Record<string, { verb: Key; icon: 'book' | 'shield' | 'box' }>> = {
+  manual: { verb: 'city.thing.read', icon: 'book' },
+  armour: { verb: 'city.thing.wear', icon: 'shield' },
+  bag: { verb: 'city.thing.wearBag', icon: 'box' },
 };
 
 export function useLine(n: number): string {
   const light = LIGHTS[cityItem(n)?.id ?? ''];
   if (light) return t(light.line);
+  // (2.69: a manual, what's worn.)
+  const def = cityItem(n);
+  if (def?.manual !== undefined)
+    return t('city.gives.manual', {
+      what: CITY_RECIPES.filter((r) => r.manual === def.manual)
+        .map((r) => itemName(cityItemNumber(r.makes)))
+        .join(', '),
+    });
+  if (def?.kind === 'armour')
+    return def.hidden ? t('city.gives.poncho') : t(def.slow ? 'city.gives.armourSlow' : 'city.gives.armour', { n: def.armour ?? 0 });
+  if (def?.kind === 'bag') return t('city.gives.bag', { n: def.slots ?? 0 });
   const use = cityItem(n)?.use;
   if (!use) return '';
   const sign = (v: number) => (v > 0 ? `+${v}` : `${v}`);
@@ -165,6 +194,10 @@ export class CityPockets {
   private lang = '';
   /** The pocket whose card is up (-1 none). */
   picked = -1;
+  /** 2.69: what's worn: the armour's and the bag's buttons (under the corner map); the armour's card up instead of a pocket's. */
+  readonly worn: HTMLElement;
+  wornCard = false;
+  private shownWorn = '';
   /** A command for the simulation (op, a), and the action button. */
   onOp: (op: number, a?: number) => void = () => {};
   onAct: () => void = () => {};
@@ -216,24 +249,44 @@ export class CityPockets {
       else if (el.dataset.c === 'repair') this.onOp(COP.BUILD, PIECE_OPS);
       else if (el.dataset.c === 'down') this.onOp(COP.BUILD, PIECE_OPS + 1);
       else if (el.dataset.c === 'feed') this.onOp(COP.BUILD, PIECE_OPS + 2);
+      else if (el.dataset.c === 'bagOff') this.onOp(COP.USE, GEAR_OPS + 1);
       else this.onOp(COP.CLOSE);
     });
     this.card.addEventListener('click', (e) => {
       const c = (e.target as HTMLElement).closest<HTMLElement>('[data-c]')?.dataset.c;
       if (!c) return;
+      // (2.69: what's worn: taken off from its own card.)
+      if (c === 'off') {
+        this.onOp(COP.USE, GEAR_OPS);
+        this.wornCard = false;
+        this.shownInv = '';
+        return;
+      }
       if (c === 'use') this.onOp(COP.USE, this.picked);
+      else if (c === 'mend') this.onOp(COP.MAKE, REPAIR_OPS + this.picked);
       else if (c === 'drop') this.onOp(COP.DROP, this.picked);
       else if (c === 'store') this.onOp(COP.STORE, this.picked);
       if (c !== 'use') this.pick(-1);
     });
-    document.body.append(this.bar, this.panel, this.card, this.make, this.build, this.act, this.hit, this.stop);
+    this.worn = h('div', 'city-worn hidden');
+    this.worn.addEventListener('click', (e) => {
+      const w = (e.target as HTMLElement).closest<HTMLElement>('[data-w]')?.dataset.w;
+      if (w === 'bag') return this.onOp(COP.USE, GEAR_OPS + 2);
+      if (w === 'armour') {
+        this.wornCard = !this.wornCard;
+        this.picked = -1;
+        this.shownInv = '';
+      }
+    });
+    document.body.append(this.bar, this.panel, this.card, this.make, this.build, this.act, this.hit, this.stop, this.worn);
   }
 
   show(on: boolean) {
     this.bar.classList.toggle('hidden', !on);
     this.hit.classList.toggle('hidden', !on);
-    if (!on) for (const el of [this.panel, this.card, this.act, this.make, this.build, this.stop]) el.classList.add('hidden');
-    this.shownInv = this.shownBox = this.shownAct = this.shownMake = this.shownHit = this.shownBuild = '';
+    if (!on) for (const el of [this.panel, this.card, this.act, this.make, this.build, this.stop, this.worn]) el.classList.add('hidden');
+    this.shownInv = this.shownBox = this.shownAct = this.shownMake = this.shownHit = this.shownBuild = this.shownWorn = '';
+    this.wornCard = false;
     this.picked = -1;
     this.makeOpen = false;
     this.buildOpen = false;
@@ -242,6 +295,7 @@ export class CityPockets {
   /** A pocket's card opened (the same again, or -1: shut). */
   pick(k: number) {
     this.picked = k === this.picked ? -1 : k;
+    this.wornCard = false;
     this.shownInv = '';
     if (this.picked >= 0) this.toggleMake(false);
   }
@@ -284,9 +338,18 @@ export class CityPockets {
       setText(this.hit.querySelector('span')!, t('city.act.hit'));
       this.hit.setAttribute('aria-keyshortcuts', keyLabel('Space'));
     }
+    // 2.69: what's worn, under the corner map: the armour (its bites left, its card) and the bag (how full; it opens).
+    if (this.wornCard && !s.armour[0]) this.wornCard = false;
+    const wk = `${s.armour.join()}|${s.bag}|${s.bagUsed}|${s.bagSlots}|${s.box === 'city.box.bag'}|${this.wornCard}|${textStamp()}`;
+    if (wk !== this.shownWorn) {
+      this.shownWorn = wk;
+      this.worn.classList.toggle('hidden', !s.armour[0] && !s.bag);
+      const full = cityItem(s.armour[0])?.wear ?? 1;
+      this.worn.innerHTML = `${s.armour[0] ? `<button class="slot filled city-worn-btn${this.wornCard ? ' picked' : ''}" data-w="armour" aria-label="${itemName(s.armour[0])}" title="${itemName(s.armour[0])}"><img src="${iconOf(s.armour[0])}" alt=""><i class="slot-dur"><i style="width:${Math.round((100 * s.armour[1]) / full)}%"></i></i></button>` : ''}${s.bag ? `<button class="slot filled city-worn-btn${s.box === 'city.box.bag' ? ' picked' : ''}" data-w="bag" aria-label="${itemName(s.bag)}" title="${itemName(s.bag)}"><img src="${iconOf(s.bag)}" alt=""><i class="slot-n">${s.bagUsed}/${s.bagSlots}</i></button>` : ''}`;
+    }
     // (The thing whose card was up is gone: the card too.)
     if (this.picked >= 0 && !s.inv[this.picked]?.[0]) this.picked = -1;
-    const inv = `${JSON.stringify(s.inv)}|${this.picked}|${s.box}|${s.torchOn}|${s.torchLeft >= 60 ? Math.round(s.torchLeft / 60) : s.torchLeft}|${textStamp()}`;
+    const inv = `${JSON.stringify(s.inv)}|${this.picked}|${this.wornCard}|${s.armour.join()}|${s.box}|${s.torchOn}|${s.torchLeft >= 60 ? Math.round(s.torchLeft / 60) : s.torchLeft}|${textStamp()}`;
     if (inv !== this.shownInv) {
       this.shownInv = inv;
       this.bar.innerHTML = Array.from({ length: POCKETS }, (_, k) => {
@@ -297,7 +360,14 @@ export class CityPockets {
         'beforeend',
         `<i class="hotbar-gap"></i><button class="slot craft-btn${this.makeOpen ? ' picked' : ''}" aria-label="${t('city.make.title')}" aria-keyshortcuts="${keyLabel('KeyC')}">${icon('hammer', 22)}<span>${t('city.make.open')}</span></button><button class="slot craft-btn build-btn${this.buildOpen ? ' picked' : ''}" aria-label="${t('city.build.title')}" aria-keyshortcuts="${keyLabel('KeyB')}">${icon('home', 22)}<span>${t('city.build.open')}</span></button>`,
       );
-      this.card.classList.toggle('hidden', this.picked < 0);
+      this.card.classList.toggle('hidden', this.picked < 0 && !this.wornCard);
+      // (2.69: the armour worn: what it takes, what's left in it, Take off.)
+      if (this.picked < 0 && this.wornCard) {
+        const [item, n] = s.armour;
+        const def = cityItem(item)!;
+        this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${itemName(item)} · ${t('city.thing.worn')}</b><small>${useLine(item)} · ${t('city.thing.bites', { n, of: def.wear ?? n })}</small></div></div>
+          <div class="ct-actions"><button class="big-btn ghost" data-c="off">${icon('down', 16)}${t('city.thing.takeOff')}</button></div>`;
+      }
       if (this.picked >= 0) {
         const [item, n] = s.inv[this.picked];
         const torch = cityItem(item)!.id === 'torch';
@@ -305,8 +375,29 @@ export class CityPockets {
         const line = torch
           ? `${useLine(item)} · ${s.torchLeft >= 60 ? t('city.thing.torchLeft', { h: Math.round(s.torchLeft / 60) }) : s.torchLeft > 0 ? t('city.thing.torchMinutes', { n: s.torchLeft }) : t('city.thing.torchEmpty')}`
           : useLine(item);
-        this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${counted(item, n)}</b><small>${line || (cityItem(item)!.wear !== undefined ? t(cityItem(item)!.id === 'crossbow' ? 'city.thing.shots' : 'city.thing.blows', { n, of: cityItem(item)!.wear! }) : t(`city.kindOf.${cityItem(item)!.kind}` as Key))}</small></div></div>
-          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(torch ? (s.torchOn ? 'city.thing.torchOff' : 'city.thing.torchOn') : (LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')))}</button>` : ''}${s.box && (!s.piece || s.piece.chest) ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
+        const def = cityItem(item)!;
+        const wear = def.wear;
+        // (2.69: what's left in a thing that wears: shots, bites, blows.)
+        const left =
+          wear === undefined
+            ? ''
+            : t(def.shoots ? 'city.thing.shots' : def.kind === 'armour' ? 'city.thing.bites' : 'city.thing.blows', { n, of: wear });
+        const sub =
+          [line, line && def.kind === 'armour' ? left : ''].filter(Boolean).join(' · ') || left || t(`city.kindOf.${def.kind}` as Key);
+        const worn = WEAR[def.kind];
+        const verb = torch
+          ? s.torchOn
+            ? 'city.thing.torchOff'
+            : 'city.thing.torchOn'
+          : (worn?.verb ?? LIGHTS[def.id]?.verb ?? (def.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat'));
+        const useIcon = worn?.icon ?? LIGHTS[def.id]?.icon ?? (def.kind === 'med' ? 'heart' : 'utensils');
+        // (2.69: a worn thing mended at a bench: what it takes.)
+        const mend =
+          wear !== undefined && n < wear
+            ? `<button class="big-btn ghost" data-c="mend" title="${REPAIR[def.kind === 'armour' ? 'armour' : 'weapon'].map(([id, k]) => `${k} ${t(`city.item.${id}` as Key)}`).join(', ')}">${icon('wrench', 16)}${t('city.thing.mend')}</button>`
+            : '';
+        this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${counted(item, n)}</b><small>${sub}</small></div></div>
+          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(useIcon, 16)}${t(verb)}</button>` : ''}${mend}${s.box && (!s.piece || s.piece.chest) ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
     const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${JSON.stringify(s.breaks)}|${s.breakCan}|${JSON.stringify(s.piece)}|${textStamp()}`;
@@ -336,7 +427,12 @@ export class CityPockets {
         const pieceBtns = pc
           ? `${pc.fire >= 0 ? `<button class="big-btn" data-c="feed">${icon('flame', 16)}${t(pc.fire > 0 ? 'city.piece.feed' : 'city.piece.light')}</button>` : ''}${pc.bolts >= 0 && pc.bolts < TRAP.sentryMost ? `<button class="big-btn" data-c="feed">${icon('target', 16)}${t('city.piece.load')}</button>` : ''}${pc.canRepair !== 'full' ? `<button class="big-btn ghost" data-c="repair"${pc.canRepair === 'ok' ? '' : ' aria-disabled="true"'}>${icon('wrench', 16)}${t('city.piece.repair')}</button>` : ''}<button class="big-btn ghost" data-c="down">${icon('down', 16)}${t('city.piece.down')}</button>`
           : '';
-        this.panel.innerHTML = `<div class="box-head"><b>${t(s.box as Key)}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
+        // (2.69: the bag on the back: its name and how full; empty, it can be taken off.)
+        const bagged = s.box === 'city.box.bag';
+        const title = bagged ? t('city.box.bag', { what: itemName(s.bag), n: s.bagUsed, of: s.bagSlots }) : t(s.box as Key);
+        const bagOff =
+          bagged && !filled ? `<button class="big-btn ghost" data-c="bagOff">${icon('down', 16)}${t('city.thing.takeOff')}</button>` : '';
+        this.panel.innerHTML = `<div class="box-head"><b>${title}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${
             filled
               ? `<div class="slot-grid">${s.slots.map((st, k) => (st[0] ? `<button class="slot filled" data-slot="${k}" title="${itemName(st[0])}" aria-label="${t('city.box.take', { what: counted(st[0], st[1]) })}">${slotInner(st[0], st[1])}</button>` : '')).join('')}</div>
@@ -345,23 +441,30 @@ export class CityPockets {
             .map((st) => counted(st[0], st[1]))
             .join(' · ')}</p>
           ${smash}${pieceNote}<div class="ct-actions">${sleep}${smashBtn}${pieceBtns}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
-              : `${!pc ? `<p class="card-note">${t('city.box.empty')}</p>` : pc.chest ? `<p class="card-note">${t('city.piece.chestEmpty')}</p>` : ''}${smash}${pieceNote}${sleep || smashBtn || pieceBtns ? `<div class="ct-actions">${sleep}${smashBtn}${pieceBtns}</div>` : ''}`
+              : `${bagged ? `<p class="card-note">${t('city.box.bagEmpty')}</p>` : !pc ? `<p class="card-note">${t('city.box.empty')}</p>` : pc.chest ? `<p class="card-note">${t('city.piece.chestEmpty')}</p>` : ''}${smash}${pieceNote}${sleep || smashBtn || pieceBtns || bagOff ? `<div class="ct-actions">${sleep}${smashBtn}${pieceBtns}${bagOff}</div>` : ''}`
           }`;
       }
     }
     // The Make panel: every recipe, what it takes (what's short greyed), what it needs beside.
-    const mk = `${this.makeOpen}|${s.recipes.join()}|${JSON.stringify(s.inv)}`;
+    const mk = `${this.makeOpen}|${s.recipes.join()}|${JSON.stringify(s.inv)}|${JSON.stringify(s.bagThings)}|${textStamp()}`;
     if (mk !== this.shownMake) {
       this.shownMake = mk;
       this.make.classList.toggle('hidden', !this.makeOpen);
       if (this.makeOpen) {
+        // (2.69: the bag's things count, as the rules count them.)
         const have = (id: string) =>
-          s.inv.reduce((n, st) => n + (cityItem(st[0])?.id === id ? (cityItem(st[0])?.wear !== undefined ? 1 : st[1]) : 0), 0);
+          [...s.inv, ...s.bagThings].reduce(
+            (n, st) => n + (cityItem(st[0])?.id === id ? (cityItem(st[0])?.wear !== undefined ? 1 : st[1]) : 0),
+            0,
+          );
         this.make.innerHTML = `<div class="box-head"><b>${icon('hammer', 18)} ${t('city.make.title')}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           <ul class="city-recipes">${CITY_RECIPES.map((r, k) => {
             const why = s.recipes[k] ?? 'parts';
             const made = cityItemNumber(r.makes);
             // (Not shown how yet: who can.)
+            // (2.69: from a manual not yet read: a question mark, and where such a manual may lie.)
+            if (why === 'unknown' && r.manual !== undefined)
+              return `<li><div class="city-recipe cant locked"><i class="slot filled result unknown">?</i><span class="cr-text"><b>${t('city.make.unknown')}</b><small class="lack">${icon('book', 12)} ${t(`city.make.manual.${r.manual}` as Key)}</small></span></div></li>`;
             if (why === 'unknown')
               return `<li><div class="city-recipe cant locked"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="lack">${icon('lock', 12)} ${t('city.make.taught', { who: t(`city.person.${PEOPLE[r.taught ?? 0].id}.name` as Key) })}</small></span></div></li>`;
             const parts = r.from
@@ -373,18 +476,24 @@ export class CityPockets {
             // (2.57: what is missing, by name: a touch has no hover to read an icon by.)
             const short = r.from.filter(([id, n]) => have(id) < n).map(([id]) => t(`city.item.${id}` as Key));
             const missing = why === 'parts' && short.length ? t('city.make.missing', { what: short.join(', ') }) : '';
-            const need = r.bench ? t('city.make.bench') : r.stove ? t('city.make.stove') : '';
-            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-r="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="${why === 'bench' || why === 'stove' || missing ? 'lack' : ''}">${(why === 'bench' || why === 'stove' ? need : '') || (missing && need ? `${missing} · ${need}` : missing) || need || useLine(made) || t(`city.kindOf.${cityItem(made)!.kind}` as Key)}</small></span><span class="cr-parts">${parts}</span></button></li>`;
+            // (2.69: a workshop's: said as such.)
+            const need = r.shop ? t('city.make.shop') : r.bench ? t('city.make.bench') : r.stove ? t('city.make.stove') : '';
+            const place = why === 'bench' || why === 'stove' || why === 'shop';
+            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-r="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result"><img src="${iconOf(made)}" alt=""></i><span class="cr-text"><b>${itemName(made)}</b><small class="${place || missing ? 'lack' : ''}">${(place ? need : '') || (missing && need ? `${missing} · ${need}` : missing) || need || useLine(made) || t(`city.kindOf.${cityItem(made)!.kind}` as Key)}</small></span><span class="cr-parts">${parts}</span></button></li>`;
           }).join('')}</ul>`;
       }
     }
     // 2.67: the Build panel: every piece, what it takes (what's short greyed), the hammer it wants.
-    const bk = `${this.buildOpen}|${s.builds.join()}|${JSON.stringify(s.inv)}|${textStamp()}`;
+    const bk = `${this.buildOpen}|${s.builds.join()}|${JSON.stringify(s.inv)}|${JSON.stringify(s.bagThings)}|${textStamp()}`;
     if (bk !== this.shownBuild) {
       this.shownBuild = bk;
       this.build.classList.toggle('hidden', !this.buildOpen);
       if (this.buildOpen) {
-        const have = (id: string) => s.inv.reduce((n, st) => n + (cityItem(st[0])?.id === id ? st[1] : 0), 0);
+        const have = (id: string) =>
+          [...s.inv, ...s.bagThings].reduce(
+            (n, st) => n + (cityItem(st[0])?.id === id ? (cityItem(st[0])?.wear !== undefined ? 1 : st[1]) : 0),
+            0,
+          );
         this.build.innerHTML = `<div class="box-head"><b>${icon('home', 18)} ${t('city.build.title')}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${s.builds[0] === 'hammer' ? `<p class="card-note lack">${icon('hammer', 14)} ${t('city.build.needHammer')}</p>` : ''}
           <ul class="city-recipes">${PIECES.map((p, k) => {

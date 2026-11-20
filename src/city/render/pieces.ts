@@ -149,6 +149,23 @@ export function pieceParts(kind: number, worn: number, seed: number): Part[] {
         box(0.7, 0.022, 0.08, w(0xd8c8a0), 0, 0, -0.18),
       );
       break;
+    // 2.69: the workshop: a heavier bench, a vise on its corner, a red toolbox, a pegboard of tools behind.
+    case 'workshop':
+      out.push(
+        box(0.96, 0.09, 0.62, w(WOOD_DARK), 0, 0.68, 0),
+        ...[-0.42, 0.42].flatMap((x) => [-0.25, 0.25].map((z) => box(0.09, 0.68, 0.09, w(IRON_DARK), x, 0, z))),
+        box(0.88, 0.05, 0.52, w(WOOD), 0, 0.2, 0),
+        box(0.14, 0.12, 0.12, IRON_DARK, 0.36, 0.77, 0.24),
+        box(0.06, 0.06, 0.2, IRON, 0.36, 0.83, 0.3),
+        box(0.3, 0.14, 0.16, 0xb03a30, -0.22, 0.77, 0.06),
+        box(0.31, 0.03, 0.17, 0x8a2a22, -0.22, 0.91, 0.06),
+        box(0.9, 0.5, 0.04, w(WOOD_LIGHT), 0, 0.77, -0.29),
+        box(0.04, 0.26, 0.02, NAIL, -0.3, 0.95, -0.26),
+        box(0.18, 0.04, 0.02, IRON, -0.08, 1.12, -0.26),
+        box(0.03, 0.22, 0.02, 0xb03a30, 0.12, 0.98, -0.26),
+        box(0.12, 0.12, 0.02, IRON_DARK, 0.3, 1.0, -0.26),
+      );
+      break;
     // 2.68: the traps.
     case 'spikes':
       // Two boards flat on the ground, nails standing up through them in rows.

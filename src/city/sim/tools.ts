@@ -52,9 +52,10 @@ export function freshTools() {
 /**
  * 2.64: the rules a city was begun under, so one under way keeps what was drawn for it: 0 before 2.64; 1 a first day that works
  * (boards and bats about, a bat with the radio); 2 (2.66) axes and sledgehammers where they'd be kept; 3 (2.67) hammers; 4 (2.68)
- * the Rush every third night (content/rush.ts).
+ * the Rush every third night (content/rush.ts); 5 (2.69) manuals, the toolkit and armour in the loot, the new recipes learnt from
+ * the manuals (before 5, known).
  */
-export const CITY_REV = 4;
+export const CITY_REV = 5;
 
 /** A save's fields made sound before the city is built from it (one from before them: no locked building). */
 export function soundTools(st: {

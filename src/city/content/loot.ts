@@ -174,6 +174,63 @@ const MORE3: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
   ['house', 'shelf', [['hammer', 2]]],
 ];
 
+/** 2.69 (revision 5): the manuals where they'd be kept, the workshop's kit, armour. */
+const MORE5: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
+  [
+    'garage',
+    null,
+    [
+      ['manual_weapons', 2],
+      ['toolkit', 3],
+    ],
+  ],
+  [
+    'warehouse',
+    null,
+    [
+      ['manual_weapons', 1],
+      ['toolkit', 2],
+    ],
+  ],
+  [
+    'factory',
+    null,
+    [
+      ['manual_weapons', 1],
+      ['toolkit', 2],
+    ],
+  ],
+  [
+    'police',
+    null,
+    [
+      ['manual_weapons', 3],
+      ['riot_gear', 4],
+    ],
+  ],
+  ['boathouse', null, [['toolkit', 1]]],
+  [
+    'shop',
+    null,
+    [
+      ['manual_sewing', 2],
+      ['manual_tricks', 1],
+      ['sports_pads', 1],
+    ],
+  ],
+  [
+    'mall',
+    null,
+    [
+      ['manual_sewing', 2],
+      ['sports_pads', 2],
+    ],
+  ],
+  ['house', 'shelf', [['manual_sewing', 1]]],
+  ['rangers', null, [['manual_tricks', 3]]],
+  ['office', null, [['manual_tricks', 1]]],
+];
+
 /** A car's list, or a wreck's. */
 export function carLoot(wreck: boolean, rev = 0): { list: Array<[number, number]>; total: number } {
   const list: Array<[number, number]> = [...(wreck ? WRECK : CAR), ...(rev && !wreck ? MORE_CAR : [])].map(([id, w]) => [
@@ -240,7 +297,7 @@ export const LOOT_BY_PROP: Partial<Record<PropKind, Weights>> = {
 /** The list a piece of furniture draws from, as [item number, weight], and the weights' sum. */
 export function lootList(use: LotUse, prop: PropKind, rev = 0): { list: Array<[number, number]>; total: number } {
   const list: Array<[number, number]> = [];
-  const more = [...(rev ? MORE : []), ...(rev >= 2 ? MORE2 : []), ...(rev >= 3 ? MORE3 : [])]
+  const more = [...(rev ? MORE : []), ...(rev >= 2 ? MORE2 : []), ...(rev >= 3 ? MORE3 : []), ...(rev >= 5 ? MORE5 : [])]
     .filter(([u, p]) => u === use && (p === null || p === prop))
     .flatMap(([, , w]) => w);
   for (const [id, w] of [...(LOOT_BY_USE[use] ?? HOME), ...more, ...(LOOT_BY_PROP[prop] ?? [])]) list.push([cityItemNumber(id), w]);

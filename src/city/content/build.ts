@@ -21,6 +21,8 @@ export interface PieceDef {
   across?: true;
   /** 2.68: a trap, working on the dead by itself (content/rush.ts's TRAP; sim/dead.ts). */
   trap?: 'spikes' | 'wire' | 'snare' | 'cans' | 'scare' | 'sentry';
+  /** 2.69: what goes into it whole and comes back whole when it's taken down (never in a repair's cost): a workshop's toolkit. */
+  keeps?: string;
 }
 
 export const PIECES: readonly PieceDef[] = [
@@ -197,6 +199,20 @@ export const PIECES: readonly PieceDef[] = [
     solid: true,
     comfort: 0,
     trap: 'sentry',
+  },
+  // 2.69: the workshop: a bench with the toolkit's vise and tools (works as a workbench, and makes what wants a workshop).
+  {
+    id: 'workshop',
+    from: [
+      ['toolkit', 1],
+      ['plank', 4],
+      ['scrap', 2],
+      ['nails', 2],
+    ],
+    hp: 100,
+    solid: true,
+    comfort: 0,
+    keeps: 'toolkit',
   },
 ];
 

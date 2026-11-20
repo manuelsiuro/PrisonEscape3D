@@ -4,7 +4,7 @@
  * item): append only, saves store the numbers. Its look is one of the item models' shapes
  * (render/itemModels.ts) in its own colours.
  */
-export type CityItemKind = 'food' | 'med' | 'material' | 'tool' | 'weapon';
+export type CityItemKind = 'food' | 'med' | 'material' | 'tool' | 'weapon' | 'manual' | 'armour' | 'bag';
 
 export interface CityItem {
   id: string;
@@ -25,6 +25,16 @@ export interface CityItem {
   edge?: true;
   /** 2.66: how it breaks things (a row of salvage.ts's BREAK_RATE); a weapon without one goes by its edge. */
   smash?: 'axe' | 'sledge' | 'cleaver' | 'crowbar';
+  /** 2.69: a ranged weapon (Hit with it carried and its ammunition): what it shoots, its harm, reach (tiles), steps between shots, how far it's heard. */
+  shoots?: { ammo: string; harm: number; reach: number; every: number; heard: number };
+  /** 2.69: a manual: read, it teaches the recipes that name it (its place in MANUALS). */
+  manual?: number;
+  /** 2.69: worn (armour): the share of a bite it takes (in a hundred); seen this many tiles less; a walk this much slower (thousandths). Its count is its wear left. */
+  armour?: number;
+  hidden?: number;
+  slow?: number;
+  /** 2.69: worn on the back (a bag): the slots it holds. */
+  slots?: number;
 }
 
 const food = (
@@ -109,7 +119,17 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'lantern', kind: 'tool', stack: 2, shape: 'jar', color: 0xe8b04a, accent: 0x3a3a3a },
   // 2.55: thrown (a bottle of fuel with a rag: fire where it breaks) and shot (the crossbow's count is the shots left in it).
   { id: 'molotov', kind: 'weapon', stack: 3, shape: 'bottle', color: 0xc24a3a, accent: 0xe8d8b0 },
-  { id: 'crossbow', kind: 'weapon', stack: 1, shape: 'crowbar', color: 0x6a4a2a, accent: 0x9aa1ab, wear: 40 },
+  {
+    id: 'crossbow',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'crowbar',
+    color: 0x6a4a2a,
+    accent: 0x9aa1ab,
+    wear: 40,
+    // (2.69: as RANGED had it alone before.)
+    shoots: { ammo: 'bolt', harm: 26, reach: 7, every: 30, heard: 2 },
+  },
   { id: 'bolt', kind: 'material', stack: 6, shape: 'bar', color: 0x9aa1ab, accent: 0xc24a3a },
   // 2.66 (C5): what breaks things. An axe chops wood fast and has an edge; a sledgehammer breaks metal and inner walls, and knocks down.
   { id: 'axe', kind: 'weapon', stack: 1, shape: 'axe', color: 0x6a7078, accent: 0x8a6a40, attack: 9, wear: 45, edge: true, smash: 'axe' },
@@ -126,7 +146,73 @@ export const CITY_ITEMS: readonly CityItem[] = [
   },
   // 2.67 (C5 batch 2): what builds. Carried, it puts pieces up and repairs them (content/build.ts).
   { id: 'hammer', kind: 'tool', stack: 1, shape: 'hammer', color: 0x6a7078, accent: 0x9a7748 },
+  // 2.69 (C5 batch 4): crafting that grows. Manuals (read: their recipes learnt), the workshop's kit.
+  { id: 'manual_weapons', kind: 'manual', stack: 1, shape: 'book', color: 0x8a2a22, accent: 0xe8d8b0, manual: 0 },
+  { id: 'manual_sewing', kind: 'manual', stack: 1, shape: 'book', color: 0x3f6a8c, accent: 0xf2e6c8, manual: 1 },
+  { id: 'manual_tricks', kind: 'manual', stack: 1, shape: 'book', color: 0xd9822b, accent: 0x2a2a2a, manual: 2 },
+  { id: 'toolkit', kind: 'material', stack: 1, shape: 'pack', color: 0xb03a30, accent: 0x5a5f66 },
+  // Weapons and their upgrades.
+  {
+    id: 'machete',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'machete',
+    color: 0xc4cad0,
+    accent: 0x2a2a2a,
+    attack: 9,
+    wear: 45,
+    edge: true,
+    smash: 'cleaver',
+  },
+  { id: 'barbed_bat', kind: 'weapon', stack: 1, shape: 'mace', color: 0xa9824e, accent: 0x7a7f86, attack: 12, wear: 55 },
+  {
+    id: 'long_spear',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'broom',
+    color: 0x5a626c,
+    accent: 0xd8dde2,
+    attack: 8,
+    reach: 2,
+    wear: 35,
+    edge: true,
+  },
+  {
+    id: 'slingshot',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'slingshot',
+    color: 0x7a5434,
+    accent: 0xb87333,
+    wear: 60,
+    shoots: { ammo: 'scrap', harm: 12, reach: 6, every: 24, heard: 1 },
+  },
+  {
+    id: 'steel_crossbow',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'crowbar',
+    color: 0x4a5058,
+    accent: 0xc4cad0,
+    wear: 60,
+    shoots: { ammo: 'bolt', harm: 40, reach: 9, every: 30, heard: 2 },
+  },
+  // Thrown or set down.
+  { id: 'smoke_bomb', kind: 'tool', stack: 3, shape: 'can', color: 0x8a8f96, accent: 0xe8e2d0 },
+  { id: 'noisemaker', kind: 'tool', stack: 2, shape: 'clock', color: 0xd23a3a, accent: 0xf2f2ee },
+  { id: 'flare', kind: 'tool', stack: 3, shape: 'firecracker', color: 0xe0563a, accent: 0xf2c230 },
+  // Worn: armour (its count is the bites it has left in it), and bags.
+  { id: 'padded_jacket', kind: 'armour', stack: 1, shape: 'outfit', color: 0x5a6a4a, accent: 0x3a4a2a, wear: 30, armour: 25 },
+  { id: 'sports_pads', kind: 'armour', stack: 1, shape: 'outfit', color: 0x2a5aa8, accent: 0xf2f2ee, wear: 25, armour: 20 },
+  { id: 'scrap_armour', kind: 'armour', stack: 1, shape: 'outfit', color: 0x7c8590, accent: 0x8a5a3a, wear: 50, armour: 45, slow: 60 },
+  { id: 'riot_gear', kind: 'armour', stack: 1, shape: 'outfit', color: 0x1e2a3a, accent: 0xe8b828, wear: 60, armour: 50 },
+  { id: 'poncho', kind: 'armour', stack: 1, shape: 'ghillie', color: 0x4f6a3a, accent: 0x7a6a4a, wear: 30, armour: 0, hidden: 1 },
+  { id: 'satchel', kind: 'bag', stack: 1, shape: 'pouch', color: 0x8a6a40, accent: 0x5a4a2a, slots: 4 },
+  { id: 'hiking_pack', kind: 'bag', stack: 1, shape: 'pack', color: 0x3f6a8c, accent: 0xd9822b, slots: 8 },
 ];
+
+/** 2.69: the manuals, by their place: what each is about (its recipes name it). */
+export const MANUALS = ['weapons', 'sewing', 'tricks'] as const;
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];
 export function cityItemNumber(id: string): number {

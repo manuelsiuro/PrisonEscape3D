@@ -123,12 +123,16 @@ const zed = (c: City, tile: number, kind?: number): Zed => {
   stock(c);
   // (2.68: a sentry takes a crossbow.)
   c.state.inv[6] = [I('crossbow'), 30];
+  // (2.69: a workshop takes the toolkit.)
+  c.state.inv[7] = [I('toolkit'), 1];
   const before = new Map(c.state.inv.map(([it]) => [it, c.count(it)]));
   const out: string[] = [];
   // (2.68: the traps on the rest of the square's edge.)
   const tiles = [
     ...[-2 * W - 2, -2 * W, -2 * W + 2, -2, 2, 2 * W - 2, 2 * W, 2 * W + 2, -W - 2, W + 2, 0],
     ...[-2 * W - 1, -2 * W + 1, 2 * W - 1, 2 * W + 1, -W + 2, W - 2],
+    // (2.69: the workshop inside the square's edge.)
+    -W - 1,
   ].map((d) => mid + d);
   PIECES.forEach((def, kind) => {
     const t = tiles[kind];

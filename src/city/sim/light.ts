@@ -38,7 +38,7 @@ export const freshLight = () => ({ torch: 0, torchOn: 0, lights: {} as Record<st
 export const lightsHere = (c: City): readonly Light[] => c.state.lights[c.state.district] ?? [];
 
 /** The torch is lit and in the pockets. */
-export const torchLit = (c: City) => c.state.torchOn === 1 && c.state.torch > 0 && c.count(TORCH) > 0;
+export const torchLit = (c: City) => c.state.torchOn === 1 && c.state.torch > 0 && c.carried(TORCH) > 0;
 
 /**
  * Interiors dark by day (2.53): which tiles of the district the player is in daylight doesn't reach.
@@ -98,7 +98,7 @@ export function relight(c: City) {
       if (lot) for (let i = 0; i < N; i++) if (lotAt[i] === lot) c.lit[i] = 1;
       continue;
     }
-    const r = kind === LIGHT_KIND.FIRE ? LIGHT.fireReach : LIGHT.lanternReach;
+    const r = kind === LIGHT_KIND.FIRE || kind === LIGHT_KIND.FLARE ? LIGHT.fireReach : LIGHT.lanternReach;
     const x = tile % MAP_W;
     const z = Math.floor(tile / MAP_W);
     for (let tz = Math.max(0, z - r); tz <= Math.min(MAP_H - 1, z + r); tz++)
@@ -246,7 +246,7 @@ export function lightMinute(c: City) {
   const s = c.state;
   if (s.torchOn) {
     // (Dropped, stored or lost in a fall: it's out.)
-    if (!c.count(TORCH)) s.torchOn = 0;
+    if (!c.carried(TORCH)) s.torchOn = 0;
     else if (--s.torch <= 0) {
       s.torch = 0;
       s.torchOn = 0;
@@ -286,7 +286,7 @@ export function soundLight(s: { step?: unknown; torch?: unknown; torchOn?: unkno
             l[0] >= 0 &&
             l[0] < N &&
             l[1] >= 0 &&
-            l[1] <= 3 &&
+            l[1] <= LIGHT_KIND.FLARE &&
             l[2] >= 0 &&
             l[2] <= last,
         ),

@@ -411,6 +411,51 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       Object.assign(t.zed(mid + 3, 0, nearestDir(-1, 0)), {});
     },
   },
+  // 2.69: the workshop: a workshop and a workbench built, the player beside them with a machete, a manual and a toolkit's place.
+  cityGear: {
+    zoom: 2.3,
+    scene: (t) => {
+      t.time(2, 15 * 60);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const S = nearestDir(0, 1);
+      t.s.built = {
+        [d]: [
+          [mid - W, PIECE.workshop, 100, S, 0],
+          [mid - W + 1, PIECE.workbench, 80, S, 0],
+          [mid - W - 1, PIECE.chest, 60, S, 0],
+          [mid + 2, PIECE.campfire, 40, S, 0],
+        ],
+      };
+      t.s.lights = { [d]: [[mid + 2, 3, t.s.step + 300 * 20]] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.s.inv[0] = [cityItemNumber('machete'), 40];
+      t.c.struck = cityItemNumber('machete');
+      t.s.armour = [cityItemNumber('padded_jacket'), 30];
+      t.go(d, mid + W, nearestDir(0, -1));
+    },
+  },
+  // 2.69: armour, a bag and the tricks: by day, the player in riot gear, three of the dead blind in a smoke cloud, a noisemaker set down.
+  cityWear: {
+    zoom: 2.2,
+    scene: (t) => {
+      t.time(2, 16 * 60);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      t.s.built = { [d]: [] };
+      t.s.smoke = [[mid + 3, t.s.step + 300]];
+      t.s.ticks = [[mid + W - 1, t.s.step + 9999]];
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.c.ticksRev++;
+      t.s.armour = [cityItemNumber('riot_gear'), 60];
+      t.s.bag = cityItemNumber('hiking_pack');
+      t.go(d, mid - 1, nearestDir(1, 0));
+      const west = nearestDir(-1, 0);
+      for (const o of [3, W + 3, -W + 2]) t.zed(mid + o, 0, west);
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,
@@ -456,7 +501,7 @@ export async function stage(id: string) {
   relight(t.c);
   if (!hide) {
     hide = document.createElement('style');
-    hide.textContent = '.hud,.hotbar,.city-minimap,.act-btn,.tool-btn,.banner,.toast,.item-panel{display:none !important}';
+    hide.textContent = '.hud,.hotbar,.city-minimap,.city-worn,.act-btn,.tool-btn,.banner,.toast,.item-panel{display:none !important}';
     document.head.append(hide);
   }
   shot.scene(t);
