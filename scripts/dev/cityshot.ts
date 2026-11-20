@@ -285,6 +285,67 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       }
     },
   },
+  // (2.67) A camp in the open: plank walls round it, a door, a campfire burning, a camp bed, a chest, a table, a rug; late afternoon.
+  cityBuild: {
+    zoom: 2.0,
+    scene: (t) => {
+      t.time(1, 17 * 60);
+      const d = t.c.plan.start;
+      const dist = t.c.districtOf(d);
+      t.go(d, dist.spawn.z * W + dist.spawn.x);
+      // (A 5 × 5 out of doors, nothing on it, clear of the checkpoints.)
+      const open = (i: number) =>
+        !t.c.grid[i] &&
+        !t.c.carAt[i] &&
+        !t.c.zedGrid[i] &&
+        !dist.lotAt[i] &&
+        !dist.gates.some((g) => g.tiles.some((q) => Math.abs((q % W) - (i % W)) + Math.abs(Math.floor(q / W) - Math.floor(i / W)) < 6));
+      let mid = -1;
+      for (let z = 6; z < W - 6 && mid < 0; z++)
+        for (let x = 6; x < W - 6 && mid < 0; x++) {
+          let ok = true;
+          for (let dz = -2; dz <= 2 && ok; dz++) for (let dx = -2; dx <= 2 && ok; dx++) ok = open((z + dz) * W + x + dx);
+          if (ok) mid = z * W + x;
+        }
+      if (mid < 0) return;
+      const P = {
+        barricade: 0,
+        plankWall: 1,
+        metalWall: 2,
+        door: 3,
+        chest: 4,
+        cot: 5,
+        workbench: 6,
+        campfire: 7,
+        table: 8,
+        chair: 9,
+        rug: 10,
+      };
+      const S = nearestDir(0, 1);
+      const E = nearestDir(1, 0);
+      const built: Array<[number, number, number, number, number]> = [];
+      // (The north side plank walls, a metal wall at its corner, the door on the east, a barricade south-west, half worn.)
+      for (const dx of [-2, -1, 0, 1]) built.push([mid - 2 * W + dx, P.plankWall, 120, S, 0]);
+      built.push([mid - 2 * W + 2, P.metalWall, 250, S, 0]);
+      for (const dz of [-1, 0]) built.push([mid + dz * W - 2, P.plankWall, 120, E, 0]);
+      built.push([mid + W - 2, P.barricade, 30, E, 0]);
+      built.push([mid - W + 2, P.door, 100, E, 0]);
+      built.push([mid + 2, P.plankWall, 70, E, 0]);
+      built.push(
+        [mid - W - 1, P.cot, 50, S, 0],
+        [mid - W + 1, P.chest, 60, S, 0],
+        [mid + W + 1, P.table, 50, S, 0],
+        [mid + W, P.chair, 30, S, 0],
+        [mid, P.rug, 20, S, 0],
+      );
+      built.push([mid + W - 1, P.campfire, 40, S, 0]);
+      t.s.built = { [d]: built };
+      t.s.lights = { [d]: [[mid + W - 1, 3, t.s.step + 300 * 20]] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.s.inv[0] = [cityItemNumber('hammer'), 1];
+      t.go(d, mid - 1, nearestDir(0, 1));
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,

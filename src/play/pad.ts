@@ -354,11 +354,16 @@ export function padFrame(now: number) {
     if (pressed(BTN.A)) tap(act('act'));
     if (pressed(BTN.X) || pressed(BTN.RT)) tap(act('use'));
     // (B shuts what's open, as in the prisons; with nothing open it does nothing: Menu pauses.)
-    if (pressed(BTN.B) && document.querySelector('.city-thing:not(.hidden), .city-box:not(.hidden), .city-make:not(.hidden)'))
+    if (
+      pressed(BTN.B) &&
+      document.querySelector('.city-thing:not(.hidden), .city-box:not(.hidden), .city-make:not(.hidden), .city-stop:not(.hidden)')
+    )
       tap('Escape');
     // (2.48: Y the journal, LB the Make panel.)
     if (pressed(BTN.Y)) tap('KeyJ');
     if (pressed(BTN.LB)) tap('KeyC');
+    // (2.67: RB the Build panel.)
+    if (pressed(BTN.RB)) tap('KeyB');
     if (pressed(BTN.MENU)) tap('Escape');
     if (pressed(BTN.VIEW)) tap('KeyM');
     return;

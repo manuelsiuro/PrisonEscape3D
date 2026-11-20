@@ -433,6 +433,12 @@ HELP.city = [
         listIcons: ['fist', 'lock', 'cutters'],
         see: ['cityFood', 'cityPeople', 'cityShelter'],
       }),
+      // (2.67, C5: building a base.)
+      T('cityBuild', 'home', '#8fb06a', {
+        pic: true,
+        listIcons: ['shield', 'home', 'siren', 'wrench', 'moon'],
+        see: ['cityBreak', 'cityShelter', 'cityDead'],
+      }),
       // (2.66, C5: breaking things.)
       T('cityBreak', 'pick', '#c98a4a', {
         pic: true,

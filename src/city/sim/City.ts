@@ -1,4 +1,5 @@
 import { PROPS, type PropKind } from '../../content/props';
+import { pieceOf } from '../content/build';
 import { atFire, dayDark, freshLight, lightMinute, relight, soundLight, useLight, type Light } from './light';
 import { argA, DIR_X, DIR_Z, dirOf, opOf } from '../../sim/command';
 import { mix32 } from '../../sim/rng';
@@ -18,6 +19,22 @@ import { BLEED, BLOW, DOWN } from '../content/dead';
 import { CITY_RECIPES, recipeParts } from '../content/recipes';
 import { noise, places, populate, stepDead, strike, type Zed } from './dead';
 import { districtWorld } from './world';
+import {
+  applyBuilt,
+  atBuild,
+  benchBeside,
+  comfortAt,
+  comfortRates,
+  finishBuild,
+  freshBuild,
+  openCot,
+  pieceSlots,
+  soundBuild,
+  startBuild,
+  startPiece,
+  type Built,
+  type BuildWhy,
+} from './build';
 import {
   atWork,
   breakStep,
@@ -105,8 +122,15 @@ export const COP = {
   SLEEP: 13,
   /** 2.66: break up the open piece (its card's button), or what's faced. */
   BREAK: 14,
+  /**
+   * 2.67: a piece put up on the tile faced (a: its kind); `PIECE_OPS` and on, the open built piece repaired (+0), taken down (+1),
+   * fed a plank (+2). The last op a command has room for (four bits): what comes after rides on an argument.
+   */
+  BUILD: 15,
 } as const;
 
+/** 2.67: COP.BUILD's argument from here on: what's done to the open built piece (0 repair, 1 take down, 2 feed). */
+export const PIECE_OPS = 200;
 /** The pockets. */
 export const POCKETS = 8;
 /** Hunger and energy are kept in thousandths of a point (whole numbers): a full bar. */
@@ -115,11 +139,9 @@ export const FULL = 100_000;
 const HUNGER_AWAKE = 55;
 const HUNGER_ASLEEP = 25;
 const ENERGY_AWAKE = 92;
-const ENERGY_ASLEEP = 250;
 /** Starving: a point of health every so many minutes; fed (over half), one back every so many, awake and asleep. */
 const STARVE_EVERY = 3;
 const MEND_AWAKE = 10;
-const MEND_ASLEEP = 4;
 /** Under a quarter fed, or worn out: a slower walk (thousandths). */
 const WEAK_SPEED = 820;
 /** A night's sleep is from 20:00 to 06:00; by day (2.65) a bed is a rest till 20:00, tired or not (before: only the tired, till rested). */
@@ -157,12 +179,14 @@ const empty = (): Stack => [0, 0];
 
 /** What the action button would do now: search a piece of furniture, look at what lies on the ground, sleep in a bed. */
 export interface Target {
-  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane' | 'wall';
+  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane' | 'wall' | 'piece';
   /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile; 2.58: a locked door: 'k' + its tile, a fence: 'f' + its first tile). */
   key: string;
   tile: number;
   /** The furniture it is (2.54: or a car, or a wreck). */
   prop: PropKind | 'car' | 'wreck' | null;
+  /** 2.67: a built piece's kind (content/build.ts). */
+  piece?: number;
 }
 
 export interface CityState {
@@ -253,6 +277,8 @@ export interface CityState {
   broken: Record<string, number[]>;
   stripped: Record<string, number[]>;
   holes: Record<string, number[]>;
+  // 2.67, optional on load (sim/build.ts): the pieces built, by district: [tile, kind, health, facing, more].
+  built: Record<string, Built[]>;
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -338,6 +364,14 @@ export type CityEvent =
   | { type: 'breaking'; key: string }
   | { type: 'chop'; tile: number; metal: boolean; item: number }
   | { type: 'wrecked'; what: 'prop' | 'car' | 'wall'; tile: number; prop?: PropKind | null }
+  /** 2.67: building: the work begun (its key), a piece up, repaired, taken down, broken by the dead; refused (why); a campfire fed. */
+  | { type: 'building'; key: string }
+  | { type: 'built'; kind: number; tile: number }
+  | { type: 'repaired'; kind: number; tile: number }
+  | { type: 'unbuilt'; kind: number; tile: number }
+  | { type: 'pieceDown'; kind: number; tile: number }
+  | { type: 'cantBuild'; why: BuildWhy }
+  | { type: 'fed'; tile: number }
   /** 2.59: somebody's clothes found and put on. */
   | { type: 'clothes' }
   | { type: 'forced'; tile: number }
@@ -407,6 +441,7 @@ export class City {
         ...freshRanged(),
         ...freshTools(),
         ...freshSalvage(),
+        ...freshBuild(),
       }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
@@ -428,6 +463,7 @@ export class City {
         ...freshRanged(),
         ...freshTools(),
         ...freshSalvage(),
+        ...freshBuild(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
@@ -524,6 +560,8 @@ export class City {
     this.state.district = d;
     this.state.visited |= 1 << d;
     this.lastTile = -1;
+    // (2.67: the last district's pieces forgotten until this one's are put up.)
+    this.pieceAt.fill(0);
     // Which furniture can be searched or slept in, by tile (a bed's two).
     this.propAt = new Int16Array(N);
     this.district.props.forEach((p, k) => {
@@ -556,6 +594,8 @@ export class City {
       if (propSalvage(this, k)) for (const t of this.tilesOf(k)) this.breakAt[t] = k + 1;
     });
     for (const k of this.state.broken[d] ?? []) this.clearProp(k);
+    // (2.67: what's built here stands in the way.)
+    applyBuilt(this);
     this.world.refreshBlock();
     this.propsRev++;
     this.refreshBars();
@@ -615,6 +655,15 @@ export class City {
   /** 2.66: per tile, the piece of furniture that can be broken standing there, + 1; a count the view watches (a piece gone, a district entered); the work left on what's being broken (not saved: a load ends the work). */
   breakAt = new Int16Array(N);
   propsRev = 0;
+  /** 2.67: per tile, the built piece standing there (its kind + 1); a count the view watches; the dead's grid with every piece open (the way through what's built, for one that can't go round). */
+  pieceAt = new Uint8Array(N);
+  piecesRev = 0;
+  openGrid = new Uint8Array(N);
+  openLock = new Uint8Array(N);
+  /** 2.67: whether anything is built in the district the player is in. */
+  anyBuilt(): boolean {
+    return (this.state.built[this.state.district]?.length ?? 0) > 0;
+  }
   breakLeft = 0;
   /** Where the dead are put down and go to ground: the district's open floors indoors and its streets, and each as a mask (`deep`: the floors indoors daylight doesn't reach). */
   zedPlaces: { indoors: number[]; streets: number[]; deep: number[] } = { indoors: [], streets: [], deep: [] };
@@ -648,6 +697,15 @@ export class City {
     // (Boards stop sight as well as the dead: what stands on the streets veils as it did, and each barred door too.)
     for (let i = 0; i < N; i++) this.world.veil[i] = decoVeils(this.district.deco[i]) || this.locked[i] ? 1 : 0;
     for (const i of this.bars) this.zedGrid[i] = this.world.veil[i] = 1;
+    // (2.67: a built door stops the dead as boards do; walls and doors hide what's behind them.)
+    for (const [tile, kind] of this.state.built[this.state.district] ?? []) {
+      const def = pieceOf(kind);
+      if (def?.door) this.zedGrid[tile] = this.lockGrid[tile] = 1;
+      if (def?.veil) this.world.veil[tile] = 1;
+    }
+    this.openGrid.set(this.zedGrid);
+    this.openLock.set(this.lockGrid);
+    for (let i = 0; i < N; i++) if (this.pieceAt[i]) this.openGrid[i] = this.openLock[i] = 0;
     this.barsRev++;
   }
   /** After a load: only street doors stay barred, each once; `old`: a save from before wear, its weapons given their blows. */
@@ -700,6 +758,8 @@ export class City {
   storyGrid(d: number): Uint8Array {
     if (d !== this.state.district) return districtWorld(this.plan, d, withCuts(this, this.baseOf(d))).block;
     const g = this.world.block.slice();
+    // (2.67: nothing built: the floor under a piece was open; then the walls broken through stand again, a piece in one too.)
+    for (const [t, kind] of this.state.built[d] ?? []) if (pieceOf(kind)?.solid) g[t] = 0;
     for (const t of this.state.holes[d] ?? []) g[t] = 1;
     const dist = this.district;
     for (const k of this.state.broken[d] ?? []) {
@@ -771,9 +831,18 @@ export class City {
     if (s.search) {
       // (2.66: breaking goes on while the player stands beside it, whatever the button would take.)
       const breaking = s.search.startsWith('b');
-      if (dir || !(breaking ? atWork(this, s.search) : this.target()?.key === s.search)) s.search = '';
+      // (2.67: building, repairing, taking down: at it while beside its tile.)
+      const building = /^[hrt]/.test(s.search);
+      if (dir || !(breaking ? atWork(this, s.search) : building ? atBuild(this, s.search) : this.target()?.key === s.search)) s.search = '';
       else if (breaking) ended = breakStep(this);
-      else if (--s.searchLeft <= 0) {
+      else if (building) {
+        if (--s.searchLeft <= 0) {
+          const key = s.search;
+          s.search = '';
+          ended = true;
+          finishBuild(this, key);
+        }
+      } else if (--s.searchLeft <= 0) {
         const key = s.search;
         s.search = '';
         ended = true;
@@ -829,14 +898,16 @@ export class City {
     const s = this.state;
     const minute = Math.floor(s.step / STEPS_PER_MINUTE);
     s.hunger = Math.max(0, s.hunger - (s.sleeping ? HUNGER_ASLEEP : HUNGER_AWAKE));
-    s.energy = s.sleeping ? Math.min(FULL, s.energy + ENERGY_ASLEEP) : Math.max(0, s.energy - ENERGY_AWAKE);
+    // (2.67: asleep, what's built round the bed: a Hideout or a Home gives energy and health back faster.)
+    const rest = s.sleeping ? comfortRates(comfortAt(this, this.tile).level) : null;
+    s.energy = rest ? Math.min(FULL, s.energy + rest.energy) : Math.max(0, s.energy - ENERGY_AWAKE);
     if (s.hunger === 0) {
       if (minute % STARVE_EVERY === 0) this.hurt(1, 'hunger');
       if (!this.starved) this.events.push({ type: 'starving' });
       this.starved = true;
     } else {
       this.starved = false;
-      if (s.hunger > FULL / 2 && minute % (s.sleeping ? MEND_ASLEEP : MEND_AWAKE) === 0) s.health = Math.min(100, s.health + 1);
+      if (s.hunger > FULL / 2 && minute % (rest ? rest.mend : MEND_AWAKE) === 0) s.health = Math.min(100, s.health + 1);
     }
     if (!s.over) storyMinute(this);
     if (!s.over) lightMinute(this);
@@ -988,6 +1059,8 @@ export class City {
         return { kind: kind === 'bed' && empty && !holds(this, k - 1) ? 'bed' : 'box', key: `${k - 1}`, tile: t, prop: kind };
       }
       if (this.boxOf(`g${t}`)?.some((st) => st[0]) && !this.grid[t]) return { kind: 'pile', key: `g${t}`, tile: t, prop: null };
+      // (2.67: a piece built: its card, what it holds, its repair.)
+      if (this.pieceAt[t]) return { kind: 'piece', key: `p${t}`, tile: t, prop: null, piece: this.pieceAt[t] - 1 };
     }
     // A street door underfoot or beside: barred with boards from the pockets, or its boards taken down.
     for (const t of [here, here - MAP_W, here + 1, here + MAP_W, here - 1]) {
@@ -1027,7 +1100,7 @@ export class City {
     if (key.startsWith('n')) return this.target()?.key === key;
     const at = key.startsWith('c')
       ? carTiles(this, Number(key.slice(1)))
-      : key.startsWith('g') || key.startsWith('d') || key.startsWith('k')
+      : key.startsWith('g') || key.startsWith('d') || key.startsWith('k') || key.startsWith('p')
         ? [Number(key.slice(1))]
         : key.startsWith('f')
           ? (this.fences.find((f) => f.tiles[0] === Number(key.slice(1)))?.tiles ?? [])
@@ -1135,14 +1208,14 @@ export class City {
 
   private openBox(key: string, first: boolean) {
     const s = this.state;
-    const fresh = !key.startsWith('g') && !this.searched(key);
+    const fresh = (/^\d+$/.test(key) || key.startsWith('c')) && !this.searched(key);
     const car = key.startsWith('c');
     if (fresh) this.boxOf(key, true).push(...(car ? this.stockCar(Number(key.slice(1))) : this.stock(Number(key))));
     s.open = key;
     this.events.push({ type: 'open', key, found: this.box().filter((st) => st[0]).length, first });
     if (car) {
       if (fresh) carOpened(this, Number(key.slice(1)));
-    } else if (!key.startsWith('g')) {
+    } else if (/^\d+$/.test(key)) {
       storyFound(this, Number(key));
       foundClothes(this, Number(key));
     }
@@ -1194,6 +1267,8 @@ export class City {
   /** 2.64: the bed that can be slept in from its card: the box open if a bed, else the one the button takes (-1: none). */
   sleepable(): number {
     const s = this.state;
+    // (2.67: a camp bed built, its card open: slept in. Told apart from furniture by being past the district's pieces.)
+    if (openCot(this) >= 0) return this.district.props.length + openCot(this);
     const t = this.target();
     const key = /^\d+$/.test(s.open) && this.inReach(s.open) ? s.open : (t?.key ?? '');
     const k = /^\d+$/.test(key) ? Number(key) : -1;
@@ -1222,6 +1297,7 @@ export class City {
       if (!t) return;
       if (t.kind === 'way') return storyAct(this);
       if (t.kind === 'wall') return startBreak(this, t.key);
+      if (t.kind === 'piece') return s.open === t.key ? this.close() : this.openBox(t.key, false);
       if (t.kind === 'npc') return meet(this, Number(t.key.slice(1)));
       if (s.open === t.key) return this.close();
       // (2.54: a press that shuts something else, a pile picked clean beside a car, doesn't start on the car as well.)
@@ -1272,6 +1348,7 @@ export class City {
       return;
     }
     if (op === COP.HIT) return strike(this);
+    if (op === COP.BUILD) return a >= PIECE_OPS ? startPiece(this, a - PIECE_OPS) : startBuild(this, a);
     // (2.66: the open piece broken up, from its card; or what's faced.)
     if (op === COP.BREAK) {
       const key = s.open && !s.open.startsWith('g') ? `b${s.open}` : facedBreak(this);
@@ -1329,7 +1406,9 @@ export class City {
       return;
     }
     if (op === COP.STORE && s.open) {
-      const left = this.put(this.boxOf(s.open, true), BOX_SLOTS, item, st[1]);
+      const slots = s.open.startsWith('p') ? pieceSlots(this, s.open) : BOX_SLOTS;
+      if (!slots) return void this.events.push({ type: 'full' });
+      const left = this.put(this.boxOf(s.open, true), slots, item, st[1]);
       if (left === st[1]) return void this.events.push({ type: 'full' });
       st[1] = left;
       if (!left) st[0] = 0;
@@ -1378,6 +1457,7 @@ export class City {
   /** A workbench on a tile beside the player. */
   atBench(): boolean {
     const here = this.tile;
+    if (benchBeside(this, here)) return true;
     return [here - MAP_W, here + 1, here + MAP_W, here - 1].some((t) => {
       const k = t >= 0 && t < N ? this.propAt[t] : 0;
       return k > 0 && this.district.props[k - 1].kind === 'workbench';
@@ -1711,6 +1791,7 @@ export function loadCity(snap: unknown): City | null {
   soundRanged(st);
   soundTools(st);
   soundSalvage(st);
+  soundBuild(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

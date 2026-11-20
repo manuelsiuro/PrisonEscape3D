@@ -46,6 +46,9 @@ import { DECO } from '../gen/district';
 import { landmarkPlan } from '../render/landmarkPlan';
 import { cityItemNumber } from '../content/items';
 import { breaker, workOf, workTotal } from '../sim/salvage';
+import { BUILD, PIECES } from '../content/build';
+import { buildList, buildSpot, builtList, canBuild, comfortAt, lacking, pieceAtTile, repairCost, wornStep } from '../sim/build';
+import { DIR_X, DIR_Z } from '../../sim/command';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
 
@@ -122,6 +125,35 @@ pockets.onMake = () => {
   click();
   toggleMake();
 };
+// (2.67) Building: the panel, a piece picked to place, placing stopped.
+pockets.onBuild = () => {
+  click();
+  toggleBuild();
+};
+pockets.onPick = (kind) => {
+  click();
+  const r = run();
+  if (!r) return;
+  const why = buildList(r.city)[kind];
+  if (why !== 'ok') return void banner.toast(t(`city.build.why.${why}` as Key), 'info', 2400, 'bulb');
+  placing = kind;
+  pockets.toggleBuild(false);
+  if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
+  tip('city.build', touchWords() ? 'city.tip.build' : 'city.tip.buildKeys');
+};
+pockets.onStop = () => {
+  click();
+  placing = -1;
+};
+/** 2.67: the piece being placed (-1: none). Not the simulation's: what the action button puts up next. */
+let placing = -1;
+/** A piece's angle in the picture: a wall or a door across the way it was built from, anything else facing its builder. */
+function pieceAngle(kind: number, facing: number): number {
+  const dx = DIR_X[facing] ?? 0;
+  const dz = DIR_Z[facing] ?? 1;
+  if (PIECES[kind]?.across) return Math.abs(dx) >= Math.abs(dz) ? Math.PI / 2 : 0;
+  return Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? -Math.PI / 2 : Math.PI / 2) : dz > 0 ? Math.PI : 0;
+}
 cityHud.onPause = () => void pauseCity();
 cityHud.onMap = () => void openMap();
 cityHud.onJournal = () => void openJournal();
@@ -217,6 +249,9 @@ function stage(r: CityRun, first = false) {
   carsShown = -1;
   propsShown = -1;
   strippedShown = '';
+  piecesShown = -1;
+  // (2.67: placing ends with the place: a fall, a crossing, a city begun or carried on.)
+  placing = -1;
   firesShown = -1;
   emptiedShown = '';
   goalAt = '';
@@ -399,7 +434,16 @@ function act() {
   if (!r || r.paused) return;
   r.pilot.stop();
   pockets.pick(-1);
-  r.ops.push([COP.ACT, 0]);
+  // (2.67: placing a piece, the button puts it up.)
+  r.ops.push(placing >= 0 ? [COP.BUILD, placing] : [COP.ACT, 0]);
+}
+
+/** 2.67: the Build panel opened or shut (B, its button): not for a sleeper. */
+function toggleBuild() {
+  const r = run();
+  if (!r || r.paused || r.city.state.sleeping) return;
+  if (!pockets.buildOpen && r.city.state.open) r.ops.push([COP.CLOSE, 0]);
+  pockets.toggleBuild();
 }
 
 /** The Make panel opened or shut (C, its button): the open box shuts for it, and it's not for a sleeper. */
@@ -422,6 +466,7 @@ function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
   // Escape shuts a thing's card, then the open box, and only then pauses.
   if (code === 'Escape') {
     if (pockets.open) pockets.shut();
+    else if (placing >= 0) placing = -1;
     else if (r.city.state.open) r.ops.push([COP.CLOSE, 0]);
     else void pauseCity();
   } else if (code === 'KeyE' || (code === 'Enter' && !(document.activeElement instanceof HTMLButtonElement))) act();
@@ -429,6 +474,7 @@ function cityKey(r: CityRun, code: string, e: KeyboardEvent) {
     e.preventDefault();
     hit();
   } else if (code === 'KeyC') toggleMake();
+  else if (code === 'KeyB') toggleBuild();
   else if (/^Digit[1-8]$/.test(e.code)) {
     const k = Number(e.code.slice(5)) - 1;
     if (r.city.state.inv[k]?.[0]) pockets.pick(k);
@@ -500,6 +546,27 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     barsShown = c.barsRev;
     cityView.setBars(c.bars, c.district);
   }
+  if (piecesShown !== c.piecesRev) {
+    piecesShown = c.piecesRev;
+    cityView.setPieces(
+      builtList(c).map((q) => ({
+        tile: q[0],
+        kind: q[1],
+        worn: wornStep(q) / 3,
+        angle: pieceAngle(q[1], q[3]),
+      })),
+    );
+  }
+  // (2.67: the piece being placed, where it would go: green, or red where it can't.)
+  if (placing >= 0 && !c.state.sleeping) {
+    const at = buildSpot(c);
+    cityView.setGhost({
+      tile: at,
+      kind: placing,
+      angle: pieceAngle(placing, c.state.player.facing),
+      ok: canBuild(c, placing, at) === 'ok',
+    });
+  } else cityView.setGhost(null);
   if (propsShown !== c.propsRev) {
     propsShown = c.propsRev;
     view.hideProps(c.state.broken[c.state.district] ?? []);
@@ -690,7 +757,12 @@ function cityEvent(r: CityRun, e: CityEvent) {
       r.ops.length = 0;
       if (e.on) {
         // (2.65: by day, a rest till dusk.)
-        sleepVeil.querySelector('span')!.textContent = t(c.restsTillDusk ? 'city.sleep.resting' : 'city.sleep.asleep');
+        // (2.67: what's built round the bed: a Hideout or a Home, said under it.)
+        const level = comfortAt(c, c.tile).level;
+        sleepVeil.querySelector('span')!.textContent =
+          t(c.restsTillDusk ? 'city.sleep.resting' : 'city.sleep.asleep') +
+          (level ? ` · ${t(level === 2 ? 'city.comfort.home' : 'city.comfort.hideout')}` : '');
+        placing = -1;
         sound.yawn();
         save(r);
       } else {
@@ -824,6 +896,42 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'forcing':
     case 'casting':
       sound.scuffle();
+      break;
+    // 2.67: building: hammering, a piece up (placing stops when what it takes runs out), repaired, taken down, broken by the dead.
+    case 'building':
+      sound.scuffle();
+      break;
+    case 'built':
+      sound.stow(false);
+      view.jolt(0.1);
+      if (placing >= 0 && buildList(c)[placing] !== 'ok') {
+        banner.toast(t('city.build.ranOut'), 'info', 2600, 'bulb');
+        placing = -1;
+      }
+      if (e.kind === PIECES.findIndex((p) => p.id === 'cot')) tip('city.comfort', 'city.tip.comfort');
+      save(r);
+      break;
+    case 'repaired':
+      sound.stow(false);
+      banner.toast(t('city.toast.repaired'), 'good', 2000);
+      save(r);
+      break;
+    case 'unbuilt':
+      sound.stow(true);
+      banner.toast(t('city.toast.unbuilt'), 'good', 2000);
+      save(r);
+      break;
+    case 'pieceDown':
+      sound.dud();
+      sound.pound();
+      banner.toast(t('city.toast.pieceDown', { what: t(`city.piece.${PIECES[e.kind]?.id ?? 'barricade'}` as Key) }), 'bad', 3200);
+      save(r);
+      break;
+    case 'cantBuild':
+      banner.toast(t(`city.build.why.${e.why}` as Key), 'info', 2400, 'bulb');
+      break;
+    case 'fed':
+      sound.ignite();
       break;
     // 2.66: breaking things: each blow into it (wood flies, metal sparks), and the work done.
     case 'breaking':
@@ -1057,7 +1165,8 @@ function frameOf(r: CityRun, a: number): Frame {
             tg.kind === 'npc' ||
             tg.kind === 'lock' ||
             tg.kind === 'pane' ||
-            tg.kind === 'wall'
+            tg.kind === 'wall' ||
+            tg.kind === 'piece'
           ? [tg.tile]
           : tg.key.startsWith('c')
             ? carTiles(c, Number(tg.key.slice(1)))
@@ -1127,6 +1236,8 @@ let locksShown = -1;
 /** 2.66: the furniture broken up and the cars stripped, as the view last drew them. */
 let propsShown = -1;
 let strippedShown = '';
+/** 2.67: the pieces built, as the view last drew them. */
+let piecesShown = -1;
 let lightsShown = -1;
 let carsShown = -1;
 let firesShown = -1;
@@ -1194,11 +1305,40 @@ function pocketsOf(r: CityRun): PocketsState {
         ? c.district.deco[Number(open.slice(1))] === DECO.WRECK
           ? 'city.box.wreck'
           : 'city.box.car'
-        : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
+        : open.startsWith('p')
+          ? `city.piece.${PIECES[(c.pieceAt[Number(open.slice(1))] || 1) - 1].id}`
+          : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
   st.slots = c.box();
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
-  st.sleepable = st.box === 'city.box.bed' && c.sleepable() >= 0;
+  st.sleepable = (st.box === 'city.box.bed' || st.box === 'city.piece.cot') && c.sleepable() >= 0;
+  // (2.67: the Build panel, the piece being placed, the open built piece's card.)
+  st.builds = buildList(c);
+  st.placing = s.sleeping ? -1 : placing;
+  st.placeWhy = placing >= 0 ? canBuild(c, placing, buildSpot(c)) : '';
+  const bp = open.startsWith('p') ? pieceAtTile(c, Number(open.slice(1))) : undefined;
+  const bdef = bp ? PIECES[bp[1]] : undefined;
+  const fire =
+    bp && bdef?.id === 'campfire' ? (c.state.lights[s.district] ?? []).find((l) => l[0] === bp[0] && l[1] === LIGHT_KIND.CAMP) : undefined;
+  st.piece =
+    bp && bdef
+      ? {
+          kind: bp[1],
+          hp: bp[2],
+          max: bdef.hp,
+          repair: repairCost(bdef, bp[2]).map(([id, n]) => [cityItemNumber(id), n] as [number, number]),
+          canRepair:
+            bp[2] >= bdef.hp
+              ? 'full'
+              : !c.count(cityItemNumber('hammer'))
+                ? 'hammer'
+                : lacking(c, repairCost(bdef, bp[2])).length
+                  ? 'parts'
+                  : 'ok',
+          fire: bdef.id !== 'campfire' ? -1 : fire && fire[2] > s.step ? Math.ceil((fire[2] - s.step) / STEPS_PER_MINUTE) : 0,
+          chest: bdef.id === 'chest',
+        }
+      : null;
   // (2.66: the open piece, if it breaks: what it gives, and whether anything carried can break it.)
   const work = open && !open.startsWith('g') ? workOf(c, `b${open}`) : null;
   st.breaks = work?.sal ? work.sal.gives.map(([id, n]) => [cityItemNumber(id), n] as [number, number]) : null;
@@ -1208,15 +1348,21 @@ function pocketsOf(r: CityRun): PocketsState {
   // (2.66: breaking is measured by its work, not its steps.)
   const steps = s.search.startsWith('b')
     ? 0
-    : s.search.startsWith('d')
-      ? BAR_STEPS
-      : s.search.startsWith('k')
-        ? TOOLS.forceSteps
-        : s.search.startsWith('f')
-          ? TOOLS.cutSteps
-          : s.search === 'w'
-            ? STORY.castSteps
-            : SEARCH_STEPS;
+    : s.search.startsWith('h')
+      ? BUILD.steps
+      : s.search.startsWith('r')
+        ? BUILD.repairSteps
+        : s.search.startsWith('t')
+          ? BUILD.downSteps
+          : s.search.startsWith('d')
+            ? BAR_STEPS
+            : s.search.startsWith('k')
+              ? TOOLS.forceSteps
+              : s.search.startsWith('f')
+                ? TOOLS.cutSteps
+                : s.search === 'w'
+                  ? STORY.castSteps
+                  : SEARCH_STEPS;
   st.searching = !s.search ? 0 : steps ? 1 - s.searchLeft / steps : Math.max(0.02, 1 - c.breakLeft / workTotal(c, s.search));
   st.asleep = s.sleeping;
   st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
@@ -1328,6 +1474,8 @@ function hudOf(r: CityRun): CityHudState {
 // (Dev builds: the city under way, for the browser checks, as `__game()` is the prisons'.)
 if (import.meta.env.DEV) {
   (window as unknown as { __city: () => CityRun | null }).__city = run;
+  // (2.67: the city's own view, for a look at what it holds.)
+  (window as unknown as { __cityView: CityView }).__cityView = cityView;
   // (A district changed by hand, the tests' way about: put up again.)
   (window as unknown as { __cityStage: () => void }).__cityStage = () => {
     const r = run();

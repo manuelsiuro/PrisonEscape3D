@@ -16,6 +16,7 @@ import { LandmarkLive, landmarkParts, type LandmarkFrame } from './landmarks';
 import type { LandmarkPlan } from './landmarkPlan';
 import { lotPanes } from '../content/windows';
 import { Horde, type DeadFrame } from './horde';
+import { pieceParts } from './pieces';
 
 export type { DeadFrame } from './horde';
 
@@ -427,6 +428,8 @@ export class CityView {
       this.stains,
       this.bars,
       this.cars,
+      this.pieces,
+      this.ghost,
       this.locks,
       this.marks,
       this.folk,
@@ -594,7 +597,8 @@ export class CityView {
       const x = (tile % W) + 0.5;
       const z = Math.floor(tile / W) + 0.5;
       // (A fire: over the barrel's rim; a lantern: on the floor; a generator: a work lamp on a stand beside its top.)
-      const y = kind === 0 ? 0.62 : kind === 1 ? 0.2 : 0.95;
+      // (2.67: a campfire's low among its logs.)
+      const y = kind === 0 ? 0.62 : kind === 1 ? 0.2 : kind === 3 ? 0.16 : 0.95;
       if (kind === 1)
         put(
           things,
@@ -613,6 +617,7 @@ export class CityView {
         flame.add(core);
       }
       if (kind === 1) flame.scale.setScalar(0.55);
+      if (kind === 3) flame.scale.setScalar(0.85);
       // (The hot middle of its light, on the floor round it.)
       if (kind !== 2) {
         const hot = new THREE.Mesh(SOFT_GEO, this.hotMat);
@@ -948,6 +953,44 @@ export class CityView {
       g.add(gem, ring);
       this.marks.add(g);
     }
+  }
+
+  /**
+   * 2.67: what's built in the district (tile, kind, how worn 0–1, its angle: a wall across the way it was built from), cut away
+   * round the player above the waist as the furniture is; and the piece being placed, see-through, green where it can go.
+   */
+  private readonly pieces = new THREE.Group();
+  private readonly pieceMat = seeThrough(kitMaterial.clone(), 0.6);
+  setPieces(list: ReadonlyArray<{ tile: number; kind: number; worn: number; angle: number }>) {
+    disposeTree(this.pieces, () => false, new Set([kitMaterial, this.pieceMat]));
+    this.pieces.clear();
+    if (!list.length) return;
+    const parts: Part[] = [];
+    for (const p of list) put(parts, pieceParts(p.kind, p.worn, p.tile), (p.tile % W) + 0.5, Math.floor(p.tile / W) + 0.5, p.angle);
+    const mesh = new THREE.Mesh(merge(parts), this.pieceMat);
+    mesh.castShadow = mesh.receiveShadow = true;
+    this.pieces.add(mesh);
+  }
+  private readonly ghost = new THREE.Group();
+  private readonly ghostOk = new THREE.MeshBasicMaterial({ color: 0x6fd08a, transparent: true, opacity: 0.45, depthWrite: false });
+  private readonly ghostNo = new THREE.MeshBasicMaterial({ color: 0xe0564a, transparent: true, opacity: 0.4, depthWrite: false });
+  private ghostKey = '';
+  setGhost(g: { tile: number; kind: number; angle: number; ok: boolean } | null) {
+    const key = g ? `${g.tile}|${g.kind}|${g.angle}|${g.ok}` : '';
+    if (key === this.ghostKey) return;
+    this.ghostKey = key;
+    disposeTree(this.ghost, () => false, new Set([this.ghostOk, this.ghostNo]));
+    this.ghost.clear();
+    if (!g || g.tile < 0) return;
+    const parts: Part[] = [];
+    put(parts, pieceParts(g.kind, 0, g.tile), (g.tile % W) + 0.5, Math.floor(g.tile / W) + 0.5, g.angle);
+    const mesh = new THREE.Mesh(merge(parts), g.ok ? this.ghostOk : this.ghostNo);
+    mesh.renderOrder = 0.5;
+    this.ghost.add(mesh);
+    // (Its tile marked on the floor too: where it will stand.)
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.96).rotateX(-Math.PI / 2), g.ok ? this.ghostOk : this.ghostNo);
+    floor.position.set((g.tile % W) + 0.5, 0.04, Math.floor(g.tile / W) + 0.5);
+    this.ghost.add(floor);
   }
 
   /** 2.66: the cars and wrecks of the district (where, which way, their look's seed), and the mesh they are drawn in. */
@@ -1384,6 +1427,9 @@ void main() {
     this.bars.clear();
     disposeTree(this.cars, () => false, new Set([kitMaterial]));
     this.cars.clear();
+    disposeTree(this.pieces, () => false, new Set([kitMaterial, this.pieceMat]));
+    this.pieces.clear();
+    this.setGhost(null);
     disposeTree(this.locks, () => false, new Set([kitMaterial]));
     this.locks.clear();
     this.marks.clear();

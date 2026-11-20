@@ -1,5 +1,6 @@
 import { findPath, nearestDir } from '../../sim/ai/path';
 import { canWork, facedBreak, startBreak } from './salvage';
+import { poundPiece } from './build';
 import { lineOfSight } from '../../sim/ai/sight';
 import { DIR_X, DIR_Z } from '../../sim/command';
 import { randomInt } from '../../sim/rng';
@@ -102,7 +103,8 @@ export function places(c: City): { indoors: number[]; streets: number[]; deep: n
   const streets: number[] = [];
   let shut = 0;
   for (let i = 0; i < N; i++) {
-    if (c.grid[i]) continue;
+    // (2.67: what's built doesn't count: the places are the district's own, the same entered, forced or loaded.)
+    if (c.grid[i] && !c.pieceAt[i]) continue;
     const ch = d.rows[Math.floor(i / MAP_W)][i % MAP_W];
     const lot = d.lotAt[i];
     if (ch === ',') streets.push(i);
@@ -127,6 +129,8 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
   for (let tries = 0; tries < 12; tries++) {
     const tile = from[randomInt(c.state, from.length)];
     if (!farEnough(c, tile, up ? DEAD.clearUp : DEAD.clear)) continue;
+    // (2.67: not on a piece built since the district was entered.)
+    if (c.pieceAt[tile]) continue;
     // (2.52: nor in strong light, unless called up by the generator.)
     if (!up && c.lit[tile]) continue;
     // (Never inside a shelter: its doors are barred against them.)
@@ -537,7 +541,7 @@ export function stepDead(c: City) {
     // It looks (every fifth step, each on its own): the player in sight is gone after.
     // (2.60: a crawler sees no further than its three tiles.)
     const far = z.kind === ZKIND.CRAWLER ? Math.min(sight, CRAWLER.sight * UNIT) : sight;
-    if ((s.step + k) % 5 === 0 && d2 <= far * far && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
+    if ((s.step + k) % 5 === 0 && d2 <= far * far && lineOfSight(c.world, b.x, b.z, p.x, p.z, c.tile)) {
       if (z.mode !== ZED.CHASE) {
         c.events.push({ type: 'spotted', zed: k });
         // (2.60: a screamer says so to every one of them near.)
@@ -566,7 +570,8 @@ export function stepDead(c: City) {
         z.pound = undefined;
       } else {
         // On them: a bite, as often as it can.
-        if (d2 <= DEAD.reach * DEAD.reach && lineOfSight(c.world, b.x, b.z, p.x, p.z)) {
+        // (2.67: the tile the player stands on never hides them: a doorway, their own barred door or one they built, is no shelter from a bite.)
+        if (d2 <= DEAD.reach * DEAD.reach && lineOfSight(c.world, b.x, b.z, p.x, p.z, c.tile)) {
           b.moving = false;
           b.facing = nearestDir(dx, dz);
           if (++z.near >= kindStats(z.kind).lunge && s.step - z.bit >= DEAD.biteEvery) {
@@ -591,6 +596,9 @@ export function stepDead(c: City) {
         if (z.goal !== here || (!z.path.length && (s.step + k) % 12 === 0)) {
           z.goal = here;
           z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, grid) ?? [];
+          // (2.67: no way round what's built: the way through it, to pound the first piece in it.)
+          if (!z.path.length && c.anyBuilt())
+            z.path = findPath(c.world, tileAt(b.x, b.z), (i) => i === here, here, 900, undefined, brute ? c.openLock : c.openGrid) ?? [];
         }
       }
     }
@@ -691,6 +699,11 @@ export function stepDead(c: City) {
           z.pound = brute ? 0 : undefined;
           c.breach(next);
         }
+      } else if (z.mode === ZED.CHASE && c.pieceAt[next]) {
+        // (2.67: a piece built in its way: pounded until it gives, the chase kept up meanwhile.)
+        z.seen = s.step;
+        b.facing = nearestDir(centerX(next) - b.x, centerZ(next) - b.z);
+        poundPiece(c, next, brute, s.step + k);
       } else {
         z.path = [];
         if (!brute) z.pound = undefined;
