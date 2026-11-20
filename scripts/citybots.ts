@@ -5,6 +5,7 @@
 import { cityItem, cityItemNumber } from '../src/city/content/items';
 import { STORY } from '../src/city/content/story';
 import { gatesOpen, holds, objectives, towards, wants } from '../src/city/sim/story';
+import { needsOn } from '../src/city/sim/survival';
 import { COP, FULL, SLEEP_FROM, SLEEP_TO, type City } from '../src/city/sim/City';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { nearestDir } from '../src/sim/ai/path';
@@ -80,6 +81,16 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
       return command(0, COP.CLOSE);
     }
     if (s.search) return 0;
+    // (2.70, a city begun from then: thirsty, the best drink in the pockets; dirty water only when nearly parched.)
+    if (needsOn(c) && s.thirst < FULL * 0.55) {
+      let best = -1;
+      s.inv.forEach((st, k) => {
+        const d = cityItem(st[0]);
+        if (!d?.use?.thirst || (d.mood === 'queasy' && s.thirst > FULL * 0.15)) return;
+        if (best < 0 || d.use.thirst > (cityItem(s.inv[best][0])!.use!.thirst ?? 0)) best = k;
+      });
+      if (best >= 0) return command(0, COP.USE, best);
+    }
     // Hungry: the best thing in the pockets (never raw fish while there's health to lose).
     if (s.hunger < FULL * 0.55) {
       let best = -1;
@@ -109,14 +120,17 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
       if (spare >= 0) return command(0, COP.DROP, spare);
       const food = s.inv
         .map((st, k) => ({ k, hunger: cityItem(st[0])?.use?.hunger ?? 0, health: cityItem(st[0])?.use?.health ?? 0 }))
-        .filter((f) => f.hunger > 0 && f.health <= 5 && !keep(s.inv[f.k][0]));
+        // (2.70: never the drinks, in a city with thirst.)
+        .filter((f) => f.hunger > 0 && f.health <= 5 && !keep(s.inv[f.k][0]) && !(needsOn(c) && cityItem(s.inv[f.k][0])?.use?.thirst));
       if (food.length > 4) return command(0, COP.DROP, food.sort((a, b) => a.hunger - b.hunger)[0].k);
     }
     // (Night is for sleeping, unless the stomach is nearly empty: then food first.)
-    const night = (c.minute >= SLEEP_FROM || c.minute < SLEEP_TO) && s.hunger > FULL * 0.2;
+    // (2.70: nor nearly parched: a bed refuses the parched.)
+    const watered = !needsOn(c) || s.thirst > FULL * 0.2;
+    const night = (c.minute >= SLEEP_FROM || c.minute < SLEEP_TO) && s.hunger > FULL * 0.2 && watered;
     const props = c.district.props;
     // At night, or worn out: a bed already looked into.
-    const bedtime = night || (s.energy < FULL * 0.3 && s.hunger > FULL * 0.2);
+    const bedtime = night || (s.energy < FULL * 0.3 && s.hunger > FULL * 0.2 && watered);
     // (2.58: what's behind a chained door is left alone: it has no crowbar's use.)
     const shut = (k: number) => c.lockedLot(c.district.lotAt[props[k].z * MAP_W + props[k].x] - 1);
     const want = (k: number) =>
@@ -236,6 +250,9 @@ export function quester(c: City, way: number) {
     // (Hungry: the scavenger eats, or looks for food; on the last night only what's in the pockets, or it would go to bed.)
     const food = s.inv.some((st) => (cityItem(st[0])?.use?.hunger ?? 0) > 0 && (cityItem(st[0])?.use?.health ?? 0) >= 0);
     if (s.hunger < FULL * 0.5 && (food || !last)) return aside();
+    // (2.70: thirsty, as hungry.)
+    const drink = s.inv.some((st) => (cityItem(st[0])?.use?.thirst ?? 0) > 0);
+    if (needsOn(c) && s.thirst < FULL * 0.5 && (drink || !last)) return aside();
     // (Its way out set going: no bed that night. Waiting on the dark or the tide: about its own business till an hour before.)
     const night = c.minute >= SLEEP_FROM || c.minute < SLEEP_TO;
     const waits = last && !s.ready && s.way === 1 ? c.minute >= 5 * 60 && c.minute < 19 * 60 : false;

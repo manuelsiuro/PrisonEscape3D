@@ -14,8 +14,15 @@ export interface CityItem {
   shape: string;
   color: number;
   accent?: number;
-  /** Eaten, drunk or applied from the pockets: what it gives back (hunger, energy, health; a minus takes). */
-  use?: { hunger?: number; energy?: number; health?: number };
+  /** Eaten, drunk or applied from the pockets: what it gives back (hunger, energy, health; 2.70: thirst; a minus takes). */
+  use?: { hunger?: number; energy?: number; health?: number; thirst?: number };
+  /** 2.70 (a city begun from then): the state it brings (content/survival.ts's MOODS), and the one it settles. */
+  mood?: 'wellFed' | 'refreshed' | 'queasy';
+  settles?: 'queasy';
+  /** 2.70: it stops a wound bleeding, whatever the health it gives. */
+  stanch?: true;
+  /** 2.70: worn, never soaked by the rain (a raincoat). */
+  dry?: true;
   /** A weapon in hand (C2b): its blow, its reach in tiles past the fists'. */
   attack?: number;
   reach?: number;
@@ -42,7 +49,7 @@ const food = (
   shape: string,
   color: number,
   hunger: number,
-  more: { energy?: number; health?: number } = {},
+  more: { energy?: number; health?: number; thirst?: number } = {},
   accent?: number,
 ): CityItem => ({
   id,
@@ -65,15 +72,25 @@ const part = (id: string, shape: string, color: number, accent?: number): CityIt
 export const CITY_ITEMS: readonly CityItem[] = [
   food('tin', 'can', 0xb8bec4, 30, {}, 0xc24a3a),
   food('dried', 'packet', 0xc9a25a, 18, {}, 0x6a4a2a),
-  food('water', 'bottle', 0x6fb4e0, 6, { energy: 12 }, 0xe8f2fa),
-  food('soda', 'can', 0xd23a3a, 9, { energy: 10 }, 0xf4f1ea),
-  food('fruit', 'fruit', 0xd9483b, 12, { health: 2 }),
+  // (2.70: what's drunk quenches thirst, in a city begun from then.)
+  food('water', 'bottle', 0x6fb4e0, 6, { energy: 12, thirst: 50 }, 0xe8f2fa),
+  { ...food('soda', 'can', 0xd23a3a, 9, { energy: 10, thirst: 20 }, 0xf4f1ea), mood: 'refreshed' },
+  food('fruit', 'fruit', 0xd9483b, 12, { health: 2, thirst: 8 }),
   food('veg', 'veg', 0xe08a2a, 14, { health: 2 }, 0x4a8a3a),
   food('chocolate', 'packet', 0x5a3320, 14, { energy: 14 }, 0xd8b04a),
   // (Raw, it's a meal that costs a little health: cooked on a fire, C2c.)
   food('fish', 'fish', 0x8fa4b0, 16, { health: -4 }),
   { id: 'bandage', kind: 'med', stack: 3, shape: 'roll', color: 0xf0ece2, accent: 0xc24a3a, use: { health: 28 } },
-  { id: 'pills', kind: 'med', stack: 3, shape: 'pills', color: 0xf2f2ee, accent: 0x3a7ac2, use: { health: 10, energy: 20 } },
+  {
+    id: 'pills',
+    kind: 'med',
+    stack: 3,
+    shape: 'pills',
+    color: 0xf2f2ee,
+    accent: 0x3a7ac2,
+    use: { health: 10, energy: 20 },
+    settles: 'queasy',
+  },
   part('plank', 'plank', 0x9a7748),
   part('nails', 'jar', 0x9aa1ab, 0x5a5f66),
   part('tape', 'tape', 0x8a8f96),
@@ -97,9 +114,9 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'boards', kind: 'tool', stack: 4, shape: 'plank', color: 0x8a6a40, accent: 0x9aa1ab },
   /** A camp stove: carried, it cooks. */
   { id: 'stove', kind: 'tool', stack: 1, shape: 'pack', color: 0x4a5560, accent: 0xc24a3a },
-  food('cooked_fish', 'fish', 0xc98a4a, 32, { health: 3 }),
+  { ...food('cooked_fish', 'fish', 0xc98a4a, 32, { health: 3 }), mood: 'wellFed' },
   // (2.58: a full meal, and worth the cooking: its tin, vegetable and water eaten as they are give 50, 2 and 12.)
-  food('stew', 'bowl', 0xb5673a, 75, { health: 8, energy: 15 }, 0xe8e2d0),
+  { ...food('stew', 'bowl', 0xb5673a, 75, { health: 8, energy: 15, thirst: 10 }, 0xe8e2d0), mood: 'wellFed' },
   // C3b: what the survivors teach.
   { id: 'medkit', kind: 'med', stack: 2, shape: 'pack', color: 0xf0ece2, accent: 0xc24a3a, use: { health: 100 } },
   {
@@ -209,10 +226,26 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'poncho', kind: 'armour', stack: 1, shape: 'ghillie', color: 0x4f6a3a, accent: 0x7a6a4a, wear: 30, armour: 0, hidden: 1 },
   { id: 'satchel', kind: 'bag', stack: 1, shape: 'pouch', color: 0x8a6a40, accent: 0x5a4a2a, slots: 4 },
   { id: 'hiking_pack', kind: 'bag', stack: 1, shape: 'pack', color: 0x3f6a8c, accent: 0xd9822b, slots: 8 },
+  // 2.70 (C5 batch 5): survival with weight. Water that isn't clean, what grows, what's cooked, what keeps.
+  { ...food('dirty_water', 'bottle', 0x8a8a5a, 0, { thirst: 25 }, 0xc8c8a0), mood: 'queasy' },
+  { id: 'seeds', kind: 'material', stack: 6, shape: 'seeds', color: 0x9a7a3a, accent: 0x4a8a3a },
+  { id: 'herbs', kind: 'material', stack: 6, shape: 'veg', color: 0x4a8a3a, accent: 0x6aa84a },
+  { ...food('tea', 'cup', 0x8a5a2a, 0, { thirst: 30, energy: 5 }, 0xe8e2d0), mood: 'refreshed', settles: 'queasy' },
+  { ...food('coffee', 'can', 0x4a3220, 0, { thirst: 10, energy: 18 }, 0xd8b04a), mood: 'refreshed' },
+  { ...food('roast_veg', 'bowl', 0xd98a3a, 40, { health: 3 }, 0x6a4a2a), mood: 'wellFed' },
+  { ...food('fish_soup', 'bowl', 0xd8c8a0, 55, { health: 4, thirst: 20 }, 0x8a5a3a), mood: 'wellFed' },
+  food('jerky', 'jerky', 0x7a3a2a, 35, { energy: 5 }),
+  food('preserves', 'jar', 0xc24a5a, 30, { energy: 8 }, 0xe8d8b0),
+  { id: 'poultice', kind: 'med', stack: 3, shape: 'cloth', color: 0x6a8a4a, accent: 0xe8e2d0, use: { health: 10 }, stanch: true },
+  { id: 'fishing_rod', kind: 'tool', stack: 1, shape: 'broom', color: 0x9a7748, accent: 0xb87333, wear: 30 },
+  { id: 'raincoat', kind: 'armour', stack: 1, shape: 'outfit', color: 0xe8c02a, accent: 0x2a2a2a, wear: 40, armour: 0, dry: true },
+  { id: 'manual_garden', kind: 'manual', stack: 1, shape: 'book', color: 0x4a8a3a, accent: 0xf2e6c8, manual: 3 },
+  { id: 'manual_fishing', kind: 'manual', stack: 1, shape: 'book', color: 0x2a6a8a, accent: 0xf2e6c8, manual: 4 },
+  { id: 'manual_cooking', kind: 'manual', stack: 1, shape: 'book', color: 0xb5673a, accent: 0xf2e6c8, manual: 5 },
 ];
 
 /** 2.69: the manuals, by their place: what each is about (its recipes name it). */
-export const MANUALS = ['weapons', 'sewing', 'tricks'] as const;
+export const MANUALS = ['weapons', 'sewing', 'tricks', 'garden', 'fishing', 'cooking'] as const;
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];
 export function cityItemNumber(id: string): number {

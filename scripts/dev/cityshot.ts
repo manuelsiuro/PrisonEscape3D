@@ -14,6 +14,8 @@ import type { Zed } from '../../src/city/sim/dead';
 import { relight } from '../../src/city/sim/light';
 import { cityItemNumber } from '../../src/city/content/items';
 import { PIECE } from '../../src/city/content/build';
+import { WEATHER } from '../../src/city/content/survival';
+import { weatherOf } from '../../src/city/sim/survival';
 import { DECO } from '../../src/city/gen/district';
 import { nearestDir } from '../../src/sim/ai/path';
 import { MAP_W as W } from '../../src/sim/world/grid';
@@ -456,6 +458,70 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       for (const o of [3, W + 3, -W + 2]) t.zed(mid + o, 0, west);
     },
   },
+  // 2.70: thirst: at the park's pond, a drink.
+  cityThirst: {
+    zoom: 2.2,
+    scene: (t) => {
+      t.time(2, 15 * 60);
+      const d = t.c.plan.kinds.indexOf('park');
+      const dist = t.c.districtOf(d);
+      t.go(d, dist.spawn.z * W + dist.spawn.x);
+      let beside = -1;
+      let pond = -1;
+      for (let i = W * 6; i < W * (W - 6) && beside < 0; i++) {
+        if (t.c.grid[i] || dist.rows[Math.floor(i / W)][i % W] === '~') continue;
+        const w = [i - W, i + 1, i + W, i - 1].find((u) => dist.rows[Math.floor(u / W)]?.[u % W] === '~');
+        if (w !== undefined && [i - W, i + W, i + 1, i - 1].filter((u) => dist.rows[Math.floor(u / W)]?.[u % W] === '~').length === 1) {
+          beside = i;
+          pond = w;
+        }
+      }
+      if (beside < 0) return;
+      t.go(d, beside, nearestDir((pond % W) - (beside % W), Math.floor(pond / W) - Math.floor(beside / W)));
+    },
+  },
+  // 2.70: the weather: a rainy day in the street, the player in a raincoat.
+  cityWeather: {
+    zoom: 2.0,
+    scene: (t) => {
+      let day = 2;
+      while (day < 300 && WEATHER[weatherOf(t.c, day)] !== 'rain') day++;
+      t.time(day, 14 * 60);
+      const d = t.c.plan.start;
+      // (Nothing built from another picture in the way.)
+      t.s.built = { [d]: [] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      t.s.armour = [cityItemNumber('raincoat'), 40];
+      t.go(d, mid, nearestDir(0, 1));
+    },
+  },
+  // 2.70: the garden: two planters ripe, a rain barrel half full, a smoker and a campfire, the player with a rod.
+  cityGarden: {
+    zoom: 2.3,
+    scene: (t) => {
+      t.time(3, 16 * 60);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const S = nearestDir(0, 1);
+      const ripe = 4 * 10_000 + 3;
+      t.s.built = {
+        [d]: [
+          [mid - W - 1, PIECE.planter, 40, S, ripe],
+          [mid - W, PIECE.planter, 40, S, 2 * 10_000 + 3],
+          [mid - W + 1, PIECE.rainBarrel, 60, S, 3 * 16 + 5],
+          [mid + 2, PIECE.smoker, 60, S, 0],
+          [mid + W + 2, PIECE.campfire, 40, S, 0],
+        ],
+      };
+      t.s.lights = { [d]: [[mid + W + 2, 3, t.s.step + 300 * 20]] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.s.inv[0] = [cityItemNumber('fishing_rod'), 30];
+      t.go(d, mid + W, nearestDir(0, -1));
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,
@@ -497,6 +563,9 @@ export async function stage(id: string) {
   // (The pictures are of the first days: the bus's orange, empty hands.)
   Object.assign(t.s, { hunger: 90_000, energy: 90_000, health: 100, outfit: 0 });
   t.s.inv = t.s.inv.map(() => [0, 0]);
+  // (2.69: nothing worn either, unless the scene puts it on.)
+  t.s.armour = [0, 0];
+  t.s.bag = 0;
   t.s.lights = {};
   relight(t.c);
   if (!hide) {

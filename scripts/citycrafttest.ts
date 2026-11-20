@@ -100,7 +100,8 @@ function openSquare(c: City): number {
     }
   return -1;
 }
-const NEW = CITY_RECIPES.map((r, k) => [r, k] as const).filter(([r]) => r.manual !== undefined);
+// (2.69's three manuals; 2.70's are cityneedstest's.)
+const NEW = CITY_RECIPES.map((r, k) => [r, k] as const).filter(([r]) => r.manual !== undefined && r.manual < 3);
 
 // ------------------------------------------------------------------ manuals
 {
@@ -577,7 +578,7 @@ const NEW = CITY_RECIPES.map((r, k) => [r, k] as const).filter(([r]) => r.manual
   for (const k of ['manuals', 'armour', 'bag', 'smoke', 'ticks']) delete older.state[k];
   const o = loadCity(older)!;
   check(o.state.manuals === 0 && o.state.armour[0] === 0 && o.state.bag === 0, 'a save from before 2.69 loads with nothing worn');
-  check(CITY_ITEMS.filter((d) => d.manual !== undefined).length === 3, 'three manuals');
+  check(CITY_ITEMS.filter((d) => d.manual !== undefined).length === 6, 'six manuals (2.70: three more)');
   say(
     'a save keeps the manuals read, what is worn, the bag and its things, smoke and noisemakers; a damaged one made sound; one from before loads',
   );

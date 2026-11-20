@@ -1,0 +1,9 @@
+thirst in ten hours: 42% awake, 18% asleep, 63% in the heat, none in a city begun before 2.70; run dry, 10 health in forty minutes and a slower walk
+water drunk; dirty water queasy (hunger 2× as fast), tea settles it and refreshes (energy half as fast); a stew: 12 health back in an hour against 6; a night slept: rested, a blow 750 energy; out in the rain soaked, in a raincoat not
+at 06:00, half of each fresh stack in the pockets goes off, rounded up (3 fish → 1, 2 vegetables → 1; a single fruit gone, its slot free); tins keep
+the weather over 1000 days: clear 44%, rain 21%, fog 15%, heat 12%, storm 8%; day 1 clear; none in a city begun before; the fog to 3 tiles till 11:00; a blow 6 tiles off heard dry, not in the rain
+at the park's pond: a drink (queasy); twenty casts with a rod, 13 fish
+a planter watered three days running harvested (vegetables, herbs, a seed back), watering twice a day refused; three rainy days grow it unwatered; a rain barrel drunk from and a bottle filled; jerky only beside a smoker
+7 recipes and the planter, the barrel and the smoker from three manuals, hidden in a city begun before; boiled water known to all
+too thirsty to sleep; asleep as thirst runs out, woken; two minutes in bed not rested; the rod put away mid-cast ends it; thirsty with a rod, the button drinks
+a save keeps thirst and the states; a damaged one made sound; one from before loads with thirst full

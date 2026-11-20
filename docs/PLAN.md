@@ -45,6 +45,7 @@ Where the GDD and `tech_plan.md` disagree, or say nothing, what was decided (the
 - [Inmates, talk and crews](decisions/people.md): cells and visitors, opinion, followers, speech, the crew, the pet rat (6 rows)
 - [Free time and games](decisions/free-time.md): the side games, cards, long games, penalties, the tattoo parlour, stage nights (6 rows)
 - [Modes, progress and saves](decisions/modes.md): saving, the campaign's unlocks, achievements, lessons, the Daily Escape, replays (7 rows)
+- [City Escape, stage C5](decisions/city-c5.md): the testers' asks (2.66 on): breaking, building, the Rush, traps, crafting, survival.
 - [City Escape](decisions/city.md): the second mode, where its build departs from its own design (`source/city_escape_design.md`) or settles what it leaves open (47 rows)
 
 Any further conflict found during the build is added to its area's file in the same commit.
@@ -187,7 +188,8 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
   (2.58: chained buildings, fences cut, a sleeper's door, the boat), `cityfighttest` (2.60: the kinds of the dead, the unseen
   blow, their looks), `citylastnightstest` (2.65: fair last nights, the weapon for the one struck), `citysalvagetest` (2.66:
   breaking things), `citybuildtest` (2.67: building a base), `cityrushtest` (2.68: the Rush, traps, a base left, a bot
-  holding a Rush), `citycrafttest` (2.69: manuals, the workshop, mending, armour, bags, the tricks); their bots are in
+  holding a Rush), `citycrafttest` (2.69: manuals, the workshop, mending, armour, bags, the tricks), `cityneedstest` (2.70: thirst, the
+  states, the weather, water, the garden, fishing); their bots are in
   `citybots.ts`.
 - **Speech** (`chattertest`, `gossiptest`): the phrase banks in both languages, the director
   over days of play, every piece of gossip checked against the running game.
@@ -215,8 +217,8 @@ feel) and the known limits.
 **Status (2026-11-20): v2.69.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
-45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 87 help topics,
-6,414 text keys in English and French, 106 test scripts. A second mode, City Escape, built in four
+45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 90 help topics,
+6,530 text keys in English and French, 107 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
 2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
 metro's tunnel), and its full review's findings from 2.57 to 2.60 (a town's own look, chained buildings and fences cut,

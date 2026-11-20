@@ -260,6 +260,8 @@ function quiet(seed: number, day: number, minute: number): City {
 // ------------------------------------------------------------------ a screamer
 {
   const c = quiet(3, 3, 23 * 60);
+  // (2.70: that night rains in this city, and the rain halves the scream's reach: the screamer measured as with no weather.)
+  c.state.rev = 5;
   const { at, dir } = street(c, 6);
   c.peace = false;
   stand(c, at, at + dir);
