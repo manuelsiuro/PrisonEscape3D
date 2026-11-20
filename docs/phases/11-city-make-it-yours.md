@@ -189,9 +189,9 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 
 | # | Batch | Version | State |
 |---|---|---|---|
-| 1 | Breaking and salvage: furniture, cars, wrecks, inner walls; the axe and the sledgehammer | 2.66.0 | built, merged, not released |
-| 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | built, merged, not released |
-| 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | built, merged, not released |
-| 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | 2.69.0 | built, merged, not released |
+| 1 | Breaking and salvage: furniture, cars, wrecks, inner walls; the axe and the sledgehammer | 2.66.0 | released with 2.69.0 |
+| 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | released with 2.69.0 |
+| 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | released with 2.69.0 |
+| 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | 2.69.0 | released |
 | 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | | |
 | 6 | Events, skills, Holdout, the dog | | |
