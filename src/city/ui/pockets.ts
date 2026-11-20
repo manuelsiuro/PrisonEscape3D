@@ -6,7 +6,23 @@ import { icon } from '../../ui/icons';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../content/items';
 import { PEOPLE } from '../content/people';
 import { CITY_RECIPES } from '../content/recipes';
-import { COP, POCKETS, type Stack, type Target } from '../sim/City';
+import { COP, PIECE_OPS, POCKETS, type Stack, type Target } from '../sim/City';
+import { PIECES } from '../content/build';
+
+/** 2.67: each piece's icon in the Build panel. */
+const PIECE_ICONS: Record<string, Parameters<typeof icon>[0]> = {
+  barricade: 'shield',
+  plankWall: 'board',
+  metalWall: 'shield',
+  door: 'home',
+  chest: 'box',
+  cot: 'moon',
+  workbench: 'wrench',
+  campfire: 'flame',
+  table: 'utensils',
+  chair: 'person',
+  rug: 'sparkle',
+};
 
 /** What the pockets, the open box and the action button show (C2), worked out by the play layer each frame. */
 export interface PocketsState {
@@ -25,6 +41,11 @@ export interface PocketsState {
   /** 2.66: the open piece breaks up into these (null: it doesn't), and something carried can break it. */
   breaks: readonly Stack[] | null;
   breakCan: boolean;
+  /** 2.67: the Build panel's pieces, what each lacks ('ok': it can go up); the piece being placed (-1 none) and whether it can go where it would; the open built piece. */
+  builds: ReadonlyArray<'ok' | 'hammer' | 'parts'>;
+  placing: number;
+  placeWhy: string;
+  piece: PieceCard | null;
   /** 2.64: the torch: on, and its battery's game minutes left (its card says both). */
   torchOn: boolean;
   torchLeft: number;
@@ -44,6 +65,17 @@ export interface PocketsState {
   blows: number;
   blowsOf: number;
   ready: boolean;
+}
+
+/** 2.67: a built piece's card: its kind, health, a repair's cost and whether it can be done, a campfire's minutes left (-1: not one). */
+export interface PieceCard {
+  kind: number;
+  hp: number;
+  max: number;
+  repair: readonly Stack[];
+  canRepair: 'ok' | 'hammer' | 'parts' | 'full';
+  fire: number;
+  chest: boolean;
 }
 
 /** The city's things photographed (by item number; 0 unused), once. */
@@ -104,6 +136,14 @@ export class CityPockets {
   /** The Make panel (its button on the pockets' bar). */
   readonly make: HTMLElement;
   makeOpen = false;
+  /** 2.67: the Build panel (its button beside Make's), and the button that stops placing pieces. */
+  readonly build: HTMLElement;
+  buildOpen = false;
+  private shownBuild = '';
+  readonly stop: HTMLButtonElement;
+  onBuild: () => void = () => {};
+  onPick: (kind: number) => void = () => {};
+  onStop: () => void = () => {};
   private shownMake = '';
   readonly act: HTMLButtonElement;
   /** The blow: always there in play (Space). */
@@ -134,6 +174,15 @@ export class CityPockets {
       if (el.dataset.r !== undefined) this.onOp(COP.MAKE, Number(el.dataset.r));
       else this.toggleMake(false);
     });
+    this.build = h('div', 'item-panel city-make city-build hidden');
+    this.build.addEventListener('click', (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-b], [data-c]');
+      if (!el) return;
+      if (el.dataset.b !== undefined) this.onPick(Number(el.dataset.b));
+      else this.toggleBuild(false);
+    });
+    this.stop = h('button', 'big-btn ghost city-stop hidden') as HTMLButtonElement;
+    this.stop.addEventListener('click', () => this.onStop());
     this.act = h('button', 'act-btn city-act hidden');
     this.act.addEventListener('click', () => this.onAct());
     this.hit = h(
@@ -143,6 +192,7 @@ export class CityPockets {
     );
     this.hit.addEventListener('click', () => this.onHit());
     this.bar.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('.build-btn')) return this.onBuild();
       if ((e.target as HTMLElement).closest('.craft-btn')) return this.onMake();
       const k = (e.target as HTMLElement).closest<HTMLElement>('[data-k]')?.dataset.k;
       if (k !== undefined) this.pick(Number(k));
@@ -154,6 +204,9 @@ export class CityPockets {
       else if (el.dataset.c === 'all') this.onOp(COP.TAKE_ALL);
       else if (el.dataset.c === 'sleep') this.onOp(COP.SLEEP);
       else if (el.dataset.c === 'break') this.onOp(COP.BREAK);
+      else if (el.dataset.c === 'repair') this.onOp(COP.BUILD, PIECE_OPS);
+      else if (el.dataset.c === 'down') this.onOp(COP.BUILD, PIECE_OPS + 1);
+      else if (el.dataset.c === 'feed') this.onOp(COP.BUILD, PIECE_OPS + 2);
       else this.onOp(COP.CLOSE);
     });
     this.card.addEventListener('click', (e) => {
@@ -164,16 +217,17 @@ export class CityPockets {
       else if (c === 'store') this.onOp(COP.STORE, this.picked);
       if (c !== 'use') this.pick(-1);
     });
-    document.body.append(this.bar, this.panel, this.card, this.make, this.act, this.hit);
+    document.body.append(this.bar, this.panel, this.card, this.make, this.build, this.act, this.hit, this.stop);
   }
 
   show(on: boolean) {
     this.bar.classList.toggle('hidden', !on);
     this.hit.classList.toggle('hidden', !on);
-    if (!on) for (const el of [this.panel, this.card, this.act, this.make]) el.classList.add('hidden');
-    this.shownInv = this.shownBox = this.shownAct = this.shownMake = this.shownHit = '';
+    if (!on) for (const el of [this.panel, this.card, this.act, this.make, this.build, this.stop]) el.classList.add('hidden');
+    this.shownInv = this.shownBox = this.shownAct = this.shownMake = this.shownHit = this.shownBuild = '';
     this.picked = -1;
     this.makeOpen = false;
+    this.buildOpen = false;
   }
 
   /** A pocket's card opened (the same again, or -1: shut). */
@@ -186,18 +240,31 @@ export class CityPockets {
   /** The Make panel opened or shut. */
   toggleMake(on = !this.makeOpen) {
     this.makeOpen = on;
-    if (on) this.picked = -1;
+    if (on) {
+      this.picked = -1;
+      this.toggleBuild(false);
+    }
     this.shownMake = this.shownInv = '';
+  }
+  /** 2.67: the Build panel opened or shut. */
+  toggleBuild(on = !this.buildOpen) {
+    this.buildOpen = on;
+    if (on) {
+      this.picked = -1;
+      if (this.makeOpen) this.toggleMake(false);
+    }
+    this.shownBuild = this.shownInv = '';
   }
 
   /** Whether a card or the box is up (Escape shuts them first). */
   get open() {
-    return this.picked >= 0 || this.makeOpen;
+    return this.picked >= 0 || this.makeOpen || this.buildOpen;
   }
   /** Escape: whichever of them is up, shut. */
   shut() {
     this.picked = -1;
     this.toggleMake(false);
+    this.toggleBuild(false);
   }
 
   update(s: PocketsState) {
@@ -219,7 +286,7 @@ export class CityPockets {
       }).join('');
       this.bar.insertAdjacentHTML(
         'beforeend',
-        `<i class="hotbar-gap"></i><button class="slot craft-btn${this.makeOpen ? ' picked' : ''}" aria-label="${t('city.make.title')}" aria-keyshortcuts="${keyLabel('KeyC')}">${icon('hammer', 22)}<span>${t('city.make.open')}</span></button>`,
+        `<i class="hotbar-gap"></i><button class="slot craft-btn${this.makeOpen ? ' picked' : ''}" aria-label="${t('city.make.title')}" aria-keyshortcuts="${keyLabel('KeyC')}">${icon('hammer', 22)}<span>${t('city.make.open')}</span></button><button class="slot craft-btn build-btn${this.buildOpen ? ' picked' : ''}" aria-label="${t('city.build.title')}" aria-keyshortcuts="${keyLabel('KeyB')}">${icon('home', 22)}<span>${t('city.build.open')}</span></button>`,
       );
       this.card.classList.toggle('hidden', this.picked < 0);
       if (this.picked >= 0) {
@@ -230,10 +297,10 @@ export class CityPockets {
           ? `${useLine(item)} · ${s.torchLeft >= 60 ? t('city.thing.torchLeft', { h: Math.round(s.torchLeft / 60) }) : s.torchLeft > 0 ? t('city.thing.torchMinutes', { n: s.torchLeft }) : t('city.thing.torchEmpty')}`
           : useLine(item);
         this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${counted(item, n)}</b><small>${line || (cityItem(item)!.wear !== undefined ? t(cityItem(item)!.id === 'crossbow' ? 'city.thing.shots' : 'city.thing.blows', { n, of: cityItem(item)!.wear! }) : t(`city.kindOf.${cityItem(item)!.kind}` as Key))}</small></div></div>
-          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(torch ? (s.torchOn ? 'city.thing.torchOff' : 'city.thing.torchOn') : (LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
+          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(torch ? (s.torchOn ? 'city.thing.torchOff' : 'city.thing.torchOn') : (LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')))}</button>` : ''}${s.box && (!s.piece || s.piece.chest) ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
-    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${JSON.stringify(s.breaks)}|${s.breakCan}|${textStamp()}`;
+    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${JSON.stringify(s.breaks)}|${s.breakCan}|${JSON.stringify(s.piece)}|${textStamp()}`;
     if (box !== this.shownBox) {
       this.shownBox = box;
       this.panel.classList.toggle('hidden', !s.box);
@@ -251,6 +318,15 @@ export class CityPockets {
         const smashBtn = s.breaks
           ? `<button class="big-btn ghost" data-c="break"${s.breakCan ? '' : ' aria-disabled="true"'}>${icon('hammer', 16)}${t('city.act.break')}</button>`
           : '';
+        // (2.67: a built piece: its health, a repair's cost, its buttons; a campfire's time left.)
+        const pc = s.piece;
+        const cost = pc?.repair.map(([item, n]) => counted(item, n)).join(', ') ?? '';
+        const pieceNote = pc
+          ? `<p class="card-note city-piece">${icon('shield', 14)} ${t('city.piece.health', { n: pc.hp, of: pc.max })}${pc.fire >= 0 ? ` · ${pc.fire > 0 ? t('city.piece.burns', { h: Math.max(1, Math.round(pc.fire / 60)) }) : t('city.piece.out')}` : ''}${pc.canRepair !== 'full' ? ` · ${t('city.piece.repairCost', { what: cost })}` : ''}</p>`
+          : '';
+        const pieceBtns = pc
+          ? `${pc.fire >= 0 ? `<button class="big-btn" data-c="feed">${icon('flame', 16)}${t(pc.fire > 0 ? 'city.piece.feed' : 'city.piece.light')}</button>` : ''}${pc.canRepair !== 'full' ? `<button class="big-btn ghost" data-c="repair"${pc.canRepair === 'ok' ? '' : ' aria-disabled="true"'}>${icon('wrench', 16)}${t('city.piece.repair')}</button>` : ''}<button class="big-btn ghost" data-c="down">${icon('down', 16)}${t('city.piece.down')}</button>`
+          : '';
         this.panel.innerHTML = `<div class="box-head"><b>${t(s.box as Key)}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${
             filled
@@ -259,8 +335,8 @@ export class CityPockets {
             .filter((st) => st[0])
             .map((st) => counted(st[0], st[1]))
             .join(' · ')}</p>
-          ${smash}<div class="ct-actions">${sleep}${smashBtn}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
-              : `<p class="card-note">${t('city.box.empty')}</p>${smash}${sleep || smashBtn ? `<div class="ct-actions">${sleep}${smashBtn}</div>` : ''}`
+          ${smash}${pieceNote}<div class="ct-actions">${sleep}${smashBtn}${pieceBtns}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
+              : `${!pc ? `<p class="card-note">${t('city.box.empty')}</p>` : pc.chest ? `<p class="card-note">${t('city.piece.chestEmpty')}</p>` : ''}${smash}${pieceNote}${sleep || smashBtn || pieceBtns ? `<div class="ct-actions">${sleep}${smashBtn}${pieceBtns}</div>` : ''}`
           }`;
       }
     }
@@ -293,6 +369,33 @@ export class CityPockets {
           }).join('')}</ul>`;
       }
     }
+    // 2.67: the Build panel: every piece, what it takes (what's short greyed), the hammer it wants.
+    const bk = `${this.buildOpen}|${s.builds.join()}|${JSON.stringify(s.inv)}|${textStamp()}`;
+    if (bk !== this.shownBuild) {
+      this.shownBuild = bk;
+      this.build.classList.toggle('hidden', !this.buildOpen);
+      if (this.buildOpen) {
+        const have = (id: string) => s.inv.reduce((n, st) => n + (cityItem(st[0])?.id === id ? st[1] : 0), 0);
+        this.build.innerHTML = `<div class="box-head"><b>${icon('home', 18)} ${t('city.build.title')}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
+          ${s.builds[0] === 'hammer' ? `<p class="card-note lack">${icon('hammer', 14)} ${t('city.build.needHammer')}</p>` : ''}
+          <ul class="city-recipes">${PIECES.map((p, k) => {
+            const why = s.builds[k] ?? 'parts';
+            const parts = p.from
+              .map(
+                ([id, n]) =>
+                  `<i class="slot filled${have(id) < n ? ' short' : ''}" title="${t(`city.item.${id}` as Key)}"><img src="${iconOf(cityItemNumber(id))}" alt="${t(`city.item.${id}` as Key)}">${n > 1 ? `<i class="slot-n">${n}</i>` : ''}</i>`,
+              )
+              .join('');
+            const short = p.from.filter(([id, n]) => have(id) < n).map(([id]) => t(`city.item.${id}` as Key));
+            const line =
+              why === 'parts' && short.length ? t('city.make.missing', { what: short.join(', ') }) : t(`city.piece.${p.id}.d` as Key);
+            return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-b="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result piece-ic">${icon(PIECE_ICONS[p.id] ?? 'home', 22)}</i><span class="cr-text"><b>${t(`city.piece.${p.id}` as Key)}</b><small class="${why === 'parts' ? 'lack' : ''}">${line}</small></span><span class="cr-parts">${parts}</span></button></li>`;
+          }).join('')}</ul>`;
+      }
+    }
+    // (2.67: placing a piece: the stop button, by the action button.)
+    this.stop.classList.toggle('hidden', s.placing < 0);
+    if (s.placing >= 0) setText(this.stop, `✕ ${t('city.build.stop')}`);
     // The action button: what's in reach, a search's ring.
     const tg = s.asleep ? null : s.target;
     const verb = !tg
@@ -319,14 +422,28 @@ export class CityPockets {
                         ? s.rest
                           ? 'city.act.rest'
                           : 'city.act.sleep'
-                        : tg.kind === 'pile' || s.searched
+                        : tg.kind === 'pile' || tg.kind === 'piece' || s.searched
                           ? 'city.act.look'
                           : 'city.act.search';
-    const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${s.person}|${textStamp()}`;
+    // (2.67: placing a piece, the button puts it up, or says why it can't go there.)
+    const placing = s.placing >= 0;
+    const key = placing
+      ? `place|${s.placing}|${s.placeWhy}|${textStamp()}`
+      : `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${tg?.piece ?? ''}|${s.person}|${textStamp()}`;
     if (key !== this.shownAct) {
       this.shownAct = key;
-      this.act.classList.toggle('hidden', !tg);
-      if (tg) {
+      this.act.classList.toggle('hidden', !tg && !placing);
+      this.act.classList.toggle('cant', placing && s.placeWhy !== 'ok');
+      if (placing) {
+        const cap = TOUCH ? '' : `<kbd class="city-key">${keyLabel('KeyE')}</kbd>`;
+        const name = t(`city.piece.${PIECES[s.placing]?.id ?? 'barricade'}` as Key);
+        const what = s.placeWhy === 'ok' ? name : t(`city.build.why.${s.placeWhy || 'here'}` as Key);
+        this.act.innerHTML = `<i class="act-round">${cap}${icon('home', 24)}<span></span></i><b class="act-what"></b>`;
+        setText(this.act.querySelector('.act-round span')!, t('city.act.build'));
+        setText(this.act.querySelector('.act-what')!, what);
+        this.act.setAttribute('aria-label', `${t('city.act.build')} ${name}: ${what}`);
+        this.act.setAttribute('aria-keyshortcuts', keyLabel('KeyE'));
+      } else if (tg) {
         const what = t(
           tg.kind === 'npc'
             ? (`city.person.${s.person}.name` as Key)
@@ -344,13 +461,15 @@ export class CityPockets {
                       ? 'city.box.fence'
                       : tg.kind === 'wall'
                         ? 'city.box.wall'
-                        : tg.prop
-                          ? (`city.box.${tg.prop}` as Key)
-                          : 'city.box.pile',
+                        : tg.kind === 'piece'
+                          ? (`city.piece.${PIECES[tg.piece ?? 0]?.id ?? 'barricade'}` as Key)
+                          : tg.prop
+                            ? (`city.box.${tg.prop}` as Key)
+                            : 'city.box.pile',
         );
         // (2.64: on a keyboard, the key on the button; an open box's button shuts it, and says so by its icon too.)
         const cap = TOUCH ? '' : `<kbd class="city-key">${keyLabel('KeyE')}</kbd>`;
-        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'wall' ? 'hammer' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'wall' ? 'hammer' : tg.kind === 'piece' ? 'home' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);

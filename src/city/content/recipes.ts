@@ -176,6 +176,16 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
     ],
     bench: true,
   },
+  // 2.67 (C5 batch 2): what builds, by hand.
+  {
+    makes: 'hammer',
+    n: 1,
+    from: [
+      ['plank', 1],
+      ['scrap', 1],
+      ['tape', 1],
+    ],
+  },
 ];
 
 /** A recipe's ingredients and result as item numbers. */

@@ -134,7 +134,7 @@ teach. Play as Survivor, or as Hardcore with one life.
     <td width="72%">
       <ul>
         <li><b>A tutorial of 69 short lessons</b> in five chapters (First steps, Getting by, Prison life, Ways out, The prisons), each played in a real prison scene.</li>
-        <li><b>How to play</b>: 82 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
+        <li><b>How to play</b>: 83 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
         <li><b>144 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
@@ -227,7 +227,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 103 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 104 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

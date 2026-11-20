@@ -127,6 +127,8 @@ function shoo(c: City) {
 export const wayToDark = (c: City, from: number): number[] =>
   findPath(c.world, from, (i) => !c.lit[i], -1, 2500, undefined, c.zedGrid) ?? [];
 
+/** A light lit on a tile for so many game minutes (2.67: a campfire built, sim/build.ts). */
+export const addLight = (c: City, tile: number, kind: number, minutes: number) => add(c, tile, kind, minutes);
 function add(c: City, tile: number, kind: number, minutes: number) {
   const list = (c.state.lights[c.state.district] ??= []);
   // (One more than the most: the oldest goes out, and is said to.)
@@ -232,7 +234,7 @@ export function atFire(c: City): boolean {
   const here = c.tile;
   return lightsHere(c).some(
     (l) =>
-      l[1] === LIGHT_KIND.FIRE &&
+      (l[1] === LIGHT_KIND.FIRE || l[1] === LIGHT_KIND.CAMP) &&
       l[2] > c.state.step &&
       Math.max(Math.abs((l[0] % MAP_W) - (here % MAP_W)), Math.abs(Math.floor(l[0] / MAP_W) - Math.floor(here / MAP_W))) <= 1,
   );
@@ -283,7 +285,7 @@ export function soundLight(s: { step?: unknown; torch?: unknown; torchOn?: unkno
             l[0] >= 0 &&
             l[0] < N &&
             l[1] >= 0 &&
-            l[1] <= 2 &&
+            l[1] <= 3 &&
             l[2] >= 0 &&
             l[2] <= last,
         ),

@@ -75,8 +75,9 @@ water) come with the batch that first uses them, never before.
 - **Where**: any floor, pavement, yard, park, car park or street, in any district; not on a checkpoint or
   the two tiles round it, beside a survivor, on the story's tiles, the stairs, a pier's end.
 - **Taken down** free, half the materials back; **repaired** a quarter of the materials a quarter of its health.
-- **The dead** after someone pound the weakest piece in their way, as they pound boards now; brutes four
-  times harder; those wandering go round. A limit of pieces a district, from a phone's measurement.
+- **The dead** after someone go round what's built when they can; when they can't, they pound the first piece on
+  their way through (2.67: the shortest way, not the weakest piece); brutes four times harder; those wandering go round.
+  A limit of 120 pieces a district.
 - **A base left**: coming back after nights away, the pieces facing out have taken the nights' harm,
   worked out from the nights, the danger and the lights ("Your base held: 3 pieces damaged").
 - **Comfort**: the pieces within six tiles of the bed (bed, fire, table, radio…): Camp, Hideout, Home;
@@ -84,9 +85,9 @@ water) come with the batch that first uses them, never before.
 
 | Kind | Pieces |
 |---|---|
-| Walls | barricade (2 planks, nails), plank wall (4 planks, 2 nails), metal wall (workshop), built door (opens for the player only), window boards |
+| Walls | barricade (2 planks, nails), plank wall (4 planks, 2 nails), metal wall (4 scrap, 2 nails, wire; 2.67: no workshop needed), built door (opens for the player only); window boards wait for the dead to break windows (batch 3) |
 | Traps (batch 3) | spike strip, barbed wire, snare, tin-can alarm, pit, fire line, scarecrow decoy, sentry crossbow, floodlight and electric fence (powered) |
-| Living | campfire, workbench, workshop kit, bed, chest (12 slots), shelf, rain barrel, planter, smoker, coop, lantern post, table, chair, rug, plant, radio |
+| Living | 2.67: campfire, workbench, camp bed (one tile), chest (12 slots), table, chair, rug; later: workshop kit (batch 4), shelf, rain barrel, planter, smoker, coop (batch 5), lantern post, plant, radio |
 
 Most reuse models the game has (bed, table, chair, shelf, crate, workbench, planter, smoker, generator,
 lamp, trough, lantern; the trap, fence and seed shapes).
@@ -174,8 +175,8 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 
 | # | Batch | Version | State |
 |---|---|---|---|
-| 1 | Breaking and salvage: furniture, cars, wrecks, inner walls; the axe and the sledgehammer | 2.66.0 | built, not released |
-| 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | | |
+| 1 | Breaking and salvage: furniture, cars, wrecks, inner walls; the axe and the sledgehammer | 2.66.0 | built, merged, not released |
+| 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | built, not released |
 | 3 | The Rush; traps and defences; a base left takes the nights' harm | | |
 | 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | | |
 | 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | | |

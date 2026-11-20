@@ -1,8 +1,8 @@
 12 cities walked end to end by a bot: all nine districts each, 3040 steps on average (3 game hours), 4262 at most
 the same commands give the same city; saved half way and loaded, it ends the same
-  1: 3378 steps · 3e4f6e59
-  2: 2691 steps · a01a99d0
-  3: 3565 steps · df036be0
-  4: 2586 steps · f0804cf4
+  1: 3378 steps · 38b1e72a
+  2: 2691 steps · f968e111
+  3: 3565 steps · 8bf5e079
+  4: 2586 steps · 441238c3
 the clock: 20 steps a game minute from 6:30; standing still, 161 tiles seen
 damaged saves refused: no state, a district that is not, a place off the map, a place that is not a number, a later layout, no map, a negative step; one standing in a wall is put back on the street

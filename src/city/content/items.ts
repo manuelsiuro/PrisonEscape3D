@@ -124,6 +124,8 @@ export const CITY_ITEMS: readonly CityItem[] = [
     wear: 50,
     smash: 'sledge',
   },
+  // 2.67 (C5 batch 2): what builds. Carried, it puts pieces up and repairs them (content/build.ts).
+  { id: 'hammer', kind: 'tool', stack: 1, shape: 'hammer', color: 0x6a7078, accent: 0x9a7748 },
 ];
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];

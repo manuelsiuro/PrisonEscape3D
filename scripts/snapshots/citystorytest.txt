@@ -10,23 +10,23 @@ the survivors: met, then an errand each in turn (things brought, or the dead put
 runners from night 3 and one brute from night 5 where the danger is 2 or more, at night only; a brute at a barred door pounds it open in 80 steps without seeing through it, a shambler never; one brute a district a night; a thing of the armoury's in an emptied bed is still looked into
 the records: a way out counted, the quickest kept, ten feats each had once
 a bot follows the story to each way out on 4 cities (the dead away): 12 of 12 left, by day 4.3 (helicopter), 3.8 (boat), 4.3 (metro) on average
-  1 heli: day 5, f13b5991
-  1 boat: day 5, e5793412
-  1 metro: day 5, 348167e6
-  2 heli: day 6, f2cdc5e4
-  2 boat: day 4, c7684da2
-  2 metro: day 6, 2b716526
-  3 heli: day 2, ab516934
-  3 boat: day 2, a289dccd
-  3 metro: day 2, 1bd40340
-  4 heli: day 4, 3009894c
-  4 boat: day 4, bf4f1ca6
-  4 metro: day 4, 22366630
+  1 heli: day 5, 5665364c
+  1 boat: day 5, 14cb5b3e
+  1 metro: day 5, 98ccdaf0
+  2 heli: day 6, c76b45c7
+  2 boat: day 4, 7fcc9a60
+  2 metro: day 6, 714ba321
+  3 heli: day 2, f4060f8b
+  3 boat: day 2, 625477ac
+  3 metro: day 2, c2b9a737
+  4 heli: day 4, e5d4be49
+  4 boat: day 4, e0bf526f
+  4 metro: day 4, 78350958
 the holds alone with the dead about (a bat, three bandages, the first night, a bot that keeps moving): the helicopter 6 of 6, the metro 5 of 6
-with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 2 of 6 left, 31 falls in all
-  1 heli: still there on day 13 (act 4), fell 5, 114 put down
-  1 boat: left on day 8, fell 2, 72 put down
-  1 metro: still there on day 13 (act 4), fell 6, 95 put down
-  2 heli: still there on day 13 (act 4), fell 9, 62 put down
-  2 boat: left on day 2, fell 0, 13 put down
-  2 metro: still there on day 13 (act 4), fell 9, 51 put down
+with the dead about, a Survivor bot that scavenges, fights what reaches it and never hides, 12 days at the most: 1 of 6 left, 31 falls in all
+  1 heli: still there on day 13 (act 2), fell 6, 51 put down
+  1 boat: still there on day 13 (act 2), fell 6, 51 put down
+  1 metro: still there on day 13 (act 2), fell 6, 51 put down
+  2 heli: still there on day 13 (act 4), fell 5, 116 put down
+  2 boat: left on day 2, fell 0, 14 put down
+  2 metro: still there on day 13 (act 4), fell 8, 60 put down

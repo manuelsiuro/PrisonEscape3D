@@ -5,7 +5,8 @@
  * building. The torch is a dim light: it shows the player the night, and shows the player to it.
  * Never renumber the kinds: saves store them.
  */
-export const LIGHT_KIND = { FIRE: 0, LANTERN: 1, POWER: 2 } as const;
+/** 2.67: CAMP, a campfire built (content/build.ts): a lantern's reach, it cooks as a fire does. */
+export const LIGHT_KIND = { FIRE: 0, LANTERN: 1, POWER: 2, CAMP: 3 } as const;
 
 export const LIGHT = {
   /** A battery's worth of torch (game minutes). */
