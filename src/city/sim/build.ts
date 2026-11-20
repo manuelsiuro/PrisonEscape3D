@@ -3,6 +3,7 @@ import { MAP_H, MAP_W } from '../../sim/world/World';
 import { BUILD, COMFORT, PIECE, PIECES, pieceOf, type PieceDef } from '../content/build';
 import { cityItem, cityItemNumber } from '../content/items';
 import { LIGHT_KIND } from '../content/light';
+import { TRAP } from '../content/rush';
 import { STEPS_PER_MINUTE } from '../../sim/tuning';
 import { TUNNEL } from '../gen/tunnel';
 import type { City, Stack } from './City';
@@ -21,6 +22,8 @@ import { addLight, lightsHere, relight } from './light';
 const N = MAP_W * MAP_H;
 const HAMMER = cityItemNumber('hammer');
 const PLANK = cityItemNumber('plank');
+const CROSSBOW = cityItemNumber('crossbow');
+const BOLT = cityItemNumber('bolt');
 
 /** A piece as the save keeps it. */
 export type Built = [tile: number, kind: number, hp: number, facing: number, more: number];
@@ -122,7 +125,10 @@ export function lacking(c: City, from: ReadonlyArray<readonly [string, number]>)
 
 /** A repair's cost: half of what the piece took, for the share of its health gone (rounded up): never dearer than building it again. */
 export const repairCost = (def: PieceDef, hp: number): Array<[string, number]> =>
-  def.from.map(([id, n]) => [id, Math.ceil((n * (def.hp - hp)) / def.hp / 2)] as [string, number]).filter(([, n]) => n > 0);
+  def.from
+    // (2.68, the review: a sentry's crossbow is in it still: a repair takes only the scrap and wire.)
+    .map(([id, n]) => [id, id === 'crossbow' ? 0 : Math.ceil((n * (def.hp - hp)) / def.hp / 2)] as [string, number])
+    .filter(([, n]) => n > 0);
 
 /** The work a press begins: a piece put up (kind on the tile faced), repaired, taken down. Refused, and said. */
 export function startBuild(c: City, kind: number) {
@@ -176,8 +182,10 @@ export function finishBuild(c: City, key: string) {
     const why = canBuild(c, kind, tile);
     if (why !== 'ok') return void c.events.push({ type: 'cantBuild', why });
     const def = pieceOf(kind)!;
+    // (2.68: a sentry keeps its crossbow's blows, for when it's taken down: the most worn one goes, as `spend` takes it.)
+    const blows = def.trap === 'sentry' ? Math.min(...s.inv.filter((st) => st[0] === CROSSBOW).map((st) => st[1])) : 0;
     for (const [id, n] of def.from) c.spend(cityItemNumber(id), n);
-    builtHere(c).push([tile, kind, def.hp, s.player.facing, 0]);
+    builtHere(c).push([tile, kind, def.hp, s.player.facing, blows * BUILD.sentryWear]);
     changed(c);
     if (kind === PIECE.campfire) addLight(c, tile, LIGHT_KIND.CAMP, BUILD.fireMinutes);
     c.events.push({ type: 'built', kind, tile });
@@ -195,11 +203,17 @@ export function finishBuild(c: City, key: string) {
     return void c.events.push({ type: 'repaired', kind: p[1], tile });
   }
   // Taken down: half of what it took, less for the damage; a chest's things on the ground; a campfire out.
+  // (2.68: a sentry's crossbow comes back whole, with the blows it had, and its bolts.)
   const back: Stack[] = def.from
-    .map(([id, n]) => [cityItemNumber(id), Math.floor((n * p[2]) / def.hp / 2)] as Stack)
+    .map(([id, n]) => [cityItemNumber(id), id === 'crossbow' ? 0 : Math.floor((n * p[2]) / def.hp / 2)] as Stack)
     .filter(([, n]) => n > 0);
+  const sentry = def.trap === 'sentry';
+  const bolts = sentry ? p[4] % BUILD.sentryWear : 0;
+  p[4] -= bolts;
   removePiece(c, p);
   for (const [item, n] of back) c.hand(item, n);
+  if (sentry) c.handWorn(CROSSBOW, Math.max(1, Math.floor(p[4] / BUILD.sentryWear)));
+  if (bolts) c.hand(BOLT, bolts);
   c.events.push({ type: 'unbuilt', kind: p[1], tile });
 }
 
@@ -216,6 +230,8 @@ export function removePiece(c: City, p: Built) {
     s.lights[s.district] = lightsHere(c).filter((l) => !(l[0] === p[0] && l[1] === LIGHT_KIND.CAMP));
     relight(c);
   }
+  // (2.68: a sentry broken by the dead: its bolts on the ground. Taken down, they were handed back first.)
+  if (pieceOf(p[1])?.trap === 'sentry' && p[4] % BUILD.sentryWear) c.drop(p[0], BOLT, p[4] % BUILD.sentryWear);
   if (pieceOf(p[1])!.solid) c.world.parked[p[0]] = c.world.propSolid[p[0]] = 0;
   changed(c);
 }
@@ -228,8 +244,17 @@ function changed(c: City) {
   c.piecesRev++;
 }
 
-/** A plank fed to a campfire: it burns longer, or is lit again. */
+/** A plank fed to a campfire: it burns longer, or is lit again. 2.68: a sentry loaded with the bolts carried, to its most. */
 function feed(c: City, p: Built) {
+  if (pieceOf(p[1])?.trap === 'sentry') {
+    const room = TRAP.sentryMost - (p[4] % BUILD.sentryWear);
+    const n = Math.min(room, c.count(BOLT));
+    if (!c.count(BOLT)) return void c.events.push({ type: 'cantBuild', why: 'parts' });
+    if (n <= 0) return void c.events.push({ type: 'refused', why: 'alreadyLit' });
+    c.spend(BOLT, n);
+    p[4] += n;
+    return void c.events.push({ type: 'fed', tile: p[0] });
+  }
   if (p[1] !== PIECE.campfire) return;
   if (!c.count(PLANK)) return void c.events.push({ type: 'cantBuild', why: 'parts' });
   const s = c.state;

@@ -116,7 +116,8 @@ function shoo(c: City) {
   if (going(c) === 1) return;
   for (const z of c.state.zeds) {
     // (A brute doesn't mind it.)
-    if (z.mode === ZED.CHASE || z.kind === ZKIND.BRUTE || !c.lit[tileAt(z.body.x, z.body.z)]) continue;
+    // (2.68: nor do the Rush's.)
+    if (z.mode === ZED.CHASE || z.kind === ZKIND.BRUTE || z.rush || !c.lit[tileAt(z.body.x, z.body.z)]) continue;
     z.mode = ZED.SEEK;
     z.goal = -3;
     z.path = [];

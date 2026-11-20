@@ -13,6 +13,7 @@ import type { City } from '../../src/city/sim/City';
 import type { Zed } from '../../src/city/sim/dead';
 import { relight } from '../../src/city/sim/light';
 import { cityItemNumber } from '../../src/city/content/items';
+import { PIECE } from '../../src/city/content/build';
 import { DECO } from '../../src/city/gen/district';
 import { nearestDir } from '../../src/sim/ai/path';
 import { MAP_W as W } from '../../src/sim/world/grid';
@@ -346,6 +347,70 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       t.go(d, mid - 1, nearestDir(0, 1));
     },
   },
+  // 2.68: the Rush: night, a walled corner held, the dead at its walls, one through the barricade, a campfire inside.
+  cityRush: {
+    zoom: 2.0,
+    scene: (t) => {
+      t.time(3, 22 * 60 + 20);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const P = PIECE;
+      const S = nearestDir(0, 1);
+      const E = nearestDir(1, 0);
+      const built: Array<[number, number, number, number, number]> = [];
+      for (const dx of [-2, -1, 0, 1, 2]) built.push([mid - 2 * W + dx, P.plankWall, dx === 0 ? 40 : 110, S, 0]);
+      for (const dz of [-1, 0, 1]) built.push([mid + dz * W - 2, P.metalWall, 230, E, 0]);
+      for (const dz of [-1, 1]) built.push([mid + dz * W + 2, P.plankWall, 90, E, 0]);
+      built.push([mid + 2, P.barricade, 14, E, 0]);
+      built.push([mid + 3, P.spikes, 20, E, 0], [mid + W + 3, P.barbedWire, 30, E, 0]);
+      built.push([mid - W - 1, P.cot, 50, S, 0], [mid + W - 1, P.campfire, 40, S, 0], [mid + W + 1, P.sentry, 60, E, 30 * 16 + 4]);
+      t.s.built = { [d]: built };
+      t.s.lights = { [d]: [[mid + W - 1, 3, t.s.step + 300 * 20]] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.go(d, mid, nearestDir(1, 0));
+      const west = nearestDir(-1, 0);
+      const south = nearestDir(0, 1);
+      // (At the barricade, pounding; against the north wall; in the wire; more coming.)
+      t.zed(mid + 3, 3, west);
+      t.zed(mid - 3 * W, 3, south);
+      t.zed(mid - 3 * W + 1, 3, south);
+      t.zed(mid + W + 3, 3, west);
+      Object.assign(t.zed(mid + 5, 3, west), { kind: 4, hp: 90 });
+      t.zed(mid + 2 * W + 5, 3, west);
+      t.zed(mid - W + 6, 3, west);
+    },
+  },
+  // 2.68: the traps laid before a walled door by day: spikes, wire, a snare, cans, a scarecrow off to the side, a sentry.
+  cityTraps: {
+    zoom: 2.1,
+    scene: (t) => {
+      t.time(2, 16 * 60 + 30);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const P = PIECE;
+      const E = nearestDir(1, 0);
+      const S = nearestDir(0, 1);
+      const built: Array<[number, number, number, number, number]> = [];
+      for (const dz of [-2, -1, 1, 2]) built.push([mid + dz * W - 1, P.plankWall, 120, E, 0]);
+      built.push([mid - 1, P.door, 100, E, 0]);
+      built.push(
+        [mid, P.spikes, 30, E, 0],
+        [mid - W, P.barbedWire, 40, E, 0],
+        [mid + W, P.barbedWire, 40, E, 0],
+        [mid + 1, P.snare, 3, S, 0],
+        [mid - 2 * W + 1, P.cans, 20, E, 0],
+        [mid + 2 * W + 1, P.cans, 20, E, 0],
+        [mid - 2 * W - 2, P.sentry, 60, E, 30 * 16 + 12],
+        [mid + 2 * W + 2, P.scarecrow, 40, S, 0],
+      );
+      t.s.built = { [d]: built };
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.go(d, mid - 2, nearestDir(1, 0));
+      Object.assign(t.zed(mid + 3, 0, nearestDir(-1, 0)), {});
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,
@@ -357,6 +422,25 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
     },
   },
 };
+
+/** 2.68: 5 × 6 out of doors in a district (the pieces' tiles), nothing on it, clear of the checkpoints (-1: none); the player put there. */
+function openSpot(t: ReturnType<typeof tools>, d: number): number {
+  const dist = t.c.districtOf(d);
+  t.go(d, dist.spawn.z * W + dist.spawn.x);
+  const open = (i: number) =>
+    !t.c.grid[i] &&
+    !t.c.carAt[i] &&
+    !t.c.zedGrid[i] &&
+    !dist.lotAt[i] &&
+    !dist.gates.some((g) => g.tiles.some((q) => Math.abs((q % W) - (i % W)) + Math.abs(Math.floor(q / W) - Math.floor(i / W)) < 6));
+  for (let z = 8; z < W - 8; z++)
+    for (let x = 8; x < W - 8; x++) {
+      let ok = true;
+      for (let dz = -2; dz <= 2 && ok; dz++) for (let dx = -2; dx <= 3 && ok; dx++) ok = open((z + dz) * W + x + dx);
+      if (ok) return z * W + x;
+    }
+  return -1;
+}
 
 /** A topic's scene put up and held still, the HUD hidden: ready for the screenshot. */
 export async function stage(id: string) {

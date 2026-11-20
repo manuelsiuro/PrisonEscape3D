@@ -445,6 +445,17 @@ HELP.city = [
         listIcons: ['fist', 'hammer', 'wrench', 'ear'],
         see: ['cityMake', 'cityTools', 'cityShelter'],
       }),
+      // (2.68, C5: nights: the Rush, and the traps.)
+      T('cityRush', 'siren', '#e0563a', {
+        pic: true,
+        listIcons: ['clock', 'hammer', 'users', 'gift'],
+        see: ['cityTraps', 'cityBuild', 'cityDead'],
+      }),
+      T('cityTraps', 'target', '#b0904a', {
+        pic: true,
+        listIcons: ['pick', 'needle', 'hook', 'bell', 'shirt', 'target'],
+        see: ['cityRush', 'cityBuild', 'cityFight'],
+      }),
     ],
   },
   {

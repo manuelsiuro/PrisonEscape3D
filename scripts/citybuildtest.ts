@@ -121,9 +121,15 @@ const zed = (c: City, tile: number, kind?: number): Zed => {
   const mid = openSquare(c);
   check(mid >= 0, 'an open square to build on');
   stock(c);
-  const before = new Map(c.state.inv.map(([it, n]) => [it, n]));
+  // (2.68: a sentry takes a crossbow.)
+  c.state.inv[6] = [I('crossbow'), 30];
+  const before = new Map(c.state.inv.map(([it]) => [it, c.count(it)]));
   const out: string[] = [];
-  const tiles = [-2 * W - 2, -2 * W, -2 * W + 2, -2, 2, 2 * W - 2, 2 * W, 2 * W + 2, -W - 2, W + 2, 0].map((d) => mid + d);
+  // (2.68: the traps on the rest of the square's edge.)
+  const tiles = [
+    ...[-2 * W - 2, -2 * W, -2 * W + 2, -2, 2, 2 * W - 2, 2 * W, 2 * W + 2, -W - 2, W + 2, 0],
+    ...[-2 * W - 1, -2 * W + 1, 2 * W - 1, 2 * W + 1, -W + 2, W - 2],
+  ].map((d) => mid + d);
   PIECES.forEach((def, kind) => {
     const t = tiles[kind];
     const steps = buildAt(c, kind, t);

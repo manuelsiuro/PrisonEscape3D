@@ -64,8 +64,9 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
   is cut away with its wall round the player, so the window being broken isn't seen from where it is
   broken. (The last nights' waits, harder with a bat since 2.61, were shortened in 2.63.2.)
 - **Stage C5, Make it yours** (the testers' asks, 2026-11-20; the design and its six batches in
-  `phases/11-city-make-it-yours.md`): 1, breaking and salvage (2.66.0, merged); 2, building a base (2.67.0, built); 3 to 6 (the Rush,
-  crafting that grows, survival with weight, a city that doesn't wait) to come, each at the user's go.
+  `phases/11-city-make-it-yours.md`): 1, breaking and salvage (2.66.0, merged); 2, building a base (2.67.0, merged); 3, the Rush, traps and a base
+  left (2.68.0, merged); 4 to 6 (crafting that grows, survival with weight, a city that doesn't wait) to come, each at the
+  user's go. Parked from 3: the pit, the fire line, the floodlight, the electric fence, window boards.
 - The 2026-11-19 review's polish, in four batches (the user's go for each): 1, a first day that works (2.64,
   done); 2, readable screens and fights (2.64.1, done); 3, fair last nights
   and real choices (2.65, done); 4, the look (2.65.1, done). Left of it: a phone's speed with the new
