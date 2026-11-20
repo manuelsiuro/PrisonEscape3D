@@ -23,6 +23,8 @@ export interface CityItem {
   wear?: number;
   /** 2.61: a blade or a point: what it puts down stays down (the others' are only knocked down). */
   edge?: true;
+  /** 2.66: how it breaks things (a row of salvage.ts's BREAK_RATE); a weapon without one goes by its edge. */
+  smash?: 'axe' | 'sledge' | 'cleaver' | 'crowbar';
 }
 
 const food = (
@@ -73,7 +75,7 @@ export const CITY_ITEMS: readonly CityItem[] = [
   part('bottle', 'bottle', 0x6a8a5a),
   part('fuel', 'jar', 0xc24a3a, 0x2a2a2a),
   part('scrap', 'sheet', 0x8a8f96),
-  { id: 'crowbar', kind: 'tool', stack: 1, shape: 'crowbar', color: 0xb03a30 },
+  { id: 'crowbar', kind: 'tool', stack: 1, shape: 'crowbar', color: 0xb03a30, smash: 'crowbar' },
   { id: 'torch', kind: 'tool', stack: 1, shape: 'tube', color: 0x2a2f36, accent: 0xf2c230 },
   { id: 'cutters', kind: 'tool', stack: 1, shape: 'cutters', color: 0xd9822b },
   { id: 'bat', kind: 'weapon', stack: 1, shape: 'bat', color: 0xa9824e, attack: 6, wear: 40 },
@@ -90,7 +92,18 @@ export const CITY_ITEMS: readonly CityItem[] = [
   food('stew', 'bowl', 0xb5673a, 75, { health: 8, energy: 15 }, 0xe8e2d0),
   // C3b: what the survivors teach.
   { id: 'medkit', kind: 'med', stack: 2, shape: 'pack', color: 0xf0ece2, accent: 0xc24a3a, use: { health: 100 } },
-  { id: 'cleaver', kind: 'weapon', stack: 1, shape: 'knife', color: 0x9aa1ab, accent: 0x5a3320, attack: 14, wear: 60, edge: true },
+  {
+    id: 'cleaver',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'knife',
+    color: 0x9aa1ab,
+    accent: 0x5a3320,
+    attack: 14,
+    wear: 60,
+    edge: true,
+    smash: 'cleaver',
+  },
   food('ration', 'packet', 0x6a7a4a, 60, { energy: 20 }, 0xd8b04a),
   // 2.52: a lantern, made; set down where the player stands, it burns the night through.
   { id: 'lantern', kind: 'tool', stack: 2, shape: 'jar', color: 0xe8b04a, accent: 0x3a3a3a },
@@ -98,6 +111,19 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'molotov', kind: 'weapon', stack: 3, shape: 'bottle', color: 0xc24a3a, accent: 0xe8d8b0 },
   { id: 'crossbow', kind: 'weapon', stack: 1, shape: 'crowbar', color: 0x6a4a2a, accent: 0x9aa1ab, wear: 40 },
   { id: 'bolt', kind: 'material', stack: 6, shape: 'bar', color: 0x9aa1ab, accent: 0xc24a3a },
+  // 2.66 (C5): what breaks things. An axe chops wood fast and has an edge; a sledgehammer breaks metal and inner walls, and knocks down.
+  { id: 'axe', kind: 'weapon', stack: 1, shape: 'axe', color: 0x6a7078, accent: 0x8a6a40, attack: 9, wear: 45, edge: true, smash: 'axe' },
+  {
+    id: 'sledgehammer',
+    kind: 'weapon',
+    stack: 1,
+    shape: 'sledge',
+    color: 0x4a5058,
+    accent: 0x9a7748,
+    attack: 11,
+    wear: 50,
+    smash: 'sledge',
+  },
 ];
 
 export const cityItem = (n: number): CityItem | undefined => CITY_ITEMS[n - 1];

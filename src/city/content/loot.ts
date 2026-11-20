@@ -143,6 +143,28 @@ const MORE: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
   ['warehouse', null, [['bat', 1]]],
 ];
 const MORE_CAR: Weights = [['bat', 1]];
+/** 2.66 (rules' revision 2): the tools that break things, where they'd be kept. */
+const MORE2: ReadonlyArray<readonly [LotUse, PropKind | null, Weights]> = [
+  [
+    'garage',
+    null,
+    [
+      ['axe', 3],
+      ['sledgehammer', 2],
+    ],
+  ],
+  ['warehouse', null, [['sledgehammer', 2]]],
+  [
+    'factory',
+    null,
+    [
+      ['sledgehammer', 3],
+      ['axe', 1],
+    ],
+  ],
+  ['rangers', null, [['axe', 3]]],
+  ['boathouse', null, [['axe', 2]]],
+];
 
 /** A car's list, or a wreck's. */
 export function carLoot(wreck: boolean, rev = 0): { list: Array<[number, number]>; total: number } {
@@ -210,7 +232,9 @@ export const LOOT_BY_PROP: Partial<Record<PropKind, Weights>> = {
 /** The list a piece of furniture draws from, as [item number, weight], and the weights' sum. */
 export function lootList(use: LotUse, prop: PropKind, rev = 0): { list: Array<[number, number]>; total: number } {
   const list: Array<[number, number]> = [];
-  const more = rev ? MORE.filter(([u, p]) => u === use && (p === null || p === prop)).flatMap(([, , w]) => w) : [];
+  const more = [...(rev ? MORE : []), ...(rev >= 2 ? MORE2 : [])]
+    .filter(([u, p]) => u === use && (p === null || p === prop))
+    .flatMap(([, , w]) => w);
   for (const [id, w] of [...(LOOT_BY_USE[use] ?? HOME), ...more, ...(LOOT_BY_PROP[prop] ?? [])]) list.push([cityItemNumber(id), w]);
   return { list, total: list.reduce((n, [, w]) => n + w, 0) };
 }

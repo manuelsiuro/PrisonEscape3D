@@ -72,28 +72,49 @@ function checkpoint(blocks: readonly number[]): Part[] {
   ];
 }
 
-/** A car two tiles long, nose along +z from the middle of its first tile; `burnt`: a shell, its roof down. */
-function car(paint: number, burnt: boolean, flat: number): Part[] {
+/**
+ * A car two tiles long, nose along +z from the middle of its first tile; `burnt`: a shell, its roof down. 2.66: `stripped`, broken
+ * up for its metal: on the ground with its wheels gone, its glass out, its bonnet off over a dark engine bay, its bumpers gone.
+ */
+function car(paint: number, burnt: boolean, flat: number, stripped = false): Part[] {
   const body = burnt ? BURNT : paint;
   const w = 0.86;
-  const wheels = [0.05, 0.95].flatMap((z, k) =>
-    [-1, 1].map((s, j) => rod(k * 2 + j === flat ? 0.1 : 0.15, 0.14, TYRE, s * (w / 2 - 0.04), k * 2 + j === flat ? 0.1 : 0.15, z, 8)),
-  );
-  return [
+  const wheels = stripped
+    ? []
+    : [0.05, 0.95].flatMap((z, k) =>
+        [-1, 1].map((s, j) => rod(k * 2 + j === flat ? 0.1 : 0.15, 0.14, TYRE, s * (w / 2 - 0.04), k * 2 + j === flat ? 0.1 : 0.15, z, 8)),
+      );
+  const HOLE = 0x16181b;
+  const parts = [
     box(w, 0.26, 1.8, body, 0, 0.14, 0.5),
     box(w - 0.1, burnt ? 0.16 : 0.26, 0.9, burnt ? 0x1c1a19 : paint, 0, 0.4, 0.4),
     ...(burnt
       ? [box(w - 0.3, 0.05, 0.5, 0x3a322c, 0.05, 0.4, 1.1)]
+      : stripped
+        ? [
+            box(w - 0.14, 0.18, 0.04, HOLE, 0, 0.43, 0.86),
+            box(w - 0.14, 0.18, 0.04, HOLE, 0, 0.43, -0.06),
+            box(w - 0.08, 0.16, 0.7, HOLE, 0, 0.44, 0.4),
+            box(w - 0.12, 0.03, 0.86, paint, 0, 0.64, 0.4),
+            box(w - 0.16, 0.03, 0.46, HOLE, 0, 0.4, 1.12),
+          ]
+        : [
+            box(w - 0.14, 0.18, 0.04, GLASS, 0, 0.43, 0.86),
+            box(w - 0.14, 0.18, 0.04, GLASS, 0, 0.43, -0.06),
+            box(w - 0.08, 0.16, 0.7, GLASS, 0, 0.44, 0.4),
+            box(w - 0.12, 0.03, 0.86, paint, 0, 0.64, 0.4),
+          ]),
+    ...(stripped
+      ? []
       : [
-          box(w - 0.14, 0.18, 0.04, GLASS, 0, 0.43, 0.86),
-          box(w - 0.14, 0.18, 0.04, GLASS, 0, 0.43, -0.06),
-          box(w - 0.08, 0.16, 0.7, GLASS, 0, 0.44, 0.4),
-          box(w - 0.12, 0.03, 0.86, paint, 0, 0.64, 0.4),
+          box(w + 0.02, 0.06, 0.06, burnt ? 0x151413 : 0x8b9098, 0, 0.16, 1.41),
+          box(w + 0.02, 0.06, 0.06, burnt ? 0x151413 : 0x8b9098, 0, 0.16, -0.41),
         ]),
-    box(w + 0.02, 0.06, 0.06, burnt ? 0x151413 : 0x8b9098, 0, 0.16, 1.41),
-    box(w + 0.02, 0.06, 0.06, burnt ? 0x151413 : 0x8b9098, 0, 0.16, -0.41),
     ...wheels,
   ];
+  // (No wheels: it sits on the ground.)
+  if (stripped) for (const p of parts) p.translate(0, -0.12, 0);
+  return parts;
 }
 
 /** The prison bus on its side, three tiles long from the middle of its first tile, along +z: the grey of the service, its barred windows up at the sky. */
@@ -405,6 +426,7 @@ export class CityView {
       this.you,
       this.stains,
       this.bars,
+      this.cars,
       this.locks,
       this.marks,
       this.folk,
@@ -928,6 +950,29 @@ export class CityView {
     }
   }
 
+  /** 2.66: the cars and wrecks of the district (where, which way, their look's seed), and the mesh they are drawn in. */
+  private carSpots: Array<{ i: number; x: number; z: number; along: number; h: number; wreck: boolean }> = [];
+  private readonly cars = new THREE.Group();
+  /** The cars and wrecks, those stripped (their first tiles) drawn so. */
+  setCars(stripped: readonly number[]) {
+    disposeTree(this.cars, () => false, new Set([kitMaterial]));
+    this.cars.clear();
+    if (!this.carSpots.length) return;
+    const gone = new Set(stripped);
+    const parts: Part[] = [];
+    for (const c of this.carSpots)
+      put(
+        parts,
+        c.wreck ? car(0, true, (c.h >> 4) & 3, gone.has(c.i)) : car(PAINTS[c.h % PAINTS.length], false, (c.h >> 4) & 7, gone.has(c.i)),
+        c.x,
+        c.z,
+        c.along,
+      );
+    const mesh = new THREE.Mesh(merge(parts), kitMaterial);
+    mesh.castShadow = mesh.receiveShadow = true;
+    this.cars.add(mesh);
+  }
+
   /** Boards nailed across the barred doors (put up again whenever one is barred or opened). */
   private readonly bars = new THREE.Group();
   setBars(tiles: readonly number[], district: District) {
@@ -1170,6 +1215,7 @@ void main() {
       this.group.add(lm);
     }
     const parts: Part[] = [];
+    this.carSpots = [];
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const kind = district.deco[i];
       if (!kind || kind === DECO.PART) continue;
@@ -1180,11 +1226,10 @@ void main() {
       const along = district.turn[i] ? 0 : Math.PI / 2;
       const any = ((h >> 8) & 255) / 40;
       switch (kind) {
+        // (2.66: the cars and wrecks a mesh of their own, put up again when one is stripped.)
         case DECO.CAR:
-          put(parts, car(PAINTS[h % PAINTS.length], false, (h >> 4) & 7), x, z, along);
-          break;
         case DECO.WRECK:
-          put(parts, car(0, true, (h >> 4) & 3), x, z, along);
+          this.carSpots.push({ i, x, z, along, h, wreck: kind === DECO.WRECK });
           break;
         case DECO.BUS:
           put(parts, bus(), x, z, along);
@@ -1337,6 +1382,8 @@ void main() {
     if (this.fog) this.fog.visible = false;
     disposeTree(this.bars, () => false, new Set([kitMaterial]));
     this.bars.clear();
+    disposeTree(this.cars, () => false, new Set([kitMaterial]));
+    this.cars.clear();
     disposeTree(this.locks, () => false, new Set([kitMaterial]));
     this.locks.clear();
     this.marks.clear();

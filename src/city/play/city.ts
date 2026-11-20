@@ -44,6 +44,8 @@ import { riverBeyond } from '../../render/WorldView';
 import { alarmCars, carTiles } from '../sim/cars';
 import { DECO } from '../gen/district';
 import { landmarkPlan } from '../render/landmarkPlan';
+import { cityItemNumber } from '../content/items';
+import { breaker, workOf, workTotal } from '../sim/salvage';
 import type { LandmarkFrame } from '../render/landmarks';
 import { objectiveText } from '../ui/story';
 
@@ -213,6 +215,8 @@ function stage(r: CityRun, first = false) {
   locksShown = -1;
   lightsShown = -1;
   carsShown = -1;
+  propsShown = -1;
+  strippedShown = '';
   firesShown = -1;
   emptiedShown = '';
   goalAt = '';
@@ -244,6 +248,9 @@ export function cityBackdrop(c: City) {
   cityView.setTunnel(c.state.district === TUNNEL ? c.tunnel.way : null, c.district.rows);
   cityView.setLocks(c.locked, c.district, c.state.panes[c.state.district] ?? []);
   cityView.setBars(c.bars, c.district);
+  // (2.66: its cars, the stripped ones so; its broken furniture gone.)
+  cityView.setCars(c.state.stripped[c.state.district] ?? []);
+  view.hideProps(c.state.broken[c.state.district] ?? []);
   // (By day, nothing lit: not what the last city left.)
   cityView.setLights([], c.lit, c.dim, c.grid, c.district.lotAt);
   cityView.drawLights(0, true, false, false);
@@ -493,6 +500,16 @@ function cityFrame(r: CityRun, dt: number, now: number) {
     barsShown = c.barsRev;
     cityView.setBars(c.bars, c.district);
   }
+  if (propsShown !== c.propsRev) {
+    propsShown = c.propsRev;
+    view.hideProps(c.state.broken[c.state.district] ?? []);
+  }
+  const stripped = c.state.stripped[c.state.district] ?? [];
+  const strippedKey = `${c.state.district}|${stripped.join()}`;
+  if (strippedKey !== strippedShown) {
+    strippedShown = strippedKey;
+    cityView.setCars(stripped);
+  }
   if (locksShown !== c.locksRev) {
     locksShown = c.locksRev;
     cityView.setLocks(c.locked, c.district, c.state.panes[c.state.district] ?? []);
@@ -570,6 +587,9 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'open':
       pockets.toggleMake(false);
       if (e.first) sound.stow(false);
+      // (2.66: a piece found empty: it can be broken up.)
+      if (!e.found && !e.key.startsWith('g') && workOf(c, `b${e.key}`)?.sal)
+        tip('city.break', touchWords() ? 'city.tip.break' : 'city.tip.breakKeys');
       break;
     case 'took':
       sound.pickup();
@@ -805,6 +825,31 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'casting':
       sound.scuffle();
       break;
+    // 2.66: breaking things: each blow into it (wood flies, metal sparks), and the work done.
+    case 'breaking':
+      sound.scuffle();
+      break;
+    case 'chop': {
+      view.playerPunch();
+      if (e.metal) sound.rimClang(0.7);
+      else sound.thwack();
+      const x = (e.tile % MAP_W) + 0.5;
+      const z = Math.floor(e.tile / MAP_W) + 0.5;
+      view.puff(x, z, e.metal ? 0xe8d9a8 : 0xa98656, 8);
+      view.jolt(0.12);
+      break;
+    }
+    case 'wrecked':
+      sound.dud();
+      sound.pound();
+      view.jolt(0.3);
+      if (e.what === 'wall') {
+        // (The district as it now stands: the wall gone, a way through.)
+        stage(r);
+        banner.toast(t('city.toast.wallThrough'), 'good', 2800);
+      } else banner.toast(t(e.what === 'car' ? 'city.toast.stripped' : 'city.toast.brokeUp'), 'good', 2400);
+      save(r);
+      break;
     // 2.58: the crowbar and the bolt cutters.
     case 'clothes':
       sound.stow(false);
@@ -1006,7 +1051,13 @@ function frameOf(r: CityRun, a: number): Frame {
     const tiles =
       tg.kind === 'fence'
         ? (c.fences.find((q) => q.tiles[0] === tg.tile)?.tiles ?? [tg.tile])
-        : tg.kind === 'pile' || tg.kind === 'door' || tg.kind === 'way' || tg.kind === 'npc' || tg.kind === 'lock' || tg.kind === 'pane'
+        : tg.kind === 'pile' ||
+            tg.kind === 'door' ||
+            tg.kind === 'way' ||
+            tg.kind === 'npc' ||
+            tg.kind === 'lock' ||
+            tg.kind === 'pane' ||
+            tg.kind === 'wall'
           ? [tg.tile]
           : tg.key.startsWith('c')
             ? carTiles(c, Number(tg.key.slice(1)))
@@ -1073,6 +1124,9 @@ const topOf = (kind: string) => TOP[kind] ?? 0.6;
 /** The barred doors the view last put its boards on (`City.barsRev`). */
 let barsShown = -1;
 let locksShown = -1;
+/** 2.66: the furniture broken up and the cars stripped, as the view last drew them. */
+let propsShown = -1;
+let strippedShown = '';
 let lightsShown = -1;
 let carsShown = -1;
 let firesShown = -1;
@@ -1145,18 +1199,25 @@ function pocketsOf(r: CityRun): PocketsState {
   st.target = tg;
   st.targetOpen = !!tg && tg.key === open;
   st.sleepable = st.box === 'city.box.bed' && c.sleepable() >= 0;
+  // (2.66: the open piece, if it breaks: what it gives, and whether anything carried can break it.)
+  const work = open && !open.startsWith('g') ? workOf(c, `b${open}`) : null;
+  st.breaks = work?.sal ? work.sal.gives.map(([id, n]) => [cityItemNumber(id), n] as [number, number]) : null;
+  st.breakCan = !!work?.sal && breaker(c, !!work.sal.metal).rate > 0;
   st.rest = c.restsTillDusk;
   st.searched = !!tg && c.searched(tg.key);
-  const work = s.search.startsWith('d')
-    ? BAR_STEPS
-    : s.search.startsWith('k')
-      ? TOOLS.forceSteps
-      : s.search.startsWith('f')
-        ? TOOLS.cutSteps
-        : s.search === 'w'
-          ? STORY.castSteps
-          : SEARCH_STEPS;
-  st.searching = s.search ? 1 - s.searchLeft / work : 0;
+  // (2.66: breaking is measured by its work, not its steps.)
+  const steps = s.search.startsWith('b')
+    ? 0
+    : s.search.startsWith('d')
+      ? BAR_STEPS
+      : s.search.startsWith('k')
+        ? TOOLS.forceSteps
+        : s.search.startsWith('f')
+          ? TOOLS.cutSteps
+          : s.search === 'w'
+            ? STORY.castSteps
+            : SEARCH_STEPS;
+  st.searching = !s.search ? 0 : steps ? 1 - s.searchLeft / steps : Math.max(0.02, 1 - c.breakLeft / workTotal(c, s.search));
   st.asleep = s.sleeping;
   st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
   st.person = tg?.kind === 'npc' ? PEOPLE[Number(tg.key.slice(1))].id : '';

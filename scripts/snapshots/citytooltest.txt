@@ -1,5 +1,5 @@
 12 cities: 18.8 buildings chained shut a city (4 at the most in a district, none in 4 of 108), never the story's, a survivor's or a way out's; nobody walks in, none of the dead stand inside, the button at their door is the chain's
-what's inside (3 cities, 2706 pieces): 1.45 things a piece behind a chain (192), 0.70 elsewhere (2514)
+what's inside (3 cities, 2706 pieces): 1.44 things a piece behind a chain (192), 0.70 elsewhere (2514)
 a chained door: refused without a crowbar (said), forced in 4 seconds with one (heard as a blow is, the crowbar kept), every door of the building open for good, to the dead too; a save keeps it and plays on as the live city; a city begun before has none
 12 cities: 12.3 places a city where the fence can be cut (a street up to it on both sides, clear), 0 cities with none; 3.8 of them a city between two districts no checkpoint joins
 the fence: refused without bolt cutters (said), cut in 5 seconds with them (heard, the cutters kept); the street runs through from both sides, a crossing as a checkpoint is, and the journal's way takes it; a save keeps it, a cut that never could be is dropped

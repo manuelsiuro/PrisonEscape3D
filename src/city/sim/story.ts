@@ -73,7 +73,8 @@ export function storyPlaces(c: City): StoryPlaces {
   const plan = c.plan;
   const used = new Set<string>();
   const grids = new Map<number, Uint8Array>();
-  const gridOf = (d: number) => grids.get(d) ?? (grids.set(d, c.districtGrid(d)), grids.get(d)!);
+  // (2.66: the grid nothing was broken in: a hole or a piece broken never moves the story's places.)
+  const gridOf = (d: number) => grids.get(d) ?? (grids.set(d, c.storyGrid(d)), grids.get(d)!);
   // The furniture of a district that can be searched and stood beside (in one lot, or anywhere: lot -1).
   const pieces = (d: number, lot: number): number[] => {
     const dist = c.districtOf(d);
@@ -227,7 +228,7 @@ export function busNotes(c: City): Spot[] {
   BUS_NOTES.forEach((kind, n) => {
     const d = plan.kinds.indexOf(kind);
     const dist = c.districtOf(d);
-    const grid = c.districtGrid(d);
+    const grid = c.storyGrid(d);
     const shut = new Set(lockedLots(c, d));
     const from: number[] = [];
     dist.props.forEach((p, k) => {

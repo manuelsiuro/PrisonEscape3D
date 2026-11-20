@@ -13,6 +13,7 @@ import type { City } from '../../src/city/sim/City';
 import type { Zed } from '../../src/city/sim/dead';
 import { relight } from '../../src/city/sim/light';
 import { cityItemNumber } from '../../src/city/content/items';
+import { DECO } from '../../src/city/gen/district';
 import { nearestDir } from '../../src/sim/ai/path';
 import { MAP_W as W } from '../../src/sim/world/grid';
 
@@ -252,6 +253,35 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
         // (A door in a wall that faces the camera's side or the street: stood on its step.)
         const door = Array.from(t.c.locked.keys()).find((i) => t.c.locked[i] === 1 && !t.c.grid[i + W] && !dist.lotAt[i + W]);
         if (door !== undefined) return t.go(d, door + W, 9);
+      }
+    },
+  },
+  // (2.66) Beside a car stripped by a sledgehammer (one lying along the street, the player at its side so it shows), its scrap at
+  // the player's feet: in daylight.
+  cityBreak: {
+    zoom: 2.2,
+    scene: (t) => {
+      t.time(1, 11 * 60);
+      const SLEDGE = cityItemNumber('sledgehammer');
+      for (const d of [t.c.plan.start, 0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+        const dist = t.c.districtOf(d);
+        t.go(d, dist.spawn.z * W + dist.spawn.x);
+        const open = (j: number) => ',a'.includes(dist.rows[Math.floor(j / W)]?.[j % W] ?? '#') && !t.c.grid[j] && !t.c.carAt[j];
+        for (let i = 0; i < W * W; i++) {
+          // (A car, not a wreck, along z: two tiles one above the other; the player on its east side, by its rear.)
+          if (t.c.carAt[i] - 1 !== i || dist.deco[i] !== DECO.CAR || t.c.carAt[i + W] !== i + 1) continue;
+          const at = i + W + 1;
+          if (!open(at) || !open(at + 1) || !open(at - W + 1)) continue;
+          t.s.stripped[d] = [i];
+          t.s.boxes[`${d}:c${i}`] = [];
+          t.s.boxes[`${d}:g${at}`] = [
+            [cityItemNumber('scrap'), 2],
+            [cityItemNumber('wire'), 1],
+          ];
+          t.s.inv[0] = [SLEDGE, 41];
+          t.c.struck = SLEDGE;
+          return t.go(d, at, nearestDir(-1, 0));
+        }
       }
     },
   },

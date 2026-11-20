@@ -22,6 +22,9 @@ export interface PocketsState {
   sleepable: boolean;
   /** 2.65: a bed by day is a rest till dusk. */
   rest: boolean;
+  /** 2.66: the open piece breaks up into these (null: it doesn't), and something carried can break it. */
+  breaks: readonly Stack[] | null;
+  breakCan: boolean;
   /** 2.64: the torch: on, and its battery's game minutes left (its card says both). */
   torchOn: boolean;
   torchLeft: number;
@@ -150,6 +153,7 @@ export class CityPockets {
       if (el.dataset.slot !== undefined) this.onOp(COP.TAKE, Number(el.dataset.slot));
       else if (el.dataset.c === 'all') this.onOp(COP.TAKE_ALL);
       else if (el.dataset.c === 'sleep') this.onOp(COP.SLEEP);
+      else if (el.dataset.c === 'break') this.onOp(COP.BREAK);
       else this.onOp(COP.CLOSE);
     });
     this.card.addEventListener('click', (e) => {
@@ -229,7 +233,7 @@ export class CityPockets {
           <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(LIGHTS[cityItem(item)!.id]?.icon ?? (cityItem(item)!.kind === 'med' ? 'heart' : 'utensils'), 16)}${t(torch ? (s.torchOn ? 'city.thing.torchOff' : 'city.thing.torchOn') : (LIGHTS[cityItem(item)!.id]?.verb ?? (cityItem(item)!.kind === 'med' ? 'city.thing.apply' : 'city.thing.eat')))}</button>` : ''}${s.box ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
-    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${textStamp()}`;
+    const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${JSON.stringify(s.breaks)}|${s.breakCan}|${textStamp()}`;
     if (box !== this.shownBox) {
       this.shownBox = box;
       this.panel.classList.toggle('hidden', !s.box);
@@ -239,6 +243,14 @@ export class CityPockets {
         const sleep = s.sleepable
           ? `<button class="big-btn" data-c="sleep">${icon('moon', 16)}${t(s.rest ? 'city.act.rest' : 'city.act.sleep')}</button>`
           : '';
+        // (2.66: a piece that breaks: its button, and what comes of it, or what it would take.)
+        const gives = s.breaks?.map(([item, n]) => counted(item, n)).join(', ') ?? '';
+        const smash = s.breaks
+          ? `<p class="card-note city-breaks">${icon('hammer', 14)} ${t(s.breakCan ? 'city.box.breakGives' : 'city.box.breakMetal', { what: gives })}</p>`
+          : '';
+        const smashBtn = s.breaks
+          ? `<button class="big-btn ghost" data-c="break"${s.breakCan ? '' : ' aria-disabled="true"'}>${icon('hammer', 16)}${t('city.act.break')}</button>`
+          : '';
         this.panel.innerHTML = `<div class="box-head"><b>${t(s.box as Key)}</b><button class="icon-btn" data-c="close" aria-label="${t('city.box.close')}">${icon('close', 18)}</button></div>
           ${
             filled
@@ -247,8 +259,8 @@ export class CityPockets {
             .filter((st) => st[0])
             .map((st) => counted(st[0], st[1]))
             .join(' · ')}</p>
-          <div class="ct-actions">${sleep}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
-              : `<p class="card-note">${t('city.box.empty')}</p>${sleep ? `<div class="ct-actions">${sleep}</div>` : ''}`
+          ${smash}<div class="ct-actions">${sleep}${smashBtn}<button class="big-btn primary" data-c="all">${icon('hand', 16)}${t('city.box.takeAll')}</button></div>`
+              : `<p class="card-note">${t('city.box.empty')}</p>${smash}${sleep || smashBtn ? `<div class="ct-actions">${sleep}${smashBtn}</div>` : ''}`
           }`;
       }
     }
@@ -295,19 +307,21 @@ export class CityPockets {
               ? 'city.act.smash'
               : tg.kind === 'fence'
                 ? 'city.act.cut'
-                : tg.kind === 'door'
-                  ? s.barred
-                    ? 'city.act.unbar'
-                    : 'city.act.bar'
-                  : s.targetOpen
-                    ? 'city.act.close'
-                    : tg.kind === 'bed'
-                      ? s.rest
-                        ? 'city.act.rest'
-                        : 'city.act.sleep'
-                      : tg.kind === 'pile' || s.searched
-                        ? 'city.act.look'
-                        : 'city.act.search';
+                : tg.kind === 'wall'
+                  ? 'city.act.break'
+                  : tg.kind === 'door'
+                    ? s.barred
+                      ? 'city.act.unbar'
+                      : 'city.act.bar'
+                    : s.targetOpen
+                      ? 'city.act.close'
+                      : tg.kind === 'bed'
+                        ? s.rest
+                          ? 'city.act.rest'
+                          : 'city.act.sleep'
+                        : tg.kind === 'pile' || s.searched
+                          ? 'city.act.look'
+                          : 'city.act.search';
     const key = `${verb}|${tg?.prop ?? tg?.kind ?? ''}|${s.person}|${textStamp()}`;
     if (key !== this.shownAct) {
       this.shownAct = key;
@@ -328,13 +342,15 @@ export class CityPockets {
                     ? 'city.box.pane'
                     : tg.kind === 'fence'
                       ? 'city.box.fence'
-                      : tg.prop
-                        ? (`city.box.${tg.prop}` as Key)
-                        : 'city.box.pile',
+                      : tg.kind === 'wall'
+                        ? 'city.box.wall'
+                        : tg.prop
+                          ? (`city.box.${tg.prop}` as Key)
+                          : 'city.box.pile',
         );
         // (2.64: on a keyboard, the key on the button; an open box's button shuts it, and says so by its icon too.)
         const cap = TOUCH ? '' : `<kbd class="city-key">${keyLabel('KeyE')}</kbd>`;
-        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'wall' ? 'hammer' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);

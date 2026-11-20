@@ -657,9 +657,19 @@ export class WorldView {
     });
     // Furniture is cut above waist height only: low pieces next to the player stay whole.
     const mesh = batched(seeThrough(kitMaterial.clone(), 0.6), pieces);
+    this.propMesh = mesh;
     if (!mesh) return;
     mesh.castShadow = mesh.receiveShadow = true;
     this.group.add(mesh);
+  }
+  /** The furniture's batch (one instance a piece, in the world's order). */
+  private propMesh: THREE.BatchedMesh | null = null;
+  /** 2.66 (City Escape): pieces of furniture no longer there (broken up), by their place in the world's list; the rest shown. */
+  hideProps(gone: readonly number[]) {
+    const mesh = this.propMesh;
+    if (!mesh) return;
+    const out = new Set(gone);
+    for (let k = 0; k < this.world.props.length; k++) mesh.setVisibleAt(k, !out.has(k));
   }
 
   /** Whether a fence tile runs along x (for the damage drawn on it). */

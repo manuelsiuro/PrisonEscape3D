@@ -63,6 +63,9 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
 - Nothing of the design is left unbuilt after 2.61, nor of the reviews or the look. Known and left: a pane
   is cut away with its wall round the player, so the window being broken isn't seen from where it is
   broken. (The last nights' waits, harder with a bat since 2.61, were shortened in 2.63.2.)
+- **Stage C5, Make it yours** (the testers' asks, 2026-11-20; the design and its six batches in
+  `phases/11-city-make-it-yours.md`): 1, breaking and salvage (2.66.0, built); 2 to 6 (building a base, the Rush,
+  crafting that grows, survival with weight, a city that doesn't wait) to come, each at the user's go.
 - The 2026-11-19 review's polish, in four batches (the user's go for each): 1, a first day that works (2.64,
   done); 2, readable screens and fights (2.64.1, done); 3, fair last nights
   and real choices (2.65, done); 4, the look (2.65.1, done). Left of it: a phone's speed with the new

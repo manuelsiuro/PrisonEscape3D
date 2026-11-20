@@ -156,6 +156,26 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
     ],
     bench: true,
   },
+  // 2.66 (C5): the tools that break things.
+  {
+    makes: 'axe',
+    n: 1,
+    from: [
+      ['blade', 1],
+      ['plank', 1],
+      ['tape', 1],
+    ],
+    bench: true,
+  },
+  {
+    makes: 'sledgehammer',
+    n: 1,
+    from: [
+      ['pipe', 1],
+      ['scrap', 3],
+    ],
+    bench: true,
+  },
 ];
 
 /** A recipe's ingredients and result as item numbers. */

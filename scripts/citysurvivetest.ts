@@ -9,6 +9,7 @@ import { check } from './assert';
 import { CITY_ITEMS, cityItem, cityItemNumber } from '../src/city/content/items';
 import { City, COP, FULL, loadCity, MODE, POCKETS, START_MINUTE } from '../src/city/sim/City';
 import { scavenger } from './citybots';
+import { CITY_REV } from '../src/city/sim/tools';
 import { nearestDir } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
 import { fnv1a } from '../src/sim/rng';
@@ -213,12 +214,13 @@ const idle = (c: City, minutes: number) => {
   const tally = [
     { boards: 0, bat: 0 },
     { boards: 0, bat: 0 },
+    { boards: 0, bat: 0 },
   ];
   for (let seed = 1; seed <= SEEDS; seed++) {
     const c = new City(seed);
     c.peace = true;
     c.step(0);
-    for (const rev of [0, 1]) {
+    for (const rev of [0, 1, 2]) {
       c.state.rev = rev;
       const n = new Map<number, number>();
       c.district.props.forEach((_, k) => {
@@ -229,12 +231,15 @@ const idle = (c: City, minutes: number) => {
       if (n.get(BAT)) tally[rev].bat++;
     }
   }
-  check(tally[1].bat === SEEDS, `a bat in the start district in ${tally[1].bat} of ${SEEDS} cities`);
-  check(tally[1].boards >= SEEDS * 0.8, `boards in the start district in ${tally[1].boards} of ${SEEDS} cities`);
+  // (2.66's revision adds tools where they'd be kept: the first nights' things are as they were.)
+  for (const rev of [1, 2]) {
+    check(tally[rev].bat === SEEDS, `a bat in the start district in ${tally[rev].bat} of ${SEEDS} cities (revision ${rev})`);
+    check(tally[rev].boards >= SEEDS * 0.8, `boards in the start district in ${tally[rev].boards} of ${SEEDS} cities (revision ${rev})`);
+  }
   // A save from before the revision keeps its rules (what its furniture holds); a new city has the newest.
   const c = new City(4);
   c.step(0);
-  check(c.state.rev === 1, `a new city's rules: ${c.state.rev}`);
+  check(c.state.rev === CITY_REV && CITY_REV === 2, `a new city's rules: ${c.state.rev}`);
   const old = JSON.parse(JSON.stringify(c.snapshot()));
   delete old.state.rev;
   check(loadCity(old)?.state.rev === 0, 'a save from before the revision takes the newest rules');
@@ -242,7 +247,7 @@ const idle = (c: City, minutes: number) => {
   odd.state.rev = 99;
   check(loadCity(odd)?.state.rev === 0, 'a revision that is not is kept');
   say(
-    `the rules' revision: a city begun from 2.64 is 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before and ${tally[1].boards} after, a bat found in ${tally[0].bat} and ${tally[1].bat}`,
+    `the rules' revision: a city begun from 2.66 is 2, from 2.64 1, a save from before 0; all the start district searched, boards can be made in ${tally[0].boards} of ${SEEDS} cities before 2.64, ${tally[1].boards} from it and ${tally[2].boards} from 2.66, a bat found in ${tally[0].bat}, ${tally[1].bat} and ${tally[2].bat}`,
   );
 }
 
