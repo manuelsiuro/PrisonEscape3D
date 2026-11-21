@@ -28,6 +28,9 @@ import { TUNNEL } from '../gen/tunnel';
 import { SLEEP_FROM, SLEEP_TO, type City, type Target } from './City';
 import { nightAt, noise } from './dead';
 import { joined, lockedLots } from './tools';
+import { ALIVE_REV } from '../content/alive';
+import { holdoutObjectives, isHoldout } from './holdout';
+import { PIECE } from '../content/build';
 
 /**
  * The story (C3), a part of the city's simulation: where the things it needs lie (from the city's
@@ -281,7 +284,7 @@ export function soundStory(c: City) {
     s.met < 1 << PEOPLE.length &&
     Array.isArray(s.errand) &&
     s.errand.length === PEOPLE.length &&
-    s.errand.every((e) => e === 0 || e === 1 || e === 2) &&
+    s.errand.every((e) => e === 0 || e === 1 || e === 2 || (e === 3 && s.rev >= ALIVE_REV)) &&
     Array.isArray(s.mark) &&
     s.mark.length === PEOPLE.length &&
     s.mark.every((m) => Number.isInteger(m) && m >= 0) &&
@@ -331,7 +334,12 @@ const shut = (c: City, k: number) => LOCKED.includes(THINGS[k]) && !(c.state.fla
 
 /** Whether a piece of furniture of this district still holds a thing of the story not yet had (a bed that does is looked into, not slept in). */
 export const holds = (c: City, prop: number) =>
-  c.story.things.some((sp, k) => sp.district === c.state.district && sp.prop === prop && !(c.state.kit & (1 << k)));
+  !isHoldout(c) && c.story.things.some((sp, k) => sp.district === c.state.district && sp.prop === prop && !(c.state.kit & (1 << k)));
+
+/** 2.71: a line of Dispatch's on the base and the city's days, once, in a city begun from then. */
+export const remark = (c: City, beat: 'hammer' | 'garden' | 'dog' | 'happen') => {
+  if (c.state.rev >= ALIVE_REV && !isHoldout(c)) say(c, beat);
+};
 
 /** Dispatch says a line, once (only with the radio found to hear her on). */
 function say(c: City, beat: Beat) {
@@ -373,7 +381,7 @@ export const gatesOpen = (c: City) => c.state.ready === 1 && c.state.way === 3 &
 export function storyFound(c: City, prop: number) {
   const s = c.state;
   const at = (sp: Spot) => sp.district === s.district && sp.prop === prop;
-  const k = c.story.things.findIndex(at);
+  const k = isHoldout(c) ? -1 : c.story.things.findIndex(at);
   if (k >= 0 && !(s.kit & (1 << k)) && shut(c, k)) {
     c.events.push({ type: 'refused', why: 'locked' });
     say(c, 'locked');
@@ -384,6 +392,7 @@ export function storyFound(c: City, prop: number) {
     if (s.way && wayOf(s.way)!.needs.includes(THINGS[k]) && !missing(c, s.way).length) say(c, `all${s.way}` as Beat);
     fix(c);
   }
+  // (2.71: Holdout has no story: what the story would have hidden isn't there, the notes are.)
   const n = notePlaces(c).findIndex(at);
   if (n >= 0 && !(s.notes & (1 << n))) {
     s.notes |= 1 << n;
@@ -413,6 +422,7 @@ export function storyDid(c: City, what: 'ate' | 'slept' | 'shelter') {
 /** Onto another tile: a way out's landmark walked into is scouted; a beacon or a generator walked away from goes out. */
 export function storyMoved(c: City) {
   const s = c.state;
+  if (isHoldout(c)) return;
   const lot = c.lot;
   for (let w = 1; w <= WAYS.length; w++) {
     if (s.scouted & (1 << (w - 1)) || s.district !== c.story.wayDistrict[w - 1] || lot !== c.story.wayLot[w - 1]) continue;
@@ -463,6 +473,7 @@ function win(c: City) {
 /** A game minute: the radio mended once its parts are in hand, the first night said, a way out's clock. */
 export function storyMinute(c: City) {
   const s = c.state;
+  if (isHoldout(c)) return;
   fix(c);
   if (c.minute === NIGHT_FROM) say(c, 'night');
   if (s.ready && going(c) === 1) {
@@ -484,6 +495,7 @@ export function storyMinute(c: City) {
 /** What the action button would do for the story here: the way out's own tile, in reach. */
 export function storyTarget(c: City): Target | null {
   const s = c.state;
+  if (isHoldout(c)) return null;
   // (2.65: on the foot of the tunnel's stairs, the way back up into the station. Before, going down could not be undone.)
   if (s.district === TUNNEL)
     return !s.over && c.tile === c.tunnel.start ? { kind: 'way', key: 'u', tile: c.tunnel.start, prop: null } : null;
@@ -561,6 +573,7 @@ export interface Objective {
 /** What the story asks now. */
 export function objectives(c: City): Objective[] {
   const s = c.state;
+  if (isHoldout(c)) return holdoutObjectives(c);
   const P = c.story;
   const spot = (k: number) => {
     const sp = P.things[k];
@@ -660,10 +673,18 @@ export function marks(c: City, list: readonly Objective[] = objectives(c)): numb
 }
 
 // ------------------------------------------------------------------ the survivors (C3b)
-/** The errand a survivor has open (null: not met, or both done). */
+/** A survivor's errands in this city: two, and (2.71, a city begun from then) a third, something made or built. */
+export const errandsOf = (c: City, k: number): readonly Errand[] =>
+  c.state.rev >= ALIVE_REV ? [...PEOPLE[k].errands, PEOPLE[k].later.errand] : PEOPLE[k].errands;
+/** A survivor's swaps in this city: three, and (2.71) a fourth. */
+export const tradesOf = (c: City, k: number) =>
+  c.state.rev >= ALIVE_REV ? [...PEOPLE[k].trades, PEOPLE[k].later.trade] : PEOPLE[k].trades;
+
+/** The errand a survivor has open (null: not met, or all done). */
 export function errandOf(c: City, k: number): Errand | null {
   const s = c.state;
-  return s.met & (1 << k) && s.errand[k] < 2 ? PEOPLE[k].errands[s.errand[k]] : null;
+  const list = errandsOf(c, k);
+  return s.met & (1 << k) && s.errand[k] < list.length ? list[s.errand[k]] : null;
 }
 
 /** What a survivor's open errand still wants: how many, and how many are in hand (things in the pockets, or the dead put down since). */
@@ -673,6 +694,11 @@ export function wants(c: City, k: number): { item: number; n: number; have: numb
   if (e.bring) {
     const item = cityItemNumber(e.bring[0]);
     return { item, n: e.bring[1], have: Math.min(e.bring[1], c.count(item)) };
+  }
+  // (2.71: a piece built anywhere in the city.)
+  if (e.build) {
+    const kind = PIECE[e.build];
+    return { item: 0, n: 1, have: Object.values(c.state.built).some((list) => list.some((p) => p[1] === kind)) ? 1 : 0 };
   }
   return { item: 0, n: e.kills ?? 0, have: Math.max(0, Math.min(e.kills ?? 0, c.state.kills - c.state.mark[k])) };
 }
@@ -707,7 +733,7 @@ export function giveErrand(c: City, k: number) {
 
 /** A swap with the survivor beside the player: refused without the things. */
 export function trade(c: City, k: number, offer: number) {
-  const t = PEOPLE[k]?.trades[offer];
+  const t = PEOPLE[k] ? tradesOf(c, k)[offer] : undefined;
   if (!t || !(c.state.met & (1 << k)) || c.target()?.key !== `n${k}`) return;
   const give = cityItemNumber(t[0][0]);
   if (c.count(give) < t[0][1]) return void c.events.push({ type: 'refused', why: 'noTrade' });

@@ -139,7 +139,8 @@ export function scavenger(c: City, keep: (item: number) => boolean = () => false
       (bedtime ? props[k].kind === 'bed' && c.searched(`${k}`) && !holds(c, k) : !c.searched(`${k}`));
     // (2.54: it walks past cars, as it did before they could be searched: its runs stay what they were.)
     const beside = c.target();
-    const t = beside?.key.startsWith('c') ? null : beside;
+    // (2.71: and past a happening's crate or truck, as it walks past cars.)
+    const t = beside?.key.startsWith('c') || beside?.key.startsWith('e') ? null : beside;
     if (t && (t.kind === 'box' || t.kind === 'bed') && (want(Number(t.key)) || (bedtime && t.prop === 'bed' && Number(t.key) === goal))) {
       pilot.stop();
       goal = -1;

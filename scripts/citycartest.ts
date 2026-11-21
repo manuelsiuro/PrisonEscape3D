@@ -106,6 +106,8 @@ let wreckAt: { seed: number; d: number; first: number } | null = null;
         stand(c, at[0]);
         const t = c.target();
         if (t?.key !== `c${first}`) continue;
+        // (2.71: what a car holds as a first searcher finds it: no Scavenger's level from the cars before.)
+        c.state.skills = [0, 0, 0, 0];
         search(c);
         const box = c.box().filter((st) => st[0]);
         if (!box.length) empty++;

@@ -522,6 +522,100 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
       t.go(d, mid + W, nearestDir(0, -1));
     },
   },
+  // 2.71: the day's happenings: a supply crate down under its parachute, opened; a crashed army truck in the street.
+  cityAlive: {
+    zoom: 2.0,
+    scene: (t) => {
+      const day = clearDay(t, 4);
+      t.time(day, 14 * 60);
+      const d = t.c.plan.start;
+      t.s.built = { [d]: [] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      t.s.happen = [
+        [day * 2, 0, d, mid - W - 1, 1, 10 * 60],
+        [day * 2 + 1, 3, d, mid + W + 1, 0, 6 * 60],
+      ];
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.go(d, mid + 1 - W, nearestDir(-1, 0));
+    },
+  },
+  // 2.71: skills: a Handy player's base going up: a workshop, a workbench, walls, a chest, the hammer in hand.
+  citySkills: {
+    zoom: 2.2,
+    scene: (t) => {
+      t.time(clearDay(t, 5), 11 * 60);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const S = nearestDir(0, 1);
+      const E = nearestDir(1, 0);
+      t.s.built = {
+        [d]: [
+          [mid - W - 1, PIECE.workshop, 100, S, 0],
+          [mid - W + 1, PIECE.workbench, 80, S, 0],
+          [mid - 2 * W - 1, PIECE.plankWall, 120, S, 0],
+          [mid - 2 * W, PIECE.plankWall, 120, S, 0],
+          [mid - 2 * W + 1, PIECE.metalWall, 250, S, 0],
+          [mid + 2, PIECE.chest, 60, E, 0],
+        ],
+      };
+      t.s.skills = [200, 80, 40, 30];
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.s.inv[0] = [cityItemNumber('hammer'), 1];
+      t.go(d, mid, nearestDir(0, -1));
+    },
+  },
+  // 2.71: the dog at heel, a coop with its two hens and eggs in the straw.
+  cityDog: {
+    zoom: 3.4,
+    scene: (t) => {
+      const day = clearDay(t, 3);
+      t.time(day, 10 * 60);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const S = nearestDir(0, 1);
+      // (Its run turned to the camera: the hens in it.)
+      t.s.built = { [d]: [[mid - 1, PIECE.coop, 50, nearestDir(0, -1), 2 * 1_000_000 + 3 * 10_000 + day]] };
+      void S;
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.go(d, mid + W, nearestDir(-1, -1));
+      const at = mid + W + 1;
+      t.s.dog = [2, d, (at % W) * UNIT + UNIT / 2, Math.floor(at / W) * UNIT + UNIT / 2, 0];
+    },
+  },
+  // 2.71: Holdout: the second Rush on a base of walls and traps, the dead closing in.
+  cityHoldout: {
+    zoom: 1.9,
+    scene: (t) => {
+      t.s.mode = 2;
+      t.time(clearDay(t, 6), 23 * 60 + 40);
+      const d = t.c.plan.start;
+      const mid = openSpot(t, d);
+      if (mid < 0) return;
+      const P = PIECE;
+      const S = nearestDir(0, 1);
+      const E = nearestDir(1, 0);
+      const built: Array<[number, number, number, number, number]> = [];
+      for (const dx of [-2, -1, 0, 1, 2]) built.push([mid - 2 * W + dx, P.metalWall, 200, S, 0]);
+      for (const dz of [-1, 0, 1]) built.push([mid + dz * W - 2, P.plankWall, 100, E, 0], [mid + dz * W + 2, P.metalWall, 220, E, 0]);
+      built.push([mid + 2 * W, P.door, 80, S, 0], [mid + 3 * W, P.spikes, 25, S, 0], [mid + 3 * W - 1, P.barbedWire, 30, S, 0]);
+      built.push([mid - W, P.campfire, 40, S, 0], [mid + W + 1, P.sentry, 60, S, 30 * 16 + 6]);
+      t.s.built = { [d]: built };
+      t.s.lights = { [d]: [[mid - W, 3, t.s.step + 300 * 20]] };
+      (t.c as unknown as { reenter(): void }).reenter();
+      t.go(d, mid, nearestDir(0, 1));
+      const north = nearestDir(0, -1);
+      t.zed(mid + 4 * W, 3, north);
+      t.zed(mid + 4 * W - 1, 3, north);
+      t.zed(mid + 3 * W + 1, 3, north);
+      Object.assign(t.zed(mid + 5 * W + 1, 3, north), { kind: 4, hp: 90 });
+      t.zed(mid + 5 * W - 2, 3, north);
+      t.zed(mid - 3 * W + 1, 3, nearestDir(0, 1));
+    },
+  },
   // Beside the nurse.
   cityPeople: {
     zoom: 2.1,
@@ -533,6 +627,13 @@ export const SHOTS: Record<string, { zoom: number; scene: (t: ReturnType<typeof 
     },
   },
 };
+
+/** 2.71: the first clear day from a day on (the pictures that aren't of the weather). */
+function clearDay(t: ReturnType<typeof tools>, from: number): number {
+  let day = from;
+  while (day < 300 && WEATHER[weatherOf(t.c, day)] !== 'clear') day++;
+  return day;
+}
 
 /** 2.68: 5 × 6 out of doors in a district (the pieces' tiles), nothing on it, clear of the checkpoints (-1: none); the player put there. */
 function openSpot(t: ReturnType<typeof tools>, d: number): number {
@@ -567,6 +668,10 @@ export async function stage(id: string) {
   t.s.armour = [0, 0];
   t.s.bag = 0;
   t.s.lights = {};
+  // (2.71: no happening, no dog, the story's mode, unless the scene puts them there.)
+  t.s.happen = [];
+  t.s.dog = [];
+  t.s.mode = 0;
   relight(t.c);
   if (!hide) {
     hide = document.createElement('style');

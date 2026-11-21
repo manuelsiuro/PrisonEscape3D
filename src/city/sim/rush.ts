@@ -8,6 +8,8 @@ import { builtHere, removePiece } from './build';
 import { START_MINUTE, type City } from './City';
 import { danger, rushWave } from './dead';
 import { going } from './story';
+import { skillUp } from './skills';
+import { SKILL, SKILL_POINTS } from '../content/alive';
 
 /**
  * Nights (C5 batch 3, 2.68), a part of the city's simulation: the Rush (every third night, cities begun from 2.68), and a base left
@@ -108,6 +110,7 @@ export function rushMinute(c: City) {
       if (manual >= 0) c.drop(c.tile, manual + 1, 1);
       if (s.held >= 3) c.drop(c.tile, cityItemNumber('padded_jacket'), cityItem(cityItemNumber('padded_jacket'))!.wear!);
     }
+    skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.rush);
     c.events.push({ type: 'rush', what: 'held', n, tile: c.tile });
   }
 }

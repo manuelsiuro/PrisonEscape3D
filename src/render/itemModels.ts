@@ -296,6 +296,23 @@ export const ITEM_SHAPES: Record<string, Shape> = {
     ...[-0.14, 0.14].map((x) => rod(0.082, 0.04, 0x9aa2ad, x, 0.075, 0, 12)),
     box(0.03, 0.03, 0.26, 0x5a4a35, 0.2, 0.02),
   ],
+  /** 2.71 (City Escape): a hen's egg, on its side, a speckle or two. */
+  henEgg: (c, a) => [
+    paint(new THREE.SphereGeometry(0.08, 14, 10).scale(1.3, 1, 1).translate(0, 0.08, 0), c),
+    box(0.02, 0.005, 0.015, a, 0.03, 0.155, 0.02),
+    box(0.015, 0.005, 0.02, a, -0.04, 0.15, -0.02),
+  ],
+  /** 2.71 (City Escape): a hen, sitting: a round brown body, a head, a red comb and wattle, a beak, a tail up. */
+  hen: (c, a) => [
+    paint(new THREE.SphereGeometry(0.13, 14, 10).scale(1.25, 0.95, 1).translate(0, 0.12, 0), c),
+    paint(new THREE.SphereGeometry(0.065, 12, 8).translate(0.15, 0.25, 0), c),
+    box(0.05, 0.05, 0.02, a, 0.15, 0.32, 0),
+    box(0.02, 0.04, 0.02, a, 0.2, 0.2, 0),
+    box(0.05, 0.02, 0.03, 0xe8b828, 0.22, 0.25, 0),
+    box(0.06, 0.12, 0.1, c, -0.17, 0.22, 0),
+    box(0.012, 0.012, 0.012, 0x141414, 0.18, 0.27, 0.05),
+    box(0.012, 0.012, 0.012, 0x141414, 0.18, 0.27, -0.05),
+  ],
   /** A piece of fruit (P28): a round apple, a stalk and a leaf. */
   fruit: (c, a) => [
     paint(new THREE.SphereGeometry(0.11, 14, 10).scale(1, 0.92, 1).translate(0, 0.1, 0), c),

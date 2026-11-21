@@ -1,3 +1,4 @@
+import { Dogs, type DogFrame } from '../../render/Dog';
 import * as THREE from 'three';
 import { disposeTree } from '../../render/batch';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -250,6 +251,56 @@ function beyond(plan: CityPlan, d: number, out: Part[], streets: ReadonlyArray<{
   }
 }
 
+/** A board tilted about its own middle round x (radians), its middle then set at (x, y, z). */
+function tiltedPart(w: number, h: number, d: number, color: number, angle: number, x: number, y: number, z: number): Part {
+  const p = box(w, h, d, color, 0, -h / 2, 0);
+  p.rotateX(angle);
+  p.translate(x, y, z);
+  return p;
+}
+
+/**
+ * 2.71: the living a happening brings: the fence's runner (a red tracksuit, a cap worn backwards, a shopping trolley beside them) and a
+ * stranger calling for help (a grey hoodie, its hood down, an arm up).
+ */
+function passer(runner: boolean): Part[] {
+  const skin = runner ? 0xb07a52 : 0xe2b48c;
+  const cloth = runner ? 0xc8302a : 0x8a9098;
+  const legs = runner ? 0x2a2a30 : 0x3a4a6a;
+  const parts = [
+    box(0.16, 0.46, 0.18, legs, -0.11, 0, 0),
+    box(0.16, 0.46, 0.18, legs, 0.11, 0, 0),
+    box(0.46, 0.5, 0.26, cloth, 0, 0.46, 0),
+    box(0.12, 0.44, 0.14, cloth, -0.29, 0.5, 0),
+    runner ? box(0.12, 0.44, 0.14, cloth, 0.29, 0.5, 0) : box(0.12, 0.44, 0.14, cloth, 0.29, 0.96, 0),
+    box(0.12, 0.1, 0.14, skin, -0.29, 0.4, 0),
+    runner ? box(0.12, 0.1, 0.14, skin, 0.29, 0.4, 0) : box(0.12, 0.1, 0.14, skin, 0.29, 1.4, 0),
+    box(0.36, 0.34, 0.34, skin, 0, 0.98, 0.02),
+    box(0.07, 0.06, 0.02, 0x241a14, -0.09, 1.14, 0.2),
+    box(0.07, 0.06, 0.02, 0x241a14, 0.09, 1.14, 0.2),
+    box(0.12, 0.03, 0.02, 0x6a3a2a, 0, 1.05, 0.2),
+  ];
+  if (runner)
+    parts.push(
+      box(0.38, 0.1, 0.36, 0x1e2a3a, 0, 1.3, 0.01),
+      box(0.3, 0.03, 0.14, 0x1e2a3a, 0, 1.3, -0.22),
+      box(0.04, 0.46, 0.02, 0xf4f1ea, -0.2, 0.46, 0.14),
+      box(0.04, 0.46, 0.02, 0xf4f1ea, 0.2, 0.46, 0.14),
+      // (The trolley, to the runner's right: a wire basket on wheels, a few things in it.)
+      box(0.5, 0.04, 0.36, 0x9aa1ab, 0.72, 0.18, 0.1),
+      box(0.5, 0.3, 0.02, 0x9aa1ab, 0.72, 0.22, 0.28),
+      box(0.5, 0.3, 0.02, 0x9aa1ab, 0.72, 0.22, -0.08),
+      box(0.02, 0.3, 0.36, 0x9aa1ab, 0.97, 0.22, 0.1),
+      box(0.02, 0.3, 0.36, 0x9aa1ab, 0.47, 0.22, 0.1),
+      box(0.04, 0.42, 0.04, 0x5a626c, 0.97, 0.2, -0.06),
+      ...[0.52, 0.92].flatMap((x) => [-0.04, 0.24].map((z) => cyl(0.04, 0.03, 0x2a2a2a, x, 0.02, z, 8))),
+      box(0.16, 0.14, 0.12, 0x4a8a3a, 0.62, 0.24, 0.06),
+      box(0.12, 0.1, 0.16, 0xb5673a, 0.82, 0.24, 0.14),
+    );
+  else parts.push(box(0.4, 0.12, 0.16, cloth, 0, 0.98, -0.2));
+  return parts;
+}
+
 /**
  * A survivor (C4): one of the living, standing straight, arms at their sides, dressed for what they are:
  * the fence in the bus's orange with a wool cap, the nurse in teal scrubs and a white cap with its cross,
@@ -442,7 +493,98 @@ export class CityView {
       this.track,
       this.ticks,
       this.smoke,
+      this.happen,
+      this.dogs.group,
     );
+    this.dogs.setDogs([{ x: -99, z: -99, face: 1, coat: 'retriever' }]);
+    this.dogs.group.visible = false;
+  }
+
+  /**
+   * 2.71: what the day's happenings stand in this district: a supply crate under its parachute (its lid off once opened), a crashed
+   * army truck across two tiles (its back doors open once forced), the fence's runner with a trolley, a stranger calling for help.
+   */
+  private readonly happen = new THREE.Group();
+  private happenAt = '?';
+  setHappenings(list: ReadonlyArray<{ kind: 'drop' | 'truck' | 'runner' | 'cry'; tile: number; open: boolean }>) {
+    const key = JSON.stringify(list);
+    if (key === this.happenAt) return;
+    this.happenAt = key;
+    disposeTree(this.happen, () => false, new Set([kitMaterial]));
+    this.happen.clear();
+    for (const e of list) {
+      const x = (e.tile % W) + 0.5;
+      const z = Math.floor(e.tile / W) + 0.5;
+      let parts: Part[] = [];
+      if (e.kind === 'drop') {
+        parts = [
+          box(0.72, 0.56, 0.72, 0x6a5a3a, 0, 0, 0),
+          box(0.76, 0.06, 0.76, 0x4a3e28, 0, 0.18, 0),
+          box(0.06, 0.58, 0.76, 0x4a3e28, 0, 0, 0),
+          box(0.3, 0.16, 0.02, 0xf2f2ee, 0, 0.3, 0.37),
+          box(0.12, 0.04, 0.02, 0xc24a3a, 0, 0.36, 0.38),
+          box(0.04, 0.12, 0.02, 0xc24a3a, 0, 0.33, 0.38),
+          // (The parachute, slumped over a corner and spilling onto the street.)
+          tiltedPart(0.9, 0.04, 0.7, 0xe8762a, -0.5, 0.3, 0.58, -0.25),
+          tiltedPart(0.7, 0.03, 0.8, 0xf2f2ee, 0.35, -0.55, 0.12, -0.38),
+          box(0.01, 0.4, 0.01, 0xd8d0c0, -0.3, 0.5, 0.1),
+          box(0.01, 0.4, 0.01, 0xd8d0c0, 0.3, 0.5, -0.2),
+        ];
+        if (!e.open) parts.push(box(0.74, 0.06, 0.74, 0x7a6a48, 0, 0.56, 0));
+        else parts.push(tiltedPart(0.74, 0.05, 0.74, 0x7a6a48, 0.5, 0.62, 0.1, 0));
+      } else if (e.kind === 'truck') {
+        // (Two tiles along x from its tile: the cab at the far end, the canvas-covered bed nearer; nosed into the kerb, tipped.)
+        const OD = 0x4a5a3a;
+        const OL = 0x5f704a;
+        parts = [
+          box(1.5, 0.5, 0.9, OD, 0.25, 0.22, 0),
+          box(1.1, 0.62, 0.92, 0x6a7a52, 0.05, 0.72, 0),
+          box(1.12, 0.06, 0.94, OL, 0.05, 1.34, 0),
+          box(0.56, 0.7, 0.88, OL, 1.18, 0.22, 0),
+          box(0.04, 0.3, 0.7, 0x2a3440, 1.47, 0.6, 0),
+          // (A white star on its canvas: two squares turned an eighth apart.)
+          box(0.2, 0.2, 0.02, 0xf2f2ee, 0.3, 0.9, 0.47),
+          box(0.2, 0.2, 0.02, 0xf2f2ee, 0, 0, 0)
+            .rotateZ(Math.PI / 4)
+            .translate(0.3, 1.0, 0.475),
+          ...[-0.45, 0.45, 1.25].flatMap((wx) =>
+            [-0.47, 0.47].map((wz) =>
+              cyl(0.2, 0.14, 0x1e1e20, wx, 0, wz, 12)
+                .rotateX(Math.PI / 2)
+                .translate(0, 0.2, 0),
+            ),
+          ),
+          box(0.3, 0.08, 0.02, 0xe0c060, 1.5, 0.3, 0.3),
+          box(0.3, 0.08, 0.02, 0xe0c060, 1.5, 0.3, -0.3),
+        ];
+        // (Its back doors: shut, or swung wide once forced.)
+        if (!e.open) parts.push(box(0.04, 0.6, 0.9, OD, -0.52, 0.72, 0));
+        else parts.push(box(0.4, 0.6, 0.04, OD, -0.72, 0.72, 0.46), box(0.4, 0.6, 0.04, OD, -0.72, 0.72, -0.46));
+        const m = new THREE.Mesh(merge(parts), kitMaterial);
+        m.castShadow = true;
+        m.position.set(x + 0.25, 0, z);
+        m.rotation.y = 0.06;
+        m.rotation.z = -0.03;
+        this.happen.add(m);
+        continue;
+      } else parts = passer(e.kind === 'runner');
+      const m = new THREE.Mesh(merge(parts), kitMaterial);
+      m.castShadow = true;
+      m.position.set(x, 0, z);
+      if (e.kind !== 'drop') m.scale.setScalar(1.3);
+      m.rotation.y = e.kind === 'drop' ? (mix32(e.tile) & 3) * 0.4 : Math.PI;
+      this.happen.add(m);
+    }
+  }
+
+  /** 2.71: the dog (render/Dog.ts's, a retriever): where it is, which way, moving or lying, wagging near the player. */
+  private readonly dogs = new Dogs();
+  private dogSleep: number[] = [];
+  drawDog(dog: DogFrame | null, px: number, pz: number, dt: number, time: number, still: boolean) {
+    this.dogs.group.visible = !!dog;
+    if (!dog) return;
+    this.dogSleep.length = 0;
+    this.dogs.update([dog], [], px, pz, dt, time, !still, this.dogSleep);
   }
 
   /** 2.69: smoke clouds where a smoke bomb landed: soft grey billows over its reach, drifting (still with reduced motion). */
@@ -489,6 +631,8 @@ export class CityView {
     if (key === this.ticksAt) return;
     this.ticksAt = key;
     disposeTree(this.ticks, () => false, new Set([kitMaterial]));
+    // (2.71: and taken off the scene: before, a clock that had rung stayed drawn where it lay.)
+    this.ticks.clear();
     if (!tiles.length) return;
     const parts: Part[] = [];
     for (const tile of tiles) {

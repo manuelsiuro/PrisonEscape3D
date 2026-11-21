@@ -8,7 +8,12 @@ import { TUNNEL } from '../gen/tunnel';
 import { FLAG, NOTES, THINGS, WAYS, thingBit } from '../content/story';
 import type { City } from '../sim/City';
 import { MODE } from '../sim/City';
-import { errandOf, objectives, wants } from '../sim/story';
+import { errandOf, objectives, tradesOf, wants } from '../sim/story';
+import { HAPPEN, HAPPENINGS, RUNNER_TRADES, SKILL_AT, SKILLS } from '../content/alive';
+import { ahead, happenList, happenSpot, HAPPEN_KIND, happening, stashWhere, type HappenEntry } from '../sim/happen';
+import { level, nextLevel, skillsOn } from '../sim/skills';
+import { isHoldout } from '../sim/holdout';
+import { hhmm } from '../../sim/systems/clock';
 import { isCut } from '../sim/tools';
 import { cityItemNumber } from '../content/items';
 import { PEOPLE } from '../content/people';
@@ -75,6 +80,7 @@ export async function showNewCity(click: () => void): Promise<number | null> {
       <div class="city-modes" role="group" aria-label="${t('city.new.mode')}">
         <button class="city-mode" data-c="mode" data-pick="${MODE.SURVIVOR}" aria-pressed="true">${icon('heart', 20)}<b>${t('city.mode.survivor')}</b><small>${t('city.mode.survivorSub')}</small></button>
         <button class="city-mode" data-c="mode" data-pick="${MODE.HARDCORE}" aria-pressed="false">${icon('flame', 20)}<b>${t('city.mode.hardcore')}</b><small>${t('city.mode.hardcoreSub')}</small></button>
+        <button class="city-mode" data-c="mode" data-pick="${MODE.HOLDOUT}" aria-pressed="false">${icon('shield', 20)}<b>${t('city.mode.holdout')}</b><small>${t('city.mode.holdoutSub')}</small></button>
       </div>
       <div class="actions">
         <button class="big-btn ghost" data-c="back">${icon('chevronLeft', 18)}${t('city.new.back')}</button>
@@ -137,6 +143,42 @@ export async function showCityIntro(click: () => void): Promise<void> {
     '[data-c="go"]',
   );
   click();
+}
+
+/** 2.71: Holdout, before the first steps: no story, the nights, one life. */
+export async function showHoldoutIntro(click: () => void): Promise<void> {
+  await modal<'go'>(
+    `<div class="card city-intro">
+      <h2>${icon('shield', 22)}${t('city.holdout.intro.title')}</h2>
+      <p>${t('city.holdout.intro.text')}</p>
+      <div class="actions"><button class="big-btn primary" data-c="go">${icon('walk', 18)}${t('city.holdout.intro.go')}</button></div>
+    </div>`,
+    'go',
+    '[data-c="go"]',
+  );
+  click();
+}
+
+/** 2.71: Holdout over: the nights held and the Rushes, and the best kept on this device (`fresh`: this one is it). */
+export async function showHoldoutOver(
+  nights: number,
+  rushes: number,
+  best: number,
+  fresh: boolean,
+  click: () => void,
+): Promise<'back' | 'new'> {
+  const out = await modal<'back' | 'new'>(
+    `<div class="card city-intro city-over">
+      <h2>${t('city.holdout.over.title')}</h2>
+      <p class="city-over-line">${t('city.holdout.over.text', { n: nights, r: rushes })}</p>
+      <p>${fresh ? `${icon('trophy', 16)} ${t('city.holdout.over.newBest')}` : t('city.holdout.over.best', { n: best })}</p>
+      ${endActions()}
+    </div>`,
+    'back',
+    '[data-c="new"]',
+  );
+  click();
+  return out;
 }
 
 /**
@@ -215,7 +257,7 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
       <h2>${icon('map', 20)}${t('city.map.title')}</h2>
       <div class="city-map-body">
         <div class="city-map-pic"><canvas width="${size}" height="${size}" role="img" aria-label="${t('city.map.title')}"></canvas><ol class="city-map-names" aria-hidden="true">${names}</ol></div>
-        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-pile"></i>${t('city.map.pile')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-person"></i>${t('city.map.person')}</li><li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
+        <ul class="city-map-legend">${legend}<li><i class="lg-gate"></i>${t('city.map.gate')}</li><li><i class="lg-wall"></i>${t('city.map.wall')}</li><li><i class="lg-home"></i>${t('city.map.home')}</li><li><i class="lg-pile"></i>${t('city.map.pile')}</li><li><i class="lg-goal"></i>${t('city.map.goal')}</li><li><i class="lg-person"></i>${t('city.map.person')}</li>${happenList(city).length ? `<li><i class="lg-happen"></i>${t('city.journal.today')}</li>` : ''}<li><i class="lg-you"></i>${t('city.map.you')}</li></ul>
       </div>
       <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.map.close')}</button></div>
     </div>`,
@@ -283,6 +325,25 @@ export async function showCityMap(city: City, click: () => void): Promise<void> 
         c.fill();
         c.stroke();
       });
+      // (2.71: the day's happenings, on or to come: an orange ring with a dot.)
+      for (const e of happenList(city)) {
+        if (!ahead(city, e) && !(e[1] === HAPPEN_KIND.truck && !e[4])) continue;
+        const { x, y } = mapXY(e[2], happenSpot(city, e), GAP);
+        c.strokeStyle = '#07090c';
+        c.lineWidth = 3;
+        c.beginPath();
+        c.arc(x, y, 4.5, 0, Math.PI * 2);
+        c.stroke();
+        c.strokeStyle = '#ff9a3a';
+        c.lineWidth = 1.6;
+        c.beginPath();
+        c.arc(x, y, 4.5, 0, Math.PI * 2);
+        c.stroke();
+        c.fillStyle = '#ff9a3a';
+        c.beginPath();
+        c.arc(x, y, 1.6, 0, Math.PI * 2);
+        c.fill();
+      }
       // Where the journal points: a diamond each.
       for (const o of objectives(city)) {
         // (2.56: what the tunnel asks is under the map, not on it.)
@@ -379,12 +440,15 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
           return `<li><b>${t(`city.person.${PEOPLE[k].id}.name` as Key)}<small>${t(`city.person.${PEOPLE[k].id}.role` as Key)}</small></b><span>${t(`city.use.${dist.lots[p.lot].use}` as Key)}, ${city.plan.names[p.district]}</span><small>${met ? errandLine(city, k) || t('city.journal.errands', { n: s.errand[k] }) : t('city.journal.unmet')}</small></li>`;
         })
         .join('')}</ul></section>`;
+  const holdout = isHoldout(city);
   const choice = await modal<'close' | 'way1' | 'way2' | 'way3'>(
     `<div class="card city-journal">
-      <h2>${icon('book', 20)}${t('city.journal.title')}<small>${t('city.act.n', { n: s.act })} · ${t(`city.act.${s.act}` as Key)}</small></h2>
+      <h2>${icon('book', 20)}${t('city.journal.title')}<small>${holdout ? t('city.act.holdout') : `${t('city.act.n', { n: s.act })} · ${t(`city.act.${s.act}` as Key)}`}</small></h2>
       <div class="cj-body">
         <section><h3>${icon('clipboard', 16)}${t('city.journal.todo')}</h3><ul class="cj-todo">${todo}</ul>${kit.length ? `<p class="card-note cj-kit">${t('city.journal.kit', { what: kit.join(', ') })}</p>` : ''}</section>
-        ${ways}
+        ${todaySection(city)}
+        ${holdout ? '' : ways}
+        ${skillsSection(city)}
         ${people}
         <section><h3>${icon('megaphone', 16)}${t('city.journal.radio')}</h3>${radio}</section>
         <section><h3>${icon('letter', 16)}${t('city.journal.notes', { n: found.length, of: NOTES })}</h3>${notes}</section>
@@ -396,6 +460,93 @@ export async function showCityJournal(city: City, click: () => void): Promise<nu
   );
   click();
   return choice === 'close' ? 0 : Number(choice.slice(3));
+}
+
+/** 2.71: a happening in words, with its time (the map and the journal). */
+export function happenText(city: City, e: HappenEntry): string {
+  const where = city.plan.names[e[2]];
+  const kind = HAPPENINGS[e[1]];
+  if (kind === 'cry') {
+    const dist = city.districtOf(e[2]);
+    const lot = dist.lotAt[e[3]];
+    return t('city.happen.line.cry', {
+      place: t(`city.use.${lot ? dist.lots[lot - 1].use : 'house'}` as Key),
+      where,
+      time: hhmm(HAPPEN.cryTo),
+    });
+  }
+  if (kind === 'stash') {
+    const at = stashWhere(city, e);
+    return t('city.happen.line.stash', {
+      prop: t(`city.box.${at.prop}` as Key),
+      place: t(`city.use.${at.use}` as Key),
+      where,
+    });
+  }
+  if (kind === 'runner') return t('city.happen.line.runner', { where, from: hhmm(HAPPEN.runnerFrom), to: hhmm(HAPPEN.runnerTo) });
+  return t(`city.happen.line.${kind}` as Key, { where, time: hhmm(e[5]) });
+}
+
+/** 2.71: the journal's day: each happening, on, to come, done or missed. */
+function todaySection(city: City): string {
+  const list = happenList(city);
+  if (!list.length && !(city.state.rev >= 7 && city.day >= HAPPEN.fromDay)) return '';
+  const rows = list
+    .map((e) => {
+      const state = e[4] === 1 ? 'done' : e[4] === 2 || !ahead(city, e) ? 'missed' : happening(city, e) ? 'now' : 'at';
+      const tag = state === 'at' ? t('city.happen.at', { time: hhmm(e[5]) }) : t(`city.happen.${state}` as Key);
+      return `<li class="cj-happen ${state}">${icon(HAPPEN_ICONS[HAPPENINGS[e[1]]], 16)}<span><b>${t(`city.happen.${HAPPENINGS[e[1]]}` as Key)}</b> · <i>${tag}</i><small>${happenText(city, e)}</small></span></li>`;
+    })
+    .join('');
+  return `<section><h3>${icon('calendar', 16)}${t('city.journal.today')}</h3>${rows ? `<ul class="cj-todo cj-today">${rows}</ul>` : `<p class="card-note">${t('city.journal.noHappen')}</p>`}</section>`;
+}
+export const HAPPEN_ICONS: Record<(typeof HAPPENINGS)[number], string> = {
+  drop: 'gift',
+  cry: 'megaphone',
+  horde: 'users',
+  truck: 'truck',
+  runner: 'cart',
+  stash: 'letter',
+};
+
+/** 2.71: the journal's skills: each one's level and how far to the next. */
+function skillsSection(city: City): string {
+  if (!skillsOn(city)) return '';
+  const rows = SKILLS.map((id, k) => {
+    const l = level(city, k);
+    const next = nextLevel(city, k);
+    const pct = next ? Math.round(((next.have - next.from) / (next.to - next.from)) * 100) : 100;
+    const sub = next ? t('city.skill.next', { have: next.have - next.from, to: next.to - next.from, n: l + 1 }) : t('city.skill.max');
+    return `<li class="cj-skill"><b>${t(`city.skill.${id}` as Key)}<small>${t('city.skill.level', { n: l })}</small></b><i class="cj-bar" style="--p:${pct}%"></i><small>${sub} · ${t(`city.skill.${id}.how` as Key)}</small></li>`;
+  }).join('');
+  return `<section><h3>${icon('star', 16)}${t('city.journal.skills')}</h3><ul class="cj-skills">${rows}</ul></section>`;
+}
+void SKILL_AT;
+
+/**
+ * 2.71: the fence's runner's card, at the market for the day: a word, and the swaps. Resolves with the swap asked for, or -1.
+ */
+export async function showCityRunner(city: City, click: () => void): Promise<number> {
+  const swaps = RUNNER_TRADES.map(([give, get], n) => {
+    const g = cityItemNumber(give[0]);
+    const can = city.count(g) >= give[1];
+    const a = `${itemName(g)}${give[1] > 1 ? ` × ${give[1]}` : ''}`;
+    const b = `${itemName(cityItemNumber(get[0]))}${get[1] > 1 ? ` × ${get[1]}` : ''}`;
+    return `<button class="cp-swap" data-c="t${n}"${can ? '' : ' disabled'} aria-label="${t('city.person.swap', { give: a, get: b })}"><span>${a}</span>${icon('chevronRight', 14)}<b>${b}</b></button>`;
+  }).join('');
+  const choice = await modal<'close' | `t${number}`>(
+    `<div class="card city-person">
+      <h2>${icon('cart', 20)}${t('city.runner.name')}<small>${t('city.runner.role')}</small></h2>
+      <p class="cj-line">${t('city.runner.line')}</p>
+      <h3>${icon('hand', 16)}${t('city.person.swaps')}</h3>
+      <div class="cp-swaps">${swaps}</div>
+      <div class="actions"><button class="big-btn primary" data-c="close">${icon('check', 18)}${t('city.person.close')}</button></div>
+    </div>`,
+    'close',
+    '[data-c="close"]',
+  );
+  click();
+  return choice === 'close' ? -1 : Number(choice.slice(1));
 }
 
 /** Out of the city: by which way, how it went, and the last thing on the radio. */
@@ -426,13 +577,16 @@ function errandLine(city: City, k: number): string {
   if (!e || !w) return '';
   return e.bring
     ? t('city.person.wants.bring', { n: w.n, what: itemName(w.item), have: w.have })
-    : t('city.person.wants.kills', { n: w.n, have: w.have });
+    : e.build
+      ? t('city.person.wants.build', { what: t(`city.piece.${e.build}` as Key), have: w.have })
+      : t('city.person.wants.kills', { n: w.n, have: w.have });
 }
 
 /**
  * A survivor's card (C3b): what they say (first met, an errand just handed in, or a word), the errand
- * open and what it pays, their swaps. Resolves with the swap asked for (0–2), 3: the errand handed over, or -1: left.
+ * open and what it pays, their swaps. Resolves with the swap asked for (0–3), GIVE: the errand handed over, or -1: left.
  */
+export const GIVE = 9;
 export async function showCityPerson(city: City, k: number, what: 'met' | 'done' | 'chat', click: () => void): Promise<number> {
   const s = city.state;
   const who = PEOPLE[k];
@@ -456,8 +610,8 @@ export async function showCityPerson(city: City, k: number, what: 'met' | 'done'
       ].join(', ');
   const errand = !e
     ? `<p class="card-note">${t('city.person.noMore')}</p>`
-    : `<div class="cp-errand${w && w.have >= w.n ? ' ready' : ''}"><b>${errandLine(city, k)}</b><small>${t('city.person.gives', { what: pay })}</small>${w && w.have >= w.n ? `<button class="big-btn primary cp-give" data-c="t3">${icon('check', 16)}${t('city.person.ready')}</button>` : ''}</div>`;
-  const swaps = who.trades
+    : `<div class="cp-errand${w && w.have >= w.n ? ' ready' : ''}"><b>${errandLine(city, k)}</b><small>${t('city.person.gives', { what: pay })}</small>${w && w.have >= w.n ? `<button class="big-btn primary cp-give" data-c="t${GIVE}">${icon('check', 16)}${t('city.person.ready')}</button>` : ''}</div>`;
+  const swaps = tradesOf(city, k)
     .map(([give, get], n) => {
       const g = cityItemNumber(give[0]);
       const can = city.count(g) >= give[1];
@@ -466,7 +620,7 @@ export async function showCityPerson(city: City, k: number, what: 'met' | 'done'
       return `<button class="cp-swap" data-c="t${n}"${can ? '' : ' disabled'} aria-label="${t('city.person.swap', { give: a, get: b })}"><span>${a}</span>${icon('chevronRight', 14)}<b>${b}</b></button>`;
     })
     .join('');
-  const choice = await modal<'close' | 't0' | 't1' | 't2' | 't3'>(
+  const choice = await modal<'close' | `t${number}`>(
     `<div class="card city-person">
       <h2>${icon('chat', 20)}${t(`city.person.${who.id}.name` as Key)}<small>${t(`city.person.${who.id}.role` as Key)}</small></h2>
       ${lines.map((l) => `<p class="cj-line">${t(`city.person.${l}` as Key)}</p>`).join('')}

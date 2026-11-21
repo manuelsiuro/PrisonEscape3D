@@ -1,0 +1,11 @@
+skills: a point for each thing done of its kind, a level said; at level 5 a search 30 → 20 steps, building 60 → 41, a blow's energy 1000 → 600 thousandths, well fed 360 → 576 min, queasy 240 → 96; Handy 3 a barricade one plank fewer; Fighter 5 spares the weapon 34% of blows; none in a city begun before
+12 cities, days 2 to 31: nothing on day 1; 1.40 happenings a day (two on 143 of 360 days), never two of a kind or in one district, the same each time asked; drop 108, cry 85, horde 94, truck 85, runner 68, stash 63; each on bare street clear of the checkpoints, in a building, at the market or in furniture as it should
+a supply drop: planned and said at dawn, landing at its half hour (heard), standing in the street; searched, it holds 4 things; gone the next dawn
+a truck: forced with a crowbar (100 steps, heard), army kit inside, it stays; a stash: found in the furniture the note names (searched before: false)
+a stranger: answered once the building is clear (the dead put in it first), thanked with what they had; lost at 19:00; the runner at the market from 10 to 16, swaps beside them; a horde: 10 walking across the district at its hour
+the dog: a stray in every city's park, fed twice (jerky, a tin…) it follows, 2 tiles off at a walk, into the next district; it barks at the dead it sees, wakes a sleeper when one within 5 tiles is coming for them, digs something up once a day out of doors; never the button's once it follows; a save keeps it
+hens: a coop holds 2, an egg a day each from the next dawn, 6 kept at most, the hens back when it's taken down; two eggs and herbs make an omelette on a stove; none of it in a city begun before
+the survivors: a third errand (two noisemakers, two poultices, a rain barrel built anywhere, two jerky for two hens) and a fourth swap each, in a city begun from 2.71
+Holdout: no story (the radio's furniture holds no radio), the goal the night and the next Rush; 2 more of the dead each night held (24 at most); a fall ends it; a save keeps it
+Holdout, a ready player (metal walls, spikes and wire, a spear, a bat, three bandages, mended and restocked by day) on 10 cities: 8, 9, 8, 5, 9, 8, 8, 5, 8, 8 nights held (7.6 on average)
+a save keeps the skills, the happenings and the dog; a damaged one made sound; one from before 2.71 loads with none, and its days stay as they were (741638a5)

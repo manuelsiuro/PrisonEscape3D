@@ -21,7 +21,7 @@ export const MOODS = ['wellFed', 'refreshed', 'rested', 'queasy', 'soaked'] as c
 export const MOOD_TIME = { wellFed: 360, refreshed: 180, rested: 720, queasy: 240, soaked: 60 } as const;
 
 /** Fresh food in the pockets or the bag goes off at dawn: half of each stack (rounded down) gone. A chest, a fridge keep it. */
-export const PERISH: readonly string[] = ['fruit', 'veg', 'fish', 'cooked_fish', 'roast_veg', 'fish_soup'];
+export const PERISH: readonly string[] = ['fruit', 'veg', 'fish', 'cooked_fish', 'roast_veg', 'fish_soup', 'egg', 'omelette'];
 export const SPOIL_AT = 6 * 60;
 
 /** The weather, a day at a time from the city's seed (day 1 always clear), said at 06:00; [kind, weight]. */

@@ -5,11 +5,15 @@ import { cityItem, cityItemNumber } from '../content/items';
 import { LIGHT_KIND } from '../content/light';
 import { TRAP } from '../content/rush';
 import { BAG, knowsManual, manualExists } from './gear';
-import { growingOp, newGrowing } from './survival';
+import { coop, growingOp, newGrowing } from './survival';
 import { STEPS_PER_MINUTE } from '../../sim/tuning';
 import { TUNNEL } from '../gen/tunnel';
 import type { City, Stack } from './City';
 import { noise } from './dead';
+import { pieceFrom, pieceSpared, skillUp, workSteps } from './skills';
+import { remark } from './story';
+import { happenSpotsHere } from './happen';
+import { SKILL, SKILL_POINTS } from '../content/alive';
 import { addLight, lightsHere, relight } from './light';
 
 /**
@@ -88,6 +92,8 @@ export function buildSpot(c: City): number {
 export type BuildWhy = 'ok' | 'hammer' | 'parts' | 'most' | 'here' | 'blocked' | 'gate' | 'people' | 'story' | 'unknown';
 /** 2.70: a piece from a manual not read (in a city begun from then). */
 const unknownPiece = (c: City, def: PieceDef) => def.manual !== undefined && !knowsManual(c, def.manual);
+/** 2.71: a piece not in this city at all (begun before its revision). */
+const pieceNone = (c: City, def: PieceDef) => (def.manual !== undefined && !manualExists(c, def.manual)) || (def.rev ?? 0) > c.state.rev;
 
 const cheb = (a: number, b: number) =>
   Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
@@ -96,9 +102,9 @@ const cheb = (a: number, b: number) =>
 export function canBuild(c: City, kind: number, tile: number): BuildWhy {
   const def = pieceOf(kind);
   if (!def) return 'parts';
-  if (unknownPiece(c, def)) return 'unknown';
+  if (unknownPiece(c, def) || pieceNone(c, def)) return 'unknown';
   if (!c.count(HAMMER)) return 'hammer';
-  if (lacking(c, def.from).length) return 'parts';
+  if (lacking(c, pieceFrom(c, def)).length) return 'parts';
   const s = c.state;
   if (s.district === TUNNEL || tile < 0) return 'here';
   if ((s.built[s.district] ?? []).length >= BUILD.most) return 'most';
@@ -106,6 +112,8 @@ export function canBuild(c: City, kind: number, tile: number): BuildWhy {
   const ch = c.district.rows[Math.floor(tile / MAP_W)][tile % MAP_W];
   if (c.grid[tile] || c.pieceAt[tile] || c.carAt[tile] || c.zedGrid[tile] || ch === 'y' || ch === '~' || ch === '=') return 'blocked';
   if (tile === c.tile || c.state.boxes[`${s.district}:g${tile}`]?.some((st) => st[0])) return 'blocked';
+  // (2.71, the review: nor where a happening stands or is coming: a crate's street, a truck's, the runner's.)
+  if (happenSpotsHere(c).includes(tile)) return 'blocked';
   // (Nor on furniture that's walked over (a chair: break it first), nor where a Survivor wakes, nor where the district puts them.)
   if (c.breakAt[tile] || (s.home[0] === s.district && s.home[1] === tile)) return 'blocked';
   if (c.district.spawn.z * MAP_W + c.district.spawn.x === tile) return 'blocked';
@@ -140,7 +148,7 @@ export function startBuild(c: City, kind: number) {
   const tile = buildSpot(c);
   const why = canBuild(c, kind, tile);
   if (why !== 'ok') return void c.events.push({ type: 'cantBuild', why });
-  begin(c, `h${kind}:${tile}`, BUILD.steps);
+  begin(c, `h${kind}:${tile}`, workSteps(c, BUILD.steps));
 }
 export function startPiece(c: City, what: number) {
   const s = c.state;
@@ -152,9 +160,9 @@ export function startPiece(c: City, what: number) {
     if (p[2] >= def.hp) return;
     if (!c.count(HAMMER)) return void c.events.push({ type: 'cantBuild', why: 'hammer' });
     if (lacking(c, repairCost(def, p[2])).length) return void c.events.push({ type: 'cantBuild', why: 'parts' });
-    return begin(c, `r${tile}`, BUILD.repairSteps);
+    return begin(c, `r${tile}`, workSteps(c, BUILD.repairSteps));
   }
-  if (what === 1) return begin(c, `t${tile}`, BUILD.downSteps);
+  if (what === 1) return begin(c, `t${tile}`, workSteps(c, BUILD.downSteps));
   if (what === 2) return feed(c, p);
   // (2.70: a planter's seeds, its watering, its harvest; a barrel's drink, a bottle filled at it.)
   if (what >= 3) return growingOp(c, p, what);
@@ -193,12 +201,15 @@ export function finishBuild(c: City, key: string) {
     // (The review: the pockets and the bag alike, as `spend` takes it.)
     const bows = [...s.inv, ...(s.bag ? (s.boxes[BAG] ?? []) : [])].filter((st) => st[0] === CROSSBOW).map((st) => st[1]);
     const blows = def.trap === 'sentry' && bows.length ? Math.min(...bows) : 0;
-    for (const [id, n] of def.from) c.spend(cityItemNumber(id), n);
+    // (2.71: a Handy player's piece takes less.)
+    for (const [id, n] of pieceFrom(c, def)) c.spend(cityItemNumber(id), n);
+    skillUp(c, SKILL.HANDY, SKILL_POINTS.build);
     builtHere(c).push([tile, kind, def.hp, s.player.facing, blows * BUILD.sentryWear]);
     changed(c);
     if (kind === PIECE.campfire) addLight(c, tile, LIGHT_KIND.CAMP, BUILD.fireMinutes);
     newGrowing(c, builtHere(c)[builtHere(c).length - 1]);
     c.events.push({ type: 'built', kind, tile });
+    remark(c, 'hammer');
     return;
   }
   const p = pieceAtTile(c, tile);
@@ -210,6 +221,7 @@ export function finishBuild(c: City, key: string) {
     for (const [id, n] of cost) c.spend(cityItemNumber(id), n);
     p[2] = def.hp;
     c.piecesRev++;
+    skillUp(c, SKILL.HANDY, SKILL_POINTS.repair);
     return void c.events.push({ type: 'repaired', kind: p[1], tile });
   }
   // Taken down: half of what it took, less for the damage; a chest's things on the ground; a campfire out.
@@ -245,6 +257,12 @@ export function removePiece(c: City, p: Built, takenDown = false) {
   // (2.69, the review: a workshop broken by the dead or the nights: its toolkit on the ground, whole.)
   const keeps = pieceOf(p[1])?.keeps;
   if (keeps && !takenDown) c.drop(p[0], cityItemNumber(keeps), 1);
+  // (2.71: a coop's eggs on the ground; its hens handed back when it's taken down, run off when the dead break it.)
+  if (pieceOf(p[1])?.grows === 'coop') {
+    const { hens, eggs } = coop(c, p);
+    if (eggs) c.drop(p[0], cityItemNumber('egg'), eggs);
+    if (takenDown && hens) c.hand(cityItemNumber('hen'), hens);
+  }
   if (pieceOf(p[1])!.solid) c.world.parked[p[0]] = c.world.propSolid[p[0]] = 0;
   changed(c);
 }
@@ -285,6 +303,8 @@ export function poundPiece(c: City, tile: number, brute: boolean, beat: number) 
   const p = pieceAtTile(c, tile);
   if (!p) return;
   if (beat % BUILD.poundEvery !== 0) return;
+  // (2.71: a Handy player's pieces: now and then a blow that does nothing.)
+  if (pieceSpared(c, beat / BUILD.poundEvery)) return;
   const was = wornStep(p);
   p[2] -= brute ? BUILD.bruteHarm : 1;
   // (Drawn again only when it looks more worn: four steps of wear, not a blow at a time.)
@@ -339,13 +359,13 @@ export const pieceSlots = (c: City, key: string): number => (c.pieceAt[Number(ke
 /** The pieces the Build panel lists, with what each lacks now ('ok'). */
 export const buildList = (c: City): Array<'ok' | 'hammer' | 'parts' | 'unknown' | 'none'> =>
   PIECES.map((def) =>
-    def.manual !== undefined && !manualExists(c, def.manual)
+    pieceNone(c, def)
       ? 'none'
       : unknownPiece(c, def)
         ? 'unknown'
         : !c.count(HAMMER)
           ? 'hammer'
-          : lacking(c, def.from).length
+          : lacking(c, pieceFrom(c, def)).length
             ? 'parts'
             : 'ok',
   );

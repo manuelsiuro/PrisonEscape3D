@@ -1,4 +1,4 @@
-90 topics in 16 groups: 90 laid out as pages (12518 words before the fine print), 0 still a paragraph (0 words); 71 pictures
+94 topics in 16 groups: 94 laid out as pages (12998 words before the fine print), 0 still a paragraph (0 words); 75 pictures
 every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there
   cityGoal   117 words on the page,  61 folded; 4 steps, 3 chips
   cityFood   128 words on the page, 135 folded; 4 steps, 3 chips
@@ -17,9 +17,13 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   cityThirst 141 words on the page,  39 folded; 0 steps, 3 chips
   cityWeather  95 words on the page,  10 folded; 0 steps, 2 chips
   cityGarden 139 words on the page,  31 folded; 0 steps, 3 chips
+  cityAlive  168 words on the page,  32 folded; 0 steps, 3 chips
+  citySkills 103 words on the page,   7 folded; 0 steps, 2 chips
+  cityDog    107 words on the page,  18 folded; 0 steps, 3 chips
   cityStory  125 words on the page,  44 folded; 5 steps, 3 chips
   cityWays   228 words on the page,  68 folded; 0 steps, 3 chips
-  cityPeople 101 words on the page,  33 folded; 0 steps, 2 chips
+  cityHoldout  92 words on the page,   7 folded; 0 steps, 2 chips
+  cityPeople 111 words on the page,  33 folded; 0 steps, 2 chips
   cityKeys   123 words on the page,   0 folded; 0 steps, 0 chips
   goal        85 words on the page,  45 folded; 4 steps, 1 chips, 1 lessons
   routine    120 words on the page,   0 folded; 4 steps, 0 chips, schedule, 2 lessons

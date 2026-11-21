@@ -7,6 +7,8 @@ import type { City, Stack } from './City';
 import { noise } from './dead';
 import { addLight } from './light';
 import { landing } from './ranged';
+import { skillUp } from './skills';
+import { SKILL, SKILL_POINTS } from '../content/alive';
 
 /**
  * Crafting that grows (C5 batch 4, 2.69), a part of the city's simulation: manuals read (their recipes learnt), what's worn (armour
@@ -151,6 +153,7 @@ export function repairItem(c: City, slot: number) {
   if (cost.some(([id, n]) => c.count(cityItemNumber(id)) < n)) return void c.events.push({ type: 'cantMake', why: 'parts' });
   for (const [id, n] of cost) c.spend(cityItemNumber(id), n);
   st[1] = Math.min(def.wear, st[1] + Math.ceil((def.wear * REPAIR.share) / 100));
+  skillUp(c, SKILL.HANDY, SKILL_POINTS.mend);
   c.events.push({ type: 'mended', item: st[0] });
 }
 export const repairCostOf = (kind: string) => (kind === 'armour' ? REPAIR.armour : REPAIR.weapon);

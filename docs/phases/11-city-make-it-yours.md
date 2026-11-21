@@ -171,6 +171,12 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 - **The story**: survivors' errands ask for things made or built (the mechanic wants a rain barrel);
   their swaps sell manuals and seeds; Dispatch remarks on the base ("I hear hammering. Good.").
 
+- **As built (2.71):** skills, six kinds of happening, the dog, hens and the omelette, the survivors' third errands and fourth
+  swaps, Dispatch's remarks, Holdout (the rules: `decisions/city-c5.md`'s rows). Claude's picks: everything in a city begun from
+  2.71 only (`state.rev` 7); a block on fire left out of the happenings (fire is the molotov's and the Rush's); the stash a note in
+  the journal, not a note found; the dog drawn with the prisons' retriever, never hurt, never fighting; the coop a piece of its own;
+  Holdout's score the nights held and the Rushes, a fall ending it.
+
 ### Before → after
 
 | | 2.65.1 | After the stage |
@@ -198,5 +204,5 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 | 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | released with 2.69.0 |
 | 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | released with 2.69.0 |
 | 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | 2.69.0 | released |
-| 5 | Thirst, states, cooking, garden, rain barrel, fishing, hens, weather | 2.70.0 | built, merged, not released |
-| 6 | Events, skills, Holdout, the dog | | |
+| 5 | Thirst, states, cooking, garden, rain barrel, fishing, weather (hens: batch 6) | 2.70.0 | built, merged, not released |
+| 6 | Events, skills, Holdout, the dog, hens | 2.71.0 | built, not merged |

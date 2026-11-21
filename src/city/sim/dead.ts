@@ -6,6 +6,9 @@ import { RUSH, TRAP, BASE_SIEGE } from '../content/rush';
 import { rushFollows, rushMinute } from './rush';
 import { armourBite, hiddenBy, inSmoke } from './gear';
 import { blowShare, fogSight, rainingNow } from './survival';
+import { blowEnergy, skillUp, wearSpared } from './skills';
+import { holdoutMore } from './holdout';
+import { SKILL, SKILL_POINTS } from '../content/alive';
 import { RAIN_HEARING } from '../content/survival';
 import { lineOfSight } from '../../sim/ai/sight';
 import { DIR_X, DIR_Z } from '../../sim/command';
@@ -94,7 +97,9 @@ export function quota(c: City): { indoors: number; streets: number } {
       DEAD.nightBase +
       DEAD.nightPerDanger * dg +
       Math.min(DEAD.nightMost, DEAD.nightPerNight * Math.max(0, night - 1)) +
-      (set ? STORY.extra : 0);
+      (set ? STORY.extra : 0) +
+      // (2.71: Holdout's nights, worse each time.)
+      holdoutMore(c, night);
     return { indoors: indoorsOf(c, Math.floor(all / 4)), streets: all - Math.floor(all / 4) };
   }
   return {
@@ -188,6 +193,13 @@ function put(c: City, from: readonly number[], mode: number, up = false): boolea
     return true;
   }
   return false;
+}
+
+/** 2.71: so many more put down on tiles of `from` (a happening's: round a crate, in a stranger's building, a horde). How many were. */
+export function putSome(c: City, from: readonly number[], mode: number, n: number): number {
+  let put_ = 0;
+  for (let k = 0; k < n; k++) if (put(c, from, mode)) put_++;
+  return put_;
 }
 
 /** 2.65: the dusk the night's dead came at last: its day (0, before the first). */
@@ -348,7 +360,8 @@ export function strike(c: City) {
   }
   s.swung = s.step;
   // (2.70: rested, a blow costs half.)
-  s.energy = Math.max(0, s.energy - Math.trunc((BLOW.energy * blowShare(c)) / 1000));
+  // (2.71: a Fighter's level, less.)
+  s.energy = Math.max(0, s.energy - Math.trunc((Math.trunc((BLOW.energy * blowShare(c)) / 1000) * blowEnergy(c)) / 1000));
   noise(c, c.tile, BLOW.noise);
   if (best < 0) return void c.events.push({ type: 'swing', hit: false, dead: false });
   // (One of the dead struck: what was being broken is left.)
@@ -363,7 +376,7 @@ export function strike(c: City) {
   // (2.61: one lying knocked down is finished by any blow.)
   if (isDown(z)) {
     c.events.push({ type: 'swing', hit: true, dead: true, x: z.body.x, z: z.body.z, left: 0 });
-    c.wearWeapon(arm);
+    if (!wearSpared(c)) c.wearWeapon(arm);
     return void putDown(c, [z]);
   }
   const harm = blowOf(held?.attack ?? 0, unseen, tired);
@@ -382,7 +395,8 @@ export function strike(c: City) {
   z.body.facing = nearestDir(p.x - z.body.x, p.z - z.body.z);
   const dead = z.hp <= 0 && !down;
   c.events.push({ type: 'swing', hit: true, dead, x: z.body.x, z: z.body.z, unseen, left: Math.max(0, z.hp) / K.health, down });
-  c.wearWeapon(arm);
+  // (2.71: a Fighter's level: now and then a blow that doesn't wear it.)
+  if (!wearSpared(c)) c.wearWeapon(arm);
   if (down) {
     // (Followed through: the next blow comes at once, to finish it or to meet the next.)
     s.swung = s.step - BLOW.every + DOWN.follow;
@@ -413,6 +427,8 @@ export function putDown(c: City, list: Zed[]) {
     s.zeds.splice(at, 1);
     s.kills++;
     countDown(c);
+    // (2.71: a Fighter's point; a brute three.)
+    skillUp(c, SKILL.FIGHTER, z.kind === ZKIND.BRUTE ? SKILL_POINTS.brute : SKILL_POINTS.kill);
     c.events.push({ type: 'fell', x: z.body.x, z: z.body.z, facing: z.body.facing, kind: z.kind ?? 0, seed: z.pace, lying: isDown(z) });
     if (z.kind !== ZKIND.BLOATER) continue;
     // (2.61: a wall between stops it.)

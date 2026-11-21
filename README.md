@@ -100,17 +100,20 @@ on its side, in a city the army walled in and left. **Find food, find out what h
 
 The city is new every time: nine districts, each its own map, joined by checkpoints in the army's fences.
 Search houses, shops and the cars left in the street (some still have their alarms). Eat, sleep, make
-weapons, bandages and meals (thirty-nine recipes, twenty of them from manuals found in the city). Keep from
+weapons, bandages and meals (forty recipes, twenty-one of them from manuals found in the city). Keep from
 thirst through rain, fog, heat and storms, grow vegetables, catch rain in a barrel and fish the park's pond. Break
 furniture, cars and inner walls for planks, scrap and wire, and build a base with a hammer: walls, a door,
 a bed, a campfire, a workshop, and six traps before it. Every third night is the Rush, four waves coming
 for you wherever you are. The dead keep to the dark indoors by day and come out everywhere at night:
 runners, brutes, screamers and bloaters on the later nights. Fight them with a bat, a machete or a
 crossbow, burn them, blind them with smoke, draw them off with a noisemaker, wear armour against their
-bites, bar a house's doors to sleep, keep a fire lit.
+bites, bar a house's doors to sleep, keep a fire lit. Each day brings something to go for (a supply drop, a cry
+for help, a horde on the move, a crashed army truck, a trader at the market, a stash), skills grow with what you do,
+a stray in the park follows you once fed, and hens lay in a coop you build.
 A voice on a radio and your journal lead through five acts to three ways out (a helicopter, a boat or the
 metro tunnel), each with a last night of its own. Four survivors have errands, swaps and recipes to
-teach. Play as Survivor, or as Hardcore with one life.
+teach. Play as Survivor, as Hardcore with one life, or Holdout: no story, no way out, the nights worse each time,
+and your score the nights you held.
 
 <table>
   <tr>
@@ -232,7 +235,7 @@ Pages. A release: build and `npm run check` pass → commit → `npm version min
 - **Content is data** (`src/content/`). Each prison is an ASCII map plus its zones, cells, props, guards and
   escape routes. `maptest` checks every map: every floor reachable, the prison closed, props on floor, zones
   on every floor tile.
-- **Tested by bots.** 107 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
+- **Tested by bots.** 108 test scripts (`scripts/*test*.ts`) run headless against golden snapshots in `scripts/snapshots/`.
   Escape bots play every way out of every prison, and lesson bots play every tutorial lesson. Other tests
   cover the routine, guards, heat, combat, the economy, every free-time game, the i18n tables and the help
   pages.

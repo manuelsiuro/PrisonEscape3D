@@ -189,7 +189,8 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
   blow, their looks), `citylastnightstest` (2.65: fair last nights, the weapon for the one struck), `citysalvagetest` (2.66:
   breaking things), `citybuildtest` (2.67: building a base), `cityrushtest` (2.68: the Rush, traps, a base left, a bot
   holding a Rush), `citycrafttest` (2.69: manuals, the workshop, mending, armour, bags, the tricks), `cityneedstest` (2.70: thirst, the
-  states, the weather, water, the garden, fishing); their bots are in
+  states, the weather, water, the garden, fishing), `cityalivetest` (2.71: skills, the happenings, the dog, hens, Holdout and a bot
+  holding it); their bots are in
   `citybots.ts`.
 - **Speech** (`chattertest`, `gossiptest`): the phrase banks in both languages, the director
   over days of play, every piece of gossip checked against the running game.
@@ -217,14 +218,15 @@ feel) and the known limits.
 **Status (2026-11-20): v2.69.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
-45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 90 help topics,
-6,530 text keys in English and French, 107 test scripts. A second mode, City Escape, built in four
+45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 94 help topics,
+6,662 text keys in English and French, 108 test scripts. A second mode, City Escape, built in four
 stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked at its finish was built from
 2.50 to 2.56 (the landmarks' models, its music, light and fire, dark interiors, cars, thrown and shot weapons, the
 metro's tunnel), and its full review's findings from 2.57 to 2.60 (a town's own look, chained buildings and fences cut,
 a sleeper's door, the endings re-tuned, checkpoints, clothes, the fight and three more kinds of the dead). Stage C5, the
 testers' asks (`phases/11-city-make-it-yours.md`): breaking, building a base, the Rush and traps, crafting that grows
-(2.66 to 2.69); two batches to come.
+(2.66 to 2.69); survival with weight (2.70, merged); a city that doesn't wait (2.71: skills, the day's happenings, the dog, hens,
+Holdout; built on its branch).
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).

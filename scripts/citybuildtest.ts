@@ -66,6 +66,8 @@ const run = (c: City, steps: number): CityEvent[] => {
 function buildAt(c: City, kind: number, tile: number, but: ReadonlySet<number> = new Set()): number {
   const from = around(tile).find((i) => !c.grid[i] && !c.zedGrid[i] && !but.has(i) && !c.pieceAt[i] && !c.carAt[i]);
   if (from === undefined) return -1;
+  // (2.71: a Handy player's level would make it quicker and cheaper: measured at the first.)
+  c.state.skills = [0, 0, 0, 0];
   stand(c, from, tile);
   c.step(command(0, COP.BUILD, kind));
   if (c.events.some((e) => e.type === 'cantBuild')) return -1;
@@ -73,14 +75,14 @@ function buildAt(c: City, kind: number, tile: number, but: ReadonlySet<number> =
   for (; steps < 400 && c.state.search; steps++) c.step(0);
   return c.pieceAt[tile] === kind + 1 ? steps - 1 : -1;
 }
-/** An open square of street or floor (5 × 5) in the district, every tile buildable, clear of the survivors and the checkpoints. */
+/** An open square of street or floor (5 × 5, and a row more below it: 2.71) in the district, every tile buildable, clear of the survivors and the checkpoints. */
 function openSquare(c: City): number {
   stock(c);
   for (let z = 4; z < W - 4; z++)
     for (let x = 4; x < W - 4; x++) {
       const mid = z * W + x;
       let ok = true;
-      for (let dz = -2; dz <= 2 && ok; dz++)
+      for (let dz = -2; dz <= 3 && ok; dz++)
         for (let dx = -2; dx <= 2 && ok; dx++) {
           const t = mid + dz * W + dx;
           if (c.grid[t] || c.zedGrid[t] || c.carAt[t] || c.pieceAt[t]) ok = false;
@@ -137,6 +139,8 @@ const zed = (c: City, tile: number, kind?: number): Zed => {
     -W + 1,
     W - 1,
     W + 1,
+    // (2.71: the coop, in the row below.)
+    3 * W,
   ].map((d) => mid + d);
   PIECES.forEach((def, kind) => {
     const t = tiles[kind];

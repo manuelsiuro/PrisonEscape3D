@@ -14,6 +14,8 @@ export interface CityRecord {
   wins: [number, number, number];
   best: number;
   feats: Feat[];
+  /** 2.71: Holdout's most nights held (0: never played; optional, a record from before has none). */
+  holdout?: number;
 }
 
 /** What a city left behind says of how it went. */
@@ -37,7 +39,8 @@ export function readRecord(): CityRecord {
   if (!r || r.v !== 1 || !Array.isArray(r.wins) || r.wins.length !== 3 || !r.wins.every((n) => Number.isInteger(n) && n >= 0))
     return fresh();
   if (!Number.isInteger(r.best) || !Array.isArray(r.feats)) return fresh();
-  return { v: 1, wins: [r.wins[0], r.wins[1], r.wins[2]], best: r.best, feats: FEATS.filter((f) => r.feats.includes(f)) };
+  const holdout = Number.isInteger(r.holdout) && (r.holdout as number) > 0 ? (r.holdout as number) : 0;
+  return { v: 1, wins: [r.wins[0], r.wins[1], r.wins[2]], best: r.best, feats: FEATS.filter((f) => r.feats.includes(f)), holdout };
 }
 
 /** The record with a city left added: what it becomes, and the feats that are new. Pure. */
@@ -62,9 +65,19 @@ export function withRun(rec: CityRecord, run: Run): { record: CityRecord; fresh:
       wins,
       best: rec.best ? Math.min(rec.best, run.day) : run.day,
       feats: FEATS.filter((f) => rec.feats.includes(f) || had.includes(f)),
+      holdout: rec.holdout ?? 0,
     },
     fresh: news,
   };
+}
+
+/** 2.71: a Holdout ended after so many nights: the best kept, and whether this one is it. */
+export function recordHoldout(nights: number): { best: number; fresh: boolean } {
+  const rec = readRecord();
+  const was = rec.holdout ?? 0;
+  const fresh = nights > was && nights > 0;
+  if (fresh) writeJSON(KEYS.cityRecord, { ...rec, holdout: nights });
+  return { best: Math.max(was, nights), fresh };
 }
 
 /** A city left: the record written, the new feats told. */

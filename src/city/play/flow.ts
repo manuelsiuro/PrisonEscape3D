@@ -35,7 +35,7 @@ export async function cityFlow(): Promise<void> {
       ? 'new'
       : saved
         ? await showCityMenu(
-            `${saved.name} · ${t('city.hud.day', { n: saved.day })} · ${hhmm(saved.minute)} · ${t(saved.mode === MODE.HARDCORE ? 'city.mode.hardcore' : 'city.mode.survivor')}`,
+            `${saved.name} · ${t('city.hud.day', { n: saved.day })} · ${hhmm(saved.minute)} · ${t(saved.mode === MODE.HARDCORE ? 'city.mode.hardcore' : saved.mode === MODE.HOLDOUT ? 'city.mode.holdout' : 'city.mode.survivor')}`,
             click,
           )
         : 'new';

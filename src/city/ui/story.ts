@@ -26,6 +26,10 @@ export function objectiveText(c: City, o: Objective): string {
   if (o.id === 'key') return t('city.obj.key', { where: plan.names[P.people[0].district] });
   if (o.id.startsWith('scout')) return t(`city.obj.${o.id}` as Key, { where: plan.names[P.wayDistrict[Number(o.id.slice(5)) - 1]] });
   if (o.id === 'hold1' || o.id === 'hold3') return t(`city.obj.${o.id}` as Key, { n: o.left ?? 0 });
+  // (2.71: Holdout's night, and the next Rush.)
+  if (o.id === 'holdNight') return t('city.obj.holdNight', { n: o.n ?? 1 });
+  if (o.id === 'holdRush')
+    return (o.n ?? 0) > 1 ? t('city.obj.holdRush', { n: o.n ?? 0 }) : t(o.n === 1 ? 'city.obj.holdRush1' : 'city.obj.holdRush0');
   return t(`city.obj.${o.id}` as Key);
 }
 
