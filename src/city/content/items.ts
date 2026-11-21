@@ -242,6 +242,10 @@ export const CITY_ITEMS: readonly CityItem[] = [
   { id: 'manual_garden', kind: 'manual', stack: 1, shape: 'book', color: 0x4a8a3a, accent: 0xf2e6c8, manual: 3 },
   { id: 'manual_fishing', kind: 'manual', stack: 1, shape: 'book', color: 0x2a6a8a, accent: 0xf2e6c8, manual: 4 },
   { id: 'manual_cooking', kind: 'manual', stack: 1, shape: 'book', color: 0xb5673a, accent: 0xf2e6c8, manual: 5 },
+  // 2.71 (C5 batch 6): the hens' eggs, and what's made of them; a hen carried to a coop.
+  food('egg', 'henEgg', 0xf2ead8, 8, { health: 1 }, 0xd8c8a8),
+  { ...food('omelette', 'plate', 0xf2c84a, 45, { health: 4, energy: 6 }, 0x6aa84a), mood: 'wellFed' },
+  { id: 'hen', kind: 'material', stack: 1, shape: 'hen', color: 0xc8742a, accent: 0xd23a3a },
 ];
 
 /** 2.69: the manuals, by their place: what each is about (its recipes name it). */

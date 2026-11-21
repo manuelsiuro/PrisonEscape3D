@@ -70,7 +70,8 @@ the story to a way out). The story's places are `city.story` (`things`, `notes`,
 now `objectives(city)` (`city/sim/story.ts`); the survivors are `city.story.people` (`COP.ACT` beside one, `COP.TRADE` with `who * 4 + swap`); a test puts the player in another district with the private
 `city.enter(d)` and a new `state.player` (in the browser, `window.__cityStage()` then puts the district up). The metro's tunnel (2.56) is place 9
 (`TUNNEL`): `city.descend()` puts the player at the foot of its stairs, `city.tunnel` has its `start`, `end` and `way`. What burns is
-`state.lights` (2.52) and `state.fires` (2.55), a car's alarm `state.alarm` (2.54); `city.dim` is the tiles dark by day (2.53). The help's twenty city pictures are staged by
+`state.lights` (2.52) and `state.fires` (2.55), a car's alarm `state.alarm` (2.54); `city.dim` is the tiles dark by day (2.53). Since 2.71: `state.skills` (points), `state.happen` (the day's happenings, `sim/happen.ts`'s `planDay(city, day)` plans one),
+`state.dog`, and `new City(seed, MODE.HOLDOUT)`; a scene that wants none of them gets them emptied by `stage`. The help's twenty-four city pictures are staged by
 `scripts/dev/cityshot.ts` (`stage('cityDead')` in a city open at 1040 × 480, the page's screenshot, then
 `cwebp -q 80 -resize 1040 480`).
 `stage` empties the pockets and puts the bus's orange back on (the pictures are of the first days); a scene on a street

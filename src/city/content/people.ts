@@ -8,9 +8,10 @@ import type { Thing } from './story';
  * and trades. Append only: saves store a survivor's place in the list.
  */
 export interface Errand {
-  /** Things to bring: [item id, how many]; or the dead to put down since it was asked. */
+  /** Things to bring: [item id, how many]; or the dead to put down since it was asked; 2.71: or a piece built (its id), anywhere. */
   bring?: readonly [string, number];
   kills?: number;
+  build?: string;
   /** What's handed over for it: things, and (the fence) the police armoury's key. */
   gives: ReadonlyArray<readonly [string, number]>;
   key?: true;
@@ -23,6 +24,8 @@ export interface Person {
   errands: readonly [Errand, Errand];
   /** Swaps, as often as wanted: [given: item, n], [got: item, n]. */
   trades: ReadonlyArray<readonly [readonly [string, number], readonly [string, number]]>;
+  /** 2.71, in a city begun from then (`state.rev` 7): a third errand (something made or built) and a fourth swap. */
+  later: { errand: Errand; trade: readonly [readonly [string, number], readonly [string, number]] };
 }
 
 export const PEOPLE: readonly Person[] = [
@@ -54,6 +57,19 @@ export const PEOPLE: readonly Person[] = [
         ['battery', 1],
       ],
     ],
+    later: {
+      errand: {
+        bring: ['noisemaker', 2],
+        gives: [
+          ['satchel', 1],
+          ['bolt', 6],
+        ],
+      },
+      trade: [
+        ['scrap', 4],
+        ['manual_tricks', 1],
+      ],
+    },
   },
   {
     id: 'nurse',
@@ -76,6 +92,13 @@ export const PEOPLE: readonly Person[] = [
         ['bandage', 1],
       ],
     ],
+    later: {
+      errand: { bring: ['poultice', 2], gives: [['medkit', 2]] },
+      trade: [
+        ['herbs', 3],
+        ['poultice', 1],
+      ],
+    },
   },
   {
     id: 'mechanic',
@@ -110,6 +133,19 @@ export const PEOPLE: readonly Person[] = [
         ['fuel', 1],
       ],
     ],
+    later: {
+      errand: {
+        build: 'rainBarrel',
+        gives: [
+          ['scrap_armour', 1],
+          ['wire', 2],
+        ],
+      },
+      trade: [
+        ['plank', 4],
+        ['manual_weapons', 1],
+      ],
+    },
   },
   {
     id: 'ranger',
@@ -138,6 +174,19 @@ export const PEOPLE: readonly Person[] = [
         ['dried', 1],
       ],
     ],
+    later: {
+      errand: {
+        bring: ['jerky', 2],
+        gives: [
+          ['hen', 2],
+          ['seeds', 3],
+        ],
+      },
+      trade: [
+        ['seeds', 3],
+        ['hen', 1],
+      ],
+    },
   },
 ];
 

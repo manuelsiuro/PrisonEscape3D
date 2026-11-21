@@ -20,6 +20,7 @@
   --city-water-72: #5ab8d8;
   --city-you-65: #ff5a4a;
   --city-you-65-rgb: 255, 90, 74;
+  --city-happen-74: #ff9a3a;
 }
 
 /* Where the player is, and the clock. */
@@ -144,9 +145,34 @@
 
 .city-modes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
   margin: 12px 0;
+}
+
+/* (2.71: three ways to play, side by side on a wide card; one under another, as rows, on a phone upright.) */
+.city-new:has(.city-modes) {
+  width: min(94vw, 660px);
+}
+
+@media (max-width: 560px) {
+  .city-modes {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .city-modes .city-mode {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    column-gap: 10px;
+    padding: 8px 12px;
+    text-align: left;
+  }
+
+  .city-modes .city-mode svg {
+    grid-row: span 2;
+    align-self: center;
+  }
 }
 
 .city-mode {
@@ -1115,6 +1141,13 @@ body.reduced-motion .city-bitten.low.on {
   transform: rotate(45deg) scale(0.8);
 }
 
+/* 2.71: the day's happenings on the map. */
+.city-map-legend .lg-happen {
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--city-happen-74);
+}
+
 /* The journal. */
 .city-journal {
   width: min(94vw, 620px);
@@ -1700,4 +1733,73 @@ body.reduced-motion .city-bitten.low.on {
   .city-make {
     max-height: min(52vh, calc(100vh - 510px));
   }
+}
+
+/* ------------------------------------------------------------ 2.71: the journal's day and skills */
+.cj-today li svg {
+  color: var(--city-happen-74);
+}
+
+.cj-today li i {
+  font-style: normal;
+  color: var(--city-happen-74);
+}
+
+.cj-today li small {
+  display: block;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+.cj-today li.done,
+.cj-today li.missed {
+  opacity: 0.55;
+}
+
+.cj-skills {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cj-skill {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.cj-skill b {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cj-skill b small {
+  color: var(--city-amber-83);
+}
+
+.cj-skill > small {
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.75;
+}
+
+.cj-bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(var(--city-amber-83-rgb), 0.18);
+}
+
+.cj-bar::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--p);
+  border-radius: 3px;
+  background: var(--city-amber-83);
+  content: '';
 }

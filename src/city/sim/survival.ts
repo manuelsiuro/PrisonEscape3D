@@ -26,6 +26,9 @@ import type { City } from './City';
 import { noise } from './dead';
 import { BAG } from './gear';
 import { atFire } from './light';
+import { moodMinutes, skillUp } from './skills';
+import { remark } from './story';
+import { COOP, SKILL, SKILL_POINTS } from '../content/alive';
 
 /**
  * Survival with weight (C5 batch 5, 2.70), a part of the city's simulation, in a city begun from then (`state.rev` 6): thirst, the
@@ -41,6 +44,8 @@ const BOTTLE = cityItemNumber('bottle');
 const FISH = cityItemNumber('fish');
 const VEG = cityItemNumber('veg');
 const HERBS = cityItemNumber('herbs');
+const HEN = cityItemNumber('hen');
+const EGG = cityItemNumber('egg');
 
 /** The save's part: thirst (0–FULL), and the step each state lasts till (by MOOD's place; 0: none). */
 export const freshNeeds = () => ({ thirst: FULL, moods: [0, 0, 0, 0, 0] as number[], sleptAt: 0 });
@@ -61,7 +66,8 @@ export const moodOn = (c: City, k: number) => needsOn(c) && c.state.moods[k] > c
 export function setMood(c: City, k: number) {
   if (!needsOn(c)) return;
   const was = moodOn(c, k);
-  c.state.moods[k] = c.state.step + MOOD_TIME[MOODS[k]] * STEPS_PER_MINUTE;
+  // (2.71: a Survivalist's good states last longer, queasy less.)
+  c.state.moods[k] = c.state.step + moodMinutes(c, MOODS[k], MOOD_TIME[MOODS[k]]) * STEPS_PER_MINUTE;
   if (!was) c.events.push({ type: 'mood', mood: k, on: true });
 }
 export function clearMood(c: City, k: number) {
@@ -172,11 +178,14 @@ export function ate(c: City, item: number) {
   if (!def || !needsOn(c)) return;
   if (def.settles) clearMood(c, MOOD.QUEASY);
   if (def.mood) setMood(c, MOOD[def.mood === 'wellFed' ? 'WELL_FED' : def.mood === 'refreshed' ? 'REFRESHED' : 'QUEASY']);
+  if (def.mood === 'wellFed') skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.meal);
 }
 
 /** Woken in the morning after a night in a bed (City's wake): rested. */
 export const wokeRested = (c: City) => {
-  if (c.state.step - c.state.sleptAt >= REST_STEPS) setMood(c, MOOD.RESTED);
+  if (c.state.step - c.state.sleptAt < REST_STEPS) return;
+  setMood(c, MOOD.RESTED);
+  skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.rest);
 };
 /** A night's rest: six hours slept. */
 const REST_STEPS = 6 * 60 * STEPS_PER_MINUTE;
@@ -221,6 +230,7 @@ export function castDone(c: City, tile: number) {
   const sea = c.district.rows[Math.floor(tile / MAP_W)][tile % MAP_W] === '~' && c.plan.kinds[s.district] === 'docks';
   const caught = (c.salt(40_000 + s.step) >>> 0) % FISHING.oneIn === 0 ? (sea ? 2 : 1) : 0;
   if (caught) c.hand(FISH, caught);
+  if (caught) skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.fish);
   c.wearItem(ROD);
   c.events.push({ type: 'fished', n: caught });
 }
@@ -254,10 +264,23 @@ export function barrel(c: City, p: Built, write = true): number {
   if (write) p[4] = today * 16 + units;
   return units;
 }
+/** 2.71: a coop's hens, its eggs waiting, the day they were last counted: [hens, eggs, last]. */
+export const coopOf = (p: Built) => [Math.floor(p[4] / 1_000_000), Math.floor(p[4] / 10_000) % 100, p[4] % 10_000] as const;
+const setCoop = (p: Built, hens: number, eggs: number, last: number) => (p[4] = hens * 1_000_000 + eggs * 10_000 + Math.max(0, last));
+/** 2.71: a coop brought up to date: an egg a day for each hen (counted at dawn), so many kept at most. */
+export function coop(c: City, p: Built, write = true): { hens: number; eggs: number } {
+  const [hens, was, last] = coopOf(p);
+  const today = weatherDay(c);
+  const eggs = Math.min(COOP.eggs, was + hens * Math.max(0, today - last));
+  if (write) setCoop(p, hens, eggs, today);
+  return { hens, eggs };
+}
+
 /** A piece just built: a barrel's rain counted from today, a planter empty. */
 export function newGrowing(c: City, p: Built) {
   const def = pieceOf(p[1]);
   if (def?.grows === 'barrel') p[4] = (weatherDay(c) - 1) * 16;
+  if (def?.grows === 'coop') setCoop(p, 0, 0, weatherDay(c));
 }
 
 /**
@@ -278,6 +301,7 @@ export function growingOp(c: City, p: Built, what: number) {
       // (Planted, not watered: the rain of today counts from now.)
       setGarden(p, 0, weatherDay(c) - 1);
       c.piecesRev++;
+      skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.plant);
       return void c.events.push({ type: 'grow', what: 'planted', tile: p[0] });
     }
     if (what === 4) {
@@ -297,8 +321,31 @@ export function growingOp(c: City, p: Built, what: number) {
       c.hand(VEG, GARDEN.veg + ((c.salt(50_000 + p[0] + s.step) >>> 0) % 2));
       c.hand(HERBS, GARDEN.herbs);
       c.hand(SEEDS, 1);
+      skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.harvest);
+      remark(c, 'garden');
       return void c.events.push({ type: 'grow', what: 'harvested', tile: p[0] });
     }
+  }
+  // (2.71: a coop: a hen put in from the pockets (it lays from the next dawn), the eggs taken.)
+  if (def?.grows === 'coop') {
+    const { hens, eggs } = coop(c, p);
+    if (what === 8) {
+      if (hens >= COOP.hens) return void c.events.push({ type: 'refused', why: 'coopFull' });
+      if (!c.count(HEN)) return void c.events.push({ type: 'refused', why: 'noHen' });
+      c.spend(HEN, 1);
+      setCoop(p, hens + 1, eggs, weatherDay(c));
+      c.piecesRev++;
+      return void c.events.push({ type: 'grow', what: 'hen', tile: p[0] });
+    }
+    if (what === 9) {
+      if (!eggs) return void c.events.push({ type: 'refused', why: 'noEggs' });
+      setCoop(p, hens, 0, weatherDay(c));
+      c.hand(EGG, eggs);
+      c.piecesRev++;
+      skillUp(c, SKILL.SURVIVALIST, SKILL_POINTS.eggs);
+      return void c.events.push({ type: 'grow', what: 'eggs', tile: p[0] });
+    }
+    return;
   }
   if (def?.grows === 'barrel') {
     const units = barrel(c, p);
@@ -334,6 +381,11 @@ export function growingHere(c: City): Array<[number, number]> {
       const g = gardenOf(p);
       out.push([p[0], g ? Math.min(4, g.grown + 1) : 0]);
     } else if (def?.grows === 'barrel') out.push([p[0], p[4] % 16]);
+    // (2.71: a coop: its hens, and whether eggs wait in it, as of now: read without writing.)
+    else if (def?.grows === 'coop') {
+      const k = coop(c, p, false);
+      out.push([p[0], k.hens * 10 + Math.min(9, k.eggs)]);
+    }
   }
   return out;
 }

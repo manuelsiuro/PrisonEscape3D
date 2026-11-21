@@ -10,6 +10,8 @@ import { carTiles, isWreck } from './cars';
 import type { City, Stack } from './City';
 import { noise } from './dead';
 import { notePlaces } from './story';
+import { skillUp } from './skills';
+import { SKILL, SKILL_POINTS } from '../content/alive';
 
 /**
  * Breaking things (C5, 2.66), a part of the city's simulation: furniture, cars and wrecks, and with a sledgehammer the inner walls
@@ -297,6 +299,7 @@ function finish(c: City, key: string, sal: Salvage | null, tiles: number[]) {
     c.unprop(Number(what));
   }
   for (const [item, n] of [...inside, ...gives]) c.drop(pile, item, n);
+  skillUp(c, SKILL.SCAVENGER, SKILL_POINTS.salvage);
   c.events.push({ type: 'wrecked', what: car ? 'car' : 'prop', tile: pile, prop: car ? null : c.district.props[Number(what)].kind });
   c.openPile(pile);
 }

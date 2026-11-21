@@ -1,3 +1,4 @@
+import { COOP } from '../content/alive';
 import { t, textStamp, type Key } from '../../i18n';
 import { keyLabel } from '../../i18n/keys';
 import { photos } from '../../render/itemIcons';
@@ -51,6 +52,8 @@ export interface PocketsState {
   breakCan: boolean;
   /** 2.67: the Build panel's pieces, what each lacks ('ok': it can go up); the piece being placed (-1 none) and whether it can go where it would; the open built piece. */
   builds: ReadonlyArray<'ok' | 'hammer' | 'parts' | 'unknown' | 'none'>;
+  /** 2.71: what each piece takes (a Handy player's, less). */
+  buildFrom: ReadonlyArray<ReadonlyArray<readonly [string, number]>>;
   placing: number;
   placeWhy: string;
   piece: PieceCard | null;
@@ -98,6 +101,9 @@ export interface PieceCard {
   planter: number;
   watered: boolean;
   drinks: number;
+  /** 2.71: a coop's hens and eggs (-1: not one). */
+  hens: number;
+  eggs: number;
 }
 
 /** The city's things photographed (by item number; 0 unused), once. */
@@ -261,7 +267,7 @@ export class CityPockets {
       else if (el.dataset.c === 'feed') this.onOp(COP.BUILD, PIECE_OPS + 2);
       else if (el.dataset.c === 'bagOff') this.onOp(COP.USE, GEAR_OPS + 1);
       // (2.70: a planter's and a barrel's buttons.)
-      else if (/^g[3-7]$/.test(el.dataset.c ?? '')) this.onOp(COP.BUILD, PIECE_OPS + Number(el.dataset.c!.slice(1)));
+      else if (/^g[3-9]$/.test(el.dataset.c ?? '')) this.onOp(COP.BUILD, PIECE_OPS + Number(el.dataset.c!.slice(1)));
       else this.onOp(COP.CLOSE);
     });
     this.card.addEventListener('click', (e) => {
@@ -409,7 +415,7 @@ export class CityPockets {
             ? `<button class="big-btn ghost" data-c="mend" title="${REPAIR[def.kind === 'armour' ? 'armour' : 'weapon'].map(([id, k]) => `${k} ${t(`city.item.${id}` as Key)}`).join(', ')}">${icon('wrench', 16)}${t('city.thing.mend')}</button>`
             : '';
         this.card.innerHTML = `<div class="ct-head"><i class="slot filled"><img src="${iconOf(item)}" alt=""></i><div><b>${counted(item, n)}</b><small>${sub}</small></div></div>
-          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(useIcon, 16)}${t(verb)}</button>` : ''}${mend}${s.box && (!s.piece || s.piece.chest) ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
+          <div class="ct-actions">${line ? `<button class="big-btn primary" data-c="use">${icon(useIcon, 16)}${t(verb)}</button>` : ''}${mend}${s.box && (!s.piece || s.piece.chest) && s.box !== 'city.box.drop' && s.box !== 'city.box.truck' ? `<button class="big-btn ghost" data-c="store">${icon('box', 16)}${t('city.thing.store')}</button>` : ''}<button class="big-btn ghost" data-c="drop">${icon('down', 16)}${t('city.thing.drop')}</button></div>`;
       }
     }
     const box = `${s.box}|${JSON.stringify(s.slots)}|${s.sleepable && s.rest}|${s.sleepable}|${JSON.stringify(s.breaks)}|${s.breakCan}|${JSON.stringify(s.piece)}|${textStamp()}`;
@@ -434,10 +440,10 @@ export class CityPockets {
         const pc = s.piece;
         const cost = pc?.repair.map(([item, n]) => counted(item, n)).join(', ') ?? '';
         const pieceNote = pc
-          ? `<p class="card-note city-piece">${icon('shield', 14)} ${t('city.piece.health', { n: pc.hp, of: pc.max })}${pc.fire >= 0 ? ` · ${pc.fire > 0 ? t('city.piece.burns', { h: Math.max(1, Math.round(pc.fire / 60)) }) : t('city.piece.out')}` : ''}${pc.bolts >= 0 ? ` · ${t('city.piece.bolts', { n: pc.bolts, of: TRAP.sentryMost })}` : ''}${pc.planter >= 0 ? ` · ${t(pc.planter === 0 ? 'city.piece.empty' : pc.planter >= 4 ? 'city.piece.ripe' : pc.watered ? 'city.piece.growingWet' : 'city.piece.growing', { n: pc.planter - 1, of: 3 })}` : ''}${pc.drinks >= 0 ? ` · ${t('city.piece.drinks', { n: pc.drinks, of: 8 })}` : ''}${pc.canRepair !== 'full' ? ` · ${t('city.piece.repairCost', { what: cost })}` : ''}</p>`
+          ? `<p class="card-note city-piece">${icon('shield', 14)} ${t('city.piece.health', { n: pc.hp, of: pc.max })}${pc.fire >= 0 ? ` · ${pc.fire > 0 ? t('city.piece.burns', { h: Math.max(1, Math.round(pc.fire / 60)) }) : t('city.piece.out')}` : ''}${pc.bolts >= 0 ? ` · ${t('city.piece.bolts', { n: pc.bolts, of: TRAP.sentryMost })}` : ''}${pc.planter >= 0 ? ` · ${t(pc.planter === 0 ? 'city.piece.empty' : pc.planter >= 4 ? 'city.piece.ripe' : pc.watered ? 'city.piece.growingWet' : 'city.piece.growing', { n: pc.planter - 1, of: 3 })}` : ''}${pc.drinks >= 0 ? ` · ${t('city.piece.drinks', { n: pc.drinks, of: 8 })}` : ''}${pc.hens >= 0 ? ` · ${t('city.piece.hens', { n: pc.hens, of: COOP.hens, e: pc.eggs })}` : ''}${pc.canRepair !== 'full' ? ` · ${t('city.piece.repairCost', { what: cost })}` : ''}</p>`
           : '';
         const pieceBtns = pc
-          ? `${pc.fire >= 0 ? `<button class="big-btn" data-c="feed">${icon('flame', 16)}${t(pc.fire > 0 ? 'city.piece.feed' : 'city.piece.light')}</button>` : ''}${pc.bolts >= 0 && pc.bolts < TRAP.sentryMost ? `<button class="big-btn" data-c="feed">${icon('target', 16)}${t('city.piece.load')}</button>` : ''}${pc.planter === 0 ? `<button class="big-btn" data-c="g3">${icon('sprout', 16)}${t('city.piece.plant')}</button>` : ''}${pc.planter > 0 && pc.planter < 4 && !pc.watered ? `<button class="big-btn" data-c="g4">${icon('water', 16)}${t('city.piece.water')}</button>` : ''}${pc.planter >= 4 ? `<button class="big-btn primary" data-c="g5">${icon('hand', 16)}${t('city.piece.harvest')}</button>` : ''}${pc.drinks > 0 ? `<button class="big-btn" data-c="g6">${icon('water', 16)}${t('city.piece.drink')}</button><button class="big-btn ghost" data-c="g7">${icon('water', 16)}${t('city.piece.fill')}</button>` : ''}${pc.canRepair !== 'full' ? `<button class="big-btn ghost" data-c="repair"${pc.canRepair === 'ok' ? '' : ' aria-disabled="true"'}>${icon('wrench', 16)}${t('city.piece.repair')}</button>` : ''}<button class="big-btn ghost" data-c="down">${icon('down', 16)}${t('city.piece.down')}</button>`
+          ? `${pc.fire >= 0 ? `<button class="big-btn" data-c="feed">${icon('flame', 16)}${t(pc.fire > 0 ? 'city.piece.feed' : 'city.piece.light')}</button>` : ''}${pc.bolts >= 0 && pc.bolts < TRAP.sentryMost ? `<button class="big-btn" data-c="feed">${icon('target', 16)}${t('city.piece.load')}</button>` : ''}${pc.planter === 0 ? `<button class="big-btn" data-c="g3">${icon('sprout', 16)}${t('city.piece.plant')}</button>` : ''}${pc.planter > 0 && pc.planter < 4 && !pc.watered ? `<button class="big-btn" data-c="g4">${icon('water', 16)}${t('city.piece.water')}</button>` : ''}${pc.planter >= 4 ? `<button class="big-btn primary" data-c="g5">${icon('hand', 16)}${t('city.piece.harvest')}</button>` : ''}${pc.drinks > 0 ? `<button class="big-btn" data-c="g6">${icon('water', 16)}${t('city.piece.drink')}</button><button class="big-btn ghost" data-c="g7">${icon('water', 16)}${t('city.piece.fill')}</button>` : ''}${pc.eggs > 0 ? `<button class="big-btn primary" data-c="g9">${icon('egg', 16)}${t('city.piece.takeEggs')}</button>` : ''}${pc.hens >= 0 && pc.hens < COOP.hens ? `<button class="big-btn" data-c="g8">${icon('egg', 16)}${t('city.piece.addHen')}</button>` : ''}${pc.canRepair !== 'full' ? `<button class="big-btn ghost" data-c="repair"${pc.canRepair === 'ok' ? '' : ' aria-disabled="true"'}>${icon('wrench', 16)}${t('city.piece.repair')}</button>` : ''}<button class="big-btn ghost" data-c="down">${icon('down', 16)}${t('city.piece.down')}</button>`
           : '';
         // (2.69: the bag on the back: its name and how full; empty, it can be taken off.)
         const bagged = s.box === 'city.box.bag';
@@ -505,7 +511,7 @@ export class CityPockets {
       }
     }
     // 2.67: the Build panel: every piece, what it takes (what's short greyed), the hammer it wants.
-    const bk = `${this.buildOpen}|${s.builds.join()}|${JSON.stringify(s.inv)}|${JSON.stringify(s.bagThings)}|${textStamp()}`;
+    const bk = `${this.buildOpen}|${s.builds.join()}|${JSON.stringify(s.buildFrom)}|${JSON.stringify(s.inv)}|${JSON.stringify(s.bagThings)}|${textStamp()}`;
     if (bk !== this.shownBuild) {
       this.shownBuild = bk;
       this.build.classList.toggle('hidden', !this.buildOpen);
@@ -524,13 +530,14 @@ export class CityPockets {
             // (2.70: from a manual not yet read: a question mark, and where it may lie.)
             if (why === 'unknown' && p.manual !== undefined)
               return `<li><div class="city-recipe cant locked"><i class="slot filled result unknown">?</i><span class="cr-text"><b>${t('city.make.unknown')}</b><small class="lack">${icon('book', 12)} ${t(`city.make.manual.${p.manual}` as Key)}</small></span></div></li>`;
-            const parts = p.from
+            const from = s.buildFrom[k] ?? p.from;
+            const parts = from
               .map(
                 ([id, n]) =>
                   `<i class="slot filled${have(id) < n ? ' short' : ''}" title="${t(`city.item.${id}` as Key)}"><img src="${iconOf(cityItemNumber(id))}" alt="${t(`city.item.${id}` as Key)}">${n > 1 ? `<i class="slot-n">${n}</i>` : ''}</i>`,
               )
               .join('');
-            const short = p.from.filter(([id, n]) => have(id) < n).map(([id]) => t(`city.item.${id}` as Key));
+            const short = from.filter(([id, n]) => have(id) < n).map(([id]) => t(`city.item.${id}` as Key));
             const line =
               why === 'parts' && short.length ? t('city.make.missing', { what: short.join(', ') }) : t(`city.piece.${p.id}.d` as Key);
             return `<li><button class="city-recipe${why === 'ok' ? '' : ' cant'}" data-b="${k}" aria-disabled="${why !== 'ok'}"><i class="slot filled result piece-ic">${icon(PIECE_ICONS[p.id] ?? 'home', 22)}</i><span class="cr-text"><b>${t(`city.piece.${p.id}` as Key)}</b><small class="${why === 'parts' ? 'lack' : ''}">${line}</small></span><span class="cr-parts">${parts}</span></button></li>`;
@@ -546,33 +553,37 @@ export class CityPockets {
       ? ''
       : tg.kind === 'npc'
         ? 'city.act.talk'
-        : tg.kind === 'way'
-          ? `city.act.${s.way}`
-          : tg.kind === 'lock'
+        : tg.kind === 'dog'
+          ? 'city.act.feed'
+          : tg.kind === 'event'
             ? 'city.act.force'
-            : tg.kind === 'pane'
-              ? 'city.act.smash'
-              : tg.kind === 'fence'
-                ? 'city.act.cut'
-                : tg.kind === 'wall'
-                  ? 'city.act.break'
-                  : tg.kind === 'water'
-                    ? s.rod
-                      ? 'city.act.fish'
-                      : 'city.act.drink'
-                    : tg.kind === 'door'
-                      ? s.barred
-                        ? 'city.act.unbar'
-                        : 'city.act.bar'
-                      : s.targetOpen
-                        ? 'city.act.close'
-                        : tg.kind === 'bed'
-                          ? s.rest
-                            ? 'city.act.rest'
-                            : 'city.act.sleep'
-                          : tg.kind === 'pile' || tg.kind === 'piece' || s.searched
-                            ? 'city.act.look'
-                            : 'city.act.search';
+            : tg.kind === 'way'
+              ? `city.act.${s.way}`
+              : tg.kind === 'lock'
+                ? 'city.act.force'
+                : tg.kind === 'pane'
+                  ? 'city.act.smash'
+                  : tg.kind === 'fence'
+                    ? 'city.act.cut'
+                    : tg.kind === 'wall'
+                      ? 'city.act.break'
+                      : tg.kind === 'water'
+                        ? s.rod
+                          ? 'city.act.fish'
+                          : 'city.act.drink'
+                        : tg.kind === 'door'
+                          ? s.barred
+                            ? 'city.act.unbar'
+                            : 'city.act.bar'
+                          : s.targetOpen
+                            ? 'city.act.close'
+                            : tg.kind === 'bed'
+                              ? s.rest
+                                ? 'city.act.rest'
+                                : 'city.act.sleep'
+                              : tg.kind === 'pile' || tg.kind === 'piece' || s.searched
+                                ? 'city.act.look'
+                                : 'city.act.search';
     // (2.67: placing a piece, the button puts it up, or says why it can't go there.)
     const placing = s.placing >= 0;
     const key = placing
@@ -594,32 +605,36 @@ export class CityPockets {
       } else if (tg) {
         const what = t(
           tg.kind === 'npc'
-            ? (`city.person.${s.person}.name` as Key)
-            : tg.kind === 'way'
-              ? s.way === 'up3'
-                ? 'city.box.stairs'
-                : (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
-              : tg.kind === 'door'
-                ? 'city.box.door'
-                : tg.kind === 'lock'
-                  ? 'city.box.lock'
-                  : tg.kind === 'pane'
-                    ? 'city.box.pane'
-                    : tg.kind === 'fence'
-                      ? 'city.box.fence'
-                      : tg.kind === 'wall'
-                        ? 'city.box.wall'
-                        : tg.kind === 'water'
-                          ? 'city.box.water'
-                          : tg.kind === 'piece'
-                            ? (`city.piece.${PIECES[tg.piece ?? 0]?.id ?? 'barricade'}` as Key)
-                            : tg.prop
-                              ? (`city.box.${tg.prop}` as Key)
-                              : 'city.box.pile',
+            ? s.person === 'runner'
+              ? 'city.runner.name'
+              : (`city.person.${s.person}.name` as Key)
+            : tg.kind === 'dog'
+              ? 'city.box.dog'
+              : tg.kind === 'way'
+                ? s.way === 'up3'
+                  ? 'city.box.stairs'
+                  : (`city.box.way${s.way.slice(-1)}${s.way.startsWith('go') ? 'go' : ''}` as Key)
+                : tg.kind === 'door'
+                  ? 'city.box.door'
+                  : tg.kind === 'lock'
+                    ? 'city.box.lock'
+                    : tg.kind === 'pane'
+                      ? 'city.box.pane'
+                      : tg.kind === 'fence'
+                        ? 'city.box.fence'
+                        : tg.kind === 'wall'
+                          ? 'city.box.wall'
+                          : tg.kind === 'water'
+                            ? 'city.box.water'
+                            : tg.kind === 'piece'
+                              ? (`city.piece.${PIECES[tg.piece ?? 0]?.id ?? 'barricade'}` as Key)
+                              : tg.prop
+                                ? (`city.box.${tg.prop}` as Key)
+                                : 'city.box.pile',
         );
         // (2.64: on a keyboard, the key on the button; an open box's button shuts it, and says so by its icon too.)
         const cap = TOUCH ? '' : `<kbd class="city-key">${keyLabel('KeyE')}</kbd>`;
-        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'wall' ? 'hammer' : tg.kind === 'water' ? (s.rod ? 'fish' : 'water') : tg.kind === 'piece' ? 'home' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
+        this.act.innerHTML = `<i class="act-round">${cap}${icon(s.targetOpen ? 'close' : tg.kind === 'bed' ? 'moon' : tg.kind === 'door' ? 'hammer' : tg.kind === 'lock' ? 'lock' : tg.kind === 'pane' ? 'fist' : tg.kind === 'fence' ? 'cutters' : tg.kind === 'wall' ? 'hammer' : tg.kind === 'water' ? (s.rod ? 'fish' : 'water') : tg.kind === 'piece' ? 'home' : tg.kind === 'way' ? 'flag' : tg.kind === 'npc' ? 'chat' : tg.kind === 'dog' ? 'paw' : tg.kind === 'event' ? 'lock' : 'search', 24)}<span></span></i><b class="act-what"></b>`;
         setText(this.act.querySelector('.act-round span')!, t(verb as Key));
         setText(this.act.querySelector('.act-what')!, what);
         this.act.setAttribute('aria-label', `${t(verb as Key)} ${what}`);

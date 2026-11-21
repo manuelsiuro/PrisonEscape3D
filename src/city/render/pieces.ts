@@ -200,6 +200,40 @@ export function pieceParts(kind: number, worn: number, seed: number, stage = 0):
         box(0.3, 0.2, 0.02, w(IRON), 0, 0.38, 0.26),
       );
       break;
+    // 2.71: a coop: a hut on legs with a sloped roof and a ramp, a wire run in front; its hens (`stage` tens) in the run, eggs
+    // (`stage` units) in the nest box's straw.
+    case 'coop': {
+      // (The hut at the back, its roof red so it reads from above; the run in front, open to the sky, where the hens are.)
+      out.push(
+        ...[-0.38, 0.38].flatMap((x) => [-0.4, -0.06].map((z) => box(0.06, 0.2, 0.06, w(WOOD_DARK), x, 0, z))),
+        box(0.84, 0.34, 0.4, w(WOOD), 0, 0.2, -0.23),
+        tilted(0.94, 0.05, 0.5, w(0xa8402e), 0.22, 0, 0.62, -0.23),
+        box(0.14, 0.16, 0.02, 0x2a2018, -0.2, 0.26, -0.02),
+        box(0.22, 0.08, 0.14, 0xd8b85a, 0.24, 0.54, -0.18),
+        // (The run: a low frame of posts and wire, straw on the ground.)
+        box(0.9, 0.02, 0.5, 0xc8a85a, 0, 0, 0.22),
+        ...[-0.45, 0.45].map((x) => box(0.04, 0.34, 0.04, w(WOOD_DARK), x, 0, 0.46)),
+        box(0.94, 0.03, 0.03, w(WOOD_DARK), 0, 0.32, 0.46),
+        box(0.03, 0.03, 0.5, w(WOOD_DARK), -0.45, 0.32, 0.22),
+        box(0.03, 0.03, 0.5, w(WOOD_DARK), 0.45, 0.32, 0.22),
+        box(0.9, 0.22, 0.01, w(IRON), 0, 0.06, 0.47),
+      );
+      const hens = Math.floor(stage / 10);
+      const eggs = stage % 10;
+      for (let k = 0; k < hens; k++) {
+        const x = k ? 0.2 : -0.18;
+        const z = k ? 0.18 : 0.28;
+        out.push(
+          box(0.24, 0.18, 0.3, 0xc8742a, x, 0.02, z),
+          box(0.16, 0.1, 0.12, 0xa85a20, x, 0.16, z - 0.12),
+          box(0.13, 0.13, 0.13, 0xd88a3a, x, 0.16, z + 0.15),
+          box(0.05, 0.07, 0.08, 0xd23a3a, x, 0.29, z + 0.15),
+          box(0.05, 0.03, 0.06, 0xe8b828, x, 0.2, z + 0.24),
+        );
+      }
+      for (let k = 0; k < Math.min(3, eggs); k++) out.push(box(0.06, 0.07, 0.06, 0xf2ead8, 0.18 + k * 0.06, 0.62, -0.18 + (k % 2) * 0.04));
+      break;
+    }
     // 2.68: the traps.
     case 'spikes':
       // Two boards flat on the ground, nails standing up through them in rows.

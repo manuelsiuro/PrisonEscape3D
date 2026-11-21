@@ -97,6 +97,23 @@ import {
   type CutSpot,
 } from './tools';
 import { STORY, type Beat } from '../content/story';
+import { emptyDraws, freshSkills, moreDraws, searchSteps, skillUp, soundSkills } from './skills';
+import {
+  freshHappen,
+  happenAct,
+  happenKeyTiles,
+  happenMinute,
+  happenMoved,
+  happenOpened,
+  happenTarget,
+  here as happenHere,
+  RUNNER,
+  runnerTrade,
+  soundHappen,
+  stashIn,
+} from './happen';
+import { SKILL, SKILL_POINTS } from '../content/alive';
+import { dogAlong, dogTarget, feedDog, freshDog, placeDog, soundDog, stepDog, type Pup } from './dog';
 import {
   castOff,
   choose,
@@ -129,7 +146,7 @@ import {
  */
 
 /** How death is taken, chosen when the city is made. Never renumber: saves store it. */
-export const MODE = { SURVIVOR: 0, HARDCORE: 1 } as const;
+export const MODE = { SURVIVOR: 0, HARDCORE: 1, HOLDOUT: 2 } as const;
 /** The time a city starts at: dawn, the bus on its side. */
 export const START_MINUTE = 6 * 60 + 30;
 /** How far round the player the map fills in (tiles). */
@@ -191,7 +208,7 @@ const TIDE_WAKE = 30;
 /** 2.65: a checkpoint held back during a last night: steps another step on it still crosses, once the stick is let go. */
 const LEAVE_WARN = 200;
 /** Why a sleeper woke (2.65: a rest by day, at dusk; the boat ready, for its tide; `rested` and its early waking gone). */
-export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding' | 'rattle' | 'parched';
+export type Woken = 'morning' | 'dusk' | 'tide' | 'hungry' | 'stirred' | 'attacked' | 'pounding' | 'rattle' | 'parched' | 'barked';
 /** A Survivor who fell wakes at home the next morning with this much health, hunger and energy. */
 const WAKE = { health: 40, hunger: 15_000, energy: 60_000 };
 /** A pile's most slots (what a save takes). */
@@ -218,12 +235,12 @@ const empty = (): Stack => [0, 0];
 
 /** What the action button would do now: search a piece of furniture, look at what lies on the ground, sleep in a bed. */
 export interface Target {
-  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane' | 'wall' | 'piece' | 'water';
+  kind: 'box' | 'pile' | 'bed' | 'door' | 'way' | 'npc' | 'lock' | 'fence' | 'pane' | 'wall' | 'piece' | 'water' | 'event' | 'dog';
   /** The box's key in the state (a piece of furniture: its number; a pile: 'g' + its tile; 2.58: a locked door: 'k' + its tile, a fence: 'f' + its first tile). */
   key: string;
   tile: number;
   /** The furniture it is (2.54: or a car, or a wreck). */
-  prop: PropKind | 'car' | 'wreck' | null;
+  prop: PropKind | 'car' | 'wreck' | 'drop' | 'truck' | null;
   /** 2.67: a built piece's kind (content/build.ts). */
   piece?: number;
 }
@@ -336,6 +353,11 @@ export interface CityState {
   moods: number[];
   /** 2.70: the step the last sleep began (rested from a night of six hours). */
   sleptAt: number;
+  // 2.71, optional on load (sim/skills.ts, sim/happen.ts, sim/dog.ts): the skills' points; the day's happenings as said
+  // ([code, kind, district, tile, done]); the dog ([stage, district, x, z, the day it last dug, fed]).
+  skills: number[];
+  happen: number[][];
+  dog: number[];
 }
 
 /** A city saved: its state, and each district's seen tiles (a bit a tile, base64). */
@@ -406,7 +428,12 @@ export type CityEvent =
         | 'tooThirsty'
         | 'noSeeds'
         | 'noWater'
-        | 'noBottle';
+        | 'noBottle'
+        | 'noDogFood'
+        | 'noHen'
+        | 'noEggs'
+        | 'coopFull'
+        | 'truckCrowbar';
     }
   /** 2.52: a fire, a lantern or a generator lit (LIGHT_KIND) or burnt out; the torch on or off (`spent`: its battery ran down). */
   | { type: 'lit'; kind: number; tile: number }
@@ -426,7 +453,12 @@ export type CityEvent =
   /** 2.65: a step onto a checkpoint held back while the beacon or the generator runs (another, after letting go, crosses). */
   | { type: 'leaving'; way: number }
   /** 2.58: a locked door being forced or a fence being cut (the work begun); a building forced open; a fence cut through (the district is put up again). */
-  | { type: 'forcing'; what: 'lock' | 'fence' | 'pane' }
+  | { type: 'forcing'; what: 'lock' | 'fence' | 'pane' | 'truck' }
+  /**
+   * 2.71: a happening (HAPPENINGS' place, its code): said at dawn, a crate landed, a stranger lost at nightfall, a horde come, a stranger
+   * thanking the player, a crate, a truck or a stash found, the runner's card opened.
+   */
+  | { type: 'happen'; what: 'said' | 'landed' | 'lost' | 'horde' | 'thanks' | 'found' | 'runner'; kind: number; code: number }
   | { type: 'casting' }
   /** 2.66: breaking begun (the work's key); a blow of it (where, on metal or not, what struck: 0 fists); the work done (a piece gone, a car stripped, a wall through: where its pile lies). */
   | { type: 'breaking'; key: string }
@@ -453,8 +485,12 @@ export type CityEvent =
   | { type: 'thirsty' }
   | { type: 'drank'; dirty: boolean }
   | { type: 'fished'; n: number }
-  | { type: 'grow'; what: 'planted' | 'watered' | 'harvested' | 'filled'; tile: number }
+  | { type: 'grow'; what: 'planted' | 'watered' | 'harvested' | 'filled' | 'hen' | 'eggs'; tile: number }
   | { type: 'ring'; tile: number }
+  /** 2.71: the dog fed (and now following), barking at the dead, something dug up (where). */
+  | { type: 'dog'; what: 'fed' | 'follows' | 'bark' | 'dug'; tile?: number }
+  /** 2.71: a skill's level reached (SKILLS' place). */
+  | { type: 'skill'; skill: number; level: number }
   /**
    * 2.68: the Rush: said (`warn`, minutes to nightfall), begun, a wave come (its number, how many), held (supplies on `tile`); a trap
    * at work (a sentry's shot at x, z); back at a base after nights away (how many pieces damaged, lost).
@@ -537,6 +573,9 @@ export class City {
         ...freshRush(),
         ...freshGear(),
         ...freshNeeds(),
+        ...freshSkills(),
+        ...freshHappen(),
+        ...freshDog(),
       }))
         if ((this.state as unknown as Record<string, unknown>)[k] === undefined) Object.assign(this.state, { [k]: v });
       from.seen.forEach((text, d) => d < PLACES && unpackBits(text, this.seen[d]));
@@ -562,15 +601,22 @@ export class City {
         ...freshRush(),
         ...freshGear(),
         ...freshNeeds(),
+        ...freshSkills(),
+        ...freshHappen(),
+        ...freshDog(),
       };
       this.state.rng = this.salt(77) | 0;
       this.enter(d);
       const s = this.district.spawn;
       this.state.player = bodyAt(s.x, s.z);
       this.state.home = [d, s.z * MAP_W + s.x];
+      // (2.71: the stray waiting in the park.)
+      placeDog(this);
     }
     this.look();
   }
+  /** 2.71: the dog's walk (not saved). */
+  pup: Pup = { body: null, path: [] };
 
   /** 2.59: the furniture of the start's district the clothes lie in (-1: none). */
   private wardrobe: number | null = null;
@@ -635,6 +681,8 @@ export class City {
     this.enter(this.story.wayDistrict[2]);
     const exit = this.story.exits[2];
     s.player = bodyAt(exit % MAP_W, Math.floor(exit / MAP_W), s.player.facing);
+    // (The review: the dog beside where the player now stands, not where they were.)
+    dogAlong(this);
     s.zeds = [];
     s.arrive = 1;
   }
@@ -651,6 +699,7 @@ export class City {
     // (2.65: a step in from the stairs' foot, whose tile is now the way back up: a second press at the gates doesn't climb straight back.)
     const at = this.tunnel.way[1] ?? this.tunnel.start;
     s.player = bodyAt(at % MAP_W, Math.floor(at / MAP_W), s.player.facing);
+    dogAlong(this);
     this.events.push({ type: 'travel', from, to: TUNNEL, side: SIDE.W, first });
   }
 
@@ -712,7 +761,33 @@ export class City {
     // (2.53: by day the dead wait where it's dark.)
     this.zedPlaces.deep = this.zedPlaces.indoors.filter((i) => this.dim[i] === 1);
     relight(this);
+    // (2.71: what a happening stands here: a crate, a truck, the runner.)
+    this.happenWas.fill(0);
+    happenHere(this, false);
+    // (2.71: the dog comes along.)
+    if (!kept) dogAlong(this);
     if (!kept) this.state.arrive = 1;
+  }
+  /** 2.71: per tile, 1 where a happening stands (a crate, a truck, the runner); a count the view watches (planned, landed, done). */
+  happenAt = new Uint8Array(N);
+  happenRev = 0;
+  private happenWas = new Uint8Array(N);
+  /** 2.71: the world as the happenings stand: what stood and is gone walked on again, what came stopping everyone. */
+  blockHappen() {
+    let moved = false;
+    for (let i = 0; i < N; i++) {
+      if (this.happenAt[i] === this.happenWas[i]) continue;
+      // (The review: a wall standing there stays a wall when what stood with it goes.)
+      const def = this.pieceAt[i] ? pieceOf(this.pieceAt[i] - 1) : undefined;
+      this.world.parked[i] = this.happenAt[i] || (def?.solid && def.veil ? 1 : 0);
+      moved = true;
+    }
+    this.happenWas.set(this.happenAt);
+    this.happenAt.fill(0);
+    if (!moved) return;
+    this.world.refreshBlock();
+    this.refreshBars();
+    this.happenRev++;
   }
   /** Where the dead may be: the open floors indoors (not a locked building's) and the streets. */
   private setPlaces() {
@@ -920,6 +995,8 @@ export class City {
       // (2.55: what burns goes on burning, and wakes whoever lies in it.)
       if (!s.over && !this.events.some((e) => e.type === 'dead')) stepFires(this);
       if (!s.over) stepGear(this);
+      // (2.71: the dog keeps watch.)
+      if (!s.over) stepDog(this);
       return;
     }
     if (!dir) this.letGo = true;
@@ -977,6 +1054,8 @@ export class City {
     if (s.arrive) {
       s.arrive = 0;
       if (!this.peace) populate(this);
+      // (2.71: and those a happening brings.)
+      if (!this.peace) happenHere(this, true);
     }
     if (!this.peace) stepDead(this);
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
@@ -985,6 +1064,8 @@ export class City {
     if (s.over || this.events.some((e) => e.type === 'dead')) return;
     // (2.69: smoke thins, a noisemaker rings.)
     stepGear(this);
+    // (2.71: the dog.)
+    stepDog(this);
     const here = this.tile;
     if (here === this.lastTile) return;
     // (2.65: walked off the tile held on beside a checkpoint: the next step onto one is warned again.)
@@ -1007,6 +1088,7 @@ export class City {
     }
     if (gate) this.cross(gate);
     storyMoved(this);
+    happenMoved(this);
     this.look();
   }
 
@@ -1037,6 +1119,8 @@ export class City {
     // (A fall to thirst this minute: nothing more of it. Only in a city with thirst: one under way runs on as it did.)
     if (needsOn(this) && (s.over || this.events.some((e) => e.type === 'dead'))) return;
     if (!s.over) storyMinute(this);
+    // (2.71: the day's happenings.)
+    if (!s.over) happenMinute(this);
     if (!s.over) lightMinute(this);
     if (!s.over) carMinute(this);
     if (s.over || !s.sleeping) return;
@@ -1056,7 +1140,7 @@ export class City {
   private heldOn = -1;
 
   /** Woken (the dead's bite). */
-  wakeNow(why: 'attacked' | 'pounding' | 'rattle') {
+  wakeNow(why: 'attacked' | 'pounding' | 'rattle' | 'barked') {
     if (this.state.sleeping) this.wake(why);
   }
   private wake(why: Woken) {
@@ -1076,7 +1160,8 @@ export class City {
     s.bleed = 0;
     this.close();
     s.deaths++;
-    if (s.mode === MODE.HARDCORE) {
+    // (2.71: Holdout too: a fall ends it.)
+    if (s.mode === MODE.HARDCORE || s.mode === MODE.HOLDOUT) {
       s.over = 1;
       this.events.push({ type: 'dead', final: true, moved: false, by });
       return;
@@ -1113,6 +1198,7 @@ export class City {
     s.arrive = 1;
     s.zeds = [];
     s.player = bodyAt(tile % MAP_W, Math.floor(tile / MAP_W));
+    dogAlong(this);
     // (To the next 06:30.)
     const now = (START_MINUTE + Math.floor(s.step / STEPS_PER_MINUTE)) % DAY_MINUTES;
     s.step += ((START_MINUTE - now + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES) * STEPS_PER_MINUTE;
@@ -1210,6 +1296,9 @@ export class City {
       const door = doorAt(t);
       if (door) return door;
     }
+    // (2.71: a happening's crate, truck or runner beside: after what was there before.)
+    const ev = happenTarget(this) ?? dogTarget(this);
+    if (ev) return ev;
     // (2.54) A car or a wreck beside, the one faced first: after everything else, so nothing that was done before is done otherwise.
     for (const [dx, dz] of around) {
       const tx = x + dx;
@@ -1244,7 +1333,11 @@ export class City {
   private inReach(key: string): boolean {
     const here = this.tile;
     if (key === 'w' || key === BAG) return true;
-    if (key.startsWith('n')) return this.target()?.key === key;
+    if (key.startsWith('n') || key.startsWith('r')) return this.target()?.key === key;
+    if (key.startsWith('e'))
+      return happenKeyTiles(this, key).some(
+        (t) => Math.abs((t % MAP_W) - (here % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(here / MAP_W)) <= 1,
+      );
     const at = key.startsWith('c')
       ? carTiles(this, Number(key.slice(1)))
       : key.startsWith('g') || key.startsWith('d') || key.startsWith('k') || key.startsWith('p')
@@ -1262,6 +1355,8 @@ export class City {
       if (car) carOpened(this, Number(key.slice(1)));
       else foundClothes(this, Number(key));
     }
+    // (2.71: broken up before it was opened, the stash spills with the rest.)
+    if (/^\d+$/.test(key)) stashIn(this, Number(key), this.boxOf(key, true));
     return this.boxOf(key) ?? [];
   }
   /** 2.66: a box emptied (a car stripped: searched, nothing in it). */
@@ -1272,6 +1367,10 @@ export class City {
   forgetBox(key: string) {
     if (this.state.open === key) this.close();
     delete this.state.boxes[this.boxKey(key)];
+  }
+  /** 2.71: things into a box as a search finds them (onto stacks with room, one weapon a slot), what doesn't fit left out. */
+  stow(into: Stack[], item: number, n: number) {
+    this.put(into, BOX_SLOTS, item, n);
   }
   /** 2.66: things laid on the ground at a tile (a pile's slots are many). */
   drop(tile: number, item: number, n: number) {
@@ -1321,7 +1420,14 @@ export class City {
     const rnd = streamOf(this.state.seed, 5000 + this.state.district * 1000 + prop);
     // (2.58: a building that was locked was never picked over: a draw more, and fewer of them empty.)
     const kept = lot > 0 && this.wasLocked(lot - 1);
-    const out = this.draws(list, total, (SEARCHED[p.kind] ?? 0) + (kept ? TOOLS.moreDraws : 0), rnd, kept ? TOOLS.emptyDraws : EMPTY_DRAWS);
+    // (2.71: the Scavenger's level: fewer empty, a draw more at the last.)
+    const out = this.draws(
+      list,
+      total,
+      (SEARCHED[p.kind] ?? 0) + (kept ? TOOLS.moreDraws : 0) + moreDraws(this),
+      rnd,
+      emptyDraws(this, kept ? TOOLS.emptyDraws : EMPTY_DRAWS),
+    );
     const radio = this.story.things[0];
     if (rev >= 1 && radio.district === this.state.district && radio.prop === prop)
       for (const [item, n] of RADIO_KIT) this.put(out, BOX_SLOTS, item, n);
@@ -1336,6 +1442,7 @@ export class City {
       total,
       wreck ? CARS.wreckDraws : CARS.draws,
       streamOf(this.state.seed, 200_000 + this.state.district * N + first),
+      emptyDraws(this, EMPTY_DRAWS),
     );
   }
   private draws(list: Array<[number, number]>, total: number, n: number, rnd: () => number, none: number = EMPTY_DRAWS): Stack[] {
@@ -1358,6 +1465,10 @@ export class City {
     const fresh = (/^\d+$/.test(key) || key.startsWith('c')) && !this.searched(key);
     const car = key.startsWith('c');
     if (fresh) this.boxOf(key, true).push(...(car ? this.stockCar(Number(key.slice(1))) : this.stock(Number(key))));
+    // (2.71: a first search done, a Scavenger's point; a crate or a truck opened; the stash a note spoke of.)
+    if (fresh) skillUp(this, SKILL.SCAVENGER, SKILL_POINTS.search);
+    if (key.startsWith('e') && !this.searched(key)) happenOpened(this, key, this.boxOf(key, true));
+    if (/^\d+$/.test(key)) stashIn(this, Number(key), this.boxOf(key, true));
     s.open = key;
     this.events.push({ type: 'open', key, found: this.box().filter((st) => st[0]).length, first });
     if (car) {
@@ -1451,7 +1562,12 @@ export class City {
       if (t.kind === 'wall') return startBreak(this, t.key);
       if (t.kind === 'water') return atWater(this, t.tile);
       if (t.kind === 'piece') return s.open === t.key ? this.close() : this.openBox(t.key, false);
+      // (2.71: the runner's card.)
+      if (t.kind === 'npc' && t.key.startsWith('r'))
+        return void this.events.push({ type: 'happen', what: 'runner', kind: 4, code: Number(t.key.slice(1)) });
       if (t.kind === 'npc') return meet(this, Number(t.key.slice(1)));
+      if (t.kind === 'event') return happenAct(this, t.key);
+      if (t.kind === 'dog') return feedDog(this);
       if (s.open === t.key) return this.close();
       // (2.54: a press that shuts something else, a pile picked clean beside a car, doesn't start on the car as well.)
       if (s.open && t.key.startsWith('c')) return this.close();
@@ -1486,7 +1602,8 @@ export class City {
       }
       if (t.kind === 'pile' || this.searched(t.key)) return this.openBox(t.key, false);
       s.search = t.key;
-      s.searchLeft = SEARCH_STEPS;
+      // (2.71: the Scavenger's level, quicker.)
+      s.searchLeft = searchSteps(this, SEARCH_STEPS);
       // (Drawers pulled out: heard nearby.)
       noise(this, this.tile, BLOW.rustle);
       this.close();
@@ -1510,7 +1627,7 @@ export class City {
     }
     if (op === COP.MAKE) return a >= REPAIR_OPS ? repairItem(this, a - REPAIR_OPS) : this.make(a);
     if (op === COP.CHOOSE) return choose(this, a);
-    if (op === COP.TRADE) return trade(this, a >> 2, a & 3);
+    if (op === COP.TRADE) return a >> 2 === RUNNER ? runnerTrade(this, a & 3) : trade(this, a >> 2, a & 3);
     if (op === COP.GIVE) return giveErrand(this, a);
     if (op === COP.TAKE || op === COP.TAKE_ALL) {
       const box = this.box();
@@ -1579,6 +1696,8 @@ export class City {
       }
       return;
     }
+    // (2.71, the review: nothing stored in a crate or a truck: let go at the next dawn, it would go with them.)
+    if (op === COP.STORE && s.open.startsWith('e')) return void this.events.push({ type: 'full' });
     if (op === COP.STORE && s.open) {
       const slots = s.open === BAG ? bagSlots(this) : s.open.startsWith('p') ? pieceSlots(this, s.open) : BOX_SLOTS;
       if (!slots) return void this.events.push({ type: 'full' });
@@ -1631,7 +1750,7 @@ export class City {
     const r = CITY_RECIPES[k];
     if (!r) return 'parts';
     // (2.70: not in a city begun before: hidden.)
-    if (r.manual !== undefined && !manualExists(this, r.manual)) return 'none';
+    if ((r.manual !== undefined && !manualExists(this, r.manual)) || (r.rev ?? 0) > this.state.rev) return 'none';
     if (r.taught !== undefined && this.state.errand[r.taught] < 1) return 'unknown';
     // (2.69: from a manual, read.)
     if (!knows(this, r)) return 'unknown';
@@ -1664,6 +1783,7 @@ export class City {
     // (What doesn't fit the pockets goes on the ground underfoot.)
     const left = this.give(this.state.inv, POCKETS, makes, r.n);
     if (left) this.give(this.boxOf(`g${this.tile}`, true), PILE_SLOTS, makes, left);
+    skillUp(this, SKILL.HANDY, SKILL_POINTS.make);
     this.events.push({ type: 'made', item: makes });
   }
 
@@ -1841,6 +1961,7 @@ export class City {
     else if (gate.side === SIDE.S) p.z = UNIT + UNIT / 2;
     else if (gate.side === SIDE.W) p.x = (MAP_W - 2) * UNIT + UNIT / 2;
     else p.x = UNIT + UNIT / 2;
+    dogAlong(this);
     this.events.push({ type: 'travel', from, to: gate.to, side: OPPOSITE[gate.side], first });
   }
 
@@ -1974,7 +2095,7 @@ export function loadCity(snap: unknown): City | null {
     if (![st.health, st.hunger, st.energy, st.deaths, st.over, st.searchLeft].every(Number.isInteger)) return null;
     // (A city that's over is never saved: lost or left, there's nothing to carry on.)
     if (st.over !== 0) return null;
-    if (st.mode !== MODE.SURVIVOR && st.mode !== MODE.HARDCORE) return null;
+    if (st.mode !== MODE.SURVIVOR && st.mode !== MODE.HARDCORE && st.mode !== MODE.HOLDOUT) return null;
     if (st.health < 0 || st.health > 100 || st.hunger < 0 || st.hunger > FULL || st.energy < 0 || st.energy > FULL) return null;
     if (!stacksOk(st.inv, POCKETS) || st.inv.length !== POCKETS) return null;
     if (typeof st.boxes !== 'object' || !st.boxes || !Object.values(st.boxes).every((b) => stacksOk(b, 64))) return null;
@@ -2001,6 +2122,9 @@ export function loadCity(snap: unknown): City | null {
   soundRush(st);
   soundGear(st);
   soundNeeds(st);
+  soundSkills(st);
+  soundHappen(st);
+  soundDog(st);
   try {
     const city = new City(st.seed, st.mode, { state: { ...st, player: { ...st.player, moving: false } }, seen: s.seen });
     // (A save from before homes: beside where the city starts.)

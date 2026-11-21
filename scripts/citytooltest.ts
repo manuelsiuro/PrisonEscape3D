@@ -179,6 +179,8 @@ const print = (c: City) => fnv1a(JSON.stringify(c.snapshot().state));
         if (lot < 0 || P.things.some((sp) => sp.district === d && sp.prop === k)) return;
         const was = locked.includes(lot);
         try {
+          // (2.71: as a first searcher finds it: no Scavenger's level from the pieces before.)
+          c.state.skills = [0, 0, 0, 0];
           const n = looked(c, k);
           pieces++;
           if (was) {

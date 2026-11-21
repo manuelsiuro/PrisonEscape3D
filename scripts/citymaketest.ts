@@ -1,3 +1,4 @@
+import { PEOPLE } from '../src/city/content/people';
 /**
  * City Escape's shelters and making (C2c): every recipe (its parts found somewhere in the city, made
  * from the pockets, refused without them, without a workbench beside or a stove carried), a weapon's
@@ -47,6 +48,9 @@ const beside = (c: City, tiles: number[]) => tiles.flatMap((i) => [i - 1, i + 1,
     for (const prop of ['shelf', 'desk', 'bed', 'toilet', 'table', ...Object.keys(LOOT_BY_PROP)] as PropKind[])
       for (const [item] of lootList(use, prop, CITY_REV).list) found.add(cityItem(item)!.id);
   const made = new Set(CITY_RECIPES.map((r) => r.makes));
+  // (2.71: the coop's eggs; the ranger's hens, swapped for and paid for an errand.)
+  made.add('egg');
+  for (const p of PEOPLE) for (const [id] of [p.later.trade[1], ...p.later.errand.gives]) made.add(id);
   for (const r of CITY_RECIPES) {
     check(!!cityItem(N(r.makes)), `${r.makes} is no item`);
     for (const [id, n] of r.from) {

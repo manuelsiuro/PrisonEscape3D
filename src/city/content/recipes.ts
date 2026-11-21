@@ -22,6 +22,8 @@ export interface CityRecipe {
   shop?: true;
   /** 2.70: made only beside a smoker built. */
   smoker?: true;
+  /** 2.71: only in a city begun from this revision (`state.rev`). */
+  rev?: number;
 }
 
 export const CITY_RECIPES: readonly CityRecipe[] = [
@@ -400,6 +402,18 @@ export const CITY_RECIPES: readonly CityRecipe[] = [
     ],
     stove: true,
     manual: 3,
+  },
+  // 2.71: the hens' eggs, on a fire or the stove (the cooking manual).
+  {
+    makes: 'omelette',
+    n: 1,
+    from: [
+      ['egg', 2],
+      ['herbs', 1],
+    ],
+    stove: true,
+    manual: 5,
+    rev: 7,
   },
 ];
 

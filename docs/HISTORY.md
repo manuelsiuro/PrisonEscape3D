@@ -251,3 +251,4 @@ Every release, in order, one line each; the full entry (what changed, what the r
 ## [v2.70 to v2.74](history/v2.70-v2.74.md)
 
 - City Escape, survival with weight (v2.70.0, not released yet)
+- City Escape, a city that doesn't wait (v2.71.0, not released yet)

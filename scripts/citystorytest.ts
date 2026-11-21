@@ -694,7 +694,8 @@ const ids = (c: City) =>
     'a save loses the survivors',
   );
   const bad = JSON.parse(JSON.stringify(c.snapshot()));
-  bad.state.errand = [3, 0, 0, 0];
+  // (2.71: three errands in a city begun from then: four is past the last anywhere.)
+  bad.state.errand = [4, 0, 0, 0];
   check(loadCity(bad)!.state.met === 0, 'an errand past its last is kept');
   // None of the dead are put down in a building one of them holds.
   // (Counted from across the district, after dark, when they are put down anywhere indoors; with the rule off they are there.)

@@ -37,11 +37,13 @@ src/city/
                       (`11-city-make-it-yours.md`): salvage.ts (2.66: breaking), build.ts and render/pieces.ts
                       (2.67: building, the traps since 2.68), rush.ts (2.68: the Rush, a base left), gear.ts
                       (2.69: manuals, mending, what's worn, the tricks), survival.ts (2.70: thirst, the states,
-                      the weather, water, the garden), each with its numbers in content/
+                      the weather, water, the garden, the coop), skills.ts, happen.ts, dog.ts, holdout.ts (2.71:
+                      skills, the day's happenings, the dog, Holdout; their numbers in content/alive.ts), each
+                      with its numbers in content/
   play/               city.ts (the run: steps, frame, keys, taps, pause, save), flow.ts (from the title)
   record.ts           the ways out taken and the feats, in a slot of their own (read by the city's menu)
 src/styles/46-city.css
-scripts/city*test.ts (twenty-one: `PLAN.md` §6 says what each proves);
+scripts/city*test.ts (twenty-two: `PLAN.md` §6 says what each proves);
 citybots.ts (the scavenger, the quester)
 ```
 

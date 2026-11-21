@@ -82,6 +82,11 @@ export const BEATS = [
   'win1',
   'win2',
   'win3',
+  // (2.71: Dispatch on the base and the city's days.)
+  'hammer',
+  'garden',
+  'dog',
+  'happen',
 ] as const;
 export type Beat = (typeof BEATS)[number];
 export const isBeat = (v: unknown): v is Beat => typeof v === 'string' && (BEATS as readonly string[]).includes(v);

@@ -25,8 +25,10 @@ export interface PieceDef {
   keeps?: string;
   /** 2.70: built only once its manual is read (MANUALS' place), in a city begun from then. */
   manual?: number;
-  /** 2.70: what it does: a planter grows, a rain barrel fills, a smoker smokes (sim/survival.ts). */
-  grows?: 'planter' | 'barrel' | 'smoker';
+  /** 2.70: what it does: a planter grows, a rain barrel fills, a smoker smokes (sim/survival.ts); 2.71: a coop's hens lay. */
+  grows?: 'planter' | 'barrel' | 'smoker' | 'coop';
+  /** 2.71: only in a city begun from this revision (`state.rev`). */
+  rev?: number;
 }
 
 export const PIECES: readonly PieceDef[] = [
@@ -255,6 +257,20 @@ export const PIECES: readonly PieceDef[] = [
     comfort: 1,
     manual: 4,
     grows: 'smoker',
+  },
+  // 2.71: a coop for the ranger's hens: an egg a day each.
+  {
+    id: 'coop',
+    from: [
+      ['plank', 4],
+      ['nails', 2],
+      ['wire', 1],
+    ],
+    hp: 50,
+    solid: true,
+    comfort: 1,
+    grows: 'coop',
+    rev: 7,
   },
 ];
 

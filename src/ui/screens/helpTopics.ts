@@ -481,7 +481,23 @@ HELP.city = [
       T('cityGarden', 'sprout', '#6aa84a', {
         pic: true,
         listIcons: ['sprout', 'water', 'fish', 'flame', 'utensils'],
-        see: ['cityThirst', 'cityGear', 'cityBuild'],
+        see: ['cityThirst', 'cityGear', 'cityBuild', 'cityDog'],
+      }),
+      // (2.71, C5: a city that doesn't wait.)
+      T('cityAlive', 'calendar', '#ff9a3a', {
+        pic: true,
+        listIcons: ['gift', 'megaphone', 'users', 'truck', 'cart', 'letter'],
+        see: ['cityPeople', 'citySkills', 'cityDog'],
+      }),
+      T('citySkills', 'star', '#d8b04a', {
+        pic: true,
+        listIcons: ['search', 'hammer', 'sword', 'heart'],
+        see: ['cityBuild', 'cityFight', 'cityThirst'],
+      }),
+      T('cityDog', 'paw', '#c9743b', {
+        pic: true,
+        listIcons: ['ear', 'bell', 'shovel', 'shield', 'egg'],
+        see: ['cityGarden', 'cityAlive'],
       }),
     ],
   },
@@ -497,6 +513,12 @@ HELP.city = [
         pic: true,
         listIcons: ['heli', 'boat', 'lock'],
         see: ['cityStory', 'cityPeople', 'cityShelter'],
+      }),
+      // (2.71: the second way to play.)
+      T('cityHoldout', 'shield', '#8a6ac8', {
+        pic: true,
+        listIcons: ['moon', 'siren', 'heart', 'home'],
+        see: ['cityRush', 'cityTraps', 'cityAlive'],
       }),
       T('cityPeople', 'users', '#6fd0c4', { pic: true, listIcons: ['key', 'heart', 'wrench', 'tree'], see: ['cityWays', 'cityMake'] }),
       T('cityKeys', 'keyboard', '#8a94a6', {

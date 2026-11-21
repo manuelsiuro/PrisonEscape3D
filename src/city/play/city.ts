@@ -29,10 +29,25 @@ import { TOOLS } from '../sim/tools';
 import { CityHud, type CityHudState } from '../ui/hud';
 import { paintDistrict } from '../ui/mapPaint';
 import { CityPockets, itemName, type PocketsState } from '../ui/pockets';
-import { showCityEscaped, showCityFell, showCityIntro, showCityJournal, showCityMap, showCityOver, showCityPerson } from '../ui/screens';
+import {
+  GIVE,
+  HAPPEN_ICONS,
+  happenText,
+  showCityEscaped,
+  showCityFell,
+  showCityIntro,
+  showCityJournal,
+  showCityMap,
+  showCityOver,
+  showCityPerson,
+  showCityRunner,
+  showHoldoutIntro,
+  showHoldoutOver,
+} from '../ui/screens';
 import { PEOPLE } from '../content/people';
 import { NOTES } from '../content/story';
-import { recordRun, type Feat } from '../record';
+import { recordHoldout, recordRun, type Feat } from '../record';
+import { isHoldout, nightsHeld } from '../sim/holdout';
 import { MODE } from '../sim/City';
 import { STORY, THINGS } from '../content/story';
 import { gatesOpen, going, marks, objectives, type Objective } from '../sim/story';
@@ -47,10 +62,16 @@ import { landmarkPlan } from '../render/landmarkPlan';
 import { cityItemNumber } from '../content/items';
 import { breaker, workOf, workTotal } from '../sim/salvage';
 import { BUILD, PIECES } from '../content/build';
+import { pieceFrom, searchSteps, workSteps } from '../sim/skills';
+import { HAPPEN, HAPPENINGS, SKILLS } from '../content/alive';
+import { FISHING } from '../content/survival';
+import { happenKeyTiles, happenView, RUNNER } from '../sim/happen';
+import { dogFacing, dogHere, dogMoving, dogTowards, follows } from '../sim/dog';
+import type { DogFrame } from '../../render/Dog';
 import { buildList, buildSpot, builtList, canBuild, comfortAt, lacking, pieceAtTile, repairCost, wornStep } from '../sim/build';
 import { rushDue, rushNumber, wavesIn } from '../sim/rush';
 import { BAG, bagSlots, bagThings } from '../sim/gear';
-import { barrel, fishesAt, fogSight, garden, moodOn, needsOn, outdoors, rainingNow, weatherNow } from '../sim/survival';
+import { barrel, coop, fishesAt, fogSight, garden, moodOn, needsOn, outdoors, rainingNow, weatherNow } from '../sim/survival';
 import { MOODS, WEATHER } from '../content/survival';
 import { RUSH } from '../content/rush';
 import { DIR_X, DIR_Z } from '../../sim/command';
@@ -213,7 +234,7 @@ export function runCity(city: City, fresh: boolean): Promise<boolean> {
     hideLoading();
     save(r);
     if (fresh)
-      void under(r, () => showCityIntro(click)).then(() => {
+      void under(r, () => (isHoldout(r.city) ? showHoldoutIntro(click) : showCityIntro(click))).then(() => {
         arrive(r);
         tip('city.search', touchWords() ? 'city.tip.search' : 'city.tip.searchKeys');
       });
@@ -392,7 +413,7 @@ async function talk(r: CityRun, who: number, what: 'met' | 'done' | 'chat') {
     const offer = await under(r, () => showCityPerson(r.city, who, said, click));
     if (offer < 0 || play.side !== r) return;
     // (Handed over: the action at them, whose answer brings the card back.)
-    if (offer === 3) return void r.ops.push([COP.GIVE, who]);
+    if (offer === GIVE) return void r.ops.push([COP.GIVE, who]);
     r.ops.push([COP.TRADE, who * 4 + offer]);
     said = 'chat';
     // (The swap is the next step's: the card again once it's made.)
@@ -411,7 +432,9 @@ async function pauseCity() {
     for (;;) {
       const c = r.city;
       // (2.64: and how death is taken, the one thing about this city a player can't see on the screen.)
-      const mode = t(c.state.mode === MODE.HARDCORE ? 'city.mode.hardcore' : 'city.mode.survivor');
+      const mode = t(
+        c.state.mode === MODE.HARDCORE ? 'city.mode.hardcore' : c.state.mode === MODE.HOLDOUT ? 'city.mode.holdout' : 'city.mode.survivor',
+      );
       const place = `${t('city.title')} · ${placeName(c)} · ${t('city.hud.day', { n: c.day })} · ${mode}`;
       // (The city's own line: it says "vous" in French, the prisons' "tu".)
       const choice = await showPause(click, r.saved, false, r.saved ? t('city.pause.saved') : '', false, place);
@@ -540,6 +563,8 @@ function cityFrame(r: CityRun, dt: number, now: number) {
       play.acc -= 1 / STEPS_PER_SECOND;
       r.prev.x = p.x;
       r.prev.z = p.z;
+      dogWas.x = c.state.dog[2] ?? 0;
+      dogWas.z = c.state.dog[3] ?? 0;
       for (const z of c.state.zeds) {
         const q = was.get(z);
         if (q) {
@@ -580,7 +605,13 @@ function cityFrame(r: CityRun, dt: number, now: number) {
               })()
             : PIECES[q[1]]?.grows === 'barrel'
               ? barrel(c, q, false)
-              : 0,
+              : PIECES[q[1]]?.grows === 'coop'
+                ? (() => {
+                    // (2.71: a coop's hens (tens) and eggs (units).)
+                    const k = coop(c, q, false);
+                    return k.hens * 10 + Math.min(9, k.eggs);
+                  })()
+                : 0,
       })),
     );
   }
@@ -635,6 +666,9 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   }
   cityView.setSmoke(c.state.smoke.filter(([, until]) => until > c.state.step).map(([tile]) => tile));
   cityView.drawSmoke(now / 1000, r.paused || settings.reducedMotion);
+  // (2.71: the day's happenings here; the dog.)
+  cityView.setHappenings(happenView(c));
+  cityView.drawDog(dogOf(r, play.acc * STEPS_PER_SECOND), f.x, f.z, dt, now / 1000, r.paused || settings.reducedMotion);
   if (ticksShown !== c.ticksRev) {
     ticksShown = c.ticksRev;
     cityView.setTicks(c.state.ticks.map((tk) => tk[0]));
@@ -685,6 +719,61 @@ function cityFrame(r: CityRun, dt: number, now: number) {
   sleepVeil.classList.toggle('on', c.state.sleeping);
   // (2.60: badly hurt: the screen's edges keep a slow red pulse.)
   bitten.classList.toggle('low', c.state.health <= 25 && !c.state.over && !c.state.sleeping);
+}
+
+/** 2.71: a happening (said at dawn, a crate down, a stranger lost or thanking, a horde come, found, the runner's card). */
+function happened(r: CityRun, e: Extract<CityEvent, { type: 'happen' }>) {
+  const c = r.city;
+  const entry = c.state.happen.find((x) => x[0] === e.code);
+  const kind = HAPPENINGS[e.kind];
+  const where = entry ? c.plan.names[entry[2]] : '';
+  const mark = HAPPEN_ICONS[kind];
+  switch (e.what) {
+    case 'said':
+      // (Each morning's: a banner, the line in the journal and on the map.)
+      if (entry) banner.show(t(`city.happen.${kind}` as Key), happenText(c, entry), 'routine', 6200, mark);
+      tip('city.happen', 'city.tip.happen');
+      break;
+    case 'landed':
+      sound.parcelThump(entry?.[2] === c.state.district ? 1 : 0.35);
+      banner.toast(entry?.[2] === c.state.district ? t('city.happen.landedHere') : t('city.happen.landed', { where }), 'info', 3600, mark);
+      break;
+    case 'lost':
+      banner.toast(t('city.happen.lost', { where }), 'bad', 3600, mark);
+      break;
+    case 'horde':
+      sound.moan();
+      banner.show(t('city.happen.horde'), t('city.happen.hordeHere'), 'alarm', 4200, mark);
+      buzz('missed');
+      break;
+    case 'thanks':
+      sound.cheer();
+      banner.show(t('city.happen.cry'), t(`city.happen.thanks.${e.code % 4}` as Key), 'routine', 6000, mark);
+      save(r);
+      break;
+    case 'found':
+      sound.chime();
+      banner.toast(t(`city.happen.found.${kind}` as Key), 'good', 3600, mark);
+      save(r);
+      break;
+    case 'runner':
+      r.pilot.stop();
+      void trade(r);
+      break;
+  }
+}
+
+/** 2.71: the runner's card: a swap is the next step's command, the card again once it's made. */
+async function trade(r: CityRun) {
+  if (r.paused) return;
+  const key = r.city.target()?.key ?? '';
+  for (;;) {
+    const offer = await under(r, () => showCityRunner(r.city, click));
+    if (offer < 0 || play.side !== r) return;
+    r.ops.push([COP.TRADE, RUNNER * 4 + offer]);
+    await new Promise((done) => setTimeout(done, 160));
+    if (play.side !== r || r.paused || r.city.target()?.key !== key) return;
+  }
 }
 
 function cityEvent(r: CityRun, e: CityEvent) {
@@ -821,7 +910,7 @@ function cityEvent(r: CityRun, e: CityEvent) {
         if (e.why && e.why !== 'stirred')
           banner.toast(
             t(`city.toast.woke.${e.why}` as Key),
-            e.why === 'hungry' || e.why === 'attacked' || e.why === 'pounding' || e.why === 'rattle' ? 'bad' : 'good',
+            e.why === 'hungry' || e.why === 'attacked' || e.why === 'pounding' || e.why === 'rattle' || e.why === 'barked' ? 'bad' : 'good',
             3000,
           );
         if (e.why === 'pounding') tip('city.siege', 'city.tip.siege');
@@ -949,6 +1038,43 @@ function cityEvent(r: CityRun, e: CityEvent) {
     case 'forcing':
     case 'casting':
       sound.scuffle();
+      // (2.71: a truck's doors take a while: said.)
+      if (e.type === 'forcing' && e.what === 'truck') banner.toast(t('city.toast.forcingTruck'), 'info', 2400, 'truck');
+      break;
+    // 2.71: a skill's level; the day's happenings; the dog.
+    case 'skill': {
+      const id = SKILLS[e.skill];
+      sound.chime();
+      banner.show(
+        t('city.skill.up', { skill: t(`city.skill.${id}` as Key), n: e.level }),
+        t(`city.skill.${id}.d` as Key),
+        'routine',
+        4600,
+        'star',
+      );
+      tip('city.skill', 'city.tip.skill');
+      break;
+    }
+    case 'happen':
+      happened(r, e);
+      break;
+    case 'dog':
+      if (e.what === 'bark') {
+        // (Heard, not said: a toast a bark would bury everything else.)
+        const g = c.state.dog;
+        const d = Math.hypot(g[2] - c.state.player.x, g[3] - c.state.player.z) / UNIT;
+        sound.bark(Math.max(0.25, 1 - d / 14), 1.1);
+        break;
+      }
+      if (e.what === 'dug') {
+        sound.plant();
+        banner.toast(t('city.toast.dog.dug'), 'good', 2800, 'paw');
+        break;
+      }
+      sound.munch(e.what === 'follows');
+      banner.toast(t(e.what === 'follows' ? 'city.toast.dog.follows' : 'city.toast.dog.fed'), 'good', 3200, 'paw');
+      if (e.what === 'follows') tip('city.dog', 'city.tip.dog');
+      save(r);
       break;
     // 2.67: building: hammering, a piece up (placing stops when what it takes runs out), repaired, taken down, broken by the dead.
     case 'building':
@@ -1282,6 +1408,13 @@ function cityEvent(r: CityRun, e: CityEvent) {
       buzz('missed');
       if (e.final) {
         save(r);
+        // (2.71: Holdout: the nights held, the Rushes, the best.)
+        if (isHoldout(c)) {
+          const nights = nightsHeld(c);
+          const best = recordHoldout(nights);
+          void under(r, () => showHoldoutOver(nights, c.state.held, best.best, best.fresh, click)).then((next) => stopCity(next === 'new'));
+          break;
+        }
         void under(r, () => showCityOver(c, placeName(c), click)).then((next) => stopCity(next === 'new'));
         break;
       }
@@ -1369,7 +1502,12 @@ function frameOf(r: CityRun, a: number): Frame {
           ? [tg.tile]
           : tg.key.startsWith('c')
             ? carTiles(c, Number(tg.key.slice(1)))
-            : c.tilesOf(Number(tg.key));
+            : // (2.71, the review: a crate, a truck, the dog: framed where they stand.)
+              tg.key.startsWith('e')
+              ? happenKeyTiles(c, tg.key)
+              : tg.kind === 'dog'
+                ? [tg.tile]
+                : c.tilesOf(Number(tg.key));
     // (Its edges, as the prisons give them: 2.64, the far ones a tile on, where the frame had been a tile short since 2.47.)
     focus.x0 = Math.min(...tiles.map((i) => i % MAP_W));
     focus.x1 = Math.max(...tiles.map((i) => i % MAP_W)) + 1;
@@ -1445,6 +1583,28 @@ let alarmHeard = -1e9;
 /** Where each of the dead was before the last step, and what the view is handed of them. */
 const was = new WeakMap<Zed, { x: number; z: number }>();
 const deadList: DeadFrame[] = [];
+/** 2.71: the dog where it is between two steps (null: not in this district). */
+const dogWas = { x: 0, z: 0 };
+const dogFrame: DogFrame = { x: 0, z: 0, facing: 0, moving: false, pace: 1, pose: 'heel', friend: true };
+function dogOf(r: CityRun, a: number): DogFrame | null {
+  const c = r.city;
+  if (!dogHere(c)) return null;
+  const g = c.state.dog;
+  const k = Math.min(1, Math.max(0, a));
+  const near = Math.abs(dogWas.x - g[2]) + Math.abs(dogWas.z - g[3]) < 3 * UNIT;
+  dogFrame.x = (near ? dogWas.x + (g[2] - dogWas.x) * k : g[2]) / UNIT;
+  dogFrame.z = (near ? dogWas.z + (g[3] - dogWas.z) * k : g[3]) / UNIT;
+  const moving = dogMoving(c) && !r.paused;
+  dogFrame.facing = headingAngle(moving ? dogFacing(c) : dogTowards(c));
+  dogFrame.moving = moving;
+  dogFrame.pace = 1.15;
+  // (Asleep with a sleeper; else at heel, sitting once still: the hungry stray too. The prisons' kennel pose lies by a kennel, and
+  // the city's dog has none.)
+  dogFrame.pose = follows(c) && c.state.sleeping ? 'asleep' : 'heel';
+  dogFrame.friend = follows(c) || g[0] > 0;
+  return dogFrame;
+}
+
 function deadOf(r: CityRun, a: number): DeadFrame[] {
   const zeds = r.city.state.zeds;
   deadList.length = zeds.length;
@@ -1508,7 +1668,12 @@ function pocketsOf(r: CityRun): PocketsState {
             : 'city.box.car'
           : open.startsWith('p')
             ? `city.piece.${PIECES[(c.pieceAt[Number(open.slice(1))] || 1) - 1].id}`
-            : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
+            : // (2.71, the review: a crate or a truck opened, by its own name.)
+              open.startsWith('e')
+              ? c.target()?.prop === 'truck' || c.state.happen.some((e) => `e${e[0]}` === open && e[1] === 3)
+                ? 'city.box.truck'
+                : 'city.box.drop'
+              : `city.box.${c.district.props[Number(open)]?.kind ?? 'shelf'}`;
   st.slots = c.box();
   // (2.69: what's worn.)
   st.armour = s.armour;
@@ -1523,6 +1688,7 @@ function pocketsOf(r: CityRun): PocketsState {
   st.sleepable = (st.box === 'city.box.bed' || st.box === 'city.piece.cot') && c.sleepable() >= 0;
   // (2.67: the Build panel, the piece being placed, the open built piece's card.)
   st.builds = buildList(c);
+  st.buildFrom = PIECES.map((p) => pieceFrom(c, p));
   st.placing = s.sleeping ? -1 : placing;
   st.placeWhy = placing >= 0 ? canBuild(c, placing, buildSpot(c)) : '';
   const bp = open.startsWith('p') ? pieceAtTile(c, Number(open.slice(1))) : undefined;
@@ -1555,6 +1721,8 @@ function pocketsOf(r: CityRun): PocketsState {
               planter: g ? (g.planted ? Math.min(4, g.grown + 1) : 0) : -1,
               watered: !!g?.watered,
               drinks: bdef.grows === 'barrel' ? barrel(c, bp, false) : -1,
+              // (2.71: a coop's hens and eggs, read the same way.)
+              ...(bdef.grows === 'coop' ? coop(c, bp, false) : { hens: -1, eggs: -1 }),
             };
           })(),
         }
@@ -1566,27 +1734,33 @@ function pocketsOf(r: CityRun): PocketsState {
   st.rest = c.restsTillDusk;
   st.searched = !!tg && c.searched(tg.key);
   // (2.66: breaking is measured by its work, not its steps.)
+  // (2.71: a Handy player's work and a Scavenger's search, quicker; a truck forced.)
   const steps = s.search.startsWith('b')
     ? 0
     : s.search.startsWith('h')
-      ? BUILD.steps
+      ? workSteps(c, BUILD.steps)
       : s.search.startsWith('r')
-        ? BUILD.repairSteps
+        ? workSteps(c, BUILD.repairSteps)
         : s.search.startsWith('t')
-          ? BUILD.downSteps
-          : s.search.startsWith('d')
-            ? BAR_STEPS
-            : s.search.startsWith('k')
-              ? TOOLS.forceSteps
-              : s.search.startsWith('f')
-                ? TOOLS.cutSteps
-                : s.search === 'w'
-                  ? STORY.castSteps
-                  : SEARCH_STEPS;
+          ? workSteps(c, BUILD.downSteps)
+          : s.search.startsWith('e') && s.search === c.target()?.key && c.target()?.kind === 'event'
+            ? HAPPEN.truckSteps
+            : s.search.startsWith('F')
+              ? FISHING.steps
+              : s.search.startsWith('d')
+                ? BAR_STEPS
+                : s.search.startsWith('k')
+                  ? TOOLS.forceSteps
+                  : s.search.startsWith('f')
+                    ? TOOLS.cutSteps
+                    : s.search === 'w'
+                      ? STORY.castSteps
+                      : searchSteps(c, SEARCH_STEPS);
   st.searching = !s.search ? 0 : steps ? 1 - s.searchLeft / steps : Math.max(0.02, 1 - c.breakLeft / workTotal(c, s.search));
   st.asleep = s.sleeping;
   st.barred = !!tg && tg.kind === 'door' && c.bars.includes(tg.tile);
-  st.person = tg?.kind === 'npc' ? PEOPLE[Number(tg.key.slice(1))].id : '';
+  // (2.71: the fence's runner, at the market for the day.)
+  st.person = tg?.kind === 'npc' ? (tg.key.startsWith('r') ? 'runner' : PEOPLE[Number(tg.key.slice(1))].id) : '';
   // (2.65: in the tunnel, the way back up.)
   st.way = tg?.kind === 'way' ? (s.district === TUNNEL ? 'up3' : `${s.ready ? 'go' : 'begin'}${s.way}`) : '';
   // (2.60: what strikes, a crossbow aside: it shoots, its count is its shots.)
