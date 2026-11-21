@@ -204,5 +204,5 @@ lamp, trough, lantern; the trap, fence and seed shapes).
 | 2 | Building: the build mode, walls, doors, chest, bed, workbench, campfire; repair; comfort; the hammer | 2.67.0 | released with 2.69.0 |
 | 3 | The Rush; traps and defences; a base left takes the nights' harm | 2.68.0 | released with 2.69.0 |
 | 4 | Manuals, upgrades, repair, armour, bags, the smoke bomb, the noisemaker, the flare | 2.69.0 | released |
-| 5 | Thirst, states, cooking, garden, rain barrel, fishing, weather (hens: batch 6) | 2.70.0 | built, merged, not released |
-| 6 | Events, skills, Holdout, the dog, hens | 2.71.0 | built, not merged |
+| 5 | Thirst, states, cooking, garden, rain barrel, fishing, weather (hens: batch 6) | 2.70.0 | released with 2.71.0 |
+| 6 | Events, skills, Holdout, the dog, hens | 2.71.0 | released |

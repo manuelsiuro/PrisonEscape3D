@@ -65,8 +65,8 @@ everything parked at its finish is built (v2.50.0 to v2.56.0). Left:
   broken. (The last nights' waits, harder with a bat since 2.61, were shortened in 2.63.2.)
 - **Stage C5, Make it yours** (the testers' asks, 2026-11-20; the design and its six batches in
   `phases/11-city-make-it-yours.md`): 1, breaking and salvage (2.66.0); 2, building a base (2.67.0); 3, the Rush, traps and a base
-  left (2.68.0); 4, crafting that grows (2.69.0): all released with 2.69.0; 5, survival with weight (2.70.0, merged); 6, a city that
-  doesn't wait (2.71.0: skills, the day's happenings, the dog, hens, Holdout; built on its branch). Parked from 3 and 4: the pit, the fire line, the floodlight, the electric fence and
+  left (2.68.0); 4, crafting that grows (2.69.0): all released with 2.69.0; 5, survival with weight (2.70.0); 6, a city that doesn't
+  wait (2.71.0: skills, the day's happenings, the dog, hens, Holdout): both released with 2.71.0. Parked from 3 and 4: the pit, the fire line, the floodlight, the electric fence and
   the powered workshop (a generator piece), window boards. Parked from 6: a block on fire as a happening.
 - The 2026-11-19 review's polish, in four batches (the user's go for each): 1, a first day that works (2.64,
   done); 2, readable screens and fights (2.64.1, done); 3, fair last nights

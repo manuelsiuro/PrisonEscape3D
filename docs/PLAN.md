@@ -215,7 +215,7 @@ feel) and the known limits.
 
 ## 8. Progress
 
-**Status (2026-11-20): v2.69.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
+**Status (2026-11-21): v2.71.0.** Every planned roadmap is built and released (§4: P0–P42 and the Six
 Hunter), with its reviews, the improvement queue (`BACKLOG.md` §4) and the gameplay polish series
 (`POLISH.md`); what each release did is in [`docs/HISTORY.md`](HISTORY.md). In numbers: 6 prisons and the Training Block,
 45 ways out, 165 items, 64 recipes, 144 achievements, 70 lessons in 5 chapters, 94 help topics,
@@ -225,8 +225,8 @@ stages (`phases/10-city-escape.md`), is on the title since 2.49; what was parked
 metro's tunnel), and its full review's findings from 2.57 to 2.60 (a town's own look, chained buildings and fences cut,
 a sleeper's door, the endings re-tuned, checkpoints, clothes, the fight and three more kinds of the dead). Stage C5, the
 testers' asks (`phases/11-city-make-it-yours.md`): breaking, building a base, the Rush and traps, crafting that grows
-(2.66 to 2.69); survival with weight (2.70, merged); a city that doesn't wait (2.71: skills, the day's happenings, the dog, hens,
-Holdout; built on its branch).
+(2.66 to 2.69); survival with weight (2.70) and a city that doesn't wait (2.71: skills, the day's happenings, the dog,
+hens, Holdout), released with 2.71.0: the stage is done.
 
 What's open (the areas not polished yet, the checks only a person can do, the ideas the user
 parked): [`BACKLOG.md`](BACKLOG.md).
